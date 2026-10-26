@@ -251,7 +251,9 @@ enum class HomeLayout(val label: String) {
          */
         // (Update 205: Arcade cabinets removed — no longer offered; a home still set to it opens as the Voltcap row.)
         // (Update 235, #15/#16: Tile home is a layout again — and the Square tile look stays a look of its own.)
-        val pickable: List<HomeLayout> get() = values().filter { it != ARCADE }
+        // (Update 347: Arcade cabinets offered again, rebuilt. A home saved as Arcade before 347 — moved to the Voltcap row
+        // by 205 — stays on the row: only a pick made now counts ("arcade_restored", see AppearanceStore.load).)
+        val pickable: List<HomeLayout> get() = values().toList()
     }
 }
 
@@ -1150,6 +1152,12 @@ data class AppearanceSettings(
     val introAnimation: Boolean get() = introStyle != IntroStyle.OFF
 }
 
+/** Update 347: set once Arcade cabinets is picked again (an older saved Arcade home stays on the Voltcap row). */
+internal const val ARCADE_RESTORED = "arcade_restored"
+
+/** Update 347: a home saved as Arcade cabinets opens as it only when Arcade was picked again since 347 ([restored]). */
+internal fun arcadeGate(saved: HomeLayout, restored: Boolean): HomeLayout = if (saved == HomeLayout.ARCADE && !restored) HomeLayout.CLASSIC else saved
+
 class AppearanceStore(context: Context) {
     private val appContext = context.applicationContext
     private val prefs = context.getSharedPreferences("appearance", Context.MODE_PRIVATE)
@@ -1437,7 +1445,7 @@ class AppearanceStore(context: Context) {
         launchAnimation = prefs.getBoolean("launch_animation", true),
         arrivalAnim = prefs.getBoolean("arrival_anim", true),
         popupZoom = prefs.getBoolean("popup_zoom", true),
-        homeLayout = prefs.getString("home_layout", null).let { if (it == "SWITCH") HomeLayout.TILES else enumPref("home_layout", HomeLayout.CLASSIC) }.let { if (it == HomeLayout.ARCADE) HomeLayout.CLASSIC else it },
+        homeLayout = prefs.getString("home_layout", null).let { if (it == "SWITCH") HomeLayout.TILES else enumPref("home_layout", HomeLayout.CLASSIC) }.let { arcadeGate(it, prefs.getBoolean(ARCADE_RESTORED, false)) },
         tileShortcuts = prefs.getBoolean("tile_shortcuts", true),
         // New key: everyone starts on the consistent theme colour once (design clean-up); their own colours stay a choice.
         tileShortcutTheme = prefs.getBoolean("tile_shortcut_theme2", true),
@@ -1617,6 +1625,8 @@ class AppearanceStore(context: Context) {
             putBoolean("arrival_anim", s.arrivalAnim)
             putBoolean("popup_zoom", s.popupZoom)
             putString("home_layout", s.homeLayout.name)
+            // (Update 347: Arcade picked now — see HomeLayout.pickable.)
+            if (s.homeLayout == HomeLayout.ARCADE) putBoolean(ARCADE_RESTORED, true)
             putBoolean("tile_shortcuts", s.tileShortcuts)
             putBoolean("tile_shortcut_theme2", s.tileShortcutTheme)
             putString("tile_focus", s.tileFocus.name)

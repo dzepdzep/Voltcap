@@ -61,7 +61,7 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.LIBRARY -> "Games per row, the game panel, tabs"
     HomeLayout.STACKS -> "Stacks in perspective, tool strip, bottom panel, mirror floor, 3D case" // (Update 162)
     HomeLayout.TIMELINE -> "Order by last played, release year or added, dates"
-    HomeLayout.ARCADE -> "Marquee glow, screen lines, cabinet colour"
+    HomeLayout.ARCADE -> "Showcase or Arcade hall, cabinet build, camera, room, screens, gameplay clips, sounds"
     HomeLayout.CONSOLES -> "Console pictures, how many games slide out"
     HomeLayout.DISCS -> "Spinning disc, CD player or the game's art, calm background, about the game" // (Update 162)
     // Update 158.

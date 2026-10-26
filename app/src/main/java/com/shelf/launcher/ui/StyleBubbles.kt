@@ -665,7 +665,7 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
  * The page with its top-right corner peeled back by [k] (0 = flat, 1 = gone): what's left of the page (the rect cut along
  * the fold line x − y = w − k·L).
  */
-private fun peelShape(k: Float) = GenericShape { size, _ ->
+internal fun peelShape(k: Float) = GenericShape { size, _ ->
     val l = (size.width + size.height) * k
     val c = size.width - l
     // Rect ∩ {x − y ≤ c}, walked round its corners.
@@ -681,6 +681,20 @@ private fun peelShape(k: Float) = GenericShape { size, _ ->
         }
     }
     if (out.size >= 3) { moveTo(out[0].x, out[0].y); for (q in 1 until out.size) lineTo(out[q].x, out[q].y); close() }
+}
+
+/** The flap of a page peeled back by [k] (see [peelShape]): the corner folded over, lit near the fold, shaded at its tip. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPeelFlap(k: Float) {
+    if (k <= 0f) return
+    val l = (size.width + size.height) * k
+    val ax = size.width - l
+    val a = Offset(ax, 0f); val b = Offset(size.width, l); val cc = Offset(ax, l)
+    val flap = Path().apply { moveTo(a.x, a.y); lineTo(b.x, b.y); lineTo(cc.x, cc.y); close() }
+    // Clip the flap to the page.
+    clipRect(0f, 0f, size.width, size.height) {
+        drawPath(flap, Color.Black.copy(alpha = 0.25f), style = Stroke(6f))
+        drawPath(flap, Brush.linearGradient(listOf(Color(0xFFFDFDFD), Color(0xFFD9DEE4), Color(0xFFA9B3BE)), start = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f), end = cc))
+    }
 }
 
 @Composable
@@ -715,17 +729,7 @@ private fun LiveAreaPage(c: StyleCtx, g: Game, open: Float, active: Boolean) {
         ) {
             Box(Modifier.fillMaxSize().clip(peelShape(k))) { LiveAreaBody(c, g, compactPage) }
             // The flap: the corner folded back, its underside lit near the fold, shaded at its tip.
-            Canvas(Modifier.fillMaxSize()) {
-                val l = (size.width + size.height) * k
-                val ax = size.width - l
-                val a = Offset(ax, 0f); val b = Offset(size.width, l); val cc = Offset(ax, l)
-                val flap = Path().apply { moveTo(a.x, a.y); lineTo(b.x, b.y); lineTo(cc.x, cc.y); close() }
-                // Clip the flap to the page.
-                clipRect(0f, 0f, size.width, size.height) {
-                    drawPath(flap, Color.Black.copy(alpha = 0.25f), style = Stroke(6f))
-                    drawPath(flap, Brush.linearGradient(listOf(Color(0xFFFDFDFD), Color(0xFFD9DEE4), Color(0xFFA9B3BE)), start = Offset((a.x + b.x) / 2f, (a.y + b.y) / 2f), end = cc))
-                }
-            }
+            Canvas(Modifier.fillMaxSize()) { drawPeelFlap(k) }
             // The corner to peel by hand: tap it, or drag it in (let go past a fifth of the way: it peels off).
             val span by rememberUpdatedState(wPx + hPx)
             Box(Modifier.align(Alignment.TopEnd).size(72.dp)

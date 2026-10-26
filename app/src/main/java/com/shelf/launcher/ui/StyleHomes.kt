@@ -807,7 +807,9 @@ internal class StyleActions(
     /** Update 202: the game's details looked up (Pocket Quest's panel: summary, year, genre), sort & filter, search. */
     val needMetadata: (Game) -> Unit = {},
     val sort: () -> Unit = {},
-    val search: () -> Unit = {}
+    val search: () -> Unit = {},
+    /** Update 347: the game's gameplay clip looked up (Arcade cabinets' screen), whatever Video previews is set to. */
+    val needVideo: (Game) -> Unit = {}
 )
 
 /** One stop of the category cycle (as L2 / R2 go through them). */
@@ -1417,6 +1419,7 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.PANELS -> PanelsBackdrop(Modifier.fillMaxSize())
         HomeLayout.MAGAZINE -> MagazineBackdrop(Modifier.fillMaxSize())
         HomeLayout.SHOP -> RentalShopBackdrop(Modifier.fillMaxSize())
+        HomeLayout.ARCADE -> ArcadeBackdrop(Modifier.fillMaxSize())
         HomeLayout.TERMINAL -> TerminalBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
@@ -1471,6 +1474,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     // Its wallpaper (the game's art: the art behind, as the other layouts with that option).
     HomeLayout.BUBBLES -> Features.bvWall.state.value != Features.BvWall.GAME
     HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL -> true
+    // Update 347: Arcade cabinets' room (Layout options › Room; "Your theme" keeps Voltcap's background).
+    HomeLayout.ARCADE -> Features.arRoom.state.value != Features.ArRoom.THEME
     else -> false
 }
 

@@ -4,6 +4,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -605,8 +606,8 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             btnFill = solid(Color(0xFF2A2833)), btnInk = Color.White,
             btnOnFill = Brush.verticalGradient(listOf(Color(0xFFFFF08A), Color(0xFFFFC21A))), btnOnInk = Color(0xFF231A00),
             btnBorder = Color(0xFF3DE7FF).copy(alpha = 0.7f),
-            back = "BACK", details = "INFO", play = if (resumed) "CONTINUE" else "PRESS START",
-            caps = true, paper = Color(0xFF0B0B10), keepsPalette = true
+            back = "EXIT", details = "GAME INFO", play = if (resumed) "CONTINUE" else "PRESS START",
+            caps = true, paper = Color(0xFF0B0B18), keepsPalette = true
         )
         // Console stack: the console's matte plastic body, a thin power-LED edge, rounded keys like its front buttons.
         HomeLayout.CONSOLES -> WinLook(
@@ -917,6 +918,12 @@ internal fun GameWindow(
     /** Update 213: the game's own "Sync saves" (Game settings), null = as Settings › Sync. */
     syncOn: Boolean? = null
 ) {
+    // Update 347: Play ignores the first moments after the window opens — a quick second press of A (or a double tap)
+    // meant for opening the window started the game while it was still growing in (found testing rapid open / close).
+    val openedAt = remember(g.stableKey) { android.os.SystemClock.uptimeMillis() }
+    val playNow by rememberUpdatedState(onPlay)
+    @Suppress("NAME_SHADOWING")
+    val onPlay: () -> Unit = { if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
     val syncView = rememberGameSyncView(g, syncOn)
@@ -993,7 +1000,7 @@ internal fun GameWindow(
     val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO ||
         scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS ||
         scene == WinScene.BLADE_GUIDE || scene == WinScene.BUBBLE_CARD || scene == WinScene.CAMERA_MENU || scene == WinScene.PANEL_DETAIL ||
-        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN) && !askedInspect && MediaInspect.force != g.stableKey
+        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
@@ -1040,7 +1047,7 @@ internal fun GameWindow(
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, tween(if (scene == WinScene.FILE_CARD) 340 else if (scene == WinScene.ORBIT_TERMINAL) 480 else 260, easing = FastOutSlowInEasing))
+                    grow.animateTo(0f, tween(sceneCloseMs(scene), easing = FastOutSlowInEasing))
                     closeNow()
                 }
             }
@@ -1082,7 +1089,9 @@ internal fun GameWindow(
         LaunchedEffect(Unit) {
             // (Update 125: the first three asks always go to Play — something else in the window, e.g. an icon, could
             // take the focus first, and then Play was never picked.)
-            for ((n, wait) in longArrayOf(60, 140, 250, 400, 700).withIndex()) {
+            // (Update 347: one more ask a second later — a window opened while the app was taking its focus back could
+            // still have nothing lit after 1.5 s.)
+            for ((n, wait) in longArrayOf(60, 140, 250, 400, 700, 1000).withIndex()) {
                 kotlinx.coroutines.delay(wait)
                 if (focusInside && n >= 3) break
                 runCatching { playFocus.requestFocus() }
@@ -1162,7 +1171,7 @@ internal fun GameWindow(
         }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else 320, easing = FastOutSlowInEasing))
+            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else sceneOpenMs(scene), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing else FastOutSlowInEasing))
         }
         // Update 162: the piece's place beside the window's parts (window px), known after the first layout; it comes
         // out once that's known, and the right stick turns it.
@@ -1241,7 +1250,7 @@ internal fun GameWindow(
                         onPlaced = { r -> if (target == null) target = r },
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
-                        if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { motion.lift.floatValue }
+                        if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { motion.closing }) { motion.lift.floatValue }
                         else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                     }
                 } else Box(
@@ -1287,7 +1296,7 @@ internal fun GameWindow(
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
                     if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight) origin else null)) {
-                        SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { grow.value }
+                        SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value }
                     }
                     else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
@@ -1298,6 +1307,34 @@ internal fun GameWindow(
         }
         }
     }
+}
+
+/** Update 347: how long after the window opens Play starts accepting a press (see GameWindow). */
+internal const val PLAY_GUARD_MS = 450L
+
+internal fun playAllowed(sinceOpenMs: Long): Boolean = sinceOpenMs >= PLAY_GUARD_MS
+
+/**
+ * Update 347: how long a layout's own window takes to open / close — the ones that draw themselves in steps (the DOS box,
+ * the camera's screen) a little longer, so their steps can be seen; everything else as before.
+ */
+internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
+    WinScene.TERM_RUN -> 560
+    WinScene.ARCADE_MENU -> 440
+    WinScene.CAMERA_MENU -> 420
+    WinScene.MAG_PAGE, WinScene.BUBBLE_CARD -> 400
+    WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 380
+    else -> 320
+}
+
+internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
+    WinScene.FILE_CARD -> 340
+    WinScene.ORBIT_TERMINAL -> 480
+    WinScene.TERM_RUN -> 420
+    WinScene.ARCADE_MENU -> 340
+    WinScene.CAMERA_MENU, WinScene.BUBBLE_CARD -> 340
+    WinScene.MAG_PAGE, WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 300
+    else -> 260
 }
 
 /** Update 162: the window's parts are beside the inspected piece — no second disc / cartridge drawn among them. */
@@ -1945,6 +1982,7 @@ private fun SceneBody(
     scene: WinScene, look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
     page: WinPage, setPage: (WinPage) -> Unit, maxW: Dp, maxH: Dp, playFocus: FocusRequester, listFocus: FocusRequester,
     onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, options: List<WinOption>,
+    closing: () -> Boolean = { false },
     reveal: () -> Float
 ) {
     val titles = LocalTitleOptions.current
@@ -1953,12 +1991,27 @@ private fun SceneBody(
     val I = androidx.compose.material.icons.Icons.Filled
     val perf = status?.perf != null
     val toMain = { setPage(WinPage.MAIN) }
+    // Update 347: back from Details / Options / Achievements, the D-pad lands on the button that opened the page (it
+    // went to Play). Performance has its own (WinStatus.perfFocus, see GameWindow's page effect).
+    val detailsF = remember { FocusRequester() }
+    val optionsF = remember { FocusRequester() }
+    val trophiesF = remember { FocusRequester() }
+    val returnTo = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
+    fun opener(f: FocusRequester, act: () -> Unit): () -> Unit = { returnTo[0] = f; act() }
+    LaunchedEffect(page) {
+        if (page != WinPage.MAIN) return@LaunchedEffect
+        val f = returnTo[0] ?: return@LaunchedEffect
+        returnTo[0] = null
+        // (After the window's own ask for Play, 60 ms after the page changes.)
+        kotlinx.coroutines.delay(120)
+        runCatching { f.requestFocus() }
+    }
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {
             WinPage.MAIN -> {
                 if (perf) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
-                add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, { setPage(WinPage.DETAILS) }))
+                add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
                 add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
             WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
@@ -1967,8 +2020,8 @@ private fun SceneBody(
         }
     }
     val tools = buildList {
-        add(WinAction("Options", I.Settings, extras.onOptions))
-        add(WinAction("Achievements", I.EmojiEvents, extras.onAchievements))
+        add(WinAction("Options", I.Settings, opener(optionsF, extras.onOptions), focus = optionsF))
+        add(WinAction("Achievements", I.EmojiEvents, opener(trophiesF, extras.onAchievements), focus = trophiesF))
         add(WinAction("Save sync", I.CloudSync, extras.onSync))
         extras.onManual?.let { add(WinAction("Manual", I.MenuBook, it)) }
         extras.onInspect?.let { add(WinAction("Inspect", InspectIcon.vector, it)) }
@@ -1997,6 +2050,7 @@ private fun SceneBody(
         page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
         buttons = buttons, tools = tools, chips = chips, close = onClose,
         inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = maxH, reveal = reveal,
+        closing = closing,
         pageBody = { m ->
             when (page) {
                 WinPage.MAIN -> {}

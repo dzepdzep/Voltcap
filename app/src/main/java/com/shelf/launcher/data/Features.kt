@@ -1672,6 +1672,41 @@ object Features {
     val arcadeLines = BoolPref("arcade_lines", true)
     /** Arcade cabinets: the cabinets in the game's own colours (off: the theme's). */
     val arcadeGameColors = BoolPref("arcade_game_colors", true)
+
+    // ---- Update 347: Arcade cabinets 2.0 (StyleArcade.kt, ArcadeCabinets.kt, WinScenesArcade.kt) ----
+    /** Showcase: one big machine and a row of small ones. Arcade hall: the machines standing round the room. */
+    enum class ArMode(val label: String) { SHOWCASE("Showcase"), HALL("Arcade hall") }
+    val arMode = EnumPref("ar_mode", ArMode.SHOWCASE, ArMode.values())
+    /** The machines' build — each its own shape; Mixed picks one by the game's console. */
+    enum class ArCab(val label: String) {
+        UPRIGHT("Classic upright"), CANDY("Candy cabinet"), NEO("Neo-retro"), BARTOP("Bartop"), MIXED("Mixed, by console")
+    }
+    val arCab = EnumPref("ar_cab", ArCab.UPRIGHT, ArCab.values())
+    /** How the machines are seen: straight on, a little from the side, or from the side and above. */
+    enum class ArView(val label: String, val yaw: Float, val elev: Float) {
+        FRONT("Straight on", 6f, 6f), SIDE("From the side", 20f, 9f), HIGH("From above", 26f, 17f)
+    }
+    val arView = EnumPref("ar_view", ArView.SIDE, ArView.values())
+    enum class ArSpacing(val label: String, val k: Float) { TIGHT("Close together", 0.82f), NORMAL("Normal", 1f), WIDE("Spread out", 1.22f) }
+    val arSpacing = EnumPref("ar_spacing", ArSpacing.NORMAL, ArSpacing.values())
+    /** The CRT look over the screens (with Scan lines off: none). */
+    enum class ArCrt(val label: String) { LIGHT("Light"), STRONG("Strong") }
+    val arCrt = EnumPref("ar_crt", ArCrt.LIGHT, ArCrt.values())
+    /** What the screens show when there's no gameplay clip. */
+    enum class ArScreen(val label: String) { SHOTS("Gameplay screenshot"), ART("Game art"), COVER("Cover") }
+    val arScreen = EnumPref("ar_screen", ArScreen.SHOTS, ArScreen.values())
+    /** The gameplay clip on the machine you're on, after a moment (where the game has one). */
+    val arVideo = BoolPref("ar_video", true)
+    /** The game's art printed on the cabinets' side panels (off: plain paint). */
+    val arSideArt = BoolPref("ar_side_art", true)
+    enum class ArRoom(val label: String) { NEON("Neon arcade"), DARK("Dark arcade"), CARPET("Carpet & wood"), THEME("Your theme") }
+    val arRoom = EnumPref("ar_room", ArRoom.NEON, ArRoom.values())
+    /** Camera glides and the machine you're on coming forward (off: straight there, still). */
+    val arMotion = BoolPref("ar_motion", true)
+    enum class ArSpeed(val label: String, val k: Float) { CALM("Calm", 1.45f), NORMAL("Normal", 1f), BRISK("Brisk", 0.7f) }
+    val arSpeed = EnumPref("ar_speed", ArSpeed.NORMAL, ArSpeed.values())
+    /** The arcade's own sounds: joystick clicks, a coin, a CRT switching on (off: Voltcap's usual sounds). */
+    val arSounds = BoolPref("ar_sounds", false)
     /** Console stack: the consoles as your console photos where there are (Settings › Library), else drawn. */
     val consolePhotos = BoolPref("console_stack_photos", true)
     /** Update 330: the console picture picked per console, "KEY=name" (ConsoleArt). */

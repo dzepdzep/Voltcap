@@ -43,7 +43,7 @@ object SettingsTransfer {
                 k.startsWith("unlock") || k.contains("trophy") || k.contains("mastered") || k == "show_rarity" ||
                 k == "completion_celebration" || k == "animate_only_new" || k.startsWith("cover_achievements") || k == "progress_on_banner" ||
                 k == "progress_above" -> Group.ACHIEVEMENTS
-            k == "widget_positions" || k.startsWith("dock_") || k.startsWith("tile_") || k.startsWith("hero_") || k == "home_layout" ||
+            k == "widget_positions" || k.startsWith("dock_") || k.startsWith("tile_") || k.startsWith("hero_") || k == "home_layout" || k == "arcade_restored" ||
                 k.startsWith("card_") || k.startsWith("focus") || k == "console_name_pin" || k.endsWith("_side") || k == "info_spacing" ||
                 k == "safe_zone_extra" || k.startsWith("shortcut_") || k == "density" || k == "text_scale" -> Group.LAYOUT
             k.startsWith("category") || k == "start_category" || k.endsWith("_collections") || k == "play_status" -> Group.CATEGORIES

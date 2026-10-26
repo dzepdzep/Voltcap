@@ -1,5 +1,51 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (347): popup animations finished, Arcade cabinets 2.0
+
+Toni's brief "Update 346 Final Polish + Arcade Cabinets 2.0". Dreamcast World untouched; other layouts unchanged.
+- **Popup open/close per scene** (`ui\WinScenesConsole.kt`, `ui\GameWindow.kt`, `ui\WinScenes.kt`, `ui\StyleBubbles.kt`):
+  Blades slide with a slight turn and a proper reverse; Bubbles open as a circle from the bubble and peel shut;
+  Camera switches on in 12 pixel steps (line, then open) and back; Panels swing forward / back; Magazine page lifts
+  from the bottom edge and settles; Rental tag swings on its hole (damped) with the case; Terminal draws its double
+  frame, then the text line by line, and erases it in reverse. Own open / close times per scene; Lite and reduced
+  motion keep the short fade; closing mid-open reverses from where it is.
+- **Play guard**: Play does nothing for 450 ms after a window opens (a held / repeated A from the home could launch the
+  game). Play gets focus on open; Details / Options / Achievements give focus back to their button after Back.
+- **Rental / Magazine on short screens**: tag drops the "GAME RENTALS" line, facts on one line, 3 keys across; magazine
+  1-line headline, smaller burst; both scroll with a fade when they still don't fit.
+- **Arcade back in the picker** (`data\AppearanceStore.kt`): only when picked again — old saves that said ARCADE and were
+  moved to CLASSIC stay CLASSIC (`arcade_restored` flag, in settings transfer / layout-only lists).
+- **Cabinets** (`ui\ArcadeCabinets.kt`, new): 2.5D extruded side profiles drawn from any angle — Classic upright,
+  Japanese candy (curved, slim), Neo-retro (wide monitor, LED trim), Compact bartop on a wooden counter (no coin door);
+  "Mixed" picks by console. Marquee, side art, deck (sticks / buttons), bezel and screen regions; screen / marquee are
+  real composables mapped onto the faces (`AffineBox`).
+- **Two modes** (`ui\StyleArcade.kt`, rewritten): Showcase (one big machine + info + row of minis) and Arcade Hall (a
+  curved row of machines in perspective on a floor, depth / shadows / lighting, the picked one steps forward and lights
+  up, the camera glides, console sign, plaque with Play / Details). Room: neon, dark, carpet or theme.
+- **Screen**: gameplay clip → screenshot → art → attract screen; clip only on the focused machine after ~1.6 s, stops on
+  move, none while the home is idle (a held clip showed a black first frame); fit inside (vertical games not stretched);
+  scanlines, CRT wake. Launch zooms into the monitor, back on return.
+- **Insert Coin popup** (`ui\WinScenesArcade.kt`, new): CRT bezel, pixel title, blinking INSERT COIN (static on Lite /
+  reduced motion), ▶ menu (Play, Game info, Options, Achievements …) and themed pages inside the screen.
+- **Settings** (`data\Features.kt`, Look → Arcade): mode, cabinet, view (front / side / high), spacing, size, marquee glow,
+  CRT strength, screen picture, clip on / off, side art, room, motion, speed, sounds (coin on open, CRT on launch; off by
+  default) (`ui\LayoutKitSounds.kt`).
+- Tests: `Arcade347Test` (picker gate, profiles, silhouettes, views, affine split, mixed pick, tube), 3 more in
+  `Layouts346Test`. testDebugUnitTest and assembleRelease pass.
+
+Copy: `src_copy\data\` AppearanceStore.kt, Features.kt, LayoutOnly.kt, SettingsTransfer.kt; `src_copy\ui\` ArcadeCabinets.kt
+(new), WinScenesArcade.kt (new), StyleArcade.kt, GameWindow.kt, WinScenes.kt, WinScenesConsole.kt, StyleBubbles.kt,
+StyleHomes.kt, StyleHomeSettings.kt, PresetsCard.kt, LauncherScreen.kt, LayoutKitSounds.kt, VideoPreview.kt;
+`project_copy\app\src\test\java\com\shelf\launcher\ui\` Arcade347Test.kt (new), Layouts346Test.kt.
+
+Tested on the Thor (release build): all 7 popup animations (screen recordings, frame by frame), rapid open / close,
+category change and style switch with a popup open, focus on Play and focus return, touch (select, open, tap outside),
+launch + Home return, L2 / R2 ignored in a popup, second screen keeps its page, 1280×720 and full size; Arcade: 4
+cabinets + Mixed in Showcase and Hall, glide, high view, Insert Coin popup + Game info page, compact and full.
+Gameplay clip on the arcade screen checked (25 To Life, Showcase: plays after a press, still screenshot while idle).
+Not tested: analog stick (adb can't send axes), a game with missing art (none in the library). Second-screen arcade info not added (the companion page stays as it is). Side effect: an early
+rapid A / Back test launched 25 To Life once (closed; removed from Continue playing; its playtime shows "under a minute").
+
 ## Update — 26 Oct 2026 (346): polish of the seven console layouts and their windows
 
 Toni's two briefs ("Console Layout Polish & Bug Fixes", "Complete Console Popup Audit & Polish"). Functional fixes first,

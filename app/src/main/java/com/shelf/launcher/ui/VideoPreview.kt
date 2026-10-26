@@ -33,7 +33,11 @@ fun VideoBackdrop(
     url: String, withSound: Boolean, modifier: Modifier = Modifier, paused: Boolean = false,
     /** Update 307: false fades the clip out (VideoCrossfade), then [onHidden]. */
     show: Boolean = true,
-    onHidden: (() -> Unit)? = null
+    onHidden: (() -> Unit)? = null,
+    /** Update 347: the whole picture inside the view, its own shape kept (black bars) — an arcade monitor; else cropped to fill. */
+    fit: Boolean = false,
+    /** The dock's shading over the clip (off: the clip as it is). */
+    shade: Boolean = true
 ) {
     com.shelf.launcher.Breadcrumbs.mark("VideoBackdrop")
     var playing by remember(url) { mutableStateOf(false) }
@@ -73,7 +77,7 @@ fun VideoBackdrop(
                             player.isLooping = true
                             if (!withSound) player.setVolume(0f, 0f)
                             player.setOnPreparedListener { mp ->
-                                cropToFill(view, mp.videoWidth, mp.videoHeight)
+                                sizeClip(view, mp.videoWidth, mp.videoHeight, fit)
                                 prepared.set(true)
                                 // (Already idle when it got ready: the first frame is shown, then it holds.)
                                 mp.start()
@@ -86,14 +90,14 @@ fun VideoBackdrop(
                             // (Update 307: a clip whose looping the player didn't honour — some streamed clips end
                             // after one play — starts over from its first frame, keeping its last one on screen meanwhile.)
                             player.setOnCompletionListener { mp -> runCatching { if (view.tag === mp && !pausedNow.value) { mp.seekTo(0); mp.start() } } }
-                            player.setOnVideoSizeChangedListener { _, w, h -> cropToFill(view, w, h) }
+                            player.setOnVideoSizeChangedListener { _, w, h -> sizeClip(view, w, h, fit) }
                             player.setOnErrorListener { _, _, _ -> playing = false; true }
                             player.prepareAsync()
                         }
                     }
 
                     override fun onSurfaceTextureSizeChanged(texture: SurfaceTexture, width: Int, height: Int) {
-                        (view.tag as? MediaPlayer)?.let { cropToFill(view, it.videoWidth, it.videoHeight) }
+                        (view.tag as? MediaPlayer)?.let { sizeClip(view, it.videoWidth, it.videoHeight, fit) }
                     }
 
                     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture): Boolean {
@@ -126,7 +130,7 @@ fun VideoBackdrop(
             modifier = Modifier.fillMaxSize()
         )
         // Same shading as the artwork backdrop, so the dock stays readable.
-        Box(
+        if (shade) Box(
             Modifier
                 .fillMaxSize()
                 .background(
@@ -191,6 +195,18 @@ private fun releaseInBackground(player: MediaPlayer, surface: Surface?) {
 /** (Update 231, #59) One background thread that releases finished clip players, one after another. */
 private val ClipReleaser: java.util.concurrent.ExecutorService =
     java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "voltcap-clip-release").apply { isDaemon = true } }
+
+/** Update 347: cropped to fill, or (fit) the whole picture inside the view with its own shape. */
+private fun sizeClip(view: TextureView, videoWidth: Int, videoHeight: Int, fit: Boolean) {
+    if (!fit) { cropToFill(view, videoWidth, videoHeight); return }
+    if (videoWidth <= 0 || videoHeight <= 0 || view.width <= 0 || view.height <= 0) return
+    val viewW = view.width.toFloat()
+    val viewH = view.height.toFloat()
+    val scale = minOf(viewW / videoWidth, viewH / videoHeight)
+    val matrix = Matrix()
+    matrix.setScale(scale * videoWidth / viewW, scale * videoHeight / viewH, viewW / 2f, viewH / 2f)
+    view.setTransform(matrix)
+}
 
 /** TextureView stretches video to its bounds; scale it back so it covers the
  * view while keeping its shape, cropping the overflow evenly. */

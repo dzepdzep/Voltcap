@@ -102,7 +102,9 @@ import com.shelf.launcher.data.HomeLayout
 /** Update 330: the layouts with a window of their own. */
 internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INFO, CASE_MEDIA, ORBIT_TERMINAL, AIRY_PANEL, NIGHT_STATUS,
     /** Update 344 (WinScenesConsole.kt). */
-    BLADE_GUIDE, BUBBLE_CARD, CAMERA_MENU, PANEL_DETAIL, MAG_PAGE, SHOP_TAG, TERM_RUN }
+    BLADE_GUIDE, BUBBLE_CARD, CAMERA_MENU, PANEL_DETAIL, MAG_PAGE, SHOP_TAG, TERM_RUN,
+    /** Update 347: Arcade cabinets' Insert Coin screen (WinScenesArcade.kt). */
+    ARCADE_MENU }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -120,6 +122,7 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.MAGAZINE -> WinScene.MAG_PAGE
     HomeLayout.SHOP -> WinScene.SHOP_TAG
     HomeLayout.TERMINAL -> WinScene.TERM_RUN
+    HomeLayout.ARCADE -> WinScene.ARCADE_MENU
     else -> null
 }
 
@@ -138,6 +141,7 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.MAG_PAGE -> Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.78f)))
     WinScene.TERM_RUN -> termColors(com.shelf.launcher.data.Features.tmTheme.value).let { t -> Brush.verticalGradient(listOf(t.bg.copy(alpha = 0.6f), t.bg.copy(alpha = 0.75f))) }
     WinScene.SHOP_TAG -> Brush.verticalGradient(listOf(Color(0xFF120A1F).copy(alpha = 0.7f), Color.Black.copy(alpha = 0.85f)))
+    WinScene.ARCADE_MENU -> Brush.radialGradient(listOf(Color(0xFF0A0420).copy(alpha = 0.55f), Color.Black.copy(alpha = 0.9f)))
     WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
@@ -200,7 +204,9 @@ internal class WinSceneCtx(
     /** How far the window is open, 0…1 (read while drawing). */
     val reveal: () -> Float,
     /** The details / options / achievements / performance page, in the layout's colours. */
-    val pageBody: @Composable (Modifier) -> Unit
+    val pageBody: @Composable (Modifier) -> Unit,
+    /** Update 347: the window is on its way out (a scene can leave differently from how it came — Bubble's peel). */
+    val closing: () -> Boolean = { false }
 ) {
     val played: String get() = stylePlaytime(playtime, lastPlayed != null)
     val last: String? get() = lastPlayed?.let { lastPlayedLabel(it) }
@@ -224,6 +230,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.MAG_PAGE -> MagazinePage(ctx)
         WinScene.SHOP_TAG -> RentalTag(ctx)
         WinScene.TERM_RUN -> TerminalDialog(ctx)
+        WinScene.ARCADE_MENU -> ArcadeMenu(ctx)
     }
 }
 

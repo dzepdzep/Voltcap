@@ -22,7 +22,7 @@ import kotlin.random.Random
  */
 
 /** Update 344: whose kit. */
-internal enum class LayoutKit { BLADES, BUBBLES, CAMERA, PANELS, MAGAZINE, SHOP, TERMINAL }
+internal enum class LayoutKit { BLADES, BUBBLES, CAMERA, PANELS, MAGAZINE, SHOP, TERMINAL, ARCADE }
 
 /** Update 344: the six sounds of a kit. */
 internal enum class KitSound { MOVE, SELECT, BACK, PAGE, OPEN, SPECIAL }
@@ -182,6 +182,18 @@ internal object LayoutKitSounds {
             KitSound.OPEN -> normalize(mix(0.2, 0.0 to keyClick(0.045, 8), 0.06 to square(1174.7, 0.08, 0.3)), 0.42)
             // The monitor switching on: a low thump under a short rising whine.
             KitSound.SPECIAL -> normalize(mix(0.5, 0.0 to tone(60.0, 0.3, 1.0, 9.0), 0.02 to sweep(4000.0, 7200.0, 0.4, 0.08)), 0.5)
+        }
+        // Update 347: an arcade machine — the stick's microswitch, a button, a coin dropping in and the credit blip, the
+        // monitor's thump.
+        LayoutKit.ARCADE -> when (s) {
+            KitSound.MOVE -> normalize(mix(0.03, 0.0 to keyClick(0.025, 11), 0.0 to tone(2900.0, 0.012, 0.3, 300.0)), 0.36)
+            KitSound.SELECT -> normalize(mix(0.16, 0.0 to clack(0.04), 0.05 to square(1318.5, 0.05, 0.45), 0.1 to square(1760.0, 0.06, 0.45)), 0.45)
+            KitSound.BACK -> normalize(mix(0.14, 0.0 to clack(0.03), 0.04 to square(659.3, 0.08, 0.4)), 0.42)
+            KitSound.PAGE -> normalize(mix(0.4, 0.0 to whoosh(0.36, 41), 0.0 to sweep(140.0, 80.0, 0.34, 0.25)), 0.45)
+            // A coin: two bright clinks, a rattle down the chute, the credit blip.
+            KitSound.OPEN -> normalize(mix(0.62, 0.0 to bell(3951.0, 0.12, 0.7), 0.05 to bell(3520.0, 0.1, 0.5), 0.1 to noise(0.12, 0.6, 0.35),
+                0.36 to square(987.8, 0.05, 0.5), 0.42 to square(1975.5, 0.12, 0.5)), 0.5)
+            KitSound.SPECIAL -> normalize(mix(0.55, 0.0 to tone(55.0, 0.32, 1.0, 8.0), 0.02 to sweep(5200.0, 8000.0, 0.45, 0.07)), 0.5)
         }
     }
 

@@ -2716,6 +2716,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.MAGAZINE ||
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SHOP ||
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TERMINAL ||
+            // Update 347: Arcade cabinets' room.
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.ARCADE && com.shelf.launcher.data.Features.arRoom.state.value != com.shelf.launcher.data.Features.ArRoom.THEME) ||
             // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
             state.appearance.homeLayout.isPocket ||
             // Update 202: Pocket Quest drawing its theme's scenery (Layout options › Background): the theme's background rests.
@@ -3692,6 +3694,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         },
                         needPhysical = { viewModel.loadPhysicalMedia(it) },
                         needMedia = { viewModel.loadMedia(it) },
+                        needVideo = { viewModel.loadVideoUrl(it, force = true) },
                         needSpine = { viewModel.loadPhysicalMedia(it, needSpine = true) },
                         mediaPlayPause = { viewModel.mediaPlayPause() },
                         mediaNext = { viewModel.mediaNext() },
@@ -3729,6 +3732,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             favorite = { a().favorite(it) },
                             needPhysical = { a().needPhysical(it) },
                             needMedia = { a().needMedia(it) },
+                            needVideo = { a().needVideo(it) },
                             needSpine = { a().needSpine(it) },
                             mediaPlayPause = { a().mediaPlayPause() },
                             mediaNext = { a().mediaNext() },

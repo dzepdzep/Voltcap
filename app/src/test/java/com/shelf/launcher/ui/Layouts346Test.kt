@@ -75,6 +75,20 @@ class Layouts346Test {
         assertEquals("OPTIONS", rentalKeyLabel("Options", primary = false))
     }
 
+    /** Update 347: a press of Play right as the window opens is ignored (a double press of A started the game). */
+    @Test fun playWaitsForTheWindow() {
+        assertTrue(!playAllowed(0)); assertTrue(!playAllowed(200)); assertTrue(playAllowed(PLAY_GUARD_MS)); assertTrue(playAllowed(2000))
+    }
+
+    /** Update 347: the DOS box draws its frame first, then its text; the camera screen moves in whole steps. */
+    @Test fun popupAnimationSteps() {
+        val half = termFrame(0.3f)
+        assertEquals(1f, half.top, 0.001f); assertEquals(0f, half.text, 0.001f)
+        assertEquals(1f, termFrame(1f).text, 0.001f); assertEquals(0f, termFrame(0f).top, 0.001f)
+        for (i in 0..100) { val k = i / 100f; val q = cameraStep(k); assertEquals(q * 12f, Math.round(q * 12f).toFloat(), 0.001f); assertTrue(q <= k) }
+        assertEquals(0f, tagSwing(1f), 0.001f); assertEquals(1f, tagSwing(0f), 0.001f)
+    }
+
     /** Past 14 pages the bubbles show a window of 11 dots round the page you're on, always inside the pages. */
     @Test fun bubblePageDots() {
         assertEquals(0 to 4, bubbleDotWindow(2, 5))

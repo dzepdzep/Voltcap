@@ -32,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -53,6 +55,25 @@ import coil.compose.AsyncImage
  * Update 344: the game windows of the console-inspired layouts (Blades, …), drawn by the layouts themselves (see
  * WinScenes.kt for how a scene gets the game and its actions from GameWindow).
  */
+
+/** Update 347: the pocket camera's screen moves in whole steps (12 a switch-on), as its little LCD would. */
+internal fun cameraStep(k: Float): Float = (kotlin.math.floor(k.coerceIn(0f, 1f) * 12f) / 12f)
+
+/** Update 347: the rental tag's swing as it opens — from 1 (swung away) past 0 (hanging) to a little the other way and back. */
+internal fun tagSwing(k: Float): Float {
+    val t = k.coerceIn(0f, 1f)
+    // A damped swing: cos with the amplitude dying away, landing on 0 at t = 1.
+    return ((1f - t) * (1f - t) * kotlin.math.cos(t * Math.PI.toFloat() * 2.5f)).let { if (t >= 1f) 0f else it }
+}
+
+/** Update 347: how far the terminal box has drawn itself at [k]: its frame (top, sides, bottom), the ground, the text. */
+internal class TermFrame(val top: Float, val sides: Float, val bottom: Float, val fill: Float, val text: Float)
+
+internal fun termFrame(k: Float): TermFrame {
+    val t = k.coerceIn(0f, 1f)
+    fun seg(a: Float, b: Float) = ((t - a) / (b - a)).coerceIn(0f, 1f)
+    return TermFrame(top = seg(0f, 0.18f), sides = seg(0.12f, 0.38f), bottom = seg(0.32f, 0.45f), fill = seg(0f, 0.3f), text = seg(0.45f, 1f))
+}
 
 /** Update 346: Play in the magazine's burst — one "!" (the look's own word may already shout: "CONTINUE!"). */
 internal fun magBurstLabel(label: String): String = label.uppercase().let { if (it.endsWith("!")) it else "$it!" }
@@ -85,9 +106,14 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
     val compact = h < 380.dp
     Box(
         Modifier.size(w, h).graphicsLayer {
+            // (Update 347: the blade slides in edge first, turned a little away, and squares up as it lands; closing runs
+            // it back out the same way.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            val e = 1f - (1f - k) * (1f - k)
+            val e = 1f - (1f - k) * (1f - k) * (1f - k)
             translationX = -(1f - e) * size.width * 0.6f
+            rotationY = (1f - e) * 14f
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            cameraDistance = 14f * density
             alpha = (e * 1.6f).coerceIn(0f, 1f)
         }
     ) {
@@ -232,11 +258,29 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
     val blue = Color(0xFF39A9FF)
     Box(
         Modifier.size(w, h).graphicsLayer {
+            // (Update 347: it opens as the bubble swelling into the page — a round window growing from its bubble's
+            // place, the page swinging down as it unfolds — and leaves as the LiveArea does, peeled off from the corner.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            rotationX = (1f - k) * -30f
-            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
-            cameraDistance = 14f * density
-            alpha = k
+            if (!ctx.closing()) {
+                val r = (k * 1.25f).coerceIn(0f, 1f)
+                shape = androidx.compose.foundation.shape.GenericShape { sz, _ ->
+                    val c = Offset(sz.width * 0.12f, sz.height * 0.14f)
+                    val far = kotlin.math.hypot(sz.width, sz.height)
+                    val rad = 26f * density + (far - 26f * density) * r * r
+                    addOval(androidx.compose.ui.geometry.Rect(c, rad))
+                }
+                clip = true
+                rotationX = (1f - k) * -22f
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                cameraDistance = 14f * density
+                alpha = (k * 2.5f).coerceIn(0f, 1f)
+            }
+        }.drawWithContent {
+            if (!ctx.closing()) { drawContent(); return@drawWithContent }
+            val pk = (1f - ctx.reveal()).coerceIn(0f, 1f)
+            val o = peelShape(pk).createOutline(size, layoutDirection, this)
+            if (o is androidx.compose.ui.graphics.Outline.Generic) clipPath(o.path) { this@drawWithContent.drawContent() } else drawContent()
+            drawPeelFlap(pk)
         }.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0D1520))
     ) {
         (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
@@ -338,10 +382,14 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
     val bmp = if (land) rememberDithered(url, 128, 112, pal) else rememberDithered(url, 112, 128, pal)
     Box(
         Modifier.size(w, h).graphicsLayer {
-            // The shutter opening: the window grows out of a bar in the middle.
-            val k = ctx.reveal().coerceIn(0f, 1f)
-            scaleY = 0.08f + 0.92f * k
-            alpha = if (k < 0.05f) 0f else 1f
+            // (Update 347: the little screen switching on in steps, as the cartridge's would — a dot, a line across, then
+            // the picture opening out of the line; switching off runs it back down to the dot.)
+            val q = cameraStep(ctx.reveal())
+            val line = (q / 0.3f).coerceIn(0f, 1f)
+            val open = ((q - 0.3f) / 0.7f).coerceIn(0f, 1f)
+            scaleX = 0.02f + 0.98f * line
+            scaleY = 0.015f + 0.985f * open
+            alpha = if (q <= 0f) 0f else 1f
         }
     ) {
         Canvas(Modifier.fillMaxSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
@@ -415,11 +463,15 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
     val ink = p.panelInk
     Box(
         Modifier.size(w, h).graphicsLayer {
+            // (Update 347: the panel comes forward out of its row — standing at the row's angle, it turns to face you as it
+            // grows, and swings back into the row when it closes.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            rotationY = (1f - k) * -28f
+            val e = 1f - (1f - k) * (1f - k)
+            rotationY = (1f - e) * -34f
             transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
             cameraDistance = 12f * density
-            alpha = (k * 1.4f).coerceIn(0f, 1f)
+            translationX = -(1f - e) * size.width * 0.06f
+            alpha = (k * 1.6f).coerceIn(0f, 1f)
         }.clip(RoundedCornerShape(6.dp)).background(p.panel).border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
     ) {
         Column(Modifier.fillMaxSize()) {
@@ -509,10 +561,16 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
     val compact = h < 380.dp
     Box(
         Modifier.size(w, h).graphicsLayer {
+            // (Update 347: the torn page is lifted off the issue — it comes up tilted back from its bottom edge, turning,
+            // and settles crooked on top; closing lays it back down.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            rotationZ = -2f + (1f - k) * -8f
-            translationY = (1f - k) * size.height * 0.15f
-            alpha = (k * 1.5f).coerceIn(0f, 1f)
+            val e = 1f - (1f - k) * (1f - k)
+            rotationX = (1f - e) * 42f
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+            cameraDistance = 16f * density
+            rotationZ = -2f + (1f - e) * -9f
+            translationY = (1f - e) * size.height * 0.12f
+            alpha = (k * 1.8f).coerceIn(0f, 1f)
         }
     ) {
         // The paper with its torn edge.
@@ -617,10 +675,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
     val tear = if (short) 0.1f else 0.15f
     Box(
         Modifier.size(w, h).graphicsLayer {
+            // (Update 347: the tag swings in on the string through its hole as the case comes off the shelf — past
+            // straight and back, once — and swings away as the case goes back.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            rotationZ = 2f + (1f - k) * 10f
-            translationX = (1f - k) * size.width * 0.3f
-            alpha = (k * 1.5f).coerceIn(0f, 1f)
+            rotationZ = 2f + tagSwing(k) * 26f
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.04f)
+            translationX = (1f - k) * (1f - k) * size.width * 0.35f
+            alpha = (k * 2f).coerceIn(0f, 1f)
         }
     ) {
         Canvas(Modifier.fillMaxSize()) {
@@ -635,7 +696,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
             while (bx < size.width * 0.6f) { val bw = if (i % 3 == 0) 6f else 3f; drawRect(ink, Offset(bx, size.height * (1f - tear + 0.045f)), Size(bw, size.height * (tear - 0.07f))); bx += bw + 3f + (i % 2) * 2f; i++ }
         }
         Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = h * tear)) {
-            Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+            if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
             Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
                 maxLines = if (short) 1 else 2, overflow = TextOverflow.Ellipsis)
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
@@ -644,7 +705,10 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                 // (Update 346: the facts two by two, label over value, so the keys below fit on the tag.)
                 val facts = listOfNotNull(ctx.genres?.let { "GENRE" to it }, ctx.developer?.let { "MADE BY" to it }, "PLAYED" to ctx.played,
                     if (ctx.total > 0) "TROPHIES" to "${ctx.earned} / ${ctx.total}" else null)
-                (if (short) facts.takeLast(2) else facts).chunked(2).forEach { pair ->
+                // (Update 347: on a short tag the facts are one line, so every key fits on the tag without scrolling.)
+                if (short) Text(facts.takeLast(2).joinToString("   ·   ") { (l, v) -> "$l ${v.uppercase()}" }, color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                else facts.chunked(2).forEach { pair ->
                     Row(Modifier.fillMaxWidth().padding(bottom = 3.dp)) {
                         pair.forEach { (l, v) ->
                             Column(Modifier.weight(1f).padding(end = 6.dp)) {
@@ -662,19 +726,23 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                         SceneControl(a, m) { on ->
                             Row(Modifier.fillMaxWidth().height(if (a.primary) (if (short) 32.dp else 38.dp) else if (short) 26.dp else 30.dp).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
-                                Icon(a.icon, null, tint = if (on) ink else yellow, modifier = Modifier.size(if (a.primary) 16.dp else 12.dp))
-                                Spacer(Modifier.width(if (a.primary) 8.dp else 4.dp))
+                                // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
+                                val tight = !a.primary && w < 340.dp
+                                if (!tight) {
+                                    Icon(a.icon, null, tint = if (on) ink else yellow, modifier = Modifier.size(if (a.primary) 16.dp else 12.dp))
+                                    Spacer(Modifier.width(if (a.primary) 8.dp else 4.dp))
+                                }
                                 // (Update 346: the window's look already says "RENT & PLAY" — it read "RENT & RENT & PLAY".)
                                 val label = rentalKeyLabel(a.label, a.primary)
                                 Text(label, color = if (on) ink else if (a.urgent) Color(0xFFFF8A3D) else yellow,
-                                    fontSize = if (a.primary) 15.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    fontSize = if (a.primary) 15.sp else if (tight) 9.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
                     // Play across the tag; the others as a block of punched keys, two by two, so they all fit on the tag.
                     ctx.buttons.filter { it.primary }.forEach { key(it, Modifier.fillMaxWidth()) }
                     val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
-                    val across = if (w >= 340.dp) 3 else 2
+                    val across = if (w >= 340.dp || short) 3 else 2
                     rest.chunked(across).forEach { group ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             group.forEach { key(it, Modifier.weight(1f)) }
@@ -722,24 +790,39 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         shadow = if (glow) androidx.compose.ui.graphics.Shadow(tc.fg.copy(alpha = 0.7f), Offset.Zero, 8f) else null)
     Box(
         Modifier.size(w, h).graphicsLayer {
-            // It draws in from the top down, as a slow screen would.
+            // (Update 347: the box draws itself — the double frame runs out from the top centre, down the sides and along
+            // the bottom; then the text comes up line by line; closing takes it away in reverse.)
             val k = ctx.reveal().coerceIn(0f, 1f)
-            clip = true
-            shape = androidx.compose.ui.graphics.RectangleShape
-            scaleY = 1f; alpha = if (k < 0.02f) 0f else 1f
-            translationY = 0f
-        }.background(tc.bg)
+            alpha = if (k < 0.02f) 0f else 1f
+        }
     ) {
         val k = ctx.reveal().coerceIn(0f, 1f)
         Canvas(Modifier.fillMaxSize()) {
-            val i = 6f; val gap = 5f
-            drawRect(tc.fg, Offset(i, i), Size(size.width - 2 * i, size.height - 2 * i), style = Stroke(2f))
-            drawRect(tc.fg, Offset(i + gap, i + gap), Size(size.width - 2 * (i + gap), size.height - 2 * (i + gap)), style = Stroke(2f))
-            // Not drawn yet below the reveal line.
-            drawRect(tc.bg, Offset(0f, size.height * k), Size(size.width, size.height * (1f - k)))
+            val f = termFrame(k)
+            // The box's ground fills in behind the frame as it goes round.
+            drawRect(tc.bg, alpha = (f.fill).coerceIn(0f, 1f))
+            for ((inset, sw) in listOf(6f to 2f, 11f to 2f)) {
+                val l = inset; val t = inset; val r = size.width - inset; val b = size.height - inset
+                val cx = size.width / 2f
+                // top, from the middle out
+                drawLine(tc.fg, Offset(cx - (cx - l) * f.top, t), Offset(cx + (r - cx) * f.top, t), sw)
+                // sides, down
+                if (f.sides > 0f) { drawLine(tc.fg, Offset(l, t), Offset(l, t + (b - t) * f.sides), sw); drawLine(tc.fg, Offset(r, t), Offset(r, t + (b - t) * f.sides), sw) }
+                // bottom, in to the middle
+                if (f.bottom > 0f) { drawLine(tc.fg, Offset(l, b), Offset(l + (cx - l) * f.bottom, b), sw); drawLine(tc.fg, Offset(r, b), Offset(r - (r - cx) * f.bottom, b), sw) }
+            }
         }
-        Text(" RUN " + TermNav.alias(ctx.g) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter).background(tc.hi))
-        Row(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 22.dp).graphicsLayer { alpha = ((k - 0.4f) / 0.6f).coerceIn(0f, 1f) }) {
+        Text(" RUN " + TermNav.alias(ctx.g) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter)
+            .graphicsLayer { alpha = if (termFrame(ctx.reveal()).top >= 0.6f) 1f else 0f }.background(tc.hi))
+        Row(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 22.dp).drawWithContent {
+            // The lines come up one at a time from the top (a whole text line at a step).
+            val shown = termFrame(k).text
+            if (shown <= 0f) return@drawWithContent
+            val lineH = fs.toPx() * 1.35f
+            val lines = kotlin.math.ceil(size.height / lineH)
+            val cut = kotlin.math.floor(shown * lines) * lineH
+            clipRect(0f, 0f, size.width, cut) { this@drawWithContent.drawContent() }
+        }) {
             Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
