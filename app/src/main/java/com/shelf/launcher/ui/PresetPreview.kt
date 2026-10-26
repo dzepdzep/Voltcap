@@ -106,6 +106,9 @@ internal fun PresetPreview(
             HomeLayout.POCKET -> pqPreview()
             // (Update 239, #93: Cube menu.)
             HomeLayout.CUBE -> p.cube()
+            // Update 330.
+            HomeLayout.MEMCARD -> p.memCard()
+            HomeLayout.CASEFLOW -> p.caseFlow()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -1009,6 +1012,53 @@ private class PreviewPainter(
      * or the cube docked — a small cube in the left column or the top band — beside the row of games, the game's name
      * and Play / Details.
      */
+    /** Update 330: Memory card — grey screen, loose rows of small icons, the card's name top left, a yellow title top right. */
+    fun memCard() {
+        val back = oe(Features.mcBack)
+        if (back != Features.McBack.THEME.name) {
+            val blue = back == Features.McBack.BLUE.name
+            d.drawRect(
+                Brush.radialGradient(
+                    if (blue) listOf(Color(0xFFC6CFDC), Color(0xFF8B96A8), Color(0xFF3C4556)) else listOf(Color(0xFFCBCCCF), Color(0xFF909297), Color(0xFF444649)),
+                    center = Offset(w * 0.5f, h * 0.38f), radius = maxOf(w, h) * 0.78f
+                )
+            )
+        }
+        rect(0.04f, 0.06f, 0.04f, 0.07f, Color(0xFF8D9198), 2f)
+        line(0.1f, 0.075f, 0.22f, Color.White, 0.035f)
+        line(0.1f, 0.13f, 0.12f, Color.White.copy(alpha = 0.8f), 0.02f)
+        line(0.66f, 0.075f, 0.3f, Color(0xFFF6DA4E), 0.035f)
+        line(0.76f, 0.13f, 0.2f, Color.White.copy(alpha = 0.8f), 0.02f)
+        val cols = 6
+        for (r in 0 until 3) for (cIdx in 0 until cols) {
+            val j = ((r * 7 + cIdx * 13) % 10) / 10f - 0.5f
+            val x = 0.08f + cIdx * 0.145f + j * 0.02f
+            val y = 0.28f + r * 0.21f + j * 0.03f
+            val on = r == 0 && cIdx == 1
+            if (on) d.drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.7f), Color.Transparent), center = Offset((x + 0.04f) * w, (y + 0.06f) * h), radius = w * 0.07f), radius = w * 0.07f, center = Offset((x + 0.04f) * w, (y + 0.06f) * h))
+            val hue = listOf(Color(0xFF3D6FD8), Color(0xFFD8913D), Color(0xFF55A04E), Color(0xFFB04A4A), Color(0xFF8A5CC4), Color(0xFF3FA6A8))[(r + cIdx) % 6]
+            rect(x, y + (if (on) -0.03f else 0f), 0.08f, 0.12f, hue, 4f)
+        }
+        val tri = androidx.compose.ui.graphics.Path().apply { moveTo(w * 0.48f, h * 0.9f); lineTo(w * 0.52f, h * 0.9f); lineTo(w * 0.5f, h * 0.94f); close() }
+        d.drawPath(tri, Color(0xFF2E63E6))
+    }
+
+    /** Update 330: Case flow — a dark stage, a case facing you in the middle, the others turned along a curve, reflections. */
+    fun caseFlow() {
+        if (ob(Features.cfStage)) d.drawRect(Brush.verticalGradient(listOf(Color(0xFF15171C), Color(0xFF050608))))
+        val spines = oe(Features.cfSide) == Features.CfSide.SPINES.name
+        for (side in listOf(-1, 1)) for (j in 3 downTo 1) {
+            val x = 0.5f + side * (0.14f + (j - 1) * 0.085f)
+            val hh = 0.42f - j * 0.035f
+            val ww = if (spines) 0.025f else 0.06f
+            rect(x - ww / 2f, 0.3f + (0.42f - hh) / 2f - j * 0.01f, ww, hh, cover(j * 3 + side + 4).copy(alpha = 1f - j * 0.12f), 2f)
+            if (ob(Features.cfReflect)) rect(x - ww / 2f, 0.74f, ww, hh * 0.25f, cover(j * 3 + side + 4).copy(alpha = 0.18f), 2f)
+        }
+        rect(0.42f, 0.26f, 0.16f, 0.46f, cover(1), 3f)
+        if (ob(Features.cfReflect)) rect(0.42f, 0.74f, 0.16f, 0.12f, cover(1).copy(alpha = 0.22f), 3f)
+        if (ob(Features.cfTitle)) { line(0.38f, 0.88f, 0.24f, Color.White, 0.03f); line(0.43f, 0.93f, 0.14f, Color.White.copy(alpha = 0.6f)) }
+    }
+
     fun cube() {
         val tintName = oe(Features.cubeTint)
         val tint = Features.CubeTint.values().firstOrNull { it.name == tintName }

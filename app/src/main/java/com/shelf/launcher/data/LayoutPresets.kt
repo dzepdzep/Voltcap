@@ -251,6 +251,18 @@ object LayoutPresets {
         o(Features.cubeExtraFaces), o(Features.cubeIdle), o(Features.cubeSize), o(Features.cubeBackdrop), o(Features.cubeReducedMotion)
     )
 
+    /** Update 330: Memory card's options. */
+    private fun memCardOpts(back: Features.McBack = Features.McBack.GREY, size: Features.McSize = Features.McSize.MEDIUM) = listOf(
+        o(Features.mcSize, size), o(Features.mcSpacing), o(Features.mcArrange), o(Features.mcDepth), o(Features.mcSelected),
+        o(Features.mcBack, back), o(Features.mcSaveIcons), o(Features.mcTitle), o(Features.mcHints), o(Features.mcFloat)
+    )
+
+    /** Update 330: Case flow's options. */
+    private fun caseFlowOpts(side: Features.CfSide = Features.CfSide.FRONTS, curve: Int = 45, reflect: Boolean = true) = listOf(
+        o(Features.cfSide, side), o(Features.cfCurve, curve), o(Features.cfSpacing), o(Features.cfSize), o(Features.cfAngle),
+        o(Features.cfPitch), o(Features.cfSpeed), o(Features.cfReflect, reflect), o(Features.cfStage), o(Features.cfTitle)
+    )
+
     private val CASES = PresetLook()
 
     /** A few presets for each home layout, made for it (Settings › Home › Layout & presets; update 162: every layout has its own). */
@@ -643,6 +655,20 @@ object LayoutPresets {
             look = null, options = cubeOpts()) { s ->
             s.copy(focusEffect = FocusEffect.GLOW)
         },
+        // Update 330: Memory card. Keeps your game look (the icons are their own drawing).
+        preset("memcard_std", HomeLayout.MEMCARD, "Memory card",
+            "Your games as small save icons floating in loose rows on a grey memory-card screen, the game you're on lit from behind, its title in yellow at the top right.",
+            look = null, options = memCardOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("memcard_blue", HomeLayout.MEMCARD, "Memory card, grey-blue",
+            "The same card on a cooler grey-blue screen with bigger icons.",
+            look = null, options = memCardOpts(Features.McBack.BLUE, Features.McSize.LARGE)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        // Update 330: Case flow. Keeps your game look (the cases are drawn as cases whatever it is).
+        preset("caseflow_std", HomeLayout.CASEFLOW, "Case flow",
+            "Real 3D cases on a curved carousel on a dark stage, the one you're on facing you, the others turned toward it, reflections on the floor.",
+            look = null, options = caseFlowOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("caseflow_spines", HomeLayout.CASEFLOW, "Case flow, spines",
+            "The cases either side show their spines, on a flatter curve.",
+            look = null, options = caseFlowOpts(Features.CfSide.SPINES, 20)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
         preset("cube_band", HomeLayout.CUBE, "Cube band",
             "The same cube docked in a band along the top while you browse, lilac glass and the faces' names only — more room across for the games.",
             look = null, options = cubeOpts(dock = Features.CubeDock.TOP, tint = Features.CubeTint.LILAC, face = Features.CubeFace.NAME)) { s ->

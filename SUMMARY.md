@@ -1,5 +1,54 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (330, phase 1 of 5): Pocket classic's game window, Memory card (2000), Case flow
+
+The retro layout expansion runs in five phases, each built, checked on the AYN Thor and pushed (Toni: push each phase;
+original names; layout-styled dialogs opt-in). Tracking matrices: `docs\compat\LAYOUTS_330.md`.
+
+- **Pocket classic (from PR #12):** A on the game panel opens the game's window (Game window off: it starts the game, as
+  everywhere). The window is the pocket menu's own: a pale paper screen with faint pinstripes, a sharp grey frame,
+  monospace capitals — START / GAME INFO / BACK — and the picture and the lit button in Layout options › Accent colour.
+  The whole window works as on every layout (details, achievements, options, saves, Inspect, performance).
+- **Game window colours keep a layout's own look where the colours are the look** (`WinLook.keepsPalette`): with "The
+  game's colours" (the default) or "Theme colours" the paper of Pocket classic and the grey of Memory card stay; the
+  game's / theme's colour lights the accent only. Other layouts unchanged.
+- **New layout: Memory card (2000)** (`ui\StyleMemoryCard.kt`): the games as small save icons floating in loose rows on
+  a neutral grey screen lit from above — the category as the card's name top left with how many games are on it, the game
+  you're on top right in yellow with its console, time played and achievements, blue arrows for more rows, button hints.
+  The icon you're on lifts and brightens with a soft light behind it and turns. PS2 games with a save on this device's
+  memory cards show **their save's own 3D icon and two-line title** (read only, never changed — the Save Vault's reader);
+  others their clear logo (your pick first), an app's icon, a small disc printed with the cover (disc consoles) or a little
+  box of it, else a plain memory-card symbol — never called a save icon. ◀ ▶ ▲ ▼ through the icons (rows scroll), A the
+  window, L2 / R2 the next card, Endless goes round; tap to pick, tap again to open, drag to scroll. Layout options: icon
+  size, spacing, loose / straight rows, depth, the icon you're on (turns / sways / lifts), background (grey, grey-blue,
+  your theme), save icons, title, hints, floating. Its window: smoky grey-blue glass. Presets "Memory card" and "Memory
+  card, grey-blue". (The Save Vault's PS2 memory-card style from update 239 already is the optional vault presentation.)
+- **New layout: Case flow** (`ui\StyleCaseFlow.kt`): real 3D cases (the game's front, real spine, its back when turned)
+  on a curved carousel on a dark stage — the one you're on facing you, the others turned toward it along the curve,
+  smaller and darker further out, with reflections; each console's case at its real size. Moving glides the whole row
+  (nothing pops in or out; Endless glides on from the last case to the first). A brings the case forward and its window
+  grows out of it (Inspect there turns it round); B sets it back. Layout options: fronts or spines either side, curve,
+  spacing, case size, the side cases' turn, camera height, speed, reflections, stage, name. R1 › Case for every game
+  works here. Presets "Case flow" and "Case flow, spines".
+- **R1 on the new layouts:** the look, game size, console badges and achievement chip tiles are hidden there (they'd
+  change nothing); Endless, Music player, Sort, Categories etc. stay. Memory card's card name follows R1 › Categories.
+- **Fixed while checking:** Case flow's category name sat over the round shortcuts' ☰ in the top-left corner (found by
+  the R1 tile walk — the tile changed nothing): it's at the top in the middle there.
+- **Checked on the Thor:** every option of both new layouts rendered (35 shots); recordings of moving, scrolling,
+  categories and opening / closing the window (no flashes, the piece flies back to its place); R1 tile walk of both
+  layouts in the Cover and Case looks (every tile shown changed the screen); Pocket classic's window on both screens with
+  D-pad and B; Mr Bean's real PS2 save icon. Unit tests (`Layouts330Test`).
+- **Not tested:** the Retroid Pocket Classic / Flip 2 (not connected), other screen sizes, Memory card's Sways / Lifts
+  only and Floating off, Case flow's Calm / Quick speeds, backup / restore of the new options.
+
+**Copy:** `src_copy\ui\` StyleMemoryCard.kt (new), StyleCaseFlow.kt (new), GameWindow.kt, PocketClassic.kt,
+PocketSettings.kt, StyleHomes.kt, StyleHomeSettings.kt, OptionIcons.kt, PresetsCard.kt, PresetPreview.kt, Ps2Browser.kt,
+R1TileRules.kt, GameLookPicker.kt, HomeParts.kt; `src_copy\data\` AppearanceStore.kt, Features.kt, LayoutPresets.kt,
+SaveCapsules.kt; `project_copy\app\src\test\java\com\shelf\launcher\ui\Layouts330Test.kt`;
+`project_copy\docs\compat\LAYOUTS_330.md` (new).
+
+---
+
 ## Update — 26 Oct 2026 (329): every R1 tile pressed in every layout × look on the Thor, fixes, Dark Channel grid
 
 - **R1 tile walk (test hooks only, `ui/TileCheck.kt`):** `--es voltcap_test_tilewalk <tiles|all>` /

@@ -30,7 +30,7 @@ import com.shelf.launcher.data.Features
 internal fun PocketClassicSettings() {
     MutedNote(
         "A 2004-style two-screen pocket menu. Top: your name, the time and battery in a thin bar in your colour, a clock " +
-            "and this month's calendar. Bottom: the game you're on (◀ ▶ change it, A starts it), Achievements, the category " +
+            "and this month's calendar. Bottom: the game you're on (◀ ▶ change it, A opens its game window; with Game window off, A starts it), Achievements, the category " +
             "you're in (A: its games) and All categories (A: every category), with Settings, Statistics and Sleep along the " +
             "bottom edge. B goes back. Two screens: the menu on the lower one; one screen: one above the other."
     )

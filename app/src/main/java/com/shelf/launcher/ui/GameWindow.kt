@@ -69,6 +69,7 @@ import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import com.shelf.launcher.ui.theme.ShelfTheme
 import com.shelf.launcher.LauncherUiState
 import androidx.compose.ui.platform.LocalView
@@ -259,7 +260,14 @@ private class WinLook(
     val mono: Boolean = false,
     val caps: Boolean = false,
     /** The details page's own paper (null: the panel's). */
-    val paper: Color? = null
+    val paper: Color? = null,
+    /** Update 330: faint vertical pinstripes over the panel (Pocket classic's paper), null: none. */
+    val stripes: Color? = null,
+    /**
+     * Update 330: the layout's own colours ARE its look (Pocket classic's paper, the memory-card screen's grey): "The
+     * game's colours" / "Theme colours" then only colour its accent (the lit button, the picture's frame), never the panel.
+     */
+    val keepsPalette: Boolean = false
 )
 
 private fun solid(c: Color): Brush = Brush.verticalGradient(listOf(c, c))
@@ -271,6 +279,18 @@ private fun mix(a: Color, b: Color, t: Float) = Color(a.red + (b.red - a.red) * 
  * buttons and the details page — keeping the layout's shapes, words and type. The windows were mostly white or grey.
  */
 private fun WinLook.tinted(tint: Color): WinLook {
+    if (keepsPalette) {
+        // A colour that reads on the layout's own panel: the tint itself, a little deeper on a pale panel.
+        val a = if (ink.luminance() < 0.4f) mix(tint, Color.Black, 0.18f) else mix(tint, Color.White, 0.25f)
+        val onA = if (a.luminance() > 0.55f) Color(0xFF1C2026) else Color.White
+        return WinLook(
+            arrange, btn, veil, panel, frame, frameW, corner, mediaCorner,
+            mediaFrame = if (mediaFrame != null) a else null, mediaFrameW = mediaFrameW,
+            ink = ink, muted = muted, accent = a, btnFill = btnFill, btnInk = btnInk, btnOnFill = solid(a), btnOnInk = onA,
+            btnBorder = btnBorder, back = back, details = details, play = play, mono = mono, caps = caps, paper = paper,
+            stripes = stripes, keepsPalette = true
+        )
+    }
     val deep = mix(tint, Color.Black, 0.55f)
     val rich = mix(tint, Color.Black, 0.25f)
     val glow = mix(tint, Color.White, 0.55f)
@@ -461,6 +481,55 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             btnFill = solid(Color(0xFFE1E4E9)), btnInk = Color(0xFF1E2228), btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
             back = "Back", details = "Details", play = playWord,
             paper = Color.White
+        )
+        // Update 330 (from PR #12): Pocket classic — the 2004 pocket menu's pale paper screen with faint pinstripes, sharp
+        // grey borders, monospace capital labels, the picture and the lit button in the layout's own accent
+        // (Layout options › Accent colour). The whole window pipeline (Play, details, achievements, options, saves, Inspect,
+        // performance) is the shared one.
+        HomeLayout.POCKET_CLASSIC -> {
+            val pc = pocketAccent(PocketAccent.values().firstOrNull { it.name == Features.classicAccent.state.value } ?: PocketAccent.BLUE)
+            val onPc = if (pc.luminance() > 0.55f) Color(0xFF24303B) else Color.White
+            WinLook(
+                Arrange.SPLIT, Btn.LCD,
+                veil = solid(Color(0xFF101823).copy(alpha = 0.79f)),
+                panel = Brush.verticalGradient(listOf(Color(0xFFF7F8FA), Color(0xFFE8EBEF))),
+                frame = Color(0xFF929AA5), frameW = 2.dp, corner = 3.dp, mediaCorner = 2.dp,
+                mediaFrame = pc, mediaFrameW = 2.dp,
+                ink = Color(0xFF303943), muted = Color(0xFF5B6674), accent = pc,
+                btnFill = solid(Color(0xFFF7F8FA)), btnInk = Color(0xFF303943),
+                btnOnFill = solid(pc), btnOnInk = onPc, btnBorder = Color(0xFF929AA5),
+                back = "BACK", details = "GAME INFO", play = if (resumed) "CONTINUE" else "START",
+                mono = true, caps = true, paper = Color(0xFFFFFFFF), stripes = Color(0xFFE3E7EC).copy(alpha = 0.55f),
+                keepsPalette = true
+            )
+        }
+        // Update 330: Memory card — the memory-card screen's own window: smoky grey-blue glass with a thin light edge, white
+        // words with the browser's yellow for the lit button and the title's accent, plain text buttons.
+        HomeLayout.MEMCARD -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color(0xFF3A3D44).copy(alpha = 0.55f), Color(0xFF0E1014).copy(alpha = 0.82f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF5B6270).copy(alpha = 0.92f), Color(0xFF2A2F38).copy(alpha = 0.96f))),
+            frame = Color.White.copy(alpha = 0.55f), frameW = 1.dp, corner = 8.dp, mediaCorner = 4.dp,
+            mediaFrame = Color.White.copy(alpha = 0.35f), mediaFrameW = 1.dp,
+            ink = Color.White, muted = Color(0xFFD4D8E0), accent = Color(0xFFF6DA4E),
+            btnFill = solid(Color.White.copy(alpha = 0.10f)), btnInk = Color.White,
+            btnOnFill = solid(Color(0xFFF6DA4E)), btnOnInk = Color(0xFF22252B), btnBorder = Color.White.copy(alpha = 0.3f),
+            back = "Back", details = "Details", play = if (resumed) "Continue" else "Start",
+            paper = Color(0xFF2A2F38), keepsPalette = true
+        )
+        // Update 330: Case flow — graphite glass under the case that came forward: the case beside the details, round-ended
+        // buttons in your accent, a fine light edge.
+        HomeLayout.CASEFLOW -> WinLook(
+            Arrange.SPLIT, Btn.PILL,
+            veil = Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Black.copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF2A2D35).copy(alpha = 0.94f), Color(0xFF14161B).copy(alpha = 0.97f))),
+            frame = Color.White.copy(alpha = 0.18f), frameW = 1.dp, corner = 16.dp, mediaCorner = 6.dp,
+            mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color(0xFFB9BEC9), accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.09f)), btnInk = Color.White, btnOnFill = solid(acc), btnOnInk = onAcc,
+            btnBorder = Color.White.copy(alpha = 0.16f),
+            back = "Back", details = "Details", play = playWord,
+            paper = Color(0xFF16181D)
         )
         // Update 202: Pocket Quest — a deep blue / indigo panel with a crisp accent (gold) edge and nearly square corners,
         // the picture in a thin accent frame, square buttons; the lit one solid accent with dark words (its theme's palette).
@@ -1227,6 +1296,13 @@ private fun WindowBody(
     val panelShape = RoundedCornerShape(look.corner)
     val panelMod = Modifier
         .then(if (look.panel != null) Modifier.clip(panelShape).background(look.panel) else Modifier)
+        .then(look.stripes?.takeIf { look.panel != null }?.let { line ->
+            Modifier.drawBehind {
+                val step = 3.dp.toPx(); val w = (step / 3f).coerceAtLeast(1f)
+                var x = 0f
+                while (x < size.width) { drawRect(line, androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Size(w, size.height)); x += step }
+            }
+        } ?: Modifier)
         .then(if (look.frame != null && look.frameW > 0.dp) Modifier.border(look.frameW, look.frame, panelShape) else Modifier)
         .padding(if (look.panel != null) 14.dp else 0.dp)
     val titles = LocalTitleOptions.current

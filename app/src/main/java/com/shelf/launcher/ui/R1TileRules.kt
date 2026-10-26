@@ -134,7 +134,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         }
         // Case for every game: the case looks where the look is drawn, and Game shelf (its pulled-out game is a case).
         "casestyle" -> when {
-            l == HomeLayout.SHELF -> R1Fit.Show
+            // (Update 330: Case flow's cases take the case picked for every game too.)
+            l == HomeLayout.SHELF || l == HomeLayout.CASEFLOW -> R1Fit.Show
             look == CardArtType.CASE || look == CardArtType.CASE_REAL -> lookFit(l)
             else -> R1Fit.Hide
         }
@@ -161,7 +162,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             HomeLayout.POCKET_RIBBON -> Features.ribbonCart.state.value
             else -> l !in setOf(HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.ARCADE, HomeLayout.SHELF,
                 // (Update 226, #98: the Pocket layouts draw no console badges either.)
-                HomeLayout.POCKET_CLASSIC)
+                HomeLayout.POCKET_CLASSIC,
+                // (Update 330: Memory card and Case flow draw none — the case's printed band names its console.)
+                HomeLayout.MEMCARD, HomeLayout.CASEFLOW)
         })
         // Update 326 (audit): Outline (Settings › Game look › Coloured frame, R1 tile of 325) — only where it's drawn: the
         // Voltcap row, Tile home, Grid, Hero carousel, TV room (their cards), and the carousel view of Side menu / Case
@@ -187,7 +190,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "progressbar" -> if (l in setOf(HomeLayout.CLASSIC, HomeLayout.GRID, HomeLayout.SIDE, HomeLayout.STACKS) &&
             l.name in Features.carouselLayouts.state.value) R1Fit.Hide else when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
-            HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC -> R1Fit.Hide
+            HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC, HomeLayout.MEMCARD, HomeLayout.CASEFLOW -> R1Fit.Hide
             // (Update 326, audit: Pocket ribbon's cartridge on top is drawn with StyleArt, which puts the chip on it.)
             HomeLayout.POCKET_RIBBON -> on(Features.ribbonCart.state.value)
             // (Update 204: hidden, not greyed, while Pocket Quest shows plain covers.)
@@ -198,7 +201,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // layouts, Green Core (their own sizes, or none) or Pocket Quest (its own Size in Layout options).
         "gamesize" -> on(l !in setOf(
             HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.CUSTOM,
-            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET
+            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET,
+            // Update 330: their own Icon size / Case size (Layout options).
+            HomeLayout.MEMCARD, HomeLayout.CASEFLOW
         ))
         // (Update 239, #93: the Cube menu needs no rule of its own — its games are drawn with StyleArt in your look, size
         // (GameSize), badges and achievement chip, its row goes round with Endless; Carousel / Row position / Twin gaps

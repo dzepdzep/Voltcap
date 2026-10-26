@@ -158,6 +158,9 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     // (Update 329, seen on the AYN Thor: at 0.19 the name's frame ran through the line of counts — "2213 titles online ·
     // 18 systems". A little lower, clear of it.)
     HomeLayout.GREENCORE -> 0f to 0.245f
+    // Update 330: Case flow — at the top in the middle, over the cases (the top-left corner is where the round shortcuts'
+    // ☰ sits: the name covered it).
+    HomeLayout.CASEFLOW -> 0.5f to 0.03f
     // Anywhere else it's added by hand: the top-left corner.
     else -> 0f to 0f
 }

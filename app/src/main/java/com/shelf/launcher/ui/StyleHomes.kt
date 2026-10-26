@@ -420,6 +420,30 @@ internal fun styleHomeKey(
             Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) leftToMenu() else false // Update 151: knock first
             else -> false
         }
+        // Update 330: Memory card — loose rows of icons: ◀ ▶ along (on round the row ends into the next row), ▲ ▼ a row
+        // up / down (the rows scroll); past the top / bottom row what lies there. Endless: the last icon goes round to the first.
+        HomeLayout.MEMCARD -> {
+            if (count == 0) return false
+            val cols = MemCardNav.cols.coerceAtLeast(1)
+            val loop = StyleLoop.on && count >= 2
+            val target: Int? = when (k) {
+                Key.DirectionLeft -> if (focus > 0) focus - 1 else if (loop) count - 1 else null
+                Key.DirectionRight -> if (focus < count - 1) focus + 1 else if (loop) 0 else null
+                Key.DirectionUp -> if (focus - cols >= 0) focus - cols else null
+                Key.DirectionDown -> when {
+                    focus + cols < count -> focus + cols
+                    focus / cols < (count - 1) / cols -> count - 1 // the last row is shorter: its last icon
+                    else -> null
+                }
+                else -> return false
+            }
+            if (target != null && target != focus) {
+                setFocus(target)
+                sound(UiSound.MOVE)
+            } else if (first && (k == Key.DirectionUp || k == Key.DirectionDown)) reach(k == Key.DirectionUp)
+            else if (first && target == null) EdgeBump.hit(if (k == Key.DirectionLeft) -1 else 1)
+            return take()
+        }
         HomeLayout.CHAN -> {
             // Pages of a grid (update 104: each page stays put). ▲ ▼ move a row within the page — past its bottom row
             // the Channel grid's round buttons (then what lies beyond).
@@ -571,6 +595,13 @@ internal fun styleHomeKey(
         // Update 158: Record crate handles its own keys (StyleRecordCrate.kt).
         // Update 176: Custom layout (StyleCustom.kt).
         HomeLayout.CUSTOM -> return customLayoutKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        // Update 330: Case flow (StyleCaseFlow.kt): ▲ ▼ beyond; ◀ ▶ the home screen's own.
+        HomeLayout.CASEFLOW -> return caseFlowKey(
             StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
                 category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
@@ -1237,6 +1268,10 @@ internal fun StyleHome(
         HomeLayout.POCKET -> StylePocketQuest(c, modifier)
         // (Update 239, #93: Cube menu, StyleCube.kt.)
         HomeLayout.CUBE -> StyleCube(c, modifier)
+        // Update 330: Memory card (StyleMemoryCard.kt).
+        HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
+        // Update 330: Case flow (StyleCaseFlow.kt).
+        HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
         else -> Unit
     }
 }
@@ -1303,6 +1338,9 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.POCKET -> PocketQuestBackdrop(Modifier.fillMaxSize())
         // (Update 239, #93: the Cube menu's dark indigo room, its option; off: your theme's background.)
         HomeLayout.CUBE -> if (Features.cubeBackdrop.state.value) CubeBackdrop(Modifier.fillMaxSize())
+        // Update 330: the memory-card screen's grey (its option; Your theme: the theme's background).
+        HomeLayout.MEMCARD -> MemCardBackdrop(Modifier.fillMaxSize())
+        HomeLayout.CASEFLOW -> CaseFlowBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1343,6 +1381,9 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.POCKET -> pqOwnsBackground()
     // (Update 239, #93: the Cube menu with its own backdrop on.)
     HomeLayout.CUBE -> Features.cubeBackdrop.state.value
+    // Update 330.
+    HomeLayout.MEMCARD -> memCardOwnsBackground()
+    HomeLayout.CASEFLOW -> caseFlowOwnsBackground()
     else -> false
 }
 

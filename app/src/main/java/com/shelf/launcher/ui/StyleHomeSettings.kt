@@ -84,6 +84,9 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.POCKET -> "Theme, scenery or Voltcap background, parallax, accent, media, panel parts, size, speed, retro sounds, reduced motion"
     // (Update 239, #93.)
     HomeLayout.CUBE -> "Cube home, where it docks, faces, Apps & Settings faces, colour, size, idle float, backdrop, reduced motion"
+    // Update 330.
+    HomeLayout.MEMCARD -> "Icon size, spacing, loose or straight rows, depth, the icon you're on, background, save icons, title, hints, float"
+    HomeLayout.CASEFLOW -> "Fronts or spines either side, curve, spacing, size, turn, camera height, speed, reflections, stage, name"
     else -> ""
 }
 
@@ -130,6 +133,10 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.POCKET -> PocketQuestSettings()
         // (Update 239, #93: Cube menu, below.)
         HomeLayout.CUBE -> CubeSettings()
+        // Update 330 (StyleMemoryCard.kt).
+        HomeLayout.MEMCARD -> MemoryCardSettings()
+        // Update 330 (StyleCaseFlow.kt).
+        HomeLayout.CASEFLOW -> CaseFlowSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
@@ -233,7 +240,7 @@ internal fun <T> StyleChoice(label: String, values: Array<T>, current: T, name: 
 }
 
 @Composable
-private fun Toggle(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, pref: Features.BoolPref) {
+internal fun Toggle(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, pref: Features.BoolPref) {
     SwitchRow(icon, title, subtitle, pref.state.value, { pref.value = it })
     Spacer(Modifier.height(8.dp))
 }

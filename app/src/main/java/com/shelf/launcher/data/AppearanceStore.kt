@@ -180,7 +180,13 @@ enum class HomeLayout(val label: String) {
     POCKET("Pocket Quest"),
     /** (Update 239, #93: a cube home — a big translucent cube whose faces are your categories (▲ Apps, ▼ Settings);
      *  A opens a face and the cube docks to the side while the games fill the rest of the screen (StyleCube.kt).) */
-    CUBE("Cube menu");
+    CUBE("Cube menu"),
+    /** Update 330: Memory card (2000) — the games as small save icons floating in loose rows on a grey memory-card screen,
+     *  the card / category top left, the game's title top right; PS2 games show their own save's 3D icon (StyleMemoryCard.kt). */
+    MEMCARD("Memory card (2000)"),
+    /** Update 330: Case flow — the games as real 3D cases on a curved carousel: the one you're on comes forward facing you,
+     *  the others turn aside; A brings it closer and opens its window (StyleCaseFlow.kt). */
+    CASEFLOW("Case flow");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -193,6 +199,7 @@ enum class HomeLayout(val label: String) {
         this == GREENCORE || // Update 202: Green Core
         this == POCKET || // Update 202: Pocket Quest
         this == CUBE || // (Update 239, #93: Cube menu)
+        this == MEMCARD || this == CASEFLOW || // Update 330: Memory card, Case flow
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -677,7 +684,7 @@ object CategoryBars {
     val BAR = setOf(HomeLayout.CLASSIC, HomeLayout.TILES, HomeLayout.GRID, HomeLayout.TWIN_DESK, HomeLayout.TWIN_SHOWCASE)
     val OWN = setOf(
         HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.DISCS, HomeLayout.CRATE, HomeLayout.POCKET_RIBBON,
-        HomeLayout.TIMELINE, HomeLayout.SIDE, HomeLayout.DASH
+        HomeLayout.TIMELINE, HomeLayout.SIDE, HomeLayout.DASH, HomeLayout.MEMCARD
     )
     val MENU = setOf(
         HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,

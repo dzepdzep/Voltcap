@@ -161,6 +161,32 @@ object SaveCapsules {
         }
     }
 
+    @Volatile private var localDone = false
+
+    /**
+     * Update 330: the saves already on this device (no network, nothing written to a save) — for the Memory card layout's
+     * save icons, once per run. The list kept on disk shows first; a quick local look then registers the memory cards'
+     * icons (Ps2Icons). It never replaces a fuller list the Save Vault has already shown.
+     */
+    suspend fun refreshLocal(context: Context, games: List<Game>, lastPlayed: Map<String, Long>) {
+        if (localDone || games.isEmpty()) return
+        localDone = true
+        val app = context.applicationContext
+        if (_all.value.isEmpty()) {
+            val cached = withContext(Dispatchers.IO) { runCatching { readCache(app, games) }.getOrNull() }
+            if (!cached.isNullOrEmpty() && _all.value.isEmpty()) _all.value = cached
+        }
+        if (!mutex.tryLock()) return
+        try {
+            val quick = withContext(Dispatchers.IO) { runCatching { build(app, games, lastPlayed, net = false) }.getOrNull() }
+            val shown = _all.value.map { it.game.stableKey }.toSet()
+            if (!quick.isNullOrEmpty() && quick.map { it.game.stableKey }.toSet().containsAll(shown)) _all.value = quick
+            Ps2Icons.bump()
+        } finally {
+            mutex.unlock()
+        }
+    }
+
     /** (Update 241, #76) What the vault last asked for, so a sync can bring the list up to date by itself. */
     @Volatile private var lastArgs: Pair<List<Game>, Map<String, Long>>? = null
     private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -299,7 +299,7 @@ private fun DrawScope.fourCorners(c: IntArray, alpha: Float) {
 
 /** (Update 239, #112: a plain, generic memory-card symbol — Voltcap's own drawing, not the save's icon.) */
 @Composable
-private fun GenericCardSymbol(modifier: Modifier) {
+internal fun GenericCardSymbol(modifier: Modifier) {
     Canvas(modifier) {
         val ch = size.height * 0.78f
         val cw = ch * 0.78f

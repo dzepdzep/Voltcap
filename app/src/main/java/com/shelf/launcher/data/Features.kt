@@ -1750,6 +1750,56 @@ object Features {
      *  game library (on wide screens); Classic: the cube of categories (update 239). */
     enum class CubeLook(val label: String) { HUB("Hub (cube + library)"), CLASSIC("Classic (cube of categories)") }
     val cubeLook = EnumPref("cube_look", CubeLook.HUB, CubeLook.values())
+
+    // ---- Update 330: Memory card (2000) — the games as save icons floating on a grey memory-card screen (StyleMemoryCard.kt) ----
+    enum class McSize(val label: String, val cell: Int) { SMALL("Small", 84), MEDIUM("Medium", 104), LARGE("Large", 132) }
+    val mcSize = EnumPref("mc_size", McSize.MEDIUM, McSize.values())
+    enum class McSpacing(val label: String, val icon: Float) { TIGHT("Tight", 0.64f), NORMAL("Normal", 0.54f), ROOMY("Roomy", 0.45f) }
+    val mcSpacing = EnumPref("mc_spacing", McSpacing.NORMAL, McSpacing.values())
+    /** Rows: straight rows; Loose: each icon a little off the line, as a real card's icons float. */
+    enum class McArrange(val label: String) { LOOSE("Loose rows"), ROWS("Straight rows") }
+    val mcArrange = EnumPref("mc_arrange", McArrange.LOOSE, McArrange.values())
+    /** How deep the drawn icons look: no edge, a shallow edge, a deeper one with a tilt. */
+    enum class McDepth(val label: String, val edge: Float, val tilt: Float) { FLAT("Flat", 0f, 0f), SHALLOW("Shallow", 2f, 10f), DEEP("Deep", 4f, 18f) }
+    val mcDepth = EnumPref("mc_depth", McDepth.SHALLOW, McDepth.values())
+    /** What the icon you're on does: turns round, sways, or only lifts and brightens. */
+    enum class McSelected(val label: String) { TURN("Turns"), SWAY("Sways"), LIFT("Lifts only") }
+    val mcSelected = EnumPref("mc_selected", McSelected.TURN, McSelected.values())
+    /** The screen behind: neutral grey, grey-blue, or your theme's background. */
+    enum class McBack(val label: String) { GREY("Grey"), BLUE("Grey-blue"), THEME("Your theme") }
+    val mcBack = EnumPref("mc_back", McBack.GREY, McBack.values())
+    /** PS2 games show the 3D icon of their own save (read only from your memory cards) when there is one. */
+    val mcSaveIcons = BoolPref("mc_save_icons", true)
+    /** The game's title at the top right (the save's own two-line title where it has one). */
+    val mcTitle = BoolPref("mc_title", true)
+    /** The button hints along the bottom. */
+    val mcHints = BoolPref("mc_hints", true)
+    /** The icons float up and down a little (rests when the home screen goes quiet). */
+    val mcFloat = BoolPref("mc_float", true)
+
+    // ---- Update 330: Case flow — the games as real 3D cases on a curved carousel (StyleCaseFlow.kt) ----
+    /** How much the row of cases curves away (0 = straight). */
+    val cfCurve = IntPref("cf_curve", 45, 0..100)
+    /** Room between the cases, in % of the standard. */
+    val cfSpacing = IntPref("cf_spacing", 100, 60..160)
+    /** The cases' size, in % of the standard. */
+    val cfSize = IntPref("cf_size", 100, 70..120)
+    /** How far the cases either side turn, degrees. */
+    val cfAngle = IntPref("cf_angle", 60, 25..80)
+    /** How much you look down on the cases (the camera's height), degrees. */
+    val cfPitch = IntPref("cf_pitch", 5, 0..14)
+    /** The cases either side: their fronts turned toward the middle, or their spines toward you. */
+    enum class CfSide(val label: String) { FRONTS("Fronts"), SPINES("Spines") }
+    val cfSide = EnumPref("cf_side", CfSide.FRONTS, CfSide.values())
+    enum class CfSpeed(val label: String, val k: Float) { CALM("Calm", 0.55f), NORMAL("Normal", 1f), QUICK("Quick", 1.8f) }
+    val cfSpeed = EnumPref("cf_speed", CfSpeed.NORMAL, CfSpeed.values())
+    /** The cases' mirror images on a glossy floor. */
+    val cfReflect = BoolPref("cf_reflect", true)
+    /** A dark stage with a floor behind the cases (off: your theme's background). */
+    val cfStage = BoolPref("cf_stage", true)
+    /** The game's name, console and time played under the cases. */
+    val cfTitle = BoolPref("cf_title", true)
+
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)
 

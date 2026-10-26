@@ -59,7 +59,7 @@ import kotlin.math.sin
  * - top screen: white paper with faint pinstripes, a thin bar in your colour (your name; date, time and battery), a big
  *   clock with hands on the left (or big digits), this month's calendar on the right (Sundays red, Saturdays blue, today
  *   lit);
- * - bottom screen: a light grid with four flat panels — the game panel (the game you're on: ◀ ▶ change it, A starts it),
+ * - bottom screen: a light grid with four flat panels — the game panel (the game you're on: ◀ ▶ change it, A opens its game window — or starts it with Game window off),
  *   Achievements and the category you're in side by side, All categories under them — and three tiny icons along the
  *   bottom edge: Settings, Statistics, Sleep. The one you're on has small corner brackets in your colour.
  * The category panel opens the category's games, All categories every category, in pages of the same grid (A picks, B
@@ -631,7 +631,8 @@ private fun pocketFlash(id: Int) {
 internal fun pocketActivate(c: StyleCtx, spot: Int) {
     pocketFlash(spot)
     when (spot) {
-        CARD -> c.game?.let { c.actions.play(it) }
+        // Update 330 (from PR #12): A on the game opens its game window (Game window off: it starts, as StyleActions.open does).
+        CARD -> c.game?.let { c.actions.open() }
         ACH -> { val g = c.game; if (g != null) c.actions.achievements(g) else c.actions.achievementsHub() }
         CAT -> { pocketPlaySound(UiSound.OPEN); PocketNav.gamesFromAll = false; PocketNav.cursor = c.focus; PocketNav.page = PocketNav.Page.GAMES }
         ALL -> { pocketPlaySound(UiSound.OPEN); PocketNav.cursor = c.stop.coerceAtLeast(0); PocketNav.page = PocketNav.Page.CATEGORIES }

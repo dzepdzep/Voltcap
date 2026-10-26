@@ -92,6 +92,10 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.POCKET -> Pictogram.SHOWCASE
         // (Update 239, #93: Cube menu — the nearest picture: a menu beside the games.)
         com.shelf.launcher.data.HomeLayout.CUBE -> Pictogram.SIDE_MENU
+        // Update 330: Memory card (the nearest picture: a grid).
+        com.shelf.launcher.data.HomeLayout.MEMCARD -> Pictogram.GRID
+        // Update 330: Case flow (the nearest picture: a big game with others beside it).
+        com.shelf.launcher.data.HomeLayout.CASEFLOW -> Pictogram.SHOWCASE
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES
