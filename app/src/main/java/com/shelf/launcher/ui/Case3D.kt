@@ -228,7 +228,7 @@ internal fun Case3D(
         ?.takeIf { t -> spec == null || spec.shell == CaseShell.JEWEL || kotlin.math.abs(t.frontAspect / spec.aspect - 1f) < 0.15f } else null
     // (Update 305: never over a front you added yourself — your box front or full wrap is the whole design, its own
     // band and logos included; the template's band went over a wrap made for another case.)
-    val userFront = remember(g.stableKey, scans) { com.shelf.launcher.data.PhysicalOverrides.of(g.stableKey).keys.any { it == "Box" || it == BoxTexture.LABEL } }
+    val userFront = remember(g.stableKey, scans) { com.shelf.launcher.data.PhysicalOverrides.inUse(g.stableKey).keys.any { it == "Box" || it == BoxTexture.LABEL } }
     val tplFront = caseTpl.takeIf { ownFront == null && !userFront }
     // (Update 169: Steam / Android cases at a SteamGridDB cover's shape — case3dAspect — so the cover fills the window.)
     val fit = tplFront?.takeIf { it.isOwn() && Features.ownCaseFit.state.value }?.fitTo(SGDB_COVER_ASPECT)

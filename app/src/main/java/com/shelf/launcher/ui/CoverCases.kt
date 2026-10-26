@@ -399,14 +399,14 @@ internal object UserCovers {
     fun of(gameKey: String?): String? {
         if (gameKey == null) return null
         val c = picks.value.byKey[gameKey] ?: return null
-        return c.takeIf { com.shelf.launcher.data.PhysicalOverrides.of(gameKey)["Box"] == null }
+        return c.takeIf { com.shelf.launcher.data.PhysicalOverrides.inUse(gameKey)["Box"] == null }
     }
 
     /** Whether [art] is a cover you picked (for a game without its own box front pick, see [of]). */
     fun isPicked(art: Any?): Boolean {
         val s = art as? String ?: return false
         val keys = picks.value.keysOf[s] ?: return false
-        return keys.any { com.shelf.launcher.data.PhysicalOverrides.of(it)["Box"] == null }
+        return keys.any { com.shelf.launcher.data.PhysicalOverrides.inUse(it)["Box"] == null }
     }
 }
 

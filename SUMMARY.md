@@ -1,5 +1,17 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (345): Android games keep their Android case and cartridge
+
+Toni: "why is the Android game shown that weirdly, not like the others, and the game isn't the cartridge" (WWE All Stars
+in Case stacks: a flat white cover with a flat copy beside it). Its cover had been picked as its own "Box front" and
+"Disc / cartridge" in Artwork & details, and those picks replaced Voltcap's Android case (green band) and green cartridge.
+- WWE All Stars: those three picks cleared on the Thor (Box front, Disc / cartridge, Disc label).
+- Code: an Android game's Box front / Disc / cartridge picked from its own pictures (a web address) is no longer used —
+  the Android case and cartridge show, with the cover in them. A picture you upload for it still counts
+  (`data\PhysicalOverrides.kt` `inUse`, used by `ui\Case3D.kt` and `ui\CoverCases.kt`).
+Copy: `src_copy\data\PhysicalOverrides.kt`, `src_copy\ui\Case3D.kt`, `src_copy\ui\CoverCases.kt`.
+Checked: built (release), WWE All Stars in Case stacks on the Thor.
+
 ## Update — 26 Oct 2026 (344): seven console-inspired layouts — Blades, Bubble home, Pocket camera, Panel dashboard, Game magazine, Rental shop, Terminal
 
 Toni's brief ("8 new console & ES-DE inspired layouts", with the concept board). Original names, drawings and sounds only

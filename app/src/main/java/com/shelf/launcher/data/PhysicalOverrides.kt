@@ -53,6 +53,20 @@ object PhysicalOverrides {
     /** This game's picks (label → address). */
     fun of(key: String): Map<String, String> = map[key] ?: emptyMap()
 
+    /**
+     * Update 345 (Toni: "why is the Android game shown that weirdly, and the game isn't the cartridge"): the picks that
+     * are used. An Android game's box front / cartridge picked from its own pictures (its cover, a web address) is left
+     * out: it took the place of Voltcap's Android case and green cartridge, so the game stood as a flat cover with a flat
+     * copy of it beside. A picture you uploaded (a file of yours) still counts — that's a front or cartridge made for it.
+     */
+    fun inUse(key: String): Map<String, String> {
+        val own = of(key)
+        if (own.isEmpty() || ("Box" !in own && "Disc / cartridge" !in own)) return own
+        val p = platformOf(key)
+        if (p != "App" && p != "Android") return own
+        return own.filterNot { (label, url) -> (label == "Box" || label == "Disc / cartridge") && url.startsWith("http") }
+    }
+
     fun set(key: String, label: String, url: String?) {
         val now = of(key)
         map[key] = if (url == null) now - label else now + (label to url)
@@ -72,7 +86,7 @@ object PhysicalOverrides {
         // (Update 302: TheGamesDB's back where the game has none of its own — TgdbBacks.)
         val scrapedPlus = TgdbBacks.fill(key, scraped)
         val list = if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus
-        var own = of(key)
+        var own = inUse(key)
         if (own.isEmpty()) return list
         // Update 301: your own full case scan stands for the front, back and spine (cut out of it — automatically, or
         // where you set the cuts) unless you picked one of those yourself; the scraped ones give way to it.
