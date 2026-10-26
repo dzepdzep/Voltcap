@@ -296,9 +296,12 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
     val pick = remember(g.platform) { stationPick(g.platform) }
     // Update 151: cut to the disc's circle (a UMD keeps its own shape), so a square scan's black / white corners never
     // show, turning or not.
-    val round = pick.shell != MediaShell.UMD
+    // (Update 342, Toni: "the disc station looks weird with the PSP's UMD": the UMD shell stood in the round tray. Only the
+    // disc from inside it now — round, smaller, with the game's art printed on it — the shell stays out of the player.)
+    val umd = pick.shell == MediaShell.UMD
+    val round = true
     val small = pick.shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value
-    val frac = stationDiscFrac(pick, Features.bigGcDiscs.state.value)
+    val frac = if (umd) UMD_DISC_FRAC else stationDiscFrac(pick, Features.bigGcDiscs.state.value)
     val labelIsScan = scan != null && label == scan
     // Update 151: with "Disc in its case" on, only the disc here (never its case half round it).
     val tpl = if (genericDiscConsole(pick.platform) == null) MediaTemplates.of(pick.platform) else null
@@ -313,7 +316,14 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
         },
         contentAlignment = Alignment.Center
     ) {
-        if (tpl != null && discCaseOn(tpl)) {
+        if (umd) {
+            Box(Modifier.fillMaxSize(UMD_DISC_FRAC), contentAlignment = Alignment.Center) {
+                PhysicalMedia(
+                    MediaShell.DISC, cover ?: label, Modifier.fillMaxSize(), platform = null,
+                    labelIsScan = cover == null && labelIsScan, title = g.name, noCase = true
+                )
+            }
+        } else if (tpl != null && discCaseOn(tpl)) {
             TemplateMedia(
                 MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,
                 cover = if (labelIsScan) null else label, modifier = Modifier.fillMaxSize(), smallDisc = small
@@ -328,6 +338,9 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
         if (round) Box(Modifier.fillMaxSize().discSheen(frac))
     }
 }
+
+/** Update 342: how much of the tray a UMD's own disc fills (60 mm against a CD's 120, drawn as big as a GameCube disc here). */
+private const val UMD_DISC_FRAC = 0.7f
 
 /** Update 151: the disc a game is shown as here — its own, else the plain CD with its console's branding. */
 private fun stationPick(platform: String): MediaPick =

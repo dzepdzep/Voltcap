@@ -368,7 +368,11 @@ internal fun StorageSprite(g: Game, state: com.shelf.launcher.LauncherUiState, c
                 sprite, g.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
                 filterQuality = androidx.compose.ui.graphics.FilterQuality.None
             )
-            g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(8.dp)))
+            // (Update 342, Toni: "never the coloured icons, their real logos": the app's own icon in its own colours, whatever
+            // the icon style — the one-colour symbol on a grey card looked like a stand-in.)
+            g.sourceType == com.shelf.launcher.data.SourceType.APP -> rememberOwnAppIcon(g.packageName)?.let { icon ->
+                androidx.compose.foundation.Image(icon, g.name, Modifier.fillMaxSize(0.82f).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Fit)
+            } ?: Box(Modifier.fillMaxSize(0.7f).clip(RoundedCornerShape(10.dp)).background(placeholderBrush(g.hue)))
             model == null -> Box(Modifier.fillMaxSize(0.8f).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.85f))) { StyleNamePlate(LocalTitleOptions.current.display(g.name)) }
             else -> Box(Modifier.fillMaxSize(0.7f).clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue)))
         }
@@ -423,7 +427,10 @@ private fun StoragePreview(c: StyleCtx, modifier: Modifier) {
         ) {
             AnimatedContent(targetState = g, label = "stPreview", transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }) { shown ->
                 val cover = c.cover(shown)
+                val appIcon = if (cover == null && shown.sourceType == com.shelf.launcher.data.SourceType.APP) rememberOwnAppIcon(shown.packageName) else null
                 if (cover != null) AsyncImage(rememberStyleArtRequest(cover, trim = true), shown.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
+                // (Update 342: an app without a cover: its own icon, big, in its own colours.)
+                else if (appIcon != null) androidx.compose.foundation.Image(appIcon, shown.name, Modifier.fillMaxSize(0.55f).clip(RoundedCornerShape(18.dp)), contentScale = ContentScale.Fit)
                 else StyleNamePlate(titles.display(shown.name))
             }
         }

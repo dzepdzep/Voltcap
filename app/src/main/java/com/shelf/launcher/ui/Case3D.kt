@@ -684,28 +684,39 @@ internal object DerivedArt {
      * counted) under its own kind.
      */
     fun alias(src: android.graphics.Bitmap, kind: String, value: Any) {
-        if (value !== src) cache.put("${System.identityHashCode(src)}|${src.width}x${src.height}|$kind", Entry(java.lang.ref.WeakReference(src), value, 64))
+        cache.put("${System.identityHashCode(src)}|${src.width}x${src.height}|$kind", Entry(java.lang.ref.WeakReference(src), if (value === src) SAME else value, 64))
     }
+
+    /**
+     * Update 342 (Toni: "the screen flashes" in Case flow): what's made is the picture itself (a whole jewel-case scan is
+     * the case's face as it is; a spine already upright). It was never remembered — keeping it would hold the picture — so
+     * [peek] missed it every time a case was handed that picture again, and the case showed its stand-in colour for a frame
+     * while it was "made" again: on each step every 3D case of the row (the slots take the next game) flashed. Now a marker
+     * says "the picture itself", holding nothing.
+     */
+    private val SAME = Any()
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> valueOf(e: Entry, src: android.graphics.Bitmap): T? =
+        (if (e.value === SAME) src else e.value).takeUnless { it is android.graphics.Bitmap && it.isRecycled } as? T
 
     /** [make] for [src] (a picture), made once while [src] lives. */
     fun <T : Any> of(src: android.graphics.Bitmap, kind: String, make: () -> T): T {
         val key = "${System.identityHashCode(src)}|${src.width}x${src.height}|$kind"
         val hit = cache.get(key)
-        @Suppress("UNCHECKED_CAST")
-        val known = if (hit != null && hit.src?.get() === src && !(hit.value is android.graphics.Bitmap && hit.value.isRecycled)) hit.value as? T else null
+        val known = if (hit != null && hit.src?.get() === src) valueOf<T>(hit, src) else null
         if (known != null) { hits++; return known }
         misses++
         val v = make()
-        // (Never one holding its own picture: the same picture back needs no keeping.)
-        if (v !== src) cache.put(key, Entry(java.lang.ref.WeakReference(src), v, bytesOf(v, src)))
+        // (Never one holding its own picture: the same picture back is kept as the marker — Update 342.)
+        cache.put(key, Entry(java.lang.ref.WeakReference(src), if (v === src) SAME else v, bytesOf(v, src)))
         return v
     }
 
     /** Update 316: [of]'s picture for [src] when it's already made, else null (nothing is made). */
     fun <T : Any> peek(src: android.graphics.Bitmap, kind: String): T? {
         val hit = cache.get("${System.identityHashCode(src)}|${src.width}x${src.height}|$kind") ?: return null
-        @Suppress("UNCHECKED_CAST")
-        return if (hit.src?.get() === src && !(hit.value is android.graphics.Bitmap && hit.value.isRecycled)) hit.value as? T else null
+        return if (hit.src?.get() === src) valueOf<T>(hit, src) else null
     }
 
     /** Update 316: [named]'s picture for [key] when it's already made, else null. */

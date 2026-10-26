@@ -1,5 +1,19 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (342): Case flow flash fixed, UMDs as bare discs, real app icons in Storage boxes
+
+- **Case flow flashing** (Toni's recording): on every step all 3D cases showed their stand-in colour for one frame. The
+  row's slots take the next game on each step, and a case whose face is the picture itself (a whole jewel-case scan,
+  an upright spine) was never remembered, so it was "made" again and the stand-in showed meanwhile. That case is now
+  remembered too, with a marker that holds no picture (`ui\Case3D.kt`, `DerivedArt`). Checked: no one-frame flashes left
+  in a recording of Case flow (also helps every 3D-case layout: the Game shelf had the same flash).
+- **Disc station with PSP games:** the UMD shell stood in the round tray. Now only the disc from inside it, round, with
+  the game's art on it, at 0.7 of the tray (`ui\StyleDiscStation.kt`).
+- **Storage boxes:** apps showed the one-colour icons (grey cards with an orange symbol). Always the app's own icon in its
+  own colours now, in the grid and the big preview (`ui\StyleStorageBoxes.kt`).
+Copy: `src_copy\ui\Case3D.kt`, `src_copy\ui\StyleDiscStation.kt`, `src_copy\ui\StyleStorageBoxes.kt`.
+Checked: built (release), installed on the Thor, recorded. Trailer: `Claude outputs\trailer` (made from these recordings).
+
 ## Update — 26 Oct 2026 (341): fixes found while recording the trailer
 
 Found by recording every layout on the Thor and checking the frames:
