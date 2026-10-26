@@ -143,8 +143,12 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             Canvas(Modifier.atFull(0f, 0f, width, fullH)) { pocketPinstripes(uPx, RPaper, RStripe) }
             val status = Features.ribbonStatus.state.value
             if (status) {
-                Canvas(Modifier.atScreen(3f, 1f, 10f, 10f)) { pocketIcon(PocketIcons.VOLUME, RInk, accent) }
-                PocketText(this, user, 15f, 1f, 110f, 10f, 7.5f, accent, font, TextAlign.Start, screenX = true)
+                // (Update 330, phase 4: the round shortcuts' ☰ at the bar's left end, the rest after it — in a top corner it
+                // lay on your name or the battery.)
+                val menuRoom = if (HomeMenuSlot.want) 44f / d(1f).value else 0f
+                HomeMenuSlot.Room(Modifier.atScreen(1f, 0f, menuRoom, 12f))
+                Canvas(Modifier.atScreen(3f + menuRoom, 1f, 10f, 10f)) { pocketIcon(PocketIcons.VOLUME, RInk, accent) }
+                PocketText(this, user, 15f + menuRoom, 1f, 110f, 10f, 7.5f, accent, font, TextAlign.Start, screenX = true)
                 val day = pocketDay(time.longValue, tz)
                 PocketText(this, "%02d/%02d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute), width - 22f - 90f, 1f, 90f, 10f, 7.5f, RInk, font, TextAlign.End, screenX = true)
                 Canvas(Modifier.atScreen(width - 18f, 2.5f, 13f, 7f)) { pocketBattery(uPx, battery.percent, RInk) }

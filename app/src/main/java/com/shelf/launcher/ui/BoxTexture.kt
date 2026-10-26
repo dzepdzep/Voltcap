@@ -161,10 +161,12 @@ internal object BoxTexture {
         if (com.shelf.launcher.data.Features.mediaShells.value) null else mediaOfFront(front)
 
     /** Update 173: the game's own cartridge / disc for a scanned front [front], whatever the drawn-media setting says. */
-    fun mediaOfFront(front: Any?): String? = (front as? String)?.let { medias[it] }
+    // (Update 331: also for the front cut out of a wrap scan — the cut is named after the scan it came from: the TNA
+    // iMPACT case lost its real disc photo once its wrap was cut to the front.)
+    fun mediaOfFront(front: Any?): String? = (front as? String)?.let { medias[it] ?: parse(it)?.third?.let { src -> medias[src] } }
 
     /** The game's own spine for a front picked by [front] (null when it has none, or for any other picture). */
-    fun spineFor(front: Any?): String? = (front as? String)?.let { spines[it] }
+    fun spineFor(front: Any?): String? = (front as? String)?.let { spines[it] ?: parse(it)?.third?.let { src -> spines[src] } }
 
     /**
      * The best picture of the game's case for a card: the front scan (or the front cut from the full scan) — never the

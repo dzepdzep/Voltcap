@@ -91,3 +91,38 @@ Legend: P = passed (rendered, the option visibly changes what it should), F = fi
 - Settings persistence across an app restart was not checked per option (they are ordinary Features prefs, backed up with
   the rest); backup / restore not run.
 - Memory card's Sways / Lifts only, Floating off; Case flow's Calm / Quick speeds — not recorded.
+
+## Phase 4 — the older layouts
+
+### Game windows (Settings › Game window, opened with `voltcap_test_window` on 25 To Life)
+
+| Layout | Before | Now | Result |
+|---|---|---|---|
+| Arcade | plain window | neon marquee frame, PRESS START / INFO / BACK in caps | P |
+| Consoles, Library, Timeline, Case stacks, Twin showcase | plain window | their own warm panels (theme / game colours keep working) | P |
+| Disc station | plain window | silver panel, ▶ Play / Info / ■ Stop | P |
+| Hero tiles | plain window | flat dark acrylic, square keys | F → P (facts broke a word per line beside the case) |
+| Twin desk / Twin icons | plain window | the desk's white paper / the icon grid's pale shell | P |
+| Crate, Cards | plain window | sleeve-note cream / card stock | P |
+| Pocket ribbon | plain window | white paper, outlined keys | P |
+| Cube | plain window | the cube's violet glass | P |
+
+### R1 › Round shortcuts (☰), Top left and Top right
+
+| Layouts | Before | Now | Result |
+|---|---|---|---|
+| Airy, Grid, File select, Green Core, Shelf, Timeline, Memory card, Orbit, Library, Hero, Circuit, Classic | in the corner, on the title / category / profile | in the status bar (left end / before the clock) | P |
+| TV room | on the category name | before the clock (both spots) | P |
+| Channel grid (no status bar) | under the category name / on the cloud button | its top row, before the clock | P |
+| Pocket Quest | on the VOLTCAP plate / the clock | its bar, before the battery | P |
+| Pocket classic / ribbon | on the name / the battery | the bar's left end, the name after it | P |
+| Hero tiles (status pill) | on the pill's clock | just before the pill | P |
+| Spotlight (Home menu, Row & menu) | on the profile / the clock | none — the shortcuts are its top row | P |
+| Resume | none (its own shortcuts) | unchanged | P |
+
+### Coming back from a game
+
+| Layout | Kept | Result |
+|---|---|---|
+| Cube (cube / games, face, Hub part and zone) | page, ring, tip, section, zone, console | P (games page and the 3rd game back after a force-stop) |
+| Green Core, Pocket Quest, Pocket classic | page, menu / zone, console, cursor | by the same snapshot (not run one by one) |

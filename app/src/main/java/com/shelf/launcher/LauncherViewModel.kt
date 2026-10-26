@@ -1367,7 +1367,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.data.CloudSync.stopWatching()
         // Discord's callback pump parks itself unless a game session is showing.
         com.shelf.launcher.data.DiscordPresence.setForeground(false)
-        sessionPrefs.edit().putLong("left_at", System.currentTimeMillis()).apply()
+        sessionPrefs.edit().putLong("left_at", System.currentTimeMillis())
+            // (Update 330, phase 4: where the layouts with pages of their own were — put back after a return in a new process.)
+            .putString("style_state", com.shelf.launcher.ui.StyleRestore.snapshot()).apply()
         // After our own launch the snapshot taken at launch time stays (the list re-sorts afterwards).
         if (!ownLaunchPending && !restoreActive) saveLaunchContext(null, false)
         dismissSessionSummary()
@@ -6656,6 +6658,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         restoreSavedRaData()
         pendingFocusKey = restoreCtx?.focusedKey ?: categoryStore.load().lastFocusedKey
+        // (Update 330, phase 4: back from a game in a new process — the Cube menu's games, Green Core's page… as they were.)
+        if (restoreCtx != null || resumingRecently()) com.shelf.launcher.ui.StyleRestore.apply(sessionPrefs.getString("style_state", null))
         if (restoreCtx != null) viewModelScope.launch {
             // Slow storage: wait a while for the saved game to appear before falling back.
             kotlinx.coroutines.delay(15_000)

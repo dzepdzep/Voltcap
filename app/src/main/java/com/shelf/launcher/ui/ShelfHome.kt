@@ -628,7 +628,7 @@ internal fun PulledOutCase(
     }
     // (Update 173: an app without art: its icon in the case's window.)
     if (cov != null) androidx.compose.runtime.CompositionLocalProvider(LocalCaseOwner provides if (forAll) g.platform else null) {
-        CoverCase(cov, coverOrAppIcon(g, cover), placeholderBrush(g.hue), modifier)
+        CoverCase(cov, coverOrAppIcon(g, rememberWrapFront(cover, g.platform, decode = false)), placeholderBrush(g.hue), modifier)
     }
     else Box(modifier.clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue))) {
         // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the front.)

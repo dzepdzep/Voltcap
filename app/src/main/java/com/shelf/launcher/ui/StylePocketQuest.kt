@@ -308,6 +308,9 @@ private fun PqTopBar(c: StyleCtx, pal: PqPalette, compact: Boolean, pulse: Anima
             PqTool(pal, Icons.Filled.Tune, "Quick settings", inTop && PqNav.index == tabs + 3, toolSize) { live.actions.quickMenu() }
             PqTool(pal, Icons.Filled.Settings, "Settings", inTop && PqNav.index == tabs + 4, toolSize) { live.actions.settings() }
             Spacer(Modifier.width(6.dp))
+            // (Update 330, phase 4: the round shortcuts' ☰ here, before the battery and clock — in a top corner it lay on
+            // the VOLTCAP plate or the clock.)
+            HomeMenuSlot.Room(Modifier.width(40.dp).height(toolSize))
             PqStatus(pal, compact)
             Spacer(Modifier.width(6.dp))
         }

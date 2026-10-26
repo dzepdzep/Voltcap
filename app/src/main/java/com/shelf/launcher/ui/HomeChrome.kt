@@ -83,9 +83,30 @@ import com.shelf.launcher.data.StatusBarPrefs
 import androidx.compose.ui.platform.LocalContext
 import com.shelf.launcher.ui.theme.ShelfTheme
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.layout.boundsInRoot
 
 // The home screen's smaller pieces — status bar, category pills, button
 // legend, controls card, background art — split out of LauncherScreen.kt.
+
+
+/**
+ * Update 330 (phase 4): a layout with its own top row instead of the status bar (Channel grid, the Pocket layouts, Hero
+ * tiles' and Twin showcase's status pill) makes room there for the round shortcuts' ☰ — [want] says it should, [rect] is
+ * that room (root px) — LauncherScreen puts the ☰ in it (in the corner as before while there's none).
+ */
+internal object HomeMenuSlot {
+    var want by androidx.compose.runtime.mutableStateOf(false)
+    var rect by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null)
+
+    /** The room itself (in a row: 44 dp wide; or where [modifier] puts it), while [want]. */
+    @Composable
+    fun Room(modifier: Modifier = Modifier.width(44.dp).height(28.dp)) {
+        if (!want) return
+        Spacer(modifier.onGloballyPositioned { val r = it.boundsInRoot(); if (rect != r) rect = r })
+        DisposableEffect(Unit) { onDispose { rect = null } }
+    }
+}
 
 @Composable
 internal fun StatusBar(
@@ -122,7 +143,13 @@ internal fun StatusBar(
     trophyCount: Int = 0,
     onTrophy: () -> Unit = {},
     /** Update 185: a tap on the progress text — what's running in the background (BackgroundWorkDialog). */
-    onProgressClick: () -> Unit = {}
+    onProgressClick: () -> Unit = {},
+    /**
+     * Update 330 (phase 4): room for the round shortcuts' ☰ in the bar itself — -1 at its left end, 1 just before the
+     * clock and icons, 0 none — and where that room is (root px), for the ☰ drawn over it (LauncherScreen).
+     */
+    menuSlot: Int = 0,
+    onMenuSlot: (androidx.compose.ui.geometry.Rect) -> Unit = {}
 ) {
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
     val battery = rememberBatteryInfo()
@@ -176,6 +203,7 @@ internal fun StatusBar(
         // profile always stay pinned in their corner (they used to sit right next to the player).
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        if (menuSlot < 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
         // Optional mini music player, top left (Appearance setting).
         // It gives way to the icons on the right: the clock, battery and the profile picture keep their
         // corner and the player shrinks into what's left (it used to push the profile off the screen).
@@ -223,6 +251,7 @@ internal fun StatusBar(
         // only shows when there's something, with how many.
         // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
         Row(Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons"), verticalAlignment = Alignment.CenterVertically) {
+        if (menuSlot > 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
         if (syncSlot != null) {
             syncSlot()
             Spacer(Modifier.width(10.dp))

@@ -40,6 +40,10 @@ internal object TestHooks {
     val category = mutableStateOf<String?>(null)
     /** 0.6.15: open the Sort window (`--ez voltcap_test_sort true`). */
     val sort = mutableStateOf(false)
+    /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
+    val window = mutableStateOf(false)
+    /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
+    val shortcuts = mutableStateOf<String?>(null)
     /**
      * Update 274: `--es voltcap_test_inspect "Game_name|shellId|yaw|pitch"` — that game's window with its piece out on that
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
@@ -80,6 +84,8 @@ internal object TestHooks {
         val inst = intent?.getStringExtra("voltcap_test_install")
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
+        val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
+        val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         val aw = intent?.getStringExtra("voltcap_test_artwork")
         val tf = intent?.getStringExtra("voltcap_test_facts")
@@ -106,11 +112,13 @@ internal object TestHooks {
             previewOnly = true
             tileWalk.value = tw
         }
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
         if (so) sort.value = true
+        if (wi) window.value = true
+        if (rs != null) { previewOnly = true; shortcuts.value = rs }
         if (snap != null) runCatching {
             val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
             if (snap == "save") {

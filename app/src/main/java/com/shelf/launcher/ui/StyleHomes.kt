@@ -1404,6 +1404,8 @@ internal fun styleHasShortcuts(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.BAR -> Features.barIcons.state.value && !Features.barTabsCurrent.state.value
     HomeLayout.HUB -> Features.hubIcons.state.value
     HomeLayout.RESUME -> true
+    // (Update 330, phase 4: Spotlight's Home menu and Row & menu looks have them along their top — the ☰ lay on it.)
+    HomeLayout.SPOT -> Features.spotLook.state.value != Features.SpotLook.CINEMA
     // Update 158: Twin icons has them as its tool buttons.
     HomeLayout.TWIN_ICONS -> true
     else -> false

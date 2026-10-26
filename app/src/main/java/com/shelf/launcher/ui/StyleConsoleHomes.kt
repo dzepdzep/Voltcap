@@ -690,6 +690,9 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
     Box(Modifier.fillMaxWidth().padding(top = 6.dp, end = 14.dp, start = 14.dp), contentAlignment = Alignment.TopEnd) {
     Row(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.CHAN, "corner"), "Corner buttons"), verticalAlignment = Alignment.CenterVertically) {
         val (time, _) = rememberConsoleClock()
+        // (Update 330, phase 4: the round shortcuts' ☰ in a top corner sits here, before the clock — in the corner it
+        // lay under the category name or on the save sync button.)
+        HomeMenuSlot.Room()
         if (!Features.chanStatusBar.state.value) {
             Text(time, color = ink, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1, softWrap = false)
             Spacer(Modifier.width(12.dp))

@@ -1,5 +1,47 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (330, phase 4 of 5): every layout's own game window, the ☰ never over a layout's title, coming back from a game where you were, wrap scans cut to their front everywhere
+
+- **Game windows for the older layouts** (`ui\GameWindow.kt`): the 14 layouts that still opened the plain window now
+  open in their own colours and shapes — Arcade (neon marquee, PRESS START), Consoles, Disc station (silver, ▶ Play /
+  ■ Stop), Hero tiles (flat dark acrylic), Twin desk / icons / showcase, Crate, Cards, Pocket ribbon, Cube, Library,
+  Timeline, Case stacks. Beside an inspected case on Hero tiles the facts under the picture keep the window's width
+  (they broke into a word per line).
+- **The round shortcuts' ☰ never lies on a layout's title, menu, clock or profile** (Toni's review: in a top corner it
+  sat on Grid's / Shelf's / Timeline's category name, File select's and Green Core's titles, Spotlight's and Resume's
+  profile picture, the Pocket layouts' bars):
+  - With the status bar at the top, the ☰ sits in the bar itself: at its left end (Top left) or just before the clock
+    (Top right). TV room: always before the clock (its category name is at the bar's left end).
+  - Layouts with a top row of their own make room for it there: Channel grid (before the clock and its round buttons),
+    Pocket Quest (before the battery and clock), Pocket classic / ribbon (at the bar's left end, the name moved along),
+    Hero tiles' and Twin showcase's status pill (just before it). It folds out away from the screen's edge.
+  - Spotlight's Home menu and Row & menu looks already show your shortcuts along their top: no ☰ there (as Resume).
+  - Bottom corners and the dock at the top work as before.
+- **Coming back from a game where you were** (`ui\StyleRestore.kt`, new): when Android closed Voltcap for memory while a
+  game ran, the Cube menu came back as the big cube, Green Core on its menu, Pocket Quest / classic on their first page.
+  Where you were in those (the page, the face / part / zone, the console, the cursor) is kept when Voltcap goes to the
+  background and put back on a quick return (30 min, as the start category's rule) or a return from Voltcap's own launch.
+- **Wrap scans cut to their front in every case look** (Toni: "the PS3 TNA iMPACT isn't applied well — do I have to
+  reapply it?" — no): a cover or box scan from any source that is the whole wrap (back | spine | front) goes into the
+  case as its front, cut out as the full scans are. The Classic row put the wrap whole into the case: there it was the
+  game's box scan (never looked at), and a cover whose shape wasn't known yet stayed whole until another view had
+  measured it. Both are measured now (a small decode, only while the shape isn't known), and the game's real disc photo
+  stays beside its cut front.
+- Cube docking (dock on top / bottom, the category under the cube): checked, works as designed.
+- Test hooks: `voltcap_test_window` (opens the focused game's window, never starts it), `voltcap_test_shortcuts` (the
+  ☰ spot in preview).
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E`.
+Files: new `ui\StyleRestore.kt`; changed `ui\GameWindow.kt`, `ui\LauncherScreen.kt`, `ui\HomeChrome.kt`,
+`ui\StyleHomes.kt`, `ui\StyleConsoleHomes.kt`, `ui\StyleHeroTiles.kt`, `ui\StylePocketQuest.kt`, `ui\PocketClassic.kt`,
+`ui\PocketRibbon.kt`, `ui\RealMedia.kt`, `ui\Carousel.kt`, `ui\ShelfHome.kt`, `ui\BoxTexture.kt`, `ui\TestHooks.kt`,
+`LauncherViewModel.kt`, `docs\compat\LAYOUTS_330.md`.
+
+Checked on the AYN Thor (release builds, screenshots): the ☰ Top left / Top right in 25 layouts (AIRY, GRID, FILESELECT,
+GREENCORE, SHELF, TIMELINE, SPOT, RESUME, MEMCARD, ORBIT, LIBRARY, HERO, TV, CIRCUIT, CHAN, CLASSIC, POCKET,
+POCKET_CLASSIC, POCKET_RIBBON, HERO_TILES, TWIN_SHOWCASE…); the 14 new windows (each opened on 25 To Life); TNA iMPACT
+in the Classic row and Case stacks; the Cube games page and the game you were on after Voltcap was stopped and started again (force-stop) and after Settings and back. Unit tests pass. Not tested: phones, the second screen's windows.
+
 ## Update — 26 Oct 2026 (330, phase 3 of 5): Orbit deck (1995), Airy home (1999), Night menu (2006) with their own game windows; Orbit deck refined (3D discs, real discs, disc-born window); Voltcap's own console pictures (74 curated)
 
 - **Orbit deck (1995)** (`ui\StyleOrbitDeck.kt`), refined after Toni's review ("title overlapping the artwork, excessive

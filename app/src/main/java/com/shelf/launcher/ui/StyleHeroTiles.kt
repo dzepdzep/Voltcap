@@ -252,8 +252,11 @@ internal fun HeroStatusPill(compact: Boolean, modifier: Modifier) {
     val battery = rememberBatteryInfo()
     val wifi = rememberWifiConnected()
     val icon = if (compact) 13.dp else 15.dp
+    // (Update 330, phase 4: the round shortcuts' ☰ just before the pill — in a top corner it lay on its clock.)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+    HomeMenuSlot.Room()
     Row(
-        modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))
+        Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))
             .padding(horizontal = if (compact) 8.dp else 10.dp, vertical = if (compact) 3.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -263,6 +266,7 @@ internal fun HeroStatusPill(compact: Boolean, modifier: Modifier) {
         Text("${battery.percent}%", color = Color.White, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, softWrap = false)
         Spacer(Modifier.width(8.dp))
         Text(time, color = Color.White, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+    }
     }
 }
 

@@ -188,7 +188,11 @@ private fun PocketClassicTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
             // The thin bar in your colour: your name; the date, time and battery (from the screen's very top).
             Box(Modifier.atFull(0f, 0f, width, 13f + cy).background(accent))
             // (Update 183: from the screen's own edges — on a wide screen they sat in towards the middle.)
-            PocketText(this, user, 6f, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start, screenX = true)
+            // (Update 330, phase 4: the round shortcuts' ☰ at the bar's left end, your name after it — in a top corner it
+            // lay on your name or the battery.)
+            val menuRoom = if (HomeMenuSlot.want) 44f / d(1f).value else 0f
+            HomeMenuSlot.Room(Modifier.atScreen(1f, 0f, menuRoom, 13f))
+            PocketText(this, user, 6f + menuRoom, 2.5f, 120f, 10f, 8f, Color.White, font, TextAlign.Start, screenX = true)
             val day = pocketDay(time.longValue, tz)
             val clock = "%d/%d  %d:%02d".format(day.month, day.dayOfMonth, day.hour, day.minute)
             // (Update 261, #120 Thor: 104 wide — at 90 the pixel font's "10/19  17:33" lost its minutes: "17:…".)

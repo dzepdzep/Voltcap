@@ -686,8 +686,16 @@ internal fun CaseArt(
     EnsureUserCovers()
     // (Update 325, Toni: "the cutting for custom uploaded cases — fit, and the back usable too": a cover you picked or
     // uploaded that is the whole wrap — back | spine | front — goes into the case as its front, cut out as the scans are.)
-    val cover = if (UserCovers.isPicked(cover0)) rememberWrapFront(cover0, LookStyles.casePlatform(platform)) else cover0
-    val caseScan = if (forAll || UserCovers.isPicked(cover0)) null else scan
+    // (Update 330, Toni: "an autofit to the case when uploading the case scan from other sources as well — the PS3 TNA
+    // iMPACT isn't applied well": a cover from any source — another scraper, a scan picked in Artwork & details — that is
+    // the whole wrap is cut to its front the same way. Your own uploads are measured at once; the others as soon as their
+    // picture's shape is known (the first time it's drawn), so no extra decoding for every cover.)
+    // (Update 331, Toni: "why does the TNA iMPACT still look weird": in the Classic row its whole wrap still stood in the
+    // case — it is its box scan there (Artwork › Box front, or a scan from another source), which wasn't looked at, and a
+    // cover whose shape wasn't known yet stayed whole until some other view had measured it. Both are measured now — a
+    // small decode, only while the shape isn't known.)
+    val cover = rememberWrapFront(cover0, LookStyles.casePlatform(platform), decode = true)
+    val caseScan = if (forAll || UserCovers.isPicked(cover0)) null else rememberWrapFront(scan, LookStyles.casePlatform(platform), decode = true)
     val caseSpine = if (forAll) null else spine
     val mm = if (real != null) realCaseMm(casePlatform) else null
     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
@@ -776,12 +784,15 @@ private fun CaseArtBody(
  * front), cut as the full box scans are (BoxTexture FRONT); else [cover] as it is.
  */
 @Composable
-internal fun rememberWrapFront(cover: Any?, platform: String?): Any? {
+internal fun rememberWrapFront(cover: Any?, platform: String?, decode: Boolean = true): Any? {
     val s = cover as? String ?: return cover
     if (platform == null || BoxTexture.parse(s) != null) return cover
     val real = CaseCatalog.frontAspect(platform) ?: realCaseMm(platform)?.let { it.first / it.second } ?: return cover
-    val bmp = rememberSoftBitmap(s, 480)
-    val raw = CoverAspects.rawOf(s) ?: bmp?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: return cover
+    // (Update 331: decoded small, and only while its shape isn't known — then remembered for every view, CoverAspects.)
+    val known = CoverAspects.rawOf(s)
+    val bmp = if (decode && known == null) rememberSoftBitmap(s, 160) else null
+    if (known == null && bmp != null) androidx.compose.runtime.SideEffect { CoverAspects.note(s, bmp.width.toFloat(), bmp.height.toFloat()) }
+    val raw = known ?: bmp?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: return cover
     return if (raw > real * UNFOLDED_SCAN) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
 }
 

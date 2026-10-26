@@ -176,7 +176,7 @@ internal fun ShelfGameArt(
                     val ownSpine = BoxTexture.realSpine(physicalMedia[g.stableKey], g.platform)
                     Box3D(box3d, front, isBox, gameDisplayName(g.name), Modifier.fillMaxSize(), spin = false, realSpine = ownSpine)
                 }
-            } else CoverCase(cov, cover, placeholderBrush(g.hue), Modifier.fillMaxSize().padding(2.dp).awardShine(g.stableKey, on), caseModifier = frame)
+            } else CoverCase(cov, rememberWrapFront(cover, g.platform, decode = false), placeholderBrush(g.hue), Modifier.fillMaxSize().padding(2.dp).awardShine(g.stableKey, on), caseModifier = frame)
             // Update 141: on the console's case too. (Update 202: not over the case's own printed band — it read twice.)
             ConsoleBadge(g.platform, packageName = g.packageName, onCase = true)
         }

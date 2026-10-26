@@ -592,6 +592,180 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
                 paper = q.deep
             )
         }
+        // ---- Update 330, phase 4: the older layouts that still took the Voltcap row's glass window get their own. ----
+        // Arcade cabinets: the cabinet's black body under a neon marquee edge, square arcade buttons, capitals.
+        HomeLayout.ARCADE -> WinLook(
+            Arrange.SPLIT, Btn.SQUARE,
+            veil = Brush.verticalGradient(listOf(Color(0xFF12001F).copy(alpha = 0.66f), Color.Black.copy(alpha = 0.88f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF1A1A22), Color(0xFF0B0B10))),
+            frame = Color(0xFFFF3DB4), frameW = 3.dp, corner = 6.dp, mediaCorner = 3.dp,
+            mediaFrame = Color(0xFF3DE7FF), mediaFrameW = 3.dp,
+            ink = Color.White, muted = Color(0xFFB9B4CC), accent = Color(0xFFFFE23D),
+            btnFill = solid(Color(0xFF2A2833)), btnInk = Color.White,
+            btnOnFill = Brush.verticalGradient(listOf(Color(0xFFFFF08A), Color(0xFFFFC21A))), btnOnInk = Color(0xFF231A00),
+            btnBorder = Color(0xFF3DE7FF).copy(alpha = 0.7f),
+            back = "BACK", details = "INFO", play = if (resumed) "CONTINUE" else "PRESS START",
+            caps = true, paper = Color(0xFF0B0B10), keepsPalette = true
+        )
+        // Console stack: the console's matte plastic body, a thin power-LED edge, rounded keys like its front buttons.
+        HomeLayout.CONSOLES -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF3A3E46), Color(0xFF23262C), Color(0xFF1A1C21))),
+            frame = acc.copy(alpha = 0.7f), frameW = 2.dp, corner = 10.dp, mediaCorner = 4.dp,
+            mediaFrame = Color(0xFF0E0F12), mediaFrameW = 3.dp,
+            ink = Color(0xFFEDEFF3), muted = Color(0xFFAEB4BF), accent = acc,
+            btnFill = solid(Color(0xFF2D3037)), btnInk = Color(0xFFEDEFF3), btnOnFill = solid(acc), btnOnInk = onAcc,
+            btnBorder = Color.White.copy(alpha = 0.12f),
+            back = "Back", details = "Details", play = if (resumed) "Continue" else "Power on",
+            paper = Color(0xFF1A1C21)
+        )
+        // Disc station: the player's brushed-silver front with its blue display and LCD keys.
+        HomeLayout.DISCS -> WinLook(
+            Arrange.SPLIT, Btn.LCD,
+            veil = Brush.verticalGradient(listOf(Color(0xFF0A1220).copy(alpha = 0.62f), Color.Black.copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFFD9DEE5), Color(0xFFAEB5BF), Color(0xFF8D95A1))),
+            frame = Color(0xFFF4F6F9), frameW = 2.dp, corner = 14.dp, mediaCorner = 6.dp,
+            mediaFrame = Color(0xFF0F2742), mediaFrameW = 4.dp,
+            ink = Color(0xFF1C222B), muted = Color(0xFF414A57), accent = Color(0xFF2E8BFF),
+            btnFill = solid(Color(0xFFE9ECF1)), btnInk = Color(0xFF1C222B),
+            btnOnFill = Brush.verticalGradient(listOf(Color(0xFF8CC4FF), Color(0xFF2E8BFF))), btnOnInk = Color.White,
+            btnBorder = Color(0xFF6C7582),
+            back = "■ Stop", details = "Info", play = if (resumed) "▶ Continue" else "▶ Play",
+            paper = Color(0xFFF1F3F6), keepsPalette = true
+        )
+        // Hero tiles: the big picture on top, square tiles for the choices, flat dark acrylic.
+        HomeLayout.HERO_TILES -> WinLook(
+            Arrange.STACK, Btn.SQUARE,
+            veil = solid(Color.Black.copy(alpha = 0.72f)),
+            panel = Brush.verticalGradient(listOf(Color(0xFF1E2126).copy(alpha = 0.96f), Color(0xFF121418).copy(alpha = 0.98f))),
+            frame = null, frameW = 0.dp, corner = 8.dp, mediaCorner = 6.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color.White.copy(alpha = 0.7f), accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.1f)), btnInk = Color.White, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord,
+            paper = Color(0xFF121418)
+        )
+        // Twin desk: the desk's light paper — white cards, soft grey keys, the lit one in the desk's blue.
+        HomeLayout.TWIN_DESK -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = solid(Color(0xFF1B2330).copy(alpha = 0.6f)),
+            panel = Brush.verticalGradient(listOf(Color(0xFFFFFFFF), Color(0xFFF1F3F7))),
+            frame = Color(0xFFDDE1E8), frameW = 1.dp, corner = 14.dp, mediaCorner = 10.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color(0xFF1D2430), muted = Color(0xFF5D6676), accent = Color(0xFFE5484D),
+            btnFill = solid(Color(0xFFEDEFF3)), btnInk = Color(0xFF1D2430), btnOnFill = solid(Color(0xFFE5484D)), btnOnInk = Color.White,
+            btnBorder = null,
+            back = "Back", details = "Details", play = playWord,
+            paper = Color.White, keepsPalette = true
+        )
+        // Twin icons: the icon grid's pale shell — rounded squares, a light ring for the lit key.
+        HomeLayout.TWIN_ICONS -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = solid(Color(0xFF14181F).copy(alpha = 0.62f)),
+            panel = Brush.verticalGradient(listOf(Color(0xFFF4F6F8), Color(0xFFDDE2E8))),
+            frame = Color(0xFFB9C1CC), frameW = 2.dp, corner = 18.dp, mediaCorner = 14.dp,
+            mediaFrame = Color.White, mediaFrameW = 4.dp,
+            ink = Color(0xFF242A33), muted = Color(0xFF5A6370), accent = acc,
+            btnFill = solid(Color.White), btnInk = Color(0xFF242A33), btnOnFill = solid(acc), btnOnInk = onAcc,
+            btnBorder = Color(0xFFB9C1CC),
+            back = "Back", details = "Details", play = playWord,
+            paper = Color.White, keepsPalette = true
+        )
+        // Twin showcase: the showcase's dark stage, rounded icon keys.
+        HomeLayout.TWIN_SHOWCASE -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Black.copy(alpha = 0.88f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF1B1E24).copy(alpha = 0.95f), Color(0xFF0E1013).copy(alpha = 0.97f))),
+            frame = Color.White.copy(alpha = 0.16f), frameW = 1.dp, corner = 16.dp, mediaCorner = 12.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color(0xFFB7BDC8), accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.1f)), btnInk = Color.White, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord,
+            paper = Color(0xFF0E1013)
+        )
+        // Record crate: the sleeve's cream card in a wooden frame, black vinyl keys, the lit one the label's red.
+        HomeLayout.CRATE -> WinLook(
+            Arrange.SPLIT, Btn.PILL,
+            veil = Brush.verticalGradient(listOf(Color(0xFF2A1A0E).copy(alpha = 0.6f), Color.Black.copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFFF3E9D6), Color(0xFFE2D2B4))),
+            frame = Color(0xFF7A4E2A), frameW = 5.dp, corner = 6.dp, mediaCorner = 2.dp,
+            mediaFrame = Color(0xFF151515), mediaFrameW = 3.dp,
+            ink = Color(0xFF2A1E14), muted = Color(0xFF5E4A36), accent = Color(0xFFD8402F),
+            btnFill = Brush.radialGradient(listOf(Color(0xFF3A3A3A), Color(0xFF111111))), btnInk = Color(0xFFF3E9D6),
+            btnOnFill = solid(Color(0xFFD8402F)), btnOnInk = Color(0xFFFFF4E4), btnBorder = Color(0xFF7A4E2A),
+            back = "Back", details = "Sleeve notes", play = if (resumed) "Continue" else "Play",
+            paper = Color(0xFFF3E9D6), keepsPalette = true
+        )
+        // Card binder: a collectible card — parchment inside a gold foil frame, capitals, the lit key foil gold.
+        HomeLayout.CARDS -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color(0xFF1A1430).copy(alpha = 0.62f), Color.Black.copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFFF7EFD9), Color(0xFFE6D6AE))),
+            frame = Color(0xFFC9A23A), frameW = 5.dp, corner = 12.dp, mediaCorner = 6.dp,
+            mediaFrame = Color(0xFF8C6A1C), mediaFrameW = 3.dp,
+            ink = Color(0xFF2B2210), muted = Color(0xFF6A5A36), accent = Color(0xFFC9A23A),
+            btnFill = solid(Color(0xFFFBF5E6)), btnInk = Color(0xFF2B2210),
+            btnOnFill = Brush.linearGradient(listOf(Color(0xFFFFE9A3), Color(0xFFC9A23A), Color(0xFFFFE08A))), btnOnInk = Color(0xFF2B2210),
+            btnBorder = Color(0xFFC9A23A),
+            back = "BACK", details = "CARD TEXT", play = if (resumed) "CONTINUE" else "PLAY",
+            caps = true, paper = Color(0xFFFBF5E6), keepsPalette = true
+        )
+        // Pocket ribbon: the 2008 pocket menu's white screen with its light-blue edges, a speech-bubble feel.
+        HomeLayout.POCKET_RIBBON -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = solid(Color(0xFF0E1620).copy(alpha = 0.66f)),
+            panel = Brush.verticalGradient(listOf(Color.White, Color(0xFFEFF3F7))),
+            frame = Color(0xFF8FA3B8), frameW = 3.dp, corner = 12.dp, mediaCorner = 4.dp,
+            mediaFrame = Color(0xFF3FA2F0), mediaFrameW = 4.dp,
+            ink = Color(0xFF2D3540), muted = Color(0xFF6B7684), accent = Color(0xFF3FA2F0),
+            btnFill = solid(Color.White), btnInk = Color(0xFF2D3540), btnOnFill = solid(Color(0xFF3FA2F0)), btnOnInk = Color.White,
+            btnBorder = Color(0xFF8FA3B8),
+            back = "Back", details = "Info", play = if (resumed) "Continue" else "Start",
+            paper = Color.White, keepsPalette = true
+        )
+        // Cube menu: the cube's indigo glass, a lilac edge, round-ended keys.
+        HomeLayout.CUBE -> WinLook(
+            Arrange.SPLIT, Btn.PILL,
+            veil = Brush.verticalGradient(listOf(Color(0xFF140E33).copy(alpha = 0.6f), Color(0xFF06041A).copy(alpha = 0.88f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF3B2F86).copy(alpha = 0.9f), Color(0xFF1A1450).copy(alpha = 0.95f))),
+            frame = Color(0xFFB8A9FF).copy(alpha = 0.8f), frameW = 2.dp, corner = 18.dp, mediaCorner = 12.dp,
+            mediaFrame = Color(0xFFB8A9FF).copy(alpha = 0.5f), mediaFrameW = 2.dp,
+            ink = Color.White, muted = Color(0xFFD2CBFF), accent = Color(0xFFB8A9FF),
+            btnFill = solid(Color.White.copy(alpha = 0.12f)), btnInk = Color.White, btnOnFill = solid(Color(0xFFE6E0FF)), btnOnInk = Color(0xFF1A1450),
+            btnBorder = Color(0xFFB8A9FF).copy(alpha = 0.4f),
+            back = "Back", details = "Details", play = playWord,
+            paper = Color(0xFF1A1450), keepsPalette = true
+        )
+        // Library panel: the library's dark panel with its tab-shaped keys.
+        HomeLayout.LIBRARY -> WinLook(
+            Arrange.SPLIT, Btn.TAB,
+            veil = solid(Color.Black.copy(alpha = 0.7f)),
+            panel = Brush.verticalGradient(listOf(t.surfaceRaised.copy(alpha = 0.96f), t.surface.copy(alpha = 0.98f))),
+            frame = Color.White.copy(alpha = 0.1f), frameW = 1.dp, corner = 8.dp, mediaCorner = 6.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.07f)), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = null,
+            back = "Back", details = "Details", play = playWord
+        )
+        // Timeline: a slim card on the line of time — square-ish keys, the accent as the line.
+        HomeLayout.TIMELINE -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = solid(Color.Black.copy(alpha = 0.72f)),
+            panel = Brush.verticalGradient(listOf(t.surfaceRaised.copy(alpha = 0.96f), t.surface.copy(alpha = 0.98f))),
+            frame = acc, frameW = 2.dp, corner = 6.dp, mediaCorner = 4.dp, mediaFrame = acc.copy(alpha = 0.6f), mediaFrameW = 2.dp,
+            ink = t.textPrimary, muted = ShelfTheme.textMuted, accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.08f)), btnInk = t.textPrimary, btnOnFill = solid(acc), btnOnInk = onAcc, btnBorder = acc.copy(alpha = 0.3f),
+            back = "Back", details = "Details", play = playWord
+        )
+        // Case stacks: a case's hard plastic — square keys, a thin edge.
+        HomeLayout.STACKS -> WinLook(
+            Arrange.SPLIT, Btn.SQUARE,
+            veil = solid(Color.Black.copy(alpha = 0.72f)),
+            panel = Brush.verticalGradient(listOf(Color(0xFF24272D).copy(alpha = 0.96f), Color(0xFF15171B).copy(alpha = 0.98f))),
+            frame = Color.White.copy(alpha = 0.2f), frameW = 1.dp, corner = 4.dp, mediaCorner = 2.dp, mediaFrame = null, mediaFrameW = 0.dp,
+            ink = Color.White, muted = Color(0xFFB4BAC4), accent = acc,
+            btnFill = solid(Color.White.copy(alpha = 0.09f)), btnInk = Color.White, btnOnFill = solid(acc), btnOnInk = onAcc,
+            btnBorder = Color.White.copy(alpha = 0.14f),
+            back = "Back", details = "Details", play = playWord,
+            paper = Color(0xFF15171B)
+        )
         // The Voltcap row (and anything else): the theme's own glass panel, round-ended buttons.
         else -> WinLook(
             Arrange.STACK, Btn.PILL,
@@ -1540,7 +1714,9 @@ private fun WindowBody(
                 Media(Modifier.weight(1f, fill = false).widthIn(max = screenW).aspectRatio(1.78f, matchHeightConstraintsFirst = true), showName = true)
                 if (info && !details) {
                     Spacer(Modifier.height(8.dp))
-                    Box(Modifier.width(screenW)) { WinInfo(look, g, state, extras, descLines = 2) }
+                    // (Update 330, phase 4: never narrower than the window — beside an inspected case on Hero tiles the
+                    // picture shrinks to a small tile, and the facts under it broke into a word per line.)
+                    Box(Modifier.width(maxOf(screenW, minOf(inner, 380.dp)))) { WinInfo(look, g, state, extras, descLines = 2) }
                 }
                 Spacer(Modifier.height(14.dp))
                 Buttons(vertical = false)
