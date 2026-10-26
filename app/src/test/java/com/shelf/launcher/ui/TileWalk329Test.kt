@@ -84,6 +84,16 @@ class TileWalk329Test {
         }
     }
 
+    /** A cartridge game on a disc keeps its own console's plain disc: the Disc tile is greyed on one, shown on a disc game. */
+    @Test fun discTileFollowsTheGameYoureOn() {
+        val a = AppearanceSettings(homeLayout = HomeLayout.CLASSIC, cardArtType = com.shelf.launcher.data.CardArtType.DISC)
+        fun fit(p: String?) = r1TileFit("discstyle", R1Ctx(a, secondDisplay = true, bluetooth = true, lights = true, romm = false,
+            raAccounts = 1, themeRecolorable = true, chargeLimitWorks = true, focusPlatform = p))
+        assertTrue(fit("N64") is R1Fit.Grey)
+        assertEquals(R1Fit.Show, fit("PS2"))
+        assertEquals(R1Fit.Show, fit(null))
+    }
+
     /** Twin showcase's grid has no Endless (StyleTwinShowcase keeps it off). */
     @Test fun noEndlessOnTwinShowcase() {
         assertEquals(R1Fit.Hide, r1TileFit("endless", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_SHOWCASE))))

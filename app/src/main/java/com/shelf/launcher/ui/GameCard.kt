@@ -1304,10 +1304,29 @@ internal fun typedArtFor(
         else if (platform != null && noOwnMedia(platform)) null
         // Update 159, Discs only: a cartridge game's own scan / label is its cartridge — on its CD its cover is printed.
         else if (platform != null && DiscLook.on && mediaKind(platform) != "disc") null
+        // Update 329 (the R1 tile walk on the AYN Thor; Toni: "do what you think is best"): a pick for every game wins over
+        // the game's own photo, as one case / spine picked for all already does (LookStyles) — the Disc tile's console disc
+        // for the disc games, your pack's shape (Cartridge: Your pack / Clear) for the consoles the pack has. With
+        // "Own" / Real shells (the defaults) every game keeps its own photo. Before, both tiles changed nothing on a
+        // scraped library (every game showed its photo).
+        else if (platform != null && mediaKind(platform) == "disc" && LookStyles.disc() != null) null
+        else if (platform != null && packWinsOverPhoto(platform)) null
         else if (com.shelf.launcher.data.Features.mediaShells.value) physical?.firstOrNull { it.first == "Disc label" }?.second
         else physical?.firstOrNull { it.first == "Disc / cartridge" }?.second
     CardArtType.SCREENSHOT -> screenshots?.firstOrNull()
     else -> null
+}
+
+/**
+ * Update 329: your cartridge pack's shape was picked (Cartridge: Your pack / Clear — the R1 Cartridge tile, Game look) and
+ * the pack has [platform]'s part on the device: its drawn pack cartridge shows instead of the game's own photo.
+ */
+internal fun packWinsOverPhoto(platform: String): Boolean {
+    val f = com.shelf.launcher.data.Features
+    // (Read as state, so a picture drawn with it follows the tile at once — cartNow reads the plain values.)
+    f.modelFinish.state.value; f.cartSource.state.value; f.cartsOnly.state.value; f.cartClear.state.value
+    return mediaKind(platform) != "disc" && cartNow() != LookCart.REAL &&
+        CustomCarts.idFor(platform)?.let { com.shelf.launcher.data.Packs.hasCart(it) } == true
 }
 
 /**

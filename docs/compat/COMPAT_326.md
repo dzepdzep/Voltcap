@@ -176,10 +176,12 @@ motion styles on style homes (fall back to the layout's window); Green Core (its
 (the walk sat on the apps column); Round shortcuts' corner ☰ under the pass-1 line (seen on the device); Hero carousel /
 TV room / Game shelf controls not steady (their own motion).
 
-**Open question — Cartridge shape and Disc for every game:** the setting changes, but a game with its own scraped
-cartridge / disc photo shows that photo, so in the Thor's N64 and PS2 categories (all with photos) nothing on screen
-changed. Only games without a photo take the pack shape / picked disc. Options: leave it, or have these two tiles also
-switch the photos off (back to drawn pieces) — that changes how your library looks, so not done without asking.
+**Cartridge shape and Disc for every game — FIXED:** the setting changed, but a game with its own scraped cartridge /
+disc photo kept the photo, so on the Thor's N64 and PS2 lists nothing changed on screen. An explicit pick for every game
+now wins over the photo (as Case / Spine for every game already did); Own / Real shells keep the photos. Greyed with why
+where the pick can't change the game you're on (Disc tile on a cartridge game, Cartridge tile on a disc game).
+Found on the way: a plain disc reused for another game kept the previous console's band (N64 band on PS2 games) — **FIXED**
+(`GenericDisc.kt`, keyed by console).
 
 **Flashing check (screen recordings, all 33 layouts, both screens, animations on):** moving along (◀ ▶), L2 / R2, A to
 open the game window and B to close it — no flash or flicker found on any layout (frame-by-frame check for a change that

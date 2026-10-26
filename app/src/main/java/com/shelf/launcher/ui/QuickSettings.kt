@@ -313,7 +313,8 @@ fun QuickSettingsCard(
         raAccounts = raAccountCount,
         themeRecolorable = home?.themeKey?.let { tk -> com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == tk }?.recolorable } == true,
         // (Listed on every device; read with the other device tiles. Not read yet: nothing to hide.)
-        chargeLimitWorks = deviceTiles.firstOrNull { it.first == com.shelf.launcher.device.DeviceControl.CHARGE_LIMIT }?.second?.supported ?: true
+        chargeLimitWorks = deviceTiles.firstOrNull { it.first == com.shelf.launcher.device.DeviceControl.CHARGE_LIMIT }?.second?.supported ?: true,
+        focusPlatform = home?.gamePlatform
     )
 
     // Every tile, in the default order; the saved order is applied on top (new tiles go at the end).

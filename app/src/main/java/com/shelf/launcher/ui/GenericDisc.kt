@@ -61,8 +61,17 @@ private class DiscLogo(val image: ImageBitmap, val light: Boolean)
 
 private val logoCache = java.util.concurrent.ConcurrentHashMap<String, DiscLogo>()
 
+/*
+ * Update 329 (found on the AYN Thor: PS2 games drawn as plain discs carried the Nintendo 64 band after the N64 list was
+ * shown): produceState's state isn't keyed — only its producer restarts on a new key — and the producer returned at
+ * once when the state already held a picture, so a disc reused for another game (rows keep their slots while the
+ * category changes) kept the previous console's logo / system disc for good. Keyed now: a new console starts fresh.
+ */
 @Composable
-private fun rememberDiscLogo(platform: String): DiscLogo? {
+private fun rememberDiscLogo(platform: String): DiscLogo? = androidx.compose.runtime.key(platform) { rememberDiscLogoOf(platform) }
+
+@Composable
+private fun rememberDiscLogoOf(platform: String): DiscLogo? {
     val context = LocalContext.current
     val logo by produceState(logoCache[platform], platform) {
         if (value != null) return@produceState
@@ -231,6 +240,12 @@ private val discTplCache = java.util.concurrent.ConcurrentHashMap<String, ImageB
 @Composable
 private fun rememberSystemDiscOverlay(console: String): ImageBitmap? {
     val path = com.shelf.launcher.data.SystemLogos.discAsset(console) ?: return null
+    // (Update 329: keyed by the overlay, as rememberDiscLogo — a reused disc kept the previous console's overlay.)
+    return androidx.compose.runtime.key(path) { rememberSystemDiscOverlayAt(path) }
+}
+
+@Composable
+private fun rememberSystemDiscOverlayAt(path: String): ImageBitmap? {
     val context = LocalContext.current
     val bmp by produceState(discTplCache[path], path) {
         if (value != null) return@produceState

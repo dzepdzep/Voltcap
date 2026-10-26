@@ -61,9 +61,19 @@
   fall back to the layout's window on style homes, so two steps look alike there; badges aren't printed over a case
   that already shows its console; Green Core's tiles act on its games page, not its menu; Cross menu's walk sat on its
   apps column.
-- **Cartridge shape / Disc for every game (N64 and PS2 checked by hand):** the tile changes its setting, but games with
-  their own cartridge / disc photo show that photo, so with your scraped N64 and PS2 libraries nothing on screen changed
-  — only games without a photo take the pack shape / picked disc. Not changed; a question for Toni (see the report).
+- **Cartridge shape / Disc for every game (found on the Thor; Toni: "do what you think is best"):** the tiles changed
+  their setting, but every game with its own scraped cartridge / disc photo kept showing the photo — on the Thor's N64
+  and PS2 lists nothing on screen changed. Now an explicit pick for every game wins over the photo, as one case / spine
+  picked for all already did: **Cartridge: Your pack / Clear** draws the pack's shape for the consoles the pack has, and
+  **Disc: <console>** draws the disc games on that disc. With Own / Real shells (the defaults) every game keeps its photo
+  (`GameCard.typedArtFor`, `packWinsOverPhoto`). Where a pick can't change the game you're on, the tile is greyed with
+  why: the Disc tile on a cartridge game (on a disc it keeps its own console's plain disc, update 141), the Cartridge
+  tile on a disc game (it stays a disc unless disc games go on a cartridge) (`R1Ctx.focusPlatform`).
+- **Fixed — a plain disc could keep the previous console's branding** (found checking the Disc tile): after the N64
+  list, PS2 games drawn on discs carried the Nintendo 64 band. The disc's console logo / system-disc overlay was
+  remembered without its console (Compose's `produceState` keeps its state across a new key, and the loader returned at
+  once when it already held a picture), so a disc reused for another game kept the old one. Keyed now
+  (`ui/GenericDisc.kt`). Checked on the Thor: N64 list → PS2 list shows the PlayStation 2 band.
 - **Second screen, pressed for real:** at home — page arrows (Widgets → Wall → Magnifier → back), Play; during a PS2 game
   (ARMSX2) — every in-game page in turn (Wall, Magnifier, Art, Video, Details, Achievements, Music, Guide, Performance,
   Widgets), the timer counting, the Music page's volume slider (+ / − changed Android's media volume), the dock's All apps
@@ -75,12 +85,12 @@
   2. Test side effects: 7 Wonders Of The Ancient World (ARMSX2) started and closed (at its title, nothing saved); Chrome
   opened once on the second screen; the in-game second screen's start page may be Widgets (turned during 328's tests).
 - **Tests:** `TileWalk329Test` (category title names, Twin categories, Magnifier on the two-screen layouts, no Endless on
-  Twin showcase, the music player taken off), `R1Compat326Test` updated (Outline, Endless, Achievements with the carousel).
+  Twin showcase, the music player taken off, the Disc tile on a cartridge game), `R1Compat326Test` updated (Outline, Endless, Achievements with the carousel).
 - **Copy** (already in place and pushed): `src_copy\ui\R1TileRules.kt`, `src_copy\ui\QuickSettings.kt`,
   `src_copy\ui\SceneStyle.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\TwinShowcase.kt`, `src_copy\ui\TileCheck.kt`,
   `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\StyleConsoleHomes.kt`,
   `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\PlayerSkins.kt`,
-  `src_copy\ui\SettingsIndex.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
+  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GenericDisc.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
   `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt` (and the earlier 329 files:
   `TileCheck.kt`, `TestHooks.kt`, `LauncherScreen.kt`, `PowerSaver.kt`, `LauncherViewModel.kt`, `data\ConsoleNames.kt`…).
 

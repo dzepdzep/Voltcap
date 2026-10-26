@@ -35,7 +35,9 @@ internal class R1Ctx(
     /** The theme in use can take its colours from the game or the music (Colours tile). */
     val themeRecolorable: Boolean,
     /** The battery driver's 80 % charge limit works on this device (read with the device tiles). */
-    val chargeLimitWorks: Boolean
+    val chargeLimitWorks: Boolean,
+    /** Update 329: the console of the game you're on (null: none / not known) — the Cartridge and Disc tiles' games. */
+    val focusPlatform: String? = null
 )
 
 /** Update 202: a tile shows, is hidden (it would do nothing here), or shows greyed out with [Grey.why]. */
@@ -113,9 +115,23 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Cartridge shape (your pack): Cartridges & discs drawn with the pack (not Real shells, unless disc games go on a
         // cartridge), with some of the pack downloaded, where the look is drawn.
         // (Update 325: on Real shells too — the tile is the way back and forth between each console's own and the pack.)
-        "cartlook" -> if (look == CardArtType.CARTRIDGE_DISC && com.shelf.launcher.data.Packs.anyCarts()) lookFit(l) else R1Fit.Hide
+        "cartlook" -> if (look == CardArtType.CARTRIDGE_DISC && com.shelf.launcher.data.Packs.anyCarts()) {
+            // (Update 329, found by the R1 tile walk: on a disc game the pack shape changes nothing — disc games stay discs
+            // unless they go on a cartridge (Game look › Disc games: On a cartridge).)
+            val fp = x.focusPlatform
+            if (lookFit(l) == R1Fit.Show && fp != null && mediaKind(fp) == "disc" && !Features.cartsOnly.state.value)
+                R1Fit.Grey("The game you're on is a disc game — it stays a disc. The cartridge shape is for cartridge games (or put disc games on a cartridge: Game look › Disc games).")
+            else lookFit(l)
+        } else R1Fit.Hide
         // Disc for every game: the Discs look where the look is drawn, and Disc station (always discs, LookStyles.disc).
-        "discstyle" -> if (l == HomeLayout.DISCS) R1Fit.Show else if (look == CardArtType.DISC) lookFit(l) else R1Fit.Hide
+        "discstyle" -> (if (l == HomeLayout.DISCS) R1Fit.Show else if (look == CardArtType.DISC) lookFit(l) else R1Fit.Hide).let { f ->
+            // (Update 329, found by the R1 tile walk: a cartridge game on a disc keeps its own console's plain disc whatever
+            // console is picked (update 141: no other console's printed disc on it) — the pick is for the disc games.)
+            val fp = x.focusPlatform
+            if (f == R1Fit.Show && fp != null && mediaKind(fp) != "disc")
+                R1Fit.Grey("The game you're on is a cartridge game: as a disc it keeps its own console's plain disc. The disc picked for every game is for disc games (PlayStation, GameCube…).")
+            else f
+        }
         // Case for every game: the case looks where the look is drawn, and Game shelf (its pulled-out game is a case).
         "casestyle" -> when {
             l == HomeLayout.SHELF -> R1Fit.Show
