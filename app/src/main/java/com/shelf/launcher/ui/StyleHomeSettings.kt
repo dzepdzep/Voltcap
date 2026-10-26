@@ -87,6 +87,9 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     // Update 330.
     HomeLayout.MEMCARD -> "Icon size, spacing, loose or straight rows, depth, the icon you're on, background, save icons, title, hints, float"
     HomeLayout.CASEFLOW -> "Fronts or spines either side, curve, spacing, size, turn, camera height, speed, reflections, stage, name"
+    HomeLayout.BOX -> "What stands in it, rows, neat or messy, spacing, rise, tilt, box depth, cardboard, speed"
+    HomeLayout.STORAGE -> "Box size, room round the icons, wallpapers, preview side, motion, pointer"
+    HomeLayout.FILESELECT -> "Files per page, spacing, bounce, block colours, moving pattern, console-era blips"
     else -> ""
 }
 
@@ -137,6 +140,9 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.MEMCARD -> MemoryCardSettings()
         // Update 330 (StyleCaseFlow.kt).
         HomeLayout.CASEFLOW -> CaseFlowSettings()
+        HomeLayout.BOX -> CardboardBoxSettings()
+        HomeLayout.STORAGE -> StorageBoxesSettings()
+        HomeLayout.FILESELECT -> FileSelectSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

@@ -331,6 +331,8 @@ internal fun styleHomeKey(
     // On the games.
     // Update 158: Card binder — Y (or a hold of A) turns the card over, A plays, B turns it back (StyleCardBinder.kt).
     if (layout == HomeLayout.CARDS && !isDir && cardBinderButton(event, sound)) return true
+    // Update 330: Cardboard box — Y turns the case you're on round, B turns it back.
+    if (layout == HomeLayout.BOX && !isDir && cardboardBoxButton(event, sound)) return true
     if (!isDir || !down) return false
     val at = event.nativeKeyEvent.eventTime
     if (focus != StyleNav.dirFocus) { StyleNav.movedAt = StyleNav.dirAt; StyleNav.edgeKnock = false }
@@ -602,6 +604,25 @@ internal fun styleHomeKey(
         )
         // Update 330: Case flow (StyleCaseFlow.kt): ▲ ▼ beyond; ◀ ▶ the home screen's own.
         HomeLayout.CASEFLOW -> return caseFlowKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        // Update 330, phase 2.
+        HomeLayout.BOX -> return cardboardBoxKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        HomeLayout.STORAGE -> return storageBoxesKey(
+            StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+        )
+        HomeLayout.FILESELECT -> return fileSelectKey(
             StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
                 category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
@@ -1086,7 +1107,7 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
-private fun StyleNamePlate(name: String) {
+internal fun StyleNamePlate(name: String) {
     Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
         Text(
             name, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
@@ -1272,6 +1293,10 @@ internal fun StyleHome(
         HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
         // Update 330: Case flow (StyleCaseFlow.kt).
         HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
+        // Update 330, phase 2 (StyleCardboardBox.kt, StyleStorageBoxes.kt, StyleFileSelect.kt).
+        HomeLayout.BOX -> StyleCardboardBox(c, modifier)
+        HomeLayout.STORAGE -> StyleStorageBoxes(c, modifier)
+        HomeLayout.FILESELECT -> StyleFileSelect(c, modifier)
         else -> Unit
     }
 }
@@ -1341,6 +1366,9 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         // Update 330: the memory-card screen's grey (its option; Your theme: the theme's background).
         HomeLayout.MEMCARD -> MemCardBackdrop(Modifier.fillMaxSize())
         HomeLayout.CASEFLOW -> CaseFlowBackdrop(Modifier.fillMaxSize())
+        HomeLayout.BOX -> CardboardBoxBackdrop(Modifier.fillMaxSize())
+        HomeLayout.STORAGE -> StorageBoxesBackdrop(Modifier.fillMaxSize())
+        HomeLayout.FILESELECT -> FileSelectBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1384,6 +1412,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     // Update 330.
     HomeLayout.MEMCARD -> memCardOwnsBackground()
     HomeLayout.CASEFLOW -> caseFlowOwnsBackground()
+    // Update 330: their own room / screen always.
+    HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT -> true
     else -> false
 }
 

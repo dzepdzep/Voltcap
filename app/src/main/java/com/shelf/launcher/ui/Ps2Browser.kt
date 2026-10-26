@@ -78,7 +78,13 @@ internal fun ps2RefsOf(capsule: SaveCapsules.Capsule?): List<Ps2SaveRef> =
 internal class Ps2IconMesh(icon: Ps2Icons.Icon) {
     private val n = icon.vertexCount - icon.vertexCount % 3
     private val tris = n / 3
-    private val pos = icon.positions
+    /** Update 330: the icon's own animation (its shapes blended), when it has one; positions drawn from [pos]. */
+    private val anim = icon.anim
+    private val pos = if (anim != null) icon.positions.copyOf() else icon.positions
+    val animated: Boolean get() = anim != null
+
+    /** Update 330: sets the shape to [seconds] into the icon's animation (call before drawing). */
+    fun animate(seconds: Float) { anim?.blend(seconds, pos) }
     private val texture: Bitmap? = icon.texture?.let { px ->
         runCatching { Bitmap.createBitmap(px, 128, 128, Bitmap.Config.ARGB_8888) }.getOrNull()
     }
@@ -235,9 +241,12 @@ internal fun Ps2IconView(mesh: Ps2IconMesh, turning: Boolean, fast: Boolean, mod
         )
     } else null
     val buffer = remember { SoftBuffer() }
+    // Update 330: the icon's own animation plays while it turns (the one you're on), as the console's browser plays it.
+    val clock = if (turning && mesh.animated) MediaClock.rememberFrameTime() else null
     Canvas(modifier) {
         // Read only while drawing: the turn redraws, never recomposes.
         val ang = angleState?.value ?: -25f
+        clock?.let { mesh.animate(it.longValue / 1_000_000_000f) }
         drawMesh(mesh, buffer, ang)
     }
 }
@@ -316,7 +325,8 @@ internal fun GenericCardSymbol(modifier: Modifier) {
     }
 }
 
-private class Ps2Pick(val ref: Ps2SaveRef?, val parsed: Ps2Icons.Parsed?, val done: Boolean)
+/** [fromDb] (update 330): the icon is PS2IODB's for the game, not this save's own. */
+private class Ps2Pick(val ref: Ps2SaveRef?, val parsed: Ps2Icons.Parsed?, val done: Boolean, val fromDb: Boolean = false)
 
 /**
  * (Update 239, #112: a PS2 save's slot picture in the PS2 browser style — the same size, lift, bob and hidden state as the
@@ -331,21 +341,28 @@ internal fun Ps2SaveTile(
     lift: Float,
     bob: () -> Float,
     hidden: Boolean,
-    onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit
+    onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit,
+    /** Update 330: the save's game — with no readable icon of its own, PS2IODB's icon for it. */
+    game: com.shelf.launcher.data.Game? = null
 ) {
     val context = LocalContext.current
     val version = Ps2Icons.version.intValue
+    val slug = androidx.compose.runtime.remember(game?.stableKey) { game?.let { com.shelf.launcher.data.Ps2IconDb.slugFor(context, it) } }
     val initial = remember(refs) {
         refs.firstNotNullOfOrNull { r -> Ps2Icons.cached(r.id)?.takeIf { it.icon != null }?.let { Ps2Pick(r, it, true) } }
             ?: Ps2Pick(refs.firstOrNull(), null, false)
     }
-    val pick by produceState(initial, refs, version) {
+    val pick by produceState(initial, refs, version, slug) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             var first: Ps2Pick? = null
             for (r in refs.take(8)) {
                 val p = runCatching { Ps2Icons.load(context, r.id) }.getOrNull()
                 if (p?.icon != null) return@withContext Ps2Pick(r, p, true)
                 if (first == null) first = Ps2Pick(r, p, true)
+            }
+            // Update 330: none of its own readable — PS2IODB's icon for the game (its own title and size stay).
+            slug?.let { s -> runCatching { com.shelf.launcher.data.Ps2IconDb.load(context, s) }.getOrNull() }?.takeIf { it.icon != null }?.let { db ->
+                return@withContext Ps2Pick(first?.ref ?: refs.firstOrNull(), Ps2Icons.Parsed(first?.parsed?.sys ?: db.sys, db.icon), true, fromDb = true)
             }
             first ?: Ps2Pick(null, null, true)
         }
@@ -396,7 +413,7 @@ internal fun Ps2SaveTile(
         // What the picture is, said plainly: the save's own icon, or a generic symbol.
         if (pick.done) {
             Text(
-                if (mesh != null) "PS2 save icon" else "No save icon",
+                if (mesh != null && pick.fromDb) "Icon from PS2IODB" else if (mesh != null) "PS2 save icon" else "No save icon",
                 color = if (mesh != null) Color(0xFFCFE0FF) else Color(0xFFFFD6A0),
                 fontSize = 7.sp, lineHeight = 8.sp, maxLines = 1,
                 modifier = Modifier.align(Alignment.TopStart).padding(4.dp)

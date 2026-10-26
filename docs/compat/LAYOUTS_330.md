@@ -12,7 +12,7 @@ Storage boxes, File select (1996), Orbit deck (1995), Airy home (1999), Night me
 | Phase | Content | State |
 |---|---|---|
 | 1 | Pocket classic popup (PR #12), Memory card (2000), Case flow | Done — built, tested on the Thor, pushed |
-| 2 | Cardboard box, Storage boxes, File select (1996) | Not started |
+| 2 | Cardboard box, Storage boxes, File select (1996); layout-made game windows (box, file select, storage, memory card, case flow); PS2IODB icons | Done — built, tested on the Thor, pushed |
 | 3 | Orbit deck (1995), Airy home (1999), Night menu (2006) | Not started |
 | 4 | Popup review of all 33 layouts, Cube docking, return-from-game restore | Not started |
 | 5 | Layout-styled Voltcap dialogs (opt-in, Standard by default) | Not started |
@@ -24,6 +24,16 @@ Storage boxes, File select (1996), Orbit deck (1995), Airy home (1999), Night me
 | Pocket classic | Existing; A on the game panel now opens the game window (PR #12, `StyleActions.open` — Game window off: starts the game) | Paper screen: pale panel with pinstripes, sharp grey frame, monospace capitals, START / GAME INFO / BACK, accent from Layout options › Accent | Rendered on both screens: home, window open, D-pad moved inside the window (▼ ▶ to Options), B closed it and the focus was back on the game panel on the bottom screen | With "The game's colours" (the default) the window was re-coloured whole and the paper was lost → `keepsPalette`: the game's colour lights only the accent | Passed |
 | Memory card (2000) | New (`StyleMemoryCard.kt`) | Smoky grey-blue glass, white words, lit button in the game's colour (or yellow with "The layout's own"), Start / Details / Back | Rendered: every option value (20 shots), PS2 + PS3 categories, window open / closed; recorded: moving, scrolling rows, L2 / R2, A / B — no flash, the piece flies back to its icon | Square achievement icons made it a cover grid → the game's clear logo first; icons too big / wide logos touching → smaller cells and narrower logo boxes; long titles pushed the sub line down → taller header; category name drawn twice → layout's own label (CategoryTitle.Native), hidden by R1 › Categories › Off; rows cut hard at the edges → faded | Passed |
 | Case flow | New (`StyleCaseFlow.kt`) | Graphite glass beside the case that came forward, round buttons | Rendered: every option (15 shots); recorded: gliding 3 cases, back, A (case comes forward, window grows out of it, Inspect turns it to its back), B (case goes back) — smooth, nothing pops | Floor band's hard edge ran through the reflections → soft floor; the category name sat over the round shortcuts' ☰ in the top-left corner (R1 tile walk: Round shortcuts changed nothing) → name at the top middle | Passed |
+
+### Phase 2 rows
+
+| Layout | Implementation | Popup | Visual check | Bugs found → fixed | Status |
+|---|---|---|---|---|---|
+| Cardboard box | Rebuilt three times on Toni's corrections: upright fronts → spine rows (shelf-like) → top-down box drawn through a measured camera with generated cardboard materials (`StyleCardboardBox.kt`) | Insert sheet taped beside the case pulled out of the box (the window's piece) | Rendered + recorded: packed box, spine selected, 25 / 50 / 100 % out, window, reverse into the slot, other row, Box 2 by D-pad and swipe, last box partly filled | Window froze on the Thor (turned text) → flat first; the case flew out as a plain slab, then showed its whole box scan → its pictures readied while resting on it; a long swipe skipped a box → one per swipe; lifted case drifted off over the flap → stays over its slot | Passed |
+| File select (1996) | Console names on the blocks | The block turns over, its back grows into the window | Rendered + recorded: page, selected, window (flip), reverse, other game; window open 15 s | FILE A–D labels → console; window buttons ran off the side when the case was out → flow onto two lines; the cover twice beside the case → hidden while the piece is out | Passed |
+| Storage boxes | Pixel sprites in slots, pixel-framed box / header / preview | Stored-entry record with tabs and a pointer menu | Rendered + recorded: box, selected, record open, closing into the slot, other game | Record cramped beside a case piece → opens from the icon itself (piece via Inspect only); title over the tabs when narrow → hidden there | Passed |
+| Memory card (window) | PS2IODB icons, animated | Browser info screen | Rendered + recorded | Games without an icon blank (logos never loaded) → fixed | Passed |
+| Case flow (window) | — | The case out, its media beside it | Rendered + recorded | — | Passed (tools scroll into view below the buttons on the Thor) |
 
 ## B. Settings compatibility matrix (phase 1)
 

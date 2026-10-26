@@ -31,6 +31,11 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -531,6 +536,45 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             back = "Back", details = "Details", play = playWord,
             paper = Color(0xFF16181D)
         )
+        // Update 330: Cardboard box — a storage label: kraft paper, typewriter capitals, a red stamp for the lit button.
+        HomeLayout.BOX -> WinLook(
+            Arrange.SPLIT, Btn.SQUARE,
+            veil = Brush.verticalGradient(listOf(Color(0xFF2A221A).copy(alpha = 0.6f), Color.Black.copy(alpha = 0.85f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFFE8D7B4), Color(0xFFD6C08F))),
+            frame = Color(0xFF8A6A3C), frameW = 2.dp, corner = 3.dp, mediaCorner = 2.dp,
+            mediaFrame = Color(0xFFF7F1E2), mediaFrameW = 4.dp,
+            ink = Color(0xFF2B2117), muted = Color(0xFF5E4B33), accent = Color(0xFFB8322A),
+            btnFill = solid(Color(0xFFF4EAD3)), btnInk = Color(0xFF2B2117),
+            btnOnFill = solid(Color(0xFFB8322A)), btnOnInk = Color(0xFFFFF4E4), btnBorder = Color(0xFF8A6A3C),
+            back = "BACK", details = "CONTENTS", play = if (resumed) "CONTINUE" else "PLAY",
+            mono = true, caps = true, paper = Color(0xFFF1E6CC), keepsPalette = true
+        )
+        // Update 330: Storage boxes — the box's entry card: a pale panel under a coloured title band, rounded, friendly.
+        HomeLayout.STORAGE -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color(0xFF10233A).copy(alpha = 0.6f), Color(0xFF07111D).copy(alpha = 0.86f))),
+            panel = Brush.verticalGradient(0f to Color(0xFF4C6A8E), 0.13f to Color(0xFF4C6A8E), 0.13f to Color(0xFFF7F9FC), 1f to Color(0xFFDDE4EE)),
+            frame = Color(0xFF2C4766), frameW = 3.dp, corner = 12.dp, mediaCorner = 8.dp,
+            mediaFrame = Color(0xFF6E98C4), mediaFrameW = 3.dp,
+            ink = Color(0xFF1E2A3A), muted = Color(0xFF4C5E76), accent = Color(0xFFFF5A4E),
+            btnFill = solid(Color.White), btnInk = Color(0xFF1E2A3A), btnOnFill = solid(Color(0xFFFF5A4E)), btnOnInk = Color.White,
+            btnBorder = Color(0xFF4C6A8E),
+            back = "Back", details = "Summary", play = playWord,
+            paper = Color(0xFFF7F9FC), keepsPalette = true
+        )
+        // Update 330: File select — the block opened out: chunky blue with a thick light bevel, yellow for the lit button.
+        HomeLayout.FILESELECT -> WinLook(
+            Arrange.SPLIT, Btn.ROUNDED,
+            veil = Brush.verticalGradient(listOf(Color(0xFF101A52).copy(alpha = 0.6f), Color(0xFF070B2A).copy(alpha = 0.88f))),
+            panel = Brush.verticalGradient(listOf(Color(0xFF5B8FF0), Color(0xFF2F63D0), Color(0xFF2350B0))),
+            frame = Color(0xFFBFD6FF), frameW = 4.dp, corner = 20.dp, mediaCorner = 10.dp,
+            mediaFrame = Color(0xFFBFD6FF), mediaFrameW = 4.dp,
+            ink = Color.White, muted = Color(0xFFDDE8FF), accent = Color(0xFFFFE04A),
+            btnFill = solid(Color(0xFF1C3F94)), btnInk = Color.White, btnOnFill = solid(Color(0xFFFFE04A)), btnOnInk = Color(0xFF2A2200),
+            btnBorder = Color(0xFFBFD6FF),
+            back = "Back", details = "Details", play = if (resumed) "Continue" else "Start",
+            paper = Color(0xFF1C3F94), keepsPalette = true
+        )
         // Update 202: Pocket Quest — a deep blue / indigo panel with a crisp accent (gold) edge and nearly square corners,
         // the picture in a thin accent frame, square buttons; the lit one solid accent with dark words (its theme's palette).
         HomeLayout.POCKET -> {
@@ -640,6 +684,8 @@ internal fun GameWindow(
         Features.WinColors.GAME -> base.tinted(if (coverBmp != null) gameTint else ShelfTheme.accent)
     }
     val plan = WinPlan.of(layout)
+    // Update 330: the layout's own window (WinScenes.kt), unless it's switched off (Settings › Game window).
+    val scene = if (Features.winScenes.state.value) winSceneFor(layout) else null
     // The TV room: the window opens on the TV's own screen (update 119).
     val hereView = LocalView.current
     val hereDisplay = runCatching { hereView.display?.displayId }.getOrNull() ?: -1
@@ -660,7 +706,10 @@ internal fun GameWindow(
     val fromOtherScreen = origin != null && origin.top == Float.MAX_VALUE
     // (Update 285, Toni: "if using the cartridge and stuff, it's always moved to the window to be inspected": picked on
     // the other screen too — there's no card here to fly from, so it grows in where it stands.)
-    val pieceNow = if (tvRect == null) inspectPieceFor(g, state) else null
+    // (Update 330: File select's and Storage boxes' own windows open out of the file / the icon itself — their piece
+    // comes out only when asked for, with the Inspect button.)
+    val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO) && !askedInspect && MediaInspect.force != g.stableKey
+    val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
     val lastPiece = remember(g.stableKey) { arrayOfNulls<InspectPiece>(1) }
@@ -670,6 +719,9 @@ internal fun GameWindow(
     // (Update 162: a piece turns all the way round. Update 200: the drawn shells of the 3D cartridges looks too — the
     // pre-rendered 3D models and their InspectModel are retired.)
     motion.limited = false
+    // (Update 330: the Cardboard box's case comes out of the box spine first — it turns to face you as it comes forward.)
+    motion.fromSpine = scene == WinScene.BOX_SHEET && piece?.kind == InspectKind.BOX && origin != null
+    motion.spineYaw = 90f - BoxNav.OUT_TURN
     // (Update 274: Settings › Game look › In the game window: Wobble — it only sways, no turning by hand.)
     motion.handsOff = com.shelf.launcher.data.Features.inspectMode.state.value == com.shelf.launcher.data.Features.InspectMode.WOBBLE
     val inspectScope = rememberCoroutineScope()
@@ -696,8 +748,18 @@ internal fun GameWindow(
     val grow = remember { Animatable(0f) }
     val closeNow by rememberUpdatedState(onClose)
     // Update 162: closing turns the piece back and flies it to its place first, then the window goes.
+    // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
+    var shrinking by remember { mutableStateOf(false) }
     val close: () -> Unit = {
-        if (piece == null || !motion.started) closeNow()
+        if (piece == null && scene != null && MotionPrefs.info() != Features.InfoAnim.NONE && grow.value > 0.05f) {
+            if (!shrinking) {
+                shrinking = true
+                inspectScope.launch {
+                    grow.animateTo(0f, tween(if (scene == WinScene.FILE_CARD) 340 else 260, easing = FastOutSlowInEasing))
+                    closeNow()
+                }
+            }
+        } else if (piece == null || !motion.started) closeNow()
         else if (!motion.closing) {
             motion.closing = true
             inspectScope.launch {
@@ -868,7 +930,7 @@ internal fun GameWindow(
           Box(
             Modifier.fillMaxSize()
                 .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
-                .background(look.veil)
+                .background(scene?.let { sceneVeil(it) } ?: look.veil)
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
         ) {
@@ -883,7 +945,8 @@ internal fun GameWindow(
                         onPlaced = { r -> if (target == null) target = r },
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
-                        WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                        if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { motion.lift.floatValue }
+                        else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                     }
                 } else Box(
                     Modifier
@@ -909,13 +972,24 @@ internal fun GameWindow(
                                 scaleY = s0y + (1f - s0y) * k
                                 translationX = (from.center.x - to.center.x) * (1f - k)
                                 translationY = (from.center.y - to.center.y) * (1f - k)
+                                // (Update 330: File select — the file block turns over (StyleFileSelect's FileBlock turns
+                                // its front away) and its back grows out into this: hidden for the first half, then turning
+                                // in from edge-on.)
+                                if (scene == WinScene.FILE_CARD) {
+                                    val t = ((k - 0.42f) / 0.58f).coerceIn(0f, 1f)
+                                    alpha = if (k < 0.42f) 0f else 1f
+                                    rotationY = -90f * (1f - t)
+                                    cameraDistance = 18f * density
+                                    flatTextFor3d()
+                                }
                             }
                         }
                         // Taps inside the window never close it.
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                    if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { grow.value }
+                    else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
             }
           }
@@ -1555,6 +1629,83 @@ private fun WindowBody(
             }
         }
     }
+}
+
+/**
+ * Update 330: the window drawn by the layout itself (WinScenes.kt) — the same game, buttons, pages and focus as
+ * [WindowBody], handed over as a [WinSceneCtx]: Play / Continue first (the D-pad starts on it), the page's own buttons,
+ * the small tools (options, achievements, save sync, manual, inspect), the save / performance chips, and the details /
+ * options / achievements / performance pages drawn in the layout's colours for the scene to frame. [reveal]: how far
+ * the window is open (0…1), for the scene's own entrance.
+ */
+@Composable
+private fun SceneBody(
+    scene: WinScene, look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
+    page: WinPage, setPage: (WinPage) -> Unit, maxW: Dp, maxH: Dp, playFocus: FocusRequester, listFocus: FocusRequester,
+    onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, options: List<WinOption>,
+    reveal: () -> Float
+) {
+    val titles = LocalTitleOptions.current
+    val status = LocalWinStatus.current
+    val meta = state.metadata[g.stableKey]
+    val I = androidx.compose.material.icons.Icons.Filled
+    val perf = status?.perf != null
+    val toMain = { setPage(WinPage.MAIN) }
+    val buttons = buildList {
+        add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
+        when (page) {
+            WinPage.MAIN -> {
+                if (perf) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
+                add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, { setPage(WinPage.DETAILS) }))
+                add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+            }
+            WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
+        }
+    }
+    val tools = buildList {
+        add(WinAction("Options", I.Settings, extras.onOptions))
+        add(WinAction("Achievements", I.EmojiEvents, extras.onAchievements))
+        add(WinAction("Save sync", I.CloudSync, extras.onSync))
+        extras.onManual?.let { add(WinAction("Manual", I.MenuBook, it)) }
+        extras.onInspect?.let { add(WinAction("Inspect", InspectIcon.vector, it)) }
+    }
+    val chips = buildList {
+        status?.let { st ->
+            val sv = st.sync
+            add(WinAction("Saves: " + sv.text, sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
+            st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf)) }
+        }
+    }
+    val list = state.raAchievementDetails[g.stableKey].orEmpty()
+    val p = state.raProgress[g.stableKey]
+    val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
+    val earned = if (list.isNotEmpty()) list.count { it.isUnlocked } else p?.NumAchieved ?: 0
+    val ctx = WinSceneCtx(
+        g = g, state = state, cover = cover, wide = wide, backdrop = backdrop, logo = bigLogo(g, state),
+        name = titles.display(g.name),
+        console = if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform),
+        playtime = state.playtime[g.stableKey]?.takeIf { it > 0L },
+        lastPlayed = state.lastPlayedAt[g.stableKey],
+        year = meta?.releaseYear?.toString(), developer = meta?.developer?.takeIf { it.isNotBlank() },
+        genres = meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() },
+        summary = meta?.summary?.takeIf { it.isNotBlank() },
+        earned = earned, total = total,
+        page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
+        buttons = buttons, tools = tools, chips = chips, close = onClose,
+        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = maxH, reveal = reveal,
+        pageBody = { m ->
+            when (page) {
+                WinPage.MAIN -> {}
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.OPTIONS -> WindowOptions(look, options, listFocus, m)
+                WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, m, extras.onLoadComments)
+                WinPage.PERF -> WindowPerformance(look, listFocus, m)
+            }
+        }
+    )
+    DrawWinScene(scene, ctx)
 }
 
 /**

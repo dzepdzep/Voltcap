@@ -701,6 +701,13 @@ internal class InspectMotion {
     val stick = mutableFloatStateOf(0f)
     /** Where it came from (window px); on the way back its place is read again. */
     var from: Rect? = null
+    /**
+     * Update 330: it comes out of a box where it stood spine-out (Cardboard box): it starts turned to its spine, at its
+     * spine's height, and turns to face you as it comes forward — and back to its spine on its way home.
+     */
+    var fromSpine = false
+    /** Update 330: how far it's turned from facing you when it starts out from a spine (90: spine-on). */
+    var spineYaw = 90f
     var started = false
     var closing = false
     /** A 3D model: it turns only as far as its pictures go (±60°). */
@@ -938,7 +945,11 @@ internal class InspectMotion {
     fun yaw(): Float {
         val k = lift.floatValue
         // A little turn as it flies (and square again when it lands), so it moves like a thing, not a picture.
-        val fly = if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
+        val fly = if (fromSpine) {
+            // (Update 330: from its spine (90°) to its front, eased.)
+            val e = (1f - k).coerceIn(0f, 1f)
+            spineYaw * e * e * (3f - 2f * e)
+        } else if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
         val y = turn.floatValue + manual.floatValue + fly + sway.floatValue
         return if (limited) y.coerceIn(-60f, 60f) else y
     }
@@ -1286,13 +1297,14 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                             if (f != null && f.width > 1f && f.top != Float.MAX_VALUE) {
                                 // Its size on the card (fitted in its slot as the card draws it), growing to its size here,
                                 // a little bigger mid-way as it comes forward, lifted a little on its way.
-                                val sw = minOf(f.width * 0.94f, f.height * 0.94f * aspect)
+                                // (Update 330: from a spine — the case turned side-on — at the spine's height.)
+                                val sw = if (motion.fromSpine) f.height * aspect else minOf(f.width * 0.94f, f.height * 0.94f * aspect)
                                 val s0 = (sw / w).coerceIn(0.05f, 4f)
                                 val pop = sin(PI.toFloat() * k)
                                 val s = (s0 + (1f - s0) * k) * (1f + 0.06f * pop)
                                 scaleX = s; scaleY = s
                                 translationX = (f.center.x - (left + w / 2f)) * (1f - k)
-                                translationY = (f.center.y - (top + h / 2f)) * (1f - k) - h * 0.07f * pop
+                                translationY = (f.center.y - (top + h / 2f)) * (1f - k) - (if (motion.fromSpine) 0f else h * 0.07f * pop)
                             } else {
                                 // No card to come from: it grows in where it stands.
                                 val s = 0.6f + 0.4f * k
@@ -1374,6 +1386,27 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                 manual = bookPlace != null
             )
         }
+    }
+}
+
+/**
+ * Update 330: [g]'s case as the game window will show it (the case it's lifted out of the Cardboard box as), drawn unseen
+ * where it stands, so its front, back and spine pictures are ready when it comes out — it flew out as a plain coloured
+ * slab, then showed its whole box scan for a moment, while they loaded.
+ */
+@Composable
+internal fun PrewarmInspectCase(g: Game, state: LauncherUiState, modifier: Modifier) {
+    val k = g.stableKey
+    val piece = remember(k, state.physicalMedia[k], state.artOverrides[k], state.art[k]) {
+        runCatching { forcedPieceOf(g, state) }.getOrNull()?.also {
+            if (it.kind == InspectKind.BOX && it.back == null && Features.printedBacks.state.value) it.back = printedBackFor(g, state, it.aspect)
+        }
+    } ?: return
+    if (piece.kind != InspectKind.BOX) return
+    val realScan = Features.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform) &&
+        piece.front != null && piece.front == BoxTexture.front(piece.physical, g.platform)
+    Box(modifier.graphicsLayer { alpha = 0.004f }) {
+        Case3D(g, piece.front, piece.physical, 0f, piece.aspect, Modifier.fillMaxSize(), pitch = CASE_PITCH, realFront = realScan, back = piece.back, fill = 0.97f)
     }
 }
 

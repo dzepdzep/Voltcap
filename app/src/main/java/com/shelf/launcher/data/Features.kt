@@ -1666,6 +1666,13 @@ object Features {
      */
     val winBanner = BoolPref("win_banner", false)
     /**
+     * Update 330 (Toni: "each popup a natural extension of its layout"): the layouts that have a window of their own making
+     * (the Cardboard box's insert sheet beside the case, File select's flipped-over file, Storage boxes' entry record…,
+     * WinScenes.kt) show it; off: those layouts use the standard window in their colours. The banner page and the
+     * motions above override both.
+     */
+    val winScenes = BoolPref("win_scenes", true)
+    /**
      * Update 249 (#119, Toni's two earlier designs kept as styles of their own): the game window as a move of the home
      * screen itself instead of a window over it — [WinMotion.ROW_OPENS]: the row with the game you're on opens up into its
      * details; [WinMotion.ROW_REVEAL]: the art stays, the other games fade, the name rises and Play / Continue and the
@@ -1770,6 +1777,8 @@ object Features {
     val mcBack = EnumPref("mc_back", McBack.GREY, McBack.values())
     /** PS2 games show the 3D icon of their own save (read only from your memory cards) when there is one. */
     val mcSaveIcons = BoolPref("mc_save_icons", true)
+    /** Update 330: PS2 games without a save here: their save icon from PS2IODB (fetched once, kept). */
+    val mcDbIcons = BoolPref("mc_db_icons", true)
     /** The game's title at the top right (the save's own two-line title where it has one). */
     val mcTitle = BoolPref("mc_title", true)
     /** The button hints along the bottom. */
@@ -1799,6 +1808,67 @@ object Features {
     val cfStage = BoolPref("cf_stage", true)
     /** The game's name, console and time played under the cases. */
     val cfTitle = BoolPref("cf_title", true)
+
+    // ---- Update 330: Cardboard box — the games filed spine-up in rows in an open cardboard box (StyleCardboardBox.kt) ----
+    val boxLanes = IntPref("box_lanes", 2, 2..3)
+    enum class BoxArrange(val label: String) { NEAT("Neat"), MESSY("Messy") }
+    val boxArrange = EnumPref("box_arrange", BoxArrange.NEAT, BoxArrange.values())
+    /** Room between the games, in % of the standard. */
+    val boxSpacing = IntPref("box_spacing", 100, 70..150)
+    /** How high the game you're on rises out of the box, in % of the standard. */
+    val boxLift = IntPref("box_lift", 100, 40..160)
+    /** Update 330 (top-down box): the camera's angle — 0 straight down into the box, more: tilted toward its back wall. */
+    val boxTilt = IntPref("box_tilt", 8, 0..32)
+    /** How deep the box looks (its walls), in %. */
+    val boxDepth = IntPref("box_depth", 100, 60..140)
+    enum class BoxCardboard(val label: String, val top: Long, val deep: Long) {
+        KRAFT("Brown cardboard", 0xFFC79A62, 0xFF8A6235), WHITE("White box", 0xFFE9E4DA, 0xFFB9B1A2), DARK("Dark box", 0xFF4A4038, 0xFF241E19)
+    }
+    val boxCardboard = EnumPref("box_cardboard", BoxCardboard.KRAFT, BoxCardboard.values())
+    enum class BoxSpeed(val label: String, val k: Float) { CALM("Calm", 0.6f), NORMAL("Normal", 1f), QUICK("Quick", 1.7f) }
+    val boxSpeed = EnumPref("box_speed", BoxSpeed.NORMAL, BoxSpeed.values())
+    /** Update 330 (top-down box): how big the cases are — bigger cases, fewer to a row (and to a box). */
+    enum class BoxCaseSize(val label: String, val k: Float) { LARGE("Large (fewer to a row)", 1.18f), MEDIUM("Medium", 1f), SMALL("Small (more to a row)", 0.84f) }
+    val boxCaseSize = EnumPref("box_case_size", BoxCaseSize.MEDIUM, BoxCaseSize.values())
+    /** Update 330: what the box's name is written on. */
+    enum class BoxLabel(val label: String) { STICKER("Printed label"), MARKER("Marker on the cardboard"), NONE("No label") }
+    val boxLabel = EnumPref("box_label", BoxLabel.STICKER, BoxLabel.values())
+    /** Update 330: a strip of tape and a few scuffs on the box (off: a clean new box). */
+    val boxWear = BoolPref("box_wear", false)
+    /** Update 330: ◀ ▶ past a box's edge: on into the next box at once, or after a knock against its wall. */
+    enum class BoxSwitch(val label: String) { EDGE("At once"), KNOCK("After a knock") }
+    val boxSwitch = EnumPref("box_switch", BoxSwitch.EDGE, BoxSwitch.values())
+    /** (Update 330 first draft: what stood in the box — no longer read; always the games' cases by their spines.) */
+    enum class BoxMedia(val label: String) { LOOK("Your game look"), CASES("Cases and boxes") }
+    val boxMedia = EnumPref("box_media", BoxMedia.LOOK, BoxMedia.values())
+
+    // ---- Update 330: Storage boxes — categories as storage boxes of small icons (StyleStorageBoxes.kt) ----
+    enum class StSize(val label: String, val cols: Int, val rows: Int) { COMPACT("Compact (6 × 5)", 6, 5), ROOMY("Roomy (5 × 4)", 5, 4) }
+    val stSize = EnumPref("st_size", StSize.COMPACT, StSize.values())
+    /** Room round each icon in its slot, in %. */
+    val stSpacing = IntPref("st_spacing", 100, 60..150)
+    enum class StWallpaper(val label: String) { PER_BOX("A different one per box"), ONE("The same for every box"), PLAIN("Plain") }
+    val stWallpaper = EnumPref("st_wallpaper", StWallpaper.PER_BOX, StWallpaper.values())
+    enum class StPreview(val label: String) { LEFT("Left"), RIGHT("Right") }
+    val stPreview = EnumPref("st_preview", StPreview.LEFT, StPreview.values())
+    /** The pointer over the icon you're on, and the icons' little hop. */
+    val stCursor = BoolPref("st_cursor", true)
+    enum class StMotion(val label: String) { FULL("Full"), REDUCED("Reduced"), OFF("Off") }
+    val stMotion = EnumPref("st_motion", StMotion.FULL, StMotion.values())
+
+    // ---- Update 330: File select (1996) — chunky 3D save-file blocks, pages of them (StyleFileSelect.kt) ----
+    enum class FsPage(val label: String, val cols: Int, val rows: Int) { FOUR("4 files (2 × 2)", 2, 2), SIX("6 files (3 × 2)", 3, 2), EIGHT("8 files (4 × 2)", 4, 2) }
+    val fsPage = EnumPref("fs_page", FsPage.FOUR, FsPage.values())
+    /** Room between the blocks, in %. */
+    val fsSpacing = IntPref("fs_spacing", 100, 60..150)
+    /** How much the block you're on bounces and tilts, in %. */
+    val fsBounce = IntPref("fs_bounce", 100, 0..160)
+    enum class FsColors(val label: String) { BRIGHT("Bright"), GAME("The game's colours"), SOFT("Soft") }
+    val fsColors = EnumPref("fs_colors", FsColors.BRIGHT, FsColors.values())
+    /** Console-era blips when you move and pick. */
+    val fsSounds = BoolPref("fs_sounds", false)
+    /** The moving pattern behind the blocks. */
+    val fsPattern = BoolPref("fs_pattern", true)
 
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)

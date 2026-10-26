@@ -109,6 +109,9 @@ internal fun PresetPreview(
             // Update 330.
             HomeLayout.MEMCARD -> p.memCard()
             HomeLayout.CASEFLOW -> p.caseFlow()
+            HomeLayout.BOX -> p.cardboardBox()
+            HomeLayout.STORAGE -> p.storageBoxes()
+            HomeLayout.FILESELECT -> p.fileSelect()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -1057,6 +1060,50 @@ private class PreviewPainter(
         rect(0.42f, 0.26f, 0.16f, 0.46f, cover(1), 3f)
         if (ob(Features.cfReflect)) rect(0.42f, 0.74f, 0.16f, 0.12f, cover(1).copy(alpha = 0.22f), 3f)
         if (ob(Features.cfTitle)) { line(0.38f, 0.88f, 0.24f, Color.White, 0.03f); line(0.43f, 0.93f, 0.14f, Color.White.copy(alpha = 0.6f)) }
+    }
+
+    /** Update 330: Cardboard box — rows of games standing in an open brown box, the one you're on raised. */
+    fun cardboardBox() {
+        d.drawRect(Color(0xFF26231F))
+        val boardName = oe(Features.boxCardboard)
+        val board = Features.BoxCardboard.values().firstOrNull { it.name == boardName } ?: Features.BoxCardboard.KRAFT
+        // Looking down into the box: its rim and walls, the floor, two packed rows of spines; one lifted.
+        rect(0.03f, 0.1f, 0.94f, 0.86f, Color(board.top), 3f)
+        rect(0.07f, 0.2f, 0.86f, 0.74f, Color(board.deep), 2f)
+        for (row in 0 until 2) for (i in 0 until 28) {
+            val raised = row == 0 && i == 11
+            rect(0.08f + i * 0.03f, 0.23f + row * 0.36f - (if (raised) 0.06f else 0f), 0.026f, 0.31f, cover(i + row * 28), 1f)
+        }
+        rect(0.06f, 0.03f, 0.3f, 0.06f, Color(0xFFF4EFE3), 1f)
+    }
+
+    /** Update 330: Storage boxes — a preview panel and a box of small icons on a wallpaper. */
+    fun storageBoxes() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF2E5E8C), Color(0xFF10233A))))
+        val left = oe(Features.stPreview) == Features.StPreview.LEFT.name
+        val px = if (left) 0.04f else 0.7f
+        val bx = if (left) 0.34f else 0.04f
+        rect(px, 0.14f, 0.26f, 0.76f, Color(0xFFE8EDF4), 6f)
+        rect(px + 0.03f, 0.18f, 0.2f, 0.4f, cover(2), 4f)
+        line(px + 0.03f, 0.64f, 0.2f, Color(0xFF1E2A3A), 0.03f)
+        rect(bx, 0.14f, 0.62f, 0.09f, Color(0xFFE8EDF4), 6f)
+        rect(bx, 0.26f, 0.62f, 0.64f, Color(0xFF7BC67B), 6f)
+        for (r in 0 until 4) for (cIdx in 0 until 6) rect(bx + 0.03f + cIdx * 0.098f, 0.3f + r * 0.15f, 0.07f, 0.11f, cover(r * 6 + cIdx), 3f)
+    }
+
+    /** Update 330: File select — four chunky coloured blocks on deep blue under "SELECT FILE". */
+    fun fileSelect() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF1B2A7A), Color(0xFF070B2A))))
+        line(0.05f, 0.08f, 0.3f, Color.White, 0.05f)
+        val cols = listOf(Color(0xFFE5483C), Color(0xFF2F7BE0), Color(0xFF3DB24E), Color(0xFFF0B429))
+        for (i in 0 until 4) {
+            val x = 0.05f + (i % 2) * 0.46f; val y = 0.2f + (i / 2) * 0.38f
+            rect(x, y + 0.02f, 0.44f, 0.34f, cols[i].copy(alpha = 0.5f), 10f)
+            rect(x, y, 0.44f, 0.34f, cols[i], 10f)
+            rect(x + 0.03f, y + 0.05f, 0.1f, 0.24f, cover(i), 4f)
+            line(x + 0.16f, y + 0.1f, 0.22f, Color.White, 0.04f)
+            line(x + 0.16f, y + 0.18f, 0.1f, Color(0xFFFFE04A), 0.03f)
+        }
     }
 
     fun cube() {

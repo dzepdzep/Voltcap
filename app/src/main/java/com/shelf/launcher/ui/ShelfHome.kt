@@ -108,6 +108,9 @@ private fun spineAspect(platform0: String): Float = (LookStyles.spinePlatform(pl
     // (Update 126: your own console spine's shape first, so its picture fills the slot as it is.)
     (if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f }
 
+/** Update 330: [spineAspect] for the Cardboard box's spines (StyleCardboardBox.kt). */
+internal fun shelfSpineAspect(platform: String): Float = spineAspect(platform)
+
 /** Update 126: the shape of [platform]'s own console spine (null: none), for the same-height shelves too. */
 private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlatform(platform0) ?: platform0).let { platform ->
     if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null }

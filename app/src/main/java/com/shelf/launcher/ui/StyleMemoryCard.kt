@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -168,30 +169,41 @@ internal fun StyleMemoryCard(c: StyleCtx, modifier: Modifier = Modifier) {
 }
 
 /** One save icon, looked up: its 3D model and what its icon.sys says (title, colours). */
-private class McSave(val mesh: Ps2IconMesh?, val sys: Ps2Icons.IconSys?)
+/** [fromDb]: the icon is PS2IODB's for this game, not one of its saves on this device (its title isn't shown as the save's). */
+private class McSave(val mesh: Ps2IconMesh?, val sys: Ps2Icons.IconSys?, val fromDb: Boolean = false)
 
-/** The first readable save icon of [refs] (null refs: none). Cached by Ps2Icons; loaded off the main thread. */
+/**
+ * The first readable save icon of [refs]; with none, PS2IODB's icon for [game] (Layout options › Icons from PS2IODB).
+ * Cached by Ps2Icons / Ps2IconDb; loaded off the main thread.
+ */
 @Composable
-private fun rememberMcSave(refs: List<Ps2SaveRef>?): McSave? {
-    if (refs.isNullOrEmpty()) return null
+private fun rememberMcSave(refs: List<Ps2SaveRef>?, game: Game?): McSave? {
     val context = LocalContext.current
     val version = Ps2Icons.version.intValue
-    val initial = remember(refs) { refs.firstNotNullOfOrNull { r -> Ps2Icons.cached(r.id)?.takeIf { it.icon != null } } }
-    val parsed by produceState(initial, refs, version) {
+    val db = Features.mcDbIcons.state.value && Features.mcSaveIcons.state.value && game != null &&
+        com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)
+    val slug = remember(game?.stableKey, db) { if (db && game != null) com.shelf.launcher.data.Ps2IconDb.slugFor(context, game) else null }
+    if (refs.isNullOrEmpty() && slug == null) return null
+    val initial = remember(refs, slug) {
+        refs?.firstNotNullOfOrNull { r -> Ps2Icons.cached(r.id)?.takeIf { it.icon != null } }?.let { it to false }
+            ?: slug?.let { com.shelf.launcher.data.Ps2IconDb.cached(it) }?.let { it to true }
+    }
+    val parsed by produceState(initial, refs, version, slug) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             var firstSys: Ps2Icons.Parsed? = null
-            for (r in refs.take(6)) {
+            for (r in refs.orEmpty().take(6)) {
                 val p = runCatching { Ps2Icons.load(context, r.id) }.getOrNull()
-                if (p?.icon != null) return@withContext p
+                if (p?.icon != null) return@withContext p to false
                 if (firstSys == null && p?.sys != null) firstSys = p
             }
-            firstSys
+            slug?.let { s -> runCatching { com.shelf.launcher.data.Ps2IconDb.load(context, s) }.getOrNull() }?.takeIf { it.icon != null }?.let { return@withContext it to true }
+            firstSys?.let { it to false }
         }
     }
-    val icon = parsed?.icon
+    val icon = parsed?.first?.icon
     val mesh = remember(icon) { icon?.let { runCatching { Ps2IconMesh(it) }.getOrNull() }?.takeIf { it.ok } }
-    if (mesh == null && parsed?.sys == null) return null
-    return McSave(mesh, parsed?.sys)
+    if (mesh == null && parsed?.first?.sys == null) return null
+    return McSave(mesh, parsed?.first?.sys, parsed?.second == true)
 }
 
 /** A stable small number per game (its loose place in the row). */
@@ -335,7 +347,7 @@ private fun McArrowMark(up: Boolean, alpha: Float, modifier: Modifier) {
 private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
     val g = c.game
     val titles = LocalTitleOptions.current
-    val save = if (Features.mcTitle.state.value) rememberMcSave(refs) else null
+    val save = if (Features.mcTitle.state.value) rememberMcSave(refs, null) else null
     val outline = TextStyle(shadow = McShadow)
     // The card's name is the layout's own category label (no second title over it); R1 › Categories › Off takes it away.
     val caption = CategoryTitle.captionOn(c.state.appearance)
@@ -353,8 +365,8 @@ private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
         }
         if (Features.mcTitle.state.value && g != null) {
             Column(Modifier.weight(0.55f), horizontalAlignment = Alignment.End) {
-                val l1 = save?.sys?.line1?.takeIf { it.isNotBlank() }
-                val l2 = save?.sys?.line2?.takeIf { it.isNotBlank() }
+                val l1 = save?.takeIf { !it.fromDb }?.sys?.line1?.takeIf { it.isNotBlank() }
+                val l2 = save?.takeIf { !it.fromDb }?.sys?.line2?.takeIf { it.isNotBlank() }
                 if (l1 != null) {
                     Text(l1, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
                     if (l2 != null) Text(l2, color = McYellow, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
@@ -451,7 +463,7 @@ private fun McIcon(
     c: StyleCtx, g: Game, refs: List<Ps2SaveRef>?, selected: Boolean, depth: Features.McDepth,
     selMode: Features.McSelected, clock: androidx.compose.runtime.FloatState
 ) {
-    val mesh = rememberMcSave(refs)?.mesh
+    val mesh = rememberMcSave(refs, g)?.mesh
     if (mesh != null) Box(Modifier.fillMaxHeight().aspectRatio(1f).graphicsLayer { scaleX = 1.2f; scaleY = 1.2f }) { McMeshIcon(mesh, selected, selMode, clock) }
     else McArtIcon(c, g, selected, depth, selMode, clock)
 }
@@ -465,9 +477,11 @@ private fun McArtIcon(c: StyleCtx, g: Game, selected: Boolean, depth: Features.M
     val turnMod = Modifier.fillMaxSize().graphicsLayer {
         cameraDistance = 14f * density
         rotationY = -tilt + if (swayOn) sin(clock.floatValue * 2.2f) * 16f else 0f
+        flatTextFor3d()
     }
-    // The game's own logo (a clear picture that floats well), not the square achievement icon that can stand in for it.
-    val logo = bigLogo(g, c.state)
+    // The game's own logo (a clear picture that floats well) — your pick, SteamGridDB's or the scraped one — else its
+    // RetroAchievements icon: drawn as a solid 3D badge that turns like a save icon.
+    val logo = bigLogo(g, c.state) ?: g.raGameId?.let { c.state.raIcons[it] }
     val appIcon = if (g.sourceType == SourceType.APP) rememberAppIcon(g.packageName) else null
     val cover = c.cover(g)
     @Composable
@@ -487,17 +501,10 @@ private fun McArtIcon(c: StyleCtx, g: Game, selected: Boolean, depth: Features.M
             if (depth.edge > 0f) Image(appIcon, null, Modifier.fillMaxSize(0.8f).offset(depth.edge.dp, depth.edge.dp), colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.45f)))
             Image(appIcon, null, Modifier.fillMaxSize(0.8f))
         }
-        logo != null -> SubcomposeAsyncImage(
-            model = logo, contentDescription = null, modifier = Modifier.fillMaxSize(),
-            loading = { ArtFallback() }, error = { ArtFallback() },
-            success = { st ->
-                Box(turnMod, contentAlignment = Alignment.Center) {
-                    // A shallow edge: the logo again, dark, just behind it.
-                    if (depth.edge > 0f) Image(st.painter, null, Modifier.fillMaxSize().offset(depth.edge.dp, depth.edge.dp),
-                        contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.45f)))
-                    Image(st.painter, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                }
-            }
+        logo != null -> LogoSlab(
+            logo, Modifier.fillMaxSize(), turning = selected && selMode == Features.McSelected.TURN,
+            restAngle = -tilt - 12f,
+            depth = 0.03f + depth.edge * 0.012f, fallback = { ArtFallback() }
         )
         else -> ArtFallback()
     }
@@ -512,8 +519,11 @@ private fun McMeshIcon(mesh: Ps2IconMesh, selected: Boolean, selMode: Features.M
         0f, 360f, infiniteRepeatable(tween(7_000, easing = LinearEasing)), label = "mcTurnA"
     ) else null
     val sway = selected && selMode == Features.McSelected.SWAY
+    // The icon's own animation plays on the one you're on (as the console's browser plays it).
+    val frame = if (selected && mesh.animated) MediaClock.rememberFrameTime() else null
     Canvas(Modifier.fillMaxSize()) {
         val a = turn?.value ?: if (sway) -25f + sin(clock.floatValue * 2.2f) * 22f else -25f
+        frame?.let { mesh.animate(it.longValue / 1_000_000_000f) }
         drawPs2Mesh(mesh, buffer, a, null)
     }
 }
@@ -521,7 +531,7 @@ private fun McMeshIcon(mesh: Ps2IconMesh, selected: Boolean, selMode: Features.M
 /** A small disc printed with the game's cover, lying back a little, with its edge. */
 @Composable
 private fun McDiscIcon(cover: String, depth: Features.McDepth, turnMod: Modifier) {
-    Box(turnMod.graphicsLayer { rotationX = 28f; cameraDistance = 14f * density }, contentAlignment = Alignment.Center) {
+    Box(turnMod.graphicsLayer { rotationX = 28f; cameraDistance = 14f * density; flatTextFor3d() }, contentAlignment = Alignment.Center) {
         val d = Modifier.fillMaxSize(0.86f)
         Box(d.offset(0.dp, (1.5f + depth.edge).dp).clip(CircleShape).background(Color(0xFF6C7078)))
         Box(d.clip(CircleShape).background(Color(0xFFD9DCE1))) {
@@ -548,7 +558,7 @@ private fun McBoxIcon(cover: String, depth: Features.McDepth, turnMod: Modifier)
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (depth.edge > 0f) Box(
                 Modifier.width(side).height(h * 0.97f)
-                    .graphicsLayer { transformOrigin = TransformOrigin(1f, 0.5f); rotationY = 62f; cameraDistance = 14f * density }
+                    .graphicsLayer { transformOrigin = TransformOrigin(1f, 0.5f); rotationY = 62f; cameraDistance = 14f * density; flatTextFor3d() }
                     .background(Color(0xFF2B2E33))
             ) {
                 AsyncImage(cover, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.55f,
@@ -582,7 +592,129 @@ internal fun MemoryCardSettings() {
     StyleChoice("Background", Features.McBack.values(), Features.mcBack.state.value, { it.label }) { Features.mcBack.value = it }
     Spacer(Modifier.height(8.dp))
     Toggle(Icons.Filled.Save, "Save icons from your memory cards", "PS2 games show their own save's 3D icon when one is found on this device's memory cards. Off: the game's own artwork.", Features.mcSaveIcons)
+    Toggle(Icons.Filled.Save, "Icons from PS2IODB", "PS2 games without a save here show their save icon from PS2IODB (ps2iodb.com, the community's archive of PS2 save icons) — fetched once when it's first shown, then kept.", Features.mcDbIcons)
     Toggle(Icons.Filled.Title, "Title at the top right", "The game you're on: its save's own title where it has one, else its name, with console, time played and achievements.", Features.mcTitle)
     Toggle(Icons.Filled.Help, "Button hints", "A, L2 / R2 and R1 along the bottom.", Features.mcHints)
     Toggle(Icons.Filled.Waves, "Floating icons", "The icons float gently; they rest when the home screen goes quiet, with Lite effects and with Android's animations off.", Features.mcFloat)
+}
+
+/**
+ * Update 330 (Toni: "the icon expands into a PS2 system-browser info screen"): Memory card's game window, as the
+ * console's browser shows a save you've picked. The grey screen stays; the game's icon comes forward big on the left,
+ * turning slowly over its light (its own animation playing), the card and console at the top left, the save's title in
+ * yellow at the top right with the game's facts under it, and the choices as words along the bottom — the one you're
+ * on lit with a soft glow — over the button hints. The details, options and achievements pages show on a dark glass
+ * panel on the right.
+ */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+internal fun MemCardWindow(ctx: WinSceneCtx) {
+    val g = ctx.g
+    val caps by SaveCapsules.all.collectAsState()
+    val saveIcons = Features.mcSaveIcons.state.value
+    val refs = remember(caps, g.stableKey, saveIcons) {
+        if (!saveIcons) null else caps.firstOrNull { it.game.stableKey == g.stableKey }?.let { ps2RefsOf(it) }?.takeIf { it.isNotEmpty() }
+    }
+    val save = rememberMcSave(refs, g)
+    val clock = rememberGcClock(rememberAnimationsEnabled(), 1f, 30)
+    val outline = TextStyle(shadow = McShadow)
+    val l1 = save?.takeIf { !it.fromDb }?.sys?.line1?.takeIf { it.isNotBlank() }
+    val l2 = save?.takeIf { !it.fromDb }?.sys?.line2?.takeIf { it.isNotBlank() }
+    Box(Modifier.size(ctx.maxW, ctx.maxH)) {
+        // The card and its console, top left.
+        Row(Modifier.align(Alignment.TopStart).padding(start = 8.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            GenericCardSymbol(Modifier.size(30.dp))
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text("Memory card", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, style = outline)
+                Text(ctx.console, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, style = outline, maxLines = 1)
+            }
+        }
+        // The save's title and the facts, top right.
+        Column(Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 4.dp).fillMaxWidth(0.52f), horizontalAlignment = Alignment.End) {
+            if (l1 != null) {
+                Text(l1, color = McYellow, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+                if (l2 != null) Text(l2, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+            } else Text(ctx.name, color = McYellow, fontSize = 21.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+            Spacer(Modifier.height(6.dp))
+            listOfNotNull(
+                listOfNotNull(ctx.year, ctx.developer).joinToString("  ·  ").takeIf { it.isNotBlank() },
+                ctx.genres,
+                "Played  " + ctx.played + (ctx.last?.let { "  ·  $it" } ?: ""),
+                if (ctx.total > 0) "Achievements  ${ctx.earned} / ${ctx.total}" else null,
+                if (save?.mesh != null) (if (save.fromDb) "Icon from PS2IODB" else "Save icon from your memory card") else null
+            ).forEach { Text(it, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline) }
+        }
+        // The icon, big, over its light.
+        Box(
+            Modifier.align(Alignment.CenterStart).padding(start = ctx.maxW * 0.06f).fillMaxHeight(0.62f).aspectRatio(1f)
+                .graphicsLayer {
+                    val k = ctx.reveal().coerceIn(0f, 1f)
+                    val s = 0.55f + 0.45f * k
+                    scaleX = s; scaleY = s
+                    translationY = sin(clock.floatValue * 1.2f) * 4.dp.toPx()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(Modifier.fillMaxSize()) {
+                drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.14f), Color.Transparent),
+                    center = center, radius = size.minDimension * 0.55f), radius = size.minDimension * 0.55f)
+                val sw = size.width * 0.5f
+                drawOval(Color.Black.copy(alpha = 0.16f), Offset(center.x - sw / 2f, size.height * 0.88f), Size(sw, size.height * 0.07f))
+            }
+            val mesh = save?.mesh
+            if (mesh != null) Box(Modifier.fillMaxSize(0.92f)) { McMeshIcon(mesh, true, Features.McSelected.TURN, clock) }
+            else {
+                val logo = ctx.logo ?: g.raGameId?.let { ctx.state.raIcons[it] }
+                val appIcon = if (g.sourceType == SourceType.APP) rememberAppIcon(g.packageName) else null
+                when {
+                    appIcon != null -> Image(appIcon, null, Modifier.fillMaxSize(0.7f))
+                    logo != null -> LogoSlab(logo, Modifier.fillMaxSize(0.92f), turning = true, fast = false, depth = 0.05f,
+                        fallback = { ctx.cover?.let { McBoxIcon(it, Features.McDepth.values().last(), Modifier.fillMaxSize(0.8f)) } })
+                    ctx.cover != null -> McBoxIcon(ctx.cover, Features.McDepth.values().last(), Modifier.fillMaxSize(0.8f))
+                    else -> GenericCardSymbol(Modifier.fillMaxSize(0.6f))
+                }
+            }
+        }
+        // Another page: on dark glass on the right.
+        if (ctx.page != WinPage.MAIN) Box(
+            Modifier.align(Alignment.CenterEnd).padding(end = 8.dp, top = 40.dp, bottom = 70.dp).fillMaxWidth(0.52f).fillMaxHeight(0.62f)
+                .clip(RoundedCornerShape(10.dp)).background(Color(0xFF1C1E22).copy(alpha = 0.72f))
+                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+        ) { ctx.pageBody(Modifier.fillMaxSize()) }
+        // The choices along the bottom, then the hints.
+        Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(4.dp),
+                itemVerticalAlignment = Alignment.CenterVertically
+            ) {
+                (ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()).forEach { a ->
+                    SceneControl(a, Modifier) { on ->
+                        val glow by animateFloatAsState(if (on) 1f else 0f, tween(180), label = "mcWord")
+                        Box(
+                            Modifier.drawBehind {
+                                if (glow > 0.01f) drawRoundRect(
+                                    Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.55f * glow), Color(0xFF9CC2FF).copy(alpha = 0.35f * glow))),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
+                                )
+                            }.padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text(a.label, color = if (on) Color.White else Color.White.copy(alpha = 0.86f), fontSize = if (a.primary) 20.sp else 17.sp,
+                                fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal, maxLines = 1,
+                                style = TextStyle(shadow = if (on) Shadow(Color(0xFF2E63E6).copy(alpha = 0.9f), Offset.Zero, 12f) else McShadow))
+                        }
+                    }
+                }
+            }
+            if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                ctx.chips.forEach { a ->
+                    SceneControl(a, Modifier) { on ->
+                        Text(a.label, color = if (a.urgent) McYellow else Color.White.copy(alpha = if (on) 1f else 0.8f), fontSize = 12.sp, maxLines = 1,
+                            style = outline, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                    }
+                }
+            }
+        }
+    }
 }

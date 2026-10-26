@@ -263,6 +263,19 @@ object LayoutPresets {
         o(Features.cfPitch), o(Features.cfSpeed), o(Features.cfReflect, reflect), o(Features.cfStage), o(Features.cfTitle)
     )
 
+    /** Update 330: phase 2 layouts' options. */
+    private fun boxOpts(arrange: Features.BoxArrange = Features.BoxArrange.NEAT, board: Features.BoxCardboard = Features.BoxCardboard.KRAFT,
+                        size: Features.BoxCaseSize = Features.BoxCaseSize.MEDIUM, label: Features.BoxLabel = Features.BoxLabel.STICKER) = listOf(
+        o(Features.boxArrange, arrange), o(Features.boxSpacing), o(Features.boxLift), o(Features.boxTilt), o(Features.boxCaseSize, size),
+        o(Features.boxLabel, label), o(Features.boxSwitch), o(Features.boxCardboard, board), o(Features.boxSpeed)
+    )
+    private fun storageOpts(size: Features.StSize = Features.StSize.COMPACT, wall: Features.StWallpaper = Features.StWallpaper.PER_BOX) = listOf(
+        o(Features.stSize, size), o(Features.stSpacing), o(Features.stWallpaper, wall), o(Features.stPreview), o(Features.stCursor), o(Features.stMotion)
+    )
+    private fun fileOpts(page: Features.FsPage = Features.FsPage.FOUR, colors: Features.FsColors = Features.FsColors.BRIGHT) = listOf(
+        o(Features.fsPage, page), o(Features.fsSpacing), o(Features.fsBounce), o(Features.fsColors, colors), o(Features.fsSounds), o(Features.fsPattern)
+    )
+
     private val CASES = PresetLook()
 
     /** A few presets for each home layout, made for it (Settings › Home › Layout & presets; update 162: every layout has its own). */
@@ -669,6 +682,27 @@ object LayoutPresets {
         preset("caseflow_spines", HomeLayout.CASEFLOW, "Case flow, spines",
             "The cases either side show their spines, on a flatter curve.",
             look = null, options = caseFlowOpts(Features.CfSide.SPINES, 20)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("box_std", HomeLayout.BOX, "Cardboard box",
+            "Looking down into a brown cardboard box: two tightly packed rows of cases, spines up; more boxes when one is full.",
+            look = null, options = boxOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("box_white", HomeLayout.BOX, "White archive box",
+            "A white archive box with bigger cases, its name in marker on the cardboard.",
+            look = null, options = boxOpts(Features.BoxArrange.NEAT, Features.BoxCardboard.WHITE, Features.BoxCaseSize.LARGE, Features.BoxLabel.MARKER)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("box_messy", HomeLayout.BOX, "Rummaged box",
+            "The same brown box after a good rummage: the cases a little crooked and uneven.",
+            look = null, options = boxOpts(Features.BoxArrange.MESSY)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("storage_std", HomeLayout.STORAGE, "Storage boxes",
+            "Each category a box of 30 small icons on its own wallpaper, a preview of the game you're on beside it.",
+            look = null, options = storageOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("storage_roomy", HomeLayout.STORAGE, "Roomy storage boxes",
+            "Bigger icons, 20 to a box, on plain wallpaper.",
+            look = null, options = storageOpts(Features.StSize.ROOMY, Features.StWallpaper.PLAIN)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("files_std", HomeLayout.FILESELECT, "File select",
+            "Four bright save-file blocks to a page on a deep blue screen, stars for achievements.",
+            look = null, options = fileOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("files_more", HomeLayout.FILESELECT, "File select, eight files",
+            "Eight blocks to a page in each game's own colours.",
+            look = null, options = fileOpts(Features.FsPage.EIGHT, Features.FsColors.GAME)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
         preset("cube_band", HomeLayout.CUBE, "Cube band",
             "The same cube docked in a band along the top while you browse, lilac glass and the faces' names only — more room across for the games.",
             look = null, options = cubeOpts(dock = Features.CubeDock.TOP, tint = Features.CubeTint.LILAC, face = Features.CubeFace.NAME)) { s ->

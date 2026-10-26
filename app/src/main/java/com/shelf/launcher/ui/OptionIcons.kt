@@ -96,6 +96,9 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.MEMCARD -> Pictogram.GRID
         // Update 330: Case flow (the nearest picture: a big game with others beside it).
         com.shelf.launcher.data.HomeLayout.CASEFLOW -> Pictogram.SHOWCASE
+        com.shelf.launcher.data.HomeLayout.BOX -> Pictogram.SHELF
+        com.shelf.launcher.data.HomeLayout.STORAGE -> Pictogram.GRID
+        com.shelf.launcher.data.HomeLayout.FILESELECT -> Pictogram.GRID
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

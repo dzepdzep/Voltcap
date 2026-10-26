@@ -3527,6 +3527,10 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             RowChoice("In ${appearance.homeLayout.label}, A opens", arrayOf(false, true), classic, { if (it) "The classic details window" else "This layout's own window" }) {
                 if (it != classic) F.classicWindowLayouts.toggle(appearance.homeLayout.name)
             }
+            // Update 330: the layouts with a window of their own (WinScenes.kt) — it, or the standard window in their colours.
+            if (winSceneFor(appearance.homeLayout) != null) {
+                RowChoice("${appearance.homeLayout.label}'s window", arrayOf(true, false), F.winScenes.state.value, { if (it) "Built into the layout" else "Standard window" }) { F.winScenes.value = it }
+            }
             // Update 146: the banner page — one look for every layout (art banner, Play strip, tabs).
             RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
             // Update 249 (#119): the window as a move of the home screen itself (RowRevealWindow.kt).

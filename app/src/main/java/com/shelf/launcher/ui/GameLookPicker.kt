@@ -494,6 +494,10 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     // Update 330: Memory card draws save icons (or the game's logo / a small disc or box); Case flow draws 3D cases.
     com.shelf.launcher.data.HomeLayout.MEMCARD -> "save icons"
     com.shelf.launcher.data.HomeLayout.CASEFLOW -> "3D game cases"
+    com.shelf.launcher.data.HomeLayout.STORAGE -> "small game icons"
+    com.shelf.launcher.data.HomeLayout.FILESELECT -> "save-file blocks"
+    // (The Cardboard box: always the games' cases, spines up.)
+    com.shelf.launcher.data.HomeLayout.BOX -> "game cases by their spines"
     // (Update 183: the Pocket layouts follow your look — cartridges, cases and discs in their frames.)
     else -> null
 }

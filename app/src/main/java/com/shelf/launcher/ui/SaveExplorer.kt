@@ -750,7 +750,7 @@ private fun SaveSlot(
         val look = SaveLookStore.look(game.stableKey, game.platform)
         if (ps2 != null) {
             // (Update 239, #112: the PS2 memory-card browser's look — the save's own icon, else a generic one marked so.)
-            Ps2SaveTile(ps2, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced)
+            Ps2SaveTile(ps2, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, game = game)
         } else if (vaultStyle == Features.SaveVaultStyle.SD_CARD || vaultStyle == Features.SaveVaultStyle.MEMORY_CARD || vaultStyle == Features.SaveVaultStyle.FLOPPY || vaultStyle == Features.SaveVaultStyle.CARD_3D) {
             StyledSaveCard(
                 vaultStyle, icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, platform = game.platform,
@@ -778,7 +778,12 @@ private fun SaveSlot(
                 contentAlignment = Alignment.Center
             ) {
                 if (selected) Box(Modifier.fillMaxSize(0.9f).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(ShelfTheme.accent.copy(alpha = 0.35f), Color.Transparent))))
-                if (icon != null) AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(10.dp)))
+                // (Update 330: with the PS2 browser style on, the logo / icon as a solid 3D badge that turns like a PS2 save icon.)
+                if (icon != null && com.shelf.launcher.data.Ps2BrowserStyle.on.value) LogoSlab(
+                    icon, Modifier.fillMaxSize(0.92f), turning = selected && turnOn, depth = 0.06f,
+                    fallback = { Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+                )
+                else if (icon != null) AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(10.dp)))
                 else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 SyncBadge(status.state, 18.dp, Modifier.align(Alignment.TopEnd).padding(2.dp))
             }

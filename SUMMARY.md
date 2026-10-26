@@ -1,5 +1,74 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (330, phase 2 of 5): layout-made game windows, Cardboard box (top-down storage boxes), Storage boxes, File select, PS2IODB save icons
+
+- **Game windows made by their layouts** (`ui\WinScenes.kt`, Toni: "each popup a natural extension of its layout, not
+  a recoloured generic window"). GameWindow keeps everything that makes the window work (opening out of the game's place
+  and going back into it, the inspected piece, pages, Play's focus, the banner / motion / classic-window overrides) and
+  hands the layout a `WinSceneCtx` with the game and every action — Play first, Details / Full details / Back, Options,
+  Achievements, Save sync, Manual, Inspect, Performance, the save and performance lines, and the details / options /
+  achievements / performance pages in the layout's colours. Windows without a piece now go back into their game's place
+  when closed (they used to vanish). Settings › Game window › "<layout>'s window": Built into the layout (default) /
+  Standard window.
+  - **Cardboard box:** the case pulled out of the box is the centrepiece (the window's piece, turning from its spine to
+    its front as it comes forward — `InspectMotion.fromSpine`), with a typed **insert sheet** taped beside it: facts on
+    dotted lines, a few lines of story, the actions as rubber stamps (lit one stamped red), round sticker tools.
+  - **File select:** the file block turns over (its front turns away) and its **back grows out into the window** in the
+    block's own colour — console tab, stars, cover window, outlined name, time and story on an inset panel, fat buttons
+    (lit one yellow, bouncing). Closing turns it back into the block.
+  - **Storage boxes:** a **stored-entry record** — the sprite big on a stand (hopping), name plate, console tag, tabs
+    Info / Details / Achievements / Options (L1 / R1 or tap), facts in pixel-framed cells, a menu with a ▶ pointer.
+  - **Memory card:** the browser's **info screen** — the save icon big and turning (its own animation playing), the
+    save's title in yellow top right with the facts, the choices as words along the bottom over the grey screen.
+  - **Case flow:** the case out on the left and its **media** beside it — video / backdrop big, a strip of screenshot
+    slides (◀ ▶ / tap shows one big), facts as glass chips, glossy pills with their reflections.
+  - File select, Storage boxes and Memory card open out of the file / icon itself (their piece only via Inspect).
+- **Cardboard box rebuilt** (`ui\StyleCardboardBox.kt`) after Toni's corrections ("looking down into a real cardboard
+  storage box… two rows of tightly packed cases, spines up… multiple boxes when one fills up… not a shelf"):
+  - Built to measure and drawn through a camera (`BoxCam`): a box two DVD-lengths deep and 420 mm across, 250 mm walls,
+    5 mm board, its four flaps folded out, seen from 95 cm above (Camera angle moves it toward the front). The insides of
+    all four walls, the floor, the cases' ends between the rows and the cut edge of the walls show as they would.
+  - Cardboard: generated kraft / white materials (`tools\box\gen_cardboard.py` → `res\drawable-nodpi\box_*.webp`:
+    fibres, mottling, fluted walls, flutes in the cut edge), each surface lit by how it faces the light (upper left),
+    darker where walls meet the floor, flap creases, contact shadows along the rows. Wear and tape optional (off).
+  - Each case at its real length and thickness, spine up; as many as physically fit across the back row, then the
+    front row, then **Box 2, Box 3…** — the label shows "BOX n OF m" with ◀ ▶; ◀ ▶ past a box's side goes into the next
+    box (at once, or after a knock), swipe changes box (one per swipe), Endless goes round from the last box.
+  - The case you're on is lit and comes up a little (the one before goes back down first); A slides it straight up out
+    of its slot, then turns it toward its cover, then its window opens; B reverses all of it into the same slot. Y turns
+    it to its cover in place. Its case pictures are got ready while you rest on it (no plain slab mid-flight).
+  - Layout options: case size (fewer / more to a row), spacing, packing (neat / messy), camera angle, how far it comes
+    out, speed, box label (printed / marker / none), past a box's side, cardboard (brown / white / dark), wear and tape.
+    Presets: Cardboard box, White archive box, Rummaged box. R1: the look, game size, badges and achievement chip tiles
+    hidden there (the box always shows cases by their spines).
+- **File select:** each block is labelled with the game's **console** (PlayStation 2, Nintendo 64…) instead of
+  FILE A / B / C / D.
+- **Storage boxes:** the icons are **pixel sprites** (the achievement icon or the cover's middle brought down to 32 px,
+  colours stepped, stepped corners, a dark outline, drawn with hard pixel edges), standing in soft slots on the
+  wallpaper; the one you're on hops in two steps; picked up, it rises to the pointer. Pixel-framed box, header and preview.
+- **PS2 save icons from PS2IODB** (`data\Ps2IconDb.kt`, `res\raw\ps2iodb_index.tsv`): PS2 games with no save on this
+  device show the game's real memory-card icon, downloaded once and cached; its animation plays on the one you're on
+  (`Ps2Icons.Anim`). Memory card layout and the Save Vault's PS2 style; Layout options › Icons from PS2IODB.
+- **Logos as 3D badges** (`ui\LogoSlab.kt`) for games without a save icon. Fixed: they never loaded (blank icons —
+  Toni: "the games that don't have the icons are shown empty").
+- **Freeze fixed:** File select's window froze the Thor (Android 13's turned-text cache) — text in turned layers is now
+  drawn flat first (`flatTextFor3d`) in File select, Cardboard box and Memory card.
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E` (new: res\raw\
+ps2iodb_index.tsv, res\drawable-nodpi\box_*.webp, tools\box\gen_cardboard.py). Files: ui\WinScenes.kt (new),
+ui\LogoSlab.kt (new), data\Ps2IconDb.kt (new), ui\GameWindow.kt, ui\MediaInspectView.kt, ui\StyleCardboardBox.kt,
+ui\StyleFileSelect.kt, ui\StyleStorageBoxes.kt, ui\StyleMemoryCard.kt, ui\Ps2Browser.kt, ui\SaveExplorer.kt,
+ui\ShelfHome.kt, ui\SettingsDialog.kt, ui\PresetPreview.kt, ui\R1TileRules.kt, ui\GameLookPicker.kt, ui\StyleHomes.kt,
+ui\StyleHomeSettings.kt, ui\OptionIcons.kt, ui\PresetsCard.kt, data\Features.kt, data\AppearanceStore.kt,
+data\LayoutPresets.kt, data\Ps2Icons.kt; test Layouts330Test.kt; docs\compat\LAYOUTS_330.md.
+
+Checked on the AYN Thor (release builds, screenshots + screen recordings cut into frames): Cardboard box — full box,
+selected spine, 25 / 50 / 100 % out, window, reverse into the slot, other row, D-pad and swipe into Box 2, last box
+partly filled; File select, Storage boxes, Memory card, Case flow — home, selected, window open, closing back, another
+game; File select's window left open 15 s (no freeze). Unit tests pass. Not checked: the Retroid Pocket Classic /
+Flip 2, every option value of the new layouts one by one, Pocket classic's window (unchanged from phase 1), the second
+screen with the new windows open.
+
 ## Update — 26 Oct 2026 (330, phase 1 of 5): Pocket classic's game window, Memory card (2000), Case flow
 
 The retro layout expansion runs in five phases, each built, checked on the AYN Thor and pushed (Toni: push each phase;

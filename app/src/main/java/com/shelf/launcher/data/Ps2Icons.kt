@@ -59,8 +59,57 @@ object Ps2Icons {
         val colors: IntArray,
         /** 128 × 128 ARGB, or null for an icon without a texture (drawn in its vertex colours). */
         val texture: IntArray?,
-        val frames: Int
+        val frames: Int,
+        /** Update 330: the icon's own animation (its shapes blended over time), when it has one. */
+        val anim: Anim? = null
     )
+
+    /**
+     * Update 330: a PS2 icon's animation — as the console's browser plays it: every frame names one of the icon's shapes
+     * (its vertex positions, [frameShapes]) and a timeline of weights ([keys]: time, value, time, value…, in 1/60 s steps);
+     * at any moment the shapes are blended by their weights. [frameLength] is the loop's length in 1/60 s, [speed] its
+     * pace (PS2IODB's version 2 timing).
+     */
+    class Anim(val frameLength: Int, val speed: Float, val frameShapes: Array<FloatArray>, val keys: Array<FloatArray>) {
+        /** The blended positions at [seconds] into [out] (x, y, z per vertex). */
+        fun blend(seconds: Float, out: FloatArray) {
+            val n = frameShapes.size
+            if (n == 0 || frameLength <= 0) return
+            val len = frameLength / 60f
+            val t = ((seconds * speed) % len + len) % len
+            val frame = kotlin.math.floor(t * 60f)
+            var sum = 0f
+            val w = FloatArray(n)
+            for (f in 0 until n) { w[f] = evaluate(keys[f], frame).coerceAtLeast(0f); sum += w[f] }
+            if (sum <= 0f) { w[0] = 1f; sum = 1f }
+            java.util.Arrays.fill(out, 0f)
+            for (f in 0 until n) {
+                val wf = w[f] / sum
+                if (wf == 0f) continue
+                val shape = frameShapes[f]
+                val m = minOf(shape.size, out.size)
+                for (i in 0 until m) out[i] += shape[i] * wf
+            }
+        }
+
+        private fun evaluate(k: FloatArray, time: Float): Float {
+            if (k.size < 2) return 0f
+            if (time <= k[0]) return k[1]
+            if (time >= k[k.size - 2]) return k[k.size - 1]
+            var i = 2
+            while (i < k.size) {
+                val t0 = k[i - 2]; val t1 = k[i]
+                if (time >= t0 && time < t1) {
+                    val dt = t1 - t0
+                    if (dt == 0f) return k[i - 1]
+                    val a = (time - t0) / dt
+                    return (1 - a) * k[i - 1] + a * k[i + 1]
+                }
+                i += 2
+            }
+            return k[k.size - 1]
+        }
+    }
 
     /** (Update 239, #112: a save's look-up result: [icon] null = no usable save icon, the fallback shows.) */
     class Parsed(val sys: IconSys?, val icon: Icon?)
@@ -165,6 +214,8 @@ object Ps2Icons {
         val vertexEnd = 20L + count.toLong() * stride
         if (vertexEnd > b.size) return null
         val pos = FloatArray(count * 3)
+        // Update 330: every shape's positions (the animation blends them).
+        val shapePos = Array(shapes) { FloatArray(count * 3) }
         val uv = FloatArray(count * 2)
         val col = IntArray(count)
         var maxC = 0
@@ -173,6 +224,12 @@ object Ps2Icons {
             pos[i * 3] = s16(b, o) / 4096f
             pos[i * 3 + 1] = s16(b, o + 2) / 4096f
             pos[i * 3 + 2] = s16(b, o + 4) / 4096f
+            for (k in 0 until shapes) {
+                val so = o + 8 * k
+                shapePos[k][i * 3] = s16(b, so) / 4096f
+                shapePos[k][i * 3 + 1] = s16(b, so + 2) / 4096f
+                shapePos[k][i * 3 + 2] = s16(b, so + 4) / 4096f
+            }
             val t = o + 8 * shapes + 8 // after the shapes and the normal
             uv[i * 2] = s16(b, t) / 4096f
             uv[i * 2 + 1] = s16(b, t + 2) / 4096f
@@ -195,16 +252,34 @@ object Ps2Icons {
         // count, two more words and the keys (time, value). Walked only to find where the texture starts.
         var p = vertexEnd.toInt()
         var frames = 0
+        var frameLength = 0
+        var speed = 1f
+        val frameShapes = ArrayList<FloatArray>()
+        val frameKeys = ArrayList<FloatArray>()
         if (p + 20 <= b.size && u32(b, p) == 1L) {
+            frameLength = u32(b, p + 4).coerceIn(0, 100_000).toInt()
+            speed = java.lang.Float.intBitsToFloat(u32(b, p + 8).toInt()).takeIf { it.isFinite() && it > 0f && it < 100f } ?: 1f
             frames = u32(b, p + 16).coerceIn(0, 4096).toInt()
             p += 20
             for (f in 0 until frames) {
                 if (p + 16 > b.size) break
+                val shapeId = u32(b, p).toInt()
                 val keys = u32(b, p + 4).coerceIn(0, 65_536).toInt()
+                // Update 330: the frame's timeline (time, value as floats), for the animation.
+                if (p + 16 + keys * 8 <= b.size && shapeId in 0 until shapes) {
+                    val k = FloatArray(keys * 2)
+                    for (j in 0 until keys) {
+                        k[j * 2] = java.lang.Float.intBitsToFloat(u32(b, p + 16 + j * 8).toInt())
+                        k[j * 2 + 1] = java.lang.Float.intBitsToFloat(u32(b, p + 20 + j * 8).toInt())
+                    }
+                    if (k.all { it.isFinite() }) { frameShapes += shapePos[shapeId]; frameKeys += k }
+                }
                 p += 16 + keys * 8
                 if (p > b.size) break
             }
         }
+        val anim = if (shapes > 1 && frameShapes.size > 1 && frameLength > 0)
+            Anim(frameLength, speed, frameShapes.toTypedArray(), frameKeys.toTypedArray()) else null
         val compressed = (texType and 0x08) != 0
         val rawSize = TEX * TEX * 2
         val tex = when {
@@ -216,7 +291,7 @@ object Ps2Icons {
             b.size - rawSize >= vertexEnd -> rawTexture(b, b.size - rawSize)
             else -> null
         }
-        return Icon(shapes, texType, count, pos, uv, col, tex, frames)
+        return Icon(shapes, texType, count, pos, uv, col, tex, frames, anim)
     }
 
     /** 32 KB of plain pixels at [at]. */
