@@ -155,7 +155,9 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
     HomeLayout.BAR -> 0f to (if (com.shelf.launcher.data.Features.barGamesAt.state.value == com.shelf.launcher.data.Features.SpotSide.BOTTOM) 0.18f else 0.5f)
     // Update 247 (#94, RP Classic): Green Core — its own "GREEN CORE" title and line of counts fill the top-left corner;
     // under them, above the globe.
-    HomeLayout.GREENCORE -> 0f to 0.19f
+    // (Update 329, seen on the AYN Thor: at 0.19 the name's frame ran through the line of counts — "2213 titles online ·
+    // 18 systems". A little lower, clear of it.)
+    HomeLayout.GREENCORE -> 0f to 0.245f
     // Anywhere else it's added by hand: the top-left corner.
     else -> 0f to 0f
 }

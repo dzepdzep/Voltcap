@@ -153,9 +153,13 @@ internal fun TvRoomHome(
     /** Update 135: Endless (R1) — the carousel goes round; the view model's D-pad step for its endless place. */
     loop: Boolean = false,
     loopTick: Int = 0,
-    loopStep: Int = 0
+    loopStep: Int = 0,
+    /** Update 329: the category is one console's (its sticker then names the category). */
+    consoleCategory: Boolean = false
 ) {
     val game = games.getOrNull(focus.coerceIn(0, (games.size - 1).coerceAtLeast(0)))
+    // (Update 329: every game of one console — the console sticker names the category, ConsoleSticker.)
+    val oneConsole = consoleCategory
     // The focused game's clip, screenshots and story are fetched once you rest on it a moment.
     LaunchedEffect(game?.stableKey) {
         val g = game ?: return@LaunchedEffect
@@ -248,7 +252,7 @@ internal fun TvRoomHome(
             }
         }
         Column(Modifier.align(Alignment.TopEnd).width(gamesW).fillMaxHeight()) {
-            Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "sticker"), "Console sticker")) { ConsoleSticker(game?.platform) }
+            Box(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "sticker"), "Console sticker")) { ConsoleSticker(game?.platform, namesCategory = oneConsole) }
             Spacer(Modifier.height(6.dp))
             // (Update 202: the games, and the info strip below, are moved / resized / taken off in Edit Home too.)
             Box(Modifier.fillMaxWidth().weight(1f).categorySlide().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "games"), "Games")) {
@@ -350,7 +354,11 @@ private fun TvRoomPicture(place: TvRoomArt.Place) {
 
 /** The console's banner: a small sticker card in the theme's colours with its logo and name. */
 @Composable
-private fun ConsoleSticker(platform: String?) {
+private fun ConsoleSticker(platform: String?, namesCategory: Boolean = false) {
+    // (Update 329, seen on the AYN Thor: in a console's category the sticker names that category, but didn't say so — the
+    // home screen's fallback category title showed "PlayStation 2" again in the top-left corner. In a mixed category
+    // (All games, a collection) it names the game's console, and the category title stays.)
+    if (namesCategory) CategoryTitle.Native(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TV, "sticker"))
     val accent = ShelfTheme.accent
     val second = ShelfTheme.colors.secondary
     val shape = RoundedCornerShape(topStart = 6.dp, topEnd = 22.dp, bottomStart = 6.dp, bottomEnd = 6.dp)

@@ -99,4 +99,14 @@ class TileWalk329Test {
         assertEquals(R1Fit.Hide, r1TileFit("endless", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_SHOWCASE))))
         assertEquals(R1Fit.Show, r1TileFit("endless", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_ICONS))))
     }
+
+    /** The PS2 "7 Wonders" took the DS game's TheGamesDB entry (Nintendo's logo on its back): searched on its console now. */
+    @Test fun tgdbSearchesTheGamesConsole() {
+        assertEquals(11, com.shelf.launcher.data.TgdbPlatforms.idFor("PS2"))
+        assertEquals(8, com.shelf.launcher.data.TgdbPlatforms.idFor("NDS"))
+        assertEquals(41, com.shelf.launcher.data.TgdbPlatforms.idFor("GBC"))
+        assertEquals(2, com.shelf.launcher.data.TgdbPlatforms.idFor("GameCube"))
+        assertEquals(null, com.shelf.launcher.data.TgdbPlatforms.idFor("PICO8"))
+        assertEquals(null, com.shelf.launcher.data.TgdbPlatforms.idFor(null))
+    }
 }

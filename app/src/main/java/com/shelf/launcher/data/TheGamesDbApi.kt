@@ -22,7 +22,9 @@ interface TheGamesDbApi {
     suspend fun searchByName(
         @Query("apikey") apiKey: String,
         @Query("name") name: String,
-        @Query("fields") fields: String = "game_title"
+        @Query("fields") fields: String = "game_title",
+        /** Update 329: TheGamesDB's platform id(s) to search on (null = every platform). */
+        @Query("filter[platform]") platform: String? = null
     ): TgdbSearchResponse
 
     @GET("v1/Games/Images")
@@ -98,7 +100,12 @@ class TheGamesDbRepository(private val api: TheGamesDbApi) {
             val strict = hack != null || TitleMatch.strictFor(game)
             fun pick(list: List<TgdbGame>?): TgdbGame? =
                 list?.let { l -> TitleMatch.best(cleaned, l.map { it.game_title.orEmpty() }, strict)?.let { l[it] } }
-            val match = pick(api.searchByName(apiKey, cleaned).data?.games)
+            // (Update 329, seen on the AYN Thor: the PS2 "7 Wonders of the Ancient World" got the DS game's entry — its
+            // back cover with Nintendo's logo on the PS2 case — because the search took every platform. Searched on the
+            // game's own console first now, like IGDB / RAWG; every platform only when that finds nothing.)
+            val platformId = TgdbPlatforms.idFor(game.platform)?.toString()
+            val match = (if (platformId != null) pick(api.searchByName(apiKey, cleaned, platform = platformId).data?.games) else null)
+                ?: pick(api.searchByName(apiKey, cleaned).data?.games)
                 ?: pick(api.searchByName(apiKey, searchName).data?.games)
                 ?: return null
             val id = match.id ?: return null
@@ -138,4 +145,23 @@ class TheGamesDbRepository(private val api: TheGamesDbApi) {
         t = t.replace(Regex("\\s+"), " ").trim()
         return t.ifBlank { raw }
     }
+}
+
+/**
+ * Update 329: Voltcap's console names → TheGamesDB platform ids (its Platforms list), for searching on the right
+ * console. A console not listed is searched on every platform, as before.
+ */
+object TgdbPlatforms {
+    private val ids = mapOf(
+        "pc" to 1, "steam" to 1, "dos" to 1, "gamecube" to 2, "gc" to 2, "ngc" to 2, "n64" to 3, "gb" to 4, "gba" to 5,
+        "snes" to 6, "sfc" to 6, "nes" to 7, "famicom" to 7, "nds" to 8, "ds" to 8, "wii" to 9, "ps1" to 10, "psx" to 10,
+        "ps2" to 11, "ps3" to 12, "psp" to 13, "xbox" to 14, "xbox360" to 15, "dreamcast" to 16, "dc" to 16,
+        "saturn" to 17, "genesis" to 18, "megadrive" to 18, "md" to 18, "gamegear" to 20, "gg" to 20,
+        "segacd" to 21, "megacd" to 21, "atari2600" to 22, "arcade" to 23, "mame" to 23, "fbneo" to 23,
+        "neogeo" to 24, "3do" to 25, "atari5200" to 26, "atari7800" to 27, "jaguar" to 28, "32x" to 33,
+        "pcengine" to 34, "tg16" to 34, "turbografx16" to 34, "mastersystem" to 35, "sms" to 35, "wiiu" to 38,
+        "psvita" to 39, "vita" to 39, "c64" to 40, "gbc" to 41
+    )
+
+    fun idFor(platform: String?): Int? = platform?.let { ids[it.lowercase().replace(Regex("[^a-z0-9]"), "")] }
 }

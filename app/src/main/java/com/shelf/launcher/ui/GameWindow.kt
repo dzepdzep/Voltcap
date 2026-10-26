@@ -1026,7 +1026,9 @@ private fun WinInfo(
             if (facts.isNotEmpty()) androidx.compose.material3.Text(
                 // (Update 129: two lines, so the year, maker, genres and last played aren't cut off with "…".)
                 // (Update 285: up to three lines, a little smaller until it all fits — "Racing, …", "Last played …".)
-                facts.joinToString("  ·  ").let { if (look.caps) it.uppercase() else it }, color = muted, maxLines = 3,
+                // (Update 329, seen on the AYN Thor: "Last / played Today" broke across two lines in the narrower windows —
+                // each fact keeps its words together now (no-break spaces inside it), the line breaks between them.)
+                facts.joinToString("  ·  ") { it.replace(' ', '\u00A0') }.let { if (look.caps) it.uppercase() else it }, color = muted, maxLines = 3,
                 autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp),
                 textAlign = align, fontFamily = family
             )
@@ -1321,9 +1323,16 @@ private fun WindowBody(
                                 mediaFor(g.platform, gameKey = g.stableKey) != null
                             val mediaAspect = if (Features.gameWindowCase.state.value && discCaseFits(g.platform)) 1.35f else 1f
                             val nameW = if (mediaHere) (0.97f - 0.46f * mediaAspect / 1.78f).coerceIn(0.4f, 1f) else 1f
-                            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth(nameW).padding(16.dp)) {
-                                WinText(look, name, Color.White, 22, FontWeight.Bold, shadow = true)
-                                if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), 13, FontWeight.Normal, shadow = true)
+                            // (Update 329, seen on the AYN Thor: in the narrow window beside Case stacks' case / Disc station's
+                            // disc the picture is short, and a two-line name at 22 sp pushed the console line out of it — cut
+                            // in half at the bottom. The name steps down with the picture's height.)
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+                                val nameSize = when { maxHeight < 125.dp -> 15; maxHeight < 175.dp -> 18; else -> 22 }
+                                val pad = if (maxHeight < 125.dp) 10.dp else 16.dp
+                                Column(Modifier.align(Alignment.BottomStart).fillMaxWidth(nameW).padding(pad)) {
+                                    WinText(look, name, Color.White, nameSize, FontWeight.Bold, shadow = true)
+                                    if (sub.isNotBlank()) WinText(look, sub, Color.White.copy(alpha = 0.85f), if (nameSize < 22) 11 else 13, FontWeight.Normal, shadow = true)
+                                }
                             }
                         }
                         // Update 119 / 125: what's placed on the picture (the Grid's window has its disc on top instead).

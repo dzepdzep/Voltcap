@@ -110,6 +110,8 @@ internal fun StatusBar(
     onSeek: (Long) -> Unit = {},
     /** Drawn along the bottom edge (when the games sit at the top). */
     atBottom: Boolean = false,
+    /** Update 329: a pale backdrop behind it (Twin desk's paper, Live tiles / Channel grid / Hero tiles pale): a stronger shade. */
+    paleBehind: Boolean = false,
     /** Waiting notifications; the bell is hidden at 0. */
     notificationCount: Int = 0,
     /** Tap on the bell: the notifications it counts. */
@@ -154,7 +156,11 @@ internal fun StatusBar(
                 // over a bright picture (a yellow cover made them vanish). Fades out before the bar's inner edge.
                 drawRect(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                        if (atBottom) listOf(Color.Transparent, Color.Black.copy(alpha = 0.32f)) else listOf(Color.Black.copy(alpha = 0.32f), Color.Transparent),
+                        // (Update 329, seen on the AYN Thor: over Twin desk's pale paper the white clock and date were nearly
+                        // invisible — a darker band there.)
+                        (if (paleBehind) 0.62f else 0.32f).let { k ->
+                            if (atBottom) listOf(Color.Transparent, Color.Black.copy(alpha = k)) else listOf(Color.Black.copy(alpha = k), Color.Black.copy(alpha = if (paleBehind) k * 0.35f else 0f))
+                        },
                         startY = 0f, endY = size.height
                     )
                 )

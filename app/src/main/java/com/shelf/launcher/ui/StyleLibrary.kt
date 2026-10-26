@@ -555,7 +555,7 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
                 val j = if (loop) i % stride else i
                 if (j < n) {
                     LibraryTile(
-                        c, j, aspect, corner, inGames, on = i == focusCell,
+                        c, j, aspect, corner, inGames, on = i == focusCell, column = i % cols, cols = cols,
                         // A tap picks the round that was tapped (so the grid doesn't run off to another one).
                         onPick = if (loop) ({ tap.virtual = (i / stride - half) * n + j }) else null
                     )
@@ -572,7 +572,9 @@ private fun LibraryGrid(c: StyleCtx, modifier: Modifier) {
 private fun LibraryTile(
     c: StyleCtx, i: Int, aspect: Float, corner: Dp, inGames: Boolean,
     // Update 156: with Endless only the cell you're on (not every round of the game) is lit; [onPick] runs before a tap selects.
-    on: Boolean = i == c.focus, onPick: (() -> Unit)? = null
+    on: Boolean = i == c.focus, onPick: (() -> Unit)? = null,
+    /** Update 329: its column, so a disc / cartridge sticking out to the right tucks behind the next game. */
+    column: Int = 0, cols: Int = 1
 ) {
     val g = c.games[i]
     val sel = on && inGames
@@ -583,7 +585,9 @@ private fun LibraryTile(
     // Only the game you're on runs the focus pulse, so the rest of the grid stays still.
     val pulse = if (sel) rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != FocusEffect.NONE) else null
     val titles = LocalTitleOptions.current
-    Column(Modifier.zIndex(if (on) 1f else 0f)) {
+    // (Update 329, seen on the AYN Thor: with Case + media each disc sticks out of its case to the right and was drawn over
+    // the next game's case — each game now sits a little above the one on its left, the one you're on above all.)
+    Column(Modifier.zIndex(if (on) 1f else column / (cols + 1f))) {
         Box(
             Modifier
                 .fillMaxWidth()

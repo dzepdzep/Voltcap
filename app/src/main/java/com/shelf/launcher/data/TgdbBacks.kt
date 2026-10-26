@@ -30,7 +30,10 @@ object TgdbBacks {
         if (prefs != null) return
         // (Update 302 test build's list, which kept failed look-ups as "no back": dropped.)
         runCatching { c.applicationContext.deleteSharedPreferences("tgdb_backs") }
-        val p = c.applicationContext.getSharedPreferences("tgdb_backs2", Context.MODE_PRIVATE)
+        // (Update 329: backs found by the every-platform search — a PS2 game could have the DS game's back — dropped;
+        // each is asked for again, on its own console, when its case's back is next looked at.)
+        runCatching { c.applicationContext.deleteSharedPreferences("tgdb_backs2") }
+        val p = c.applicationContext.getSharedPreferences("tgdb_backs3", Context.MODE_PRIVATE)
         prefs = p
         for ((k, v) in p.all) (v as? String)?.let { known[k] = it }
     }

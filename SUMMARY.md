@@ -85,18 +85,50 @@
   Widgets), the timer counting, the Music page's volume slider (+ / − changed Android's media volume), the dock's All apps
   and Chrome (opened on the second screen, the game kept the main one). The game stayed on the main screen throughout
   (a Back key sent by the test closed it once — adb's, not Voltcap's).
+- **Visual pass, every layout × look by eye on both screens (Toni: "check if anything's colliding"):** contact sheets of
+  all 33 layouts × 8 looks, main and second screen, plus each layout's game window. Fixed:
+  - **Grid / Library, Case + disc half out:** a case's disc slid over the next case's cover. Each column is a step
+    higher than the one before now, so a disc tucks behind its neighbour (the game you're on stays in front)
+    (`GridHome.kt`, `StyleLibrary.kt`).
+  - **Shelf:** the top shelf showed through the header; the shelves are cut at the header's bottom edge (`ShelfHome.kt`).
+  - **Timeline:** a year's label scrolled up under the header, cut in half; the list fades out over its top 28 dp
+    (`StyleTimelineHistory.kt`).
+  - **Pocket classic:** "PlayStation 2" broke as "PlayStat / ion 2" in its menu box; the text steps down until the
+    longest word fits (`PocketClassic.kt`).
+  - **Green Core:** the category title sat over the games-count line; moved below it (`HomeParts.kt`).
+  - **Status bar on pale screens** (Twin desk paper, Live / Channel grid light, Hero tiles pale): white text on a
+    near-white backdrop was unreadable; the shade behind it is darker there (`HomeChrome.kt` StatusBar `paleBehind`,
+    `LauncherScreen.kt`).
+  - **TV room:** with one console's category, the console sticker counts as the layout's own category label, so the
+    extra fallback title doesn't show as well (`TvRoomHome.kt` `consoleCategory`, `LauncherScreen.kt`). (Your own
+    Category name part added in Edit Home on TV, Case stacks, Card binder, Hub and Resume stays — that's your choice.)
+  - **Game window beside Case stacks' case / Disc station's disc:** the picture there is short, and the two-line name
+    at 22 sp pushed "PlayStation 2" out of it, cut in half. The name steps down with the picture's height (22 / 18 /
+    15 sp). "Last played Today" no longer breaks across two lines (`GameWindow.kt`).
+  - **TheGamesDB searched every console:** the look-up took the best title match on any platform, so a game that also
+    came out on another console could get that console's cover / back (a PS2 game the DS edition's back, with
+    Nintendo's logo). It searches on the game's own console first now, like IGDB / RAWG; every platform only when that
+    finds nothing. Backs found the old way are dropped and asked for again when a case's back is next looked at
+    (`data/TheGamesDbApi.kt` `TgdbPlatforms`, `data/TgdbBacks.kt`). (7 Wonders Of The Ancient World, where I thought I'd
+    seen a Nintendo logo, has the right PS2 back — ScreenScraper's; the red logo is Hot Lava Games'.)
+  - Fine as they are: Classic, Tiles, Hero, Dash, Side, Cross, Spot, Bar, Hub, Resume, Channel grid, Circuit, Stacks,
+    Arcade, Consoles, Discs, Hero tiles, Twin icons / showcase, Crate, Cards, Pocket ribbon, Pocket Quest, Cube; the game
+    window on Pocket classic, Green Core, Pocket Quest and Cube.
+  - **"All categories" flash recordings** (categories walk, animations on): the one long flicker (2 s) was the walk's
+    own R1 panel closing while the category bar slid in; the two short jumps were the backdrop's screenshots
+    cross-fading on a category change (Dash, Arcade). Nothing to fix.
 - **Check:** unit tests; release built and installed on the Thor; Dark (OLED) checked there (home, game window) and
   switched off again for you to try; the flash recordings and both walks as above. **Put back afterwards:** every
   Voltcap setting from the copy taken before the walk, animations 1×, screen-stays-on off, Case stacks + Case, PlayStation
-  2. Test side effects: 7 Wonders Of The Ancient World (ARMSX2) started and closed (at its title, nothing saved); Chrome
+  2. Test side effects: 7 Wonders Of The Ancient World (ARMSX2) started and closed (at its title, nothing saved); during the visual pass 50 Cent Bulletproof started in ARMSX2 (Card binder's A plays; closed at once, so it shows Last played Today); Chrome
   opened once on the second screen; the in-game second screen's start page may be Widgets (turned during 328's tests).
 - **Tests:** `TileWalk329Test` (category title names, Twin categories, Magnifier on the two-screen layouts, no Endless on
-  Twin showcase, the music player taken off, the Disc tile on a cartridge game), `R1Compat326Test` updated (Outline, Endless, Achievements with the carousel).
+  Twin showcase, the music player taken off, the Disc tile on a cartridge game, TheGamesDB console ids), `R1Compat326Test` updated (Outline, Endless, Achievements with the carousel).
 - **Copy** (already in place and pushed): `src_copy\ui\R1TileRules.kt`, `src_copy\ui\QuickSettings.kt`,
   `src_copy\ui\SceneStyle.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\TwinShowcase.kt`, `src_copy\ui\TileCheck.kt`,
   `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\StyleConsoleHomes.kt`,
   `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\PlayerSkins.kt`,
-  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GenericDisc.kt`, `src_copy\ui\HomeChrome.kt`, `src_copy\ui\LauncherScreen.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
+  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GenericDisc.kt`, `src_copy\ui\HomeChrome.kt`, `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\GridHome.kt`, `src_copy\ui\StyleLibrary.kt`, `src_copy\ui\ShelfHome.kt`, `src_copy\ui\StyleTimelineHistory.kt`, `src_copy\ui\PocketClassic.kt`, `src_copy\ui\HomeParts.kt`, `src_copy\ui\TvRoomHome.kt`, `src_copy\data\TheGamesDbApi.kt`, `src_copy\data\TgdbBacks.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
   `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt` (and the earlier 329 files:
   `TileCheck.kt`, `TestHooks.kt`, `LauncherScreen.kt`, `PowerSaver.kt`, `LauncherViewModel.kt`, `data\ConsoleNames.kt`…).
 

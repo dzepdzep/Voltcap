@@ -2495,6 +2495,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             },
             nowPlaying = nowPlaying,
             atBottom = atBottom,
+            // (Update 329: the pale backdrops — the status bar's white needs a darker band there.)
+            paleBehind = when (state.appearance.homeLayout) {
+                com.shelf.launcher.data.HomeLayout.TWIN_DESK -> true
+                com.shelf.launcher.data.HomeLayout.LIVE -> com.shelf.launcher.data.Features.liveLight.state.value && !com.shelf.launcher.data.Features.liveArt.state.value
+                com.shelf.launcher.data.HomeLayout.CHAN -> chanOled().not() && com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanArt.state.value
+                com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesPale.state.value
+                else -> false
+            },
             modifier = modifier
         )
     }
@@ -3643,6 +3651,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
                 // Update 135: Endless goes round in the TV room's carousel.
                 loop = state.appearance.loopRow, loopTick = state.loopTick, loopStep = state.loopStep,
+                consoleCategory = state.specialFilter == null && state.platformFilter != null && !com.shelf.launcher.data.isCollectionKey(state.platformFilter),
                 // The room fills the whole screen, past the padding above.
                 roomBleed = androidx.compose.foundation.layout.PaddingValues(
                     top = if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 28.dp else 8.dp, start = 14.dp, end = 14.dp

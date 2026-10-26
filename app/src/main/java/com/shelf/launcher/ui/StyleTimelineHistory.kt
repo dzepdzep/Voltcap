@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -200,7 +201,19 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
         if (fresh || abs(focusRow - list.firstVisibleItemIndex) > 3) list.scrollToItem(focusRow)
         else if (list.firstVisibleItemIndex != focusRow || list.firstVisibleItemScrollOffset != 0) list.animateScrollToItem(focusRow)
     }
-    BoxWithConstraints(modifier.categorySlide()) {
+    // (Update 329, seen on the AYN Thor: the period above the one you're on runs up under the header and was cut off hard —
+    // a year's "2026" showed as its lower half under the console's name. The list's top edge fades out now, so it reads
+    // as the history carrying on up there.)
+    BoxWithConstraints(modifier.categorySlide()
+        .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val fade = 28.dp.toPx().coerceAtMost(size.height / 4f)
+            drawRect(
+                androidx.compose.ui.graphics.Brush.verticalGradient(0f to Color.Transparent, fade / size.height.coerceAtLeast(1f) to Color.Black),
+                blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+            )
+        }) {
         val k = GameSize.scale(HomeLayout.TIMELINE)
         val aspect = styleAspect(c.type).coerceIn(0.13f, 1.8f)
         // The row you're in: cards about a third of the height (never wider than about a third of the width); the

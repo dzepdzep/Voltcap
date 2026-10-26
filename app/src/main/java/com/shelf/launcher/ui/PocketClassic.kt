@@ -271,12 +271,23 @@ internal fun PocketText(
     font: androidx.compose.ui.text.font.FontFamily, align: TextAlign, maxLines: Int = 1, screenX: Boolean = false
 ) {
     with(s) {
+        // (Update 329, seen on the AYN Thor: on two lines a word longer than the box broke in the middle — the category
+        // "PlayStation 2" (the official name since 329, it was "PS2") came out as "PlayStat / ion 2". The size steps down
+        // until the longest word fits on its line.)
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val boxPx = with(androidx.compose.ui.unit.Density(density)) { (u * w).toPx() }
+        val fitSize = if (maxLines <= 1) size else androidx.compose.runtime.remember(text, size, boxPx, font) {
+            val longest = text.split(' ', '\n').maxByOrNull { it.length }.orEmpty()
+            var z = size
+            while (z > size * 0.55f && measurer.measure(longest, TextStyle(fontSize = sp(z), fontFamily = font), softWrap = false).size.width > boxPx) z -= 0.25f
+            z
+        }
         Box(if (screenX) Modifier.atScreen(x, y, w, h) else Modifier.at(x, y, w, h), contentAlignment = when (align) {
             TextAlign.Center -> Alignment.Center; TextAlign.End -> Alignment.CenterEnd; else -> Alignment.CenterStart
         }) {
             Text(
                 text, maxLines = maxLines, overflow = TextOverflow.Ellipsis, softWrap = maxLines > 1,
-                style = TextStyle(color = color, fontSize = sp(size), lineHeight = sp(size * 1.15f), fontFamily = font, textAlign = align)
+                style = TextStyle(color = color, fontSize = sp(fitSize), lineHeight = sp(fitSize * 1.15f), fontFamily = font, textAlign = align)
             )
         }
     }

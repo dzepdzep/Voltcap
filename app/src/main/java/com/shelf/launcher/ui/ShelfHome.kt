@@ -306,8 +306,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
 
         // (Update 229, #94: the shelves end above the footer — a shelf more than fit stood half behind the game's name and
         // console there, its spines running through the text.)
+        // (Update 329, seen on the AYN Thor: with the bookcase scrolled — Endless, many shelves — the shelf above the
+        // ones in view slid up into the header, its spines standing over the category's name and count. They end under
+        // the header now too.)
         Box(Modifier.fillMaxSize().clipToBounds().drawWithContent {
-            clipRect(bottom = (size.height - footerH.toPx()).coerceAtLeast(0f)) { this@drawWithContent.drawContent() }
+            clipRect(top = headerH.toPx().coerceAtMost(size.height), bottom = (size.height - footerH.toPx()).coerceAtLeast(0f)) { this@drawWithContent.drawContent() }
         }.categorySlide()) { // (update 112: a new category slides / fades in)
             // Shelves (boards) and their spines.
             // Update 130 (lag going over many games): the scroll is read where things are placed, not while composing, so

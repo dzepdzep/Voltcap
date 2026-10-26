@@ -220,7 +220,10 @@ internal fun HomeGameGrid(
                 // Update 203: a drawn cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn
                 // instead of turning the flat picture (SolidPiece.kt).
                 val solidCart = spin != null && !spines && gArt == CardArtType.CARTRIDGE_DISC && !realScan && drawnMediaWanted(gArt, typed)
-                Column(Modifier.zIndex(if (on) 1f else 0f)) {
+                // (Update 329, seen on the AYN Thor: with Case + media each disc sticks out past its case to the right — meant to
+                // tuck behind the next game, as on the Voltcap row — but the grid drew it over its neighbour's case. Each game
+                // now sits a little above the one on its left; the one you're on above all.)
+                Column(Modifier.zIndex(if (on) 1f else (vi % cols) / (cols + 1f))) {
                     Box(
                         Modifier
                             .fillMaxWidth()
