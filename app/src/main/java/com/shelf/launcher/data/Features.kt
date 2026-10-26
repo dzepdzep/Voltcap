@@ -1465,7 +1465,9 @@ object Features {
      *  icons. Off: the console logos (on tiles, or cut out). */
     val crossFolders = BoolPref("cross_folders", true)
     /** Game shelf (update 90): every spine at its console's real case size (else all the same). */
-    val shelfRealSizes = BoolPref("shelf_real_sizes", false)
+    // (Update 348, Toni: "in real sizes as well": on by default — a new key, so it comes on once for everyone; it can still
+    // be switched off in Layout options.)
+    val shelfRealSizes = BoolPref("shelf_real_sizes_348", true)
     /** Game shelf: the game you're on bobs and turns gently once it's pulled out. */
     val shelfBob = BoolPref("shelf_bob", true)
     /** Update 129: Real case (its own scan, else Voltcap's) is the default; Voltcap's case and the plain cover added. */
@@ -1699,8 +1701,12 @@ object Features {
     val arVideo = BoolPref("ar_video", true)
     /** The game's art printed on the cabinets' side panels (off: plain paint). */
     val arSideArt = BoolPref("ar_side_art", true)
-    enum class ArRoom(val label: String) { NEON("Neon arcade"), DARK("Dark arcade"), CARPET("Carpet & wood"), THEME("Your theme") }
-    val arRoom = EnumPref("ar_room", ArRoom.NEON, ArRoom.values())
+    // Update 348: believable rooms beside the neon stage (saved names kept: CARPET is the 1990s arcade, DARK the dark neon one).
+    enum class ArRoom(val label: String) {
+        NEON("Neon stage"), CARPET("1990s arcade"), CENTER("Game centre"), DARK("Dark neon arcade"), SHOWROOM("Showroom"), THEME("Your theme")
+    }
+    // (Update 348: the 1990s arcade by default — realism first; the neon stage stays one pick away.)
+    val arRoom = EnumPref("ar_room", ArRoom.CARPET, ArRoom.values())
     /** Camera glides and the machine you're on coming forward (off: straight there, still). */
     val arMotion = BoolPref("ar_motion", true)
     enum class ArSpeed(val label: String, val k: Float) { CALM("Calm", 1.45f), NORMAL("Normal", 1f), BRISK("Brisk", 0.7f) }

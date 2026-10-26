@@ -1,5 +1,61 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (348): Arcade cabinets made real; fixes from Toni's testing
+
+Toni's brief "Arcade cabinets — visual authenticity" (Hall and Showcase kept as they were built in 347) and his notes
+while testing.
+- **Cabinets as real machines** (`ui\ArcadeCabinets.kt`): each build is now two profiles — the side panels' outline and
+  the front set in between them — so the screen sits recessed between the panels, the control panel juts out past
+  them, the marquee box overhangs, and the panels' front edges show (T-moulding, the candy shell's rounded edge, the
+  neo-retro's aluminium LED rail, the bartop's plywood). New proportions from the real machines: classic upright 0.66 ×
+  0.87 × 1.87 m (vertical front with coin door, deck ~1 m, screen ~22° in a recess, angled speaker panel, marquee box,
+  slanting back); candy 0.73 × 0.86 × 1.50 m one rounded shell (seated deck at 0.75 m, knee recess, screen ~31°, lit
+  header, rounded top); neo-retro 0.78 × 0.90 × 1.72 m (lower body leaning forward, near-upright screen, speaker
+  header); bartop on a wooden game table (0.80 m). Each its own side treatment: full side art on the upright and
+  bartop, a framed art panel on the neo, the candy's two-tone stripe.
+- **Light and materials**: ambient + one key light that never pushes paint past its colour (the white candy no longer
+  glows), faces darker towards the floor, fine edge highlights, layered contact shadows, brushed coin doors and kick
+  plate, speaker grilles, the glass recessed in a bezel with its top in shadow and a soft reflection, a printed control
+  panel overlay, the marquee lit from behind with less bloom.
+- **Rooms** (`ui\ArcadeRooms.kt`, new; Layout options › Room): Neon stage (kept), 1990s arcade (recessed lights, painted
+  walls, a row of machines along the back, the cosmic carpet), Game centre (fluorescent panels, hanging signs, candy
+  cabinets along the back, vinyl tiles), Dark neon arcade (neon tubes, glossy floor mirroring them and the machines),
+  Showroom (spotlights, polished concrete). Drawn once as a static layer. Saved "Carpet & wood" = 1990s arcade, now the
+  default room.
+- **Hall camera**: a flatter 10 m arc, and each machine placed where it stands clear of the one before on screen
+  (`hallSlots`) — no more overlapping neighbours; three either side; camera angle changes ease in.
+- **Screens**: a picture that fails to load gives way to the next (screenshot → art → cover → attract screen), never a
+  blank monitor (the black screen in 347 was a clip held on its first frame while idle — fixed in 347).
+- **Marquee**: the game's wide art printed behind its logo (cropped, its shape kept) on the machines near you.
+- **LED signage**: the section sign and Showcase's category line as amber dot-matrix LED signs; the status bar as the
+  same LED readout (a different look only with "Your theme" room).
+- **Memory card**: apps show their own full-colour icon as a turning 3D badge, not the one-colour icon
+  (`ui\StyleMemoryCard.kt`).
+- **Game magazine**: the next page no longer flashes before the page turns (`ui\StyleMagazine.kt` — the turn's first
+  frame came one frame late).
+- **Case flow**: the R1 Carousel tile is back here with Case flow's own shapes — Curved, Deep arc, Flat row, Turned row,
+  Spines, Spine shelf (tap: next, hold: list) (`ui\QuickSettings.kt`, `ui\R1TileRules.kt`, `ui\StyleCaseFlow.kt`).
+- **Custom spines flashing while scrolling**: the titled-spine cache holds up to 48 MB (was 24), and while one is being
+  made the console's spine shows without the name instead of a dark strip (`ui\CoverCases.kt`).
+- **Console CDs without branding**: a cartridge game's CD waits for its console's disc overlay before printing the
+  cover — it stood bare on the disc for a moment (`ui\GenericDisc.kt`).
+- **Game shelf**: a game's real spine always wins there (even over a spine picked for all / Matching spines), and Real
+  sizes is on by default (new key, so it came on once) (`ui\ShelfHome.kt`, `data\Features.kt`).
+- Tests: `Arcade348Test` (panels and recesses, proportions, light, hall spacing); `Arcade347Test` silhouettes compared by
+  side outline. testDebugUnitTest and assembleRelease pass.
+
+Copy: `src_copy\ui\` ArcadeCabinets.kt, ArcadeRooms.kt (new), StyleArcade.kt, StatusLooks.kt, StyleMemoryCard.kt,
+StyleMagazine.kt, QuickSettings.kt, R1TileRules.kt, StyleCaseFlow.kt, CoverCases.kt, GenericDisc.kt, ShelfHome.kt;
+`src_copy\data\Features.kt`; `project_copy\app\src\test\java\com\shelf\launcher\ui\` Arcade347Test.kt, Arcade348Test.kt.
+
+Tested on the Thor (release build): all four cabinets + Mixed in Hall and Showcase, all five rooms, 1280×720 and full size,
+a long title (2 Games In 1 Dr. Mario + Puzzle League) on the plaque and in Showcase, the gameplay clip / still on the
+screens; Game shelf (real spines, real sizes in All); Memory card's Continue playing with WWE All Stars (full-colour
+turning icon); the magazine page turn recorded and checked frame by frame (no early flash); Disc station's console CDs.
+Not tested: analog stick; a machine whose every picture fails (no such game — the fallback chain is code-checked only);
+the Case flow Carousel tile's choices on screen (the R1 panel's log on the Thor lists "carousel" among Case flow's tiles), the custom
+spine flashing (code fix, not reproduced), the CD branding fix (not reproduced); the RP Classic (not connected).
+
 ## Update — 26 Oct 2026 (347): popup animations finished, Arcade cabinets 2.0
 
 Toni's brief "Update 346 Final Polish + Arcade Cabinets 2.0". Dreamcast World untouched; other layouts unchanged.

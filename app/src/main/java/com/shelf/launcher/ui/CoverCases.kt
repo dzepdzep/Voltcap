@@ -174,7 +174,8 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean, 
         res == null -> SpineCache.Titled(true, null)
         now != null -> SpineCache.Titled(true, now)
         got != null -> SpineCache.Titled(true, got.second)
-        else -> SpineCache.Titled(false, null)
+        // (Update 348: while it's being made, the console's spine without the name — not a dark strip flashing in.)
+        else -> SpineCache.Titled(false, if (own) null else SpineCache.peekUntitled(res, landscape))
     }
 }
 
@@ -193,9 +194,18 @@ internal object SpineCache {
 
     private val readyMap = android.util.LruCache<String, Ready>(64)
     // The titled ones, by size (about 24 MB).
-    private val titledMap = object : android.util.LruCache<String, android.graphics.Bitmap>(24 * 1024 * 1024) {
+    // (Update 348, Toni: "flashing on custom spines when scrolling through them": 24 MB held about thirty of your pack's
+    // titled spines, so scrolling a long Case flow made them again and again — a dark strip each time. Up to 48 MB where the
+    // app has the memory for it.)
+    private val titledMap = object : android.util.LruCache<String, android.graphics.Bitmap>(
+        (Runtime.getRuntime().maxMemory() / 10).coerceIn(24L * 1024 * 1024, 48L * 1024 * 1024).toInt()
+    ) {
         override fun sizeOf(key: String, value: android.graphics.Bitmap): Int = value.allocationByteCount
     }
+    /** Update 348: each console spine stood up without a name — shown while a game's titled one is being made. */
+    private val untitled = android.util.LruCache<String, android.graphics.Bitmap>(24)
+    fun peekUntitled(res: Int, landscape: Boolean): android.graphics.Bitmap? =
+        untitled.get("$res|$landscape|" + com.shelf.launcher.data.Packs.version.intValue)
     private val flat = android.util.LruCache<String, android.graphics.Bitmap>(64)
 
     fun key(res: Int, landscape: Boolean, title: String?, version: Int): String = "$res|$landscape|$version|${title ?: ""}"
@@ -242,6 +252,8 @@ internal object SpineCache {
     fun titled(context: android.content.Context, res: Int, title: String?, landscape: Boolean, key: String): android.graphics.Bitmap? {
         titledMap.get(key)?.let { return it }
         val f = flatOf(context, res) ?: return null
+        val uk = "$res|$landscape|" + com.shelf.launcher.data.Packs.version.intValue
+        if (untitled.get(uk) == null) runCatching { untitled.put(uk, orientSpine(f, landscape)) }
         val tpl = CustomSpines.byRes(res)
         val named = if (tpl != null && !title.isNullOrBlank()) runCatching { spineWithTitle(f, tpl, title) }.getOrDefault(f) else f
         val out = orientSpine(named, landscape)

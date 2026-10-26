@@ -237,23 +237,24 @@ private fun DiscIconPrint(icon: ImageBitmap, side: androidx.compose.ui.unit.Dp) 
 
 private val discTplCache = java.util.concurrent.ConcurrentHashMap<String, ImageBitmap>()
 
+/** The console's disc overlay: (whether it has been looked for, the picture — null when there is none). */
 @Composable
-private fun rememberSystemDiscOverlay(console: String): ImageBitmap? {
-    val path = com.shelf.launcher.data.SystemLogos.discAsset(console) ?: return null
+private fun rememberSystemDiscOverlay(console: String): Pair<Boolean, ImageBitmap?> {
+    val path = com.shelf.launcher.data.SystemLogos.discAsset(console) ?: return true to null
     // (Update 329: keyed by the overlay, as rememberDiscLogo — a reused disc kept the previous console's overlay.)
     return androidx.compose.runtime.key(path) { rememberSystemDiscOverlayAt(path) }
 }
 
 @Composable
-private fun rememberSystemDiscOverlayAt(path: String): ImageBitmap? {
+private fun rememberSystemDiscOverlayAt(path: String): Pair<Boolean, ImageBitmap?> {
     val context = LocalContext.current
-    val bmp by produceState(discTplCache[path], path) {
-        if (value != null) return@produceState
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    val got by produceState(discTplCache[path]?.let { true to it } ?: (false to null), path) {
+        if (value.first) return@produceState
+        value = true to kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching { context.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it) }?.asImageBitmap() }.getOrNull()
         }?.also { discTplCache[path] = it }
     }
-    return bmp
+    return got
 }
 
 /**
@@ -264,7 +265,7 @@ private fun rememberSystemDiscOverlayAt(path: String): ImageBitmap? {
  */
 @Composable
 internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifier) {
-    val overlay = rememberSystemDiscOverlay(console)
+    val (looked, overlay) = rememberSystemDiscOverlay(console)
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val side = minOf(maxWidth, maxHeight)
         Box(Modifier.size(side)) {
@@ -274,7 +275,9 @@ internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifie
                 drawCircle(Color(0xFF1B1C22), r * 0.955f, center)
             }
             Box(Modifier.fillMaxSize().clip(DiscRingShape(0.225f, 0.955f))) {
-                if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
+                // (Update 348, Toni: "caught them showing without the branding": the print waited for nothing — for the
+                // moment the console's overlay was being read, the cover stood on the disc bare. Now it shows with it.)
+                if (art != null && looked) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
             }
             // The clear hub round the hole.
             Canvas(Modifier.fillMaxSize()) {

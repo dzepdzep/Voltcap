@@ -640,24 +640,27 @@ internal fun PulledOutCase(
 
 /** One spine: the console's real spine with the game's name running up it, or a plain one with the console's logo. */
 @Composable
-private fun Spine(c: StyleCtx, g: Game, modifier: Modifier) = GameSpine(g, c.state.physicalMedia[g.stableKey], modifier)
+// (Update 348, Toni: "on the shelf the games should always use real spines if possible": here a game's real spine wins
+// even over one spine picked for every game or Matching spines — those still dress the games without one.)
+private fun Spine(c: StyleCtx, g: Game, modifier: Modifier) = GameSpine(g, c.state.physicalMedia[g.stableKey], modifier, realFirst = true)
 
 /**
  * A game as its spine (the bookcase, and update 113's Spines game look everywhere): [physical] is its scans (null:
  * the ones the home screen has, [HomeScans]).
  */
 @Composable
-internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false) {
+internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false, realFirst: Boolean = false) {
     // [fit]: kept at a spine's shape in the middle of a box of another shape (a cover-shaped slot).
+    // [realFirst] (Update 348, Game shelf): the game's real spine wins over a spine picked for all / Matching spines.
     if (fit) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            SpineBody(g, physical, Modifier.fillMaxHeight().aspectRatio(SPINE_ASPECT, matchHeightConstraintsFirst = true))
+            SpineBody(g, physical, Modifier.fillMaxHeight().aspectRatio(SPINE_ASPECT, matchHeightConstraintsFirst = true), realFirst)
         }
-    } else SpineBody(g, physical, modifier)
+    } else SpineBody(g, physical, modifier, realFirst)
 }
 
 @Composable
-private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier) {
+private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, realFirst: Boolean = false) {
     val scans = physical ?: HomeScans.map[g.stableKey]
     // Not looked up yet (the Spines look on a layout that doesn't ask for scans): ask once it has stayed on screen a moment.
     // (Update 122: always — a game's real spine is used whatever the Original cases switch says.)
@@ -669,9 +672,12 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     // Update 122: a real spine scan always wins over Voltcap's own spines (the console's template spine with the name,
     // the strip of the cover): it used to need Original cases on, so games with their real spine still showed ours.
     // (Update 129: none of the games' own spines while one console's spine is picked for all, R1 › Spine.)
-    val forAll = LookStyles.spineForAll()
+    val forAll0 = LookStyles.spineForAll()
     // (Update 147: "Matching spines" leaves the real scans out, so every spine is Voltcap's own.)
-    val matching = Features.spinesOwn.state.value
+    val matching0 = Features.spinesOwn.state.value
+    // (Update 348: on the Game shelf a real spine always comes first — [realFirst]; the picks still dress the rest below.)
+    val forAll = forAll0 && !realFirst
+    val matching = matching0 && !realFirst
     // Update 205: its scans aren't known yet (they're all read at start; this is the first moment): a neutral strip in
     // the game's colour, never Voltcap's own spine that then pops to the real one.
     if (physical == null && g.sourceType == com.shelf.launcher.data.SourceType.ROM && !HomeScans.known(g.stableKey) && !forAll && !matching) {
@@ -709,7 +715,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     }
     // Update 125: no real spine: your own console spine (CustomSpines; Steam's and Android's too), the name fitted in the
     // box left for it.
-    val tpl = if (Features.coverTemplates.state.value || forAll || matching || MediaCovers.own(g.platform) != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+    val tpl = if (Features.coverTemplates.state.value || forAll0 || matching0 || MediaCovers.own(g.platform) != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     val name = gameDisplayName(g.name)
     if (tpl != null && OwnSpines.isOwn(tpl.res)) {
         // (Update 305: Voltcap's own Steam / Android spine drawn for this game — its title, its cover's accent — as the 3D

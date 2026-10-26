@@ -5,6 +5,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -53,6 +55,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -77,6 +81,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -258,7 +263,8 @@ private fun ArcadeMachine(
     val (m0, m1, m3) = flat.marqueeQuad()
     val mW = (m1 - m0).getDistance().roundToInt().coerceAtLeast(8); val mH = (m3 - m0).getDistance().roundToInt().coerceAtLeast(4)
     Box(modifier.size(w, h)) {
-        Canvas(Modifier.fillMaxSize()) { drawCabBody(frame(), cabPaint(build, color()), lit(), glow, detail, dim()) }
+        val gloss = arcadeRoomGloss(Features.arRoom.state.value)
+        Canvas(Modifier.fillMaxSize()) { drawCabBody(frame(), cabPaint(build, color()), lit(), glow, detail, dim(), gloss) }
         AffineBox(sW, sH, { frame().screenQuad() }, Modifier.then(if (live) Modifier.gameOrigin(g.stableKey, true) else Modifier)) {
             ArcadeScreen(c, g, live, detail, dim)
         }
@@ -278,11 +284,16 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
     val pick = Features.arScreen.state.value
     val shots = c.state.screenshots[g.stableKey].orEmpty()
     val shot = shots.firstOrNull()
-    val (url, gameplay) = when (pick) {
-        Features.ArScreen.SHOTS -> (shot ?: c.backdrop(g) ?: c.wide(g) ?: c.cover(g)) to (shot != null)
-        Features.ArScreen.ART -> (c.backdrop(g) ?: c.wide(g) ?: c.cover(g)) to false
-        Features.ArScreen.COVER -> (c.cover(g) ?: c.wide(g)) to false
-    }
+    // Update 348: what the screen can show, best first — a picture that fails to load gives way to the next one, and
+    // with none left the attract screen: a machine's monitor is never left blank.
+    val candidates = when (pick) {
+        Features.ArScreen.SHOTS -> listOfNotNull(shot, c.backdrop(g), c.wide(g), c.cover(g))
+        Features.ArScreen.ART -> listOfNotNull(c.backdrop(g), c.wide(g), c.cover(g))
+        Features.ArScreen.COVER -> listOfNotNull(c.cover(g), c.wide(g))
+    }.distinct()
+    var failedUrls by remember(g.stableKey) { mutableStateOf(emptySet<Any>()) }
+    val url = candidates.firstOrNull { it !in failedUrls }
+    val gameplay = url != null && url == shot
     // The screenshots looked up once you rest on the machine you're on (the stills of the others are what's known).
     LaunchedEffect(g.stableKey, live, pick) {
         if (!live || pick != Features.ArScreen.SHOTS || c.state.screenshots.containsKey(g.stableKey)) return@LaunchedEffect
@@ -314,11 +325,14 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
     val strong = Features.arCrt.state.value == Features.ArCrt.STRONG
     Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         if (url != null) {
-            AsyncImage(
-                rememberStyleArtRequest(url), LocalTitleOptions.current.display(g.name),
-                contentScale = if (gameplay || pick == Features.ArScreen.COVER) ContentScale.Fit else ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().pixelArtwork()
-            )
+            androidx.compose.runtime.key(url) {
+                AsyncImage(
+                    rememberStyleArtRequest(url), LocalTitleOptions.current.display(g.name),
+                    contentScale = if (gameplay || pick == Features.ArScreen.COVER) ContentScale.Fit else ContentScale.Crop,
+                    onError = { failedUrls = failedUrls + url },
+                    modifier = Modifier.fillMaxSize().pixelArtwork()
+                )
+            }
         } else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) {
             AppIconArt(g.packageName, wide = true, modifier = Modifier.fillMaxSize())
         } else ArcadeAttract(g, detail)
@@ -367,6 +381,15 @@ private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Bool
     val titles = LocalTitleOptions.current
     val logo = if (titles.showLogos) c.logo(g) else null
     var failed by remember(logo) { mutableStateOf(false) }
+    // Update 348: a real marquee is printed artwork lit from behind — the game's wide art (cropped to the sign, its own
+    // proportions kept) darkened under the logo; only on the machines near you (the far ones: the logo alone).
+    val art = if (detail) (c.wide(g) ?: c.backdrop(g)) else null
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = 0.55f + 0.45f * lit() }) {
+        if (art != null) {
+            AsyncImage(rememberStyleArtRequest(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.55f })
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.1f), Color.Black.copy(alpha = 0.45f)))))
+        }
+    }
     Box(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 2.dp).graphicsLayer { alpha = 0.55f + 0.45f * lit() }, contentAlignment = Alignment.Center) {
         if (logo != null && !failed) {
             AsyncImage(logo, titles.display(g.name), contentScale = ContentScale.Fit, onError = { failed = true }, modifier = Modifier.fillMaxSize())
@@ -391,77 +414,15 @@ private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Bool
 internal fun ArcadeBackdrop(modifier: Modifier) {
     val room = Features.arRoom.state.value
     if (room == Features.ArRoom.THEME) return
-    val (top, bottom) = when (room) {
-        Features.ArRoom.NEON -> Color(0xFF120A2A) to Color(0xFF160C2C)
-        Features.ArRoom.DARK -> Color(0xFF07080B) to Color(0xFF0C0D11)
-        else -> Color(0xFF2A1A12) to Color(0xFF3E141C)
-    }
+    val (top, bottom) = arcadeRoomEdges(room)
     Canvas(modifier) { drawRect(Brush.verticalGradient(listOf(top, bottom))) }
 }
 
-/** The arcade's room: its wall, the lights and the floor running back to [horizon] (share of the height). Static. */
+/** The arcade's room ([drawArcadeRoom]): the wall meeting the floor at [horizon] (share of the height). Static (its own layer). */
 @Composable
-private fun ArcadeRoomBackdrop(horizon: Float, accent: Color, modifier: Modifier) {
+private fun ArcadeRoomBackdrop(horizon: Float, accent: Color, modifier: Modifier, calm: Boolean = false) {
     val room = Features.arRoom.state.value
-    Canvas(modifier) {
-        val hy = size.height * horizon
-        val (wallTop, wallBottom, floorA, floorB) = when (room) {
-            Features.ArRoom.NEON -> listOf(Color(0xFF120A2A), Color(0xFF1C0F3A), Color(0xFF0B0716), Color(0xFF160C2C))
-            Features.ArRoom.DARK -> listOf(Color(0xFF07080B), Color(0xFF101217), Color(0xFF050608), Color(0xFF0C0D11))
-            Features.ArRoom.CARPET -> listOf(Color(0xFF2A1A12), Color(0xFF3A2416), Color(0xFF2B0E14), Color(0xFF3E141C))
-            Features.ArRoom.THEME -> listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.55f))
-        }
-        drawRect(Brush.verticalGradient(listOf(wallTop, wallBottom), endY = hy), size = Size(size.width, hy))
-        if (room == Features.ArRoom.CARPET) {
-            // Wood panelling.
-            var x = 0f
-            while (x < size.width) { drawLine(Color.Black.copy(alpha = 0.22f), Offset(x, 0f), Offset(x, hy), 2f); x += size.width / 18f }
-        }
-        if (room == Features.ArRoom.NEON) {
-            // Neon tubes high on the wall (clear of the names and buttons; the status bar keeps the right): two long lines
-            // and a zig-zag, softly glowing.
-            val tubes = listOf(accent, Color(0xFF3DE7FF), Color(0xFFFF3DAE))
-            for ((n, col) in tubes.withIndex()) {
-                val y = size.height * (0.035f + n * 0.03f)
-                val p = Path().apply {
-                    moveTo(size.width * (0.03f + n * 0.03f), y)
-                    var x = size.width * (0.03f + n * 0.03f); var up = true
-                    while (x < size.width * (0.5f - n * 0.04f)) { x += size.width * 0.03f; lineTo(x, y + (if (n == 1) (if (up) -1f else 1f) * size.height * 0.008f else 0f)); up = !up }
-                }
-                drawPath(p, col.copy(alpha = 0.16f), style = androidx.compose.ui.graphics.drawscope.Stroke(hy * 0.025f))
-                drawPath(p, col.copy(alpha = 0.7f), style = androidx.compose.ui.graphics.drawscope.Stroke(maxOf(1.5f, hy * 0.005f)))
-            }
-        }
-        // The ceiling lights: soft pools down the wall.
-        for (l in 0 until 5) {
-            val cx = size.width * (l + 0.5f) / 5f
-            drawRect(Brush.radialGradient(listOf(Color.White.copy(alpha = if (room == Features.ArRoom.THEME) 0.03f else 0.06f), Color.Transparent), center = Offset(cx, 0f), radius = size.width * 0.18f),
-                Offset(cx - size.width * 0.18f, 0f), Size(size.width * 0.36f, hy))
-        }
-        // The floor: running back to the horizon, its seams converging.
-        drawRect(Brush.verticalGradient(listOf(floorA, floorB), startY = hy, endY = size.height), Offset(0f, hy), Size(size.width, size.height - hy))
-        val vp = Offset(size.width / 2f, hy - size.height * 0.25f)
-        val seam = when (room) { Features.ArRoom.CARPET -> Color(0xFFE0B04A).copy(alpha = 0.05f); else -> Color.White.copy(alpha = 0.05f) }
-        for (i in -10..10) {
-            val x = size.width / 2f + i * size.width * 0.12f
-            val t = (hy - vp.y) / (size.height - vp.y)
-            drawLine(seam, Offset(vp.x + (x - vp.x) * t, hy), Offset(x, size.height), 1.5f)
-        }
-        var y = hy; var step = size.height * 0.012f
-        while (y < size.height) { drawLine(seam, Offset(0f, y), Offset(size.width, y), 1f); y += step; step *= 1.35f }
-        if (room == Features.ArRoom.NEON || room == Features.ArRoom.CARPET) {
-            // The arcade carpet: a scatter of little coloured shapes.
-            val dots = listOf(Color(0xFF3DE7FF), Color(0xFFFF3DAE), Color(0xFFFFE15A), accent)
-            for (k in 0 until 140) {
-                val fx = ((k * 73) % 101) / 101f; val fy = ((k * 37) % 89) / 89f
-                val yy = hy + (size.height - hy) * fy * fy
-                val sz = 1.5f + 3.5f * fy
-                drawCircle(dots[k % dots.size].copy(alpha = 0.18f), sz, Offset(size.width * fx, yy))
-            }
-        }
-        // Where the wall meets the floor.
-        drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), startY = hy, endY = hy + size.height * 0.04f), Offset(0f, hy), Size(size.width, size.height * 0.04f))
-    }
+    Canvas(modifier.graphicsLayer()) { drawArcadeRoom(room, horizon, accent, calm) }
 }
 
 // ---- Showcase ----
@@ -473,7 +434,7 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
     val view = Features.arView.state.value
     val pick = Features.arCab.state.value
     BoxWithConstraints(modifier) {
-        ArcadeRoomBackdrop(0.66f, color, Modifier.fillMaxSize())
+        ArcadeRoomBackdrop(0.66f, color, Modifier.fillMaxSize(), calm = true)
         Box(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 4.dp)) {
             val compact = this@BoxWithConstraints.maxHeight < 380.dp
             val k = GameSize.scale(HomeLayout.ARCADE)
@@ -630,6 +591,9 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
     val pick = Features.arCab.state.value
     val spacing = Features.arSpacing.state.value.k
     val motion = Features.arMotion.state.value && rememberAnimationsEnabled() && !LocalLiteEffects.current
+    // (Update 348: a new camera angle eases in instead of jumping; read while drawing only.)
+    val viewYaw = animateFloatAsState(view.yaw, if (motion) tween(600, easing = FastOutSlowInEasing) else snap(), label = "hallYaw")
+    val viewElev = animateFloatAsState(view.elev, if (motion) tween(600, easing = FastOutSlowInEasing) else snap(), label = "hallElev")
     val speed = Features.arSpeed.state.value.k
     val loop = loopRowOn(c)
     val vf = rememberLoopFocus(c)
@@ -684,10 +648,20 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
         val k = GameSize.scale(HomeLayout.ARCADE).coerceIn(0.7f, 1.2f)
         val z0 = 3.4f / k
         val f = (floorY - hPx * horizon) * z0 / 1.15f   // the floor at z0 sits at floorY (eye 1.15 m above it)
-        val radius = 6.5f
-        val dPhi = 0.25f * spacing
+        // (Update 348: a flatter arc — 10 m — so three machines each side fit on screen, side by side, turned to you.)
+        val radius = 10f
         val maxPhi = 1.25f
-        val span = (maxPhi / dPhi).toInt() + 1
+        // (Update 348: each machine's place on the arc so no two overlap on screen — [hallSlots].)
+        val slots = remember(z0, spacing, pick, view) {
+            val builds = if (pick == Features.ArCab.MIXED) CabBuild.values().toList() else listOf(cabBuildFor(pick, null))
+            val ms = builds.map { cabModel(it) }
+            val wMax = ms.maxOf { m -> maxOf(m.w, m.boxes.maxOfOrNull { it.u1 - it.u0 } ?: 0f) }
+            val dMax = ms.maxOf { it.d }
+            hallSlots(radius, z0, wMax, dMax, 0.16f * spacing, view.yaw * 0.55f, 0.55f, maxPhi = maxPhi + 0.1f)
+        }
+        // The places that fit (the next ones are past the edge of the arc: faded out).
+        val fits = ((slots.indexOfFirst { it >= maxPhi }.takeIf { it > 0 } ?: slots.size) - 1).coerceAtLeast(1)
+        val span = fits + 2
         val first = (whole - span).let { if (loop) it else it.coerceAtLeast(0) }
         val last = (whole + 1 + span).let { if (loop) it else it.coerceAtMost(count - 1) }
         // The box each machine is drawn in: the size it has standing at z0 (it's scaled for its distance as it moves).
@@ -695,14 +669,13 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
         val sectionLabel = c.categoryLabel
         // The section's sign, hanging over the machines (the layout's own category title — Home › Category name).
         if (signOn) CategoryTitle.Native(null)
-        if (signOn) Box(Modifier.align(Alignment.TopCenter).padding(top = 6.dp).categorySlide().zIndex(50f)) {
-            Text(
-                sectionLabel.uppercase(), color = lerp(Color.White, color, 0.35f), fontSize = if (compact) 16.sp else 22.sp, fontWeight = FontWeight.Black,
-                letterSpacing = 3.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = TextStyle(shadow = Shadow(color.copy(alpha = 0.9f), Offset.Zero, 24f)),
-                modifier = Modifier.widthIn(max = hallW * 0.7f).border(2.dp, color.copy(alpha = 0.7f), RoundedCornerShape(6.dp))
-                    .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(6.dp)).padding(horizontal = 14.dp, vertical = 3.dp)
-            )
+        // (Update 348: an LED section sign hung from the ceiling on two rods.)
+        if (signOn) Column(Modifier.align(Alignment.TopCenter).categorySlide().zIndex(50f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.width(if (compact) 120.dp else 180.dp).height(6.dp).drawBehind {
+                drawLine(Color(0xFF3A3C42), Offset(size.width * 0.12f, 0f), Offset(size.width * 0.12f, size.height), 2f)
+                drawLine(Color(0xFF3A3C42), Offset(size.width * 0.88f, 0f), Offset(size.width * 0.88f, size.height), 2f)
+            })
+            ArcadeLedSign(sectionLabel.uppercase(), if (compact) 15.sp else 20.sp, Modifier.widthIn(max = hallW * 0.6f))
         }
         // The pool of light on the floor in front of the machine you're on.
         Canvas(Modifier.fillMaxSize()) {
@@ -727,7 +700,7 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
             val other = arcadeColorOf(gg)
             val col: () -> Color = if (on) ({ color }) else ({ other })
             // Where it stands now (read while placing / drawing): angle on the arc, depth, its turn.
-            fun phi() = (i - pos.value) * dPhi
+            fun phi() = hallPhi(slots, i - pos.value)
             fun placeZ(): Float {
                 val p = phi()
                 val fwd = if (on) 0.55f * step.value else 0f
@@ -737,15 +710,15 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
             val viewOf: () -> CabView = {
                 val p = phi(); val x = placeX(); val z = placeZ()
                 // Facing out from the arc's centre; seen from the eye: its turn is the difference.
-                val yaw = Math.toDegrees((atan2(x, z) - p).toDouble()).toFloat() + view.yaw * 0.55f
-                CabView(yaw.coerceIn(-55f, 55f), view.elev + 3f)
+                val yaw = Math.toDegrees((atan2(x, z) - p).toDouble()).toFloat() + viewYaw.value * 0.55f
+                CabView(yaw.coerceIn(-55f, 55f), viewElev.value + 3f)
             }
             androidx.compose.runtime.key(if (loop) "${gg.stableKey}#${Math.floorDiv(i, count)}" else gg.stableKey) {
                 val lit = remember { Animatable(if (on) 1f else 0.2f) }
                 LaunchedEffect(on, glow) { lit.animateTo(if (on && glow) 1f else if (on) 0.45f else 0.2f, tween(450)) }
                 ArcadeMachine(
                     c, gg, b, col, boxWdp, boxHdp, viewOf, { lit.value },
-                    { (abs(phi()) / maxPhi * 0.7f + if (on) 0f else 0.15f).coerceIn(0f, 0.85f) },
+                    { (abs(i - pos.value) / (fits + 1f) * 0.6f + if (on) 0f else 0.12f).coerceIn(0f, 0.8f) },
                     live = on, detail = on || abs(i - vf) <= 1,
                     modifier = Modifier
                         .layout { m, _ -> val pl = m.measure(Constraints.fixed(boxW.roundToInt(), boxH.roundToInt())); layout(pl.width, pl.height) { pl.place(0, 0) } }
@@ -761,7 +734,7 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
                             val sy = hPx * horizon + 1.15f * f / z
                             translationX = sx - boxW / 2f
                             translationY = sy - boxH
-                            alpha = (1.6f - abs(phi()) / maxPhi * 1.4f).coerceIn(0f, 1f)
+                            alpha = (fits + 0.85f - abs(i - pos.value)).coerceIn(0f, 1f)
                         }
                         .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
                 )
@@ -791,24 +764,47 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
 @Composable
 private fun ArcadeCategory(c: StyleCtx, compact: Boolean) {
     val step by rememberUpdatedState(c.actions.category)
-    val accent = ShelfTheme.accent
     val size = if (compact) 11.sp else 13.sp
+    // (Update 348: an LED readout — the section and where you are in it, like a machine's credit display.)
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (c.stops.size > 1) {
-            Text("◀", color = Color.White.copy(alpha = 0.6f), fontSize = size, modifier = Modifier.tapOnly { step(-1) }.padding(end = 8.dp, top = 6.dp, bottom = 6.dp))
+            Text("◀", color = ArcadeLed.copy(alpha = 0.8f), fontSize = size, modifier = Modifier.tapOnly { step(-1) }.padding(end = 6.dp, top = 6.dp, bottom = 6.dp))
         }
         CategoryTitle.Native() // (Update 212: the layout's own category title.)
-        Text(
-            c.categoryLabel.uppercase(), color = accent, fontSize = size, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
-            maxLines = 1, softWrap = false, modifier = Modifier.weight(1f, fill = false), style = nameTextStyle(NameBackdrop.SHADOW)
-        )
-        Text(
-            "  ${c.focus + 1} / ${c.games.size}", color = Color.White.copy(alpha = 0.7f), fontSize = size, fontFamily = FontFamily.Monospace,
-            maxLines = 1, softWrap = false, style = nameTextStyle(NameBackdrop.SHADOW)
-        )
+        ArcadeLedSign(c.categoryLabel.uppercase() + "   ${c.focus + 1}/${c.games.size}", size, Modifier.weight(1f, fill = false))
         if (c.stops.size > 1) {
-            Text("▶", color = Color.White.copy(alpha = 0.6f), fontSize = size, modifier = Modifier.tapOnly { step(1) }.padding(start = 8.dp, top = 6.dp, bottom = 6.dp, end = 4.dp))
+            Text("▶", color = ArcadeLed.copy(alpha = 0.8f), fontSize = size, modifier = Modifier.tapOnly { step(1) }.padding(start = 6.dp, top = 6.dp, bottom = 6.dp, end = 4.dp))
         }
+    }
+}
+
+/** The arcade's LED colour (amber, as the status bar's readout). */
+internal val ArcadeLed = Color(0xFFFFB84D)
+
+/**
+ * Update 348: an LED sign — amber pixel letters glowing on a smoked panel in a dark metal frame, the dot matrix showing
+ * through (fine dark lines over the letters). Static (drawn once).
+ */
+@Composable
+private fun ArcadeLedSign(text: String, size: TextUnit, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .border(1.5.dp, Brush.verticalGradient(listOf(Color(0xFF5A5D65), Color(0xFF26282D))), RoundedCornerShape(4.dp))
+            .background(Color(0xF00A0A0D), RoundedCornerShape(4.dp))
+            .padding(horizontal = 10.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text, color = ArcadeLed, fontSize = size, fontFamily = pocketFont(), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+            letterSpacing = 1.5.sp, style = TextStyle(shadow = Shadow(Color(0xFFFF8A1E).copy(alpha = 0.85f), Offset.Zero, 14f)),
+            modifier = Modifier.drawWithContent {
+                drawContent()
+                val pitch = 2.dp.toPx()
+                var x = 0f
+                while (x < this.size.width) { drawLine(Color(0xFF0A0A0D).copy(alpha = 0.55f), Offset(x, 0f), Offset(x, this.size.height), 0.7f); x += pitch }
+                var y = 0f
+                while (y < this.size.height) { drawLine(Color(0xFF0A0A0D).copy(alpha = 0.55f), Offset(0f, y), Offset(this.size.width, y), 0.7f); y += pitch }
+            }
+        )
     }
 }
 

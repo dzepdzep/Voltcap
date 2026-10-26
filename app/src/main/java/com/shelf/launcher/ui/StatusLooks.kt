@@ -254,7 +254,13 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         // Timeline: a date strip — no box, spaced capitals, the theme's ruled line with ticks under it.
         HomeLayout.TIMELINE -> StatusLook(BarBacking.UNDERLINE, rim = acc, rimWidth = 2.dp, caps = true, tracking = 0.1f, clockSize = 11.sp, weight = FontWeight.Normal, clockWeight = FontWeight.Bold, gap = 10.dp, shade = 0.18f, sep = "/", avatarSize = 22.dp)
         // Arcade cabinets: a marquee — dark glass, neon capitals.
-        HomeLayout.ARCADE -> StatusLook(
+        // Update 348: the arcade's LED readout — a smoked panel in a dark metal frame, amber pixel digits (unlit segments
+        // behind the time), glowing a little; "Your theme" room: the theme-coloured capsule as before.
+        HomeLayout.ARCADE -> if (Features.arRoom.state.value != Features.ArRoom.THEME) StatusLook(
+            BarBacking.LCD, bg = Color(0xF00B0B0E), ink = Color(0xFFFFB84D), accent = Color(0xFFFFB84D), rim = Color(0xFF3B3D44), rimWidth = 1.5.dp,
+            corner = 3.dp, font = pixel, clockSize = 13.sp, clockWeight = FontWeight.Bold, ghost = true, glow = Color(0xFFFF8A1E),
+            iconSize = 15.dp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp
+        ) else StatusLook(
             // (Update 339: the cabinets' own colour — the theme's — lit like their marquee.)
             BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.82f).copy(alpha = 0.9f), ink = mixC(acc, Color.White, 0.8f), accent = acc, rim = acc.copy(alpha = 0.7f),
             rimWidth = 1.5.dp, corner = 4.dp, caps = true, tracking = 0.1f, glow = acc, clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp

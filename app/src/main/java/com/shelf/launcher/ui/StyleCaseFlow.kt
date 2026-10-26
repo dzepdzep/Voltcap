@@ -302,3 +302,30 @@ internal fun CaseFlowSettings() {
     Toggle(Icons.Filled.WbSunny, "Dark stage", "A dark stage with a soft light over the middle. Off: your theme's background.", Features.cfStage)
     Toggle(Icons.Filled.Title, "Name under the cases", "The game's name, console, time played and achievements.", Features.cfTitle)
 }
+
+/**
+ * Update 348: Case flow's carousel shapes for the R1 Carousel tile — each sets the curve, the turn of the cases either
+ * side, the spacing and fronts / spines together (Layout options keeps every slider; changed there, the tile says
+ * "Your own").
+ */
+internal enum class CaseFlowShape(val label: String, val curve: Int, val angle: Int, val spacing: Int, val side: Features.CfSide) {
+    CURVED("Curved", 45, 60, 100, Features.CfSide.FRONTS),
+    DEEP("Deep arc", 85, 70, 110, Features.CfSide.FRONTS),
+    FLAT("Flat row", 0, 35, 110, Features.CfSide.FRONTS),
+    TURNED("Turned row", 10, 75, 75, Features.CfSide.FRONTS),
+    SPINES("Spines", 20, 60, 100, Features.CfSide.SPINES),
+    SHELF("Spine shelf", 0, 80, 70, Features.CfSide.SPINES);
+
+    fun apply() {
+        Features.cfCurve.value = curve; Features.cfAngle.value = angle; Features.cfSpacing.value = spacing; Features.cfSide.value = side
+    }
+
+    companion object {
+        /** The shape the sliders are at now (read as state), or null when they're set to something of your own. */
+        fun current(): CaseFlowShape? {
+            val c = Features.cfCurve.state.value; val a = Features.cfAngle.state.value
+            val sp = Features.cfSpacing.state.value; val sd = Features.cfSide.state.value
+            return values().firstOrNull { it.curve == c && it.angle == a && it.spacing == sp && it.side == sd }
+        }
+    }
+}

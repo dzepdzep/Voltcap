@@ -32,8 +32,9 @@ class Arcade347Test {
             var area = 0f
             for (i in m.pts.indices) { val a = m.pts[i]; val b = m.pts[(i + 1) % m.pts.size]; area += a.x * b.y - b.x * a.y }
             assertTrue("${m.build} counter-clockwise", area > 0f)
-            assertEquals("${m.build} height", m.h, m.pts.maxOf { it.y }, 0.001f)
+            assertEquals("${m.build} height", m.h, maxOf(m.pts.maxOf { it.y }, m.side.maxOf { it.y }), 0.001f)
             assertTrue(m.pts.maxOf { it.x } <= m.d + 0.001f)
+            assertTrue(m.side.maxOf { it.x } <= m.d + 0.001f)
             for (r in listOf(CabRole.SCREEN, CabRole.MARQUEE, CabRole.DECK)) assertTrue("${m.build} $r", m.edge(r) >= 0)
         }
         // The bartop has no coin door or kick plate (it stands on a counter).
@@ -44,9 +45,21 @@ class Arcade347Test {
 
     /** The four builds don't share a silhouette: their shapes (width / height, screen tilt, deck height) all differ. */
     @Test fun buildsHaveTheirOwnSilhouettes() {
-        val front = CabView(0f, 0f)
-        val aspects = builds.map { cabAspect(it, front) }
-        for (i in aspects.indices) for (j in aspects.indices) if (i < j) assertTrue("${builds[i].build} vs ${builds[j].build}", abs(aspects[i] - aspects[j]) > 0.03f)
+        // (Update 348: compared by their side outlines — how far forward each reaches at heights up the machine, as a share
+        // of its depth — not by the box they fill: the bartop on its counter is as wide for its height as the candy.)
+        fun reach(m: CabModel, y: Float): Float {
+            var best = 0f
+            for (i in m.side.indices) {
+                val a = m.side[i]; val b = m.side[(i + 1) % m.side.size]
+                if ((a.y - y) * (b.y - y) <= 0f && a.y != b.y) best = maxOf(best, a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y))
+            }
+            return best / m.d
+        }
+        val heights = listOf(0.3f, 0.5f, 0.65f, 0.8f, 0.95f)
+        for (i in builds.indices) for (j in builds.indices) if (i < j) {
+            val diff = heights.sumOf { h -> abs(reach(builds[i], h * builds[i].h) - reach(builds[j], h * builds[j].h)).toDouble() }
+            assertTrue("${builds[i].build} vs ${builds[j].build}: $diff", diff > 0.15)
+        }
         fun tilt(m: CabModel): Float { val i = m.edge(CabRole.SCREEN); val a = m.pts[i]; val b = m.pts[i + 1]; return Math.toDegrees(kotlin.math.atan2((a.x - b.x).toDouble(), (b.y - a.y).toDouble())).toFloat() }
         val tilts = builds.associate { it.build to tilt(it) }
         assertTrue(tilts.getValue(CabBuild.CANDY) > tilts.getValue(CabBuild.UPRIGHT))

@@ -266,8 +266,12 @@ internal fun StyleMagazine(c: StyleCtx, modifier: Modifier = Modifier) {
         val sh = sw / spreadAspect
         val pageW = sw / 2
         val compact = sh < 360.dp
-        val t = turn.value
-        val old = c.games.getOrNull(from.intValue) ?: g
+        // (Update 348, Toni: "the next page's picture flashes before it turns": the frame the game changes in came before
+        // the turn's effect started — the turn still at its end and the old page unknown, so the new spread showed whole for
+        // a frame. A focus that moved on and isn't turning yet is the turn's first frame now.)
+        val pending = prevFocus[0] != c.focus && !reduced
+        val t = if (pending) 0f else turn.value
+        val old = c.games.getOrNull(if (pending) prevFocus[0] else from.intValue) ?: g
         val forward = MagNav.dir >= 0
         val turning = t < 1f && old.stableKey != g.stableKey
         Box(Modifier.size(sw, sh)) {

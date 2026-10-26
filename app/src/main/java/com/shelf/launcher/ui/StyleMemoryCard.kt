@@ -60,6 +60,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.draw.drawBehind
@@ -494,7 +495,10 @@ private fun McArtIcon(c: StyleCtx, g: Game, selected: Boolean, depth: Features.M
     // The game's own logo (a clear picture that floats well) — your pick, SteamGridDB's or the scraped one — else its
     // RetroAchievements icon: drawn as a solid 3D badge that turns like a save icon.
     val logo = bigLogo(g, c.state) ?: g.raGameId?.let { c.state.raIcons[it] }
-    val appIcon = if (g.sourceType == SourceType.APP) rememberAppIcon(g.packageName) else null
+    // (Update 348, Toni: the one-colour app icons looked odd here — an app is its own full-colour icon, a solid badge that
+    // turns like the logos.)
+    val appIcon = if (g.sourceType == SourceType.APP) rememberOwnAppIcon(g.packageName) else null
+    val appBmp = remember(appIcon) { appIcon?.asAndroidBitmap() }
     val cover = c.cover(g)
     @Composable
     fun ArtFallback() {
@@ -515,10 +519,11 @@ private fun McArtIcon(c: StyleCtx, g: Game, selected: Boolean, depth: Features.M
         }
     }
     when {
-        appIcon != null -> Box(Modifier.fillMaxHeight().aspectRatio(1f).then(turnMod), contentAlignment = Alignment.Center) {
-            if (depth.edge > 0f) Image(appIcon, null, Modifier.fillMaxSize(0.8f).offset(depth.edge.dp, depth.edge.dp), colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.45f)))
-            Image(appIcon, null, Modifier.fillMaxSize(0.8f))
-        }
+        appIcon != null -> LogoSlab(
+            appBmp, Modifier.fillMaxSize(), turning = selected && selMode == Features.McSelected.TURN,
+            restAngle = -tilt - 12f, depth = 0.04f + depth.edge * 0.012f,
+            fallback = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Image(appIcon, null, Modifier.fillMaxSize(0.8f)) } }
+        )
         logo != null -> LogoSlab(
             logo, Modifier.fillMaxSize(), turning = selected && selMode == Features.McSelected.TURN,
             restAngle = -tilt - 12f,
@@ -685,9 +690,11 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
             if (mesh != null) Box(Modifier.fillMaxSize(0.92f)) { McMeshIcon(mesh, true, Features.McSelected.TURN, clock) }
             else {
                 val logo = ctx.logo ?: g.raGameId?.let { ctx.state.raIcons[it] }
-                val appIcon = if (g.sourceType == SourceType.APP) rememberAppIcon(g.packageName) else null
+                val appIcon = if (g.sourceType == SourceType.APP) rememberOwnAppIcon(g.packageName) else null
+                val appBmp = remember(appIcon) { appIcon?.asAndroidBitmap() }
                 when {
-                    appIcon != null -> Image(appIcon, null, Modifier.fillMaxSize(0.7f))
+                    appIcon != null -> LogoSlab(appBmp, Modifier.fillMaxSize(0.8f), turning = true, fast = false, depth = 0.05f,
+                        fallback = { Image(appIcon, null, Modifier.fillMaxSize(0.7f)) })
                     logo != null -> LogoSlab(logo, Modifier.fillMaxSize(0.92f), turning = true, fast = false, depth = 0.05f,
                         fallback = { ctx.cover?.let { McBoxIcon(it, Features.McDepth.values().last(), Modifier.fillMaxSize(0.8f)) } })
                     ctx.cover != null -> McBoxIcon(ctx.cover, Features.McDepth.values().last(), Modifier.fillMaxSize(0.8f))

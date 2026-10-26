@@ -831,6 +831,18 @@ fun QuickSettingsCard(
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).
             add(R1Tile("romm", Icons.Filled.CloudDownload, "RomM", false) { RommUi.showing = true })
+            // Update 348 (Toni: "changing carousels in Case flow is gone where it's needed the most"): Case flow's own
+            // carousel shapes on the Carousel tile — tap: the next shape, hold: the list (Layout options keeps the sliders).
+            if (a.homeLayout == com.shelf.launcher.data.HomeLayout.CASEFLOW) {
+                val now = CaseFlowShape.current()
+                add(R1Tile("carousel", Icons.Filled.ViewCarousel, "Carousel\n" + (now?.label ?: "Your own"), true,
+                    longAction = {
+                        choiceSheet = "Case flow carousel" to CaseFlowShape.values().map { v -> R1Choice(v.label, now == v) { v.apply() } }
+                    }) {
+                    val all = CaseFlowShape.values()
+                    all[((now?.ordinal ?: -1) + 1) % all.size].apply()
+                })
+            } else {
             // Carousel look of the layout in use (TV room: Games beside the TV › Carousel).
             val tv = a.homeLayout == com.shelf.launcher.data.HomeLayout.TV
             val carouselOn = if (tv) com.shelf.launcher.data.Features.tvRoomGames.state.value == TvRoom.Games.CAROUSEL
@@ -897,6 +909,7 @@ fun QuickSettingsCard(
                     if (next.cases) { com.shelf.launcher.data.Features.carouselReflect.value = true; com.shelf.launcher.data.Features.carouselStage.value = true }
                 }
             })
+            }
             // Theme: the next favourite (hold: the theme list).
             // Update 186: what's behind the home screen, in one tap: the game's picture with its video clip → the picture
             // only → the theme's animated background → a still background (the theme's own colour). Hold: every choice.
