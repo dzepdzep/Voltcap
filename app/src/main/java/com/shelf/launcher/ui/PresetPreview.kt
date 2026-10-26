@@ -112,6 +112,9 @@ internal fun PresetPreview(
             HomeLayout.BOX -> p.cardboardBox()
             HomeLayout.STORAGE -> p.storageBoxes()
             HomeLayout.FILESELECT -> p.fileSelect()
+            HomeLayout.ORBIT -> p.orbitDeck()
+            HomeLayout.AIRY -> p.airyHome()
+            HomeLayout.NIGHT -> p.nightMenu()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -1103,6 +1106,46 @@ private class PreviewPainter(
             rect(x + 0.03f, y + 0.05f, 0.1f, 0.24f, cover(i), 4f)
             line(x + 0.16f, y + 0.1f, 0.22f, Color.White, 0.04f)
             line(x + 0.16f, y + 0.18f, 0.1f, Color(0xFFFFE04A), 0.03f)
+        }
+    }
+
+    /** Update 330: Orbit deck — discs on a tipped orbit round a glowing core in deep space. */
+    fun orbitDeck() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF0B1638), Color(0xFF02040C))))
+        val cx = w * 0.5f; val cy = h * 0.46f
+        d.drawCircle(Color(0xFF5FA8FF).copy(alpha = 0.5f), h * 0.12f, Offset(cx, cy))
+        d.drawCircle(Color.White, h * 0.05f, Offset(cx, cy))
+        for (i in 0 until 9) {
+            val th = (i - 4) * (2.0 * Math.PI / 9).toFloat()
+            val depth = (kotlin.math.cos(th) + 1f) / 2f
+            val r = h * (0.05f + 0.13f * depth)
+            d.drawCircle(cover(i), r, Offset(cx + w * 0.36f * kotlin.math.sin(th), cy + h * 0.14f * kotlin.math.cos(th)))
+        }
+        line(0.3f, 0.86f, 0.4f, Color(0xFFDDE5F0), 0.05f)
+    }
+
+    /** Update 330: Airy home — a pale screen, a bowed row of rounded tiles, the middle one lifted and ringed. */
+    fun airyHome() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFFFCFDFF), Color(0xFFDCE7F3))))
+        for (i in 0 until 7) {
+            val dd = i - 3
+            val big = dd == 0
+            val tw = if (big) 0.15f else 0.1f; val th = tw * 1.5f
+            rect(0.5f + dd * 0.135f - tw / 2f, 0.36f + dd * dd * 0.012f - (if (big) 0.04f else 0f), tw, th, cover(i), 6f)
+        }
+        line(0.3f, 0.18f, 0.4f, Color(0xFF2D3440), 0.035f)
+        rect(0.84f, 0.08f, 0.1f, 0.1f, Color(0xFF9DAF96), 3f)
+    }
+
+    /** Update 330: Night menu — slanted bars under a moon, the one you're on white, a framed cover on the left. */
+    fun nightMenu() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF0A1C3F), Color(0xFF020611))))
+        d.drawCircle(Color(0xFFF2F5F0), h * 0.09f, Offset(w * 0.82f, h * 0.18f))
+        rect(0.06f, 0.14f, 0.3f, 0.62f, Color.White, 2f)
+        rect(0.075f, 0.165f, 0.27f, 0.57f, cover(0), 2f)
+        for (i in 0 until 7) {
+            val on = i == 3
+            rect(0.46f - (if (on) 0.03f else 0f) + kotlin.math.abs(i - 3) * 0.01f, 0.1f + i * 0.12f, 0.5f, 0.09f, if (on) Color.White else Color(0xFF1B3566), 2f)
         }
     }
 

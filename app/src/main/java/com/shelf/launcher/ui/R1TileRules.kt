@@ -167,7 +167,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
                 // Storage boxes and File select, their own icons and blocks.)
                 HomeLayout.MEMCARD, HomeLayout.CASEFLOW, HomeLayout.STORAGE, HomeLayout.FILESELECT,
                 // (Nor the Cardboard box: its cases by their spines, the spine names the console.)
-                HomeLayout.BOX)
+                HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT)
         })
         // Update 326 (audit): Outline (Settings › Game look › Coloured frame, R1 tile of 325) — only where it's drawn: the
         // Voltcap row, Tile home, Grid, Hero carousel, TV room (their cards), and the carousel view of Side menu / Case
@@ -194,7 +194,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             l.name in Features.carouselLayouts.state.value) R1Fit.Hide else when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
             HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC, HomeLayout.MEMCARD, HomeLayout.CASEFLOW,
-            HomeLayout.STORAGE, HomeLayout.FILESELECT, HomeLayout.BOX -> R1Fit.Hide
+            HomeLayout.STORAGE, HomeLayout.FILESELECT, HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT -> R1Fit.Hide
             // (Update 326, audit: Pocket ribbon's cartridge on top is drawn with StyleArt, which puts the chip on it.)
             HomeLayout.POCKET_RIBBON -> on(Features.ribbonCart.state.value)
             // (Update 204: hidden, not greyed, while Pocket Quest shows plain covers.)
@@ -207,7 +207,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.CUSTOM,
             HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET,
             // Update 330: their own Icon size / Case size (Layout options).
-            HomeLayout.MEMCARD, HomeLayout.CASEFLOW, HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT
+            HomeLayout.MEMCARD, HomeLayout.CASEFLOW, HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT,
+            HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT
         ))
         // (Update 239, #93: the Cube menu needs no rule of its own — its games are drawn with StyleArt in your look, size
         // (GameSize), badges and achievement chip, its row goes round with Endless; Carousel / Row position / Twin gaps

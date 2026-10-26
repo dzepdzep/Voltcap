@@ -498,6 +498,10 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     com.shelf.launcher.data.HomeLayout.FILESELECT -> "save-file blocks"
     // (The Cardboard box: always the games' cases, spines up.)
     com.shelf.launcher.data.HomeLayout.BOX -> "game cases by their spines"
+    // Update 330, phase 3: discs, rounded tiles, slanted bars with the cover framed beside them.
+    com.shelf.launcher.data.HomeLayout.ORBIT -> "discs"
+    com.shelf.launcher.data.HomeLayout.AIRY -> "rounded tiles"
+    com.shelf.launcher.data.HomeLayout.NIGHT -> "slanted bars"
     // (Update 183: the Pocket layouts follow your look — cartridges, cases and discs in their frames.)
     else -> null
 }

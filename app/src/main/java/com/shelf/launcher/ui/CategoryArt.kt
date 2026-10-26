@@ -4,10 +4,18 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.VideogameAsset
+import androidx.compose.ui.unit.sp
+import com.shelf.launcher.ui.theme.ShelfTheme
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +67,19 @@ internal fun CategoryArt(
     val photo = rememberConsolePhoto(tile, mode)
     val wide = shape == CardShape.WIDE
     when {
+        // (Update 330: Voltcap's own console pictures — drawn whole, never cropped or stretched, with room round them; on a
+        // wide card to the right and up, clear of the name at the bottom left.)
+        com.shelf.launcher.data.ConsoleArt.isOurs(photo) -> Box(modifier) {
+            AsyncImage(
+                photo, null, contentScale = ContentScale.Fit,
+                modifier = when (shape) {
+                    CardShape.WIDE -> Modifier.align(Alignment.TopEnd).fillMaxWidth(0.64f).fillMaxHeight(0.8f).padding(horizontal = 8.dp, vertical = 6.dp)
+                    // (Tall cards and the Wall's slices carry their name in the middle or at the bottom: the console sits above it.)
+                    CardShape.TALL -> Modifier.align(Alignment.TopCenter).fillMaxWidth().fillMaxHeight(0.46f).padding(horizontal = 10.dp, vertical = 14.dp)
+                    CardShape.SQUARE -> Modifier.align(Alignment.Center).fillMaxSize(0.86f)
+                }
+            )
+        }
         photo != null -> AsyncImage(photo, null, contentScale = if (wide) ContentScale.Crop else ContentScale.Fit, modifier = modifier)
         mode == CategoryTileArt.PLAIN -> Unit
         mode == CategoryTileArt.LAST_PLAYED -> {
@@ -80,7 +101,9 @@ internal fun CategoryArt(
 
 /** True when [CategoryArt] draws the cover fan on the right of a wide card (the name keeps to the left part then). */
 internal fun categoryArtIsFan(tile: CategoryTile, mode: CategoryTileArt = Features.categoryArt.value): Boolean =
-    tile.customImage == null && mode == CategoryTileArt.COVERS && tile.covers.isNotEmpty()
+    tile.customImage == null && (mode == CategoryTileArt.COVERS && tile.covers.isNotEmpty() ||
+        // (Update 330: and with Voltcap's own console picture on the right.)
+        mode == CategoryTileArt.CONSOLE && tile.platform?.let { com.shelf.launcher.data.ConsoleArt.model(it) } != null)
 
 /** [urls] one after the other, slowly cross-fading. Still (the first one) with Lite effects. */
 @Composable
@@ -120,7 +143,48 @@ internal fun rememberConsolePhoto(tile: CategoryTile, mode: CategoryTileArt): St
     val platform = tile.platform?.takeIf {
         mode == CategoryTileArt.CONSOLE && com.shelf.launcher.data.ConsolePhotos.hasPhoto(it)
     } ?: return null
+    // (Update 330: Voltcap's own picture at once — no wait, no network; your pick of model follows at once too.)
+    Features.consoleHwPick.state.value
+    com.shelf.launcher.data.ConsoleArt.model(platform)?.let { return it }
     val context = androidx.compose.ui.platform.LocalContext.current
     val url by produceState<String?>(null, platform) { value = com.shelf.launcher.data.ConsolePhotos.url(context, platform) }
     return url
+}
+
+/**
+ * Update 330: Settings › Categories › Console pictures — which model shows for the consoles that have more than one
+ * (Voltcap's own pictures, ConsoleArt): the closed DS / 3DS or the open ones, PlayStation 2 or its Slim, and so on.
+ */
+@Composable
+internal fun ConsolePicturesPicker() {
+    var open by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val titles = LocalTitleOptions.current
+    val picks = Features.consoleHwPick.state.value
+    val multi = com.shelf.launcher.data.ConsoleArt.VARIANTS.filter { it.value.size > 1 }
+    MenuRow(
+        androidx.compose.material.icons.Icons.Filled.VideogameAsset,
+        title = "Console pictures",
+        subtitle = if (open) "Which model each console shows" else "${multi.size} consoles come in more than one model — pick which shows",
+        onClick = { open = !open }
+    )
+    if (open) Column(Modifier.padding(start = 8.dp, top = 4.dp)) {
+        multi.forEach { (key, list) ->
+            val now = com.shelf.launcher.data.ConsoleArt.nameFor(key)
+            androidx.compose.foundation.layout.Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(now?.let { com.shelf.launcher.data.ConsoleArt.asset(it) }, null, contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(60.dp, 40.dp))
+                androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(titles.console(key).ifBlank { key }, color = ShelfTheme.textMuted, fontSize = 12.sp)
+                    ChipFlow {
+                        list.forEach { n ->
+                            Chip(com.shelf.launcher.data.ConsoleArt.NAMES[n] ?: n, accent = now == n) { com.shelf.launcher.data.ConsoleArt.pick(key, n) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // (Read so the row follows a pick at once.)
+    picks.size
 }

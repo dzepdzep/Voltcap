@@ -5758,6 +5758,9 @@ private fun CategoriesContent(
                         com.shelf.launcher.data.CategoryTileArt.PLAIN -> "Just its colour and its name."
                     } + " The same in all four looks. Your own picture for a card (Y on it) always wins; X removes it."
                 )
+                // (Update 330: which model of a console its own picture shows — cards, Console stack, Save Vault.)
+                Spacer(Modifier.height(10.dp))
+                ConsolePicturesPicker()
                 Spacer(Modifier.height(14.dp))
                 if (F.platformView.state.value == com.shelf.launcher.data.Features.PlatformView.TILES) {
                     RowChoice("Cards", com.shelf.launcher.data.CategoryTileStyle.values(), appearance.categoryTileStyle, { it.label }) {

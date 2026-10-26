@@ -13,7 +13,7 @@ Storage boxes, File select (1996), Orbit deck (1995), Airy home (1999), Night me
 |---|---|---|
 | 1 | Pocket classic popup (PR #12), Memory card (2000), Case flow | Done — built, tested on the Thor, pushed |
 | 2 | Cardboard box, Storage boxes, File select (1996); layout-made game windows (box, file select, storage, memory card, case flow); PS2IODB icons | Done — built, tested on the Thor, pushed |
-| 3 | Orbit deck (1995), Airy home (1999), Night menu (2006) | Not started |
+| 3 | Orbit deck (1995), Airy home (1999), Night menu (2006), each with its own window | Done — built, tested on the Thor, pushed |
 | 4 | Popup review of all 33 layouts, Cube docking, return-from-game restore | Not started |
 | 5 | Layout-styled Voltcap dialogs (opt-in, Standard by default) | Not started |
 
@@ -34,6 +34,14 @@ Storage boxes, File select (1996), Orbit deck (1995), Airy home (1999), Night me
 | Storage boxes | Pixel sprites in slots, pixel-framed box / header / preview | Stored-entry record with tabs and a pointer menu | Rendered + recorded: box, selected, record open, closing into the slot, other game | Record cramped beside a case piece → opens from the icon itself (piece via Inspect only); title over the tabs when narrow → hidden there | Passed |
 | Memory card (window) | PS2IODB icons, animated | Browser info screen | Rendered + recorded | Games without an icon blank (logos never loaded) → fixed | Passed |
 | Case flow (window) | — | The case out, its media beside it | Rendered + recorded | — | Passed (tools scroll into view below the buttons on the Thor) |
+
+### Phase 3 rows
+
+| Layout | Implementation | Popup | Visual check | Bugs found → fixed | Status |
+|---|---|---|---|---|---|
+| Orbit deck (1995) | New (`StyleOrbitDeck.kt`), refined on Toni's review: lit 3D discs, real disc scans, front/back orbit halves, focus lift, smooth Endless | The disc flies out of the orbit; rings, an arc of chrome keys and a glass console open round it (CD-player screen); closes back into the orbit | Rendered + recorded: home, move, Endless wrap, open (3 frames), focus, close, real discs; 1280 × 720 | Front disc covered the name → orbit measured against the name block; glow too strong → small core; header scrolled away on narrow → opens at the top; Endless rebuilt discs → never wrapped | Passed |
+| Airy home (1999) | New (`StyleAiryHome.kt`): bowed row of rounded tiles, bubbles | Floating white panel, pixel LCD, round buttons | Rendered + recorded | — | Passed |
+| Night menu (2006) | New (`StyleNightMenu.kt`): slanted bar list, moon over water | Status screen of staggered slanted panels | Rendered + recorded | Command bars ran into the stats panel → chips under the stats, narrower bars | Passed |
 
 ## B. Settings compatibility matrix (phase 1)
 

@@ -43,10 +43,18 @@ object ConsolePhotos {
     }
     private val memory = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-    fun hasPhoto(platform: String): Boolean = ARTICLES.keys.any { it.equals(platform, true) }
+    fun hasPhoto(platform: String): Boolean = ConsoleArt.nameFor(platform) != null || ARTICLES.keys.any { it.equals(platform, true) }
 
-    /** The photo URL for [platform] (cached), or null when there is none / no network. */
-    suspend fun url(context: Context, platform: String): String? = withContext(Dispatchers.IO) {
+    /**
+     * The photo URL for [platform] (cached), or null when there is none / no network. Update 330: Voltcap's own picture of
+     * the console (ConsoleArt, shipped with the app) first; the Wikipedia photo only for a console without one.
+     */
+    suspend fun url(context: Context, platform: String): String? {
+        ConsoleArt.model(platform)?.let { return it }
+        return wikiUrl(context, platform)
+    }
+
+    private suspend fun wikiUrl(context: Context, platform: String): String? = withContext(Dispatchers.IO) {
         val article = ARTICLES.entries.firstOrNull { it.key.equals(platform, true) }?.value ?: return@withContext null
         memory[platform]?.let { return@withContext it.takeIf { v -> v != NONE } }
         val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

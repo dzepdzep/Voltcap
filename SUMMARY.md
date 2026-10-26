@@ -1,5 +1,69 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (330, phase 3 of 5): Orbit deck (1995), Airy home (1999), Night menu (2006) with their own game windows; Orbit deck refined (3D discs, real discs, disc-born window); Voltcap's own console pictures (74 curated)
+
+- **Orbit deck (1995)** (`ui\StyleOrbitDeck.kt`), refined after Toni's review ("title overlapping the artwork, excessive
+  central glow, better 3D, smooth orbit, a popup that grows out of the disc"):
+  - Discs on a tilted orbit round a small bright core (the floodlight glow is gone: a tight halo and two flare lines).
+    The orbit is measured against the name block (its type sizes included), so the front disc never covers the name
+    and the back discs never reach the status bar, on any screen or tilt.
+  - Each disc is lit by the core (bright on the side facing it, shaded away), with a gloss, a bright edge crescent and
+    its thickness showing; side discs turn along the orbit (perspective), far ones darken instead of vanishing, so
+    the art stays recognisable all round. The orbit: a fine line in a soft band (front half over the far discs, back
+    half behind the core), a dashed guide ring turning slowly, an inner ring.
+  - The disc you're on eases forward and grows. Moving glides the short way; with Endless it glides on past the last
+    game without rebuilding any disc (no pop); discs fade in and out at the back. Fewer games than places: each once.
+    The name cross-fades.
+  - **Real discs** (Toni: "the orbit deck doesn't use real CDs… for every layout always prefer the real media"): each
+    game's own disc photo (ScreenScraper), else its label scan on a drawn disc, a cartridge game its cartridge; the
+    cover only without scans. Layout options › "The games' own discs" (on). Its scans are fetched for the games round
+    the one you're on. Memory card's fallback icon (no save icon / logo) uses the real disc / cartridge too.
+  - **Window — a disc console's CD-player screen:** the disc leaves the orbit and flies forward (with a small lift),
+    rings open round it (achievements as a lit arc, a turning dashed ring, a ring of marks), the actions fan out from
+    it on an arc of round chrome keys, a dark glass console with chrome edges slides out: DISC · console · READY, the
+    name, TIME / LAST / YEAR / MAKER / KIND, the achievements as numbered tracks, the save / performance lines and a
+    command line naming the key you're on. Closing runs it back and the disc lands in its place on the orbit (its
+    orbit copy fades as the flying one takes over). Narrow screens: disc and console side by side, keys in rows.
+  - Options: discs round the orbit, tilt, colour, spin, stars, the games' own discs.
+- **Airy home (1999)** (`ui\StyleAiryHome.kt`): a bowed row of rounded tiles under drifting bubbles, a two-tone pixel LCD;
+  window: a floating white panel. Options: tile size, bubbles, accent, row curve, LCD.
+- **Night menu (2006)** (`ui\StyleNightMenu.kt`): slanted bars under a full moon over water, the cover framed; window: a
+  status screen of staggered slanted panels (chips moved under the stats; stats scroll when tight). Options: rows, moon,
+  water, colour.
+- All three: own backgrounds and category label, "<layout>'s window" (Built into the layout / Standard window),
+  presets, previews, option icons, R1 rules (badges / progress bar / game size hidden), controller + touch.
+- **Voltcap's own console pictures** (Toni's `VoltCap_Good_Only_74.zip`; only those 74, none of the 94 drafts):
+  - Shipped as WebP (lossy, full alpha, 1200 × 800 canvas kept: 4.8 MB in all, from 50 MB of PNG) in
+    `assets\console_hw\`, named by ES-DE system (`data\ConsoleArt.kt`). Voltcap's own keys map to their default
+    (PS1 → psx, Genesis → genesis, NDS → the closed DS Lite, 3DS → the closed 3DS XL, Steam → the Steam Machine — never a
+    Steam Deck), and a console kept under its ES-DE folder name finds its own (ps5, n64dd, famicom, atarijaguarcd,
+    arduboy, ngage, xboxone…).
+  - They win over the Wikipedia photo everywhere a console's picture shows (category / platform cards with "Photo of the
+    console", Console stack, Save Vault headers); Wikipedia only for consoles without one. Your own card picture (Y)
+    still wins over both. Cartridge / disc / box art, saves and metadata untouched.
+  - Drawn whole (ContentScale.Fit, never cropped or stretched) with room round them: square cards centred, wide cards to
+    the right and up (the name keeps to the left, as with the cover fan), tall cards and the Wall's slices above the
+    name. Covers and backdrops keep Crop.
+  - Settings › Categories › Console pictures: the model per console (DS / 3DS closed or open, PS2 / Slim, PS3 / Slim /
+    Super Slim, Switch / OLED / Lite, GBA / SP, Xbox 360 / S, Genesis / Mega Drive, Master System / Mark III, Saturn /
+    white, PC Engine / TurboGrafx-16, NES / Famicom, SNES / North America, N64 / 64DD, Jaguar / CD, ColecoVision /
+    Adam, Neo Geo Pocket Color / Pocket, Amiga 500 / 1200, Xbox One / X, Series X / S).
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E` (new:
+`app\src\main\assets\console_hw\*.webp`, 74 files; test `ConsoleArt330Test.kt`).
+Files: new `ui\StyleOrbitDeck.kt`, `ui\StyleAiryHome.kt`, `ui\StyleNightMenu.kt`, `data\ConsoleArt.kt`; changed
+`ui\WinScenes.kt`, `ui\GameWindow.kt`, `ui\StyleHomes.kt`, `ui\StyleHomeSettings.kt`, `ui\StyleMemoryCard.kt`,
+`ui\CategoryArt.kt`, `ui\StyleConsoleStack.kt`, `ui\SaveExplorer.kt`, `ui\SettingsDialog.kt`, `ui\PresetsCard.kt`,
+`ui\PresetPreview.kt`, `ui\OptionIcons.kt`, `ui\GameLookPicker.kt`, `ui\R1TileRules.kt`, `data\Features.kt`,
+`data\AppearanceStore.kt`, `data\LayoutPresets.kt`, `data\ConsolePhotos.kt`, tests `Layouts330Test.kt`,
+`ConsoleArt330Test.kt`, `docs\compat\LAYOUTS_330.md`.
+
+Checked on the AYN Thor (release builds; screenshots + recordings): Orbit deck home, moving, Endless past the first
+game, the window opening (three frames), moving inside it, closing back into the orbit, real discs; Airy / Night homes
+and windows; the category screen in all four looks with console pictures, the Console stack; a compact 1280 × 720
+screen (category cards, Orbit deck and its window). Unit tests pass (incl. the 74 files, defaults, ES-DE names, picks).
+Not tested: phones, every option value one by one.
+
 ## Update — 26 Oct 2026 (330, phase 2 of 5): layout-made game windows, Cardboard box (top-down storage boxes), Storage boxes, File select, PS2IODB save icons
 
 - **Game windows made by their layouts** (`ui\WinScenes.kt`, Toni: "each popup a natural extension of its layout, not

@@ -269,6 +269,15 @@ object LayoutPresets {
         o(Features.boxArrange, arrange), o(Features.boxSpacing), o(Features.boxLift), o(Features.boxTilt), o(Features.boxCaseSize, size),
         o(Features.boxLabel, label), o(Features.boxSwitch), o(Features.boxCardboard, board), o(Features.boxSpeed)
     )
+    private fun orbitOpts(color: Features.OdColor = Features.OdColor.BLUE, ring: Features.OdRing = Features.OdRing.NORMAL) = listOf(
+        o(Features.odRing, ring), o(Features.odTilt), o(Features.odColor, color), o(Features.odSpin), o(Features.odStars)
+    )
+    private fun airyOpts(accent: Features.AhAccent = Features.AhAccent.ORANGE, size: Features.AhSize = Features.AhSize.MEDIUM) = listOf(
+        o(Features.ahSize, size), o(Features.ahAccent, accent), o(Features.ahCurve), o(Features.ahBubbles), o(Features.ahLcd)
+    )
+    private fun nightOpts(color: Features.NmColor = Features.NmColor.NIGHT, rows: Features.NmRows = Features.NmRows.SEVEN) = listOf(
+        o(Features.nmRows, rows), o(Features.nmColor, color), o(Features.nmMoon), o(Features.nmWater)
+    )
     private fun storageOpts(size: Features.StSize = Features.StSize.COMPACT, wall: Features.StWallpaper = Features.StWallpaper.PER_BOX) = listOf(
         o(Features.stSize, size), o(Features.stSpacing), o(Features.stWallpaper, wall), o(Features.stPreview), o(Features.stCursor), o(Features.stMotion)
     )
@@ -691,6 +700,24 @@ object LayoutPresets {
         preset("box_messy", HomeLayout.BOX, "Rummaged box",
             "The same brown box after a good rummage: the cases a little crooked and uneven.",
             look = null, options = boxOpts(Features.BoxArrange.MESSY)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("orbit_std", HomeLayout.ORBIT, "Orbit deck",
+            "Your games as discs on an orbit round a glowing core in deep blue space, the one you're on at the front, spinning.",
+            look = null, options = orbitOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("orbit_violet", HomeLayout.ORBIT, "Orbit deck, violet",
+            "The same in violet space, eleven discs round the orbit.",
+            look = null, options = orbitOpts(Features.OdColor.VIOLET, Features.OdRing.LARGE)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("airy_std", HomeLayout.AIRY, "Airy home",
+            "A light, airy row of rounded tiles under drifting bubbles, the one you're on ringed in orange.",
+            look = null, options = airyOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("airy_blue", HomeLayout.AIRY, "Airy home, blue",
+            "The same with bigger tiles ringed in blue.",
+            look = null, options = airyOpts(Features.AhAccent.BLUE, Features.AhSize.LARGE)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("night_std", HomeLayout.NIGHT, "Night menu",
+            "Slanted bars under a full moon over still water, the game you're on framed big beside them.",
+            look = null, options = nightOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("night_crimson", HomeLayout.NIGHT, "Night menu, crimson",
+            "The same under a crimson sky, five big bars to a screen.",
+            look = null, options = nightOpts(Features.NmColor.CRIMSON, Features.NmRows.FIVE)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
         preset("storage_std", HomeLayout.STORAGE, "Storage boxes",
             "Each category a box of 30 small icons on its own wallpaper, a preview of the game you're on beside it.",
             look = null, options = storageOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },

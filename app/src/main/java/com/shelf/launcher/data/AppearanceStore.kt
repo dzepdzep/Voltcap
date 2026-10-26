@@ -195,7 +195,16 @@ enum class HomeLayout(val label: String) {
     STORAGE("Storage boxes"),
     /** Update 330: File select (1996) — your games as chunky 3D save-file blocks, a page of them at a time, stars for
      *  achievements (StyleFileSelect.kt). */
-    FILESELECT("File select (1996)");
+    FILESELECT("File select (1996)"),
+    /** Update 330, phase 3: Orbit deck (1995) — the games as discs on a tipped orbit round a glowing core in deep space,
+     *  the one you're on at the front (StyleOrbitDeck.kt). */
+    ORBIT("Orbit deck (1995)"),
+    /** Update 330, phase 3: Airy home (1999) — a light row of rounded tiles under drifting bubbles, a small pixel display
+     *  of the game you're on (StyleAiryHome.kt). */
+    AIRY("Airy home (1999)"),
+    /** Update 330, phase 3: Night menu (2006) — the games as slanted bars under a full moon over water, the one you're on
+     *  framed big beside them (StyleNightMenu.kt). */
+    NIGHT("Night menu (2006)");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -210,6 +219,7 @@ enum class HomeLayout(val label: String) {
         this == CUBE || // (Update 239, #93: Cube menu)
         this == MEMCARD || this == CASEFLOW || // Update 330: Memory card, Case flow
         this == BOX || this == STORAGE || this == FILESELECT || // Update 330: Cardboard box, Storage boxes, File select
+        this == ORBIT || this == AIRY || this == NIGHT || // Update 330, phase 3
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -695,7 +705,8 @@ object CategoryBars {
     val OWN = setOf(
         HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.DISCS, HomeLayout.CRATE, HomeLayout.POCKET_RIBBON,
         HomeLayout.TIMELINE, HomeLayout.SIDE, HomeLayout.DASH, HomeLayout.MEMCARD,
-        HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT
+        HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT,
+        HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT
     )
     val MENU = setOf(
         HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,

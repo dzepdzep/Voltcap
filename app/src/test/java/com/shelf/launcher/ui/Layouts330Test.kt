@@ -18,7 +18,7 @@ class Layouts330Test {
     )
 
     private val own = listOf(HomeLayout.MEMCARD, HomeLayout.CASEFLOW, HomeLayout.STORAGE, HomeLayout.FILESELECT)
-    private val all = own + HomeLayout.BOX
+    private val all = own + HomeLayout.BOX + HomeLayout.ORBIT + HomeLayout.AIRY + HomeLayout.NIGHT
 
     @Test fun newLayoutsArePickableStyleHomes() {
         for (l in all) {
@@ -27,7 +27,7 @@ class Layouts330Test {
             assertTrue("has presets", LayoutPresets.forLayout(l).isNotEmpty())
         }
         for (l in all) assertNotNull("draws its games its own way", layoutOwnLook(l))
-        for (l in listOf(HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT)) assertTrue(l in CategoryBars.OWN)
+        for (l in listOf(HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT)) assertTrue(l in CategoryBars.OWN)
         // Memory card shows the category as its card's name.
         assertTrue(HomeLayout.MEMCARD in CategoryBars.OWN)
     }
@@ -52,6 +52,9 @@ class Layouts330Test {
         assertEquals(WinScene.STORAGE_RECORD, winSceneFor(HomeLayout.STORAGE))
         assertEquals(WinScene.MEMCARD_INFO, winSceneFor(HomeLayout.MEMCARD))
         assertEquals(WinScene.CASE_MEDIA, winSceneFor(HomeLayout.CASEFLOW))
+        assertEquals(WinScene.ORBIT_TERMINAL, winSceneFor(HomeLayout.ORBIT))
+        assertEquals(WinScene.AIRY_PANEL, winSceneFor(HomeLayout.AIRY))
+        assertEquals(WinScene.NIGHT_STATUS, winSceneFor(HomeLayout.NIGHT))
         assertEquals(null, winSceneFor(HomeLayout.GRID))
     }
 }

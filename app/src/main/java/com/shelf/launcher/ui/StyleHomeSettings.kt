@@ -87,9 +87,13 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     // Update 330.
     HomeLayout.MEMCARD -> "Icon size, spacing, loose or straight rows, depth, the icon you're on, background, save icons, title, hints, float"
     HomeLayout.CASEFLOW -> "Fronts or spines either side, curve, spacing, size, turn, camera height, speed, reflections, stage, name"
-    HomeLayout.BOX -> "What stands in it, rows, neat or messy, spacing, rise, tilt, box depth, cardboard, speed"
+    HomeLayout.BOX -> "Case size, spacing, neat or messy, camera angle, how far it comes out, speed, label, box switching, cardboard, wear"
     HomeLayout.STORAGE -> "Box size, room round the icons, wallpapers, preview side, motion, pointer"
     HomeLayout.FILESELECT -> "Files per page, spacing, bounce, block colours, moving pattern, console-era blips"
+    // Update 330, phase 3.
+    HomeLayout.ORBIT -> "Discs round the orbit, tilt, colour, spinning disc, twinkling stars"
+    HomeLayout.AIRY -> "Tile size, accent colour, how much the row bows, bubbles, pixel display"
+    HomeLayout.NIGHT -> "Games on the screen, colour, full moon, water"
     else -> ""
 }
 
@@ -143,6 +147,10 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.BOX -> CardboardBoxSettings()
         HomeLayout.STORAGE -> StorageBoxesSettings()
         HomeLayout.FILESELECT -> FileSelectSettings()
+        // Update 330, phase 3 (StyleOrbitDeck.kt, StyleAiryHome.kt, StyleNightMenu.kt).
+        HomeLayout.ORBIT -> OrbitDeckSettings()
+        HomeLayout.AIRY -> AiryHomeSettings()
+        HomeLayout.NIGHT -> NightMenuSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

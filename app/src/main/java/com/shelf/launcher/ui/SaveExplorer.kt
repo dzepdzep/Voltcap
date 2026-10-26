@@ -625,7 +625,7 @@ internal fun SaveExplorerDialog(
 @Composable
 private fun ConsoleHeader(name: String, platform: String, count: Int, current: Boolean, first: Boolean) {
     val context = LocalContext.current
-    val photo by androidx.compose.runtime.produceState<String?>(null, platform) {
+    val photo by androidx.compose.runtime.produceState<String?>(null, platform, com.shelf.launcher.data.Features.consoleHwPick.state.value) {
         value = runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull()
     }
     Column(Modifier.fillMaxWidth().padding(top = if (first) 2.dp else 14.dp, bottom = 6.dp)) {

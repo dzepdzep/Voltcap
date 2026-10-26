@@ -628,6 +628,18 @@ internal fun styleHomeKey(
                 category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
             )
         )
+        // Update 330, phase 3.
+        HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT -> {
+            val ctx = StyleKeyCtx(
+                key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
+                category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
+            )
+            return when (layout) {
+                HomeLayout.ORBIT -> orbitDeckKey(ctx)
+                HomeLayout.AIRY -> airyHomeKey(ctx)
+                else -> nightMenuKey(ctx)
+            }
+        }
         HomeLayout.CRATE -> return recordCrateKey(
             StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
@@ -1153,7 +1165,11 @@ internal fun StyleHome(
     val label = state.specialFilter?.label ?: state.platformFilter?.let { titles.console(it) } ?: "All"
     val c = StyleCtx(state, games, focus, art, shortcuts, actions, type, mixed, stopsPair.first, stopsPair.second, label)
     // (Update 147: the Disc station always shows discs, so it wants the disc scans whatever the game look is.)
-    val needsLookup = type.wantsMedia() || type == CardArtType.SCREENSHOT || layout == HomeLayout.DISCS
+    val needsLookup = type.wantsMedia() || type == CardArtType.SCREENSHOT || layout == HomeLayout.DISCS ||
+        // (Update 330: Orbit deck draws each game's own disc when it has one.)
+        (layout == HomeLayout.ORBIT && com.shelf.launcher.data.Features.odReal.state.value) ||
+        // (and Memory card its own disc / cartridge for a game with no save icon or logo.)
+        layout == HomeLayout.MEMCARD
     LaunchedEffect(focus, type, games.size) {
         if (!needsLookup) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
@@ -1297,6 +1313,10 @@ internal fun StyleHome(
         HomeLayout.BOX -> StyleCardboardBox(c, modifier)
         HomeLayout.STORAGE -> StyleStorageBoxes(c, modifier)
         HomeLayout.FILESELECT -> StyleFileSelect(c, modifier)
+        // Update 330, phase 3 (StyleOrbitDeck.kt, StyleAiryHome.kt, StyleNightMenu.kt).
+        HomeLayout.ORBIT -> StyleOrbitDeck(c, modifier)
+        HomeLayout.AIRY -> StyleAiryHome(c, modifier)
+        HomeLayout.NIGHT -> StyleNightMenu(c, modifier)
         else -> Unit
     }
 }
@@ -1369,6 +1389,9 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.BOX -> CardboardBoxBackdrop(Modifier.fillMaxSize())
         HomeLayout.STORAGE -> StorageBoxesBackdrop(Modifier.fillMaxSize())
         HomeLayout.FILESELECT -> FileSelectBackdrop(Modifier.fillMaxSize())
+        HomeLayout.ORBIT -> OrbitDeckBackdrop(Modifier.fillMaxSize())
+        HomeLayout.AIRY -> AiryHomeBackdrop(Modifier.fillMaxSize())
+        HomeLayout.NIGHT -> NightMenuBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1414,6 +1437,7 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.CASEFLOW -> caseFlowOwnsBackground()
     // Update 330: their own room / screen always.
     HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT -> true
+    HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT -> true
     else -> false
 }
 

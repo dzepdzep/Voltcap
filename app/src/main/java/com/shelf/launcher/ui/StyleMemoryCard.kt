@@ -488,7 +488,13 @@ private fun McArtIcon(c: StyleCtx, g: Game, selected: Boolean, depth: Features.M
     fun ArtFallback() {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Box(Modifier.fillMaxHeight().aspectRatio(1f), contentAlignment = Alignment.Center) {
+                // (Update 330, Toni: "always prefer the real media": the game's own disc / cartridge where it has a scan.)
+                val own = ownMediaArt(g, c.state.physicalMedia[g.stableKey])
                 when {
+                    own != null && own.second == OdMedia.LABEL -> McDiscIcon(own.first, depth, turnMod)
+                    own != null -> Box(turnMod, contentAlignment = Alignment.Center) {
+                        AsyncImage(rememberStyleArtRequest(own.first, trim = true), null, Modifier.fillMaxSize(0.86f), contentScale = ContentScale.Fit)
+                    }
                     cover != null && mediaKind(g.platform) == "disc" -> McDiscIcon(cover, depth, turnMod)
                     cover != null -> McBoxIcon(cover, depth, turnMod)
                     else -> GenericCardSymbol(Modifier.fillMaxSize(0.8f))

@@ -1658,6 +1658,8 @@ object Features {
     val arcadeGameColors = BoolPref("arcade_game_colors", true)
     /** Console stack: the consoles as your console photos where there are (Settings › Library), else drawn. */
     val consolePhotos = BoolPref("console_stack_photos", true)
+    /** Update 330: the console picture picked per console, "KEY=name" (ConsoleArt). */
+    val consoleHwPick = SetPref("console_hw_pick")
     /** Console stack: how many games slide out of the console you're on (3–9). */
     val consoleStackGames = IntPref("console_stack_games", 6, 3..9)
     /**
@@ -1869,6 +1871,46 @@ object Features {
     val fsSounds = BoolPref("fs_sounds", false)
     /** The moving pattern behind the blocks. */
     val fsPattern = BoolPref("fs_pattern", true)
+
+    // ---- Update 330, phase 3: Orbit deck (1995) — the games as discs on an orbit round a glowing core (StyleOrbitDeck.kt) ----
+    enum class OdRing(val label: String, val n: Int) { SMALL("7 discs", 7), NORMAL("9 discs", 9), LARGE("11 discs", 11) }
+    val odRing = EnumPref("od_ring", OdRing.NORMAL, OdRing.values())
+    /** How far the orbit is tipped toward you, degrees. */
+    val odTilt = IntPref("od_tilt", 14, 4..30)
+    /** The disc you're on spins slowly. */
+    val odSpin = BoolPref("od_spin", true)
+    /** Twinkling stars behind (off: still). */
+    val odStars = BoolPref("od_stars", true)
+    /** The games' own discs (ScreenScraper's photo of the disc, else its label scan) on the orbit, the cover only where
+     *  there's none; a cartridge game shows its cartridge. Off: every disc printed with its cover. */
+    val odReal = BoolPref("od_real", true)
+    enum class OdColor(val label: String, val top: Long, val bottom: Long, val glow: Long) {
+        BLUE("Deep blue", 0xFF0B1638, 0xFF02040C, 0xFF5FA8FF), VIOLET("Violet", 0xFF1E0E3A, 0xFF05020C, 0xFFB98CFF),
+        GRAPHITE("Graphite", 0xFF1A1D23, 0xFF050607, 0xFFC9D3E0)
+    }
+    val odColor = EnumPref("od_color", OdColor.BLUE, OdColor.values())
+
+    // ---- Update 330, phase 3: Airy home (1999) — a light, airy row of rounded tiles under drifting bubbles (StyleAiryHome.kt) ----
+    enum class AhSize(val label: String, val k: Float) { SMALL("Small", 0.82f), MEDIUM("Medium", 1f), LARGE("Large", 1.18f) }
+    val ahSize = EnumPref("ah_size", AhSize.MEDIUM, AhSize.values())
+    val ahBubbles = BoolPref("ah_bubbles", true)
+    enum class AhAccent(val label: String, val argb: Long) { ORANGE("Orange", 0xFFF08A24), BLUE("Blue", 0xFF2F86E0), GREEN("Green", 0xFF35B37A) }
+    val ahAccent = EnumPref("ah_accent", AhAccent.ORANGE, AhAccent.values())
+    /** How much the row bows (0 straight). */
+    val ahCurve = IntPref("ah_curve", 30, 0..60)
+    /** The small pixel display top right showing the game you're on. */
+    val ahLcd = BoolPref("ah_lcd", true)
+
+    // ---- Update 330, phase 3: Night menu (2006) — slanted bars under a full moon (StyleNightMenu.kt) ----
+    enum class NmRows(val label: String, val n: Int) { FIVE("5 to a screen", 5), SEVEN("7 to a screen", 7), NINE("9 to a screen", 9) }
+    val nmRows = EnumPref("nm_rows", NmRows.SEVEN, NmRows.values())
+    val nmMoon = BoolPref("nm_moon", true)
+    val nmWater = BoolPref("nm_water", true)
+    enum class NmColor(val label: String, val top: Long, val bottom: Long, val hi: Long) {
+        NIGHT("Midnight blue", 0xFF0A1C3F, 0xFF020611, 0xFF7FE3FF), CRIMSON("Crimson", 0xFF3A0A14, 0xFF0C0204, 0xFFFF7A8C),
+        EMERALD("Emerald", 0xFF06291F, 0xFF010A07, 0xFF7DFFC6)
+    }
+    val nmColor = EnumPref("nm_color", NmColor.NIGHT, NmColor.values())
 
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)

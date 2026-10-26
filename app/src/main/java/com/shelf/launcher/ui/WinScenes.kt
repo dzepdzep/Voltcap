@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -64,6 +66,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -88,11 +92,14 @@ import com.shelf.launcher.data.HomeLayout
  *  - Storage boxes: the stored entry's record — its sprite on a stand, tabs for its pages, a menu with a pointer.
  *  - Memory card: the browser's info screen for a save — its icon big and turning, its title in yellow, words below.
  *  - Case flow: the case out on the left, its media beside it — video / backdrop, screenshot slides, glossy pills.
+ *  - Orbit deck: the CD-player terminal — the disc spinning in its tray, an LCD, transport keys.
+ *  - Airy home: a floating white system panel with big round buttons and a small pixel display.
+ *  - Night menu: angular status panels sliding in, slanted command bars with a pointer.
  * Settings › Game window › "<layout>'s window": built into the layout, or the standard window.
  */
 
 /** Update 330: the layouts with a window of their own. */
-internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INFO, CASE_MEDIA }
+internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INFO, CASE_MEDIA, ORBIT_TERMINAL, AIRY_PANEL, NIGHT_STATUS }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -100,6 +107,9 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.STORAGE -> WinScene.STORAGE_RECORD
     HomeLayout.MEMCARD -> WinScene.MEMCARD_INFO
     HomeLayout.CASEFLOW -> WinScene.CASE_MEDIA
+    HomeLayout.ORBIT -> WinScene.ORBIT_TERMINAL
+    HomeLayout.AIRY -> WinScene.AIRY_PANEL
+    HomeLayout.NIGHT -> WinScene.NIGHT_STATUS
     else -> null
 }
 
@@ -109,6 +119,9 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.FILE_CARD -> Brush.verticalGradient(listOf(Color(0xFF0B1240).copy(alpha = 0.62f), Color(0xFF050826).copy(alpha = 0.84f)))
     WinScene.STORAGE_RECORD -> Brush.verticalGradient(listOf(Color(0xFF0C1C30).copy(alpha = 0.58f), Color(0xFF060E18).copy(alpha = 0.82f)))
     WinScene.CASE_MEDIA -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.88f)))
+    WinScene.ORBIT_TERMINAL -> Brush.verticalGradient(listOf(Color(0xFF02040C).copy(alpha = 0.55f), Color(0xFF02040C).copy(alpha = 0.85f)))
+    WinScene.AIRY_PANEL -> Brush.verticalGradient(listOf(Color(0xFFF4F8FC).copy(alpha = 0.55f), Color(0xFFDCE7F3).copy(alpha = 0.8f)))
+    WinScene.NIGHT_STATUS -> Brush.linearGradient(listOf(Color(0xFF02060F).copy(alpha = 0.8f), Color(0xFF0A1C3F).copy(alpha = 0.75f)))
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
         com.shelf.launcher.data.Features.McBack.THEME -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Black.copy(alpha = 0.8f)))
@@ -184,6 +197,9 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.STORAGE_RECORD -> StorageRecord(ctx)
         WinScene.MEMCARD_INFO -> MemCardWindow(ctx)
         WinScene.CASE_MEDIA -> CaseFlowMedia(ctx)
+        WinScene.ORBIT_TERMINAL -> OrbitTerminal(ctx)
+        WinScene.AIRY_PANEL -> AiryPanel(ctx)
+        WinScene.NIGHT_STATUS -> NightStatus(ctx)
     }
 }
 
@@ -829,6 +845,489 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                             Icon(a.icon, null, tint = if (a.urgent) Color(0xFFFFB74D) else Color(0xFFB9BEC9), modifier = Modifier.size(13.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(a.label, color = Color(0xFFB9BEC9), fontSize = 11.sp, maxLines = 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Orbit deck: the CD-player terminal
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+/**
+ * Update 330: where the game window's scene was opened from (the game's own picture on the home screen, window px), for a
+ * scene that flies its own piece out of it (Orbit deck's disc); null otherwise.
+ */
+internal val LocalSceneOrigin = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.geometry.Rect?> { null }
+
+/** Corners cut off top left and bottom right (Orbit deck's console panels). */
+private fun odChamfer(cut: Float) = androidx.compose.foundation.shape.GenericShape { sz, _ ->
+    moveTo(cut, 0f); lineTo(sz.width, 0f); lineTo(sz.width, sz.height - cut); lineTo(sz.width - cut, sz.height); lineTo(0f, sz.height); lineTo(0f, cut); close()
+}
+
+/**
+ * Orbit deck's window, after a mid-90s disc console's CD-player screen (Toni's reference): the disc you were on leaves the
+ * orbit and comes forward to the left, still spinning; rings open round it (the achievements as a lit arc on one of them,
+ * a turning dashed ring, a ring of marks); the actions fan out from it on an arc of round chrome keys; a dark glass console
+ * with chrome edges slides out beside it — the name, the readouts, the achievements as numbered tracks, the save and
+ * performance lines. Other pages show in the console. Closing runs it all back and the disc returns to its place on the
+ * orbit. Narrow screens: the disc and the console side by side on top, the keys in rows under them.
+ */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun OrbitTerminal(ctx: WinSceneCtx) {
+    val col = com.shelf.launcher.data.Features.odColor.state.value
+    val glow = Color(col.glow)
+    val origin = LocalSceneOrigin.current
+    val anim = rememberAnimationsEnabled()
+    val clock = rememberGcClock(anim, 1f, 30)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    fun stage(a: Float, b: Float): Float = ((ctx.reveal() - a) / (b - a)).coerceIn(0f, 1f)
+    val acts = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
+    val w = ctx.maxW; val h = ctx.maxH
+    // The disc and its rings.
+    val discD = minOf(h * 0.56f, w * 0.3f)
+    val ringR = discD / 2 * 1.42f
+    val arcR = discD / 2 * 1.56f
+    val keyD = 38.dp
+    val discCx = ringR + 6.dp
+    // (The keys carry no words on the arc — the one you're on is named on the console's command line.)
+    val consoleX = discCx + arcR + keyD / 2 + 18.dp
+    val wideOk = w - consoleX >= 260.dp && h >= 280.dp
+    val command = remember { androidx.compose.runtime.mutableStateOf("") }
+    if (!wideOk) { OrbitTerminalNarrow(ctx, acts, glow, origin, clock); return }
+    Box(Modifier.size(w, h)) {
+        val discCy = h / 2
+        // The rings round the disc.
+        Canvas(Modifier.offset(discCx - ringR * 1.05f, discCy - ringR * 1.05f).size(ringR * 2.1f)) {
+            val t = stage(0.3f, 0.8f)
+            if (t <= 0f) return@Canvas
+            val c = center
+            val r = discD.toPx() / 2f
+            val k = 0.86f + 0.14f * t
+            drawCircle(glow.copy(alpha = 0.55f * t), r * 1.05f * k, c, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f))
+            // The achievements as a lit arc.
+            val pr = r * 1.17f * k
+            drawCircle(glow.copy(alpha = 0.12f * t), pr, c, style = androidx.compose.ui.graphics.drawscope.Stroke(5.dp.toPx()))
+            if (ctx.total > 0) drawArc(Brush.sweepGradient(listOf(glow, Color.White, glow), c), -90f, 360f * ctx.earned / ctx.total * t, false,
+                Offset(c.x - pr, c.y - pr), Size(pr * 2, pr * 2), alpha = t, style = androidx.compose.ui.graphics.drawscope.Stroke(5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round))
+            // A dashed ring turning slowly.
+            val dr = r * 1.29f * k
+            val turn = clock.floatValue * 9f
+            for (i in 0 until 48) drawArc(glow.copy(alpha = (if (i % 8 == 0) 0.7f else 0.28f) * t), turn + i * 7.5f, 4.2f, false,
+                Offset(c.x - dr, c.y - dr), Size(dr * 2, dr * 2), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+            // A ring of marks.
+            val mr = r * 1.4f * k
+            for (i in 0 until 72) {
+                val a = Math.toRadians(i * 5.0 - turn * 0.25)
+                val len = if (i % 6 == 0) r * 0.06f else r * 0.025f
+                val d = Offset(kotlin.math.cos(a).toFloat(), kotlin.math.sin(a).toFloat())
+                drawLine(Color.White.copy(alpha = (if (i % 6 == 0) 0.55f else 0.22f) * t), c + d * mr, c + d * (mr - len), 1.3f)
+            }
+        }
+        // The disc, flown out of its place on the orbit.
+        OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
+        // The keys, fanned out on an arc to the disc's right.
+        val n = acts.size
+        val span = minOf(150f, (n - 1).coerceAtLeast(1) * 17f)
+        val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
+        acts.forEachIndexed { i, a ->
+            val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
+            val rad = Math.toRadians(ang.toDouble())
+            val dx = kotlin.math.cos(rad).toFloat(); val dy = kotlin.math.sin(rad).toFloat()
+            SceneControl(a, Modifier
+                .offset(discCx + arcR * dx - keyD / 2, discCy + arcR * dy - keyD / 2)
+                .graphicsLayer {
+                    val t = stage(0.42f + i * stagger, 0.72f + i * stagger)
+                    // Out from behind the disc along its ray.
+                    val back = (1f - t) * arcR.toPx() * 0.45f
+                    translationX = -dx * back; translationY = -dy * back
+                    alpha = t
+                }
+            ) { on ->
+                if (on) androidx.compose.runtime.SideEffect { command.value = a.label }
+                OdKey(a, on, glow, keyD, 0.dp)
+            }
+        }
+        // The console.
+        Box(
+            Modifier.offset(consoleX, h * 0.06f).size(w - consoleX, h * 0.88f)
+                .graphicsLayer {
+                    val t = stage(0.28f, 0.82f)
+                    alpha = t
+                    translationX = -(1f - t) * 48.dp.toPx()
+                    scaleY = 0.9f + 0.1f * t
+                }
+        ) { OdConsole(ctx, glow, clock, command.value) }
+    }
+}
+
+/** Orbit deck's window on a narrow screen: the disc and the console side by side, the keys in rows under them. */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun OrbitTerminalNarrow(ctx: WinSceneCtx, acts: List<WinAction>, glow: Color, origin: androidx.compose.ui.geometry.Rect?, clock: androidx.compose.runtime.FloatState) {
+    val w = ctx.maxW; val h = ctx.maxH
+    val discD = minOf(w * 0.34f, h * 0.3f)
+    Column(Modifier.size(w, h), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OdFlyingDisc(ctx, origin, clock, Modifier.size(discD))
+            Box(Modifier.weight(1f).fillMaxHeight().graphicsLayer { val t = ((ctx.reveal() - 0.28f) / 0.54f).coerceIn(0f, 1f); alpha = t }) { OdConsole(ctx, glow, clock) }
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
+            acts.forEach { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
+        }
+    }
+}
+
+/**
+ * The disc in the window: laid out in its place, and drawn flying there from where it stood on the orbit ([origin]) as the
+ * window opens — the same size there, so it simply leaves the orbit and comes forward; back the same way on closing.
+ */
+@Composable
+private fun OdFlyingDisc(ctx: WinSceneCtx, origin: androidx.compose.ui.geometry.Rect?, clock: androidx.compose.runtime.FloatState, modifier: Modifier) {
+    val col = com.shelf.launcher.data.Features.odColor.state.value
+    var target by remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    Box(modifier.then(Modifier.onGloballyPositioned { target = it.boundsInWindow() })) {
+        Box(
+            Modifier.fillMaxSize().graphicsLayer {
+                val k = ctx.reveal().coerceIn(0f, 1f)
+                val to = target
+                if (origin != null && to != null && to.width > 0f) {
+                    // (Its picture is the inner 86 % — the disc itself, not its glow.)
+                    val s0 = (origin.width / (to.width * 0.86f)).coerceIn(0.05f, 2f)
+                    val s = s0 + (1f - s0) * k
+                    scaleX = s; scaleY = s
+                    translationX = (origin.center.x - to.center.x) * (1f - k)
+                    // (A slight arc on the way, as if lifted off the orbit toward you.)
+                    translationY = (origin.center.y - to.center.y) * (1f - k) - kotlin.math.sin(k * Math.PI).toFloat() * to.height * 0.08f
+                } else {
+                    val s = 0.6f + 0.4f * k
+                    scaleX = s; scaleY = s; alpha = k
+                }
+            }
+        ) { OrbitDisc(null, ctx.g, true, { clock.floatValue * 40f }, col, ctx.cover, physical = ctx.state.physicalMedia[ctx.g.stableKey]) }
+    }
+}
+
+/** A round chrome key with its word beside it; the one you're on lit in the orbit's colour. */
+@Composable
+private fun OdKey(a: WinAction, on: Boolean, glow: Color, keyD: Dp, labelW: Dp) {
+    // (labelW 0: the key alone.)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(keyD)
+                .drawBehind { if (on) drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = 0.7f), Color.Transparent)), size.minDimension * 0.85f) }
+                .clip(CircleShape)
+                .background(Brush.verticalGradient(if (on) listOf(Color(0xFFF4FAFF), glow) else listOf(Color(0xFFF2F5F9), Color(0xFF9AA3B2), Color(0xFF5D6676))))
+                .border(1.5.dp, Brush.verticalGradient(listOf(Color.White, Color(0xFF3B4250))), CircleShape)
+                .padding(3.dp).clip(CircleShape)
+                .background(Brush.verticalGradient(if (on) listOf(Color.Transparent, Color.Transparent) else listOf(Color(0xFF2A3140), Color(0xFF0E121A)))),
+            contentAlignment = Alignment.Center
+        ) {
+            val icon = when {
+                a.primary -> androidx.compose.material.icons.Icons.Filled.PlayArrow
+                a.back -> androidx.compose.material.icons.Icons.Filled.Stop
+                else -> a.icon
+            }
+            Icon(icon, a.label, tint = if (on) Color(0xFF07132A) else if (a.urgent) Color(0xFFFFB74D) else Color(0xFFDDE6F2), modifier = Modifier.size(keyD * 0.5f))
+        }
+        if (labelW > 0.dp) Spacer(Modifier.width(6.dp))
+        if (labelW > 0.dp) Text(
+            a.label.uppercase(), color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, letterSpacing = 1.sp, modifier = Modifier.widthIn(max = labelW),
+            style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
+        )
+    }
+}
+
+/** The dark glass console with chrome edges: the name, readouts, achievements as numbered tracks, the save / performance lines. */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.runtime.FloatState, command: String = "") {
+    val col = com.shelf.launcher.data.Features.odColor.state.value
+    val cut = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.toPx() }
+    val shape = remember(cut) { odChamfer(cut) }
+    val chrome = Brush.linearGradient(listOf(Color.White, Color(0xFF8E98A8), Color(0xFFE8EDF4), Color(0xFF5E6878)))
+    Box(
+        Modifier.fillMaxSize()
+            .drawBehind { drawRect(glow.copy(alpha = 0.10f)) }
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(Color(col.top).copy(alpha = 0.92f), Color(0xFF03060E).copy(alpha = 0.94f))))
+            .border(2.dp, chrome, shape)
+            .drawBehind {
+                // Fine scan lines and a sheen across the top.
+                var y = 0f
+                while (y < size.height) { drawLine(Color.White.copy(alpha = 0.025f), Offset(0f, y), Offset(size.width, y), 1f); y += 4f }
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.1f), Color.Transparent), endY = size.height * 0.18f))
+            }
+            .padding(start = 20.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)
+    ) {
+        if (ctx.page != WinPage.MAIN) { ctx.pageBody(Modifier.fillMaxSize()); return@Box }
+        val label = TextStyle(color = glow, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        val scroll = rememberScrollState()
+        // (Whatever the window's first focus did, it opens at the top.)
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(450); scroll.scrollTo(0) }
+        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(scroll)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("DISC", style = label)
+                Spacer(Modifier.width(8.dp))
+                Text(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                // A small LED, breathing.
+                Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }
+                Spacer(Modifier.width(5.dp))
+                Text("READY", style = label)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(ctx.name.uppercase(), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                maxLines = 1, modifier = Modifier.basicMarquee(), style = TextStyle(shadow = Shadow(glow.copy(alpha = 0.8f), Offset.Zero, 12f)))
+            Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.5.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0.05f)))))
+            @Composable
+            fun readout(k: String, v: String?) {
+                if (v.isNullOrBlank()) return
+                Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(k, style = label, modifier = Modifier.width(74.dp))
+                    Text(v.uppercase(), color = Color(0xFFEAF2FF), fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis)
+                }
+            }
+            readout("TIME", ctx.played)
+            readout("LAST", ctx.last ?: "—")
+            readout("YEAR", ctx.year)
+            readout("MAKER", ctx.developer)
+            readout("KIND", ctx.genres)
+            Spacer(Modifier.height(8.dp))
+            if (ctx.total > 0) {
+                // The achievements as the disc's tracks: numbered cells, the earned ones lit.
+                val cells = minOf(ctx.total, 24)
+                val lit = if (ctx.total <= 24) ctx.earned else kotlin.math.round(ctx.earned.toFloat() / ctx.total * cells).toInt()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("TRACKS", style = label)
+                    Spacer(Modifier.weight(1f))
+                    Text("${ctx.earned} / ${ctx.total}", color = Color(0xFFDDE6F2), fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(4.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (i in 0 until cells) {
+                        val on = i < lit
+                        Box(
+                            Modifier.size(26.dp, 16.dp).clip(RoundedCornerShape(4.dp))
+                                .background(if (on) Brush.verticalGradient(listOf(Color.White, glow)) else Brush.verticalGradient(listOf(Color(0xFF1C2433), Color(0xFF0B0F18))))
+                                .border(1.dp, if (on) Color.White.copy(alpha = 0.8f) else glow.copy(alpha = 0.25f), RoundedCornerShape(4.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("%02d".format(i + 1), color = if (on) Color(0xFF07132A) else Color(0xFF6E7E96), fontSize = 9.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else if (!ctx.summary.isNullOrBlank()) {
+                Text(ctx.summary, color = Color(0xFFC5D0E0), fontSize = 12.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp)
+            }
+            if (ctx.chips.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                ctx.chips.forEach { a ->
+                    SceneControl(a, Modifier.padding(vertical = 1.dp)) { on ->
+                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else Color(0xFF9FB0C8), fontSize = 11.sp, maxLines = 1,
+                            overflow = TextOverflow.Ellipsis, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                    }
+                }
+            }
+        }
+        // The command line: the key you're on, named.
+        if (command.isNotEmpty()) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("CMD", style = label)
+            Spacer(Modifier.width(8.dp))
+            Text("▸ " + command.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, style = TextStyle(shadow = Shadow(glow, Offset.Zero, 8f)))
+        }
+        }
+    }
+}
+
+private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this).toInt()
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Airy home: the floating system panel
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Airy home's window: a white panel floating over the pale screen with a soft shadow — the cover rounded on the left, the
+ * name in light type, its facts, the small pixel display showing the game; along the bottom big round buttons with
+ * their words under them (Play in the accent colour), the one you're on ringed and lifted. Other pages in a pale well.
+ */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun AiryPanel(ctx: WinSceneCtx) {
+    val accent = Color(com.shelf.launcher.data.Features.ahAccent.state.value.argb)
+    val w = minOf(ctx.maxW * 0.92f, 860.dp)
+    val h = minOf(ctx.maxH * 0.9f, 480.dp)
+    Column(
+        Modifier.size(w, h)
+            .graphicsLayer { val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx() }
+            .drawBehind {
+                drawRoundRect(Color(0xFF1C3150).copy(alpha = 0.18f), Offset(0f, 18f), size, androidx.compose.ui.geometry.CornerRadius(32.dp.toPx()))
+            }
+            .clip(RoundedCornerShape(30.dp)).background(Brush.verticalGradient(listOf(Color.White, Color(0xFFF2F6FB))))
+            .padding(22.dp)
+    ) {
+        Row(Modifier.fillMaxWidth().weight(1f)) {
+            Box(Modifier.fillMaxHeight().aspectRatio(0.74f).clip(RoundedCornerShape(20.dp)).background(Color(0xFFE6ECF3))) {
+                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            }
+            Spacer(Modifier.width(22.dp))
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                if (ctx.page == WinPage.MAIN) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(1f)) {
+                            Text(ctx.name, color = Color(0xFF2D3440), fontSize = 28.sp, lineHeight = 31.sp, fontWeight = FontWeight.Light, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(ctx.console, color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        AiryLcd(ctx.cover, Modifier.size(84.dp, 64.dp))
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOfNotNull(ctx.year, ctx.developer, ctx.genres, "Played " + ctx.played, if (ctx.total > 0) "★ ${ctx.earned} / ${ctx.total}" else null).forEach {
+                            Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFE9EFF6)).padding(horizontal = 12.dp, vertical = 4.dp)) {
+                                Text(it, color = Color(0xFF55606F), fontSize = 12.sp, maxLines = 1)
+                            }
+                        }
+                    }
+                    ctx.summary?.let {
+                        Spacer(Modifier.height(10.dp))
+                        Text(it, color = Color(0xFF66707E), fontSize = 13.sp, lineHeight = 18.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    }
+                } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            (ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()).forEach { a ->
+                SceneControl(a, Modifier) { on ->
+                    val lift by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.6f), label = "ahBtn")
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer { translationY = -lift * 4.dp.toPx() }) {
+                        Box(
+                            Modifier.size(if (a.primary) 58.dp else 50.dp)
+                                .drawBehind { drawCircle(Color(0xFF1C3150).copy(alpha = 0.12f + 0.1f * lift), size.minDimension / 2f, Offset(size.width / 2f, size.height / 2f + 4f)) }
+                                .clip(CircleShape).background(if (a.primary) accent else Color.White)
+                                .border(if (on) 3.dp else 1.dp, if (on) accent.copy(alpha = if (a.primary) 0.5f else 1f) else Color(0xFFDDE5EF), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) { Icon(a.icon, a.label, tint = if (a.primary) Color.White else if (on) accent else Color(0xFF55606F), modifier = Modifier.size(24.dp)) }
+                        Text(a.label, color = if (on) Color(0xFF2D3440) else Color(0xFF7A8493), fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(top = 3.dp))
+                    }
+                }
+            }
+        }
+        if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            ctx.chips.forEach { a ->
+                SceneControl(a, Modifier) { on ->
+                    Text(a.label, color = if (on) accent else Color(0xFF8A94A2), fontSize = 11.sp, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Night menu: the status screen
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Night menu's window: angular status panels sliding in one after another — the game's name on a slanted white bar
+ * across the top, its cover in a slanted frame, a dark slanted panel of its stats (time played, achievements as a bar,
+ * released, maker, kind), and the commands as slanted bars with a pointer at the one you're on (white, pulled out).
+ */
+@Composable
+private fun NightStatus(ctx: WinSceneCtx) {
+    val col = com.shelf.launcher.data.Features.nmColor.state.value
+    val hi = Color(col.hi)
+    val w = ctx.maxW; val h = ctx.maxH
+    fun slide(order: Int): Modifier = Modifier.graphicsLayer {
+        val k = ((ctx.reveal() - order * 0.12f) / 0.6f).coerceIn(0f, 1f)
+        val e = 1f - (1f - k) * (1f - k) * (1f - k)
+        translationX = (1f - e) * size.width * (if (order % 2 == 0) -0.6f else 0.6f)
+        alpha = e
+    }
+    Box(Modifier.size(w, h)) {
+        // The name across the top.
+        Box(slide(0).padding(top = 6.dp).fillMaxWidth(0.82f).height(64.dp).graphicsLayer { rotationZ = -2f }
+            .clip(slantShape(0.5f)).background(Color.White).padding(start = 40.dp, end = 30.dp), contentAlignment = Alignment.CenterStart) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("STATUS", color = hi.copy(alpha = 1f).let { mixS(it, Color.Black, 0.45f) }, fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                Spacer(Modifier.width(16.dp))
+                Text(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        // The cover in its slanted frame.
+        Box(slide(1).padding(start = w * 0.03f, top = h * 0.2f).size(h * 0.52f, h * 0.68f).graphicsLayer { rotationZ = -3f }) {
+            Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
+            Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
+                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            }
+        }
+        // The stats panel.
+        Box(
+            slide(2).padding(start = w * 0.33f, top = h * 0.2f).size(w * 0.38f, h * 0.56f).graphicsLayer { rotationZ = -2f }
+                .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
+                .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
+        ) {
+            if (ctx.page == WinPage.MAIN) Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                @Composable
+                fun stat(label: String, value: String?) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(96.dp))
+                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                stat("PLAY TIME", ctx.played)
+                stat("LAST", ctx.last)
+                if (ctx.total > 0) {
+                    stat("ACHIEVED", "${ctx.earned} / ${ctx.total}")
+                    Box(Modifier.padding(start = 96.dp, top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
+                        Box(Modifier.fillMaxHeight().fillMaxWidth((ctx.earned.toFloat() / ctx.total).coerceIn(0f, 1f)).background(hi))
+                    }
+                }
+                stat("RELEASED", ctx.year)
+                stat("MAKER", ctx.developer)
+                stat("KIND", ctx.genres)
+                stat("SYSTEM", ctx.console)
+                Spacer(Modifier.height(6.dp))
+                ctx.chips.forEach { a ->
+                    SceneControl(a, Modifier) { on ->
+                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1,
+                            overflow = TextOverflow.Ellipsis, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                    }
+                }
+            } else ctx.pageBody(Modifier.fillMaxSize())
+        }
+        // The commands.
+        Column(
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f).graphicsLayer { rotationZ = -4f },
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->
+                SceneControl(a, Modifier.fillMaxWidth()) { on ->
+                    val pull by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 600f), label = "nmCmd")
+                    Row(Modifier.fillMaxWidth().graphicsLayer { translationX = -pull * 24.dp.toPx() }, verticalAlignment = Alignment.CenterVertically) {
+                        Canvas(Modifier.size(14.dp).graphicsLayer { alpha = pull }) {
+                            drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, size.height / 2f); lineTo(0f, size.height); close() }, hi)
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        Box(
+                            Modifier.weight(1f).height(if (a.primary) 32.dp else 26.dp).clip(slantShape(0.5f))
+                                .background(if (on) Color.White else Color(col.top).copy(alpha = 0.85f))
+                                .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
+                                .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
+                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }

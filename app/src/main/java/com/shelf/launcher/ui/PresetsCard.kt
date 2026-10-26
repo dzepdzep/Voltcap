@@ -382,7 +382,10 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     // (Update 239, #93.)
     com.shelf.launcher.data.HomeLayout.CUBE -> "Cube menu: a translucent cube whose sides are your categories (its top Apps, its bottom Settings). ◀ ▶ turn it, A opens a face: the cube docks out of the way and the games fill the screen; B brings the big cube back."
     // Update 330.
-    com.shelf.launcher.data.HomeLayout.BOX -> "Cardboard box: your games standing in rows in an open cardboard box — the one you're on rises out of it and turns toward you while its neighbours lean aside; Y turns a case round."
+    com.shelf.launcher.data.HomeLayout.BOX -> "Cardboard box: looking down into cardboard storage boxes — two tightly packed rows of cases, spines up, more boxes when one is full; the one you're on comes up out of its slot and its window opens beside it."
+    com.shelf.launcher.data.HomeLayout.ORBIT -> "Orbit deck (1995): your games as discs on an orbit round a glowing core in deep space — the one you're on at the front, big and spinning. Its window is a CD-player terminal."
+    com.shelf.launcher.data.HomeLayout.AIRY -> "Airy home (1999): a light, airy row of rounded tiles under drifting bubbles with a small pixel display of the game you're on. Its window is a floating panel with big round buttons."
+    com.shelf.launcher.data.HomeLayout.NIGHT -> "Night menu (2006): your games as slanted bars under a full moon over water, the one you're on framed big beside them. Its window is a set of angular status panels."
     com.shelf.launcher.data.HomeLayout.STORAGE -> "Storage boxes: each category a storage box of small game icons on its own wallpaper, the game you're on big in a preview beside it; past the box's edge the next box slides in."
     com.shelf.launcher.data.HomeLayout.FILESELECT -> "File select (1996): your games as chunky save-file blocks on a deep blue screen, a page at a time — each with its cover, name, stars for achievements and time played; the one you're on bounces."
     com.shelf.launcher.data.HomeLayout.CASEFLOW -> "Case flow: your games as real 3D cases on a curved carousel — the one you're on in the middle facing you, the others turned aside along the curve with their reflections on the floor. A brings the case forward and opens its window."

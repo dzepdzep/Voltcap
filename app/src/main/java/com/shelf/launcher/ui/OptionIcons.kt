@@ -97,6 +97,10 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         // Update 330: Case flow (the nearest picture: a big game with others beside it).
         com.shelf.launcher.data.HomeLayout.CASEFLOW -> Pictogram.SHOWCASE
         com.shelf.launcher.data.HomeLayout.BOX -> Pictogram.SHELF
+        // Update 330, phase 3 (the nearest pictures).
+        com.shelf.launcher.data.HomeLayout.ORBIT -> Pictogram.SHOWCASE
+        com.shelf.launcher.data.HomeLayout.AIRY -> Pictogram.ROW
+        com.shelf.launcher.data.HomeLayout.NIGHT -> Pictogram.SIDE_MENU
         com.shelf.launcher.data.HomeLayout.STORAGE -> Pictogram.GRID
         com.shelf.launcher.data.HomeLayout.FILESELECT -> Pictogram.GRID
     }

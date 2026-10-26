@@ -708,7 +708,8 @@ internal fun GameWindow(
     // the other screen too — there's no card here to fly from, so it grows in where it stands.)
     // (Update 330: File select's and Storage boxes' own windows open out of the file / the icon itself — their piece
     // comes out only when asked for, with the Inspect button.)
-    val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO) && !askedInspect && MediaInspect.force != g.stableKey
+    val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO ||
+        scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
@@ -755,7 +756,7 @@ internal fun GameWindow(
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, tween(if (scene == WinScene.FILE_CARD) 340 else 260, easing = FastOutSlowInEasing))
+                    grow.animateTo(0f, tween(if (scene == WinScene.FILE_CARD) 340 else if (scene == WinScene.ORBIT_TERMINAL) 480 else 260, easing = FastOutSlowInEasing))
                     closeNow()
                 }
             }
@@ -864,9 +865,20 @@ internal fun GameWindow(
         }
         var target by remember { mutableStateOf<Rect?>(null) }
         val anim = MotionPrefs.info() != Features.InfoAnim.NONE
+        // (Update 330: Orbit deck's disc leaves the orbit and comes forward on its own, the window opening round it — the
+        // scene draws that flight (WinScenes.kt OdFlyingDisc); the window itself isn't scaled out of the disc. Its disc
+        // on the orbit fades as the flying one takes over, and back as it lands.)
+        val discFlight = scene == WinScene.ORBIT_TERMINAL && piece == null && origin != null && origin.top != Float.MAX_VALUE && anim
+        if (discFlight) {
+            LaunchedEffect(Unit) {
+                MediaInspect.key = g.stableKey
+                androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = it.coerceIn(0f, 1f) }
+            }
+            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
+        }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else 320, easing = FastOutSlowInEasing))
         }
         // Update 162: the piece's place beside the window's parts (window px), known after the first layout; it comes
         // out once that's known, and the right stick turns it.
@@ -957,7 +969,9 @@ internal fun GameWindow(
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            if (from == null || !anim) {
+                            if (discFlight) {
+                                // (Its scene flies the disc and opens the rest round it.)
+                            } else if (from == null || !anim) {
                                 val s = 0.86f + 0.14f * k
                                 scaleX = s; scaleY = s
                             } else if (from.top == Float.MAX_VALUE) {
@@ -988,7 +1002,9 @@ internal fun GameWindow(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { grow.value }
+                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight) origin else null)) {
+                        SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) { grow.value }
+                    }
                     else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
             }

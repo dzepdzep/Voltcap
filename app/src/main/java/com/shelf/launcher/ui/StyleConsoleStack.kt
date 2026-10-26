@@ -258,7 +258,8 @@ private fun ConsoleUnit(stop: StyleStop, lit: State<Float>, accent: Color, w: Dp
     val platform = stop.platform?.takeIf { stop.special == null && !isCollectionKey(it) }
     val photosOn = Features.consolePhotos.state.value
     val context = LocalContext.current
-    val photo by produceState<String?>(null, platform, photosOn) {
+    val pickNow = Features.consoleHwPick.state.value
+    val photo by produceState<String?>(null, platform, photosOn, pickNow) {
         value = if (photosOn && platform != null && ConsolePhotos.hasPhoto(platform)) {
             runCatching { ConsolePhotos.url(context, platform) }.getOrNull()
         } else null
