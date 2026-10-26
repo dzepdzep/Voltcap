@@ -104,7 +104,7 @@ private class ShelfPlan(val slots: List<ShelfSlot>, val rows: Int, val rowH: Dp,
  * a tenth of its height (the cartridge consoles' cardboard spines stood out as chunky blocks; update 126: up to
  * SPINE_MAX_ASPECT, your pack's chunkiest).
  */
-private fun spineAspect(platform0: String): Float = (LookStyles.spinePlatform(platform0) ?: platform0).let { platform -> // (Update 228, #18: the spine picked for all)
+private fun spineAspect(platform0: String): Float = RealSpineShape.of(platform0) ?: (LookStyles.spinePlatform(platform0) ?: platform0).let { platform -> // (Update 228, #18: the spine picked for all)
     // (Update 126: your own console spine's shape first, so its picture fills the slot as it is.)
     (if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect ?: MediaCovers.of(platform)?.shelfSpineAspect() else null)?.coerceIn(0.05f, SPINE_MAX_ASPECT) ?: 0.085f }
 
@@ -113,7 +113,9 @@ internal fun shelfSpineAspect(platform: String): Float = spineAspect(platform)
 
 /** Update 126: the shape of [platform]'s own console spine (null: none), for the same-height shelves too. */
 private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlatform(platform0) ?: platform0).let { platform ->
-    if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null) CustomSpines.of(platform)?.aspect?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null }
+    if (Features.coverTemplates.state.value || MediaCovers.own(platform) != null)
+        // (Update 338: as slim as the console's real spines — RealSpineShape.)
+        CustomSpines.of(platform)?.let { RealSpineShape.of(platform0) ?: it.aspect }?.coerceIn(0.05f, SPINE_MAX_ASPECT) else null }
 
 /**
  * Lays the games out on shelves [width] wide: tries one shelf, then two, then three (each shorter, so more spines fit),
@@ -695,6 +697,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
                         if (d.intrinsicWidth > 0 && d.intrinsicHeight > 0) {
                             val a = if (lying) d.intrinsicHeight.toFloat() / d.intrinsicWidth else d.intrinsicWidth.toFloat() / d.intrinsicHeight
                             shape = a.coerceIn(0.03f, 0.35f)
+                            RealSpineShape.note(g.platform, shape)
                         }
                     },
                     onError = { failed = true },
@@ -718,7 +721,9 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     }
     if (tpl != null) {
         // (Update 147: at the console spine's own shape, not stretched to a wider slot.)
-        SpineSlot(tpl.aspect, modifier) { inner ->
+        // (Update 338, Toni: "PS1 custom spines are way wider than the normal ones" — as slim as the console's real spines
+        // on the shelf beside it, once a few of those have loaded.)
+        SpineSlot(RealSpineShape.of(g.platform) ?: tpl.aspect, modifier) { inner ->
             SpinePicture(tpl, inner.clip(RoundedCornerShape(2.dp))) { ink ->
                 Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
                     SpineName(name, ink, Modifier.spineText())
@@ -898,3 +903,26 @@ private class ShelfBack(
     val lap: Int,
     val a: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>
 )
+
+/**
+ * Update 338: how slim a console's real spine scans are (width / height standing up), learnt from the ones that have
+ * loaded — Voltcap's own spine for a game without a scan stands at that shape beside them (the pack's PS1 spine was half
+ * as wide again as the real ones). Null until three have loaded.
+ */
+internal object RealSpineShape {
+    private val seen = java.util.concurrent.ConcurrentHashMap<String, MutableList<Float>>()
+    private val shape = androidx.compose.runtime.mutableStateMapOf<String, Float>()
+
+    fun note(platform: String, aspect: Float) {
+        if (LookStyles.spineForAll()) return
+        val list = seen.getOrPut(platform) { java.util.Collections.synchronizedList(ArrayList()) }
+        if (list.size >= 40) return
+        list += aspect
+        if (list.size >= 3) {
+            val m = synchronized(list) { list.sorted()[list.size / 2] }
+            if (shape[platform]?.let { kotlin.math.abs(it - m) > 0.002f } != false) shape[platform] = m
+        }
+    }
+
+    fun of(platform: String?): Float? = platform?.let { shape[it] }
+}

@@ -6223,7 +6223,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * picture — its box scan, its disc / cartridge, its full box — is looked up on ScreenScraper again, one at a time in
      * the background; games that have them are left alone.
      */
-    fun scrapeMissingRealArt() {
+    /** Update 338: [platform] given — only that console's games (Platform options › Find the real cases). */
+    fun scrapeMissingRealArt(platform: String? = null) {
         if (spineJob?.isActive == true) return
         if (screenScraperStore.load() == null) {
             setStatusMessage("Real covers come from ScreenScraper: connect it in Settings › Accounts first.")
@@ -6234,9 +6235,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             _uiState.value.physicalMedia[key]?.any { it.first in real } == true ||
                 physicalPrefs.getString(key, null)?.split('\n')?.any { it.substringBefore('\t') in real } == true
         spineJob = viewModelScope.launch {
-            val pending = _uiState.value.games.filter { g -> g.sourceType == SourceType.ROM && !hasReal(g.stableKey) }
+            val pending = _uiState.value.games.filter { g -> g.sourceType == SourceType.ROM && !hasReal(g.stableKey) && (platform == null || g.platform == platform) }
             if (pending.isEmpty()) {
-                setStatusMessage("Every game already has its real cover pictures.")
+                setStatusMessage(if (platform != null) "Every ${com.shelf.launcher.data.ConsoleNames.label(platform)} game already has its real case." else "Every game already has its real cover pictures.")
                 return@launch
             }
             com.shelf.launcher.data.SpineScrape.progress = 0 to pending.size
@@ -6442,6 +6443,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.data.ScanReport.saveAll = { saveAllRealMedia() }
         com.shelf.launcher.data.SpineScrape.run = { again -> scrapeAllSpines(again) }
         com.shelf.launcher.data.SpineScrape.runMissingReal = { scrapeMissingRealArt() }
+        com.shelf.launcher.data.SpineScrape.runMissingRealFor = { p -> scrapeMissingRealArt(p) }
         // Update 204: Settings › Scraping › Manuals: Find manuals / Download all manuals.
         com.shelf.launcher.data.ManualLinks.runAll = { download -> findAllManuals(download) }
         com.shelf.launcher.data.ManualLinks.stopAll = { manualBulkJob?.cancel() }

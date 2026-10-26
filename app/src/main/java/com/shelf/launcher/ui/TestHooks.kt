@@ -191,6 +191,9 @@ internal object LabelAudit {
         // full scan…) downloaded into label_audit/, and their addresses (without any login) in scans.tsv: for checking
         // which edition's back a game really has.)
         if (system.startsWith("scans:")) { scans(c, system.removePrefix("scans:")); return }
+        // (Update 338, testing only: "cases" — no downloads: every game's saved real-media kinds, the console each scan is
+        // from (systemeid) and whether a cover was picked for it — in label_audit/cases.tsv.)
+        if (system == "cases") { cases(c); return }
         val prefs = c.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE)
         val dir = java.io.File(c.getExternalFilesDir(null), "label_audit").apply { mkdirs() }
         val client = okhttp3.OkHttpClient.Builder().readTimeout(30, java.util.concurrent.TimeUnit.SECONDS).build()
@@ -222,6 +225,23 @@ internal object LabelAudit {
         }
         java.io.File(dir, "index.tsv").writeText(rows.toString())
         android.util.Log.e("VoltcapTest", "labelaudit: $n games")
+    }
+
+    private fun cases(c: android.content.Context) {
+        val prefs = c.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE)
+        val dir = java.io.File(c.getExternalFilesDir(null), "label_audit").apply { mkdirs() }
+        UserCovers.ensure(c)
+        val rows = StringBuilder("key\tbox_sys\tbox_region\tfull_sys\tpicked_cover\tkinds\n")
+        for ((key, v) in prefs.all) {
+            val text = v as? String ?: continue
+            val list = text.split('\n').mapNotNull { l -> l.split('\t').takeIf { it.size == 2 }?.let { it[0] to it[1] } }
+            val box = list.firstOrNull { it.first == "Box" }?.second
+            val full = list.firstOrNull { it.first == BoxTexture.LABEL }?.second
+            rows.append("$key\t${box?.let { param(it, "systemeid") }.orEmpty()}\t${box?.let { param(it, "region") }.orEmpty()}\t" +
+                "${full?.let { param(it, "systemeid") }.orEmpty()}\t${UserCovers.of(key) != null}\t${list.joinToString(",") { it.first }}\n")
+        }
+        java.io.File(dir, "cases.tsv").writeText(rows.toString())
+        android.util.Log.e("VoltcapTest", "labelaudit cases: ${prefs.all.size}")
     }
 
     private fun scans(c: android.content.Context, part: String) {

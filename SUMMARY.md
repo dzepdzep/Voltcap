@@ -1,5 +1,34 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (338): real cases found for more games; Voltcap's own spines as slim as the real ones
+
+Toni: "most of GBA / GB / GBC / 3DS / DS and sometimes PS1 show the custom cases, not the real ones; the PS1 custom spines
+are way wider than the normal ones; scrape art per console — some games are on several consoles".
+What the Thor's saved real-media lists showed (`--es voltcap_test_labelaudit cases`): GB / GBC / GBA / DS / PS1 / PS2 /
+SNES / N64 nearly all have their box scan; **150 of the 224 3DS games and a few others had nothing** — ScreenScraper didn't
+know their file (a big card / disc image is sent without its checksum and its file name seldom matches), so they stood in
+Voltcap's own case with the cover in it.
+
+- **Looked for by name too** (`data\ScreenScraper.kt`): a game its file didn't find is searched for by its name on its
+  own console only (jeuRecherche, that console's id) and taken only when most of the name's words match; such a match
+  always has its name checked, whatever the file's size. Never another console's release.
+- **Platform options › Find the real cases** (`ui\PlatformOptions.kt`, Y on a console tile): that console's games still
+  on Voltcap's own case looked up again now (by file, then by name), with the count while it runs.
+- **RetroAchievements' box picture** is the case front when ScreenScraper has none (`ui\BoxTexture.kt`), before
+  Voltcap's own case.
+- **Voltcap's own spines as slim as the real ones** (`ui\ShelfHome.kt`, RealSpineShape): a game without its spine scan
+  stands at the shape of that console's real spines on the shelf (the pack's PS1 spine was half as wide again).
+- Test hook: `--es voltcap_test_labelaudit cases` writes `label_audit\cases.tsv` (each game's saved kinds, the console
+  each scan is from, a picked cover) — no downloads.
+
+Files: `data\ScreenScraper.kt`, `data\ArtFiles.kt`, `LauncherViewModel.kt`, `ui\PlatformOptions.kt`, `ui\BoxTexture.kt`,
+`ui\ShelfHome.kt`, `ui\TestHooks.kt`.
+
+Checked on the AYN Thor (release): Nintendo 3DS › Find the real cases ran through the 150 (about 9 minutes): **220 of the
+224 3DS games have their real box now (was 74)**, every scan from the 3DS (none from another console). Pokémon X / Y
+weren't found (the accent): names are matched without accents now, and a number or single letter (X / Y, 2) has to be in
+the name found. Not checked yet: the other consoles' few missing games, the spines' new width on screen.
+
 ## Update — 26 Oct 2026 (337): a picture of every home layout
 
 - Settings › Home › Layout & presets, the setup's Your home step and R1 › Layout (hold): a small picture of the layout

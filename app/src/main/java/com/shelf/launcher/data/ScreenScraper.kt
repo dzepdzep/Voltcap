@@ -90,6 +90,10 @@ interface ScreenScraperApi {
     @GET("ssinfraInfos.php")
     suspend fun infraInfo(@QueryMap params: Map<String, String>): Response<ResponseBody>
 
+    /** Update 338: games found by name (up to 30, likeliest first), for a ROM its file didn't find. */
+    @GET("jeuRecherche.php")
+    suspend fun searchGames(@QueryMap params: Map<String, String>): Response<ResponseBody>
+
     /** Every system with its maker, start date and artwork (logo, photo, fan art, video). */
     @GET("systemesListe.php")
     suspend fun systemList(@QueryMap params: Map<String, String>): Response<ResponseBody>
@@ -238,11 +242,17 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             lookupOutcome[game.stableKey] = OUTCOME_OFFLINE
             return null // network trouble: don't remember, so a retry can work
         }
-        val jeu = if (response.isSuccessful) {
+        var jeu = if (response.isSuccessful) {
             parseJson(response.body()?.string().orEmpty())?.also { learnThreads(it) }?.obj("response")?.obj("jeu")
         } else {
             runCatching { response.errorBody()?.close() } // an unread error body keeps its connection busy
             null
+        }
+        // Update 338 (Toni: games with Voltcap's own case instead of their real one — Asterix (Rev 1) on PS1, most of
+        // the 3DS games): the file wasn't known (a big disc / card image is sent without its checksum, and its file name
+        // seldom matches), so the game is looked for by its name — on its own console only.
+        if (jeu == null && (response.isSuccessful || response.code() == 404)) {
+            jeu = runCatching { searchByName(c, game) }.getOrNull()
         }
         lookupOutcome[game.stableKey] = when {
             jeu != null -> OUTCOME_FOUND
@@ -262,6 +272,54 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     }
 
     /** Update 202: the manual's address in [jeu] (ScreenScraper's "manuel" media), its best region for [game]; null: none. */
+    /** Update 338: [s] without accents (Pokémon → Pokemon), so names match however they're written. */
+    private fun plain(s: String): String =
+        java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "")
+
+    /** Update 338: a name's words for matching by name — single letters and numbers count (Pokémon X / Y, Advance Wars 2). */
+    private fun tokens(name: String): List<String> =
+        plain(name).replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ").lowercase().split(Regex("[^a-z0-9]+"))
+            .filter { it.isNotEmpty() && it !in setOf("the", "of", "and", "disc", "a") }
+
+    /**
+     * Update 338: [game] looked for by its name on ScreenScraper (jeuRecherche), on its own console only, and only taken
+     * when the name matches well (most of its words). Marked, so [isConfidentMatch] checks the name whatever the file's size.
+     */
+    private suspend fun searchByName(c: ScreenScraperCredentials, game: Game): JsonObject? {
+        val system = SYSTEM_IDS[game.platform] ?: return null
+        val title = game.name.replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ").replace(Regex("\\s+"), " ").trim()
+        if (title.length < 2) return null
+        val params = baseParams(c).apply { put("systemeid", system.toString()); put("recherche", title) }
+        val r = throttled { api.searchGames(params) }
+        if (!r.isSuccessful) { runCatching { r.errorBody()?.close() }; return null }
+        val jeux = parseJson(r.body()?.string().orEmpty())?.obj("response")?.arr("jeux")?.mapNotNull { it as? JsonObject }.orEmpty()
+        val ours = tokens(game.name)
+        if (ours.isEmpty()) return null
+        fun score(j: JsonObject): Int {
+            if (j.obj("systeme")?.str("id")?.toIntOrNull() != system) return -1
+            val names = j.arr("noms")?.mapNotNull { (it as? JsonObject)?.str("text") }.orEmpty()
+            return names.maxOfOrNull { n ->
+                val w = tokens(n)
+                // Numbers and single letters tell games apart (Pokémon X / Y, a sequel): they must all be there.
+                if (ours.any { (it.length == 1 || it.all(Char::isDigit)) && it !in w }) return@maxOfOrNull -1
+                // A word of ours missing (Pokémon X for Pokémon Y) never wins over the exact name.
+                if (w == ours) 100 else ours.count { it in w } * 10 - (w.size - ours.size).coerceAtLeast(0) - ours.count { it !in w } * 3
+            } ?: -1
+        }
+        val need = ((ours.size + 1) / 2) * 10 - 5
+        val best = jeux.map { it to score(it) }.filter { it.second >= need }.maxByOrNull { it.second }?.first ?: return null
+        // The list's entries can come without their media: the game's full record by its id then.
+        val full = if (best.arr("medias") != null) best else best.str("id")?.let { id ->
+            val p2 = baseParams(c).apply { put("gameid", id); put("systemeid", system.toString()) }
+            val r2 = throttled { api.gameInfo(p2) }
+            if (r2.isSuccessful) parseJson(r2.body()?.string().orEmpty())?.obj("response")?.obj("jeu")
+            else { runCatching { r2.errorBody()?.close() }; null }
+        } ?: return null
+        full.addProperty(BY_NAME, true)
+        lookupOutcome[game.stableKey] = OUTCOME_FOUND
+        return full
+    }
+
     private fun manualFrom(jeu: JsonObject, game: Game): String? {
         val manuals = jeu.arr("medias")?.mapNotNull { it as? JsonObject }
             ?.filter { it.str("type") == "manuel" && !it.str("url").isNullOrBlank() }
@@ -494,7 +552,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         if (!isHacksOwn(jeu, game)) return false
         // File checks off the main thread (update 91).
         val length = withContext(Dispatchers.IO) { romFileFor(game)?.length() } ?: return false
-        if (length <= MAX_HASH_BYTES) return true
+        // (Update 338: one found by its name always has its name checked — no checksum vouched for it.)
+        if (length <= MAX_HASH_BYTES && jeu.get(BY_NAME) == null) return true
         val theirs = jeu.arr("noms")?.mapNotNull { (it as? JsonObject)?.str("text") }.orEmpty()
         val ours = words(game.name)
         if (ours.isEmpty()) return true
@@ -505,7 +564,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     }
 
     private fun words(name: String): Set<String> =
-        name.replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ")
+        plain(name).replace(Regex("[(\\[][^)\\]]*[)\\]]"), " ")
             .lowercase()
             .split(Regex("[^a-z0-9]+"))
             .filter { it.length > 1 && it !in setOf("the", "of", "and", "disc") }
@@ -587,6 +646,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         private const val SOFT_NAME = "ShelfLauncher"
         private const val MIN_GAP_MS = 1200L
         private const val MAX_HASH_BYTES = 64L * 1024 * 1024
+        /** Update 338: set on a record found by the game's name ([searchByName]). */
+        private const val BY_NAME = "voltcap_by_name"
 
         /** Shelf platform names → ScreenScraper system IDs. The ID narrows
          * the search to the right console; unknown platforms still work by

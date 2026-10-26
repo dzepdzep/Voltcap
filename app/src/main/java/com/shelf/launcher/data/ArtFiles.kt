@@ -389,6 +389,8 @@ object SpineScrape {
      * ScreenScraper — the ones that have them aren't asked again.
      */
     @Volatile var runMissingReal: (() -> Unit)? = null
+    /** Update 338: the same for one console's games (Platform options › Find the real cases). */
+    @Volatile var runMissingRealFor: ((String) -> Unit)? = null
     /** Games done / to do while it runs. */
     var progress by androidx.compose.runtime.mutableStateOf<Pair<Int, Int>?>(null)
 }

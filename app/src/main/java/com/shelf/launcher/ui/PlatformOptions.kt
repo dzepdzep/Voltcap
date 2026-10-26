@@ -80,6 +80,18 @@ internal fun PlatformOptionsDialog(
                 }
             }
         }
+        // Update 338 (Toni: games on Voltcap's own case instead of their real one): this console's games still without
+        // their real case looked up again on ScreenScraper — by file, then by name on this console only.
+        if (platform != null && com.shelf.launcher.data.SpineScrape.runMissingRealFor != null) {
+            val running = com.shelf.launcher.data.SpineScrape.progress
+            MenuRow(
+                Icons.Filled.Refresh,
+                if (running != null) "Finding real cases… ${running.first} / ${running.second}" else "Find the real cases",
+                "Games still on Voltcap's own case: looked for again on ScreenScraper (by name too, this console only)"
+            ) {
+                if (running == null) { com.shelf.launcher.data.SpineScrape.runMissingRealFor?.invoke(platform); status = "Looking for real cases — it carries on in the background." }
+            }
+        }
         // (Update 212: the same options from the classic category screen — Y or its Options button, a hold reorders now.)
         if (onReorder != null) {
             MenuRow(Icons.Filled.SwapVert, "Reorder", "Pick it up and move it: ◀ ▶ ▲ ▼ or drag, A puts it down") { onDismiss(); onReorder() }

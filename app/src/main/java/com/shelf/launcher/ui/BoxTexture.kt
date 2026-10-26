@@ -140,6 +140,9 @@ internal object BoxTexture {
     fun front(physical: List<Pair<String, String>>?, platform: String?): String? {
         val f = physical?.firstOrNull { it.first == "Box" }?.second
             ?: fullScan(physical)?.let { model(it, BoxPart.FRONT, platform) }
+            // (Update 338: none from ScreenScraper — RetroAchievements' box picture, a real box front too, before
+            // Voltcap's own case with the cover in it.)
+            ?: physical?.firstOrNull { it.first == "Box (RetroAchievements)" }?.second
             ?: return null
         spine(physical, platform)?.let { if (spines.size < 4000) spines[f] = it }
         media(physical)?.let { if (medias.size < 4000) medias[f] = it }
