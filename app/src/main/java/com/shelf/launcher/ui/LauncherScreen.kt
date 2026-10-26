@@ -791,7 +791,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val mode = com.shelf.launcher.data.Features.startupMode.value
         val asks = mode != com.shelf.launcher.data.Features.StartupMode.CATEGORIES ||
             (com.shelf.launcher.data.Features.whoPlays.value && com.shelf.launcher.data.Profiles.list.value.size >= 2)
-        if (!WhoPlaying.asked && asks && viewModel.takeStartupSlot()) {
+        // (Update 336: not over the first-start setup — its Who's playing step sets the players up.)
+        if (!WhoPlaying.asked && asks && !showFirstRun && viewModel.takeStartupSlot()) {
             WhoPlaying.asked = true
             StartupGate.awaitIntro()
             whoAtStart = true
@@ -5819,6 +5820,28 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onScreenScraper = { showScreenScraper = true },
             showLegend = state.appearance.showLegend,
             onShowLegendChange = { viewModel.setAppearance(state.appearance.copy(showLegend = it)) },
+            // (Update 336: the new steps — your home's layout & look, emulators, players, two screens.)
+            appearance = state.appearance,
+            theme = state.appTheme,
+            onAppearanceChange = { viewModel.setAppearance(it) },
+            onSelectTheme = { viewModel.setTheme(it) },
+            emulatorPlatforms = state.availablePlatforms.filter {
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+            },
+            emulatorConfigs = state.emulatorConfigs,
+            installedApps = state.installedApps,
+            onEditPlatform = { configuringPlatform = it },
+            raNames = state.raAccounts,
+            steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value,
+            screens = if (secondScreenActive) ({
+                ScreensSettingsContent(
+                    appearance = state.appearance,
+                    onAppearanceChange = { viewModel.setAppearance(it) },
+                    games = state.games,
+                    version = state.screenLayoutsVersion,
+                    onChanged = { viewModel.bumpScreenLayouts() }
+                )
+            }) else null,
             onFinish = {
                 com.shelf.launcher.data.FirstRun.markDone(firstRunContext)
                 showFirstRun = false

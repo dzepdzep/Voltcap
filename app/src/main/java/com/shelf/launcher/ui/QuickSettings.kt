@@ -125,6 +125,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.Composable
@@ -1825,6 +1826,10 @@ private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit, undoable: (Stri
             SectionLabel("Home layout")
             MutedNote("Pick the layout; each keeps its own options (hold the tile for its settings page).")
             Spacer(Modifier.height(10.dp))
+            // (Update 337: a picture of the layout the cursor is on.)
+            var shown by remember { mutableStateOf(a.homeLayout) }
+            LayoutPreview(shown, Modifier.widthIn(max = 300.dp))
+            Spacer(Modifier.height(10.dp))
             // Fifteen layouts: scrolls on a short screen, and the D-pad starts on the one in use.
             val current = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { current.requestFocus() } }
@@ -1836,7 +1841,8 @@ private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit, undoable: (Stri
                 ChipFlow {
                     com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
                         Box(if (a.homeLayout == l) Modifier.focusRequester(current) else Modifier) {
-                            Chip((if (a.homeLayout == l) "✓ " else "") + l.label, accent = a.homeLayout == l) { undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) }; onDismiss() }
+                            Chip((if (a.homeLayout == l) "✓ " else "") + l.label, accent = a.homeLayout == l,
+                                modifier = Modifier.onFocusChanged { if (it.isFocused) shown = l }) { undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) }; onDismiss() }
                         }
                     }
                 }

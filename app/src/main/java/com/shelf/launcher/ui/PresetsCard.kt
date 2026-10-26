@@ -20,7 +20,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,13 +109,25 @@ internal fun PresetsCard(
                 "how each game is drawn (covers, cases, cartridges, discs) is Settings › Game look."
         )
         Spacer(Modifier.height(8.dp))
+        // (Update 337: the 42 layouts in a box of their own that scrolls, so the picture under it stays in sight.)
+        androidx.compose.foundation.layout.Box(
+            Modifier.heightIn(max = 150.dp).verticalScroll(androidx.compose.foundation.rememberScrollState())
+        ) {
         ChipFlow {
             com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
                 val inUse = l == appearance.homeLayout
-                Chip((if (inUse) "✓ " else "") + l.label, accent = l == browse) { browse = l; notice = null }
+                // (Update 337: moving onto a layout with the D-pad shows its picture below.)
+                Chip(
+                    (if (inUse) "✓ " else "") + l.label, accent = l == browse,
+                    modifier = Modifier.onFocusChanged { if (it.isFocused && browse != l) { browse = l; notice = null } }
+                ) { browse = l; notice = null }
             }
         }
+        }
         Spacer(Modifier.height(10.dp))
+        // Update 337: what it looks like.
+        LayoutPreview(browse)
+        Spacer(Modifier.height(8.dp))
         Text(layoutBlurb(browse), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 17.sp)
         Spacer(Modifier.height(8.dp))
         if (browse != appearance.homeLayout) {

@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -139,6 +141,29 @@ object Romm {
 
     /** True when the server answers with these sign-in details. */
     suspend fun test(c: RommCredentials): String? = runCatching { platforms(c); null }.getOrElse { it.message ?: "Couldn't reach RomM." }
+
+    /**
+     * Update 336: signing in with a pairing code (RomM 5: Settings › Client API Tokens › a token › Pair shows 8 letters and
+     * digits, valid 5 minutes, once). The server swaps it for the token itself, so nothing long is typed on the handheld.
+     * Returns the token, or throws with what went wrong.
+     */
+    suspend fun exchangePairCode(server: String, code: String): String = withContext(Dispatchers.IO) {
+        val base = RommCredentials(server, "", "", "").base
+        val clean = code.trim().replace("-", "").replace(" ", "").uppercase()
+        val body = JsonObject().apply { addProperty("code", clean) }.toString()
+            .toRequestBody("application/json".toMediaType())
+        val req = Request.Builder().url("$base/api/client-tokens/exchange").post(body).header("Accept", "application/json").build()
+        http.newCall(req).execute().use { r ->
+            when {
+                r.code == 404 -> throw RommException("That code isn't valid any more — make a new one in RomM (they last 5 minutes).")
+                r.code == 429 -> throw RommException("Too many tries — wait a minute, then try a new code.")
+                r.code == 403 -> throw RommException("RomM says that token's owner is switched off.")
+                !r.isSuccessful -> throw RommException("RomM answered ${r.code}. (Pairing codes need RomM 5 or newer.)")
+            }
+            val o = JsonParser.parseString(r.body?.string().orEmpty()) as? JsonObject
+            o?.str("raw_token")?.takeIf { it.isNotBlank() } ?: throw RommException("RomM sent no token back.")
+        }
+    }
 
     // ---- Downloads ----
 

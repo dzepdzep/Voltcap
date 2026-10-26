@@ -1,5 +1,39 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (337): a picture of every home layout
+
+- Settings › Home › Layout & presets, the setup's Your home step and R1 › Layout (hold): a small picture of the layout
+  you're on (moving with the D-pad updates it), above its description. 42 pictures (`res\drawable-nodpi\lp_*.webp`,
+  520 × 234, 370 KB in all), taken in Voltcap on the Android emulator with made-up games and plain covers — no real game
+  art (the TV room's picture behind the set is blurred).
+
+Files: new `ui\LayoutPreviews.kt`; changed `ui\PresetsCard.kt`, `ui\QuickSettings.kt`; 42 new pictures (`project_copy`).
+
+## Update — 26 Oct 2026 (336): first start-up redone; RomM pairing code; test checklist
+
+- **First start-up, 12 steps** (`ui\FirstRunDialog.kt`; every step skippable, Back / B one step back, D-pad and touch):
+  Welcome (restore from Drive / file / another device as before) · Permissions · Your games · **Emulators** (each
+  console found with the app that starts it; tap one to choose — with a second screen also **what goes on each
+  screen**) · **Who's playing** (the players with picture and lock, + Add a player, Edit = name / picture /
+  RetroAchievements account / PIN — a locked profile asks its PIN first; what Voltcap shows when it starts) · **Your
+  home** (all 42 layouts with their presets, "Have a look" steps the setup aside to see it — any button comes back;
+  status bar matches the layout or plain) · Artwork · Extra art · Game details · Achievements · **Saves & RomM** (Google
+  Drive save sync and your RomM server) · Finishing touches. On a fresh install "Who's playing?" isn't asked over it.
+- **RomM pairing code** (`data\Romm.kt`, `ui\RommSettingsCard.kt`): RomM 5 › Settings › Client API Tokens › Pair shows 8
+  letters / digits; type them under the server address and Voltcap swaps them for the token (no long token typed).
+  Token or user name + password are still there ("Use a token or a password instead…"). Checked against RomM's current
+  source: the platforms / roms / content API Voltcap uses is unchanged.
+- **Test checklist**: `docs\TEST_CHECKLIST.md` (also in the Claude project) — what's untested and who tests it.
+- RomM for testing on the PC: `Claude outputs\romm\docker-compose.yml` (port 8090).
+- Test hook: `--ei voltcap_test_setup <step>` opens the setup on a step.
+
+Files: `ui\FirstRunDialog.kt`, `ui\EmulatorSettingsDialog.kt` (rows shared), `ui\ProfileSelect.kt` (editor shared),
+`ui\RommSettingsCard.kt`, `data\Romm.kt`, `ui\LauncherScreen.kt`, `ui\TestHooks.kt`, `docs\TEST_CHECKLIST.md`.
+
+Checked on the Android emulator (phone, 2400 × 1080, release build): Emulators (empty library), Who's playing (edit,
+PIN set by number keys and by D-pad, lock shown), Your home (layout list, Record crate used, Have a look and back),
+Saves & RomM. Not tested: the AYN Thor (USB not authorised), a real RomM pairing, a second screen in the setup.
+
 ## Update — 26 Oct 2026 (335): status bars put together each layout's own way
 
 - Update 333 gave every layout the same long rounded pill in other colours; now each is built differently

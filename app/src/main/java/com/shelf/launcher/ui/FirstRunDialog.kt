@@ -7,6 +7,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -14,11 +25,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VideogameAsset
 import androidx.compose.runtime.Composable
@@ -66,11 +81,28 @@ fun FirstRunDialog(
     onFinish: () -> Unit,
     /** The button legend along the bottom of the home screen. */
     showLegend: Boolean = false,
-    onShowLegendChange: (Boolean) -> Unit = {}
+    onShowLegendChange: (Boolean) -> Unit = {},
+    /** Update 336: the layout & look (Your home step). */
+    appearance: com.shelf.launcher.data.AppearanceSettings? = null,
+    theme: com.shelf.launcher.ui.theme.AppTheme? = null,
+    onAppearanceChange: (com.shelf.launcher.data.AppearanceSettings) -> Unit = {},
+    onSelectTheme: (com.shelf.launcher.ui.theme.AppTheme) -> Unit = {},
+    /** Update 336: the consoles in the library and their emulators (Emulators step). */
+    emulatorPlatforms: List<String> = emptyList(),
+    emulatorConfigs: Map<String, com.shelf.launcher.data.EmulatorConfig> = emptyMap(),
+    installedApps: List<com.shelf.launcher.data.Game> = emptyList(),
+    onEditPlatform: (String) -> Unit = {},
+    /** Update 336: the RetroAchievements accounts' names and the Steam picture (Who's playing step). */
+    raNames: List<String?> = listOf(null, null),
+    steamAvatar: String? = null,
+    /** Update 336: what goes on each screen — only when a second screen is there. */
+    screens: (@Composable () -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("FirstRunDialog")
     val context = LocalContext.current
     var step by remember { mutableStateOf(0) }
+    // (Update 336: a test walk opens a given step — TestHooks.)
+    androidx.compose.runtime.LaunchedEffect(SetupJump.step) { if (SetupJump.step >= 0) { step = SetupJump.step.coerceAtMost(11); SetupJump.step = -1 } }
     var importMessage by remember { mutableStateOf<String?>(null) }
     val importScope = androidx.compose.runtime.rememberCoroutineScope()
     val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -111,22 +143,37 @@ fun FirstRunDialog(
         }
     }
     // (Update 141: "Extra art" — the art packs question is part of the setup now.)
-    val steps = listOf("Welcome", "Permissions", "Your games", "Artwork", "Extra art", "Game details", "Achievements", "Finishing touches")
+    // Update 336: emulators (and two screens), who's playing, your home's layout & look, and saves & RomM are part of it.
+    val steps = listOf(
+        "Welcome", "Permissions", "Your games", "Emulators", "Who's playing", "Your home", "Artwork", "Extra art",
+        "Game details", "Achievements", "Saves & RomM", "Finishing touches"
+    )
     val name = steps[step]
     val last = steps.lastIndex
+    // Update 336: "Have a look" steps the setup aside to see the home screen with the layout just picked.
+    var peek by remember { mutableStateOf(false) }
+    if (peek) { SetupPeek { peek = false }; return }
 
     ShelfDialog(
         icon = when (name) {
             "Welcome" -> Icons.Filled.AutoAwesome
             "Permissions" -> Icons.Filled.Security
             "Your games" -> Icons.Filled.Folder
+            "Emulators" -> Icons.Filled.VideogameAsset
+            "Who's playing" -> Icons.Filled.Groups
+            "Your home" -> Icons.Filled.Dashboard
+            "Saves & RomM" -> Icons.Filled.CloudSync
             "Artwork" -> Icons.Filled.Image
             "Extra art" -> Icons.Filled.CloudDownload
             "Game details" -> Icons.Filled.Info
             "Achievements" -> Icons.Filled.EmojiEvents
             else -> Icons.Filled.Home
         },
-        title = if (step == 0) "Welcome to Voltcap" else steps[step],
+        title = when {
+            step == 0 -> "Welcome to Voltcap"
+            name == "Emulators" && screens != null -> "Emulators & screens"
+            else -> steps[step]
+        },
         subtitle = "Step ${step + 1} of ${steps.size}",
         // Update 144: B / Back (or a tap outside) goes back one step instead of ending the whole
         // setup for good; only the first step closes it. "Skip setup" / "Start playing" still finish.
@@ -150,6 +197,10 @@ fun FirstRunDialog(
                 "Welcome" -> "Welcome to Voltcap! Let's get your games set up."
                 "Permissions" -> "A few permissions first, so Voltcap can find your games and saves."
                 "Your games" -> "Organize your games, emulators and apps, all on one shelf."
+                "Emulators" -> "Which app starts each console's games. Voltcap finds them; pick one where it says Not set."
+                "Who's playing" -> "Everyone who plays gets a profile: their own favourites, Continue playing, play time and achievements."
+                "Your home" -> "Pick how your home screen looks. There are over 40 layouts; change it any time."
+                "Saves & RomM" -> "Keep saves in step between handhelds, and download games from your own RomM server."
                 "Artwork" -> "Covers and hero art make the shelf shine. Let's fetch some!"
                 "Extra art" -> "Cartridges, spines, disc shells and 3D models for the game looks. Download them now or later."
                 "Game details" -> "Want summaries, scores and how long each game takes?"
@@ -253,6 +304,81 @@ fun FirstRunDialog(
                 )
             }
             "Extra art" -> PacksSetupStep()
+            "Emulators" -> {
+                if (emulatorPlatforms.isEmpty()) ShelfCard {
+                    MutedNote("No consoles yet: choose your ROM folder in the step before (Back), and each console it finds shows up here with its emulator.")
+                } else EmulatorRows(emulatorPlatforms, emulatorConfigs, installedApps, onEditPlatform)
+                if (screens != null) {
+                    Spacer(Modifier.height(16.dp))
+                    SectionLabel("Two screens")
+                    MutedNote("A second screen was found. Choose what goes on each one — for the home and for each console's games.")
+                    Spacer(Modifier.height(8.dp))
+                    screens()
+                }
+            }
+            "Who's playing" -> WhoPlaysSetupStep(raNames, steamAvatar)
+            "Your home" -> {
+                // Update 337: the layouts on the right (D-pad or touch), a picture of the one you're on on the left.
+                if (appearance != null) {
+                    var browse by remember { mutableStateOf(appearance.homeLayout) }
+                    ShelfCard {
+                        Row(verticalAlignment = Alignment.Top) {
+                            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                                LayoutPreview(browse)
+                                Spacer(Modifier.height(8.dp))
+                                Text(browse.label, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.height(2.dp))
+                                MutedNote(layoutBlurb(browse))
+                                Spacer(Modifier.height(8.dp))
+                                ChipFlow {
+                                    val inUse = appearance.homeLayout == browse
+                                    Chip(if (inUse) "✓ In use" else "Use it", accent = !inUse) {
+                                        onAppearanceChange(appearance.copy(homeLayout = browse))
+                                    }
+                                    Chip("Have a look", accent = false) {
+                                        if (appearance.homeLayout != browse) onAppearanceChange(appearance.copy(homeLayout = browse))
+                                        peek = true
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Box(
+                                Modifier.weight(1f).heightIn(max = 260.dp)
+                                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                            ) {
+                                ChipFlow {
+                                    com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
+                                        Chip(
+                                            (if (l == appearance.homeLayout) "✓ " else "") + l.label, accent = l == browse,
+                                            modifier = Modifier.onFocusChanged { if (it.isFocused) browse = l }
+                                        ) { browse = l }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    MutedNote("Ready-made looks for each layout (layout, game look and colours together): Settings › Home › Layout & presets.")
+                }
+                Spacer(Modifier.height(12.dp))
+                ShelfCard {
+                    SectionLabel("Status bar")
+                    MutedNote("The clock, battery and icons at the top: dressed for each layout, or the same plain bar everywhere.")
+                    Spacer(Modifier.height(8.dp))
+                    val matches = com.shelf.launcher.data.Features.statusMatchesLayout.state.value
+                    ChipFlow {
+                        Chip("Matches the layout", accent = matches) { com.shelf.launcher.data.Features.statusMatchesLayout.value = true }
+                        Chip("Plain everywhere", accent = !matches) { com.shelf.launcher.data.Features.statusMatchesLayout.value = false }
+                    }
+                }
+            }
+            "Saves & RomM" -> {
+                SectionLabel("Save sync (Google Drive)")
+                CloudSyncContent()
+                Spacer(Modifier.height(16.dp))
+                SectionLabel("Your RomM server")
+                RommSettingsCard()
+            }
             "Game details" -> {
                 MutedNote("Optional: summaries, scores and play times in each game's details.")
                 Spacer(Modifier.height(8.dp))
@@ -317,9 +443,8 @@ fun FirstRunDialog(
                 ShelfCard {
                     SectionLabel("Later, if you like")
                     MutedNote(
-                        "• Save sync between handhelds: Settings › Sync › Connect Google Drive, then tick your emulators' " +
-                            "save folders (in-game saves only — save states are never synced).\n" +
-                            "• Two screens: Settings › Screens chooses what goes on each one.\n" +
+                        "• Edit Home: move and resize anything on the home screen (Options menu › Edit Home).\n" +
+                            "• Who's playing? any time: R1 › Who's playing, or the Quick menu during a game.\n" +
                             "• Spotify: Settings › Accounts. Spotify only allows this with your own free developer app " +
                             "(needs Premium) — the card there explains the steps. Music controls for any app work without it."
                     )
@@ -371,4 +496,118 @@ private fun StepDots(step: Int, count: Int) {
             )
         }
     }
+}
+
+/**
+ * Update 336: the first-start setup's players — every profile with its picture and lock, + to add one, Edit for its
+ * name, picture, RetroAchievements account and PIN (the same editor as Who's playing?), and what Voltcap shows when it
+ * starts.
+ */
+@Composable
+private fun WhoPlaysSetupStep(raNames: List<String?>, steamAvatar: String?) {
+    val context = LocalContext.current
+    remember { com.shelf.launcher.data.Profiles.ensure(context) }
+    val profiles = com.shelf.launcher.data.Profiles.list.value
+    @Suppress("UNUSED_VARIABLE") val stamp = com.shelf.launcher.data.Profiles.pictureStamp.value
+    var editing by remember { mutableStateOf<com.shelf.launcher.data.Profiles.Profile?>(null) }
+    // A locked profile asks for its PIN before it's edited, here too.
+    var unlocking by remember { mutableStateOf<com.shelf.launcher.data.Profiles.Profile?>(null) }
+    ShelfCard {
+        SectionLabel("Players")
+        MutedNote("The games, saves and settings are shared. A 4-digit PIN keeps a profile to its owner.")
+        Spacer(Modifier.height(10.dp))
+        profiles.forEachIndexed { i, p ->
+            if (i > 0) Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val model = com.shelf.launcher.data.Profiles.pictureModel(context, p, raNames, steamAvatar)
+                Box(
+                    Modifier.size(38.dp).clip(CircleShape).background(Color.hsv(p.hue, 0.5f, 0.75f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (model != null) coil.compose.AsyncImage(
+                        model = model, contentDescription = p.name,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.size(38.dp)
+                    ) else Text(p.name.trim().take(1).uppercase(), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(12.dp))
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Text(p.name, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    if (p.locked) {
+                        Spacer(Modifier.width(6.dp))
+                        androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Lock, "PIN", tint = ShelfTheme.textMuted, modifier = Modifier.size(15.dp))
+                    }
+                }
+                Chip("Edit", accent = false) { if (p.locked) unlocking = p else editing = p }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        if (profiles.size < com.shelf.launcher.data.Profiles.MAX) Chip("+ Add a player") {
+            com.shelf.launcher.data.Profiles.add(context, "")?.let { editing = it }
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    ShelfCard {
+        SectionLabel("When Voltcap starts")
+        val mode = com.shelf.launcher.data.Features.startupMode.state.value
+        ChipFlow {
+            com.shelf.launcher.data.Features.StartupMode.values().forEach { m ->
+                Chip(m.label, accent = m == mode) { com.shelf.launcher.data.Features.startupMode.value = m }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        MutedNote(
+            when (mode) {
+                com.shelf.launcher.data.Features.StartupMode.CATEGORIES -> "Straight to the categories, as the last player."
+                com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> "Who's playing? first, then the categories."
+                com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> "Who's playing? first, then your layout with the games rolling in."
+            }
+        )
+    }
+    unlocking?.let { p ->
+        PinPad(
+            "PIN for ${p.name}", check = { com.shelf.launcher.data.Profiles.pinOpens(p, it) },
+            onDone = { unlocking = null; editing = p }, onCancel = { unlocking = null }
+        )
+    }
+    editing?.let { p ->
+        ProfileEditDialog(p, raNames, steamAvatar, onDone = { editing = null }, onRemoved = { editing = null })
+    }
+}
+
+/**
+ * Update 336: the setup stepped aside ("Have a look"): the home screen as it is now, with a small note; any button, Back
+ * or a tap brings the setup back.
+ */
+@Composable
+private fun SetupPeek(onBack: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onBack,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    ) {
+        val window = (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+        androidx.compose.runtime.SideEffect { window?.setDimAmount(0f) }
+        ImmersiveDialogWindow()
+        val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+        androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
+        Box(
+            Modifier.fillMaxSize()
+                .focusRequester(focus)
+                .onKeyEvent { e -> if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) onBack(); true }
+                .focusable()
+                .pointerInput(Unit) { detectTapGestures { onBack() } },
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Text(
+                "Setup paused — press any button or tap to go back to it",
+                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 22.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.7f)).padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+/** Update 336: the step a test walk opens the setup on (TestHooks, `voltcap_test_setup`); -1: none. */
+internal object SetupJump {
+    var step by mutableStateOf(-1)
 }

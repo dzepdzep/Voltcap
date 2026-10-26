@@ -306,7 +306,7 @@ private fun Sparks(modifier: Modifier) {
 
 /** A profile's name, picture and RetroAchievements account; remove (never the first one). */
 @Composable
-private fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit) {
+internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit) {
     val context = LocalContext.current
     var p by remember(p0.id) { mutableStateOf(Profiles.list.value.firstOrNull { it.id == p0.id } ?: p0) }
     var name by remember(p0.id) { mutableStateOf(p.name) }
