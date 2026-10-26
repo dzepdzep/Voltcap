@@ -256,6 +256,25 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 329
+- **R1 tile walk** (`ui/TileCheck.kt`, test hooks only): `am start -n com.shelf.launcher/.MainActivity --es
+  voltcap_test_tilewalk_all "LAYOUTS|LOOKS|TILES"` runs inside Voltcap (adb's background shells die when adbd drops),
+  writes `<external files>/tilecheck/results.log` + PNGs of every "no change", stops itself < 20 % battery / > 45 °C.
+  Set animator scales to 0 and `svc power stayon true` before; put them back after (and `voltcap_test_snapshot restore`).
+  Use serial `3140972f` — a Google TV Streamer is on adb too.
+- **A "no change" is often content, not a dead tile:** a game without achievements (chip), scraped cartridge / disc
+  photos (they win over the pack shape and "Disc for every game"), parts taken off in Edit Home (`hiddenParts`: the
+  Thor has `music` and `TWIN_ICONS:category` off — the music player tile / Categories on Twin icons account for that now).
+- **Rules added to `r1TileFit`:** Magnifier on `isTwin` layouts (greyed unless `TwinScreens.dashboard`), Endless off on
+  Twin showcase (`endlessApplies`), Achievements hidden with the carousel view (CLASSIC / GRID / SIDE / STACKS), Outline
+  (free media looks; Grid needs Glow), Categories on Twin icons, Music player with the part taken off.
+- **Category keys:** `sortCategoryKey` is `"cat:" + platformFilter` — always name it with `categoryKeyLabel` (consoles via
+  `ConsoleNames.label`, collections via `collectionLabel`).
+- **Channel grid Dark (OLED):** `Features.chanDark` on top of the pale backdrop (`chanOled()`, `chanShade()` in
+  `StyleConsoleHomes.kt`); the game window and music player skin take the dark versions.
+- **Open:** Cartridge shape / Disc for every game vs scraped photos — asked Toni whether the tiles should also switch the
+  photos off. Release 0.6.42 still not published (needs Toni's OK).
+
 ## State after update 328
 - **Every game start that only brings a running game forward** (`QuickResume.resume`, `RunningGames.resume`) must pass
   the game's display (`ScreenPlacement.optionsFor`) — the companion is started first on the other screen and has the focus.

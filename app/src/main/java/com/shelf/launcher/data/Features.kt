@@ -1538,6 +1538,12 @@ object Features {
     /** Channel grid: tiles per row, pale backdrop, the name on the tile you're on. */
     val chanCols = IntPref("chan_cols", 4, 2..6) // Update 151: 2 to 6 (was 3 to 6).
     val chanLight = BoolPref("chan_light", true)
+    /**
+     * Update 329 (Toni: "a dark Wii Channel-inspired theme as a toggle for the current one, because of OLED"): the pale
+     * Channel grid in black and dark grey — true black behind, dark tiles, bar and buttons, light writing. Only with the
+     * pale backdrop (Layout options › Background: Pale).
+     */
+    val chanDark = BoolPref("chan_dark", false)
     /** Update 146, Channel grid: the game's art fills the background (then the pale backdrop is off). */
     val chanArt = BoolPref("chan_art", false)
     val chanNames = BoolPref("chan_names", true)

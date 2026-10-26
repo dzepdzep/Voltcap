@@ -51,7 +51,7 @@ internal fun playerSkinFor(layout: HomeLayout): PlayerSkin {
             }
             PlayerSkin(solid(lcd), RoundedCornerShape(4.dp), ink, Color.White, ink, Color.Black, artBehind = false, mono = true)
         }
-        HomeLayout.CHAN -> if (Features.chanLight.state.value)
+        HomeLayout.CHAN -> if (Features.chanLight.state.value && !Features.chanDark.state.value) // (Update 329: Dark → the dark skin)
             PlayerSkin(Brush.verticalGradient(listOf(Color.White, Color(0xFFDCE2EA))), RoundedCornerShape(50), Color(0xFF8FB4D8), Color(0xFF3B4450), Color(0xFF3B4450), Color.White, artBehind = false)
         else PlayerSkin(Brush.verticalGradient(listOf(Color(0xFF323A46), Color(0xFF1C2129))), RoundedCornerShape(50), Color(0xFF8FB4D8), Color.White, Color.White, Color.Black, artBehind = false)
         HomeLayout.LIVE -> PlayerSkin(solid(acc), RoundedCornerShape(0.dp), null, Color.White, Color.White, acc, artBehind = false)

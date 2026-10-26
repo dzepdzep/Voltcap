@@ -301,7 +301,8 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
     return when (layout) {
         // The Channel grid: a rounded screen on a see-through white (or dark) veil, round-ended buttons.
         HomeLayout.CHAN -> {
-            val light = Features.chanLight.state.value
+            // (Update 329: the Dark version takes the dark window.)
+            val light = Features.chanLight.state.value && !Features.chanDark.state.value
             val ink = if (light) Color(0xFF3B4450) else Color.White
             WinLook(
                 Arrange.STACK, Btn.PILL,

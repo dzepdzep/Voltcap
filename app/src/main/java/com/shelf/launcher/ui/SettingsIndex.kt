@@ -122,6 +122,7 @@ internal object SettingsIndex {
         E("Channel grid: status bar", "Home", "Layout options", null, null),
         // Update 151.
         E("Channel grid: channels per row (2 to 6)", "Home", "Layout options", null, null),
+        E("Channel grid: Dark (OLED) — the pale look in black", "Home", "Layout options", null, null),
         E("Resume & discover: next achievements", "Home", "Layout options", null, null),
         E("Spotlight: big title placement", "Home", "Layout options", null, null),
         // Update 132.

@@ -47,6 +47,31 @@ class TileWalk329Test {
             }
         }
         assertEquals(3, CategoryBars.choices(HomeLayout.CLASSIC).size)
+        // Twin icons has no name of its own: with its Category name part taken off in Edit Home the tile is greyed
+        // (saying how to bring it back) until the Additional category bar is on.
+        withFeature(Features.hiddenParts, setOf("TWIN_ICONS:category")) {
+            withFeature(Features.twinSharedCategories, false) {
+                assertTrue(r1TileFit("categories", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_ICONS))) is R1Fit.Grey)
+            }
+            withFeature(Features.twinSharedCategories, true) {
+                assertEquals(R1Fit.Show, r1TileFit("categories", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_ICONS))))
+            }
+        }
+        withFeature(Features.hiddenParts, emptySet<String>()) {
+            assertEquals(R1Fit.Show, r1TileFit("categories", ctx(AppearanceSettings(homeLayout = HomeLayout.TWIN_ICONS))))
+        }
+    }
+
+    /** The music player taken off in Edit Home can only sit in the status bar. */
+    @Test fun musicPlayerTakenOffNeedsTheStatusBar() {
+        withFeature(Features.hiddenParts, setOf("music")) {
+            // Hero tiles has no Voltcap status bar by default.
+            assertTrue(r1TileFit("musicspot", ctx(AppearanceSettings(homeLayout = HomeLayout.HERO_TILES))) is R1Fit.Grey)
+            assertEquals(R1Fit.Show, r1TileFit("musicspot", ctx(AppearanceSettings(homeLayout = HomeLayout.CLASSIC))))
+        }
+        withFeature(Features.hiddenParts, emptySet<String>()) {
+            assertEquals(R1Fit.Show, r1TileFit("musicspot", ctx(AppearanceSettings(homeLayout = HomeLayout.HERO_TILES))))
+        }
     }
 
     /** The two-screen layouts put their own half on the second screen: the Magnifier page can't show there. */

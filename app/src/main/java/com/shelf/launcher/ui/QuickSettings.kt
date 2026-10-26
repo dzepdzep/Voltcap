@@ -615,6 +615,11 @@ fun QuickSettingsCard(
                         // Spotlight's Home menu, Channel grid, the Pocket layouts, Twin showcase — "in the status bar" draws
                         // nothing, so the tap only switched an invisible player on and off. There it puts the player at the
                         // top right on its own (as moved in Edit Home, where it can go anywhere) and takes it off again.)
+                        // (Taken off in Edit Home, the player can only be in the status bar — the tile is greyed without
+                        // one, r1TileFit.)
+                        HomeWidgets.hidden(HomeWidgets.MUSIC) ->
+                            if (off || a.musicPlayerPosition != top) home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
+                            else home.setAppearance(a.copy(miniPlayer = false))
                         !a.statusOn -> when {
                             off -> { if (!moved) HomeWidgets.set(HomeWidgets.MUSIC, 1f, 0f); home.setAppearance(a.copy(miniPlayer = true)) }
                             !moved -> HomeWidgets.set(HomeWidgets.MUSIC, 1f, 0f)
@@ -649,7 +654,13 @@ fun QuickSettingsCard(
                     }) {
                     // A tap steps through the places, then Off after the last one, then the first place again (update 125).
                     val all = com.shelf.launcher.data.MusicPlayerPosition.values()
+                    val top = com.shelf.launcher.data.MusicPlayerPosition.TOP_LEFT
                     when {
+                        // (Update 329, found by the R1 tile walk on the AYN Thor: with the player taken off in Edit Home (✕)
+                        // only the status bar can show it — the corners stepped through drew nothing. Then: status bar ↔ off.)
+                        HomeWidgets.hidden(HomeWidgets.MUSIC) ->
+                            if (off || a.musicPlayerPosition != top) home.setAppearance(a.copy(musicPlayerPosition = top, miniPlayer = true))
+                            else home.setAppearance(a.copy(miniPlayer = false))
                         off -> home.setAppearance(a.copy(musicPlayerPosition = all.first(), miniPlayer = true))
                         moved -> { HomeWidgets.reset(HomeWidgets.MUSIC); home.setAppearance(a.copy(miniPlayer = true)) }
                         a.musicPlayerPosition.ordinal == all.lastIndex -> home.setAppearance(a.copy(miniPlayer = false))

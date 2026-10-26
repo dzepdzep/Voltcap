@@ -135,3 +135,57 @@ and many of Voltcap's own picture caches are limited by count rather than size a
 memory. Fine on the Thor (16 GB); a byte budget for those caches would lower the peak on 4–6 GB handhelds. Not changed
 here (it touches many systems) — a follow-up if you want it.
 
+
+## 7. R1 tile walk: every tile pressed in every layout × look (update 329, AYN Thor)
+
+How: test hook `voltcap_test_tilewalk_all "LAYOUTS|LOOKS|TILES"` (`ui/TileCheck.kt`) — inside Voltcap, every tile the R1
+panel shows is pressed through the panel, the panel closed, both screens captured before / after (PixelCopy) and
+compared outside the moving parts (two shots per state make the mask); a tile with no change gets its next value too.
+A control (panel opened and closed, nothing pressed) runs first. Everything is a preview, put back after each tile.
+Results: `<external files>/tilecheck/results.log`, pictures of every "no change" next to it; on the PC
+`screens\tw\` (`results.log`, `results3.log`, `png_run2.tgz`).
+
+| Pass | Scope | Presses | Changed | No change |
+|---|---|---|---|---|
+| 1 | 33 layouts × 8 looks, every home tile (192 × 108, 0.15 %) | 3,754 | 2,739 | 1,015 |
+| 2 | 33 layouts × Covers / Cases, the tiles with "no change" in pass 1 (480 × 270, 0.04 %) | 599 | 440 | 159 |
+| 3 | 19 layouts × Cartridges & discs / Discs in the N64 category: Cartridge shape, Disc for every game | 30 (stopped) | 2 | 28 |
+
+**Fixed / hidden for that combination only** (status **FIXED** or **HIDDEN** / greyed with why):
+
+| Tile | Where it did nothing | Now |
+|---|---|---|
+| Gaps | Twin showcase (changed Twin desk's gap) | **FIXED** — its own gap, from 4 dp |
+| Magnifier | Twin desk / icons / showcase, Pocket classic / ribbon (their lower half owns the second screen) | greyed with why, unless Voltcap's normal second screen is opened from the layout |
+| Music player | Style homes without Voltcap's status bar (Hero tiles, Channel grid, Spotlight Home menu, Pocket layouts, Twin showcase) | **FIXED** — the tap puts it at the top right on its own / off |
+| Music player | Player taken off in Edit Home (✕) | **FIXED** — status bar ↔ off; greyed with why where there is no status bar |
+| Endless | Twin showcase (its grid stops at the ends) | **HIDDEN** |
+| Categories | Twin desk / showcase: "All categories" = "Current only" without the Additional category bar | **FIXED** — Current only ↔ Off there |
+| Categories | Twin icons with its Category name taken off in Edit Home, no Additional category bar | greyed with why |
+| Achievements | Voltcap row, Grid, Side menu, Case stacks with the carousel view (no chip there) | **HIDDEN** |
+| Game size | Case stacks / Grid with the carousel view (the carousel has its own size) | **FIXED** — steps the carousel's size |
+| Outline | Cartridges / discs (free-standing) on Voltcap row, Tile home, Hero carousel, carousel views | **HIDDEN** |
+| Outline | Grid without "The game you're on: Glow" (not a case look) | greyed with why |
+| Background | Style homes with the game's art across the screen (theme animation / still covered) | **FIXED** — the tap switches the clips (Art + videos ↔ Art only) |
+| Round shortcuts | Off the Tile home with "By the row" | **FIXED** — corner / off |
+| (label) | The category title showed the console's key ("PS2") | **FIXED** — "PlayStation 2" (short with Short console names) |
+
+**No change on screen, by design or content (left as they are):** Corners (round the Categories screen's tiles);
+Achievements (only on a game with achievements); console badges over a case that prints its console; the game window's
+motion styles on style homes (fall back to the layout's window); Green Core (its menu page shows no games); Cross menu
+(the walk sat on the apps column); Round shortcuts' corner ☰ under the pass-1 line (seen on the device); Hero carousel /
+TV room / Game shelf controls not steady (their own motion).
+
+**Open question — Cartridge shape and Disc for every game:** the setting changes, but a game with its own scraped
+cartridge / disc photo shows that photo, so in the Thor's N64 and PS2 categories (all with photos) nothing on screen
+changed. Only games without a photo take the pack shape / picked disc. Options: leave it, or have these two tiles also
+switch the photos off (back to drawn pieces) — that changes how your library looks, so not done without asking.
+
+**Flashing check (screen recordings, all 33 layouts, both screens, animations on):** moving along (◀ ▶), L2 / R2, A to
+open the game window and B to close it — no flash or flicker found on any layout (frame-by-frame check for a change that
+reverts within 300 ms). Green Core included (310's fix holds). The only quick changes: the category change's own fade
+(Channel grid) and Hero tiles' end-of-row glow.
+
+**Second-screen controls, pressed for real:** home (page arrows, Play) and during a PS2 game (ARMSX2): all ten in-game
+pages in turn, the timer, the Music page's volume slider (Android's media volume went 1 → 2 → 1), the dock's All apps and
+Chrome (opened on the second screen; the game kept the main screen) — **PASS**.

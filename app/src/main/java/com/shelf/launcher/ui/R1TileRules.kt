@@ -6,6 +6,7 @@ import com.shelf.launcher.data.CardArtType
 import com.shelf.launcher.data.DockPosition
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.HomeLayout
+import com.shelf.launcher.data.statusOn
 
 /*
  * Update 202: where each R1 tile shows — the one place that decides it (QuickSettingsCard asks here for every tile it
@@ -93,7 +94,11 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             else R1Fit.Grey("Game window is off: A starts the game straight away. Switch it on in Settings › Home › Layout options › Game window.")
         // Music player position and Round shortcuts: every layout (style homes: in the status bar / moved in Edit Home /
         // off; the shortcuts' corner ☰ or Edit Home spot).
-        "musicspot" -> R1Fit.Show
+        // (Update 329, found by the R1 tile walk on the AYN Thor: with the player taken off in Edit Home (✕) only the status
+        // bar can hold it — on a layout without one the tile changed nothing; greyed there, saying how to bring it back.)
+        "musicspot" -> if ("music" in Features.hiddenParts.state.value && !a.statusOn)
+            R1Fit.Grey("The music player was taken off the home screen in Edit Home and this layout has no status bar for it. Bring it back in Edit Home (+ Add › Taken off › Music player).")
+            else R1Fit.Show
         // (Update 226, #98: not on a style home that has the shortcuts in its own menu — the corner ☰ copy stays out
         // there, so the tile switched something you couldn't see.)
         "roundshort" -> on(!(l.styleHome && styleHasShortcuts(l)))
@@ -194,7 +199,15 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // with the category bar added as a part (Edit Home › + Add).
         // (Update 315: every layout — each keeps its own choice, CategoryBars; where the categories are the layout's own
         // menu it's greyed, saying so.)
-        "categories" -> if (l in com.shelf.launcher.data.CategoryBars.MENU) R1Fit.Grey("On this layout the categories are its own menu, so they stay.") else R1Fit.Show
+        "categories" -> when {
+            l in com.shelf.launcher.data.CategoryBars.MENU -> R1Fit.Grey("On this layout the categories are its own menu, so they stay.")
+            // (Update 329, found by the R1 tile walk on the AYN Thor: Twin icons draws no category name of its own — only
+            // the Additional category bar (Layout options) shows it, so the tile changed nothing without it.)
+            l == HomeLayout.TWIN_ICONS && !Features.twinSharedCategories.state.value &&
+                "TWIN_ICONS:category" in Features.hiddenParts.state.value ->
+                R1Fit.Grey("The Category name was taken off Twin icons in Edit Home. Bring it back there (+ Add › Taken off), or switch on Layout options › Additional category bar.")
+            else -> R1Fit.Show
+        }
         // Game header tight / roomy: the Voltcap row with its game header on (Settings › Home › Game header).
         // (Update 235, #15/#16: the Voltcap row only — the Tile home shows no game header.)
         "headertight" -> on(l == HomeLayout.CLASSIC && Features.homeHeader.state.value)

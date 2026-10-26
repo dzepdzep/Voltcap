@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.AccountCircle
@@ -446,6 +447,12 @@ private fun ChannelSettings() {
     // Update 151: a clear choice of 2 to 6 channels per row (it was a slider from 3 to 6 that was easy to miss).
     StyleChoice("Channels per row", arrayOf(2, 3, 4, 5, 6), Features.chanCols.state.value, { "$it" }) { Features.chanCols.value = it }
     BackdropChoice(Features.chanLight, Features.chanArt)
+    // Update 329 (Toni: "a dark Wii Channel-inspired theme as a toggle, because of OLED"): the pale look in black.
+    if (Features.chanLight.state.value && !Features.chanArt.state.value) Toggle(
+        Icons.Filled.DarkMode, "Dark (OLED)",
+        "The same look in black and dark grey: true black behind, dark tiles, bar and buttons, light writing — kinder to OLED screens at night.",
+        Features.chanDark
+    )
     Toggle(Icons.Filled.Label, "Name on the tile you're on", "A small name pill along the bottom of the selected tile.", Features.chanNames)
     Toggle(Icons.Filled.Label, "Scroll on continuously", "◀ ▶ move a column over and the grid glides along with you. Off: pages that turn at the edge.", Features.gridsContinuous)
     MutedNote("The game window (A on a game: Home · Details · Start) is in Home › Game window, for every layout.")

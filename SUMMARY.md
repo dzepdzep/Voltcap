@@ -1,26 +1,88 @@
 # Voltcap — what's been done (running summary)
 
-## Update — 25 Oct 2026 (329, in progress): every R1 tile pressed in every layout × look on the Thor
+## Update — 26 Oct 2026 (329): every R1 tile pressed in every layout × look on the Thor, fixes, Dark Channel grid
 
-- **R1 tile walk (test hooks only, `ui/TileCheck.kt`):** `--es voltcap_test_tilewalk <tiles|all>` presses every R1 tile
-  the panel shows for the layout / look on screen (through the panel, like an L1 shortcut), closes it and compares both
-  screens before / after (PixelCopy, small pictures); a tile that changed nothing gets its next value too. A control
-  (panel opened and closed, nothing pressed) runs first. Everything is a preview and put back after each tile; the
-  home screen is held still meanwhile (`HomeIdle.holdForTest`), a fake song "plays" so the music player shows
-  (`TestHooks.fakeNowPlaying`), presses don't count for "most used" tiles. Results: `VoltcapTest tile …` lines.
-- **Fixed — Round shortcuts did nothing off the Tile home with "By the row"** (that spot exists only on the Tile home; on
-  every other layout it means off, as in Settings › Home › Round shortcuts). There the tap now shows them in a corner /
-  takes them off this layout, and the tile says whether they show here (`QuickSettings.kt`).
-- **Console names (Toni: "on by default the real official names, not GBA, PS2… — the short ones the user can turn on"):**
-  every screen label now goes through `ConsoleNames.label` — the official name, or the short one with the new switch
-  **Settings › Home › Name & logo › Short console names** (off by default). Fixed places that showed the bare key: Pocket
-  Quest's category tabs (3DS, GBA…), the console line on the wide card, the emulator pickers ("Emulator for PS2"), the
-  game's Options window, the launch error messages, Discord status. Printed cases / cartridges / discs and logo look-ups
-  keep the official name (`ConsoleNames.display`). Test: `ConsoleNames329Test`.
-- Running on the Thor now (33 layouts × 8 looks, ~100 s each); results, fixes and the report follow in this entry.
-- **Copy** (already in place): `src_copy\ui\TileCheck.kt` (new), `src_copy\ui\QuickSettings.kt`,
-  `src_copy\ui\LauncherScreen.kt`, `src_copy\ui\TestHooks.kt`, `src_copy\ui\PowerSaver.kt`,
-  `src_copy\LauncherViewModel.kt`.
+- **R1 tile walk (test hooks only, `ui/TileCheck.kt`):** `--es voltcap_test_tilewalk <tiles|all>` /
+  `--es voltcap_test_tilewalk_all "LAYOUTS|LOOKS|TILES"` press every R1 tile the panel shows for the layout / look on
+  screen (through the panel, like an L1 shortcut), close it and compare both screens before / after (PixelCopy); a tile
+  that changed nothing gets its next value too. A control (panel opened and closed, nothing pressed) runs first.
+  Everything is a preview and put back after each tile; the home screen is held still (`HomeIdle.holdForTest`), a fake
+  song "plays" so the music player shows, presses don't count for "most used" tiles. The whole walk runs inside Voltcap
+  (adb's background shells died) and writes `<external files>/tilecheck/results.log`; it stops itself below 20 % battery
+  or above 45 °C. Second pass: 480 × 270 pictures and a 0.04 % line, so small changes (the corner ☰, an achievement chip)
+  count.
+- **First pass: 33 layouts × 8 looks, 3,754 tile presses** (25 Oct 16:00–23:38). 2,739 changed the screen; the 1,015 that
+  didn't were sorted into real dead tiles (fixed or hidden below), things that change only somewhere else (the Categories
+  screen's corners, Green Core's games page, a tiny ☰ under the old line) and content (a game without achievements or
+  real disc scans).
+- **Fixed / hidden where the tile did nothing** (`R1TileRules.kt`, `QuickSettings.kt`, …):
+  - **Gaps on Twin showcase** changed Twin desk's gap; it now changes the showcase's own (from 4 dp — closer looked the
+    same; the showcase's Layout options list too).
+  - **Magnifier on the two-screen layouts** (Twin desk / icons / showcase, Pocket classic / ribbon): their lower half
+    owns the second screen, so the page never showed. Greyed there, saying to open the normal second screen first.
+  - **Music player on style homes without Voltcap's status bar** (Hero tiles, Channel grid, Spotlight's Home menu, the
+    Pocket layouts, Twin showcase): "in the status bar" drew nothing, so the tap switched an invisible player. There the
+    tap now puts it at the top right on its own (as moved in Edit Home) and takes it off again.
+  - **Endless on Twin showcase:** its grid stops at the ends; hidden there (and the L1 shortcut says so).
+  - **Categories on Twin desk / Twin showcase:** "All categories" looked the same as "Current only" (every category shows
+    only with Layout options › Additional category bar). Without it the tile goes Current only ↔ Off.
+  - **Achievements chip with the carousel view** (Voltcap row, Grid, Side menu, Case stacks): the carousel draws no chip —
+    hidden while the carousel is on.
+  - **Game size on Case stacks / Grid with the carousel:** the carousel has its own size and ignored the layout's; the
+    tile steps the carousel's size there.
+  - **Outline:** not round free-standing cartridges / discs (Voltcap row, Tile home, Hero carousel, carousel views) —
+    hidden with those looks there; on the Grid only with "The game you're on: Glow" — greyed with why otherwise.
+  - **Background on style homes showing the game's art across the screen** (Side menu, Spotlight, Icon bar, Console hub,
+    Resume & discover, …): theme animation / still background are covered there, so two of four taps did nothing. The
+    tap switches the clips on / off there (Art + videos ↔ Art only).
+- **Fixed — the category title showed the console's key ("PS2")** on Case stacks, Console hub and every layout with the
+  Category name part / glance window: its key is "cat:" + the console, which skipped the official names. Now
+  "PlayStation 2" (or the short name with Short console names on), collections by their name (`SceneStyle.kt`).
+- **The disc / case / spine tiles' caption** cut long official names ("Nintendo Entertainment System"); the tile shows the
+  short name when the official one is over 14 letters, the hold list keeps the full names.
+- **Fixed earlier in this update:** Round shortcuts did nothing off the Tile home with "By the row" — they now go to a
+  corner / off on this layout.
+- **Console names (Toni: "on by default the real official names, not GBA, PS2…"):** every screen label goes through
+  `ConsoleNames.label` — official, or short with the new **Settings › Home › Name & logo › Short console names** (off by
+  default). Printed cases / cartridges / discs keep the official name. Test: `ConsoleNames329Test`.
+- **New — Channel grid › Dark (OLED)** (Toni: "a dark Wii Channel-inspired theme as a toggle for the current one, because
+  of OLED"): Settings › Home › Layout options, under Background (with Pale). The same look in black: true black behind,
+  near-black tiles, bar, round buttons, game window and music player, light writing; the Wii-blue rims and your accent
+  stay (`Features.chanDark`, `StyleConsoleHomes.kt`, `GameWindow.kt`, `PlayerSkins.kt`).
+- **Flashing check (screen recordings, every layout, both screens, animations on):** moving along, L2 / R2, opening and
+  closing a game's window — no flash on any layout (Green Core included: 310's fix holds). The only quick changes found
+  were the category change's own fade (Channel grid) and Hero tiles' end-of-row glow.
+- **Second pass (33 layouts × Covers / Cases, 599 presses, sharper pictures):** 440 changed the screen. Found and fixed
+  then: **Music player** — with the player taken off in Edit Home (✕; so on the Thor) only the status bar can hold it:
+  the tap goes status bar ↔ off, and on a layout without a status bar the tile is greyed saying how to bring it back;
+  **Categories on Twin icons** — with its Category name taken off in Edit Home (so on the Thor) and no Additional category
+  bar nothing shows it: greyed, saying both ways back. Left as they are, with why: the achievement chip shows only on a
+  game with achievements (the walk's games had none); the game-window style's motion choices (Opens / Reveal / Shared)
+  fall back to the layout's window on style homes, so two steps look alike there; badges aren't printed over a case
+  that already shows its console; Green Core's tiles act on its games page, not its menu; Cross menu's walk sat on its
+  apps column.
+- **Cartridge shape / Disc for every game (N64 and PS2 checked by hand):** the tile changes its setting, but games with
+  their own cartridge / disc photo show that photo, so with your scraped N64 and PS2 libraries nothing on screen changed
+  — only games without a photo take the pack shape / picked disc. Not changed; a question for Toni (see the report).
+- **Second screen, pressed for real:** at home — page arrows (Widgets → Wall → Magnifier → back), Play; during a PS2 game
+  (ARMSX2) — every in-game page in turn (Wall, Magnifier, Art, Video, Details, Achievements, Music, Guide, Performance,
+  Widgets), the timer counting, the Music page's volume slider (+ / − changed Android's media volume), the dock's All apps
+  and Chrome (opened on the second screen, the game kept the main one). The game stayed on the main screen throughout
+  (a Back key sent by the test closed it once — adb's, not Voltcap's).
+- **Check:** unit tests; release built and installed on the Thor; Dark (OLED) checked there (home, game window) and
+  switched off again for you to try; the flash recordings and both walks as above. **Put back afterwards:** every
+  Voltcap setting from the copy taken before the walk, animations 1×, screen-stays-on off, Case stacks + Case, PlayStation
+  2. Test side effects: 7 Wonders Of The Ancient World (ARMSX2) started and closed (at its title, nothing saved); Chrome
+  opened once on the second screen; the in-game second screen's start page may be Widgets (turned during 328's tests).
+- **Tests:** `TileWalk329Test` (category title names, Twin categories, Magnifier on the two-screen layouts, no Endless on
+  Twin showcase, the music player taken off), `R1Compat326Test` updated (Outline, Endless, Achievements with the carousel).
+- **Copy** (already in place and pushed): `src_copy\ui\R1TileRules.kt`, `src_copy\ui\QuickSettings.kt`,
+  `src_copy\ui\SceneStyle.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\TwinShowcase.kt`, `src_copy\ui\TileCheck.kt`,
+  `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\StyleConsoleHomes.kt`,
+  `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\PlayerSkins.kt`,
+  `src_copy\ui\SettingsIndex.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
+  `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt` (and the earlier 329 files:
+  `TileCheck.kt`, `TestHooks.kt`, `LauncherScreen.kt`, `PowerSaver.kt`, `LauncherViewModel.kt`, `data\ConsoleNames.kt`…).
 
 ## Update — 25 Oct 2026 (328): device walk of every layout × look, a game that came back on the wrong screen, sampling while asleep
 
