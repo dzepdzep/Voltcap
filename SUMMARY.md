@@ -1,5 +1,16 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (343): Save Vault — PS2 browser style is all or nothing
+
+Toni: "that PS2 save icon has to be fixed — either all memory cards or all logos, no mix — toggle between those two".
+With Filters & look › "PS2 browser style" on, a PS2 save was drawn as the PS2 memory-card browser does while every other
+save kept the vault's cards. Now the switch decides for every save (`ui\SaveExplorer.kt`, `ui\Ps2Browser.kt`):
+- **On:** every save in the PS2 browser's look — a PS2 game its own 3D save icon (or PS2IODB's), any other game its logo
+  turning as a solid badge in its place. (Toni: "can't those icons be shown without that background?") The icons float on
+  their own: no blue tile, frame, caption or "PS2 save icon" label (the name is under the slot); the one you're on glows.
+- **Off:** every save in the vault's own look (cards, capsules, icons), PS2 games included.
+Copy: `src_copy\ui\SaveExplorer.kt`, `src_copy\ui\Ps2Browser.kt`. Checked: built (release), Save Vault on the Thor.
+
 ## Update — 26 Oct 2026 (342): Case flow flash fixed, UMDs as bare discs, real app icons in Storage boxes
 
 - **Case flow flashing** (Toni's recording): on every step all 3D cases showed their stand-in colour for one frame. The

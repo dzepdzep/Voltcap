@@ -563,7 +563,12 @@ internal fun SaveExplorerDialog(
                                 onFocus = { if (selected != i) { selected = i; sounds?.play(UiSound.MOVE) } },
                                 onOpen = { open(entry) },
                                 // (Update 239, #112: with the PS2 browser style, a PS2 game's saves as the console shows them.)
-                                ps2 = if (ps2Style && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsuleByKey[game.stableKey]) else null
+                                // (Update 343, Toni: "the PS2 save icon: either all memory cards or all logos, no mix — toggle between those
+                                // two": "PS2 browser style" on draws EVERY save as the PS2 browser does (a PS2 game its own 3D save icon,
+                                // any other game its logo turning in its place); off, every save gets the vault's own look.)
+                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value) {
+                                    if (com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsuleByKey[game.stableKey]) else emptyList()
+                                } else null
                             )
                           }
                         }
@@ -750,7 +755,7 @@ private fun SaveSlot(
         val look = SaveLookStore.look(game.stableKey, game.platform)
         if (ps2 != null) {
             // (Update 239, #112: the PS2 memory-card browser's look — the save's own icon, else a generic one marked so.)
-            Ps2SaveTile(ps2, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, game = game)
+            Ps2SaveTile(ps2, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, game = game, logo = icon)
         } else if (vaultStyle == Features.SaveVaultStyle.SD_CARD || vaultStyle == Features.SaveVaultStyle.MEMORY_CARD || vaultStyle == Features.SaveVaultStyle.FLOPPY || vaultStyle == Features.SaveVaultStyle.CARD_3D) {
             StyledSaveCard(
                 vaultStyle, icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, platform = game.platform,

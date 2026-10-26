@@ -343,11 +343,17 @@ internal fun Ps2SaveTile(
     hidden: Boolean,
     onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit,
     /** Update 330: the save's game — with no readable icon of its own, PS2IODB's icon for it. */
-    game: com.shelf.launcher.data.Game? = null
+    game: com.shelf.launcher.data.Game? = null,
+    /**
+     * Update 343: a game that isn't a PS2 game (the browser style draws every save): its logo, turning as a solid badge
+     * where a PS2 save's icon would be.
+     */
+    logo: Any? = null
 ) {
     val context = LocalContext.current
     val version = Ps2Icons.version.intValue
-    val slug = androidx.compose.runtime.remember(game?.stableKey) { game?.let { com.shelf.launcher.data.Ps2IconDb.slugFor(context, it) } }
+    val isPs2 = com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game?.platform)
+    val slug = androidx.compose.runtime.remember(game?.stableKey) { game?.takeIf { isPs2 }?.let { com.shelf.launcher.data.Ps2IconDb.slugFor(context, it) } }
     val initial = remember(refs) {
         refs.firstNotNullOfOrNull { r -> Ps2Icons.cached(r.id)?.takeIf { it.icon != null }?.let { Ps2Pick(r, it, true) } }
             ?: Ps2Pick(refs.firstOrNull(), null, false)
@@ -385,10 +391,11 @@ internal fun Ps2SaveTile(
                 scaleX = s; scaleY = s
                 alpha = if (hidden) 0.12f else 1f
             }
-            .clip(shape)
-            .border(1.dp + 1.5.dp * lift, if (selected) accent else Color(0xFF6F8CFF).copy(alpha = 0.35f), shape)
     ) {
-        Ps2Background(sys, Modifier.fillMaxSize())
+        // (Update 343, Toni: "can't those icons be shown without that background?": the icon floats on its own, as on the
+        // console's browser — no tile, no frame; the one you're on gets a soft glow. Its name is under the slot already.)
+        if (selected) Box(Modifier.fillMaxSize(0.95f).align(Alignment.Center)
+            .background(Brush.radialGradient(listOf(accent.copy(alpha = 0.35f * lift.coerceAtLeast(0.4f)), Color.Transparent))))
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                 if (mesh != null) {
@@ -396,29 +403,11 @@ internal fun Ps2SaveTile(
                     // them cheaply (on older Android each turning icon is drawn offscreen, so only the picked one turns).
                     val cheap = android.os.Build.VERSION.SDK_INT >= 29
                     Ps2IconView(mesh, turning = selected || (cheap && Features.saveTurn.state.value), fast = selected, modifier = Modifier.fillMaxSize().padding(4.dp))
+                } else if (!isPs2 && logo != null) {
+                    LogoSlab(logo, Modifier.fillMaxSize(0.78f), turning = selected && Features.saveTurn.state.value, depth = 0.06f,
+                        fallback = { GenericCardSymbol(Modifier.fillMaxSize(0.7f)) })
                 } else if (pick.done) GenericCardSymbol(Modifier.fillMaxSize(0.7f))
             }
-            // The browser's caption: the save's own title on two lines, its size.
-            Column(
-                Modifier.fillMaxWidth().background(Color(0xFF02040F).copy(alpha = 0.55f)).padding(horizontal = 4.dp, vertical = 2.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val l1 = sys?.line1?.takeIf { it.isNotBlank() } ?: ref?.title?.takeIf { it.isNotBlank() } ?: name
-                val l2 = sys?.line2?.takeIf { it.isNotBlank() }
-                Text(l1, color = Color.White, fontSize = 8.sp, lineHeight = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
-                if (l2 != null) Text(l2, color = Color.White.copy(alpha = 0.85f), fontSize = 8.sp, lineHeight = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                ref?.let { Text("${(it.sizeBytes + 1023) / 1024} KB", color = Color(0xFFB9C6FF), fontSize = 7.sp, lineHeight = 8.sp, maxLines = 1) }
-            }
-        }
-        // What the picture is, said plainly: the save's own icon, or a generic symbol.
-        if (pick.done) {
-            Text(
-                if (mesh != null && pick.fromDb) "Icon from PS2IODB" else if (mesh != null) "PS2 save icon" else "No save icon",
-                color = if (mesh != null) Color(0xFFCFE0FF) else Color(0xFFFFD6A0),
-                fontSize = 7.sp, lineHeight = 8.sp, maxLines = 1,
-                modifier = Modifier.align(Alignment.TopStart).padding(4.dp)
-                    .clip(RoundedCornerShape(4.dp)).background(Color.Black.copy(alpha = 0.55f)).padding(horizontal = 3.dp, vertical = 1.dp)
-            )
         }
         SyncBadge(state, 16.dp, Modifier.align(Alignment.TopEnd).padding(3.dp))
     }
