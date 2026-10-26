@@ -86,9 +86,11 @@ object WidgetBoardItems {
     const val SCREEN_MIRROR = "builtin:SCREEN_MIRROR"
     /** Update 299: the volume mixer (MixerActivity / AppMixer) as a widget. */
     const val VOLUME_MIXER = "builtin:VOLUME_MIXER"
+    /** Update 348: the volume of the app on each screen (SoundPerScreenWidget). */
+    const val SOUND_SCREENS = "builtin:SOUND_SCREENS"
 
     /** Update 299: the built-in widgets, in the order they're offered. */
-    val BUILTINS = listOf(NOW_PLAYING to "Now Playing", SYSTEM_STATS to "System Stats", SCREEN_MIRROR to "Screen Mirror", VOLUME_MIXER to "Volume Mixer")
+    val BUILTINS = listOf(NOW_PLAYING to "Now Playing", SYSTEM_STATS to "System Stats", SCREEN_MIRROR to "Screen Mirror", VOLUME_MIXER to "Volume Mixer", SOUND_SCREENS to "Sound per screen")
 
     fun list(): List<String> = Features.widgetBoardItems.value.split(',').map { it.trim() }.filter { it.isNotEmpty() }
     fun set(items: List<String>) { Features.widgetBoardItems.value = items.distinct().joinToString(",") }
@@ -298,6 +300,7 @@ internal fun WidgetBoardPage(
                             id == WidgetBoardItems.SYSTEM_STATS -> SystemStatsWidget(size)
                             id == WidgetBoardItems.SCREEN_MIRROR -> ScreenMirrorWidget(Modifier.fillMaxSize())
                             id == WidgetBoardItems.VOLUME_MIXER -> VolumeMixerWidget(size)
+                            id == WidgetBoardItems.SOUND_SCREENS -> SoundPerScreenWidget(size)
                             id.startsWith("app:") -> id.removePrefix("app:").toIntOrNull()?.let { AppWidgetView(it) }
                         }
                         if (editing) {
@@ -625,6 +628,109 @@ private fun VolumeMixerWidget(size: WidgetSize) {
                                 padId = "wb-mix-${a.packageName}"
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Update 348 (Toni: "controlling the sound per screen" on dual-screen handhelds): one volume for the app on each screen —
+ * the game on the top screen, the video or music on the bottom one — so either can be turned up or down without the
+ * other. The apps are read from the window manager through the handheld's root service (ScreenApps: AYN / Retroid);
+ * under Voltcap's own page the app last used on that screen. Each volume is the mixer's own (AppMixer: the same volume
+ * the full mixer and the Volume Mixer widget show, "Just for this game" kept for a running game). A look every 3 s while
+ * the widget is on screen. Without the root service or per-app volume, it says why.
+ */
+@Composable
+private fun SoundPerScreenWidget(size: WidgetSize) {
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val changes by com.shelf.launcher.device.audio.AppMixer.changes.collectAsState()
+    val perApp = remember { com.shelf.launcher.device.audio.AppMixer.available(context) }
+    val canTell = remember { com.shelf.launcher.device.audio.ScreenApps.available }
+    // This widget's own screen (the second screen it's drawn on), and the main one.
+    val here = remember(context) {
+        runCatching {
+            if (android.os.Build.VERSION.SDK_INT >= 30) context.display?.displayId
+            else (context.getSystemService(android.content.Context.WINDOW_SERVICE) as android.view.WindowManager).defaultDisplay.displayId
+        }.getOrNull() ?: -1
+    }
+    var screens by remember { mutableStateOf<Map<Int, com.shelf.launcher.device.audio.ScreenApps.OnScreen>?>(null) }
+    var volumes by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    val held = remember { androidx.compose.runtime.mutableStateMapOf<String, Pair<Int, Long>>() }
+    val beforeMute = remember { HashMap<String, Int>() }
+    val pending = remember { HashMap<String, kotlinx.coroutines.Job>() }
+    suspend fun look() {
+        val own = context.packageName
+        val got = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { com.shelf.launcher.device.audio.ScreenApps.read(own) }.getOrNull() to
+                runCatching { com.shelf.launcher.device.audio.AppMixer.effective(context) }.getOrDefault(emptyMap())
+        }
+        got.first?.let { screens = it }
+        volumes = got.second
+    }
+    LaunchedEffect(changes) { if (canTell && perApp) look() }
+    LaunchedEffect(Unit) { while (canTell && perApp) { kotlinx.coroutines.delay(3_000L); look() } }
+    fun volumeOf(pkg: String): Int = held[pkg]?.takeIf { it.second > android.os.SystemClock.uptimeMillis() }?.first ?: (volumes[pkg] ?: 100)
+    fun commit(pkg: String, v: Int) {
+        held[pkg] = v to (android.os.SystemClock.uptimeMillis() + 3_000L)
+        val ticket = com.shelf.launcher.device.audio.AppMixer.ticket(pkg)
+        pending.remove(pkg)?.cancel()
+        pending[pkg] = scope.launch {
+            kotlinx.coroutines.delay(280)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    // (The running game's own volume where it has one — "Just for this game" — else the app's.)
+                    val g = com.shelf.launcher.device.audio.AppMixer.runningGame(context)
+                    val forGame = g != null && g.packageName == pkg && com.shelf.launcher.device.audio.AppMixer.gameVolume(context, g.key) != null
+                    com.shelf.launcher.device.audio.AppMixer.setVolume(context, pkg, v, forGame = forGame, ticket = ticket)
+                }
+            }
+        }
+    }
+    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = if (size == WidgetSize.COMPACT) 6.dp else 10.dp)) {
+        Text("SOUND PER SCREEN", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(4.dp))
+        when {
+            !perApp -> Text("Volume per app isn't available on this device — the Volume Mixer says why.", color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
+            !canTell -> Text("This handheld doesn't let Voltcap see which app each screen shows (it needs the handheld's own root service, as on AYN and Retroid).", color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
+            screens == null -> Text("Looking at the screens…", color = ShelfTheme.textMuted, fontSize = 11.sp)
+            else -> Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                val main = android.view.Display.DEFAULT_DISPLAY
+                // The main screen first, then this one (and any other).
+                val order = listOf(main, here) + screens.orEmpty().keys.filter { it != main && it != here }
+                order.distinct().forEach { d ->
+                    val name = when (d) { main -> "Main screen"; here -> "This screen"; else -> "Screen $d" }
+                    val on = screens.orEmpty()[d]
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                        Text(name.uppercase(), color = ShelfTheme.textMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp)
+                        if (on != null && !on.showing) Text("  · last used", color = ShelfTheme.textMuted, fontSize = 9.sp)
+                    }
+                    if (on == null) Text("Nothing but Voltcap here.", color = ShelfTheme.textMuted, fontSize = 11.sp)
+                    else {
+                        val pkg = on.packageName
+                        val v = volumeOf(pkg)
+                        val label = remember(pkg) {
+                            runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            val icon = rememberOwnAppIcon(pkg)
+                            if (icon != null) androidx.compose.foundation.Image(icon, null, modifier = Modifier.size(20.dp).clip(RoundedCornerShape(5.dp)))
+                            Spacer(Modifier.width(6.dp))
+                            Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Text(if (v == 0) "Muted" else "$v %", color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        VolumeBar(
+                            percent = v, steps = 20,
+                            onChange = { nv -> commit(pkg, nv) },
+                            onToggle = {
+                                if (v == 0) commit(pkg, beforeMute.remove(pkg) ?: 100)
+                                else { beforeMute[pkg] = v; commit(pkg, 0) }
+                            },
+                            padId = "wb-screen-$d"
+                        )
                     }
                 }
             }

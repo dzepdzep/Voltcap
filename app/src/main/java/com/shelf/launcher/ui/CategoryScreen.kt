@@ -137,6 +137,18 @@ internal fun DragHandleBadge(modifier: Modifier) {
 fun categoryColumns(style: com.shelf.launcher.data.CategoryTileStyle): Int = style.columns
 
 /**
+ * Update 348 (Toni: "options, add category and the like aren't reachable on the category screen"): the buttons at the
+ * top — Add category, Options, Reorder — are controller stops. ▲ from the first row of tiles goes up to them, ◀ ▶
+ * between them, A presses, ▼ or B back to the tiles. [focus]: the button you're on (-1: on the tiles).
+ */
+internal object CategoryHeader {
+    var focus by androidx.compose.runtime.mutableIntStateOf(-1)
+    /** The buttons showing now, in order (set by the screen). */
+    var buttons: List<String> = emptyList()
+    fun leave() { focus = -1 }
+}
+
+/**
  * Every category as a tile, picked with the D-pad and A — like choosing a
  * console on a shelf, instead of stepping through them with L2 / R2. Each
  * console tile shows a few of its own covers and its full name. Tiles are laid
@@ -276,7 +288,7 @@ fun CategoryScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (reorder) "A Pick up / put down · ◀ ▶ ▲ ▼ Move it · Drag a tile (hold) to move it · B or Start Done"
-                            else "◀ ▶ ▲ ▼ Choose · A Open · Y Options (picture, remove) · Start or hold a tile Reorder · B Back",
+                            else "◀ ▶ ▲ ▼ Choose · A Open · Y Options (picture, remove) · Start or hold a tile Reorder · ▲ from the top row: the buttons · B Back",
                             color = ShelfTheme.textMuted, fontSize = 12.sp
                         )
                         // (Update 212: how the order works, said where it's changed.)
@@ -287,16 +299,20 @@ fun CategoryScreen(
                         Spacer(Modifier.height(4.dp))
                     }
                     // (Update 208: the Reorder button in the corner. Update 212: and the tile's Options.)
+                    // (Update 348: each a controller stop — CategoryHeader.)
+                    CategoryHeader.buttons = buildList { if (!reorder && onAdd != null) add("add"); if (!reorder) add("options"); add("reorder") }
+                    val hf = CategoryHeader.focus
+                    @Composable fun ring(id: String): Modifier = Modifier.focusRing(hf >= 0 && CategoryHeader.buttons.getOrNull(hf) == id, uiRounded(50))
                     if (!reorder) {
                         // (Update 325: the categories taken off come back from here.)
                         if (onAdd != null) {
-                            Chip("Add category", accent = false) { onAdd() }
+                            Chip("Add category", accent = false, modifier = ring("add")) { onAdd() }
                             Spacer(Modifier.width(8.dp))
                         }
-                        Chip("Options", accent = false) { onOptions(selectedIndex) }
+                        Chip("Options", accent = false, modifier = ring("options")) { onOptions(selectedIndex) }
                         Spacer(Modifier.width(8.dp))
                     }
-                    Chip(if (reorder) "Done" else "Reorder", accent = reorder) {
+                    Chip(if (reorder) "Done" else "Reorder", accent = reorder, modifier = ring("reorder")) {
                         if (CategoryReorder.on) CategoryReorder.stop() else CategoryReorder.on = true
                     }
                 }
@@ -309,7 +325,7 @@ fun CategoryScreen(
                     scaleX = k; scaleY = k
                     alpha = if (reorder && !heldHere && CategoryReorder.held) 0.75f else 1f
                 }) {
-                val pick: () -> Unit = { if (reorder) { onSelect(index); CategoryReorder.held = !CategoryReorder.held || selectedIndex != index } else onPick(index) }
+                val pick: () -> Unit = { CategoryHeader.leave(); if (reorder) { onSelect(index); CategoryReorder.held = !CategoryReorder.held || selectedIndex != index } else onPick(index) }
                 if (style == com.shelf.launcher.data.CategoryTileStyle.TILES) {
                     TileLookTile(tile, art, selected = index == selectedIndex, onClick = pick)
                 } else if (style == com.shelf.launcher.data.CategoryTileStyle.COMPACT) {

@@ -1,5 +1,29 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (349): Sound per screen widget, the category screen's buttons by controller
+
+Toni's notes after 0.6.44.
+- **Sound per screen** (second screen › Widgets, new widget; `ui\WidgetBoard.kt`, `ui\SecondScreenTools.kt`,
+  `device\audio\ScreenApps.kt` new): the app on the main screen and the app on this screen, each with its own volume
+  slider and mute — a game up top and a video below turned up or down on their own. Under Voltcap's own page it shows
+  the app last used on that screen ("last used"). The volumes are the mixer's own (AppMixer — the same as the Volume
+  Mixer and the full mixer; a running game's "Just for this game" volume kept). The screens' apps are read from the
+  window manager through the handheld's root service (AYN / Retroid); without it, or without per-app volume, the widget
+  says why. Added from Settings › Second screen tools or the board's Edit › Add.
+- **Category screen** (`ui\CategoryScreen.kt`, `ui\LauncherScreen.kt`): Add category, Options and Reorder are controller
+  stops — ▲ from the top row of tiles goes up to them, ◀ ▶ between them, A presses, ▼ or B back to the tiles.
+- **Eden and the volume mixer**: looked at with Mario Golf running in Eden — Eden plays through six OpenSL players and
+  the mixer held all six at the set volume (−25 dB). Toni: "now it did change" — not reproduced; nothing changed.
+- Tests: `ScreenAppsTest` (the Thor's task dump, including its repeated tasks under the second display).
+
+Copy: `src_copy\ui\` WidgetBoard.kt, SecondScreenTools.kt, CategoryScreen.kt, LauncherScreen.kt;
+`src_copy\device\audio\ScreenApps.kt` (new); `project_copy\app\src\test\java\com\shelf\launcher\device\audio\ScreenAppsTest.kt` (new).
+
+Tested on the Thor (release build): the widget on the second screen (main screen: Eden, last used; this screen: nothing
+but Voltcap); the category screen's ▲ to Add category, ▶ to Options. Not tested: moving a volume from the widget, an
+app showing on the second screen while the widget is visible (the board covers it), Retroid devices.
+The Thor's Widgets page now has Sound per screen between Now Playing and System Stats (remove it with Edit if unwanted).
+
 ## Update — 26 Oct 2026 (348): Arcade cabinets made real; fixes from Toni's testing
 
 Toni's brief "Arcade cabinets — visual authenticity" (Hall and Showcase kept as they were built in 347) and his notes

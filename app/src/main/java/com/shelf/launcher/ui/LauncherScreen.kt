@@ -1303,7 +1303,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val i = categoryTiles.indexOfFirst { it.key == k }
         if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
     }
-    LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) CategoryReorder.stop() }
+    LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) { CategoryReorder.stop(); CategoryHeader.leave() } }
 
     // The random-game button: go to that category, then pick from it once the games are showing.
     fun randomFromBrowser() {
@@ -6116,6 +6116,34 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                     val count = categoryTiles.size
+                    // Update 348: on the buttons at the top (Add category, Options, Reorder) — CategoryHeader.
+                    if (CategoryHeader.focus >= 0 && !(CategoryReorder.on && CategoryReorder.held)) {
+                        val btns = CategoryHeader.buttons
+                        if (CategoryHeader.focus >= btns.size) CategoryHeader.focus = btns.size - 1
+                        if (event.type == KeyEventType.KeyDown) {
+                            when (event.key) {
+                                Key.DirectionLeft -> if (CategoryHeader.focus > 0) { CategoryHeader.focus--; sounds?.play(UiSound.MOVE) }
+                                Key.DirectionRight -> if (CategoryHeader.focus < btns.size - 1) { CategoryHeader.focus++; sounds?.play(UiSound.MOVE) }
+                                Key.DirectionDown -> { CategoryHeader.leave(); sounds?.play(UiSound.MOVE) }
+                                else -> Unit
+                            }
+                            return@onKeyEvent true
+                        }
+                        when (event.key) {
+                            Key.ButtonA, Key.Enter, Key.DirectionCenter -> {
+                                when (btns.getOrNull(CategoryHeader.focus)) {
+                                    "add" -> if (removedCategoryTiles.isNotEmpty()) addCategoryOpen = true
+                                    "options" -> categoryTiles.getOrNull(categoryIndex)?.let { tile -> pbState.options = tile }
+                                    "reorder" -> { if (CategoryReorder.on) CategoryReorder.stop() else CategoryReorder.on = true; CategoryHeader.leave() }
+                                }
+                                sounds?.play(UiSound.SELECT)
+                            }
+                            Key.ButtonB, Key.Back -> { CategoryHeader.leave(); sounds?.play(UiSound.BACK) }
+                            Key.ButtonStart -> { if (CategoryReorder.on) CategoryReorder.stop() else CategoryReorder.on = true; CategoryHeader.leave(); sounds?.play(UiSound.MOVE) }
+                            else -> Unit
+                        }
+                        return@onKeyEvent true
+                    }
                     if (event.type == KeyEventType.KeyDown) {
                         val step = when (event.key) {
                             Key.DirectionLeft -> -1
@@ -6128,6 +6156,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         if (step != 0 && count > 0 && CategoryReorder.on && CategoryReorder.held) {
                             val to = (categoryIndex + step).coerceIn(0, count - 1)
                             if (to != categoryIndex && moveCategoryTile(categoryIndex, to)) sounds?.play(UiSound.MOVE)
+                            return@onKeyEvent true
+                        }
+                        // (Update 348: ▲ from the top row goes up to the buttons.)
+                        if (event.key == Key.DirectionUp && !(CategoryReorder.on && CategoryReorder.held) &&
+                            categoryIndex < categoryColumns(state.appearance.categoryTileStyle) && CategoryHeader.buttons.isNotEmpty()) {
+                            CategoryHeader.focus = 0; sounds?.play(UiSound.MOVE)
                             return@onKeyEvent true
                         }
                         if (step != 0 && count > 0) {

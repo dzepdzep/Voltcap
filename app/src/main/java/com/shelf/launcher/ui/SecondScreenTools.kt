@@ -121,6 +121,11 @@ internal fun SecondScreenToolsSettings(hasSecondScreen: Boolean) {
         SwitchRow(Icons.AutoMirrored.Filled.VolumeUp, "Volume Mixer", "The media volume and each app's volume, with mute; opens the full mixer.", WidgetBoardItems.VOLUME_MIXER in items, { on ->
             if (on) WidgetBoardItems.add(WidgetBoardItems.VOLUME_MIXER) else WidgetBoardItems.remove(WidgetBoardItems.VOLUME_MIXER)
         })
+        Spacer(Modifier.height(8.dp))
+        // Update 348: the app on each screen, each with its own volume.
+        SwitchRow(Icons.AutoMirrored.Filled.VolumeUp, "Sound per screen", "The app on the main screen and the app on this screen, each with its own volume (a game up top, a video below). Needs per-app volume and the handheld's root service (AYN, Retroid).", WidgetBoardItems.SOUND_SCREENS in items, { on ->
+            if (on) WidgetBoardItems.add(WidgetBoardItems.SOUND_SCREENS) else WidgetBoardItems.remove(WidgetBoardItems.SOUND_SCREENS)
+        })
         MutedNote("Sizes and order: the Widgets page › Edit (drag the handle, or ◀ ▶; the size key cycles compact / normal / expanded).")
         Spacer(Modifier.height(8.dp))
         FeatureChoice("Screen Mirror mode", Features.MirrorMode.values(), Features.mirrorMode) { it.label }
