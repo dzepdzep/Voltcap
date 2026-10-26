@@ -2811,6 +2811,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     focusedGame, state,
                     blurred = backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED,
                     rowTopPx = if (artTopPx > 0f) artTopPx else rowTopPx,
+                    rowBottomPx = rowBottomPx,
                     // A lone game leaves the row mostly empty — then the picture
                     // fills the whole screen instead of stopping at the capsule.
                     // Tiles at the bottom: the picture ends right above the tiles too.

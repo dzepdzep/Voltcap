@@ -1138,7 +1138,9 @@ internal fun BackdropArt(
     blurred: Boolean,
     /** Top of the row of games, in pixels — where "Whole picture" ends. */
     rowTopPx: Float = 0f,
-    rowFilled: Boolean = true
+    rowFilled: Boolean = true,
+    /** Update 329: bottom of the row of games, in pixels — where "Whole picture" starts with the row at the top. */
+    rowBottomPx: Float = 0f
 ) {
     com.shelf.launcher.Breadcrumbs.mark("BackdropArt")
     // The game's own transition (Game settings › Look for this game) wins over Background art motion.
@@ -1150,7 +1152,7 @@ internal fun BackdropArt(
         // out before the new one had loaded (a quick black screen), and dimmed both half way through.
         run {
             HeroLayers(
-                focusedGame, state, blurred, rowTopPx, rowFilled,
+                focusedGame, state, blurred, rowTopPx, rowFilled, rowBottomPx = rowBottomPx,
                 zoomOn = motion == com.shelf.launcher.data.HeroMotion.QUICK_ZOOM || motion == com.shelf.launcher.data.HeroMotion.KEN_BURNS,
                 motion = motion
             )
@@ -1199,7 +1201,8 @@ private fun HeroLayers(
     rowTopPx: Float,
     rowFilled: Boolean,
     zoomOn: Boolean,
-    motion: com.shelf.launcher.data.HeroMotion = com.shelf.launcher.data.HeroMotion.QUICK
+    motion: com.shelf.launcher.data.HeroMotion = com.shelf.launcher.data.HeroMotion.QUICK,
+    rowBottomPx: Float = 0f
 ) {
     val layers = remember { mutableStateListOf<HeroLayer>() }
     // How long the new picture takes to come in, by style (the moving ones need a little longer).
@@ -1373,7 +1376,7 @@ private fun HeroLayers(
                     )
             ) {
                 BackdropArtLayer(
-                    game, state, blurred, rowTopPx, rowFilled,
+                    game, state, blurred, rowTopPx, rowFilled, rowBottomPx = rowBottomPx,
                     zoom = if (zoomOn) ({ layer.zoom.value }) else null,
                     onReady = { layer.ready = true }
                 )
@@ -1396,7 +1399,8 @@ private fun BackdropArtLayer(
     rowTopPx: Float,
     rowFilled: Boolean,
     zoom: (() -> Float)?,
-    onReady: () -> Unit
+    onReady: () -> Unit,
+    rowBottomPx: Float = 0f
 ) {
     // Artwork priority (Appearance › Artwork, or this game's own): see ArtPick.
     val heroUrl = com.shelf.launcher.data.ArtPick.backdrop(game, state.artOverrides, state.art, state.screenshots)
@@ -1522,19 +1526,33 @@ private fun BackdropArtLayer(
                 // The sharp picture fills the space above the row exactly,
                 // so its bottom edge lines up with the top of the cards.
                 val density = androidx.compose.ui.platform.LocalDensity.current
-                val above = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) {
+                val dock = state.appearance.dockHere
+                val above = if (dock == com.shelf.launcher.data.DockPosition.BOTTOM) {
                     with(density) { rowTopPx.toDp() }
+                } else 0.dp
+                // Update 329 (Toni, seen on the Thor: Tile home with wide capsules at the top — "the art was only up there and
+                // the bottom side was blurred"): with the games at the top the whole picture sat at the top too, behind them,
+                // and the free space below was only the blurred copy. It now fills the space under the row, as it fills the
+                // space above it with the games at the bottom; with the games in the middle it sits in the middle.
+                val below = if (dock == com.shelf.launcher.data.DockPosition.TOP && rowBottomPx > 0f) {
+                    with(density) { rowBottomPx.toDp() }
                 } else 0.dp
                 AsyncImage(
                     model = heroRequest,
                     contentDescription = null,
                     filterQuality = androidx.compose.ui.graphics.FilterQuality.High,
-                    contentScale = if (above > 0.dp) ContentScale.Crop else ContentScale.Fit,
-                    alignment = if (above > 0.dp) Alignment.Center else Alignment.TopCenter,
+                    contentScale = if (above > 0.dp || below > 0.dp) ContentScale.Crop else ContentScale.Fit,
+                    alignment = if (above > 0.dp || below > 0.dp) Alignment.Center
+                        else if (dock == com.shelf.launcher.data.DockPosition.MIDDLE) Alignment.Center else Alignment.TopCenter,
                     onState = onState,
                     // A few dp past the card's top edge, tucked under it, so no
                     // sliver of the blurred copy shows between art and card.
-                    modifier = (if (above > 0.dp) Modifier.fillMaxWidth().height(above + 8.dp) else Modifier.fillMaxSize()).pixelArtwork()
+                    modifier = (when {
+                        above > 0.dp -> Modifier.fillMaxWidth().height(above + 8.dp)
+                        // (Tucked a few dp under the row's bottom edge the same way.)
+                        below > 0.dp -> Modifier.fillMaxSize().padding(top = (below - 8.dp).coerceAtLeast(0.dp))
+                        else -> Modifier.fillMaxSize()
+                    }).pixelArtwork()
                 )
             } else {
                 AsyncImage(

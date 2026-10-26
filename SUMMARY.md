@@ -74,6 +74,12 @@
   remembered without its console (Compose's `produceState` keeps its state across a new key, and the loader returned at
   once when it already held a picture), so a disc reused for another game kept the old one. Keyed now
   (`ui/GenericDisc.kt`). Checked on the Thor: N64 list → PS2 list shows the PlayStation 2 band.
+- **Fixed — "Whole picture" with the games at the top** (Toni, seen on the Thor: Tile home with wide capsules at the top —
+  "the art was only up there and the bottom side was blurred"): the whole picture sat at the top of the screen, behind
+  the games, and the free space under them showed only the blurred copy. It now fills the space under the row (as it
+  fills the space above it with the games at the bottom); with the games in the middle it sits in the middle
+  (`ui/HomeChrome.kt` BackdropArtLayer, the row's bottom edge passed from `LauncherScreen.kt`). Checked on the Thor:
+  Tile home, top / middle.
 - **Second screen, pressed for real:** at home — page arrows (Widgets → Wall → Magnifier → back), Play; during a PS2 game
   (ARMSX2) — every in-game page in turn (Wall, Magnifier, Art, Video, Details, Achievements, Music, Guide, Performance,
   Widgets), the timer counting, the Music page's volume slider (+ / − changed Android's media volume), the dock's All apps
@@ -90,7 +96,7 @@
   `src_copy\ui\SceneStyle.kt`, `src_copy\ui\EndlessRow.kt`, `src_copy\ui\TwinShowcase.kt`, `src_copy\ui\TileCheck.kt`,
   `src_copy\data\AppearanceStore.kt`, `src_copy\data\Features.kt`, `src_copy\ui\StyleConsoleHomes.kt`,
   `src_copy\ui\StyleHomeSettings.kt`, `src_copy\ui\GameWindow.kt`, `src_copy\ui\PlayerSkins.kt`,
-  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GenericDisc.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
+  `src_copy\ui\SettingsIndex.kt`, `src_copy\ui\GameCard.kt`, `src_copy\ui\GenericDisc.kt`, `src_copy\ui\HomeChrome.kt`, `src_copy\ui\LauncherScreen.kt`, `project_copy\app\src\test\java\com\shelf\launcher\ui\TileWalk329Test.kt`,
   `project_copy\app\src\test\java\com\shelf\launcher\ui\R1Compat326Test.kt` (and the earlier 329 files:
   `TileCheck.kt`, `TestHooks.kt`, `LauncherScreen.kt`, `PowerSaver.kt`, `LauncherViewModel.kt`, `data\ConsoleNames.kt`…).
 
