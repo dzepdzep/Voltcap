@@ -204,7 +204,28 @@ enum class HomeLayout(val label: String) {
     AIRY("Airy home (1999)"),
     /** Update 330, phase 3: Night menu (2006) — the games as slanted bars under a full moon over water, the one you're on
      *  framed big beside them (StyleNightMenu.kt). */
-    NIGHT("Night menu (2006)");
+    NIGHT("Night menu (2006)"),
+    /** Update 344: Blades (2005) — five overlapping blades (Spotlight, Games, Systems, Media, Settings); ◀ ▶ slide the next one
+     *  open, its list and the game you're on in your game look inside it (StyleBlades.kt). */
+    BLADES("Blades (2005)"),
+    /** Update 344: Bubble home (2011) — glossy game bubbles in staggered rows, a page at a time; A unfolds the game's
+     *  LiveArea page (big Start, its art, achievements, screenshots), B peels it back (StyleBubbles.kt). */
+    BUBBLES("Bubble home (2011)"),
+    /** Update 344: Pocket camera (1998) — four shades of pixels: the game you're on as a dithered photo in a chunky
+     *  viewfinder, the album of the games either side (StylePocketCamera.kt). */
+    CAMERA("Pocket camera (1998)"),
+    /** Update 344: Panel dashboard (2008) — channels of angled panels receding to the right, your profile beside them
+     *  (StylePanels.kt). */
+    PANELS("Panel dashboard (2008)"),
+    /** Update 344: Game magazine — each category an issue lying open on the desk, each game a two-page feature; ◀ ▶ turn
+     *  the page (StyleMagazine.kt). */
+    MAGAZINE("Game magazine"),
+    /** Update 344: Rental shop — a 1990s rental store: each console a section of shelves under a neon sign, the games as
+     *  real cases; A picks one up (StyleRentalShop.kt). */
+    SHOP("Rental shop"),
+    /** Update 344: Terminal — an old computer's screen: your games as a directory listing, a dithered preview, a command
+     *  line (StyleTerminal.kt). */
+    TERMINAL("Terminal");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -220,6 +241,7 @@ enum class HomeLayout(val label: String) {
         this == MEMCARD || this == CASEFLOW || // Update 330: Memory card, Case flow
         this == BOX || this == STORAGE || this == FILESELECT || // Update 330: Cardboard box, Storage boxes, File select
         this == ORBIT || this == AIRY || this == NIGHT || // Update 330, phase 3
+        this == BLADES || this == BUBBLES || this == CAMERA || this == PANELS || this == MAGAZINE || this == SHOP || this == TERMINAL || // Update 344
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -706,11 +728,12 @@ object CategoryBars {
         HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.DISCS, HomeLayout.CRATE, HomeLayout.POCKET_RIBBON,
         HomeLayout.TIMELINE, HomeLayout.SIDE, HomeLayout.DASH, HomeLayout.MEMCARD,
         HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT,
-        HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT
+        HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT,
+        HomeLayout.BUBBLES, HomeLayout.CAMERA, HomeLayout.MAGAZINE, HomeLayout.SHOP // Update 344
     )
     val MENU = setOf(
         HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,
-        HomeLayout.ARCADE, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET, HomeLayout.GREENCORE, HomeLayout.CUBE,
+        HomeLayout.ARCADE, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET, HomeLayout.GREENCORE, HomeLayout.CUBE, HomeLayout.BLADES, HomeLayout.PANELS, HomeLayout.TERMINAL,
         HomeLayout.CUSTOM
     )
 

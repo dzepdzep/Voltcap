@@ -168,7 +168,9 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
                 // Storage boxes and File select, their own icons and blocks.)
                 HomeLayout.MEMCARD, HomeLayout.CASEFLOW, HomeLayout.STORAGE, HomeLayout.FILESELECT,
                 // (Nor the Cardboard box: its cases by their spines, the spine names the console.)
-                HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT)
+                HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT,
+                // (Update 344: Bubble home's bubbles carry none.)
+                HomeLayout.BUBBLES, HomeLayout.CAMERA, HomeLayout.TERMINAL)
         })
         // Update 326 (audit): Outline (Settings › Game look › Coloured frame, R1 tile of 325) — only where it's drawn: the
         // Voltcap row, Tile home, Grid, Hero carousel, TV room (their cards), and the carousel view of Side menu / Case
@@ -195,7 +197,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
             l.name in Features.carouselLayouts.state.value) R1Fit.Hide else when (l) {
             HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CARDS, HomeLayout.CRATE, HomeLayout.HERO, HomeLayout.TV,
             HomeLayout.CIRCUIT, HomeLayout.POCKET_CLASSIC, HomeLayout.MEMCARD, HomeLayout.CASEFLOW,
-            HomeLayout.STORAGE, HomeLayout.FILESELECT, HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT -> R1Fit.Hide
+            HomeLayout.STORAGE, HomeLayout.FILESELECT, HomeLayout.BOX, HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT,
+            HomeLayout.BUBBLES, HomeLayout.CAMERA, HomeLayout.TERMINAL -> R1Fit.Hide
             // (Update 326, audit: Pocket ribbon's cartridge on top is drawn with StyleArt, which puts the chip on it.)
             HomeLayout.POCKET_RIBBON -> on(Features.ribbonCart.state.value)
             // (Update 204: hidden, not greyed, while Pocket Quest shows plain covers.)
@@ -205,6 +208,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Game size: the layouts that read it (GameSize) — not Disc station, the Twin layouts, Custom layout, the Pocket
         // layouts, Green Core (their own sizes, or none) or Pocket Quest (its own Size in Layout options).
         "gamesize" -> on(l !in setOf(
+            // Update 344: Blades sizes the game to its blade; Bubble home its bubbles to the page.
+            HomeLayout.BLADES, HomeLayout.BUBBLES, HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL,
             HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.CUSTOM,
             HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET,
             // Update 330: their own Icon size / Case size (Layout options).

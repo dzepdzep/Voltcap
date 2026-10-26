@@ -115,6 +115,14 @@ internal fun PresetPreview(
             HomeLayout.ORBIT -> p.orbitDeck()
             HomeLayout.AIRY -> p.airyHome()
             HomeLayout.NIGHT -> p.nightMenu()
+            // Update 344.
+            HomeLayout.BLADES -> p.blades()
+            HomeLayout.BUBBLES -> p.bubbles()
+            HomeLayout.CAMERA -> p.camera()
+            HomeLayout.PANELS -> p.panels()
+            HomeLayout.MAGAZINE -> p.magazine()
+            HomeLayout.SHOP -> p.shop()
+            HomeLayout.TERMINAL -> p.terminal()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -1147,6 +1155,89 @@ private class PreviewPainter(
             val on = i == 3
             rect(0.46f - (if (on) 0.03f else 0f) + kotlin.math.abs(i - 3) * 0.01f, 0.1f + i * 0.12f, 0.5f, 0.09f, if (on) Color.White else Color(0xFF1B3566), 2f)
         }
+    }
+
+    /** Update 344: Blades — overlapping green blades, the open one with a list and a cover. */
+    fun blades() {
+        val hi = when (oe(Features.blColor)) { "SILVER" -> Color(0xFFD9DEE4); "BLUE" -> Color(0xFF5BB6FF); "ORANGE" -> Color(0xFFFFA43A); "THEME" -> accent; else -> Color(0xFF9AD43A) }
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF10180C), Color(0xFF050705))))
+        for (i in 0 until 5) {
+            val x = if (i <= 1) 0.03f + i * 0.035f else 0.98f - (5 - i) * 0.045f
+            val c = androidx.compose.ui.graphics.lerp(hi, Color(0xFF1F3A12), i * 0.18f)
+            rect(x, 0.06f, 1f - x, 0.88f, c, 6f)
+        }
+        for (r in 0 until 5) rect(0.12f, 0.2f + r * 0.11f, 0.36f, 0.08f, if (r == 1) Color.White else Color.White.copy(alpha = 0.12f), 2f)
+        rect(0.55f, 0.16f, 0.2f, 0.56f, cover(0), 3f)
+    }
+
+    /** Update 344: Bubble home — glossy round bubbles in staggered rows on a sky wallpaper. */
+    fun bubbles() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF1D4E8F), Color(0xFF3A8BD0), Color(0xFF9FD8F2))))
+        val cols = 5
+        for (s in 0 until 14) {
+            val row = if (s < cols) 0 else if (s < 2 * cols - 1) 1 else 2
+            val col = when (row) { 0 -> s; 1 -> s - cols; else -> s - (2 * cols - 1) }
+            val cx = 0.06f + (col + 0.5f + if (row == 1) 0.5f else 0f) * 0.176f
+            val cy = 0.2f + row * 0.29f
+            val r = if (s == 6) 0.085f else 0.07f
+            d.drawCircle(cover(s), r * h, Offset(cx * w, cy * h))
+            d.drawCircle(Color.White, r * h, Offset(cx * w, cy * h), style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f * px))
+        }
+    }
+
+    /** Update 344: Pocket camera — four shades, a framed photo in the middle, the album either side. */
+    fun camera() {
+        val s = Features.PcPalette.values().firstOrNull { it.name == oe(Features.pcPalette) }?.shades ?: Features.PcPalette.GREEN.shades
+        d.drawRect(Color(s[0]))
+        rect(0.32f, 0.08f, 0.36f, 0.84f, Color(s[3]), 0f)
+        rect(0.34f, 0.12f, 0.32f, 0.06f, Color(s[0]), 0f)
+        rect(0.35f, 0.21f, 0.3f, 0.46f, Color(s[1]), 0f)
+        for (r in 0 until 4) { rect(0.14f, 0.12f + r * 0.2f, 0.12f, 0.16f, Color(s[2]), 0f); rect(0.74f, 0.12f + r * 0.2f, 0.12f, 0.16f, Color(s[2]), 0f) }
+    }
+
+    /** Update 344: Panel dashboard — a green dashboard, a profile on the left, a row of panels receding to the right. */
+    fun panels() {
+        val dark = oe(Features.pdColor) == "GRAPHITE"; val light = oe(Features.pdColor) == "SILVER"
+        d.drawRect(Brush.verticalGradient(if (light) listOf(Color(0xFFF1F3F5), Color(0xFFB9C1CA)) else if (dark) listOf(Color(0xFF2A2F36), Color(0xFF07090B)) else listOf(Color(0xFF3E8E26), Color(0xFF0C2608))))
+        rect(0.05f, 0.45f, 0.12f, 0.22f, Color.White, 3f)
+        var x = 0.24f; var s = 1f
+        for (i in 0 until 5) {
+            rect(x, 0.3f + (1f - s) * 0.2f, 0.2f * s, 0.4f * s, if (i == 0) Color.White else Color.White.copy(alpha = 0.75f - i * 0.1f), 3f)
+            x += 0.15f * s; s *= 0.74f
+        }
+    }
+
+    /** Update 344: Game magazine — an open spread on a desk: big art on the left, columns and boxes on the right. */
+    fun magazine() {
+        val m = magStyle(Features.MgStyle.values().firstOrNull { it.name == oe(Features.mgStyle) } ?: Features.MgStyle.BOLD)
+        d.drawRect(m.desk)
+        rect(0.1f, 0.1f, 0.4f, 0.8f, cover(2), 0f)
+        rect(0.5f, 0.1f, 0.4f, 0.8f, m.paper, 0f)
+        rect(0.13f, 0.7f, 0.3f, 0.06f, Color.White, 0f)
+        for (r in 0 until 6) rect(0.53f, 0.2f + r * 0.08f, 0.2f, 0.03f, m.muted, 0f)
+        rect(0.76f, 0.2f, 0.12f, 0.16f, m.accent, 0f)
+        rect(0.76f, 0.42f, 0.12f, 0.14f, m.accent2, 0f)
+    }
+
+    /** Update 344: Rental shop — a purple wall, a neon line, three shelves of cases. */
+    fun shop() {
+        d.drawRect(Brush.verticalGradient(listOf(Color(0xFF2B1846), Color(0xFF120A1F))))
+        rect(0.3f, 0.05f, 0.4f, 0.05f, Color(0xFFFF4FD8), 2f)
+        for (r in 0 until 3) {
+            rect(0f, 0.36f + r * 0.22f, 1f, 0.025f, Color(0xFF6B4A2E), 0f)
+            for (cI in 0 until 9) rect(0.04f + cI * 0.106f, 0.2f + r * 0.22f, 0.08f, 0.16f, cover(cI + r * 9), 1f)
+        }
+    }
+
+    /** Update 344: Terminal — a listing in phosphor, one line in reverse, a framed preview. */
+    fun terminal() {
+        val t = termColors(Features.TmTheme.values().firstOrNull { it.name == oe(Features.tmTheme) } ?: Features.TmTheme.GREEN)
+        d.drawRect(t.bg)
+        rect(0.03f, 0.04f, 0.94f, 0.06f, t.hi, 0f)
+        for (r in 0 until 9) rect(0.04f, 0.16f + r * 0.08f, if (r == 3) 0.5f else 0.3f + (r * 7 % 5) * 0.03f, 0.045f, if (r == 3) t.hi else t.dim, 0f)
+        rect(0.62f, 0.16f, 0.32f, 0.66f, t.dim, 0f)
+        rect(0.64f, 0.19f, 0.28f, 0.6f, t.bg, 0f)
+        rect(0.68f, 0.23f, 0.2f, 0.34f, t.fg.copy(alpha = 0.6f), 0f)
     }
 
     fun cube() {

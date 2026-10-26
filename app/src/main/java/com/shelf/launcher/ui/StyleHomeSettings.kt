@@ -94,6 +94,14 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.ORBIT -> "Discs round the orbit, tilt, colour, spinning disc, twinkling stars"
     HomeLayout.AIRY -> "Tile size, accent colour, how much the row bows, bubbles, pixel display"
     HomeLayout.NIGHT -> "Games on the screen, colour, full moon, water"
+    // Update 344.
+    HomeLayout.BLADES -> "Colour, start blade, achievement badges, moving light, sounds"
+    HomeLayout.BUBBLES -> "Bubbles or LiveArea first, wallpaper, folders, floating, sounds"
+    HomeLayout.CAMERA -> "Palette, shutter or develop, screen dots, sounds"
+    HomeLayout.PANELS -> "Colour, start channel, your profile, sounds"
+    HomeLayout.MAGAZINE -> "Editorial style, product shot, wooden desk, sounds"
+    HomeLayout.SHOP -> "Cases or your look, shelves, walls, neon, sounds"
+    HomeLayout.TERMINAL -> "Monitor colours, CRT effects, pixel type, boot screen, sounds"
     else -> ""
 }
 
@@ -151,6 +159,14 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.ORBIT -> OrbitDeckSettings()
         HomeLayout.AIRY -> AiryHomeSettings()
         HomeLayout.NIGHT -> NightMenuSettings()
+        // Update 344 (StyleBlades.kt).
+        HomeLayout.BLADES -> BladesSettings()
+        HomeLayout.BUBBLES -> BubblesSettings()
+        HomeLayout.CAMERA -> PocketCameraSettings()
+        HomeLayout.PANELS -> PanelsSettings()
+        HomeLayout.MAGAZINE -> MagazineSettings()
+        HomeLayout.SHOP -> RentalShopSettings()
+        HomeLayout.TERMINAL -> TerminalSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

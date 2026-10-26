@@ -883,7 +883,9 @@ internal fun GameWindow(
     // (Update 330: File select's and Storage boxes' own windows open out of the file / the icon itself — their piece
     // comes out only when asked for, with the Inspect button.)
     val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO ||
-        scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS) && !askedInspect && MediaInspect.force != g.stableKey
+        scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS ||
+        scene == WinScene.BLADE_GUIDE || scene == WinScene.BUBBLE_CARD || scene == WinScene.CAMERA_MENU || scene == WinScene.PANEL_DETAIL ||
+        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)

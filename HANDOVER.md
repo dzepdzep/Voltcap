@@ -256,6 +256,22 @@ I copy `src_copy` into `app/src/main/java/com/shelf/launcher/` myself (robocopy)
 - **CaseArt with a 3D case model:** sized to `Models3D.aspect` so `caseModifier` (focus frame) hugs it.
 - **Carousel cases3d:** `Models3D.caseModel` only (no cartridge models); else the drawn case3d.
 
+## State after update 344
+- **Seven new layouts** (HomeLayout BLADES, BUBBLES, CAMERA, PANELS, MAGAZINE, SHOP, TERMINAL), each in its own
+  `ui/Style<Blades|Bubbles|PocketCamera|Panels|Magazine|RentalShop|Terminal>.kt` with `<X>Nav` (state, `signature()` for
+  LauncherScreen's padSnapshot, saved by StyleRestore), `<x>Key(event, reach)` taking every key (StyleHomes.kt calls it
+  before the shared handling; A on a game returns false so the home screen opens the window), `<X>Backdrop`,
+  `<X>Settings`. Prefs in Features (Update 344 blocks: bl_, bv_, pc_, pd_, mg_, rs_, tm_, kit_volume).
+- **Their windows:** WinScene BLADE_GUIDE, BUBBLE_CARD, CAMERA_MENU, PANEL_DETAIL, MAG_PAGE, SHOP_TAG, TERM_RUN in
+  `ui/WinScenesConsole.kt`; all own the opening (GameWindow `sceneOwnsOpen`) except SHOP_TAG (the case is inspected).
+- **Sound kits:** `LayoutKitSounds` (one SoundPool, the kit in use; `rememberLayoutKit(kit, on, master)` in the layout;
+  `LayoutKitSounds.play(kit, sound, fallbackUiSound)` falls back to Voltcap's sounds through `PocketSounds.play`).
+- **Dithering:** `rememberDithered(url, w, h, palette)` / `ditherPixels` (DitherArt.kt), cached.
+- **Shared lists:** Blades' menu rows (`bladesSpotItems / MediaItems / SettingsItems`, `BladeItem`) are reused by Panel
+  dashboard. `lookSlotAspect(type)` widens the case looks' slot.
+- Bubble home: LiveArea is the layout's own view (`BubbleNav.View.LIVE`), not the game window; its Details = full details.
+- No `lp_*.webp` pictures for these yet (layoutPreviewRes → null).
+
 ## State after update 329
 - **R1 tile walk** (`ui/TileCheck.kt`, test hooks only): `am start -n com.shelf.launcher/.MainActivity --es
   voltcap_test_tilewalk_all "LAYOUTS|LOOKS|TILES"` runs inside Voltcap (adb's background shells die when adbd drops),

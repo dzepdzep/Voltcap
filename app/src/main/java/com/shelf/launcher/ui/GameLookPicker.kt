@@ -502,6 +502,10 @@ internal fun layoutOwnLook(layout: com.shelf.launcher.data.HomeLayout): String? 
     com.shelf.launcher.data.HomeLayout.ORBIT -> "discs"
     com.shelf.launcher.data.HomeLayout.AIRY -> "rounded tiles"
     com.shelf.launcher.data.HomeLayout.NIGHT -> "slanted bars"
+    // Update 344.
+    com.shelf.launcher.data.HomeLayout.BUBBLES -> "glossy bubbles"
+    com.shelf.launcher.data.HomeLayout.CAMERA -> "dithered photos"
+    com.shelf.launcher.data.HomeLayout.TERMINAL -> "a directory listing"
     // (Update 183: the Pocket layouts follow your look — cartridges, cases and discs in their frames.)
     else -> null
 }

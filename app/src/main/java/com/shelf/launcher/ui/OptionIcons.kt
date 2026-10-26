@@ -103,6 +103,14 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.NIGHT -> Pictogram.SIDE_MENU
         com.shelf.launcher.data.HomeLayout.STORAGE -> Pictogram.GRID
         com.shelf.launcher.data.HomeLayout.FILESELECT -> Pictogram.GRID
+        // Update 344 (the nearest picture: a menu beside the games).
+        com.shelf.launcher.data.HomeLayout.BLADES -> Pictogram.SIDE_MENU
+        com.shelf.launcher.data.HomeLayout.BUBBLES -> Pictogram.GRID
+        com.shelf.launcher.data.HomeLayout.CAMERA -> Pictogram.SHOWCASE
+        com.shelf.launcher.data.HomeLayout.PANELS -> Pictogram.ROW
+        com.shelf.launcher.data.HomeLayout.MAGAZINE -> Pictogram.HERO
+        com.shelf.launcher.data.HomeLayout.SHOP -> Pictogram.SHELF
+        com.shelf.launcher.data.HomeLayout.TERMINAL -> Pictogram.SIDE_MENU
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

@@ -189,6 +189,15 @@ internal fun styleHomeKey(
     if (layout == HomeLayout.POCKET) return pocketQuestKey(event, reach, sound)
     // (Update 239, #93: the Cube menu takes every key too — its big cube, the docked cube, the games and buttons; StyleCube.kt.)
     if (layout == HomeLayout.CUBE) return cubeKey(event, reach, sound)
+    // Update 344: Blades takes every key too (its blades and lists; StyleBlades.kt).
+    if (layout == HomeLayout.BLADES) return bladesKey(event, reach)
+    // Update 344: so does Bubble home (its bubbles, folders and LiveArea pages; StyleBubbles.kt).
+    if (layout == HomeLayout.BUBBLES) return bubblesKey(event, reach)
+    if (layout == HomeLayout.CAMERA) return pocketCameraKey(event, reach)
+    if (layout == HomeLayout.PANELS) return panelsKey(event, reach)
+    if (layout == HomeLayout.MAGAZINE) return magazineKey(event, reach)
+    if (layout == HomeLayout.SHOP) return rentalShopKey(event, reach)
+    if (layout == HomeLayout.TERMINAL) return terminalKey(event, reach)
     // (Update 325: Twin icons' category page takes the keys while it's open.)
     if (layout == HomeLayout.TWIN_ICONS && TwinNav.cats.value) return twinCatsKey(event, sound)
     val code = event.nativeKeyEvent.keyCode
@@ -1319,6 +1328,14 @@ internal fun StyleHome(
         HomeLayout.ORBIT -> StyleOrbitDeck(c, modifier)
         HomeLayout.AIRY -> StyleAiryHome(c, modifier)
         HomeLayout.NIGHT -> StyleNightMenu(c, modifier)
+        // Update 344 (StyleBlades.kt).
+        HomeLayout.BLADES -> StyleBlades(c, modifier)
+        HomeLayout.BUBBLES -> StyleBubbles(c, modifier)
+        HomeLayout.CAMERA -> StylePocketCamera(c, modifier)
+        HomeLayout.PANELS -> StylePanels(c, modifier)
+        HomeLayout.MAGAZINE -> StyleMagazine(c, modifier)
+        HomeLayout.SHOP -> StyleRentalShop(c, modifier)
+        HomeLayout.TERMINAL -> StyleTerminal(c, modifier)
         else -> Unit
     }
 }
@@ -1394,6 +1411,13 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.ORBIT -> OrbitDeckBackdrop(Modifier.fillMaxSize())
         HomeLayout.AIRY -> AiryHomeBackdrop(Modifier.fillMaxSize())
         HomeLayout.NIGHT -> NightMenuBackdrop(Modifier.fillMaxSize())
+        HomeLayout.BLADES -> BladesBackdrop(Modifier.fillMaxSize())
+        HomeLayout.BUBBLES -> BubblesBackdrop(Modifier.fillMaxSize())
+        HomeLayout.CAMERA -> PocketCameraBackdrop(Modifier.fillMaxSize())
+        HomeLayout.PANELS -> PanelsBackdrop(Modifier.fillMaxSize())
+        HomeLayout.MAGAZINE -> MagazineBackdrop(Modifier.fillMaxSize())
+        HomeLayout.SHOP -> RentalShopBackdrop(Modifier.fillMaxSize())
+        HomeLayout.TERMINAL -> TerminalBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1442,6 +1466,11 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     // Update 330: their own room / screen always.
     HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.FILESELECT -> true
     HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.NIGHT -> true
+    // Update 344: its own dark room.
+    HomeLayout.BLADES -> true
+    // Its wallpaper (the game's art: the art behind, as the other layouts with that option).
+    HomeLayout.BUBBLES -> Features.bvWall.state.value != Features.BvWall.GAME
+    HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL -> true
     else -> false
 }
 
@@ -1455,6 +1484,8 @@ internal fun styleArtBehind(layout: HomeLayout): Boolean = when (layout) {
     // Update 146: the two pale layouts can show the game's art instead (Settings › Home › Layout options › Background).
     HomeLayout.LIVE -> Features.liveArt.state.value
     HomeLayout.CHAN -> Features.chanArt.state.value
+    // Update 344: Bubble home's "The game's art" wallpaper.
+    HomeLayout.BUBBLES -> Features.bvWall.state.value == Features.BvWall.GAME
     else -> false
 }
 

@@ -278,6 +278,27 @@ object LayoutPresets {
     private fun nightOpts(color: Features.NmColor = Features.NmColor.NIGHT, rows: Features.NmRows = Features.NmRows.SEVEN) = listOf(
         o(Features.nmRows, rows), o(Features.nmColor, color), o(Features.nmMoon), o(Features.nmWater)
     )
+    private fun bladesOpts(color: Features.BlColor = Features.BlColor.GREEN, start: Features.BlStart = Features.BlStart.GAMES) = listOf(
+        o(Features.blColor, color), o(Features.blStart, start), o(Features.blBadges), o(Features.blMotion), o(Features.blSounds)
+    )
+    private fun bubblesOpts(wall: Features.BvWall = Features.BvWall.SKY, opens: Features.BvOpens = Features.BvOpens.BUBBLES) = listOf(
+        o(Features.bvOpens, opens), o(Features.bvWall, wall), o(Features.bvFolders), o(Features.bvFloat), o(Features.bvSounds)
+    )
+    private fun cameraOpts(pal: Features.PcPalette = Features.PcPalette.GREEN, shift: Features.PcShift = Features.PcShift.SHUTTER) = listOf(
+        o(Features.pcPalette, pal), o(Features.pcShift, shift), o(Features.pcGrid), o(Features.pcSounds)
+    )
+    private fun panelsOpts(color: Features.PdColor = Features.PdColor.GREEN) = listOf(
+        o(Features.pdColor, color), o(Features.pdStart), o(Features.pdProfile), o(Features.pdSounds)
+    )
+    private fun magazineOpts(style: Features.MgStyle = Features.MgStyle.BOLD) = listOf(
+        o(Features.mgStyle, style), o(Features.mgShot), o(Features.mgDesk), o(Features.mgSounds)
+    )
+    private fun shopOpts(wall: Features.RsWall = Features.RsWall.PURPLE, cases: Features.RsCases = Features.RsCases.CASES) = listOf(
+        o(Features.rsCases, cases), o(Features.rsRows), o(Features.rsWall, wall), o(Features.rsNeon), o(Features.rsSounds)
+    )
+    private fun terminalOpts(theme: Features.TmTheme = Features.TmTheme.GREEN, crt: Features.TmCrt = Features.TmCrt.LIGHT) = listOf(
+        o(Features.tmTheme, theme), o(Features.tmCrt, crt), o(Features.tmPixel), o(Features.tmBoot), o(Features.tmSounds)
+    )
     private fun storageOpts(size: Features.StSize = Features.StSize.COMPACT, wall: Features.StWallpaper = Features.StWallpaper.PER_BOX) = listOf(
         o(Features.stSize, size), o(Features.stSpacing), o(Features.stWallpaper, wall), o(Features.stPreview), o(Features.stCursor), o(Features.stMotion)
     )
@@ -718,6 +739,55 @@ object LayoutPresets {
         preset("night_crimson", HomeLayout.NIGHT, "Night menu, crimson",
             "The same under a crimson sky, five big bars to a screen.",
             look = null, options = nightOpts(Features.NmColor.CRIMSON, Features.NmRows.FIVE)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        // Update 344.
+        preset("blades_std", HomeLayout.BLADES, "Blades",
+            "Five overlapping green blades — the Games blade open with its list and the game you're on beside it.",
+            look = null, options = bladesOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("blades_silver", HomeLayout.BLADES, "Blades, silver spotlight",
+            "Silver blades that open on Spotlight: the games you played last, your achievements and gamer card.",
+            look = null, options = bladesOpts(Features.BlColor.SILVER, Features.BlStart.SPOTLIGHT)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("bubbles_std", HomeLayout.BUBBLES, "Bubble home",
+            "Glossy game bubbles on a sky wallpaper, a page at a time; A unfolds the game's LiveArea with its big Start.",
+            look = null, options = bubblesOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("bubbles_live", HomeLayout.BUBBLES, "LiveArea first",
+            "Straight into the games' LiveArea pages over their own art — ◀ ▶ from one game's page to the next.",
+            look = null, options = bubblesOpts(Features.BvWall.GAME, Features.BvOpens.LIVEAREA)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("camera_std", HomeLayout.CAMERA, "Pocket camera",
+            "Your games as dithered photos in four shades of green, the shutter snapping as you move.",
+            look = null, options = cameraOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("camera_grey", HomeLayout.CAMERA, "Pocket camera, grey",
+            "The pocket model's grey screen; each photo develops line by line.",
+            look = null, options = cameraOpts(Features.PcPalette.GREY, Features.PcShift.DEVELOP)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("panels_std", HomeLayout.PANELS, "Panel dashboard",
+            "Channels of angled panels on green, your profile beside them; the game you're on big at the front of its row.",
+            look = null, options = panelsOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("panels_silver", HomeLayout.PANELS, "Panel dashboard, silver",
+            "The same on a light silver dashboard.",
+            look = null, options = panelsOpts(Features.PdColor.SILVER)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("magazine_bold", HomeLayout.MAGAZINE, "Game magazine",
+            "A bold 90s games magazine open on a wooden desk: each game a two-page feature, the pages turning as you go.",
+            look = null, options = magazineOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("magazine_glossy", HomeLayout.MAGAZINE, "Glossy monthly",
+            "The same as a clean, glossy 2000s monthly.",
+            look = null, options = magazineOpts(Features.MgStyle.GLOSSY)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("magazine_computer", HomeLayout.MAGAZINE, "Computer magazine",
+            "An 80s computer magazine: cream paper and typewriter type.",
+            look = null, options = magazineOpts(Features.MgStyle.COMPUTER)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("shop_std", HomeLayout.SHOP, "Rental shop",
+            "A 90s rental store under a buzzing neon sign: the games as real cases on three shelves, a section per console.",
+            look = null, options = shopOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("shop_teal", HomeLayout.SHOP, "Rental shop, your look",
+            "Teal walls, the games drawn in your own game look on the shelves.",
+            look = null, options = shopOpts(Features.RsWall.TEAL, Features.RsCases.LOOK)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("terminal_green", HomeLayout.TERMINAL, "Terminal",
+            "VOLTCAP OS on a green phosphor monitor: your games as a directory listing, a dithered preview, a command line.",
+            look = null, options = terminalOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("terminal_amber", HomeLayout.TERMINAL, "Terminal, amber tube",
+            "An amber monitor with the full CRT: scanlines, the glass's curve and a faint flicker.",
+            look = null, options = terminalOpts(Features.TmTheme.AMBER, Features.TmCrt.FULL)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
+        preset("terminal_dos", HomeLayout.TERMINAL, "Blue shell",
+            "White on blue, like an old file manager, no CRT effects.",
+            look = null, options = terminalOpts(Features.TmTheme.DOS, Features.TmCrt.OFF)) { s -> s.copy(focusEffect = FocusEffect.GLOW) },
         preset("storage_std", HomeLayout.STORAGE, "Storage boxes",
             "Each category a box of 30 small icons on its own wallpaper, a preview of the game you're on beside it.",
             look = null, options = storageOpts()) { s -> s.copy(focusEffect = FocusEffect.GLOW) },

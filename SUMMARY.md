@@ -1,5 +1,77 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (344): seven console-inspired layouts — Blades, Bubble home, Pocket camera, Panel dashboard, Game magazine, Rental shop, Terminal
+
+Toni's brief ("8 new console & ES-DE inspired layouts", with the concept board). Original names, drawings and sounds only
+(no console names, logos, avatars or third-party theme assets). The Dreamcast one was skipped (Toni: "skip if it's too
+same"): Airy home (1999) already is the light, bubbly, VMU-display layout. Each layout is a style home with its own keys,
+its own game window (WinScenesConsole.kt), status bar look, R1 rules, presets, preset drawing, option icon and Layout
+options; all keep Endless, L2 / R2, X favourite, Y achievements, Start = quick menu, Select = sort & filter, touch, and
+come back where you were after a game (StyleRestore).
+- **Blades (2005)** (`ui\StyleBlades.kt`): five overlapping blades with curved leading edges — Spotlight, Games, Systems,
+  Media, Settings; ◀ ▶ slide the next one open (the stack glides, the content cross-slides), ▲ ▼ its list. Games: the
+  category list with a lit bar, the game in your game look, console, play time, achievements and their badges. Systems:
+  consoles with logos, counts, console pictures (A opens its games, B back). Spotlight: last played, achievements,
+  statistics, search, a gamer card. Window: one more blade sliding in (the "guide"). Options: colour (green, silver, blue,
+  orange, theme), start blade, badges, moving light, sounds.
+- **Bubble home (2011)** (`ui\StyleBubbles.kt`): glossy game bubbles in staggered rows (5 / 4 / 5, 4 across on
+  narrower screens), pages running downwards with dots, the one you're on swelling and bobbing, its name in a pill at the
+  top. A unfolds the game's **LiveArea**: layered art, its bubble and name, a big Start, round Achievements / Details /
+  Options buttons, screenshots (shown once loaded), achievements with badges and facts; ◀ ▶ (on Start) the next game's
+  page, ▼ the round buttons; the page's corner is curled — B, a tap or a drag on it peels the page back. Folders: B on the
+  bubbles shows your consoles as folder bubbles. Options: open on the bubbles or straight into the LiveArea, wallpaper
+  (sky, sunset, mint, night, the game's art), folders, floating, sounds. Distinct from Airy home (round, glossy, paged).
+- **Pocket camera (1998)** (`ui\StylePocketCamera.kt`, `ui\DitherArt.kt`): four shades of chunky pixels — the game as a
+  dithered photo (Bayer, levels stretched) in a thick-framed viewfinder with "POCKET CAMERA" and its photo number, name,
+  year, console, pixel icons for achievements / time; the album (4 before, 4 after) either side. ◀ ▶ games, ▲ ▼ the photo
+  (cover / screenshot / artwork), shutter or develop transitions. Window: the camera menu with a ► cursor. Palettes:
+  classic green, pocket grey, sepia, blue, red, backlit.
+- **Panel dashboard (2008)** (`ui\StylePanels.kt`): channels of angled panels — Spotlight, My games, Systems, Media,
+  Settings — the one you're on big at the front, the rest receding to the right, turned away; the channels above / below
+  smaller and dimmed; your profile (RA picture, name, points) on the left on wide screens. Game panels: the game's art
+  softened behind your game look. Window: a detail panel swinging round to face you. Colours: green, silver, graphite, theme.
+- **Game magazine** (`ui\StyleMagazine.kt`): each category an issue open on a desk, each game a spread — art page with
+  headline, kicker and a "product shot" in your look; story page with a drop cap, screenshots, VERDICT burst (critics'
+  score or time played), ACHIEVEMENTS and THE STATS boxes, running foot and page numbers. ◀ ▶ turn the page (it lifts at
+  the spine and turns over), ▲ the CONTENTS page (A turns to a game). Window: a torn-out page with a PLAY burst and
+  callouts. Styles: bold 90s ("PRESS START"), glossy 2000s ("LEVEL UP"), 80s computer mag ("HIGH SCORE").
+- **Rental shop** (`ui\StyleRentalShop.kt`): a 90s store wall under a buzzing "GAME RENTALS" neon, the console's backlit
+  section sign, shelves of real 3D cases (Case3D, each at its real shape, standing on the board; or your game look), the
+  camera gliding along; the case you're on tips forward with its shelf tag; a yellow shelf talker. ▲ on the top shelf: the
+  STORE MAP (aisles = consoles, A walks there). A picks the case up (the window's inspect) with the shop's rental tag beside
+  it. Walls: purple, teal, midnight.
+- **Terminal** (`ui\StyleTerminal.kt`): VOLTCAP OS — C:\ (GAMES, SYSTEMS, FAVORITE, RECENT dirs, MUSIC / SAVES / APPS /
+  SEARCH / SORT / SETTINGS .EXE), the category as a directory listing (8.3 names, console as extension, play time), reverse
+  video cursor, a dithered phosphor preview with facts and an achievement bar, a command line typing out what A will do.
+  A runs / goes in, B goes up. Window: a DOS-style RUN dialog. Monitors: green, amber, white, blue shell, four-colour; CRT
+  effects off / light / full (scanlines, glow, curve shading, a faint flicker — never in Lite); a short boot once.
+- **Sounds** (`ui\LayoutKitSounds.kt`): each layout's own synthesised kit (move, select, back, page, open, special) —
+  glassy ticks and chimes, bubble pops, square-wave blips and a shutter, muted pads, page turns and a stamp, case clacks
+  and a door bell, key clicks and a beep. Shared volume (`kit_volume`); off (or Settings › Sounds off) → Voltcap's usual.
+- **Shared:** `lookSlotAspect` gives the case looks a wider slot on these layouts (case + cartridge stay big).
+
+Settings: Settings › Home › Layout (pick it) and Settings › Home › Layout options (each layout's options). Presets: 2–3 per
+layout (Settings › Home › Layout & presets).
+Performance: every moving part rests with Reduced motion / animations off, Lite (no flicker, bokeh, light bands) and idle.
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E`.
+Files: new `ui\StyleBlades.kt`, `ui\StyleBubbles.kt`, `ui\StylePocketCamera.kt`, `ui\StylePanels.kt`,
+`ui\StyleMagazine.kt`, `ui\StyleRentalShop.kt`, `ui\StyleTerminal.kt`, `ui\WinScenesConsole.kt`, `ui\LayoutKitSounds.kt`,
+`ui\DitherArt.kt`, test `app\src\test\...\ui\Layouts344Test.kt`; changed `data\AppearanceStore.kt`, `data\Features.kt`,
+`data\LayoutPresets.kt`, `ui\StyleHomes.kt`, `ui\WinScenes.kt`, `ui\GameWindow.kt`, `ui\LauncherScreen.kt`,
+`ui\StatusLooks.kt`, `ui\R1TileRules.kt`, `ui\GameLookPicker.kt`, `ui\OptionIcons.kt`, `ui\PresetsCard.kt`,
+`ui\PresetPreview.kt`, `ui\StyleHomeSettings.kt`, `ui\StyleRestore.kt`.
+
+Check: release builds on the AYN Thor after each layout; each layout opened (test hook, preview only), moved through,
+its window opened and closed, back / menus / pages; touch on Bubble home (tap, double tap, corner peel); all seven also at
+4:3 (wm size 1080x1440) — fit. The standard second screen keeps working beside them. Unit tests pass (R1 matrix,
+Layouts344Test: picker, presets, R1 tiles, windows, bubble rows, dithering, file names, every sound). Fixed during the
+checks: blade contrast, bubble names over the next row, empty screenshot frames, magazine boxes too narrow, contents page
+size, rental cases floating above the boards and the empty section sign, terminal line height, early returns out of
+inline composables. Not tested: the RP Classic / Odin themselves (only 4:3 emulated), phones, every option value one by
+one, the sounds by ear. No layout pictures yet (`lp_*.webp` — they're taken with made-up games on the emulator; the
+picker shows the drawn preset previews meanwhile).
+
 ## Update — 26 Oct 2026 (343): Save Vault — PS2 browser style is all or nothing
 
 Toni: "that PS2 save icon has to be fixed — either all memory cards or all logos, no mix — toggle between those two".

@@ -2707,6 +2707,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             (state.appearance.homeLayout.isTwin && TwinScreens.fullTop) ||
             // Update 202: Green Core covers it with its own backdrop and sphere.
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.GREENCORE ||
+            // Update 344: so does Blades (its dark room).
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.BLADES ||
+            // (and Bubble home with a wallpaper of its own)
+            (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.BUBBLES && com.shelf.launcher.data.Features.bvWall.state.value != com.shelf.launcher.data.Features.BvWall.GAME) ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CAMERA ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.PANELS ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.MAGAZINE ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SHOP ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TERMINAL ||
             // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
             state.appearance.homeLayout.isPocket ||
             // Update 202: Pocket Quest drawing its theme's scenery (Layout options › Background): the theme's background rests.
@@ -4258,6 +4267,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE -> state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF
             com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC,
             com.shelf.launcher.data.HomeLayout.POCKET_RIBBON -> true // native menu/category navigation
+            // Update 344: Blades names the category on its Games blade; its other blades are menus of their own.
+            com.shelf.launcher.data.HomeLayout.BLADES -> true
+            // Update 344: Bubble home's tag on its bubbles, Folders / LiveArea pages of its own.
+            com.shelf.launcher.data.HomeLayout.BUBBLES -> true
+            com.shelf.launcher.data.HomeLayout.CAMERA -> true
+            com.shelf.launcher.data.HomeLayout.PANELS -> true
+            com.shelf.launcher.data.HomeLayout.MAGAZINE -> true
+            com.shelf.launcher.data.HomeLayout.SHOP -> true
+            com.shelf.launcher.data.HomeLayout.TERMINAL -> true
             else -> CategoryTitle.nativeShown()
         }
         val catFallback = overlayLayout != null && catSettled && HomeWidgets.CATEGORY !in overlayParts &&
@@ -5971,6 +5989,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             categoryScreenOpen, GamePopup.game?.stableKey, PocketNav.signature(), GreenCoreNav.signature(),
                             PqNav.signature(), // (Update 202: Pocket Quest's own places)
                             CubeNav.signature(), // (Update 239, #93: the Cube menu's page and faces)
+                            BladesNav.signature(), // (Update 344: Blades' blade and rows)
+                            BubbleNav.signature(), // (Update 344: Bubble home's view, folder, LiveArea control)
+                            CameraNav.signature(), // (Update 344: Pocket camera's photo)
+                            PanelNav.signature(), // (Update 344: Panel dashboard's channel and panels)
+                            MagNav.signature(), // (Update 344: Game magazine's contents page)
+                            ShopNav.signature(), // (Update 344: the Rental shop's store map)
+                            TermNav.signature(), // (Update 344: the Terminal's directory and cursor)
                             // (Update 260, Thor: Choose a category's tile and the game window's row and scroll were missing
                             // here, so a ▼ that moved down the category grid or scrolled the game window still sent the
                             // controller to the second screen 160 ms later — it skipped what was left to scroll.)

@@ -1928,6 +1928,75 @@ object Features {
     }
     val nmColor = EnumPref("nm_color", NmColor.NIGHT, NmColor.values())
 
+    // ---- Update 344: the console-inspired layouts' shared sound volume (LayoutKitSounds.kt) ----
+    val kitVolume = IntPref("kit_volume", 70, 0..100)
+
+    // ---- Update 344: Blades (2005) — overlapping blades (StyleBlades.kt) ----
+    enum class BlColor(val label: String) { GREEN("Green"), SILVER("Silver"), BLUE("Blue"), ORANGE("Orange"), THEME("Theme colour") }
+    val blColor = EnumPref("bl_color", BlColor.GREEN, BlColor.values())
+    enum class BlStart(val label: String) { GAMES("Games"), SPOTLIGHT("Spotlight") }
+    val blStart = EnumPref("bl_start", BlStart.GAMES, BlStart.values())
+    val blBadges = BoolPref("bl_badges", true)
+    val blMotion = BoolPref("bl_motion", true)
+    val blSounds = BoolPref("bl_sounds", true)
+
+    // ---- Update 344: Bubble home (2011) — glossy bubbles and LiveArea pages (StyleBubbles.kt) ----
+    enum class BvOpens(val label: String) { BUBBLES("The bubbles"), LIVEAREA("The game's LiveArea") }
+    val bvOpens = EnumPref("bv_opens", BvOpens.BUBBLES, BvOpens.values())
+    enum class BvWall(val label: String) { SKY("Sky"), SUNSET("Sunset"), MINT("Mint"), NIGHT("Night"), GAME("The game's art") }
+    val bvWall = EnumPref("bv_wall", BvWall.SKY, BvWall.values())
+    val bvFolders = BoolPref("bv_folders", true)
+    val bvFloat = BoolPref("bv_float", true)
+    val bvSounds = BoolPref("bv_sounds", true)
+
+    // ---- Update 344: Pocket camera (1998) — four-shade dithered photos (StylePocketCamera.kt) ----
+    enum class PcPalette(val label: String, val shades: List<Long>) {
+        GREEN("Classic green", listOf(0xFF0F380F, 0xFF306230, 0xFF8BAC0F, 0xFF9BBC0F)),
+        GREY("Pocket grey", listOf(0xFF1A1A1A, 0xFF5C5C5C, 0xFFA8A8A8, 0xFFE6E6E6)),
+        SEPIA("Sepia", listOf(0xFF2B1B0E, 0xFF6E4A2A, 0xFFC09A6B, 0xFFF3E3C3)),
+        BLUE("Blue", listOf(0xFF0B1A3A, 0xFF2E4F8F, 0xFF7FA6DF, 0xFFE0EEFF)),
+        RED("Red", listOf(0xFF2A0606, 0xFF8A1E1E, 0xFFE07A5A, 0xFFFFE6D0)),
+        BACKLIT("Backlit", listOf(0xFF00342A, 0xFF006B55, 0xFF2FBF9B, 0xFFB8FFE8))
+    }
+    val pcPalette = EnumPref("pc_palette", PcPalette.GREEN, PcPalette.values())
+    enum class PcShift(val label: String) { SHUTTER("Shutter snaps"), DEVELOP("Photo develops"), INSTANT("Instant") }
+    val pcShift = EnumPref("pc_shift", PcShift.SHUTTER, PcShift.values())
+    val pcGrid = BoolPref("pc_grid", true)
+    val pcSounds = BoolPref("pc_sounds", true)
+
+    // ---- Update 344: Panel dashboard (2008) — channels of angled panels (StylePanels.kt) ----
+    enum class PdColor(val label: String) { GREEN("Green"), SILVER("Silver"), GRAPHITE("Graphite"), THEME("Theme colour") }
+    val pdColor = EnumPref("pd_color", PdColor.GREEN, PdColor.values())
+    val pdStart = EnumPref("pd_start", BlStart.GAMES, BlStart.values())
+    val pdProfile = BoolPref("pd_profile", true)
+    val pdSounds = BoolPref("pd_sounds", true)
+
+    // ---- Update 344: Game magazine — an issue open on the desk (StyleMagazine.kt) ----
+    enum class MgStyle(val label: String) { BOLD("Bold 90s"), GLOSSY("Glossy 2000s"), COMPUTER("80s computer mag") }
+    val mgStyle = EnumPref("mg_style", MgStyle.BOLD, MgStyle.values())
+    val mgShot = BoolPref("mg_shot", true)
+    val mgDesk = BoolPref("mg_desk", true)
+    val mgSounds = BoolPref("mg_sounds", true)
+
+    // ---- Update 344: Rental shop — shelves of cases in a 90s store (StyleRentalShop.kt) ----
+    enum class RsCases(val label: String) { CASES("Store cases (3D)"), LOOK("Your game look") }
+    val rsCases = EnumPref("rs_cases", RsCases.CASES, RsCases.values())
+    enum class RsRows(val label: String, val n: Int) { TWO("Two shelves", 2), THREE("Three shelves", 3) }
+    val rsRows = EnumPref("rs_rows", RsRows.THREE, RsRows.values())
+    enum class RsWall(val label: String) { PURPLE("Purple"), TEAL("Teal"), BLUE("Midnight blue") }
+    val rsWall = EnumPref("rs_wall", RsWall.PURPLE, RsWall.values())
+    val rsNeon = BoolPref("rs_neon", true)
+    val rsSounds = BoolPref("rs_sounds", true)
+
+    // ---- Update 344: Terminal — VOLTCAP OS on an old monitor (StyleTerminal.kt) ----
+    enum class TmTheme(val label: String) { GREEN("Green phosphor"), AMBER("Amber"), WHITE("White"), DOS("Blue shell"), CGA("Four-colour") }
+    val tmTheme = EnumPref("tm_theme", TmTheme.GREEN, TmTheme.values())
+    enum class TmCrt(val label: String) { OFF("Off"), LIGHT("Light"), FULL("Full") }
+    val tmCrt = EnumPref("tm_crt", TmCrt.LIGHT, TmCrt.values())
+    val tmPixel = BoolPref("tm_pixel", false)
+    val tmBoot = BoolPref("tm_boot", true)
+    val tmSounds = BoolPref("tm_sounds", true)
+
     /** Icon bar: the tiles as squares (off: the card artwork's own shape). */
     val barSquares = BoolPref("bar_squares", true)
 

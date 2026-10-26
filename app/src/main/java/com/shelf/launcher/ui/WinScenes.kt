@@ -99,7 +99,9 @@ import com.shelf.launcher.data.HomeLayout
  */
 
 /** Update 330: the layouts with a window of their own. */
-internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INFO, CASE_MEDIA, ORBIT_TERMINAL, AIRY_PANEL, NIGHT_STATUS }
+internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INFO, CASE_MEDIA, ORBIT_TERMINAL, AIRY_PANEL, NIGHT_STATUS,
+    /** Update 344 (WinScenesConsole.kt). */
+    BLADE_GUIDE, BUBBLE_CARD, CAMERA_MENU, PANEL_DETAIL, MAG_PAGE, SHOP_TAG, TERM_RUN }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -110,6 +112,13 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.ORBIT -> WinScene.ORBIT_TERMINAL
     HomeLayout.AIRY -> WinScene.AIRY_PANEL
     HomeLayout.NIGHT -> WinScene.NIGHT_STATUS
+    HomeLayout.BLADES -> WinScene.BLADE_GUIDE
+    HomeLayout.BUBBLES -> WinScene.BUBBLE_CARD
+    HomeLayout.CAMERA -> WinScene.CAMERA_MENU
+    HomeLayout.PANELS -> WinScene.PANEL_DETAIL
+    HomeLayout.MAGAZINE -> WinScene.MAG_PAGE
+    HomeLayout.SHOP -> WinScene.SHOP_TAG
+    HomeLayout.TERMINAL -> WinScene.TERM_RUN
     else -> null
 }
 
@@ -122,6 +131,13 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.ORBIT_TERMINAL -> Brush.verticalGradient(listOf(Color(0xFF02040C).copy(alpha = 0.55f), Color(0xFF02040C).copy(alpha = 0.85f)))
     WinScene.AIRY_PANEL -> Brush.verticalGradient(listOf(Color(0xFFF4F8FC).copy(alpha = 0.55f), Color(0xFFDCE7F3).copy(alpha = 0.8f)))
     WinScene.NIGHT_STATUS -> Brush.linearGradient(listOf(Color(0xFF02060F).copy(alpha = 0.8f), Color(0xFF0A1C3F).copy(alpha = 0.75f)))
+    WinScene.BLADE_GUIDE -> Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.82f), Color.Black.copy(alpha = 0.55f)))
+    WinScene.BUBBLE_CARD -> Brush.verticalGradient(listOf(Color(0xFF0D2A4A).copy(alpha = 0.6f), Color(0xFF05101E).copy(alpha = 0.8f)))
+    WinScene.PANEL_DETAIL -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.7f)))
+    WinScene.MAG_PAGE -> Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.78f)))
+    WinScene.TERM_RUN -> termColors(com.shelf.launcher.data.Features.tmTheme.value).let { t -> Brush.verticalGradient(listOf(t.bg.copy(alpha = 0.6f), t.bg.copy(alpha = 0.75f))) }
+    WinScene.SHOP_TAG -> Brush.verticalGradient(listOf(Color(0xFF120A1F).copy(alpha = 0.7f), Color.Black.copy(alpha = 0.85f)))
+    WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
         com.shelf.launcher.data.Features.McBack.THEME -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Black.copy(alpha = 0.8f)))
@@ -200,6 +216,13 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.ORBIT_TERMINAL -> OrbitTerminal(ctx)
         WinScene.AIRY_PANEL -> AiryPanel(ctx)
         WinScene.NIGHT_STATUS -> NightStatus(ctx)
+        WinScene.BLADE_GUIDE -> BladeGuide(ctx)
+        WinScene.BUBBLE_CARD -> BubbleCard(ctx)
+        WinScene.CAMERA_MENU -> CameraMenu(ctx)
+        WinScene.PANEL_DETAIL -> PanelDetail(ctx)
+        WinScene.MAG_PAGE -> MagazinePage(ctx)
+        WinScene.SHOP_TAG -> RentalTag(ctx)
+        WinScene.TERM_RUN -> TerminalDialog(ctx)
     }
 }
 

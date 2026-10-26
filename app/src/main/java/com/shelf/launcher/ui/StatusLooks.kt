@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -294,6 +295,30 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         HomeLayout.ORBIT -> Features.odColor.state.value.let { o ->
             // (Update 339: the deck's own space colour.)
             StatusLook(BarBacking.NONE, accent = mixC(Color(o.glow), Color.White, 0.25f), glow = Color(o.glow), weight = FontWeight.Light, clockWeight = FontWeight.Light, clockSize = 14.sp, tracking = 0.06f, sep = "•", gap = 10.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
+        }
+        // Update 344, Blades: no box, light type over the dark room, the blades' own colour for the points.
+        HomeLayout.BLADES -> bladePalette().let { b ->
+            StatusLook(BarBacking.NONE, ink = Color(0xFFF2F6EE), accent = b.glow, glow = b.hi.copy(alpha = 0.5f), weight = FontWeight.Normal, clockWeight = FontWeight.Light, clockSize = 15.sp, gap = 10.dp, sep = "·", avatar = AvatarShape.SQUARE, avatarSize = 24.dp)
+        }
+        // Update 344, Bubble home: a handheld's slim bar — no box, light type with a soft shadow over the wallpaper.
+        HomeLayout.BUBBLES -> StatusLook(BarBacking.NONE, ink = Color.White, accent = Color(0xFF7FD0FF), shadowed = true, weight = FontWeight.Medium, clockWeight = FontWeight.Medium, clockSize = 13.sp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Update 344, Pocket camera: its four shades and pixel type, each group in a small chunky box.
+        HomeLayout.CAMERA -> Features.pcPalette.state.value.shades.let { s ->
+            StatusLook(BarBacking.SEGMENTS, bg = Color(s[1]), ink = Color(s[3]), accent = Color(s[2]), rim = Color(s[0]), rimWidth = 2.dp, corner = 0.dp, font = pixel, clockSize = 12.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
+        }
+        // Update 344, Panel dashboard: a clean light strip in the dashboard's own ink.
+        HomeLayout.PANELS -> panelPalette().let { pp ->
+            StatusLook(BarBacking.NONE, ink = pp.ink, accent = pp.accent, shadowed = pp.ink.luminance() > 0.5f, weight = FontWeight.Normal, clockWeight = FontWeight.Light, clockSize = 15.sp, gap = 10.dp, avatar = AvatarShape.ROUNDED, avatarSize = 24.dp)
+        }
+        // Update 344, Game magazine: a printed strip — the issue's paper colour, its ink and accent.
+        HomeLayout.MAGAZINE -> magStyle(Features.mgStyle.state.value).let { m ->
+            StatusLook(BarBacking.CAPSULE, bg = m.paper.copy(alpha = 0.92f), ink = m.ink, accent = m.accent, rim = m.ink, rimWidth = 1.5.dp, corner = 0.dp, font = m.head, caps = true, tracking = 0.06f, clockWeight = FontWeight.Black, clockSize = 13.sp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
+        }
+        // Update 344, Rental shop: a black shop-sign strip with the neon's colour for the points.
+        HomeLayout.SHOP -> StatusLook(BarBacking.CAPSULE, bg = Color(0xE6121212), ink = Color(0xFFFFF4E0), accent = Color(0xFFFF4FD8), rim = Color(0xFFFF4FD8).copy(alpha = 0.7f), rimWidth = 1.5.dp, corner = 4.dp, caps = true, tracking = 0.08f, glow = Color(0xFFFF4FD8), clockWeight = FontWeight.Black, clockSize = 13.sp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
+        // Update 344, Terminal: the monitor's own phosphor, fixed-width capitals, a reverse-video box.
+        HomeLayout.TERMINAL -> termColors(Features.tmTheme.state.value).let { t ->
+            StatusLook(BarBacking.SEGMENTS, bg = t.bg, ink = t.fg, accent = t.accent, rim = t.fg, rimWidth = 1.dp, corner = 0.dp, font = FontFamily.Monospace, caps = true, clockSize = 13.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
         }
         // Layout Studio: the theme's colours (its palette follows the theme).
         HomeLayout.CUSTOM -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.7f).copy(alpha = 0.7f), rim = acc.copy(alpha = 0.45f), corner = 10.dp, avatarSize = 24.dp)
