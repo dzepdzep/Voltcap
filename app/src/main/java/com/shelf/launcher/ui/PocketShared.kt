@@ -440,7 +440,11 @@ internal fun pocketMs(base: Int): Int = when (Features.pocketAnim.value) {
 
 /** Update 181: the user name the pocket layouts show (Layout options, else the RetroAchievements name, else "Player"). */
 internal fun pocketUser(state: com.shelf.launcher.LauncherUiState): String =
-    Features.pocketName.value.ifBlank { state.raUsername?.takeIf { it.isNotBlank() } ?: "Player" }
+    Features.pocketName.value.ifBlank {
+        // (Update 332: the playing profile's name — its own, unless it's still the first one's default.)
+        com.shelf.launcher.data.Profiles.active()?.takeIf { it.id != 0 || it.name != "Player" }?.name
+            ?: state.raUsername?.takeIf { it.isNotBlank() } ?: "Player"
+    }
 
 /** Update 181: behind the Pocket layouts: their paper filling the top screen (two screens), else the handheld's light body. */
 @Composable

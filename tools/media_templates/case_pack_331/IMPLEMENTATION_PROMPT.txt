@@ -1,0 +1,22 @@
+Integrate the attached matching VoltCap cases and spines. Inspect the current code first. Assets were prepared against commit 0a5df25fcdeb4350164014a7fd60ed19fbac201b; preserve all newer changes.
+
+1. ART AND METADATA
+Use all 62 coordinated sets: spine, transparent front frame and matching opaque back base. Keep the supplied simple branding, colors and large artwork/title areas. Do not add decorative plaques, repeated logos, fake ratings, seals, barcodes or publisher claims. Copy files into the matching repository locations. Use case_manifest.json and spine_manifest.json as the authority for coordinates and ink. Merge the reference entries in integration/ into MediaCovers.kt and MediaBacks.kt, retaining all current aliases and unrelated platforms. Add the 21 new front resources and newly covered backs to the appropriate lookup paths. Also check MediaVariants and every custom-case renderer so a flat or 3D path does not silently retain the old artwork.
+
+2. FRONT FITTING
+Draw game artwork into each declared art_window and composite the transparent frame above it. The PNG/SVG transparency is deliberate. Keep the image aspect and logo aspect intact. Preserve genuine scans and user artwork precedence. Do not frame a full retail cover twice; use existing art classification/cuts and the user's current choice. Check caseFitFor / fitTo and any hardcoded old front-window assumptions, particularly GB/GBC/GBA, DS/3DS, N64/SNES, PSP, PS1, Steam and Android.
+
+3. SPINES
+Use the manifest's title box and ink for top-to-bottom dynamic titles. Shrink long names safely, preserve Unicode, and ellipsize only when necessary. Update OwnSpines.kt: it currently redraws Steam/Android and would override the replacement resources. Use the new template with the same bounds; keep cached work off the main thread. A game’s real spine scan must keep priority unless the user has explicitly selected a custom override.
+
+4. BACKS
+Replace only the custom/generated back bases. Merge the new MediaBacks bands, empty screenshot-window lists, darkInk flags and overArt=false. Let PrintedBacks place actual screenshots and description in the large plain content band. Preserve metadata-aware fallback behavior: optional fields remain optional; absent data must not produce invented screenshots, ratings or facts. CollectorBacks currently crops the Steam/Android front's top 11.58%; keep that consistent with front_header metadata or refactor it to use the declared header. Preserve its useful real-metadata behavior when changing paths.
+
+5. PHYSICAL SHAPES
+These are flat print textures, not replacement 3D meshes. Do not change CaseCatalog dimensions, depth, regional variants, jewel-case hinges, double-disc cases, openings or user overrides to match bitmap ratios. Fit custom textures to each face using correct UVs and aspect-aware composition. For different regions, reflow simple branding into the target face rather than stretching logos. Verify landscape N64/SNES cardboard; compact Japanese GameCube cases; PS1 single/PAL/multidisc cases; PSP; DS EU/US and 3DS; Switch. Keep physical size independent of texture canvas size. Do not change unrelated model ZIPs or real scan fitting globally.
+
+6. UPDATES AND CACHES
+Version the managed spine defaults so existing devices can refresh without reinstalling. Respect pack opt-outs and custom artwork. Download and validate atomically; keep the old good asset on failure. Invalidate pack, bitmap, front, titled-spine, PrintedBacks and CollectorBacks band caches as applicable. Rebuild/update bundled resources normally. Do not erase user settings or spine-fit preferences.
+
+7. VERIFICATION
+Check all 62 platform mappings, all 41 existing front replacements, new resources, and aliases. Test custom fronts with real art at portrait/square/landscape ratios; short/long/Unicode spine titles; backs with zero/one/multiple screenshots and missing text; real-scan priority; offline update failure; Steam/Android special rendering; flat shelves and 3D inspect/carousel/box views. Run appropriate checks and build the APK. Report what actually passed and any remaining device checks. Do not push or publish automatically.

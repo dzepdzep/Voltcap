@@ -1807,7 +1807,7 @@ object CloudSync {
         context.getSharedPreferences("favorites", Context.MODE_PRIVATE).edit()
             .putStringSet("favorite_keys", data.favorites.map(l).toSet()).commit()
         // Update 202: through PlaytimeStore (its lock): a session that ended while this sync ran is kept on top.
-        PlaytimeStore(context).replaceTotals(data.playtime.mapKeys { l(it.key) }, ownSeen)
+        PlaytimeStore(context, main = true).replaceTotals(data.playtime.mapKeys { l(it.key) }, ownSeen)
         context.getSharedPreferences("recently_played", Context.MODE_PRIVATE).edit()
             .putString("last_played_json", gson.toJson(data.recent.mapKeys { l(it.key) })).commit()
 
@@ -2020,7 +2020,7 @@ object CloudSync {
         val root = romRoot(context)
         val me = OtherDevices.deviceId(context)
         val retired = runCatching { OtherDevices.retiredIds(context) }.getOrDefault(emptySet())
-        val store = PlaytimeStore(context)
+        val store = PlaytimeStore(context, main = true)
         // Drive's copy, the base's and this device's own one: older versions upload without "playtimeV2", the others keep it.
         val known = listOfNotNull(remote.pt, base?.pt, loadPlaytimeCopy(context))
         val knownLegacy = maxMerge(known.map { it.legacy })

@@ -206,6 +206,8 @@ data class LauncherUiState(
     val hiddenApps: List<Game> = emptyList(),
     val isArtKeyEncrypted: Boolean = true,
     val gameNativeConfig: GameNativeConfig = GameNativeConfig(),
+    /** Update 332: the profile playing (Profiles). */
+    val profileId: Int = 0,
     val lastPlayedAt: Map<String, Long> = emptyMap(), // keyed by Game.stableKey
     val playtime: Map<String, Long> = emptyMap(), // Game.stableKey → total ms played
     val screensaver: ScreensaverSettings = ScreensaverSettings(),

@@ -1,5 +1,110 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (333): the status bar dressed for each layout
+
+- **One status bar, each layout's own look** (`ui\StatusLooks.kt`, new; `ui\HomeChrome.kt`): everything the bar shows
+  and does is unchanged (clock / date, accessories, search, trophy, notifications, Wi-Fi, battery, points, your picture,
+  sync, progress, the music player, the ☰ room, Edit Home). Per layout only how it's drawn — a backing (the plain edge
+  shade, nothing, a capsule round the clock and icons, or a full-width toolbar), its colours, rim, corners, weight and
+  readout digits; colours ease when the layout changes:
+  Voltcap row / Tiles / Grid clean shade · Hero / Spotlight / Case flow a whisper of shade · Hero tiles / Twin showcase
+  (their status bar on) their dark pill · Icon bar a sleek dark toolbar capsule · Dashboard frosted glass · Live tiles
+  flat and square · Side menu a dark band with the theme's trim · Cross menu floating, nothing behind · Console hub /
+  Resume dashboard glass · Channel grid (its status bar on) a soft pale pill · Library a desktop toolbar · TV room an
+  on-screen display (green, readout digits) · Shelf / Case stacks / Console stack a quiet label strip · Disc station a
+  CD player's LCD · Record crate a vintage label · Card binder a card header with a metal rim · Cardboard box kraft
+  paper · Storage boxes the box's own wallpaper colours · Circuit board a green LCD · Timeline a thin strip · Arcade a
+  restrained marquee glow · Twin desk paper · Twin icons a clean pale strip · Green Core dark green glass · Cube indigo
+  glass · Memory card a 2000s grey menu · File select chunky blue and gold · Airy light and soft · Night menu moonlit
+  glass · Orbit deck deep space · Layout Studio the theme's colours. Pocket classic / ribbon / Quest, Spotlight's Home
+  menu, Hero tiles' / Twin showcase's pill and Channel grid's clock row keep their own bars (Voltcap's isn't drawn).
+- **One clock on screen**: while Case stacks' panel or Channel grid's bar shows its clock, the bar leaves its own out.
+- The Volt battery gauge takes the bar's ink (it was white on the pale capsules).
+- Settings › Look & feel › "Status bar matches the layout" (on); off: the plain bar everywhere.
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E`.
+Files: new `ui\StatusLooks.kt`; changed `ui\HomeChrome.kt`, `ui\HomeExtras.kt`, `ui\LauncherScreen.kt`,
+`ui\StyleStorageBoxes.kt`, `ui\StacksArch.kt`, `ui\StyleConsoleHomes.kt`, `ui\SettingsDialog.kt`, `data\Features.kt`.
+
+Checked on the AYN Thor (release build): the bar in all 35 layouts that show it (screenshots), contrast on the pale
+capsules after the battery fix. Not tested: the dock at the top (bar at the bottom), the music player in the bar,
+phones, the second screen.
+
+## Update — 26 Oct 2026 (332): "Who's playing?" — profiles, start-up modes and the games rolling in
+
+- **Profiles** (`data\Profiles.kt`, new): each has its own name and picture (its RetroAchievements picture, the Steam
+  picture, one of your own — cut square — or its initial on its colour), its own favorites, Continue playing / last
+  played and play time, and its own RetroAchievements account (one of the two the login keeps; signing in while a
+  profile plays makes the account that profile's). Library, saves, artwork and settings are shared. Up to 8.
+  - The first profile is everything from before (its files keep their names, and it's the one Google Drive syncs);
+    the others are the same files with `__p<n>` (backed up as game data). Made the first time from the account in use;
+    a second saved RetroAchievements account becomes a second profile (the old two-account "Who is playing").
+  - A profile without an account plays with none (no other profile's achievements show).
+  - The status bar's picture / initial, the Pocket layouts' name follow the profile playing.
+- **"Who's playing?"** (`ui\ProfileSelect.kt`, new): a deep blue night with slow drifting sparks, big round pictures in a
+  row; the one you're on lifts, grows and glows in its colour, its name and account under it. ◀ ▶, A plays, Y edits
+  (name, picture, account, remove — never the first), B keeps the last profile (at start) or closes; tap / hold by
+  touch; + adds one. Picking lifts it and the screen fades into your layout.
+- **Start-up** (Settings › Look & feel › Start-up): Categories (as before), Who's playing → Categories, Who's playing →
+  Your layout (the default, Toni's choice). Only on a fresh start — Voltcap started, or the device (after the intro) —
+  never coming back from a game (Voltcap restarted while a game it started ran, or after it), never on a home press
+  or a screen change. Any time: R1 › Who's playing (hold: asked at start-up or not), Settings, the second screen's dock.
+- **The games roll in** after Who's playing (Settings: on / off, Calm / Normal / Quick): each game's art in the layout
+  you have slides into its place with a little depth, left to right and top to bottom; layouts whose games are drawn
+  otherwise come in as a whole. Nothing runs or is drawn extra once it's done.
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E` (test `Profiles332Test.kt`).
+Files: new `data\Profiles.kt`, `ui\ProfileSelect.kt`; changed `data\FavoritesStore.kt`, `data\RecentlyPlayedStore.kt`,
+`data\PlaytimeStore.kt`, `data\PlaySession.kt`, `data\SaveWatchWorker.kt`, `data\RaCredentialsStore.kt`, `data\CloudSync.kt`,
+`data\Backup.kt`, `data\Features.kt`, `LauncherViewModel.kt`, `LauncherUiState.kt`, `ui\LauncherScreen.kt`, `ui\GameCard.kt`,
+`ui\StyleHomes.kt`, `ui\StyleCaseStacks.kt`, `ui\QuickSettings.kt`, `ui\R1TileRules.kt`, `ui\SettingsDialog.kt`,
+`ui\SteamAchievementsUi.kt`, `ui\HomeChrome.kt`, `ui\PocketShared.kt`.
+
+Checked on the AYN Thor (release build): a fresh start shows Who's playing (your profile Pockeetz with its
+RetroAchievements picture, the + to add), moving to + and back, A → the Voltcap row with its games rolling in and Case
+stacks coming in; Settings and back: not asked again. Unit tests pass. Not tested: adding / editing / removing a
+profile and picking a picture on the device, a second RetroAchievements account, Google Drive with a second profile,
+phones, the second screen.
+
+## Update — 26 Oct 2026 (331): the matching case pack (62 fronts and backs), cases with their disc whole in their slot
+
+- **The matching case pack** (Toni's `VoltCap_All_62_Matching_Cases_and_Spines.zip`; the spines left out at your request —
+  better ones are coming):
+  - All 62 case fronts are the pack's transparent frames (a plain branded header, or a stripe down the left — Game Boy,
+    DS, Mega Drive, Saturn… — or the right — N64, SNES, 3DS) round a large art window; the game's art is drawn into the
+    window and the frame over it (`ui\MediaCovers.kt`, regenerated from `case_manifest.json`, 67 platform keys). 21
+    consoles have a case for the first time (PS3, PS4, Xbox, Xbox 360, Famicom, SFC, TurboGrafx-16 / CD, PC Engine CD,
+    Neo Geo CD, FDS, MSX, Amiga, DOS, PC, ScummVM, the arcades) instead of Voltcap's plain clear case.
+  - Real box scans and the covers / fronts you picked keep priority as before (a whole printed front is never framed
+    twice); a scan's own console banner is still cut where it was (each old window kept as `scanWin`).
+  - Fitting a case to its cover only ever moves the window: a header keeps its height, a stripe its width
+    (left / right stripes now change width — the stripe's logo was stretched up and down).
+  - Backs: the consoles with a printed back get the pack's plain bases (header, the console's colour, a large band for
+    the real screenshots and description; no windows, never over the art; dark or light ink as the pack says). Drawn
+    to the case's real back shape in three parts — header and foot at their own proportions, only the plain band
+    taking the difference — so no logo is squashed (a PS1 jewel case's wider back, a Japanese case's taller one).
+    Steam, Android, PS3 / 4, the Xboxes, computers and arcades keep the collector's back (title, real screenshots,
+    description, known details and rating) with the pack's header on top. Nothing is invented: missing parts stay out.
+  - The PlayStation case has its printed header again, so no console badge on it either.
+  - Physical shapes, regional variants, jewel / double cases, the 3D models and your overrides are unchanged; spines,
+    their shapes and the spine pack's download are unchanged.
+- **Cases with their disc / cartridge** (Toni: "the CD behind the next game or cut off half way"): case and disc (or
+  cartridge) now fit their slot together, the disc whole beside its case — Case with its cartridge / disc, the
+  template box with its disc, the 3D case with its disc.
+
+Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E` (124 pictures in
+`app\src\main\res\drawable-nodpi\`: `cov_front_*.webp`, `tpl_back_*.webp`; test `CasePack331Test.kt`). The pack's
+manifests and notes: `tools\media_templates\case_pack_331\`.
+Files: `ui\MediaCovers.kt`, `ui\MediaBacks.kt`, `ui\CoverCases.kt`, `ui\CartShells.kt`, `ui\PrintedBacks.kt`,
+`ui\CollectorBacks.kt`, `ui\PhysicalMedia.kt`, `ui\DiscCase3D.kt`, `ui\RealMedia.kt`.
+
+Checked: every frame's see-through window matches its declared window (all 62, measured); unit tests (all 62 cases /
+67 keys mapped to their files, windows and aspects; backs; fits keep headers / stripes; scan cuts; spines unchanged);
+on the AYN Thor (release build) the Classic row and Case stacks for PS2, PS3, PS1, PSP, SNES, N64, GameCube, Wii,
+Switch, Sega CD, NDS, 3DS and their windows (the printed backs: Switch and Sega CD on the new bases). Your library
+mostly has real scans, so the new frames show for games without one. Not checked on the device: every platform's
+template case one by one (no games for most), phones.
+
 ## Update — 26 Oct 2026 (330, phase 4 of 5): every layout's own game window, the ☰ never over a layout's title, coming back from a game where you were, wrap scans cut to their front everywhere
 
 - **Game windows for the older layouts** (`ui\GameWindow.kt`): the 14 layouts that still opened the plain window now

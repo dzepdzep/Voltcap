@@ -963,6 +963,8 @@ internal fun StyleArt(
     ring: Color = ShelfTheme.accent,
     outline: Dp = 2.dp
 ) {
+    // (Update 332: the games rolling in after "Who's playing?" — Rollout; nothing while it isn't running.)
+    @Suppress("NAME_SHADOWING") val modifier = modifier.rolloutItem()
     val titles = LocalTitleOptions.current
     EnsureUserCovers() // (Update 235, #24: the covers you picked — typedArtFor / CaseArt put them in the case, not the scan)
     val k = g.stableKey

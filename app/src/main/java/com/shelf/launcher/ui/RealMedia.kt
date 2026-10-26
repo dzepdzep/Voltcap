@@ -739,15 +739,16 @@ private fun CaseArtBody(
         val mAspect = cartPick?.aspect ?: if (shell == MediaShell.UMD) shell.aspect else if (round) 1f else shell.aspect
         BoxWithConstraints(modifier0, contentAlignment = Alignment.Center) {
             val out = 0.62f
-            // Update 144: the case as big as a case on its own in the same place; its cartridge / disc sticks out to the
-            // right past the slot (it used to shrink the case so both fitted — smaller than the cases with nothing beside them).
-            val h = minOf(maxHeight, maxWidth / aspect)
+            // Update 144: the case as big as a case on its own in the same place; its cartridge / disc stuck out to the
+            // right past the slot. (Update 331, Toni: "the CD behind the next game, or cut off half way — fix it": case and
+            // cartridge / disc fit the slot together now, the piece whole beside its case.)
+            val h = minOf(maxHeight, maxWidth / (aspect + mFrac * mAspect * out))
             val caseW = h * aspect
             val mH = h * mFrac
             val mW = mH * mAspect
             Box(
                 Modifier.align(Alignment.CenterStart).wrapContentSize(Alignment.CenterStart, unbounded = true)
-                    .offset(x = (maxWidth - caseW) / 2).size(caseW + mW * out, h)
+                    .offset(x = (maxWidth - caseW - mW * out) / 2).size(caseW + mW * out, h)
             ) {
                 Box(Modifier.align(Alignment.TopStart).size(caseW, h)) {
                     CaseArtFace(platform, cover, scan, Modifier.fillMaxSize(), title, detail, caseModifier, allowDiscCase = false, spine = spine, game = game, physical = physical)

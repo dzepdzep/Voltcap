@@ -11,9 +11,15 @@ import com.google.gson.reflect.TypeToken
  * The open session is saved, not kept in memory: Android often kills the
  * launcher while a heavy emulator runs, and the session must survive that.
  */
-class PlaytimeStore(context: Context) {
+class PlaytimeStore(
+    context: Context,
+    /** Update 332: the first profile's (Google Drive syncs only that one's), whoever is playing. */
+    main: Boolean = false
+) {
     private val app = context.applicationContext
-    private val prefs = context.getSharedPreferences("playtime", Context.MODE_PRIVATE)
+    private val mainOnly = main
+    // (Update 332: the playing profile's own — Profiles.fileFor; the first profile's is the old "playtime".)
+    private val prefs get() = app.getSharedPreferences(if (mainOnly) "playtime" else Profiles.run { ensure(app); fileFor("playtime") }, Context.MODE_PRIVATE)
     private val gson = Gson()
     private val type = object : TypeToken<Map<String, Long>>() {}.type
 

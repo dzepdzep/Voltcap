@@ -1374,6 +1374,22 @@ object Features {
     val saverAway = BoolPref("saver_away", true)
     /** Ask "Who is playing?" at start-up when two RetroAchievements accounts are saved. */
     val whoPlays = BoolPref("who_plays", false)
+    /**
+     * Update 332: what a fresh start of Voltcap shows (a start, or the device starting — never coming back from a game):
+     * the categories as before, or "Who's playing?" first, then the categories or straight into your layout.
+     */
+    enum class StartupMode(val label: String) {
+        CATEGORIES("Categories"), PROFILES_CATEGORIES("Who's playing → Categories"), PROFILES_LAYOUT("Who's playing → Your layout")
+    }
+    val startupMode = EnumPref("startup_mode", StartupMode.PROFILES_LAYOUT, StartupMode.values())
+    /** Update 332: after "Who's playing?", the games come in one after another (the layout you have). */
+    val rolloutOn = BoolPref("rollout_on", true)
+    enum class RolloutSpeed(val label: String, val stepMs: Int, val durMs: Int) {
+        CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
+    }
+    val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
+    /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
+    val statusMatchesLayout = BoolPref("status_matches_layout", true)
     val dashStatus = BoolPref("dash_status", true)
     /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
     val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())

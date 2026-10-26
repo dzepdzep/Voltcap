@@ -41,13 +41,16 @@ internal object CollectorBacks {
     /** The band at the top of Voltcap's own Steam / Android case fronts (MediaCovers: the top 11.58 % of the front). */
     private val bands = java.util.concurrent.ConcurrentHashMap<Int, Bitmap>()
 
-    private fun band(context: android.content.Context, res: Int): Bitmap? = bands[res] ?: runCatching {
+    private fun band(context: android.content.Context, res: Int, share: Float = FRONT_HEADER, extra: Int = 2): Bitmap? = bands[res] ?: runCatching {
         val o = android.graphics.BitmapFactory.Options().apply { inScaled = false }
         val full = android.graphics.BitmapFactory.decodeResource(context.resources, res, o) ?: return null
-        val h = (full.height * 0.1158f).toInt().coerceAtLeast(1)
+        val h = (full.height * share).toInt().coerceAtLeast(1)
         // (Its blue / green line under it kept: 2 px more.)
-        Bitmap.createBitmap(full, 0, 0, full.width, (h + 2).coerceAtMost(full.height)).also { bands[res] = it }
+        Bitmap.createBitmap(full, 0, 0, full.width, (h + extra).coerceAtMost(full.height)).also { bands[res] = it }
     }.getOrNull()
+
+    /** Update 331: the Steam / Android fronts' header, as MediaCovers declares it (the top of their art window). */
+    private val FRONT_HEADER: Float get() = MediaCovers.own("Steam")?.win?.get(1) ?: 0.1158f
 
     /** A colour from [b] with some life in it (the most saturated of its averaged patches), or null. */
     fun accentOf(b: Bitmap?): Int? {
@@ -162,6 +165,13 @@ internal object CollectorBacks {
     /** The platform's band across the top; returns where it ends. */
     private fun header(context: android.content.Context, c: Canvas, w: Int, h: Int, spec: PrintedBack, st: Style): Float {
         val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        // (Update 331: the matching case pack's back header for this console — its logo and line, as on its front and
+        // spine — when the pack has one: Steam, Android, PlayStation 3 / 4, the Xboxes, the computers and arcades.)
+        MediaBacks.headerRes(spec.platform)?.let { res -> band(context, res, MediaBacks.HEADER, 0) }?.let { b ->
+            val bh = w * b.height.toFloat() / b.width
+            c.drawBitmap(b, null, RectF(0f, 0f, w.toFloat(), bh), p)
+            return bh
+        }
         st.band?.let { res -> band(context, res) }?.let { b ->
             // Voltcap's own Steam / Android band, as on the case's front (its logo and line), at the back's width.
             val bh = w * b.height.toFloat() / b.width

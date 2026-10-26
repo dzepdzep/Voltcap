@@ -116,7 +116,7 @@ internal fun CoverLight(artUrl: Any?) {
  * charging. Square in the 32-bit console look.
  */
 @Composable
-internal fun VoltBattery(percent: Int, charging: Boolean, low: Color) {
+internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: Color = Color.White) {
     val accent = ShelfTheme.accent
     val second = lerpColor(accent, ShelfTheme.colors.secondary, 0.6f)
     val pixel = VoltUi.pixel
@@ -127,8 +127,9 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color) {
         val h = size.height
         val stroke = 1.3.dp.toPx()
         val corner = CornerRadius(if (pixel) 0f else 3.dp.toPx())
-        drawRoundRect(Color.White.copy(alpha = 0.85f), topLeft = Offset(stroke / 2, stroke / 2), size = Size(w - stroke, h - stroke), cornerRadius = corner, style = Stroke(stroke))
-        drawRect(Color.White.copy(alpha = 0.85f), topLeft = Offset(w, h * 0.3f), size = Size(nub, h * 0.4f))
+        // (Update 333: in the status bar's ink — a pale capsule's dark one.)
+        drawRoundRect(outline.copy(alpha = 0.85f), topLeft = Offset(stroke / 2, stroke / 2), size = Size(w - stroke, h - stroke), cornerRadius = corner, style = Stroke(stroke))
+        drawRect(outline.copy(alpha = 0.85f), topLeft = Offset(w, h * 0.3f), size = Size(nub, h * 0.4f))
         val isLow = !charging && percent < 15
         val cells = 5
         val filled = ((percent + 19) / 20).coerceIn(0, cells)
@@ -146,7 +147,7 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color) {
             drawPath(Path().apply {
                 moveTo(x0 + bw * 0.62f, y0); lineTo(x0 + bw * 0.05f, y0 + bh * 0.58f); lineTo(x0 + bw * 0.46f, y0 + bh * 0.58f)
                 lineTo(x0 + bw * 0.34f, y0 + bh); lineTo(x0 + bw * 0.95f, y0 + bh * 0.38f); lineTo(x0 + bw * 0.54f, y0 + bh * 0.38f); close()
-            }, Color.White.copy(alpha = 0.6f + 0.4f * pulse))
+            }, outline.copy(alpha = 0.6f + 0.4f * pulse))
         }
     }
 }

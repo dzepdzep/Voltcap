@@ -153,7 +153,7 @@ object Backup {
      * emulator setup and screen layouts.
      */
     fun export(context: Context, uri: Uri, includeGameData: Boolean = false, includeDeviceSetup: Boolean = false, includeAccounts: Boolean = false): Int {
-        val chosen = names(context).filter { includeGameData || it !in GAME_DATA }
+        val chosen = names(context).filter { includeGameData || it.substringBefore("__p") !in GAME_DATA }
         val files = serialize(context, chosen, includeDeviceSetup)
         val root = document(
             context, files,
@@ -171,7 +171,7 @@ object Backup {
      * This device's setup goes along but is only applied when it comes back to this same device.
      */
     fun exportText(context: Context, reason: String = "transfer", includeDeviceSetup: Boolean = true, includeAccounts: Boolean = false): String {
-        val chosen = names(context).filter { it !in GAME_DATA }
+        val chosen = names(context).filter { it.substringBefore("__p") !in GAME_DATA }
         val files = serialize(context, chosen, includeDeviceSetup)
         return document(
             context, files,
@@ -190,7 +190,7 @@ object Backup {
      * the account set up under Sync, so a fresh install (first-start setup) can take everything back. Blocking: IO.
      */
     fun exportToDrive(context: Context, includeGameData: Boolean, includeDeviceSetup: Boolean, includeAccounts: Boolean): Int {
-        val chosen = names(context).filter { includeGameData || it !in GAME_DATA }
+        val chosen = names(context).filter { includeGameData || it.substringBefore("__p") !in GAME_DATA }
         val files = serialize(context, chosen, includeDeviceSetup)
         val root = document(
             context, files,
@@ -235,7 +235,7 @@ object Backup {
 
     /** Same as [export], into a plain file (the visible Voltcap folder's settings copy). */
     fun exportTo(context: Context, file: File, includeGameData: Boolean, includeDeviceSetup: Boolean, includeAccounts: Boolean = false): Int {
-        val chosen = names(context).filter { includeGameData || it !in GAME_DATA }
+        val chosen = names(context).filter { includeGameData || it.substringBefore("__p") !in GAME_DATA }
         val files = serialize(context, chosen, includeDeviceSetup)
         val root = document(
             context, files,

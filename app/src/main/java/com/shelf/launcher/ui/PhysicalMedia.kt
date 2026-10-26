@@ -983,11 +983,12 @@ internal fun DiscInCase(
         // box draws shorter (it's turned away). It used to be 0.86 of the full height: bigger than a PS1 case's edge.
         val dFrac = discFrac(platform, aspect, box, caseScan != null)
         val outFrac = DISC_OUT
-        // Update 144: the case as big as a case on its own in the same place (it used to shrink so its disc fitted beside
-        // it, smaller than the cases with no disc); the disc sticks out to the right past the slot, behind the next game.
-        val h = minOf(maxHeight, maxWidth / aspect)
+        // Update 144: the case as big as a case on its own in the same place; the disc stuck out to the right past the
+        // slot, behind the next game. (Update 331, Toni: "cases with a CD showing the CD behind the next game, or cut off
+        // half way — fix it": case and disc together fit the slot now, the disc whole beside its case.)
+        val h = minOf(maxHeight, maxWidth / (aspect + dFrac * outFrac))
         val d = h * dFrac
-        val lead = (maxWidth - h * aspect) / 2
+        val lead = (maxWidth - (h * aspect + d * outFrac)) / 2
         var scanFailed by androidx.compose.runtime.remember(caseScan) { androidx.compose.runtime.mutableStateOf(false) }
         Box(
             Modifier.align(Alignment.CenterStart).wrapContentSize(Alignment.CenterStart, unbounded = true)

@@ -563,7 +563,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
     if (caseLook && !spines && Features.stacks3d.state.value) {
         // Update 151: a real 3D case (the carousels' case drawing: its cover on the front, its spine on the side), turned a
         // little so its spine shows (Cases in 3D; off: the flat case below).
-        Box(modifier.gameOrigin(k, on)) {
+        Box(modifier.gameOrigin(k, on).rolloutItem()) {
             Case3D(
                 // Update 158: facing you straight on by default; turned (its spine showing) with "Turned like the others".
                 g, c.cover(g), c.state.physicalMedia[k], if (PickedFacing.faces) 0f else STACKS_CASE_YAW, case3dAspect(g, false),
@@ -575,7 +575,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
         }
     } else if (caseLook && !spines && caseMarker(g.platform) != null) {
         val scan = typedArtFor(CardArtType.CASE, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
-        Box(modifier.gameOrigin(k, on)) {
+        Box(modifier.gameOrigin(k, on).rolloutItem()) {
             MediaFocus(on) {
                 CaseArt(
                     // (Update 173: an app without art: its icon in the case.)

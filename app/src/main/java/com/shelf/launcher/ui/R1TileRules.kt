@@ -71,7 +71,8 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // RomM: once it's set up.
         "romm" -> return on(x.romm)
         // Who plays (ask at start-up): only with two RetroAchievements accounts saved — with one there's no one to ask.
-        "whoplays" -> return on(x.raAccounts >= 2)
+        // (Update 332: the profile selector — always there.)
+        "whoplays" -> return on(true)
         // The game's power profile: devices with the performance tuner, with a game you're on (both already decide
         // whether the tile can be built at all: its label is read only then — QuickSettingsCard's profileLabel).
         "profile" -> return R1Fit.Show

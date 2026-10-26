@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -143,6 +144,11 @@ internal fun StorageBoxesBackdrop(modifier: Modifier) {
     }
 }
 
+/** Update 333: the box on screen's wallpaper colour (the status bar wears it). */
+internal object StorageWallTint {
+    var color by androidx.compose.runtime.mutableStateOf<Color?>(null)
+}
+
 /** The wallpapers: original patterns, each with its own colours. */
 private val StWalls = listOf(
     Color(0xFF7BC67B) to Color(0xFF5FA85F), // meadow dots
@@ -237,6 +243,9 @@ private fun StorageScreen(c: StyleCtx, modifier: Modifier) {
                 else -> 1
             }
             val plain = Features.stWallpaper.state.value == Features.StWallpaper.PLAIN
+            // (Update 333: the status bar takes the box's wallpaper colours — StatusLooks.)
+            val wallTint = if (plain) Color(0xFF9AA6B8) else StWalls[wallKind.mod(StWalls.size)].second
+            androidx.compose.runtime.SideEffect { StorageWallTint.color = wallTint }
             AnimatedContent(
                 targetState = Triple(c.categoryLabel, page, wallKind), label = "stBox",
                 transitionSpec = {

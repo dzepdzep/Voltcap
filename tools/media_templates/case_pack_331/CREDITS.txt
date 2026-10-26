@@ -1,0 +1,11 @@
+Logo source: existing VoltCap repository assets at commit 0a5df25fcdeb4350164014a7fd60ed19fbac201b, app/src/main/assets/system_logos_png and platform_logos_png.
+https://github.com/dzepdzep/Voltcap
+
+VoltCap's platform_logos/CREDITS.txt attributes its platform logo collection to Dan Patrick, "v2 Platform Logos (professionally redrawn official versions)", made for LaunchBox / Big Box:
+https://forums.launchbox-app.com/files/file/3402-v2-platform-logos-professionally-redrawn-official-versions-new-bigbox-defaults/
+All credit for those logo artworks remains with their original creators. System-logo provenance is retained as existing VoltCap artwork; this pack does not establish additional third-party licensing rights. Some logos were cropped or recolored for contrast.
+
+Android robot attribution: Google, Creative Commons Attribution 3.0, as recorded in VoltCap OwnSpines.kt. https://creativecommons.org/licenses/by/3.0/
+Android, Steam and console/platform names and marks belong to their respective owners. No affiliation or endorsement is implied.
+
+New spine layouts, color panels and print details were created for this pack. FBNeo, FDS and PC headers use plain typeset platform names where a suitable standalone mark was unavailable.

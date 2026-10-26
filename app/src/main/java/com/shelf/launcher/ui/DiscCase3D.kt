@@ -72,9 +72,11 @@ internal fun DiscInBox3D(
     val seed = (cover?.hashCode() ?: 0) xor (box.res * 31)
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val aspect = box.aspect
-        val h = minOf(maxHeight, maxWidth / aspect)
-        val d = h * discFrac(platform, aspect, box, false)
-        val lead = (maxWidth - h * aspect) / 2
+        // (Update 331: case and disc fit the slot together — the disc was behind the next game, or cut off.)
+        val dFrac = discFrac(platform, aspect, box, false)
+        val h = minOf(maxHeight, maxWidth / (aspect + dFrac * DISC_OUT))
+        val d = h * dFrac
+        val lead = (maxWidth - (h * aspect + d * DISC_OUT)) / 2
         Box(
             Modifier.align(Alignment.CenterStart).wrapContentSize(Alignment.CenterStart, unbounded = true)
                 .offset(x = lead).size(h * aspect + d * DISC_OUT, h)

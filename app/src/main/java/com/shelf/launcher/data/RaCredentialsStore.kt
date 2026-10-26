@@ -25,10 +25,20 @@ class RaCredentialsStore(context: Context) {
 
     fun isEncrypted(): Boolean = openedA.encrypted
 
-    /** The account in use: 0 or 1 (an empty second slot counts as 0). */
-    fun activeSlot(): Int = slotPrefs.getInt(KEY_SLOT, 0).coerceIn(0, 1).let { if (it == 1 && loadSlot(1) == null) 0 else it }
+    /**
+     * The account in use: 0 or 1 (an empty second slot counts as 0). Update 332: -1 — none (a profile playing without a
+     * RetroAchievements account of its own, Profiles).
+     */
+    fun activeSlot(): Int = slotPrefs.getInt(KEY_SLOT, 0).let { s -> if (s < 0) -1 else s.coerceIn(0, 1).let { if (it == 1 && loadSlot(1) == null) 0 else it } }
 
-    fun setActive(slot: Int) { slotPrefs.edit().putInt(KEY_SLOT, slot.coerceIn(0, 1)).commit() }
+    fun setActive(slot: Int) { slotPrefs.edit().putInt(KEY_SLOT, slot.coerceIn(-1, 1)).commit() }
+
+    /**
+     * Update 332: where a profile without an account of its own keeps the one it signs in to — a slot no other profile
+     * uses ([taken]), the empty one first.
+     */
+    fun freeSlot(taken: Set<Int>): Int =
+        listOf(0, 1).firstOrNull { it !in taken && loadSlot(it) == null } ?: listOf(0, 1).firstOrNull { it !in taken } ?: 1
 
     /**
      * (Update 318, Flip 2 freeze — crash report 2026-10-22 19:36: opening a game's window read the login on the main
@@ -67,11 +77,19 @@ class RaCredentialsStore(context: Context) {
     /** Both accounts' user names (null: empty slot). */
     fun usernames(): List<String?> = listOf(loadSlot(0)?.username, loadSlot(1)?.username)
 
-    /** The active account. */
-    fun load(): RaCredentials? = loadSlot(activeSlot())
+    /** The active account (none while a profile without one plays). */
+    fun load(): RaCredentials? = activeSlot().let { if (it < 0) null else loadSlot(it) }
 
-    /** Saves into the active account. */
-    fun save(credentials: RaCredentials) = saveSlot(activeSlot(), credentials)
+    /**
+     * Saves into the active account. (Update 332: a profile without one gets a free slot — [taken]: the other profiles'
+     * — which becomes the active one; the slot used is returned.)
+     */
+    fun save(credentials: RaCredentials, taken: Set<Int> = emptySet()): Int {
+        val slot = activeSlot().let { if (it >= 0) it else freeSlot(taken) }
+        saveSlot(slot, credentials)
+        setActive(slot)
+        return slot
+    }
 
     /** Forgets the account in [slot]. The other one stays and is the one in use (the second moves up into slot 0). */
     fun remove(slot: Int) {
@@ -81,7 +99,7 @@ class RaCredentialsStore(context: Context) {
     }
 
     /** Forgets the active account; the other one, if any, is the one in use afterwards. */
-    fun clear() = remove(activeSlot())
+    fun clear() { activeSlot().takeIf { it >= 0 }?.let { remove(it) } }
 
     companion object {
         private val cacheLock = Any()

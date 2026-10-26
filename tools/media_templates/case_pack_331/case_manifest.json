@@ -1,0 +1,3169 @@
+{
+  "version": 1,
+  "source_commit": "0a5df25fcdeb4350164014a7fd60ed19fbac201b",
+  "case_count": 62,
+  "existing_front_replacements": 41,
+  "notes": [
+    "Fronts are transparent artwork overlays; backs are opaque runtime content bases.",
+    "Every case matches a spine in spine_manifest.json.",
+    "New coordinates must replace the old window coordinates.",
+    "SVGs contain editable vector frames with embedded raster logos reused from the spine pack.",
+    "Keep cover scans untouched and avoid double branding on art that already includes its retail banner."
+  ],
+  "cases": [
+    {
+      "id": "3do",
+      "platform_keys": [
+        "3DO"
+      ],
+      "front_resource": "cov_front_3do",
+      "back_resource": "tpl_back_3do",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_3do.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_3do.webp",
+      "spine_path": "packs/v1/spine_3do.webp",
+      "size_px": [
+        296,
+        560
+      ],
+      "front_aspect": 0.5285714285714286,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        296,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#111517",
+      "brand": "#111517",
+      "accent": "#d23c2e",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "7b3d850a1450d169597dabb4bc4de64fe602131f963eed28058dfdcd20908116",
+      "back_path_sha256": "ccb35dfd5849fb8a8a81c07f91f3cf7e18221f1d821593f8f84e094a85cd98d6"
+    },
+    {
+      "id": "amiga",
+      "platform_keys": [
+        "Amiga"
+      ],
+      "front_resource": "cov_front_amiga",
+      "back_resource": "tpl_back_amiga",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_amiga.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_amiga.webp",
+      "spine_path": "packs/v1/spine_amiga.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f0ece3",
+      "brand": "#172752",
+      "accent": "#ba2b33",
+      "title_ink": "#20232c",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "04fb072c1432e914be76c6aee523c10d6240b1e186320117080779da0c222e73",
+      "back_path_sha256": "a5b258d9b9641a0109c8deea80f478765731c44b14042f96b6e54e12588c38b7"
+    },
+    {
+      "id": "arcade",
+      "platform_keys": [
+        "Arcade"
+      ],
+      "front_resource": "cov_front_arcade",
+      "back_resource": "tpl_back_arcade",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_arcade.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_arcade.webp",
+      "spine_path": "packs/v1/spine_arcade.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#202431",
+      "brand": "#202431",
+      "accent": "#e8b731",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "edcbfa3924cef2d41fb162d184939efb5db3e26ec75e8d6110eee8d38e6c92d0",
+      "back_path_sha256": "5df72dff9e6cc10113952aba0b9a05fb68912afccf840f4d17cb7dba1f1380d5"
+    },
+    {
+      "id": "atari2600",
+      "platform_keys": [
+        "Atari2600"
+      ],
+      "front_resource": "cov_front_atari2600",
+      "back_resource": "tpl_back_atari2600",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_atari2600.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_atari2600.webp",
+      "spine_path": "packs/v1/spine_atari2600.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#a43a2c",
+      "brand": "#f4e8d3",
+      "accent": "#e9ae53",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "a18c8aa5e55427fd210c66748833f2657dd79c49aef8f5f9e16df4164935a0de",
+      "back_path_sha256": "1a65f9ec923127c1211c2c1d0f6500dc44fa62712159189dec0829f24190b437"
+    },
+    {
+      "id": "atari7800",
+      "platform_keys": [
+        "Atari7800"
+      ],
+      "front_resource": "cov_front_atari7800",
+      "back_resource": "tpl_back_atari7800",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_atari7800.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_atari7800.webp",
+      "spine_path": "packs/v1/spine_atari7800.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#272a2e",
+      "brand": "#deded5",
+      "accent": "#c83539",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "a9e243096dc7accbdfb0850de34bafeec9700d385ba506325eb5a1c8a882327a",
+      "back_path_sha256": "e5b9741348de70bee426f139981bf6749ce129b15556ff6a246a623a12816468"
+    },
+    {
+      "id": "atarijaguar",
+      "platform_keys": [
+        "Jaguar"
+      ],
+      "front_resource": "cov_front_jaguar",
+      "back_resource": "tpl_back_jaguar",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_jaguar.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_jaguar.webp",
+      "spine_path": "packs/v1/spine_atarijaguar.webp",
+      "size_px": [
+        408,
+        560
+      ],
+      "front_aspect": 0.7285714285714285,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        408,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#19191b",
+      "brand": "#19191b",
+      "accent": "#c52d32",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "935508a9fdab19133ed239d7c60b8ac82e4f6ff16e7d699909efa7aa675250dc",
+      "back_path_sha256": "126c64603bbfd622575f291d6457170ccf5edde8fce52714328ff895a60d23bd"
+    },
+    {
+      "id": "atarilynx",
+      "platform_keys": [
+        "Lynx"
+      ],
+      "front_resource": "cov_front_lynx",
+      "back_resource": "tpl_back_lynx",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_lynx.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_lynx.webp",
+      "spine_path": "packs/v1/spine_atarilynx.webp",
+      "size_px": [
+        456,
+        560
+      ],
+      "front_aspect": 0.8142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        456,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#22252e",
+      "brand": "#22252e",
+      "accent": "#edb432",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "d2825887f459bf7318f1c147ba1cd25b1d4c3dd23045706abca32816da0884cd",
+      "back_path_sha256": "a582a65d66f1b99def12f11994302525c6f72acd2417d8e6ba642a58b688a361"
+    },
+    {
+      "id": "atomiswave",
+      "platform_keys": [
+        "Atomiswave"
+      ],
+      "front_resource": "cov_front_atomiswave",
+      "back_resource": "tpl_back_atomiswave",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_atomiswave.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_atomiswave.webp",
+      "spine_path": "packs/v1/spine_atomiswave.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#202226",
+      "brand": "#202226",
+      "accent": "#c83229",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "d65161634f4774028517cbc9a95c01590813f09c77e8a534724d3d81863c0e31",
+      "back_path_sha256": "090d16d01ecb3ef9b2dd3befe2cf293daf9cdf798bdd96c49d18969f1a536f9a"
+    },
+    {
+      "id": "c64",
+      "platform_keys": [
+        "C64"
+      ],
+      "front_resource": "cov_front_c64",
+      "back_resource": "tpl_back_c64",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_c64.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_c64.webp",
+      "spine_path": "packs/v1/spine_c64.webp",
+      "size_px": [
+        398,
+        560
+      ],
+      "front_aspect": 0.7107142857142857,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        398,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#eee7d4",
+      "brand": "#eee7d4",
+      "accent": "#28609a",
+      "title_ink": "#202e40",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "96db1025247b204a2fab1789a4c0ce5017d0f66b50b4beb3d82e401b14494737",
+      "back_path_sha256": "882fe1fe0a7ef3130d4801bb1220e7fcda40dfcb450b4edb974419f6d86396fa"
+    },
+    {
+      "id": "colecovision",
+      "platform_keys": [
+        "ColecoVision"
+      ],
+      "front_resource": "cov_front_colecovision",
+      "back_resource": "tpl_back_colecovision",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_colecovision.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_colecovision.webp",
+      "spine_path": "packs/v1/spine_colecovision.webp",
+      "size_px": [
+        410,
+        560
+      ],
+      "front_aspect": 0.7321428571428571,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        410,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#171b22",
+      "brand": "#171b22",
+      "accent": "#d44130",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "4454ced263d213d9933361c6481d0291c9133af12bccdce7cae48332edef4ebe",
+      "back_path_sha256": "14f6efe33f63efbd7e2dd4f0e7255f7db2f48f6405dcf1ea8cb27a03969d7a66"
+    },
+    {
+      "id": "dos",
+      "platform_keys": [
+        "DOS"
+      ],
+      "front_resource": "cov_front_dos",
+      "back_resource": "tpl_back_dos",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_dos.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_dos.webp",
+      "spine_path": "packs/v1/spine_dos.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1f2840",
+      "brand": "#1f2840",
+      "accent": "#d2ab3d",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "842e1a58b4355f901ab12a9d3b5aa1cc8d41fc69dbd458a6558708a1c30c5714",
+      "back_path_sha256": "7d4dfb3a32da7604c8597ce812e0a9482f20742a9f0bd35cf6e54c17c7602c88"
+    },
+    {
+      "id": "dreamcast",
+      "platform_keys": [
+        "Dreamcast"
+      ],
+      "front_resource": "cov_front_dreamcast",
+      "back_resource": "tpl_back_dreamcast",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_dreamcast.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_dreamcast.webp",
+      "spine_path": "packs/v1/spine_dreamcast.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "left",
+      "art_window": [
+        0.16071428571428573,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        90,
+        0,
+        560,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f8f7f2",
+      "brand": "#f8f7f2",
+      "accent": "#2d60b1",
+      "title_ink": "#202a3a",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "a8fcfe71d59cb0155522134963379ed61c94038d5dad7777c442f5fc443f9c32",
+      "back_path_sha256": "3d1f598b43fc59646192ed0ed3838dcbac5279862e5513e80eff9ca8b912ec88"
+    },
+    {
+      "id": "famicom",
+      "platform_keys": [
+        "Famicom"
+      ],
+      "front_resource": "cov_front_famicom",
+      "back_resource": "tpl_back_famicom",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_famicom.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_famicom.webp",
+      "spine_path": "packs/v1/spine_famicom.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f8f1df",
+      "brand": "#f8f1df",
+      "accent": "#a42029",
+      "title_ink": "#6d1e26",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "2a678211dca518de8b050bd530afd3ce722fee1643023abdc18079bd3f045aa8",
+      "back_path_sha256": "63e1f9aca0d97cc7a21f9516ce7cf9cd3cbf4575a6080d1ba7deb3e7685e4a83"
+    },
+    {
+      "id": "fbneo",
+      "platform_keys": [
+        "FBNeo"
+      ],
+      "front_resource": "cov_front_fbneo",
+      "back_resource": "tpl_back_fbneo",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_fbneo.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_fbneo.webp",
+      "spine_path": "packs/v1/spine_fbneo.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#252134",
+      "brand": "#252134",
+      "accent": "#ce6155",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "139eb7b6bba585fdd9a35ffffc106ef28bbbf4058e25c013b729677cc5dc6598",
+      "back_path_sha256": "0cadad3580f9016bfc85ed93a097028e78bf7da593e55f3d470111bb79bee48b"
+    },
+    {
+      "id": "fds",
+      "platform_keys": [
+        "FDS"
+      ],
+      "front_resource": "cov_front_fds",
+      "back_resource": "tpl_back_fds",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_fds.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_fds.webp",
+      "spine_path": "packs/v1/spine_fds.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f3d451",
+      "brand": "#f3d451",
+      "accent": "#a3232e",
+      "title_ink": "#282421",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "a7246fb841bd1e2b07de2883dd974af9af9e8b6d60bfd3aa860b4540e4f8581b",
+      "back_path_sha256": "2e62b464cb71a89bbc6ace305e9f78e20c554f31b3630dfecdd77353d8ec3529"
+    },
+    {
+      "id": "gamegear",
+      "platform_keys": [
+        "GameGear"
+      ],
+      "front_resource": "cov_front_gamegear",
+      "back_resource": "tpl_back_gamegear",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_gamegear.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_gamegear.webp",
+      "spine_path": "packs/v1/spine_gamegear.webp",
+      "size_px": [
+        408,
+        560
+      ],
+      "front_aspect": 0.7285714285714285,
+      "layout": "left",
+      "art_window": [
+        0.15931372549019607,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        65,
+        0,
+        408,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#202b5b",
+      "brand": "#f2f1e9",
+      "accent": "#2f7cba",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "ee46249f51cf1af90f3ba2b593fc51e43ac48b60fc6ce047fe65e8b0fbebd1f1",
+      "back_path_sha256": "877826763e9bf9887734e9e38c10fb6e409a22a03c0530541198d048dcf62a36"
+    },
+    {
+      "id": "gb",
+      "platform_keys": [
+        "GB"
+      ],
+      "front_resource": "cov_front_gb",
+      "back_resource": "tpl_back_gb",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_gb.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_gb.webp",
+      "spine_path": "packs/v1/spine_gb.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "left",
+      "art_window": [
+        0.16071428571428573,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        90,
+        0,
+        560,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#e8e7e0",
+      "brand": "#e8e7e0",
+      "accent": "#253d89",
+      "title_ink": "#1c2435",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "0edb25fc003b45ae7f96be12e3c84930ac0b0cd72fe3e4bff806c806ae0af21f",
+      "back_path_sha256": "bde8e12c5cc855aa99443ed3ae33a3d21b9dab1c4a6a2404591284f6c4bf18ea"
+    },
+    {
+      "id": "gba",
+      "platform_keys": [
+        "GBA"
+      ],
+      "front_resource": "cov_front_gba",
+      "back_resource": "tpl_back_gba",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_gba.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_gba.webp",
+      "spine_path": "packs/v1/spine_gba.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "left",
+      "art_window": [
+        0.16071428571428573,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        90,
+        0,
+        560,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#38305f",
+      "brand": "#eeeae6",
+      "accent": "#7770a0",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "f19b1e2a6cf7c50b01322420357e4ff115b6137cb28f027118825683764abc34",
+      "back_path_sha256": "e85add742165ecef5bdc88d13c8dfaa0e9ccdbfd2dcc83c043c6c6134e878590"
+    },
+    {
+      "id": "gbc",
+      "platform_keys": [
+        "GBC"
+      ],
+      "front_resource": "cov_front_gbc",
+      "back_resource": "tpl_back_gbc",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_gbc.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_gbc.webp",
+      "spine_path": "packs/v1/spine_gbc.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "left",
+      "art_window": [
+        0.16071428571428573,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        90,
+        0,
+        560,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f6f3e7",
+      "brand": "#f6f3e7",
+      "accent": "#243c85",
+      "title_ink": "#1e2738",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "e3b0e420532f8035e13edc0c0293c38db1a1c51f6d6fbf8e32a0038d1f839a01",
+      "back_path_sha256": "30959b9524701a65754edd715740ecc30cee632f6abc361f70f6375e4c2ff479"
+    },
+    {
+      "id": "gc",
+      "platform_keys": [
+        "GameCube"
+      ],
+      "front_resource": "cov_front_gamecube",
+      "back_resource": "tpl_back_gamecube",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_gamecube.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_gamecube.webp",
+      "spine_path": "packs/v1/spine_gc.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#17171a",
+      "brand": "#101012",
+      "accent": "#7b70ab",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "b3678cfdce4092f9be8bfef584726e714295952d3d6c1dd48b392acd142d0232",
+      "back_path_sha256": "67c74582f64a0e93b24a57b80ef9f8ae9c2ae156d75feaba740709e454b72588"
+    },
+    {
+      "id": "intellivision",
+      "platform_keys": [
+        "Intellivision"
+      ],
+      "front_resource": "cov_front_intellivision",
+      "back_resource": "tpl_back_intellivision",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_intellivision.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_intellivision.webp",
+      "spine_path": "packs/v1/spine_intellivision.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#c8b28c",
+      "brand": "#e9dfc9",
+      "accent": "#8a4b31",
+      "title_ink": "#2b241d",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "7a42839d7eda40b4b4825a7ab6d09a657a1a01dcbfe21667dda7bb92fe86ee99",
+      "back_path_sha256": "8b81a6b576a1c1f858020b1b74af9d682e2ab6fe2257af486babbe4e7e2232e4"
+    },
+    {
+      "id": "mame",
+      "platform_keys": [
+        "MAME"
+      ],
+      "front_resource": "cov_front_mame",
+      "back_resource": "tpl_back_mame",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_mame.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_mame.webp",
+      "spine_path": "packs/v1/spine_mame.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1d2b3a",
+      "brand": "#1d2b3a",
+      "accent": "#4c9bd0",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "e204458958e1d733300c12f1b6a269d67bc40ba12c5ef30868f9106b81ed0c7e",
+      "back_path_sha256": "909776a16a58004bef58a9aaf2000e42cef46c521b0dfde4b8952369091d3ad8"
+    },
+    {
+      "id": "mastersystem",
+      "platform_keys": [
+        "MasterSystem"
+      ],
+      "front_resource": "cov_front_mastersystem",
+      "back_resource": "tpl_back_mastersystem",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_mastersystem.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_mastersystem.webp",
+      "spine_path": "packs/v1/spine_mastersystem.webp",
+      "size_px": [
+        399,
+        560
+      ],
+      "front_aspect": 0.7125,
+      "layout": "left",
+      "art_window": [
+        0.16040100250626566,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        64,
+        0,
+        399,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf8f2",
+      "brand": "#faf8f2",
+      "accent": "#b7282e",
+      "title_ink": "#191c20",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "1944b0d568e3500db414ac1da8ecd33c46a2d4f808ef8b829a88ec88bbafbd7e",
+      "back_path_sha256": "7ef1bb21851c5ace5196dacbfd8c91cf0801d05c07225afacfcc2b85ddf42330"
+    },
+    {
+      "id": "megacd",
+      "platform_keys": [
+        "SegaCD"
+      ],
+      "front_resource": "cov_front_segacd",
+      "back_resource": "tpl_back_segacd",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_segacd.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_segacd.webp",
+      "spine_path": "packs/v1/spine_megacd.webp",
+      "size_px": [
+        396,
+        560
+      ],
+      "front_aspect": 0.7071428571428572,
+      "layout": "left",
+      "art_window": [
+        0.1590909090909091,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        63,
+        0,
+        396,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#202739",
+      "brand": "#f3f0e8",
+      "accent": "#235e9a",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "cc424fee06e94827e21a1f33ee77754b09896c4982130694b207fe22af134190",
+      "back_path_sha256": "51046e4d350189e3dc69cfec8d0648702a459ef0202b8fab9b28652dba993a8d"
+    },
+    {
+      "id": "megadrive",
+      "platform_keys": [
+        "Genesis",
+        "MegaDrive"
+      ],
+      "front_resource": "cov_front_genesis",
+      "back_resource": "tpl_back_genesis",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_genesis.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_genesis.webp",
+      "spine_path": "packs/v1/spine_megadrive.webp",
+      "size_px": [
+        399,
+        560
+      ],
+      "front_aspect": 0.7125,
+      "layout": "left",
+      "art_window": [
+        0.16040100250626566,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        64,
+        0,
+        399,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#181a1d",
+      "brand": "#f4f1e9",
+      "accent": "#d22c35",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "8ce0380c6411b8f2e863f3e38d5a47f491f1242a6a335bdfb0a95dd5e8a77baf",
+      "back_path_sha256": "34152693d0412eeb4fed3293a6c51914b7993bad398556573d6f9c63b509d3be"
+    },
+    {
+      "id": "msx",
+      "platform_keys": [
+        "MSX"
+      ],
+      "front_resource": "cov_front_msx",
+      "back_resource": "tpl_back_msx",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_msx.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_msx.webp",
+      "spine_path": "packs/v1/spine_msx.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f2eee5",
+      "brand": "#171719",
+      "accent": "#d32b32",
+      "title_ink": "#222327",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "f3dc812fa221def837e886cfc8c5e8a46672a54ede4d789a17006083e81a3eb5",
+      "back_path_sha256": "e29ee1b2b97d62164a45f70c951dcf4dd7f09f4da96ba06624cb2acf38cfc5de"
+    },
+    {
+      "id": "n3ds",
+      "platform_keys": [
+        "3DS"
+      ],
+      "front_resource": "cov_front_3ds",
+      "back_resource": "tpl_back_3ds",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_3ds.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_3ds.webp",
+      "spine_path": "packs/v1/spine_n3ds.webp",
+      "size_px": [
+        514,
+        458
+      ],
+      "front_aspect": 1.1222707423580787,
+      "layout": "right",
+      "art_window": [
+        0.0,
+        0.0,
+        0.8404669260700389,
+        0.9847161572052402
+      ],
+      "art_window_px": [
+        0,
+        0,
+        432,
+        451
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf9f6",
+      "brand": "#faf9f6",
+      "accent": "#d62631",
+      "title_ink": "#151719",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "91d0f15dc383210c7681988c4e5b5eb9c597f73593d2ebb3a5f3eb42c69a68e9",
+      "back_path_sha256": "5bc18e3ab600094126b733ad0af2e4e7f592853848b78f3f226a0490a47463ae"
+    },
+    {
+      "id": "n64",
+      "platform_keys": [
+        "N64"
+      ],
+      "front_resource": "cov_front_n64",
+      "back_resource": "tpl_back_n64",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_n64.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_n64.webp",
+      "spine_path": "packs/v1/spine_n64.webp",
+      "size_px": [
+        560,
+        409
+      ],
+      "front_aspect": 1.36919315403423,
+      "layout": "right",
+      "art_window": [
+        0.0,
+        0.0,
+        0.8196428571428571,
+        0.9828850855745721
+      ],
+      "art_window_px": [
+        0,
+        0,
+        459,
+        402
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f5f2e9",
+      "brand": "#f5f2e9",
+      "accent": "#c52b2b",
+      "title_ink": "#181c24",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "67b28fe15b8c6a3e5bce620f0b8d35753808882c21e4564059f6f522d5534dc9",
+      "back_path_sha256": "75ba3b20e1f39322c36ab1e16c4ff9a84321718645519f9bfda78b0bea287d1b"
+    },
+    {
+      "id": "naomi",
+      "platform_keys": [
+        "Naomi"
+      ],
+      "front_resource": "cov_front_naomi",
+      "back_resource": "tpl_back_naomi",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_naomi.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_naomi.webp",
+      "spine_path": "packs/v1/spine_naomi.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#22272f",
+      "brand": "#22272f",
+      "accent": "#cd553a",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "2fc4a50abab1be2266ac6e27400dba046dafd67279af993760a10a05419cb857",
+      "back_path_sha256": "13e6bce85a158b65cd6019f4b5e72074669a49bcf487d6a594db82d9fb341a43"
+    },
+    {
+      "id": "nds",
+      "platform_keys": [
+        "NDS"
+      ],
+      "front_resource": "cov_front_nds",
+      "back_resource": "tpl_back_nds",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_nds.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_nds.webp",
+      "spine_path": "packs/v1/spine_nds.webp",
+      "size_px": [
+        514,
+        458
+      ],
+      "front_aspect": 1.1222707423580787,
+      "layout": "left",
+      "art_window": [
+        0.15953307392996108,
+        0.0,
+        1.0,
+        0.9847161572052402
+      ],
+      "art_window_px": [
+        82,
+        0,
+        514,
+        451
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf9f6",
+      "brand": "#faf9f6",
+      "accent": "#c2c5c7",
+      "title_ink": "#151719",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "bdff892cc5cf11b5924931d725665907e080ff9e872a0f3c641f368fdcad7484",
+      "back_path_sha256": "cd9726f975a74a5725adb1789e6393091058abf7d07a18413f2a6aff7b10df55"
+    },
+    {
+      "id": "neogeo",
+      "platform_keys": [
+        "NeoGeo"
+      ],
+      "front_resource": "cov_front_neogeo",
+      "back_resource": "tpl_back_neogeo",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_neogeo.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_neogeo.webp",
+      "spine_path": "packs/v1/spine_neogeo.webp",
+      "size_px": [
+        408,
+        560
+      ],
+      "front_aspect": 0.7285714285714285,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        408,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1e2228",
+      "brand": "#1e2228",
+      "accent": "#e8bb35",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "225094ed7ee9161ed3356c5c3729a0de497fdb367928b750fab899b624c3ba32",
+      "back_path_sha256": "98f33643330bfd43557e629d61bce00c63c9e2d47a395ac3544bea82afd7f8f8"
+    },
+    {
+      "id": "neogeocd",
+      "platform_keys": [
+        "NeoGeoCD"
+      ],
+      "front_resource": "cov_front_neogeocd",
+      "back_resource": "tpl_back_neogeocd",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_neogeocd.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_neogeocd.webp",
+      "spine_path": "packs/v1/spine_neogeocd.webp",
+      "size_px": [
+        560,
+        493
+      ],
+      "front_aspect": 1.1359026369168357,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10547667342799188,
+        1.0,
+        0.9837728194726166
+      ],
+      "art_window_px": [
+        0,
+        52,
+        560,
+        485
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10547667342799188
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#161b24",
+      "brand": "#161b24",
+      "accent": "#b4a370",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "2020152c6a6453a8d0086fe9070e9ff6627aba98f55db67f77a5dfc2af1970b9",
+      "back_path_sha256": "098536ae4332fea3fccc6e02640785ca437952511e900d2a9cbe601ea2181756"
+    },
+    {
+      "id": "nes",
+      "platform_keys": [
+        "NES"
+      ],
+      "front_resource": "cov_front_nes",
+      "back_resource": "tpl_back_nes",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_nes.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_nes.webp",
+      "spine_path": "packs/v1/spine_nes.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#eeece5",
+      "brand": "#eeece5",
+      "accent": "#c52127",
+      "title_ink": "#242424",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "21350f0767e0e19999855a9d85e5e28fd0b157a9ebf1df29712ba408b12de8eb",
+      "back_path_sha256": "9a2040200ae8c87492b352d843708ee691e130aa0344e0ef3caa62259db3403e"
+    },
+    {
+      "id": "ngpc",
+      "platform_keys": [
+        "NeoGeoPocket",
+        "NeoGeoPocketColor"
+      ],
+      "front_resource": "cov_front_neogeopocket",
+      "back_resource": "tpl_back_neogeopocket",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_neogeopocket.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_neogeopocket.webp",
+      "spine_path": "packs/v1/spine_ngpc.webp",
+      "size_px": [
+        479,
+        560
+      ],
+      "front_aspect": 0.8553571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        479,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#223054",
+      "brand": "#223054",
+      "accent": "#d8373c",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "2adbd6e3cb15ce48a48b1200553bb4ffce1fc5a890d689f56c49b2195e3c7463",
+      "back_path_sha256": "728272e4c8a82ffa6c51cabf33f635ba7b22420e9cdb0351e081c1915f562a76"
+    },
+    {
+      "id": "pc",
+      "platform_keys": [
+        "PC"
+      ],
+      "front_resource": "cov_front_pc",
+      "back_resource": "tpl_back_pc",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_pc.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_pc.webp",
+      "spine_path": "packs/v1/spine_pc.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1b2634",
+      "brand": "#1b2634",
+      "accent": "#7fa6c1",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "8fcc4896d5ad152cb3203f8a8dd44d11b8f0458ee8c0e35b4ff7814065dfb7c7",
+      "back_path_sha256": "899ff1e21ce0a8c1745af3765040c6d8714f8cceb635da47cceebde25a74cb54"
+    },
+    {
+      "id": "pcengine",
+      "platform_keys": [
+        "PCEngine"
+      ],
+      "front_resource": "cov_front_pcengine",
+      "back_resource": "tpl_back_pcengine",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_pcengine.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_pcengine.webp",
+      "spine_path": "packs/v1/spine_pcengine.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        560,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f4ecd9",
+      "brand": "#f4ecd9",
+      "accent": "#bb2229",
+      "title_ink": "#2a2420",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "4d9738d700b18d55d01e4425398ac0ce37152444f74612781ac9aefc61b36591",
+      "back_path_sha256": "7ca0034fa35dea9b56189a5d790f152de19df9dc202d7ee84e9f76dcfc4a4fad"
+    },
+    {
+      "id": "pcenginecd",
+      "platform_keys": [
+        "PCEngineCD"
+      ],
+      "front_resource": "cov_front_pcenginecd",
+      "back_resource": "tpl_back_pcenginecd",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_pcenginecd.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_pcenginecd.webp",
+      "spine_path": "packs/v1/spine_pcenginecd.webp",
+      "size_px": [
+        560,
+        493
+      ],
+      "front_aspect": 1.1359026369168357,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10547667342799188,
+        1.0,
+        0.9837728194726166
+      ],
+      "art_window_px": [
+        0,
+        52,
+        560,
+        485
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10547667342799188
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f5eee0",
+      "brand": "#f5eee0",
+      "accent": "#b72e35",
+      "title_ink": "#27231f",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "28efef084d7d8331b4e3b7c4e04c44203862c6628438d3128cb388c553bb322d",
+      "back_path_sha256": "be43909626459166df0dc7054dae78e7bcdb33b472d91229c128729ad6429074"
+    },
+    {
+      "id": "pico8",
+      "platform_keys": [
+        "PICO8",
+        "Pico8"
+      ],
+      "front_resource": "cov_front_pico8",
+      "back_resource": "tpl_back_pico8",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_pico8.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_pico8.webp",
+      "spine_path": "packs/v1/spine_pico8.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#25223c",
+      "brand": "#f0e6cf",
+      "accent": "#d45069",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "68bf635398f203a11e94abd78125f0220d2bb3ff244fef0f9e5b59e8d06c3857",
+      "back_path_sha256": "e4c33d95ce71e527315e4b8b6c2eae55b4300614113943adc54e32985566f577"
+    },
+    {
+      "id": "pokemini",
+      "platform_keys": [
+        "PokemonMini"
+      ],
+      "front_resource": "cov_front_pokemonmini",
+      "back_resource": "tpl_back_pokemonmini",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_pokemonmini.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_pokemonmini.webp",
+      "spine_path": "packs/v1/spine_pokemini.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        560,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f4d752",
+      "brand": "#f4d752",
+      "accent": "#478f54",
+      "title_ink": "#212b22",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "8129aef900415b311e67d3f88cccd73fd7767f735a5dea260680aa0b3741fd2b",
+      "back_path_sha256": "f2cdeac4df69289769f865bc2d73fa7f13b5875f0aa2f55231b766836b4f7248"
+    },
+    {
+      "id": "ps2",
+      "platform_keys": [
+        "PS2"
+      ],
+      "front_resource": "cov_front_ps2",
+      "back_resource": "tpl_back_ps2",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_ps2.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_ps2.webp",
+      "spine_path": "packs/v1/spine_ps2.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f7f6f2",
+      "brand": "#151719",
+      "accent": "#163d80",
+      "title_ink": "#17191b",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "f7e1e6dcf5789903335ecebb07501a3e0ad777f41c49fa9638830922bc463a60",
+      "back_path_sha256": "421225df4e6584cf1e9adabfec44a7e86fc01292dfcb46b555379002b6b41243"
+    },
+    {
+      "id": "ps3",
+      "platform_keys": [
+        "PS3"
+      ],
+      "front_resource": "cov_front_ps3",
+      "back_resource": "tpl_back_ps3",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_ps3.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_ps3.webp",
+      "spine_path": "packs/v1/spine_ps3.webp",
+      "size_px": [
+        440,
+        559
+      ],
+      "front_aspect": 0.7871198568872988,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10554561717352415,
+        1.0,
+        0.9838998211091234
+      ],
+      "art_window_px": [
+        0,
+        59,
+        440,
+        550
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10554561717352415
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f5f4f0",
+      "brand": "#161719",
+      "accent": "#bf272a",
+      "title_ink": "#17191b",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "59d432d29145828f9784d62bf9f12645684d633f29dd24fb2cb26d097be973ed",
+      "back_path_sha256": "c14bd700e8f2302749cb6ecd38236b098401f2ec92a255ac08b67a75a3b53a0f"
+    },
+    {
+      "id": "ps4",
+      "platform_keys": [
+        "PS4"
+      ],
+      "front_resource": "cov_front_ps4",
+      "back_resource": "tpl_back_ps4",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_ps4.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_ps4.webp",
+      "spine_path": "packs/v1/spine_ps4.webp",
+      "size_px": [
+        440,
+        559
+      ],
+      "front_aspect": 0.7871198568872988,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10554561717352415,
+        1.0,
+        0.9838998211091234
+      ],
+      "art_window_px": [
+        0,
+        59,
+        440,
+        550
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10554561717352415
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f6f7f7",
+      "brand": "#07519b",
+      "accent": "#328ac9",
+      "title_ink": "#151b24",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "ed91317d8a2792a0da1ea547c804d3cc570196c9b7f7f64704aff5b6171102f7",
+      "back_path_sha256": "c1f763a500ac0a78d2424d718e4352e1728c3f45ff5fa6207286d51d6050dd80"
+    },
+    {
+      "id": "psp",
+      "platform_keys": [
+        "PSP"
+      ],
+      "front_resource": "cov_front_psp",
+      "back_resource": "tpl_back_psp",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_psp.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_psp.webp",
+      "spine_path": "packs/v1/spine_psp.webp",
+      "size_px": [
+        327,
+        560
+      ],
+      "front_aspect": 0.5839285714285715,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        327,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f4f3ef",
+      "brand": "#18191b",
+      "accent": "#aeb4b9",
+      "title_ink": "#17191b",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "4b9409839211b80426c39079b7274a5b6476e583579e8cff2f61c8967e6724fb",
+      "back_path_sha256": "0c8db7dfa9226d3d91ffe2cf292ab1a6eef909081da430f37c63bd3101ca8500"
+    },
+    {
+      "id": "psvita",
+      "platform_keys": [
+        "PSVita"
+      ],
+      "front_resource": "cov_front_psvita",
+      "back_resource": "tpl_back_psvita",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_psvita.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_psvita.webp",
+      "spine_path": "packs/v1/spine_psvita.webp",
+      "size_px": [
+        440,
+        560
+      ],
+      "front_aspect": 0.7857142857142857,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        440,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f5f6f4",
+      "brand": "#086db1",
+      "accent": "#37b0d9",
+      "title_ink": "#16202b",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "efcc18d8f71c85859a34d7aac6b38079a31296919bc473e550f73d8adf5ffbab",
+      "back_path_sha256": "92abaf99aa3026303f7398ebbfb32abf46c6406d123e24dbf06cd34bcaa394a3"
+    },
+    {
+      "id": "psx",
+      "platform_keys": [
+        "PS1"
+      ],
+      "front_resource": "cov_front_ps1",
+      "back_resource": "tpl_back_ps1",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_ps1.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_ps1.webp",
+      "spine_path": "packs/v1/spine_psx.webp",
+      "size_px": [
+        430,
+        481
+      ],
+      "front_aspect": 0.893970893970894,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10602910602910603,
+        1.0,
+        0.9833679833679834
+      ],
+      "art_window_px": [
+        0,
+        51,
+        430,
+        473
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10602910602910603
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f5f3ee",
+      "brand": "#151719",
+      "accent": "#c7352c",
+      "title_ink": "#17191b",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "52225a5d7c11be9973e0a2ebfd9247686aa738f42bbbe06fb1f4fcb6dd3b4ec4",
+      "back_path_sha256": "789d88164e4ebdbb4cbf645cd314d2050bfae256f0c320422ffe7aab1058e1f0"
+    },
+    {
+      "id": "saturn",
+      "platform_keys": [
+        "Saturn"
+      ],
+      "front_resource": "cov_front_saturn",
+      "back_resource": "tpl_back_saturn",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_saturn.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_saturn.webp",
+      "spine_path": "packs/v1/spine_saturn.webp",
+      "size_px": [
+        363,
+        560
+      ],
+      "front_aspect": 0.6482142857142857,
+      "layout": "left",
+      "art_window": [
+        0.15977961432506887,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        58,
+        0,
+        363,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f4f1e9",
+      "brand": "#1c2637",
+      "accent": "#4276b7",
+      "title_ink": "#20222a",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "1ea27bfa375d52ac59adcd973c6b39bd03abac146555e1b89d752338ce47d891",
+      "back_path_sha256": "5e223239045fe76ac10c19280f6a29f932ee5e4ff636de0ecb87029a50574f5d"
+    },
+    {
+      "id": "scummvm",
+      "platform_keys": [
+        "ScummVM"
+      ],
+      "front_resource": "cov_front_scummvm",
+      "back_resource": "tpl_back_scummvm",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_scummvm.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_scummvm.webp",
+      "spine_path": "packs/v1/spine_scummvm.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#eae4cb",
+      "brand": "#22252b",
+      "accent": "#78ae35",
+      "title_ink": "#273029",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "0d4cb41a8c2dd5122af6b2e042b6a266feaf3438dc921d2c6c145aa19b7e70d6",
+      "back_path_sha256": "c4159826546028fb015832cfbdd4a873bbfa7e7aaa7edf288a802c1e7b77db03"
+    },
+    {
+      "id": "sega32x",
+      "platform_keys": [
+        "32X"
+      ],
+      "front_resource": "cov_front_32x",
+      "back_resource": "tpl_back_32x",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_32x.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_32x.webp",
+      "spine_path": "packs/v1/spine_sega32x.webp",
+      "size_px": [
+        399,
+        560
+      ],
+      "front_aspect": 0.7125,
+      "layout": "left",
+      "art_window": [
+        0.16040100250626566,
+        0.0,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        64,
+        0,
+        399,
+        551
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f6f2e4",
+      "brand": "#f6f2e4",
+      "accent": "#d3a120",
+      "title_ink": "#191a1e",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "95f654fd65c66b5e5cfbd605b5a14445b2b779df3c446c5f910537832a4c5ade",
+      "back_path_sha256": "b517ab6f0272eccb2ec302e1aa043bfccc8f0f9eb79d0f06b24c8376c0d6b9f5"
+    },
+    {
+      "id": "sfc",
+      "platform_keys": [
+        "SFC"
+      ],
+      "front_resource": "cov_front_sfc",
+      "back_resource": "tpl_back_sfc",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_sfc.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_sfc.webp",
+      "spine_path": "packs/v1/spine_sfc.webp",
+      "size_px": [
+        560,
+        409
+      ],
+      "front_aspect": 1.36919315403423,
+      "layout": "right",
+      "art_window": [
+        0.0,
+        0.0,
+        0.8196428571428571,
+        0.9828850855745721
+      ],
+      "art_window_px": [
+        0,
+        0,
+        459,
+        402
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#e8e8e0",
+      "brand": "#e8e8e0",
+      "accent": "#427a4a",
+      "title_ink": "#22262a",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "c271e1abf5e9b04c3e811b5375b53007addf5c61a4b7135d5348317878beef82",
+      "back_path_sha256": "9afdd810a5767e979ed773f201c68a9e24738f7387856980de4da639aaefb6fd"
+    },
+    {
+      "id": "snes",
+      "platform_keys": [
+        "SNES"
+      ],
+      "front_resource": "cov_front_snes",
+      "back_resource": "tpl_back_snes",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_snes.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_snes.webp",
+      "spine_path": "packs/v1/spine_snes.webp",
+      "size_px": [
+        560,
+        409
+      ],
+      "front_aspect": 1.36919315403423,
+      "layout": "right",
+      "art_window": [
+        0.0,
+        0.0,
+        0.8196428571428571,
+        0.9828850855745721
+      ],
+      "art_window_px": [
+        0,
+        0,
+        459,
+        402
+      ],
+      "front_header": null,
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#e7e6e1",
+      "brand": "#e7e6e1",
+      "accent": "#b6202c",
+      "title_ink": "#24242a",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "993a54949970b5c56eb8205e836adb0b0b952d0253d1e06cb0dd6a03cf2402a9",
+      "back_path_sha256": "0376e5fee49e3a30e9634dfdf709f06a4629090fe9daebffb2a27f78ff1b0d67"
+    },
+    {
+      "id": "switch",
+      "platform_keys": [
+        "Switch"
+      ],
+      "front_resource": "cov_front_switch",
+      "back_resource": "tpl_back_switch",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_switch.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_switch.webp",
+      "spine_path": "packs/v1/spine_switch.webp",
+      "size_px": [
+        347,
+        560
+      ],
+      "front_aspect": 0.6196428571428572,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        347,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#e51d2a",
+      "brand": "#e51d2a",
+      "accent": "#ffffff",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "4aadb4605c8d332b66c0de85f7ef44def5af7938211cbca2b514b2edc1b335ff",
+      "back_path_sha256": "c53b82163bf0222e378a2a5b8d3b5680d7daf0c27658bb82f8f077d00a66a8af"
+    },
+    {
+      "id": "tg16",
+      "platform_keys": [
+        "TG16"
+      ],
+      "front_resource": "cov_front_tg16",
+      "back_resource": "tpl_back_tg16",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_tg16.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_tg16.webp",
+      "spine_path": "packs/v1/spine_tg16.webp",
+      "size_px": [
+        560,
+        560
+      ],
+      "front_aspect": 1.0,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        560,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#222326",
+      "brand": "#222326",
+      "accent": "#e29335",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "96ae88b35136d64917b7f8279344e015eff7d8b8740651de49449962007cfbd4",
+      "back_path_sha256": "72b258ae0e4da4fb2c7fd939d5604039c789e20841c1bbb1f15d9a219741e40b"
+    },
+    {
+      "id": "tg_cd",
+      "platform_keys": [
+        "TGCD"
+      ],
+      "front_resource": "cov_front_tg_cd",
+      "back_resource": "tpl_back_tg_cd",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_tg_cd.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_tg_cd.webp",
+      "spine_path": "packs/v1/spine_tg_cd.webp",
+      "size_px": [
+        560,
+        493
+      ],
+      "front_aspect": 1.1359026369168357,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10547667342799188,
+        1.0,
+        0.9837728194726166
+      ],
+      "art_window_px": [
+        0,
+        52,
+        560,
+        485
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10547667342799188
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#f2ecdc",
+      "brand": "#222326",
+      "accent": "#e29335",
+      "title_ink": "#24262a",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "0b9828b6920f69dd856c68cdb633cca64a49177b39fe86a40477ed74b241e62b",
+      "back_path_sha256": "421b7c63d231ba1f27b4623f9c629d61fefac9c0f0483791d0ce1f878bf3b241"
+    },
+    {
+      "id": "vectrex",
+      "platform_keys": [
+        "Vectrex"
+      ],
+      "front_resource": "cov_front_vectrex",
+      "back_resource": "tpl_back_vectrex",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_vectrex.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_vectrex.webp",
+      "spine_path": "packs/v1/spine_vectrex.webp",
+      "size_px": [
+        408,
+        560
+      ],
+      "front_aspect": 0.7285714285714285,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        408,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#111c2b",
+      "brand": "#111c2b",
+      "accent": "#1388c6",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "98483eda21b37a5a59189ee54204126c9aae59118cbc247d9c0bd94756dfc242",
+      "back_path_sha256": "4e60205635c16f707b01bb69bcb0db67c4bf108f3fc9d31f0ed028c2a8c5ed18"
+    },
+    {
+      "id": "virtualboy",
+      "platform_keys": [
+        "VirtualBoy"
+      ],
+      "front_resource": "cov_front_virtualboy",
+      "back_resource": "tpl_back_virtualboy",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_virtualboy.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_virtualboy.webp",
+      "spine_path": "packs/v1/spine_virtualboy.webp",
+      "size_px": [
+        513,
+        458
+      ],
+      "front_aspect": 1.1200873362445414,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10480349344978165,
+        1.0,
+        0.9847161572052402
+      ],
+      "art_window_px": [
+        0,
+        48,
+        513,
+        451
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10480349344978165
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1a191b",
+      "brand": "#1a191b",
+      "accent": "#d0282c",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "316fd632046a43e1585b8e21baf3ea16ef28b8307be922227fa64c6bd9fb421d",
+      "back_path_sha256": "0481526141a533206ffbb86797f036701eb4dd4cb3fc2b8ae6e6876f3b84e4fa"
+    },
+    {
+      "id": "wii",
+      "platform_keys": [
+        "Wii"
+      ],
+      "front_resource": "cov_front_wii",
+      "back_resource": "tpl_back_wii",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_wii.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_wii.webp",
+      "spine_path": "packs/v1/spine_wii.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf9f6",
+      "brand": "#faf9f6",
+      "accent": "#bec6c8",
+      "title_ink": "#202529",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "1a166d318c3a26ac4e8789c9f4fd52255e6a59bb04c281a1e500666b1e7f2115",
+      "back_path_sha256": "411d63046e1572bb8d18a2c2e3597f4b82ad4c3e2ac6f5250a1fe954a1fd3238"
+    },
+    {
+      "id": "wiiu",
+      "platform_keys": [
+        "WiiU"
+      ],
+      "front_resource": "cov_front_wiiu",
+      "back_resource": "tpl_back_wiiu",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_wiiu.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_wiiu.webp",
+      "spine_path": "packs/v1/spine_wiiu.webp",
+      "size_px": [
+        400,
+        560
+      ],
+      "front_aspect": 0.7142857142857143,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf9f6",
+      "brand": "#f7f8f5",
+      "accent": "#009fc3",
+      "title_ink": "#1c252b",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "5c4f834856f82990ddc25867f7c987dce22098f9559ebf8ae1495b4e8594be1a",
+      "back_path_sha256": "bcc56aa04546dce64220cb436087357613b5f5801db0cdb8ebc1140af3cfa100"
+    },
+    {
+      "id": "wonderswancolor",
+      "platform_keys": [
+        "WonderSwan",
+        "WonderSwanColor"
+      ],
+      "front_resource": "cov_front_wonderswan",
+      "back_resource": "tpl_back_wonderswan",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_wonderswan.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_wonderswan.webp",
+      "spine_path": "packs/v1/spine_wonderswancolor.webp",
+      "size_px": [
+        409,
+        560
+      ],
+      "front_aspect": 0.7303571428571428,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10535714285714286,
+        1.0,
+        0.9839285714285714
+      ],
+      "art_window_px": [
+        0,
+        59,
+        409,
+        551
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10535714285714286
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#19243c",
+      "brand": "#19243c",
+      "accent": "#bd3845",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "4e61527e11eafb28814d71ae152d81b09a39d44c836da8cdd97981780ddd52f8",
+      "back_path_sha256": "32444ce0fafba6981fb294346b74990491ebbeabafc749f965dec8daed5e9ba2"
+    },
+    {
+      "id": "xbox",
+      "platform_keys": [
+        "Xbox"
+      ],
+      "front_resource": "cov_front_xbox",
+      "back_resource": "tpl_back_xbox",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_xbox.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_xbox.webp",
+      "spine_path": "packs/v1/spine_xbox.webp",
+      "size_px": [
+        400,
+        563
+      ],
+      "front_aspect": 0.7104795737122558,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10479573712255773,
+        1.0,
+        0.9840142095914742
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        554
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10479573712255773
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1b241b",
+      "brand": "#172017",
+      "accent": "#85b42c",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "86e3aa27c40bc2b27c0ccd23bc3fc4c0c831bde17da2cbf45c5e206aadb61643",
+      "back_path_sha256": "8efc472986958b2ab6650b9fcb8157e1d974e20dfba6286e8cb44657c22a660e"
+    },
+    {
+      "id": "xbox360",
+      "platform_keys": [
+        "Xbox360"
+      ],
+      "front_resource": "cov_front_xbox360",
+      "back_resource": "tpl_back_xbox360",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_xbox360.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_xbox360.webp",
+      "spine_path": "packs/v1/spine_xbox360.webp",
+      "size_px": [
+        400,
+        563
+      ],
+      "front_aspect": 0.7104795737122558,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.10479573712255773,
+        1.0,
+        0.9840142095914742
+      ],
+      "art_window_px": [
+        0,
+        59,
+        400,
+        554
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.10479573712255773
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": true,
+      "body": "#faf9f2",
+      "brand": "#faf9f2",
+      "accent": "#83ac28",
+      "title_ink": "#1f281b",
+      "existing_front_replacement": false,
+      "geometry_note": "New companion texture canvas; physical size must come from CaseCatalog or the current user setting, never inferred from this bitmap.",
+      "front_path_sha256": "154b4cbdb9379005210ac001f4b0bc67f7d8dd6f820065f3e4104fc403600d00",
+      "back_path_sha256": "1622df3cdcab75c34edf63ee161e88f80a91ca531761c007c8f4352031663fbd"
+    },
+    {
+      "id": "android",
+      "platform_keys": [
+        "Android",
+        "App"
+      ],
+      "front_resource": "cov_front_android",
+      "back_resource": "tpl_back_android",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_android.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_android.webp",
+      "spine_path": "app/src/main/res/drawable-nodpi/cov_spine_android.webp",
+      "size_px": [
+        604,
+        803
+      ],
+      "front_aspect": 0.7521793275217933,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.11581569115815692,
+        1.0,
+        0.9838107098381071
+      ],
+      "art_window_px": [
+        0,
+        93,
+        604,
+        790
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.11581569115815692
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#202824",
+      "brand": "#16241c",
+      "accent": "#3ddc84",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "08d32a817e44f40417a84031430add723390fa25c2e030d7d8771744af91262a",
+      "back_path_sha256": "753fbee395bf277d5e75a5f9f5b045af0d27fcd3d6a7dc5f597b0cd3a426ce18"
+    },
+    {
+      "id": "steam",
+      "platform_keys": [
+        "Steam"
+      ],
+      "front_resource": "cov_front_steam",
+      "back_resource": "tpl_back_steam",
+      "front_path": "app/src/main/res/drawable-nodpi/cov_front_steam.webp",
+      "back_path": "app/src/main/res/drawable-nodpi/tpl_back_steam.webp",
+      "spine_path": "app/src/main/res/drawable-nodpi/cov_spine_steam.webp",
+      "size_px": [
+        604,
+        803
+      ],
+      "front_aspect": 0.7521793275217933,
+      "layout": "top",
+      "art_window": [
+        0.0,
+        0.11581569115815692,
+        1.0,
+        0.9838107098381071
+      ],
+      "art_window_px": [
+        0,
+        93,
+        604,
+        790
+      ],
+      "front_header": [
+        0,
+        0,
+        1,
+        0.11581569115815692
+      ],
+      "back_band": [
+        0.06,
+        0.125,
+        0.94,
+        0.91
+      ],
+      "back_screenshot_windows": [],
+      "back_over_art": false,
+      "back_dark_ink": false,
+      "body": "#1b2838",
+      "brand": "#152335",
+      "accent": "#66c0f4",
+      "title_ink": "#ffffff",
+      "existing_front_replacement": true,
+      "geometry_note": "Existing front texture canvas preserved; physical model dimensions are unchanged.",
+      "front_path_sha256": "5bc44b809881fa73956899a95b7cb8a2e4d86a66557eb6fed10fba16b55d0346",
+      "back_path_sha256": "7c6e36acd0f82c456ba6e882f16954dabc566e9b12e129503ddfdaa2c77abfee"
+    }
+  ]
+}

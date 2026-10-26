@@ -67,35 +67,36 @@ internal object PrintedBacks {
         val c = Canvas(out)
         val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
         // The game's art behind it, soft and dark (a picture made small and drawn big again), so the print reads.
+        // (Update 331: not behind the matching case pack's opaque backs — nothing of it would show.)
         c.drawColor(0xFF1E2028.toInt())
-        if (art != null) {
+        if (art != null && tpl.overArt) {
             val small = runCatching { centreCrop(art, 0.12f * w, 0.12f * h) }.getOrNull()
             if (small != null) c.drawBitmap(small, null, RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
             c.drawColor(0x8C000000.toInt())
         }
-        // The console's back cover, stretched to the case's shape (its barcode and seals are kept whole).
-        if (tpl != null) {
-            val o = android.graphics.BitmapFactory.Options().apply { inScaled = false }
-            runCatching { android.graphics.BitmapFactory.decodeResource(context.resources, tpl.res, o) }.getOrNull()?.let { b ->
-                c.drawBitmap(b, null, RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
-            }
-        }
+        // The console's back cover in the case's shape. (Update 331: never stretched as a whole — its header and foot keep
+        // their proportions at the back's width and only the plain band between them takes up the difference, so a logo
+        // is never squashed on a PS1 jewel case's wider back or a Japanese case's taller one. [mapY]: a height on the
+        // template → on this back.)
+        val o = android.graphics.BitmapFactory.Options().apply { inScaled = false }
+        val base = runCatching { android.graphics.BitmapFactory.decodeResource(context.resources, tpl.res, o) }.getOrNull()
+        val mapY: (Float) -> Float = if (base != null) drawSliced(c, base, w, h, tpl.band, p) else { y -> y }
         // Its screenshot windows filled.
         var next = 0
-        tpl?.wins?.forEach { r ->
+        tpl.wins.forEach { r ->
             val shot = shots.getOrNull(next) ?: art ?: return@forEach
             next++
-            val dst = RectF(r[0] * w, r[1] * h, r[2] * w, r[3] * h)
+            val dst = RectF(r[0] * w, mapY(r[1]) * h, r[2] * w, mapY(r[3]) * h)
             c.drawBitmap(centreCrop(shot, dst.width(), dst.height()), null, dst, p)
         }
         // The plain band: a row of two screenshots (when there were no windows) and the description under them.
-        val band = tpl?.band ?: if (tpl == null) floatArrayOf(0.07f, 0.06f, 0.93f, 0.94f) else null
+        val band = tpl.band?.let { b -> floatArrayOf(b[0], mapY(b[1]), b[2], mapY(b[3])) }
         if (band != null) {
             val bx0 = band[0] * w; val bx1 = band[2] * w; val by1 = band[3] * h
             var y = band[1] * h + 0.02f * h
-            val overArt = tpl?.overArt ?: true
+            val overArt = tpl.overArt
             val rest = shots.drop(next)
-            if (tpl?.wins.isNullOrEmpty() && rest.isNotEmpty()) {
+            if (tpl.wins.isEmpty() && rest.isNotEmpty()) {
                 val gap = 0.03f * w
                 val bw = bx1 - bx0; val bh = by1 - y
                 var sw = (bw - gap) / 2f; var sh = sw * 0.75f
@@ -115,7 +116,7 @@ internal object PrintedBacks {
             if (text != null && by1 - y > 0.06f * h) {
                 val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                     textSize = 0.032f * w
-                    color = if (tpl?.darkInk == true) 0xFF1A1A1A.toInt() else Color.WHITE
+                    color = if (tpl.darkInk) 0xFF1A1A1A.toInt() else Color.WHITE
                 }
                 val pad = 0.02f * w
                 val tw = (bx1 - bx0 - 2 * pad).toInt().coerceAtLeast(10)
@@ -134,6 +135,38 @@ internal object PrintedBacks {
         }
         cache.put(spec, out)
         return out
+    }
+
+    /**
+     * Update 331: [b] (a back base) drawn [w] × [h] in three parts down its height — above [band], the band, below it —
+     * the outer two at [b]'s own proportions for the width, the band taking what's left (it's plain). Very wide backs
+     * squeeze the outer two a little too, keeping the band at least a quarter of the height. Returns where a height on
+     * [b] (a share) lands on the back (a share).
+     */
+    private fun drawSliced(c: Canvas, b: Bitmap, w: Int, h: Int, band: FloatArray?, p: Paint): (Float) -> Float {
+        val t0 = (band?.get(1) ?: MediaBacks.HEADER).coerceIn(0f, 0.9f)
+        val t1 = (band?.get(3) ?: MediaBacks.FOOT).coerceIn(t0 + 0.05f, 1f)
+        val s = w / b.width.toFloat()
+        var top = t0 * b.height * s
+        var bot = (1f - t1) * b.height * s
+        if (top + bot > h * 0.75f) { val k = h * 0.75f / (top + bot); top *= k; bot *= k }
+        val ih = b.height
+        fun part(a: Float, z: Float, y0: Float, y1: Float) {
+            if (z - a <= 0f || y1 - y0 <= 0f) return
+            val ra = (a * ih).toInt(); val rz = (z * ih).toInt().coerceAtLeast(ra + 1).coerceAtMost(ih)
+            c.drawBitmap(b, Rect(0, ra, b.width, rz), RectF(0f, y0, w.toFloat(), y1), p)
+        }
+        part(0f, t0, 0f, top)
+        part(t0, t1, top, h - bot)
+        part(t1, 1f, h - bot, h.toFloat())
+        val hh = h.toFloat()
+        return { y ->
+            when {
+                y <= t0 -> (if (t0 > 0f) y / t0 * top else 0f) / hh
+                y >= t1 -> (hh - bot + (if (t1 < 1f) (y - t1) / (1f - t1) * bot else 0f)) / hh
+                else -> (top + (y - t0) / (t1 - t0) * (hh - top - bot)) / hh
+            }
+        }
     }
 
     /** [b] cut in the middle to the shape [w] × [h] (not stretched). */

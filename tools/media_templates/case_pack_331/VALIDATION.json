@@ -1,0 +1,27 @@
+{
+  "sets": 62,
+  "webp_decoded": 186,
+  "png_decoded": 186,
+  "svg_parsed": 124,
+  "platform_aliases": 67,
+  "duplicate_aliases": 0,
+  "unmapped_templates": [],
+  "existing_front_canvases": 41,
+  "passed": [
+    "Final ZIP CRC",
+    "all final ZIP images decode",
+    "all 186 texture hashes",
+    "transparent art windows",
+    "normalized bounds",
+    "matching platform aliases",
+    "Kotlin entry counts"
+  ],
+  "repaired": [
+    "Empty MAME WebP regenerated from PNG master"
+  ],
+  "not_run": [
+    "Android build",
+    "runtime integration",
+    "on-device flat and 3D fitting"
+  ]
+}

@@ -234,6 +234,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private var lastLaunchAt = 0L
 
     /** The intro plays once per process and never on the way back from a game. */
+    private var startupTaken = false
+
+    /**
+     * Update 332: "Who's playing?" (Settings › Start-up) only on a fresh start — Voltcap started, or the device started —
+     * once per run; never coming back from a game (Voltcap restarted while a game it started ran, or after it).
+     */
+    fun takeStartupSlot(): Boolean {
+        val first = !startupTaken
+        startupTaken = true
+        if (!first || restoreCtx != null || !com.shelf.launcher.LaunchInfo.shouldPlayIntro()) return false
+        // (A game Voltcap started is still open — Voltcap was restarted while it ran: not a fresh start.)
+        return !com.shelf.launcher.data.PlaySession.isOpen(getApplication())
+    }
+
     fun takeIntroSlot(): Boolean {
         val first = !introTaken
         introTaken = true
@@ -558,6 +572,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             libraryApps = libraryAppsStore.load(),
             categories = categoryStore.load(),
             favorites = favoritesStore.loadAll(),
+            profileId = com.shelf.launcher.data.Profiles.run { ensure(application); activeId.value },
             categorySort = categorySortStore.loadAll(),
             artOverrides = artOverridesStore.loadAll(),
             heroUpscale = heroUpscaleStore.loadAll(),
@@ -1789,7 +1804,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // do nothing at all here: keep the second-screen gate and companion/overlay as they are,
         // keep the session and its save watcher, and above all don't start the Drive watcher (it
         // would pull saves while the emulator loads them) or flip the foreground flags.
-        val playPrefs = getApplication<Application>().getSharedPreferences("playtime", android.content.Context.MODE_PRIVATE)
+        val playPrefs = getApplication<Application>().let { a -> a.getSharedPreferences(com.shelf.launcher.data.Profiles.run { ensure(a); fileFor("playtime") }, android.content.Context.MODE_PRIVATE) }
         val openKey = playPrefs.getString("open_game", null)
         if (openKey != null && System.currentTimeMillis() - playPrefs.getLong("open_since", 0L) < 3_000L) return
         // Back in Voltcap: the second-screen home may show again, and apps
@@ -4527,6 +4542,41 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun raAccountNames(): List<String?> = raCredentialsStore.usernames()
     fun raActiveSlot(): Int = raCredentialsStore.activeSlot()
 
+    /** Update 332: the playing profile's RetroAchievements account is the one in [slot]. */
+    private fun bindRaToProfile(slot: Int) {
+        val app = getApplication<Application>()
+        val p = com.shelf.launcher.data.Profiles.active() ?: return
+        if (p.raSlot != slot) {
+            // (Another profile that had this slot no longer has it — one account, one profile.)
+            com.shelf.launcher.data.Profiles.list.value.filter { it.id != p.id && it.raSlot == slot }
+                .forEach { com.shelf.launcher.data.Profiles.update(app, it.copy(raSlot = null, picture = if (it.picture == com.shelf.launcher.data.Profiles.Picture.RA) com.shelf.launcher.data.Profiles.Picture.INITIAL else it.picture)) }
+            com.shelf.launcher.data.Profiles.update(app, p.copy(raSlot = slot, picture = if (p.picture == com.shelf.launcher.data.Profiles.Picture.INITIAL) com.shelf.launcher.data.Profiles.Picture.RA else p.picture))
+        }
+    }
+
+    /**
+     * Update 332: profile [id] is playing now — its favorites, last played and play time, and its RetroAchievements
+     * account (or none). The library, settings and saves stay as they are.
+     */
+    fun switchProfile(id: Int) {
+        val app = getApplication<Application>()
+        val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
+        val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
+        if (slot != null) switchRaAccount(slot)
+        else if (raCredentialsStore.activeSlot() != -1) {
+            raCredentialsStore.setActive(-1)
+            clearRaState()
+        }
+        _uiState.update {
+            it.copy(
+                favorites = favoritesStore.loadAll(),
+                playtime = playtimeStore.loadTotals(),
+                profileId = id
+            )
+        }
+        recombineGames()
+    }
+
     /** "Who is playing": the account in [slot] takes over; its achievements replace the other's. */
     fun switchRaAccount(slot: Int) {
         if (raCredentialsStore.loadSlot(slot) == null) return
@@ -4549,6 +4599,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             raCredentialsStore.saveSlot(slot, RaCredentials(username, apiKey))
             raCredentialsStore.setActive(slot)
+            bindRaToProfile(slot)
             clearRaState()
             _uiState.update { it.copy(statusMessage = "$username added.") }
             reconnectActiveRa()
@@ -4599,7 +4650,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val profile = profileResult.okValue
 
         if (persistOnSuccess) {
-            raCredentialsStore.save(creds)
+            // (Update 332: the account becomes the playing profile's own.)
+            val app = getApplication<Application>()
+            val slot = raCredentialsStore.save(creds, com.shelf.launcher.data.Profiles.raSlotsTaken(app))
+            bindRaToProfile(slot)
             syncRaAccounts()
         }
         _uiState.update { it.copy(raProfile = profile ?: it.raProfile) }

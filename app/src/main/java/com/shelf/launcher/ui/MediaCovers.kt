@@ -10,6 +10,12 @@ import com.shelf.launcher.R
  * Update 125 (by hand): the pack's spine pictures are gone at your request (spineRes null; the spine's shape stays, it
  * sizes the shelf slots). Steam keeps its spine; Android games get Voltcap's own case (front band and spine). Your own
  * console spines go in CustomSpines (CoverCases.kt).
+ *
+ * Update 331 (the matching case pack, VoltCap_All_62_Matching_Cases_and_Spines, case_manifest.json): all 62 fronts are
+ * the pack's transparent frames — a plain branded header (or a stripe down the left / right) round a large art window —
+ * and the windows below are its art_window. The spine pictures and shapes are unchanged (the pack's spines were left
+ * out at your request). [CoverTpl.scanWin] keeps each old window where it differed: it is where a box scan's own printed
+ * banner is cut off (CartShells' labels and stickers), which the new frames' windows no longer describe.
  */
 
 /**
@@ -18,8 +24,13 @@ import com.shelf.launcher.R
  */
 internal class CoverTpl(
     val frontRes: Int, val frontAspect: Float, val win: FloatArray,
-    val spineRes: Int?, val spineAspect: Float
-)
+    val spineRes: Int?, val spineAspect: Float,
+    /** Update 331: a box scan's printed banner is cut off by this window (null: [win]). */
+    val scanWin: FloatArray? = null
+) {
+    /** Update 331: the window a box-front scan is cut to, to lose its own printed console banner. */
+    val scanCut: FloatArray get() = scanWin ?: win
+}
 
 /** Update 169: one of Voltcap's own cases (Steam, Android), not a console's. */
 internal fun CoverTpl.isOwn(): Boolean = frontRes == R.drawable.cov_front_steam || frontRes == R.drawable.cov_front_android
@@ -52,54 +63,77 @@ internal object MediaCovers {
      * with the Steam band across the top of the front (the game's art under it) and the Steam logo on its spine.
      */
     private val byHand: Map<String, CoverTpl> = mapOf(
-        "Steam" to CoverTpl(R.drawable.cov_front_steam, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f), R.drawable.cov_spine_steam, 0.0872f),
         // Update 125: Android games (and apps) in Voltcap's own case — a PlayStation 4-sized case like Steam's, an
-        // original green "ANDROID" band across the top of the front and down the spine (res cov_front_android, cov_spine_android).
-        "App" to CoverTpl(R.drawable.cov_front_android, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f), R.drawable.cov_spine_android, 0.0872f),
-        "Android" to CoverTpl(R.drawable.cov_front_android, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f), R.drawable.cov_spine_android, 0.0872f)
+        // original green "ANDROID" band across the top of the front (res cov_front_android, cov_spine_android).
+        "Android" to CoverTpl(R.drawable.cov_front_android, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 0.9838f), R.drawable.cov_spine_android, 0.0872f, scanWin = floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f)),
+        "App" to CoverTpl(R.drawable.cov_front_android, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 0.9838f), R.drawable.cov_spine_android, 0.0872f, scanWin = floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f)),
+        "Steam" to CoverTpl(R.drawable.cov_front_steam, 0.7522f, floatArrayOf(0.0f, 0.1158f, 1.0f, 0.9838f), R.drawable.cov_spine_steam, 0.0872f, scanWin = floatArrayOf(0.0f, 0.1158f, 1.0f, 1.0f))
     )
 
     private val all: Map<String, CoverTpl> = mapOf(
-        "NES" to CoverTpl(R.drawable.cov_front_nes, 0.7309f, floatArrayOf(0.1026f, 0.0721f, 0.9014f, 0.5691f), null, 0.1426f),
-        "SNES" to CoverTpl(R.drawable.cov_front_snes, 1.3682f, floatArrayOf(0.0f, 0.0483f, 0.8235f, 0.837f), null, 7.0103f),
-        "N64" to CoverTpl(R.drawable.cov_front_n64, 1.3682f, floatArrayOf(0.0f, 0.0f, 0.8118f, 1.0f), null, 0.1412f),
-        "GB" to CoverTpl(R.drawable.cov_front_gb, 1.0f, floatArrayOf(0.2086f, 0.0f, 1.0f, 1.0f), null, 7.1429f),
-        "GBC" to CoverTpl(R.drawable.cov_front_gbc, 1.0f, floatArrayOf(0.2086f, 0.0f, 1.0f, 1.0f), null, 0.1414f),
-        "GBA" to CoverTpl(R.drawable.cov_front_gba, 1.0f, floatArrayOf(0.22f, 0.0f, 1.0f, 1.0f), null, 0.1257f),
-        "VirtualBoy" to CoverTpl(R.drawable.cov_front_virtualboy, 1.1201f, floatArrayOf(0.0f, 0.0611f, 1.0f, 0.7511f), null, 0.1419f),
-        "NDS" to CoverTpl(R.drawable.cov_front_nds, 1.1223f, floatArrayOf(0.1401f, 0.0f, 1.0f, 1.0f), null, 0.1397f),
-        "3DS" to CoverTpl(R.drawable.cov_front_3ds, 1.1223f, floatArrayOf(0.0f, 0.0f, 0.893f, 1.0f), null, 0.1376f),
-        "Switch" to CoverTpl(R.drawable.cov_front_switch, 0.6191f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0632f),
-        "PokemonMini" to CoverTpl(R.drawable.cov_front_pokemonmini, 1.0f, floatArrayOf(0.0f, 0.1686f, 1.0f, 1.0f), null, 0.14f),
-        "GameCube" to CoverTpl(R.drawable.cov_front_gamecube, 0.7147f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0779f),
-        "Wii" to CoverTpl(R.drawable.cov_front_wii, 0.7147f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0809f),
-        "WiiU" to CoverTpl(R.drawable.cov_front_wiiu, 0.7147f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0882f),
-        "Genesis" to CoverTpl(R.drawable.cov_front_genesis, 0.7118f, floatArrayOf(0.2045f, 0.0f, 1.0f, 0.8632f), null, 0.1412f),
-        "MasterSystem" to CoverTpl(R.drawable.cov_front_mastersystem, 0.7118f, floatArrayOf(0.0888f, 0.2f, 0.9132f, 0.8809f), null, 0.1397f),
-        "GameGear" to CoverTpl(R.drawable.cov_front_gamegear, 0.7294f, floatArrayOf(0.1835f, 0.0f, 1.0f, 0.9015f), null, 0.1426f),
-        "32X" to CoverTpl(R.drawable.cov_front_32x, 0.7118f, floatArrayOf(0.1963f, 0.0f, 1.0f, 1.0f), null, 0.1412f),
-        "SegaCD" to CoverTpl(R.drawable.cov_front_segacd, 0.7074f, floatArrayOf(0.1684f, 0.0f, 1.0f, 0.9191f), null, 0.0985f),
-        "Saturn" to CoverTpl(R.drawable.cov_front_saturn, 0.6485f, floatArrayOf(0.1882f, 0.0f, 1.0f, 1.0f), null, 0.0544f),
-        "Dreamcast" to CoverTpl(R.drawable.cov_front_dreamcast, 1.0f, floatArrayOf(0.1279f, 0.0f, 1.0f, 1.0f), null, 0.0574f),
-        // (Update 129, by hand: the jewel case's ridged hinge at the left cut off the picture; the black band stays.)
-        // (Update 141, by hand: without the black PlayStation band down the left — it's the case's side, not its front.)
-        "PS1" to CoverTpl(R.drawable.cov_front_ps1, 0.894f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0956f),
-        "PS2" to CoverTpl(R.drawable.cov_front_ps2, 0.7147f, floatArrayOf(0.0f, 0.1059f, 1.0f, 1.0f), null, 0.0809f),
-        "PSP" to CoverTpl(R.drawable.cov_front_psp, 0.5838f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0868f),
-        "PSVita" to CoverTpl(R.drawable.cov_front_psvita, 0.7853f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0809f),
-        "Atari2600" to CoverTpl(R.drawable.cov_front_atari2600, 0.7309f, floatArrayOf(0.0604f, 0.4662f, 0.9396f, 0.9412f), null, 0.1397f),
-        "Atari7800" to CoverTpl(R.drawable.cov_front_atari7800, 0.7309f, floatArrayOf(0.0865f, 0.2471f, 0.9135f, 0.8721f), null, 0.1397f),
-        "Jaguar" to CoverTpl(R.drawable.cov_front_jaguar, 0.7294f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.1441f),
-        "Lynx" to CoverTpl(R.drawable.cov_front_lynx, 0.8147f, floatArrayOf(0.056f, 0.0353f, 0.9404f, 0.8529f), null, 0.1588f),
-        "3DO" to CoverTpl(R.drawable.cov_front_3do, 0.5286f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0986f),
-        "ColecoVision" to CoverTpl(R.drawable.cov_front_colecovision, 0.7324f, floatArrayOf(0.0602f, 0.1338f, 0.9438f, 0.7059f), null, 0.1397f),
-        "Intellivision" to CoverTpl(R.drawable.cov_front_intellivision, 0.7309f, floatArrayOf(0.0865f, 0.2779f, 0.9135f, 0.8559f), null, 0.1426f),
-        "NeoGeo" to CoverTpl(R.drawable.cov_front_neogeo, 0.7294f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.1441f),
-        "NeoGeoPocket" to CoverTpl(R.drawable.cov_front_neogeopocket, 0.8557f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.2014f),
-        "PCEngine" to CoverTpl(R.drawable.cov_front_pcengine, 1.0f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0544f),
-        "Vectrex" to CoverTpl(R.drawable.cov_front_vectrex, 0.7294f, floatArrayOf(0.248f, 0.3971f, 0.75f, 0.9029f), null, 0.1441f),
-        "WonderSwan" to CoverTpl(R.drawable.cov_front_wonderswan, 0.7309f, floatArrayOf(0.0f, 0.1412f, 1.0f, 1.0f), null, 0.1426f),
-        "C64" to CoverTpl(R.drawable.cov_front_c64, 0.7103f, floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f), null, 0.0912f),
-        "PICO8" to CoverTpl(R.drawable.cov_front_pico8, 0.7309f, floatArrayOf(0.0865f, 0.2779f, 0.9135f, 0.8559f), null, 0.1456f),
+        "3DO" to CoverTpl(R.drawable.cov_front_3do, 0.5286f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0986f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "Amiga" to CoverTpl(R.drawable.cov_front_amiga, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "Arcade" to CoverTpl(R.drawable.cov_front_arcade, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "Atari2600" to CoverTpl(R.drawable.cov_front_atari2600, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1397f, scanWin = floatArrayOf(0.0604f, 0.4662f, 0.9396f, 0.9412f)),
+        "Atari7800" to CoverTpl(R.drawable.cov_front_atari7800, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1397f, scanWin = floatArrayOf(0.0865f, 0.2471f, 0.9135f, 0.8721f)),
+        "Jaguar" to CoverTpl(R.drawable.cov_front_jaguar, 0.7286f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1441f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "Lynx" to CoverTpl(R.drawable.cov_front_lynx, 0.8143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1588f, scanWin = floatArrayOf(0.056f, 0.0353f, 0.9404f, 0.8529f)),
+        "Atomiswave" to CoverTpl(R.drawable.cov_front_atomiswave, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "C64" to CoverTpl(R.drawable.cov_front_c64, 0.7107f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0912f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "ColecoVision" to CoverTpl(R.drawable.cov_front_colecovision, 0.7321f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1397f, scanWin = floatArrayOf(0.0602f, 0.1338f, 0.9438f, 0.7059f)),
+        "DOS" to CoverTpl(R.drawable.cov_front_dos, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "Dreamcast" to CoverTpl(R.drawable.cov_front_dreamcast, 1.0f, floatArrayOf(0.1607f, 0.0f, 1.0f, 0.9839f), null, 0.0574f, scanWin = floatArrayOf(0.1279f, 0.0f, 1.0f, 1.0f)),
+        "Famicom" to CoverTpl(R.drawable.cov_front_famicom, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "FBNeo" to CoverTpl(R.drawable.cov_front_fbneo, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "FDS" to CoverTpl(R.drawable.cov_front_fds, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "GameGear" to CoverTpl(R.drawable.cov_front_gamegear, 0.7286f, floatArrayOf(0.1593f, 0.0f, 1.0f, 0.9839f), null, 0.1426f, scanWin = floatArrayOf(0.1835f, 0.0f, 1.0f, 0.9015f)),
+        "GB" to CoverTpl(R.drawable.cov_front_gb, 1.0f, floatArrayOf(0.1607f, 0.0f, 1.0f, 0.9839f), null, 7.1429f, scanWin = floatArrayOf(0.2086f, 0.0f, 1.0f, 1.0f)),
+        "GBA" to CoverTpl(R.drawable.cov_front_gba, 1.0f, floatArrayOf(0.1607f, 0.0f, 1.0f, 0.9839f), null, 0.1257f, scanWin = floatArrayOf(0.22f, 0.0f, 1.0f, 1.0f)),
+        "GBC" to CoverTpl(R.drawable.cov_front_gbc, 1.0f, floatArrayOf(0.1607f, 0.0f, 1.0f, 0.9839f), null, 0.1414f, scanWin = floatArrayOf(0.2086f, 0.0f, 1.0f, 1.0f)),
+        "GameCube" to CoverTpl(R.drawable.cov_front_gamecube, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0779f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "Intellivision" to CoverTpl(R.drawable.cov_front_intellivision, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1426f, scanWin = floatArrayOf(0.0865f, 0.2779f, 0.9135f, 0.8559f)),
+        "MAME" to CoverTpl(R.drawable.cov_front_mame, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "MasterSystem" to CoverTpl(R.drawable.cov_front_mastersystem, 0.7125f, floatArrayOf(0.1604f, 0.0f, 1.0f, 0.9839f), null, 0.1397f, scanWin = floatArrayOf(0.0888f, 0.2f, 0.9132f, 0.8809f)),
+        "SegaCD" to CoverTpl(R.drawable.cov_front_segacd, 0.7071f, floatArrayOf(0.1591f, 0.0f, 1.0f, 0.9839f), null, 0.0985f, scanWin = floatArrayOf(0.1684f, 0.0f, 1.0f, 0.9191f)),
+        "Genesis" to CoverTpl(R.drawable.cov_front_genesis, 0.7125f, floatArrayOf(0.1604f, 0.0f, 1.0f, 0.9839f), null, 0.1412f, scanWin = floatArrayOf(0.2045f, 0.0f, 1.0f, 0.8632f)),
+        "MegaDrive" to CoverTpl(R.drawable.cov_front_genesis, 0.7125f, floatArrayOf(0.1604f, 0.0f, 1.0f, 0.9839f), null, 0.1125f),
+        "MSX" to CoverTpl(R.drawable.cov_front_msx, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "3DS" to CoverTpl(R.drawable.cov_front_3ds, 1.1223f, floatArrayOf(0.0f, 0.0f, 0.8405f, 0.9847f), null, 0.1376f, scanWin = floatArrayOf(0.0f, 0.0f, 0.893f, 1.0f)),
+        "N64" to CoverTpl(R.drawable.cov_front_n64, 1.3692f, floatArrayOf(0.0f, 0.0f, 0.8196f, 0.9829f), null, 0.1412f, scanWin = floatArrayOf(0.0f, 0.0f, 0.8118f, 1.0f)),
+        "Naomi" to CoverTpl(R.drawable.cov_front_naomi, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "NDS" to CoverTpl(R.drawable.cov_front_nds, 1.1223f, floatArrayOf(0.1595f, 0.0f, 1.0f, 0.9847f), null, 0.1397f, scanWin = floatArrayOf(0.1401f, 0.0f, 1.0f, 1.0f)),
+        "NeoGeo" to CoverTpl(R.drawable.cov_front_neogeo, 0.7286f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1441f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "NeoGeoCD" to CoverTpl(R.drawable.cov_front_neogeocd, 1.1359f, floatArrayOf(0.0f, 0.1055f, 1.0f, 0.9838f), null, 0.0887f),
+        "NES" to CoverTpl(R.drawable.cov_front_nes, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1426f, scanWin = floatArrayOf(0.1026f, 0.0721f, 0.9014f, 0.5691f)),
+        "NeoGeoPocket" to CoverTpl(R.drawable.cov_front_neogeopocket, 0.8554f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.2014f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "NeoGeoPocketColor" to CoverTpl(R.drawable.cov_front_neogeopocket, 0.8554f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1071f),
+        "PC" to CoverTpl(R.drawable.cov_front_pc, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0737f),
+        "PCEngine" to CoverTpl(R.drawable.cov_front_pcengine, 1.0f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0544f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "PCEngineCD" to CoverTpl(R.drawable.cov_front_pcenginecd, 1.1359f, floatArrayOf(0.0f, 0.1055f, 1.0f, 0.9838f), null, 0.0887f),
+        "PICO8" to CoverTpl(R.drawable.cov_front_pico8, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1456f, scanWin = floatArrayOf(0.0865f, 0.2779f, 0.9135f, 0.8559f)),
+        "Pico8" to CoverTpl(R.drawable.cov_front_pico8, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "PokemonMini" to CoverTpl(R.drawable.cov_front_pokemonmini, 1.0f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1400f, scanWin = floatArrayOf(0.0f, 0.1686f, 1.0f, 1.0f)),
+        "PS2" to CoverTpl(R.drawable.cov_front_ps2, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0809f, scanWin = floatArrayOf(0.0f, 0.1059f, 1.0f, 1.0f)),
+        "PS3" to CoverTpl(R.drawable.cov_front_ps3, 0.7871f, floatArrayOf(0.0f, 0.1055f, 1.0f, 0.9839f), null, 0.0760f),
+        "PS4" to CoverTpl(R.drawable.cov_front_ps4, 0.7871f, floatArrayOf(0.0f, 0.1055f, 1.0f, 0.9839f), null, 0.0760f),
+        "PSP" to CoverTpl(R.drawable.cov_front_psp, 0.5839f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0868f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "PSVita" to CoverTpl(R.drawable.cov_front_psvita, 0.7857f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0809f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "PS1" to CoverTpl(R.drawable.cov_front_ps1, 0.894f, floatArrayOf(0.0f, 0.106f, 1.0f, 0.9834f), null, 0.0956f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "Saturn" to CoverTpl(R.drawable.cov_front_saturn, 0.6482f, floatArrayOf(0.1598f, 0.0f, 1.0f, 0.9839f), null, 0.0544f, scanWin = floatArrayOf(0.1882f, 0.0f, 1.0f, 1.0f)),
+        "ScummVM" to CoverTpl(R.drawable.cov_front_scummvm, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "32X" to CoverTpl(R.drawable.cov_front_32x, 0.7125f, floatArrayOf(0.1604f, 0.0f, 1.0f, 0.9839f), null, 0.1412f, scanWin = floatArrayOf(0.1963f, 0.0f, 1.0f, 1.0f)),
+        "SFC" to CoverTpl(R.drawable.cov_front_sfc, 1.3692f, floatArrayOf(0.0f, 0.0f, 0.8196f, 0.9829f), null, 0.1125f),
+        "SNES" to CoverTpl(R.drawable.cov_front_snes, 1.3692f, floatArrayOf(0.0f, 0.0f, 0.8196f, 0.9829f), null, 7.0103f, scanWin = floatArrayOf(0.0f, 0.0483f, 0.8235f, 0.837f)),
+        "Switch" to CoverTpl(R.drawable.cov_front_switch, 0.6196f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0632f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "TG16" to CoverTpl(R.drawable.cov_front_tg16, 1.0f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1125f),
+        "TGCD" to CoverTpl(R.drawable.cov_front_tg_cd, 1.1359f, floatArrayOf(0.0f, 0.1055f, 1.0f, 0.9838f), null, 0.0887f),
+        "Vectrex" to CoverTpl(R.drawable.cov_front_vectrex, 0.7286f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1441f, scanWin = floatArrayOf(0.248f, 0.3971f, 0.75f, 0.9029f)),
+        "VirtualBoy" to CoverTpl(R.drawable.cov_front_virtualboy, 1.1201f, floatArrayOf(0.0f, 0.1048f, 1.0f, 0.9847f), null, 0.1419f, scanWin = floatArrayOf(0.0f, 0.0611f, 1.0f, 0.7511f)),
+        "Wii" to CoverTpl(R.drawable.cov_front_wii, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0809f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "WiiU" to CoverTpl(R.drawable.cov_front_wiiu, 0.7143f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.0882f, scanWin = floatArrayOf(0.0f, 0.0f, 1.0f, 1.0f)),
+        "WonderSwan" to CoverTpl(R.drawable.cov_front_wonderswan, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1426f, scanWin = floatArrayOf(0.0f, 0.1412f, 1.0f, 1.0f)),
+        "WonderSwanColor" to CoverTpl(R.drawable.cov_front_wonderswan, 0.7304f, floatArrayOf(0.0f, 0.1054f, 1.0f, 0.9839f), null, 0.1071f),
+        "Xbox" to CoverTpl(R.drawable.cov_front_xbox, 0.7105f, floatArrayOf(0.0f, 0.1048f, 1.0f, 0.984f), null, 0.0737f),
+        "Xbox360" to CoverTpl(R.drawable.cov_front_xbox360, 0.7105f, floatArrayOf(0.0f, 0.1048f, 1.0f, 0.984f), null, 0.0737f),
     )
 }

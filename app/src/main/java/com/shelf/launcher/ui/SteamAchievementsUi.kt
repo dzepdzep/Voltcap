@@ -39,6 +39,18 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun profilePictureUrl(raUrl: String?): String? {
     val steam = com.shelf.launcher.data.SteamAchievements.avatarUrl.value
+    // (Update 332: the playing profile's picture — its own, Steam's, its RetroAchievements one, or none: its initial.)
+    val context = LocalContext.current
+    com.shelf.launcher.data.Profiles.ensure(context)
+    val p = com.shelf.launcher.data.Profiles.active()
+    val stamp = com.shelf.launcher.data.Profiles.pictureStamp.value
+    when (p?.picture) {
+        com.shelf.launcher.data.Profiles.Picture.OWN ->
+            com.shelf.launcher.data.Profiles.pictureFile(context, p.id).takeIf { it.isFile }?.let { return "file://${it.absolutePath}#$stamp" }
+        com.shelf.launcher.data.Profiles.Picture.STEAM -> return steam ?: raUrl
+        com.shelf.launcher.data.Profiles.Picture.INITIAL -> return null
+        else -> Unit
+    }
     val useSteam = com.shelf.launcher.data.Features.avatarSource.state.value == com.shelf.launcher.data.Features.Avatar.STEAM
     return if (useSteam && steam != null) steam else raUrl
 }

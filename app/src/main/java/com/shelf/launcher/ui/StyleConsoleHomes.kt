@@ -720,6 +720,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
 @Composable
 private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: Int) {
     val (time, date) = rememberConsoleClock()
+    OwnClock.Mark() // (Update 333: the status bar leaves its clock out — one clock on screen.)
     val ink = if (light) Color(0xFF4A5461) else Color.White
     // Update 151: the rims and the dark bar take the theme's colour (they were one fixed blue-grey).
     val rim = androidx.compose.ui.graphics.lerp(Color(0xFF8FB4D8), ShelfTheme.accent, 0.45f)

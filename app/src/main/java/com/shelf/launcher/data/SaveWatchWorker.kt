@@ -108,7 +108,7 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
 
         /** The open session's start time if [key] is still the game being played, else null. */
         private fun openSessionStart(context: Context, key: String): Long? {
-            val prefs = context.getSharedPreferences("playtime", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(Profiles.run { ensure(context); fileFor("playtime") }, Context.MODE_PRIVATE)
             if (prefs.getString("open_game", null) != key) return null
             return prefs.getLong("open_since", 0L).takeIf { it > 0L }
         }

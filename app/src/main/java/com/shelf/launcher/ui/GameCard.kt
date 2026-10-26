@@ -157,6 +157,8 @@ fun GameCard(
     modifier: Modifier = Modifier
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameCard " + game.name)
+    // (Update 332: the games rolling in after "Who's playing?" — Rollout; nothing while it isn't running.)
+    @Suppress("NAME_SHADOWING") val modifier = modifier.rolloutItem()
     EnsureUserCovers() // (Update 235, #24: the covers you picked, for typedArtFor / CaseArt)
     val look = LocalCardLook.current
     val sizes = cardSizes()

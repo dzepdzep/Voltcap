@@ -876,6 +876,25 @@ private fun HomeContent(
                     }
                 } }
             }
+            // Update 332: what a fresh start shows — "Who's playing?" (profiles) and the games rolling in.
+            item { m ->
+                Box(m) { ShelfCard {
+                    val F = com.shelf.launcher.data.Features
+                    RowChoice("Start-up", com.shelf.launcher.data.Features.StartupMode.values(), F.startupMode.state.value, { it.label }) { F.startupMode.value = it }
+                    MutedNote("Only when Voltcap starts (or the device does) — never when you come back from a game. Who's playing? sets the profile: its favorites, Continue playing, play time and RetroAchievements account.")
+                    Spacer(Modifier.height(6.dp))
+                    SwitchRow(
+                        icon = Icons.Filled.AutoAwesome,
+                        title = "Games roll in",
+                        subtitle = "After Who's playing?, the games slide into your layout one after another.",
+                        checked = F.rolloutOn.state.value,
+                        onChange = { F.rolloutOn.value = it }
+                    )
+                    if (F.rolloutOn.state.value) RowChoice("Speed", com.shelf.launcher.data.Features.RolloutSpeed.values(), F.rolloutSpeed.state.value, { it.label }) { F.rolloutSpeed.value = it }
+                    Spacer(Modifier.height(6.dp))
+                    Chip("Who's playing? now", accent = false) { ProfilePicker.request = true }
+                } }
+            }
             item { m -> Box(m) { ShelfCard { CapsuleRevealChoice() } } }
             item { m -> Box(m) { ShelfCard { MediaMotionChoice() } } }
             // Update 109 / 112: how things come in — everywhere (and each layout its own, below), each with a preview.
@@ -4145,6 +4164,17 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                 subtitle = "Clock, battery, Wi-Fi, search and your profile along the top.",
                 checked = appearance.showStatusBar,
                 onChange = { onChange(appearance.copy(showStatusBar = it)) },
+                modifier = m
+            )
+        }
+        // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
+        item { m ->
+            SwitchRow(
+                icon = Icons.Filled.Palette,
+                title = "Status bar matches the layout",
+                subtitle = "Each layout's own style for the clock and icons (a capsule, a toolbar, an LCD, paper…). Off: the plain bar everywhere.",
+                checked = com.shelf.launcher.data.Features.statusMatchesLayout.state.value,
+                onChange = { com.shelf.launcher.data.Features.statusMatchesLayout.value = it },
                 modifier = m
             )
         }

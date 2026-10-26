@@ -172,6 +172,7 @@ private fun rememberStorageLine(): String? {
 /** The time as a big clock (24 h or 12 h as the handheld is set). */
 @Composable
 private fun ArchClock(ink: ArchInk, size: androidx.compose.ui.unit.TextUnit) {
+    OwnClock.Mark() // (Update 333: the status bar leaves its clock out — one clock on screen.)
     val context = LocalContext.current
     val now by produceState(System.currentTimeMillis()) {
         while (true) { value = System.currentTimeMillis(); kotlinx.coroutines.delay(10_000) }

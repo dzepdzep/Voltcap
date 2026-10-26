@@ -577,8 +577,13 @@ fun QuickSettingsCard(
                         home.setAppearance(a.copy(secondPage = if (on) com.shelf.launcher.data.SecondPage.ART else com.shelf.launcher.data.SecondPage.MAGNIFIER))
                     })
                 }
-                add(R1Tile("whoplays", Icons.Filled.Person, if (f.whoPlays.state.value) "Who plays\non" else "Who plays\noff", f.whoPlays.state.value) {
-                    f.whoPlays.value = !f.whoPlays.value
+                // (Update 332: "Who's playing?" — the profile selector, any time; hold: asked at start-up or not.)
+                add(R1Tile("whoplays", Icons.Filled.Person, "Who's\nplaying", false,
+                    longAction = {
+                        val asks = f.startupMode.value != com.shelf.launcher.data.Features.StartupMode.CATEGORIES
+                        f.startupMode.value = if (asks) com.shelf.launcher.data.Features.StartupMode.CATEGORIES else com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT
+                    }) {
+                    ProfilePicker.request = true
                 })
             }
             // Where the music player sits: tap = next corner, hold = move it anywhere (Edit Home).

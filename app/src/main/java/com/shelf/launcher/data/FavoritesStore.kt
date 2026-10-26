@@ -5,7 +5,9 @@ import android.content.Context
 /** Games the person has starred, by Game.stableKey — survives rescans, since
  * stableKey is the ROM path / package name / steam:<id>, not the title. */
 class FavoritesStore(context: Context) {
-    private val prefs = context.getSharedPreferences("favorites", Context.MODE_PRIVATE)
+    private val app = context.applicationContext
+    // (Update 332: the playing profile's own — Profiles.fileFor; the first profile's is the old "favorites".)
+    private val prefs get() = app.getSharedPreferences(Profiles.run { ensure(app); fileFor("favorites") }, Context.MODE_PRIVATE)
 
     fun loadAll(): Set<String> = prefs.getStringSet(KEY, emptySet()) ?: emptySet()
 

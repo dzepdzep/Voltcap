@@ -8,7 +8,9 @@ import com.google.gson.reflect.TypeToken
  * can surface "continue playing" by sorting recently-played games to the
  * front instead of needing a separate shelf/section. */
 class RecentlyPlayedStore(context: Context) {
-    private val prefs = context.getSharedPreferences("recently_played", Context.MODE_PRIVATE)
+    private val app = context.applicationContext
+    // (Update 332: the playing profile's own — Profiles.fileFor; the first profile's is the old "recently_played".)
+    private val prefs get() = app.getSharedPreferences(Profiles.run { ensure(app); fileFor("recently_played") }, Context.MODE_PRIVATE)
     private val gson = Gson()
     private val mapType = object : TypeToken<Map<String, Long>>() {}.type
 

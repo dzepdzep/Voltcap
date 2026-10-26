@@ -780,21 +780,52 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 235, #15/#16: Update 112's redirect stood here — a saved Tile home became the Voltcap row and switched the
     // Square tile look on for everyone. Tile home is a layout again and opens as itself; homes already moved stay as
     // they are, and the Square tile look is only on when you pick it.)
-    // "Who is playing?" once per run, after the intro, when two RetroAchievements accounts are saved and it is switched on.
+    // Update 332: "Who's playing?" (ProfileSelect.kt) — on a fresh start (Settings › Look & feel › Start-up: then the
+    // categories, or straight into your layout with its games rolling in), and any time from R1 / Settings. It replaces
+    // update 1xx's two-account "Who is playing?" (still asked with Categories when that switch is on and two profiles exist).
     var whoAsk by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var whoAtStart by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val profileCtx = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) {
-        if (!WhoPlaying.asked && com.shelf.launcher.data.Features.whoPlays.value && viewModel.raAccountNames().count { it != null } >= 2) {
+        com.shelf.launcher.data.Profiles.ensure(profileCtx)
+        val mode = com.shelf.launcher.data.Features.startupMode.value
+        val asks = mode != com.shelf.launcher.data.Features.StartupMode.CATEGORIES ||
+            (com.shelf.launcher.data.Features.whoPlays.value && com.shelf.launcher.data.Profiles.list.value.size >= 2)
+        if (!WhoPlaying.asked && asks && viewModel.takeStartupSlot()) {
+            WhoPlaying.asked = true
             StartupGate.awaitIntro()
+            whoAtStart = true
             whoAsk = true
         }
     }
+    LaunchedEffect(ProfilePicker.request) { if (ProfilePicker.request) { ProfilePicker.request = false; whoAtStart = false; whoAsk = true } }
     if (whoAsk) {
-        WhoIsPlayingScreen(
-            names = state.raAccounts, active = state.raActiveSlot,
-            onPick = { WhoPlaying.asked = true; whoAsk = false; viewModel.switchRaAccount(it) },
-            onSkip = { WhoPlaying.asked = true; whoAsk = false }
+        ProfileSelectScreen(
+            profiles = com.shelf.launcher.data.Profiles.list.value,
+            activeId = com.shelf.launcher.data.Profiles.activeId.value,
+            raNames = state.raAccounts,
+            steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value,
+            atStart = whoAtStart,
+            onPick = { id ->
+                whoAsk = false
+                viewModel.switchProfile(id)
+                if (whoAtStart) {
+                    when (com.shelf.launcher.data.Features.startupMode.value) {
+                        com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> categoryScreenOpen = true
+                        com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { categoryScreenOpen = false; Rollout.start() }
+                        else -> Unit
+                    }
+                } else Rollout.start()
+            },
+            onSkip = {
+                whoAsk = false
+                if (whoAtStart && com.shelf.launcher.data.Features.startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) {
+                    categoryScreenOpen = false; Rollout.start()
+                }
+            }
         )
     }
+    Rollout.Run()
     // Update 131: the extra art packs (data/Packs.kt) — asked once after the first-time setup; with "all" or "only my
     // consoles" the missing pieces (a console added to the library, a download that failed) follow a few seconds after start.
     val packContext = androidx.compose.ui.platform.LocalContext.current
@@ -1968,7 +1999,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         com.shelf.launcher.data.GestureHint.setImmersive(dockCtx, on)
                         if (on) "Navigation bar hidden" else "Navigation bar shown"
                     }
-                    "voltcap:r1:whoplays" -> { f.whoPlays.value = !f.whoPlays.value; if (f.whoPlays.value) "Who is playing: on" else "Who is playing: off" }
+                    "voltcap:r1:whoplays" -> { ProfilePicker.request = true; null }
                     // (Update 325: "Drawn only" is gone — the old dock shortcut just says so.)
                     "voltcap:r1:drawnmedia" -> "Own photos are always used"
                     "voltcap:r1:theme" -> {
@@ -2468,6 +2499,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 330, phase 4: where the status bar made room for the round shortcuts' ☰, root px; null: no room made.)
     var barMenuRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     @Composable
+    fun HomeStatusBarPale(): Boolean = run {
+        when (state.appearance.homeLayout) {
+                com.shelf.launcher.data.HomeLayout.TWIN_DESK -> true
+                com.shelf.launcher.data.HomeLayout.LIVE -> com.shelf.launcher.data.Features.liveLight.state.value && !com.shelf.launcher.data.Features.liveArt.state.value
+                com.shelf.launcher.data.HomeLayout.CHAN -> chanOled().not() && com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanArt.state.value
+                com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesPale.state.value
+                else -> false
+            }
+    }
+    @Composable
     fun HomeStatusBar(modifier: Modifier, nowPlaying: com.shelf.launcher.data.NowPlaying?, atBottom: Boolean, menuSlot: Int = 0) {
         // (Update 330, phase 4: written by the bar, read by the corner ☰ — LauncherScreen's corner shortcuts.)
         // Live, so the bell's count is right without opening the panel.
@@ -2475,6 +2516,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val notesResumed = rememberIsResumed()
         val noNotes = remember { kotlinx.coroutines.flow.MutableStateFlow<List<com.shelf.launcher.data.ShelfNotification>>(emptyList()) }
         val liveNotifications by (if (notesResumed) com.shelf.launcher.data.ShelfNotificationListener.notifications else noNotes).collectAsState()
+        val paleBehind = HomeStatusBarPale()
         StatusBar(
             scrapeDone = state.scrapeDone,
             scrapeTotal = state.scrapeTotal,
@@ -2515,13 +2557,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             nowPlaying = nowPlaying,
             atBottom = atBottom,
             // (Update 329: the pale backdrops — the status bar's white needs a darker band there.)
-            paleBehind = when (state.appearance.homeLayout) {
-                com.shelf.launcher.data.HomeLayout.TWIN_DESK -> true
-                com.shelf.launcher.data.HomeLayout.LIVE -> com.shelf.launcher.data.Features.liveLight.state.value && !com.shelf.launcher.data.Features.liveArt.state.value
-                com.shelf.launcher.data.HomeLayout.CHAN -> chanOled().not() && com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanArt.state.value
-                com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesPale.state.value
-                else -> false
-            },
+            paleBehind = paleBehind,
+            // (Update 333: dressed for the layout — StatusLooks.)
+            look0 = statusLookFor(state.appearance.homeLayout, paleBehind),
             modifier = modifier,
             menuSlot = menuSlot,
             onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r }
@@ -6577,7 +6615,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
             }
     ) {
-        HomeLayer()
+        // (Update 332: after "Who's playing?", a layout whose games don't roll in one by one comes in as a whole.)
+        Box(Modifier.fillMaxSize().rolloutLayer()) { HomeLayer() }
         HomeEditBar()
         // Update 212: Edit Home — the panels close themselves; the home screen gets the keys back after them, an edit
         // left unfinished when Voltcap closed is put back, and touch Back is B (a step back, then Save / Discard).

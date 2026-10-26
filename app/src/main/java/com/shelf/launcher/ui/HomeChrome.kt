@@ -149,9 +149,15 @@ internal fun StatusBar(
      * clock and icons, 0 none — and where that room is (root px), for the ☰ drawn over it (LauncherScreen).
      */
     menuSlot: Int = 0,
-    onMenuSlot: (androidx.compose.ui.geometry.Rect) -> Unit = {}
+    onMenuSlot: (androidx.compose.ui.geometry.Rect) -> Unit = {},
+    /** Update 333: how it's dressed for the layout it's on (StatusLooks.kt); the plain look by default. */
+    look0: StatusLook = PlainStatusLook
 ) {
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
+    val look = animatedLook(look0)
+    val ink = look.ink
+    val barAccent = if (look.accent == Color.Unspecified) ShelfTheme.accent else look.accent
+    val digits = uiFontStyle().merge(CenteredLine).let { st -> look.family()?.let { st.merge(androidx.compose.ui.text.TextStyle(fontFamily = it)) } ?: st }
     val battery = rememberBatteryInfo()
     val context = LocalContext.current
     val bar by StatusBarPrefs.state(context).collectAsState()
@@ -170,7 +176,7 @@ internal fun StatusBar(
     // runs (the words beside it give way to the music player on small screens), filling up as it goes.
     val running = listOf(scrapeDone to scrapeTotal, artSaveDone to artSaveTotal, detailsDone to detailsTotal, raMatchDone to raMatchTotal)
         .firstOrNull { it.second > 0 }
-    val lineColor = ShelfTheme.accent
+    val lineColor = barAccent
     val shown by androidx.compose.animation.core.animateFloatAsState(
         running?.let { (d, t) -> (d.toFloat() / t).coerceIn(0f, 1f) } ?: 0f,
         androidx.compose.animation.core.tween(400), label = "taskLine"
@@ -178,19 +184,10 @@ internal fun StatusBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // Update 136: a soft shade from the screen's edge, so the white clock, icons and points stay readable over a
+            // bright picture. (Update 329: darker over a pale backdrop. Update 333: the layout's own backing — StatusLooks.)
+            .statusBacking(look, atBottom)
             .drawBehind {
-                // Update 136: a soft shade from the screen's edge, so the white clock, icons and points stay readable
-                // over a bright picture (a yellow cover made them vanish). Fades out before the bar's inner edge.
-                drawRect(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        // (Update 329, seen on the AYN Thor: over Twin desk's pale paper the white clock and date were nearly
-                        // invisible — a darker band there.)
-                        (if (paleBehind) 0.62f else 0.32f).let { k ->
-                            if (atBottom) listOf(Color.Transparent, Color.Black.copy(alpha = k)) else listOf(Color.Black.copy(alpha = k), Color.Black.copy(alpha = if (paleBehind) k * 0.35f else 0f))
-                        },
-                        startY = 0f, endY = size.height
-                    )
-                )
                 if (running == null) return@drawBehind
                 val h = 2.dp.toPx()
                 val y = if (atBottom) 0f else size.height - h
@@ -238,7 +235,7 @@ internal fun StatusBar(
                     modifier = Modifier.tapOnly(onProgressClick),
                     text = 
                     progress.joinToString("  ·  "),
-                    color = ShelfTheme.accent,
+                    color = barAccent,
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -250,14 +247,16 @@ internal fun StatusBar(
         // Compact, like Android's own: small icons, narrow gaps. The bell
         // only shows when there's something, with how many.
         // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
-        Row(Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons"), verticalAlignment = Alignment.CenterVertically) {
+        // (Update 333: in the layout's capsule — StatusLooks.)
+        Row(Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusCapsule(look), verticalAlignment = Alignment.CenterVertically) {
         if (menuSlot > 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
         if (syncSlot != null) {
             syncSlot()
             Spacer(Modifier.width(10.dp))
         }
-        if (clockText != null) {
-            Text(clockText, color = Color.White, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = uiFontStyle().merge(CenteredLine))
+        // (Update 333: not while the layout shows its own clock — OwnClock.)
+        if (clockText != null && OwnClock.count == 0) {
+            Text(clockText, color = ink, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = digits)
             Spacer(Modifier.width(10.dp))
         }
         if (accessories.isNotEmpty()) {
@@ -265,7 +264,7 @@ internal fun StatusBar(
             Spacer(Modifier.width(8.dp))
         }
         Icon(
-            Icons.Filled.Search, null, tint = Color.White,
+            Icons.Filled.Search, null, tint = ink,
             modifier = Modifier.size(16.dp).tapOnly(onSearchButtonClick)
         )
         Spacer(Modifier.width(8.dp))
@@ -274,10 +273,10 @@ internal fun StatusBar(
             Spacer(Modifier.width(8.dp))
         }
         if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Notifications, null, tint = Color.White, modifier = Modifier.size(16.dp))
+            Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(16.dp))
             Text(
                 if (notificationCount > 99) "99+" else "$notificationCount",
-                color = Color.White,
+                color = ink,
                 fontSize = 11.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Bold,
@@ -286,16 +285,16 @@ internal fun StatusBar(
             )
             Spacer(Modifier.width(8.dp))
         }
-        Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = Color.White, modifier = Modifier.size(16.dp))
+        Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         // Volt looks: a little charge gauge in the theme's colours (HomeExtras.kt).
-        if (VoltUi.on && com.shelf.launcher.data.Features.voltBattery.state.value) VoltBattery(battery.percent, battery.charging, LowBatteryColor)
+        if (VoltUi.on && com.shelf.launcher.data.Features.voltBattery.state.value) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink)
         else Icon(
             if (battery.charging) Icons.Filled.BatteryChargingFull else batteryIconFor(battery.percent, false), null,
-            tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else Color.White,
+            tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
             modifier = Modifier.size(16.dp)
         )
-        if (bar.showPercent) Text("${battery.percent}%", color = Color.White, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = uiFontStyle().merge(CenteredLine))
+        if (bar.showPercent) Text("${battery.percent}%", color = ink, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = digits)
         Spacer(Modifier.width(10.dp))
 
         // Falls back to the plain "P1" chip whenever RetroAchievements isn't
@@ -305,7 +304,7 @@ internal fun StatusBar(
             raProfile.TotalPoints?.let { points ->
                 Text(
                     "$points",
-                    color = ShelfTheme.accent,
+                    color = barAccent,
                     fontSize = 13.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
@@ -340,7 +339,8 @@ internal fun StatusBar(
                     .background(ShelfTheme.accent),
                 contentAlignment = Alignment.Center
             ) {
-                Text("P1", color = onAccentColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                // (Update 332: the playing profile's initial.)
+                Text(com.shelf.launcher.data.Profiles.active()?.name?.trim()?.take(1)?.uppercase() ?: "P1", color = onAccentColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
         }
         }
