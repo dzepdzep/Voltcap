@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -442,6 +443,16 @@ private fun CrateItem(
 ) {
     val g = c.games[game]
     val onTap by rememberUpdatedState(tap)
+    // Update 340: the record slides out of its sleeve over time once this one settles in front, instead of
+    // following only the (quick) flip, which made it pop in.
+    val slide = remember { Animatable(0f) }
+    LaunchedEffect(centre) {
+        if (centre) {
+            slide.snapTo(0f)
+            kotlinx.coroutines.delay(140)
+            slide.animateTo(1f, tween(560, easing = FastOutSlowInEasing))
+        } else slide.animateTo(0f, tween(180))
+    }
     Box(
         modifier
             .size(s)
@@ -463,7 +474,7 @@ private fun CrateItem(
         if (near) CrateRecord(
             c, g, s * CRATE_DISC, spin,
             Modifier.align(Alignment.Center).graphicsLayer {
-                val o = geo.out(place - pos())
+                val o = geo.out(place - pos()) * slide.value
                 translationX = o
                 alpha = if (o < 0.5f) 0f else 1f
             }

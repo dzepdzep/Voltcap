@@ -1,5 +1,12 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (340): Record crate — the record slides out of its sleeve
+
+Toni: "that vinyl just spawns in without actually being drawn out". The record's slide followed only the flip, and the
+flip spring is so quick it looked like a pop. Now, once a sleeve settles in front, the record waits a moment and then
+slides out over about half a second (eased); it slides back in when you move on (`ui\StyleRecordCrate.kt`, `CrateItem`).
+Copy: `src_copy\ui\StyleRecordCrate.kt`. Checked: built (release), recorded on the Thor.
+
 ## Update — 26 Oct 2026 (339): status bars in each layout's own colours; Night menu's bar top left
 
 Toni: "some of the status bars aren't following the colours of the layout" and "on the Persona-inspired one move the
