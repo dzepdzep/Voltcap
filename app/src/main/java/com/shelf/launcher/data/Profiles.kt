@@ -31,8 +31,12 @@ object Profiles {
         /** Its RetroAchievements account: the login's slot 0 or 1, or none. */
         val raSlot: Int? = null,
         /** A hue (0–360) for its initial's circle and its glow. */
-        val hue: Float = 210f
-    )
+        val hue: Float = 210f,
+        /** Update 334: its 4-digit PIN, hashed (null: no lock). */
+        val pinHash: String? = null
+    ) {
+        val locked: Boolean get() = pinHash != null
+    }
 
     /** The profiles, in order (never empty once [ensure] ran), and the one playing — live for the screens. */
     val list = mutableStateOf<List<Profile>>(emptyList())
@@ -127,6 +131,22 @@ object Profiles {
         runCatching { pictureFile(context, id).delete() }
     }
 
+    /** Update 334: [pin]'s hash for profile [id] (never stored as it is). */
+    fun hashPin(id: Int, pin: String): String = runCatching {
+        java.security.MessageDigest.getInstance("SHA-256").digest("voltcap-profile:$id:$pin".toByteArray())
+            .joinToString("") { "%02x".format(it) }
+    }.getOrDefault(pin.hashCode().toString())
+
+    /** Whether [pin] opens profile [p] (any PIN for one without a lock). */
+    fun pinOpens(p: Profile, pin: String): Boolean = p.pinHash == null || p.pinHash == hashPin(p.id, pin)
+
+    /** Sets (a 4-digit [pin]) or takes away (null) profile [id]'s lock. */
+    fun setPin(context: Context, id: Int, pin: String?) {
+        ensure(context)
+        val p = list.value.firstOrNull { it.id == id } ?: return
+        update(context, p.copy(pinHash = pin?.takeIf { it.length == 4 && it.all(Char::isDigit) }?.let { hashPin(id, it) }))
+    }
+
     /** The files each profile has its own of. */
     val PER_PROFILE = listOf("favorites", "recently_played", "playtime")
 
@@ -166,7 +186,7 @@ object Profiles {
     private fun toJson(all: List<Profile>): String = JSONArray().apply {
         all.forEach { p ->
             put(JSONObject().put("id", p.id).put("name", p.name).put("pic", p.picture.name).put("hue", p.hue.toDouble())
-                .apply { p.raSlot?.let { put("ra", it) } })
+                .apply { p.raSlot?.let { put("ra", it) }; p.pinHash?.let { put("pin", it) } })
         }
     }.toString()
 
@@ -180,7 +200,8 @@ object Profiles {
                     o.getInt("id"), o.optString("name", "Player"),
                     runCatching { Picture.valueOf(o.optString("pic", "INITIAL")) }.getOrDefault(Picture.INITIAL),
                     if (o.has("ra")) o.getInt("ra").coerceIn(0, 1) else null,
-                    o.optDouble("hue", 210.0).toFloat()
+                    o.optDouble("hue", 210.0).toFloat(),
+                    o.optString("pin", "").ifBlank { null }
                 )
             }.distinctBy { it.id }
         }.getOrDefault(emptyList())

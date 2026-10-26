@@ -46,7 +46,9 @@ enum class HotkeyAction(val label: String) {
     VIRTUAL_SECOND_SCREEN("Show / hide the virtual second screen"),
     /** The second screen's next tab (Art, Video, Details, … Widgets, Wall). */
     SECOND_SCREEN_PAGE("Second screen: next page"),
-    RESTART_APP("Restart Voltcap")
+    RESTART_APP("Restart Voltcap"),
+    /** Update 334: the profiles ("Who's playing?"). */
+    WHO_PLAYS("Who's playing?")
 }
 
 /** One hotkey: a button (or Select + button) and what it does. */

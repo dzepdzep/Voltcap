@@ -116,7 +116,7 @@ internal fun CoverLight(artUrl: Any?) {
  * charging. Square in the 32-bit console look.
  */
 @Composable
-internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: Color = Color.White) {
+internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: Color = Color.White, fill: Color? = null) {
     val accent = ShelfTheme.accent
     val second = lerpColor(accent, ShelfTheme.colors.secondary, 0.6f)
     val pixel = VoltUi.pixel
@@ -138,7 +138,8 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
         val cw = (w - pad * 2 - gap * (cells - 1)) / cells
         for (i in 0 until filled) {
             val t = if (cells > 1) i / (cells - 1f) else 0f
-            val c = if (isLow) low else lerpColor(accent, second, t)
+            // (Update 334: [fill] — the status bar's ink — instead of the theme's colours, which read as a warning on warm themes.)
+            val c = if (isLow) low else fill?.copy(alpha = 0.92f - 0.1f * t) ?: lerpColor(accent, second, t)
             drawRect(c, topLeft = Offset(pad + i * (cw + gap), pad), size = Size(cw, h - pad * 2))
         }
         if (charging) {

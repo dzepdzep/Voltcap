@@ -144,6 +144,8 @@ class MainActivity : ComponentActivity() {
         // Update 208: debug builds only — frame times and the picture caches' hits, logged as "VoltcapPerf" (PerfDiag.kt).
         com.shelf.launcher.ui.PerfDiag.attach(this)
         LaunchInfo.update(intent)
+        // (Update 334: "Who's playing?" asked from a game — the in-game Quick menu.)
+        if (intent?.getBooleanExtra(com.shelf.launcher.ui.ProfilePicker.EXTRA, false) == true) com.shelf.launcher.ui.ProfilePicker.request = true
         com.shelf.launcher.ui.TestHooks.fromIntent(this, intent)
         com.shelf.launcher.data.QrTransfer.fromIntent(intent)
         // Sleep mode for Wi-Fi / Bluetooth (Settings › Device): listens for screen off only when on.
@@ -313,6 +315,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         LaunchInfo.update(intent)
+        // (Update 334: "Who's playing?" asked from a game — the in-game Quick menu.)
+        if (intent?.getBooleanExtra(com.shelf.launcher.ui.ProfilePicker.EXTRA, false) == true) com.shelf.launcher.ui.ProfilePicker.request = true
         com.shelf.launcher.ui.TestHooks.fromIntent(this, intent)
         // A Voltcap transfer QR code opened from a camera app: Settings › Backup picks it up.
         com.shelf.launcher.data.QrTransfer.fromIntent(intent)

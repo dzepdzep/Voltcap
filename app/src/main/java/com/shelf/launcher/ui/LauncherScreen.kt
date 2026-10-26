@@ -1448,6 +1448,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 viewModel.setAppearance(state.appearance.copy(secondPage = next))
             }
             com.shelf.launcher.data.HotkeyAction.RESTART_APP -> com.shelf.launcher.data.Backup.restart(hotkeyContext)
+            com.shelf.launcher.data.HotkeyAction.WHO_PLAYS -> ProfilePicker.request = true
             com.shelf.launcher.data.HotkeyAction.TOGGLE_PERF_OVERLAY -> {
                 val on = !com.shelf.launcher.data.perf.PerfSettings.config(hotkeyContext).showDuringGames
                 com.shelf.launcher.data.perf.PerfSettings.update(hotkeyContext) { it.copy(showDuringGames = on) }

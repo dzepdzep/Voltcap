@@ -293,11 +293,8 @@ internal fun CoverTpl.fitTo(coverAspect: Float): CaseFit? {
     if (kotlin.math.abs(coverAspect / winAspect - 1f) < 0.03f) return null
     // The window reaches both sides (Steam / Android: a band only on top): it changes height either way, so the band is
     // never stretched; one reaching top and bottom changes width. Else: taller covers grow it down, wider ones sideways.
-    // (Update 331: the matching case pack's frames leave a thin printed edge along the foot — 1.6 % — so "reaching the
-    // edge" allows that much: a Game Boy / Mega Drive front with its stripe down the left then changes width, never
-    // stretching the stripe's logo up and down; an N64 / SNES one with its stripe down the right likewise.)
-    val fullWidth = w[0] <= 0.03f && w[2] >= 0.97f
-    val fullHeight = w[1] <= 0.03f && w[3] >= 0.97f
+    val fullWidth = w[0] <= 0.01f && w[2] >= 0.99f
+    val fullHeight = w[1] <= 0.01f && w[3] >= 0.99f
     val vertical = if (fullWidth != fullHeight) fullWidth else coverAspect < winAspect
     return if (vertical) {
         // The window's height set by the cover (heights in widths of the front).
@@ -352,9 +349,9 @@ internal fun androidOwnCase(platform: String?): Boolean = platform == "App" || p
  * but the PlayStation's, which is drawn without its black band (update 141 / 143). The console badge stays off it then.
  */
 internal fun caseShowsConsole(platform: String?): Boolean =
-    // (Update 331: the PlayStation's case has its printed header again — the matching case pack — so no badge on it either.)
-    // (Update 235, #27/#38: Voltcap's plain case (PlainCase) has no console band printed on it: the badge stays.)
-    plainCaseSpec(platform) == null
+    LookStyles.casePlatform(platform) != "PS1" &&
+        // (Update 235, #27/#38: Voltcap's plain case (PlainCase) has no console band printed on it: the badge stays.)
+        plainCaseSpec(platform) == null
 
 /**
  * (Update 235, #24: the covers you picked yourself — Game settings › Artwork, a SteamGridDB pick, a scraper's alternative

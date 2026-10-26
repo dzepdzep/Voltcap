@@ -5,155 +5,256 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.HomeLayout
 import com.shelf.launcher.ui.theme.ShelfTheme
 
 /*
- * Update 333: the status bar dressed for the layout it's on (Settings › Look & feel › "Status bar matches the layout", on).
- * One status bar (HomeChrome.StatusBar, everything it shows and does unchanged); per layout only how it's drawn: a soft
- * shade from the edge (the plain look), a capsule round the clock and icons, a full-width toolbar, an LCD readout, a
- * paper label… its colours, corners, type. Layouts with a top bar of their own (Pocket layouts, Spotlight's Home menu,
- * Hero tiles' / Twin showcase's status pill, Channel grid's clock row) keep theirs: Voltcap's isn't drawn there at all
- * (AppearanceSettings.statusOn), so nothing shows twice.
+ * Updates 333 / 334: the status bar dressed for the layout it's on (Settings › Look & feel › "Status bar matches the
+ * layout", on). One status bar (HomeChrome.StatusBar — everything it shows and does unchanged); per layout how it's put
+ * together: what's behind it (nothing, an edge shade, a full-width toolbar, one box, separate small segments, an LCD
+ * window, a printed label, a line under it), how its pieces are grouped and spaced and what sits between the groups, its
+ * type (size, weight, capitals and spacing, a readout's digits, a pixel or a serif face, a glow), the shape of your
+ * picture, and small details of the layout's material (tape, record grooves, circuit traces, a gloss, a spine's band).
+ * Layouts with a top bar of their own (Pocket Classic / Ribbon, Spotlight's Home menu, Hero tiles' / Twin showcase's pill,
+ * Channel grid's clock row) keep theirs: Voltcap's isn't drawn there (AppearanceSettings.statusOn) — nothing twice.
  */
 
-/** How the bar is backed. */
+/** What's behind the bar's pieces. */
 internal enum class BarBacking {
-    /** The plain look: a soft shade down from the screen's edge, no box. */
+    /** A soft shade down from the screen's edge (the plain look). */
     SHADE,
-    /** Nothing behind it at all (the type carries itself, a soft shadow under it). */
+    /** Nothing at all: the type carries itself. */
     NONE,
-    /** A capsule (or a box with [StatusLook.corner]) round the clock and icons only. */
+    /** A band across the whole width, a hairline along its inner edge. */
+    TOOLBAR,
+    /** One box round the pieces. */
     CAPSULE,
-    /** A band across the whole width, its own colour, a hairline along its inner edge. */
-    TOOLBAR
+    /** Each group of pieces in its own small box. */
+    SEGMENTS,
+    /** A dark inset readout window. */
+    LCD,
+    /** A printed label (paper, card). */
+    LABEL,
+    /** No box: a fine line under the pieces. */
+    UNDERLINE
 }
+
+/** The small details of a layout's material, drawn with the bar's box. */
+internal enum class BarDecor { NONE, TAPE, GROOVES, TRACES, GLOSS, STRIPE }
+
+internal enum class AvatarShape { ROUNDED, CIRCLE, SQUARE }
 
 internal data class StatusLook(
     val backing: BarBacking,
-    /** The capsule's / toolbar's colour (with its alpha); for SHADE the shade's darkness is [shade]. */
+    /** The box's colour (with alpha); TOOLBAR: the band's. */
     val bg: Color = Color.Transparent,
     /** Icons and text. */
     val ink: Color = Color.White,
-    /** The points, the progress line and readouts. */
+    /** Points, the progress line. Unspecified: the theme's. */
     val accent: Color = Color.Unspecified,
-    /** A rim round the capsule, or the toolbar's hairline. */
+    /** The box's rim / the toolbar's hairline / the underline / a spine's band. */
     val rim: Color? = null,
+    /** A second rim colour (a card's metal edge, gold to silver). */
+    val rim2: Color? = null,
     val rimWidth: Dp = 1.dp,
     val corner: Dp = 0.dp,
-    /** The darkness of the edge shade (SHADE, and a little under CAPSULE / NONE on busy pictures). */
-    val shade: Float = 0.32f,
-    /** Digits drawn as a readout (LCD, OSD). */
-    val mono: Boolean = false,
-    val weight: FontWeight = FontWeight.Medium
+    /** Cut corners instead of round ones. */
+    val cut: Boolean = false,
+    /** The edge shade's darkness (0: none). */
+    val shade: Float = 0f,
+    val font: FontFamily? = null,
+    val weight: FontWeight = FontWeight.Medium,
+    val clockWeight: FontWeight = FontWeight.Medium,
+    val clockSize: TextUnit = 12.sp,
+    val caps: Boolean = false,
+    /** Letter spacing, in em. */
+    val tracking: Float = 0f,
+    val iconSize: Dp = 16.dp,
+    /** Room between pieces. */
+    val gap: Dp = 8.dp,
+    /** Drawn between the groups (time · devices · actions · system · you). */
+    val sep: String? = null,
+    /** A glow under the type (neon, phosphor). */
+    val glow: Color? = null,
+    /** A soft dark edge under the type (no box behind it). */
+    val shadowed: Boolean = false,
+    val avatar: AvatarShape = AvatarShape.ROUNDED,
+    val avatarSize: Dp = 26.dp,
+    /** A ring round your picture (a console dashboard's). */
+    val ring: Color? = null,
+    val decor: BarDecor = BarDecor.NONE,
+    /** Faint unlit "88:88" behind the time (an LCD's segments). */
+    val ghost: Boolean = false,
+    /** Battery cells in the ink, not the theme's colours (red only when it's really low). */
+    val plainBattery: Boolean = true
 )
 
-/** The plain look (and what every layout had before update 333). */
-internal val PlainStatusLook = StatusLook(BarBacking.SHADE)
+/** The plain look (every layout before update 333, and with the switch off). */
+internal val PlainStatusLook = StatusLook(BarBacking.SHADE, shade = 0.32f, plainBattery = false)
 
-/** Update 333: [layout]'s status bar. [paleBehind]: a pale backdrop under it (update 329), so a shaded bar shades more. */
+/** Updates 333 / 334: [layout]'s status bar. [paleBehind]: a pale backdrop under it (update 329). */
 @Composable
 internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook {
     if (!Features.statusMatchesLayout.state.value) return PlainStatusLook.copy(shade = if (paleBehind) 0.62f else 0.32f)
     val acc = ShelfTheme.accent
+    val pixel = pocketFont()
     return when (layout) {
-        // Clean, minimal, compact.
-        HomeLayout.CLASSIC, HomeLayout.TILES, HomeLayout.GRID ->
-            StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.55f else 0.26f)
-        // Cinematic: a whisper of shade over the picture.
-        HomeLayout.HERO, HomeLayout.SPOT, HomeLayout.CASEFLOW ->
-            StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.5f else 0.18f, weight = FontWeight.Normal)
-        // Hero tiles / Twin showcase (with Voltcap's bar on): the same dark rounded pill as their own.
-        HomeLayout.HERO_TILES, HomeLayout.TWIN_SHOWCASE ->
-            StatusLook(BarBacking.CAPSULE, bg = Color.Black.copy(alpha = 0.45f), corner = 50.dp, shade = 0f)
-        // Icon bar: a sleek toolbar like its round icons.
-        HomeLayout.BAR -> StatusLook(BarBacking.CAPSULE, bg = Color(0xCC15181E), rim = Color.White.copy(alpha = 0.12f), corner = 14.dp, shade = 0.12f)
-        // Dashboard: frosted glass like its panels.
-        HomeLayout.DASH -> StatusLook(BarBacking.CAPSULE, bg = Color.White.copy(alpha = 0.14f), rim = Color.White.copy(alpha = 0.28f), corner = 14.dp, shade = 0.16f)
-        // Live tiles: flat, squared.
-        HomeLayout.LIVE -> StatusLook(BarBacking.CAPSULE, bg = if (paleBehind) Color(0xE6222222) else Color(0xB3000000), corner = 0.dp, shade = 0f, weight = FontWeight.Normal)
-        // Side menu: dark translucent with the theme's trim.
-        HomeLayout.SIDE -> StatusLook(BarBacking.TOOLBAR, bg = Color(0x99080A0E), rim = acc.copy(alpha = 0.7f), shade = 0f)
-        // Cross menu: floating, nothing behind it.
-        HomeLayout.CROSS -> StatusLook(BarBacking.NONE, shade = 0.12f, weight = FontWeight.Light)
-        // Console hub / Resume: a console dashboard's glass.
-        HomeLayout.HUB, HomeLayout.RESUME -> StatusLook(BarBacking.CAPSULE, bg = Color(0x8C0C1018), rim = Color.White.copy(alpha = 0.16f), corner = 20.dp, shade = 0.1f)
-        // Channel grid (its status bar on): soft and pale, rounded.
+        // Voltcap row: Voltcap's own — the edge shade only, clean.
+        HomeLayout.CLASSIC -> StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.55f else 0.26f)
+        // Tile home: a bolder, bigger time, square picture, wider calm gaps.
+        HomeLayout.TILES -> StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.5f else 0.22f, clockWeight = FontWeight.Bold, clockSize = 14.sp, gap = 11.dp, avatar = AvatarShape.SQUARE)
+        // Grid: tight and small over a screen full of covers.
+        HomeLayout.GRID -> StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.5f else 0.3f, iconSize = 14.dp, gap = 6.dp, clockSize = 11.sp, avatarSize = 22.dp)
+        // Hero / Spotlight: cinematic — nothing behind, a large light time, fine dots between, a soft dark edge.
+        HomeLayout.HERO, HomeLayout.SPOT -> StatusLook(
+            BarBacking.NONE, shade = 0.12f, clockSize = 16.sp, clockWeight = FontWeight.Light, weight = FontWeight.Light,
+            sep = "·", gap = 9.dp, shadowed = true, avatar = AvatarShape.CIRCLE, avatarSize = 28.dp
+        )
+        // Case flow: a dark stage — small spaced capitals, nothing else.
+        HomeLayout.CASEFLOW -> StatusLook(BarBacking.NONE, ink = Color(0xFFD9DCE2), caps = true, tracking = 0.14f, clockSize = 11.sp, weight = FontWeight.Normal, iconSize = 14.dp, gap = 11.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Hero tiles / Twin showcase (their Voltcap bar on): a small dark pill like their own.
+        HomeLayout.HERO_TILES, HomeLayout.TWIN_SHOWCASE -> StatusLook(BarBacking.CAPSULE, bg = Color.Black.copy(alpha = 0.5f), corner = 50.dp, iconSize = 14.dp, gap = 6.dp, clockWeight = FontWeight.SemiBold, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Icon bar: each group its own round button, like the bar's shortcut icons.
+        HomeLayout.BAR -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xB3161A21), rim = Color.White.copy(alpha = 0.16f), corner = 50.dp, gap = 6.dp, iconSize = 15.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
+        // Dashboard: a frosted panel like its widgets, a big time first, rules between.
+        HomeLayout.DASH -> StatusLook(
+            BarBacking.CAPSULE, bg = Color.White.copy(alpha = 0.12f), rim = Color.White.copy(alpha = 0.24f), corner = 12.dp,
+            clockSize = 16.sp, clockWeight = FontWeight.SemiBold, sep = "|", decor = BarDecor.GLOSS, avatarSize = 24.dp
+        )
+        // Live tiles: flat square tiles, capitals, no rounding anywhere.
+        HomeLayout.LIVE -> StatusLook(
+            BarBacking.SEGMENTS, bg = if (paleBehind) Color(0xE6303030) else mixC(acc, Color.Black, 0.35f).copy(alpha = 0.9f),
+            corner = 0.dp, caps = true, weight = FontWeight.Normal, clockWeight = FontWeight.Light, clockSize = 13.sp, gap = 3.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp
+        )
+        // Side menu: a dark band across the top, the theme's trim under it, spaced capitals like a menu.
+        HomeLayout.SIDE -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xA6080A0E), rim = acc.copy(alpha = 0.85f), rimWidth = 2.dp, gap = 12.dp, caps = true, tracking = 0.06f, clockSize = 11.sp, iconSize = 15.dp, avatarSize = 22.dp)
+        // Cross menu: floating light type, nothing behind (its own icons float the same way).
+        HomeLayout.CROSS -> StatusLook(BarBacking.NONE, shade = 0.08f, clockSize = 15.sp, clockWeight = FontWeight.Light, weight = FontWeight.Light, gap = 13.dp, shadowed = true, avatar = AvatarShape.CIRCLE, iconSize = 15.dp)
+        // Console hub / Resume: a console dashboard's corner — no box, a bold time, your picture round with the theme's ring.
+        HomeLayout.HUB, HomeLayout.RESUME -> StatusLook(
+            BarBacking.NONE, shade = 0.16f, shadowed = true, clockSize = 15.sp, clockWeight = FontWeight.Bold, gap = 11.dp,
+            avatar = AvatarShape.CIRCLE, avatarSize = 30.dp, ring = acc
+        )
+        // Channel grid (its Voltcap bar on): a soft pale pill with a thick light rim, grey ink.
         HomeLayout.CHAN -> StatusLook(
             BarBacking.CAPSULE, bg = if (paleBehind) Color(0xF2FFFFFF) else Color(0xCC2A313B), ink = if (paleBehind) Color(0xFF4A5461) else Color.White,
-            rim = if (paleBehind) Color(0xFFB9C6D6) else Color.White.copy(alpha = 0.2f), rimWidth = 1.5.dp, corner = 20.dp, shade = 0f
+            accent = if (paleBehind) Color(0xFF2E8BFF) else Color.Unspecified,
+            rim = if (paleBehind) Color(0xFFB9C6D6) else Color.White.copy(alpha = 0.2f), rimWidth = 2.dp, corner = 50.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp
         )
-        // Library panel: a desktop library's toolbar.
-        HomeLayout.LIBRARY -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xD91B1F25), rim = Color.White.copy(alpha = 0.08f), shade = 0f)
-        // TV room: a CRT's on-screen display.
-        HomeLayout.TV -> StatusLook(BarBacking.NONE, ink = Color(0xFFD7FFD9), accent = Color(0xFF8CFF9E), shade = 0.2f, mono = true)
-        // Shelf, Case stacks, Console stack: an understated label strip.
-        HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES ->
-            StatusLook(BarBacking.CAPSULE, bg = Color(0xB3211812), rim = Color(0x80A17C55), corner = 4.dp, shade = 0.1f)
-        // Disc station: a CD player's LCD.
-        HomeLayout.DISCS -> StatusLook(BarBacking.CAPSULE, bg = Color(0xE60E1A12), ink = Color(0xFF8CF5AE), accent = Color(0xFFB8FFCB), rim = Color(0xFF2F4B37), corner = 6.dp, shade = 0f, mono = true)
-        // Record crate: a vintage label.
-        HomeLayout.CRATE -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF0EFE6D2), ink = Color(0xFF3A2A1E), accent = Color(0xFFB0392B), rim = Color(0xFFB89B6A), corner = 30.dp, shade = 0f)
-        // Card binder: a card's header, a little metal.
-        HomeLayout.CARDS -> StatusLook(BarBacking.CAPSULE, bg = Color(0xD914161C), accent = Color(0xFFE2C77D), rim = Color(0xFFC9B27A), rimWidth = 1.5.dp, corner = 6.dp, shade = 0.08f)
-        // Cardboard box: kraft paper.
-        HomeLayout.BOX -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF2C9A877), ink = Color(0xFF3B2A18), accent = Color(0xFF7A2E1B), rim = Color(0xFF8E6E44), corner = 2.dp, shade = 0f)
-        // Storage boxes: in the theme's colour.
-        // Storage boxes: the box's own wallpaper colours.
+        // Library panel: a desktop library's toolbar — flat band, small type, square picture, rules between.
+        HomeLayout.LIBRARY -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xE61B1F25), rim = Color.White.copy(alpha = 0.1f), clockSize = 11.sp, iconSize = 14.dp, gap = 9.dp, sep = "|", avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
+        // TV room: a set's on-screen display — green phosphor capitals with a glow.
+        HomeLayout.TV -> StatusLook(
+            BarBacking.NONE, ink = Color(0xFFCCFFD2), accent = Color(0xFF8CFF9E), font = FontFamily.Monospace, caps = true,
+            clockSize = 14.sp, clockWeight = FontWeight.Bold, glow = Color(0xFF39FF6A), gap = 11.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp, shade = 0.12f
+        )
+        // Game shelf / Case stacks / Console stack: a spine label — a printed strip, a coloured band at its end.
+        HomeLayout.SHELF, HomeLayout.STACKS -> StatusLook(
+            BarBacking.LABEL, bg = Color(0xEBE9E2D2), ink = Color(0xFF2A241D), accent = Color(0xFF8A2A1F), corner = 2.dp,
+            decor = BarDecor.STRIPE, rim = acc, caps = true, tracking = 0.05f, clockSize = 11.sp, clockWeight = FontWeight.Bold,
+            iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+        )
+        // Console stack: a console's front panel — dark plastic, a lit band at its end, small capitals.
+        HomeLayout.CONSOLES -> StatusLook(
+            BarBacking.LABEL, bg = Color(0xEB25282E), ink = Color(0xFFE3E6EA), accent = acc, corner = 3.dp, decor = BarDecor.STRIPE, rim = acc,
+            caps = true, tracking = 0.06f, clockSize = 11.sp, clockWeight = FontWeight.Bold, iconSize = 14.dp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+        )
+        // Disc station: a CD player's LCD window — green digits, unlit 88:88 behind.
+        HomeLayout.DISCS -> StatusLook(
+            BarBacking.LCD, bg = Color(0xF00C1710), ink = Color(0xFF8CF5AE), accent = Color(0xFFB8FFCB), rim = Color(0xFF2F4B37), rimWidth = 1.5.dp,
+            corner = 4.dp, font = FontFamily.Monospace, clockSize = 14.sp, clockWeight = FontWeight.Bold, ghost = true, iconSize = 14.dp, gap = 7.dp,
+            avatar = AvatarShape.SQUARE, avatarSize = 20.dp, glow = Color(0xFF2BD66A)
+        )
+        // Record crate: a record's centre label — cream, a serif face, printed rings.
+        HomeLayout.CRATE -> StatusLook(
+            BarBacking.LABEL, bg = Color(0xF2EFE6D2), ink = Color(0xFF3A2A1E), accent = Color(0xFFB0392B), rim = Color(0xFFB89B6A),
+            corner = 50.dp, font = FontFamily.Serif, clockSize = 13.sp, clockWeight = FontWeight.Bold, decor = BarDecor.GROOVES,
+            avatar = AvatarShape.CIRCLE, avatarSize = 22.dp, iconSize = 15.dp
+        )
+        // Card binder: a card's header strip — a metal edge (gold to silver), small capitals.
+        HomeLayout.CARDS -> StatusLook(
+            BarBacking.LABEL, bg = Color(0xE614161C), accent = Color(0xFFE2C77D), rim = Color(0xFFE2C77D), rim2 = Color(0xFFB9C2CC),
+            rimWidth = 1.5.dp, corner = 5.dp, caps = true, tracking = 0.08f, clockSize = 11.sp, clockWeight = FontWeight.Bold, gap = 7.dp, avatarSize = 22.dp
+        )
+        // Cardboard box: a kraft paper label, taped down, typed.
+        HomeLayout.BOX -> StatusLook(
+            BarBacking.LABEL, bg = Color(0xF2CBAA78), ink = Color(0xFF34240F), accent = Color(0xFF7A2E1B), corner = 1.dp,
+            font = FontFamily.Monospace, decor = BarDecor.TAPE, clockSize = 12.sp, clockWeight = FontWeight.Bold, iconSize = 14.dp, gap = 7.dp,
+            avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+        )
+        // Storage boxes: small tabs in the box's own wallpaper colours.
         HomeLayout.STORAGE -> (StorageWallTint.color ?: acc).let { w ->
-            StatusLook(BarBacking.CAPSULE, bg = mixC(w, Color.Black, 0.45f).copy(alpha = 0.9f), rim = mixC(w, Color.White, 0.35f), rimWidth = 1.5.dp, corner = 10.dp, shade = 0f)
+            StatusLook(BarBacking.SEGMENTS, bg = mixC(w, Color.Black, 0.45f).copy(alpha = 0.92f), rim = mixC(w, Color.White, 0.4f), rimWidth = 1.5.dp, corner = 7.dp, gap = 5.dp, clockWeight = FontWeight.Bold, iconSize = 15.dp, avatarSize = 22.dp)
         }
-        // Circuit board: a green LCD.
-        HomeLayout.CIRCUIT -> StatusLook(BarBacking.CAPSULE, bg = Color(0xE60B2A12), ink = Color(0xFF8CFF9E), accent = Color(0xFFD9FF8C), rim = Color(0xFF2E7D46), corner = 3.dp, shade = 0f, mono = true)
-        // Timeline: a thin date strip.
-        HomeLayout.TIMELINE -> StatusLook(BarBacking.TOOLBAR, bg = Color(0x66000000), rim = acc.copy(alpha = 0.55f), shade = 0f, weight = FontWeight.Normal)
-        // Arcade cabinets: a restrained marquee glow.
-        HomeLayout.ARCADE -> StatusLook(BarBacking.CAPSULE, bg = Color(0xD9120A1E), accent = Color(0xFFFF5FD9), rim = Color(0x99FF4FD8), rimWidth = 1.5.dp, corner = 8.dp, shade = 0f)
-        // Twin desk: paper instrumentation.
-        HomeLayout.TWIN_DESK -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF2FFFFFF), ink = Color(0xFF1D2430), accent = Color(0xFFE5484D), rim = Color(0xFFDDE1E8), corner = 12.dp, shade = 0f)
-        // Twin icons: a clean strip like its top screen.
-        HomeLayout.TWIN_ICONS -> StatusLook(BarBacking.CAPSULE, bg = Color(0xE6F2F4F8), ink = Color(0xFF26303C), accent = Color(0xFF2E8BFF), corner = 14.dp, shade = 0f)
-        // Green Core: dark green glass.
-        HomeLayout.GREENCORE -> StatusLook(BarBacking.CAPSULE, bg = Color(0xB30E2A16), ink = Color(0xFFCFFFD8), accent = Color(0xFF6CF29A), rim = Color(0x8039D27A), corner = 10.dp, shade = 0f)
-        // Pocket Quest (with Voltcap's bar): blue and gold.
-        HomeLayout.POCKET -> StatusLook(BarBacking.CAPSULE, bg = Color(0xE61B2766), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 1.5.dp, corner = 6.dp, shade = 0f)
-        // Cube menu: indigo glass.
-        HomeLayout.CUBE -> StatusLook(BarBacking.CAPSULE, bg = Color(0x8C2A2470), rim = Color(0x808C84FF), corner = 16.dp, shade = 0f)
-        // Memory card: a 2000s grey menu.
-        HomeLayout.MEMCARD -> StatusLook(BarBacking.CAPSULE, bg = Color(0xD92B2F36), ink = Color(0xFFE6E9EE), rim = Color(0x40FFFFFF), corner = 4.dp, shade = 0f, weight = FontWeight.Normal)
-        // File select: chunky 1996.
-        HomeLayout.FILESELECT -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF21F2A8C), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 2.dp, corner = 10.dp, shade = 0f, weight = FontWeight.Bold)
-        // Airy home: light and soft.
-        HomeLayout.AIRY -> StatusLook(BarBacking.CAPSULE, bg = Color(0xBFFFFFFF), ink = Color(0xFF3C4A5A), accent = Color(0xFF2E8BFF), corner = 18.dp, shade = 0f)
-        // Night menu: slim moonlit glass.
-        HomeLayout.NIGHT -> StatusLook(BarBacking.CAPSULE, bg = Color(0x8C0E1A3A), rim = Color(0x599FB8FF), corner = 6.dp, shade = 0f, weight = FontWeight.Normal)
-        // Orbit deck: deep space, a little light at the rim.
-        HomeLayout.ORBIT -> StatusLook(BarBacking.CAPSULE, bg = Color(0x9905070F), accent = Color(0xFF8FD3FF), rim = Color(0x596FA8FF), corner = 14.dp, shade = 0f)
-        // Layout Studio: the theme's colours (its own palette follows the theme), else the plain look.
-        HomeLayout.CUSTOM -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.7f).copy(alpha = 0.7f), rim = acc.copy(alpha = 0.45f), corner = 12.dp, shade = 0.08f)
-        // The Pocket classic / ribbon bars are their own (Voltcap's isn't drawn there); anything else: the plain look.
+        // Circuit board: a green chip readout, cut corners, faint traces.
+        HomeLayout.CIRCUIT -> StatusLook(
+            BarBacking.LCD, bg = Color(0xF00B2A12), ink = Color(0xFF8CFF9E), accent = Color(0xFFD9FF8C), rim = Color(0xFF2E7D46),
+            corner = 5.dp, cut = true, font = FontFamily.Monospace, decor = BarDecor.TRACES, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+        )
+        // Timeline: a date strip — no box, spaced capitals, the theme's ruled line with ticks under it.
+        HomeLayout.TIMELINE -> StatusLook(BarBacking.UNDERLINE, rim = acc, rimWidth = 2.dp, caps = true, tracking = 0.1f, clockSize = 11.sp, weight = FontWeight.Normal, clockWeight = FontWeight.Bold, gap = 10.dp, shade = 0.18f, sep = "/", avatarSize = 22.dp)
+        // Arcade cabinets: a marquee — dark glass, neon capitals.
+        HomeLayout.ARCADE -> StatusLook(
+            BarBacking.CAPSULE, bg = Color(0xD9120A1E), ink = Color(0xFFFFE9FB), accent = Color(0xFFFF5FD9), rim = Color(0x99FF4FD8), rimWidth = 1.5.dp, corner = 4.dp,
+            caps = true, tracking = 0.1f, glow = Color(0xFFFF4FD8), clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp
+        )
+        // Twin desk: instruments printed on the paper — no box, dark ink, thin rules between.
+        HomeLayout.TWIN_DESK -> StatusLook(BarBacking.NONE, ink = Color(0xFF1D2430), accent = Color(0xFFE5484D), sep = "|", font = FontFamily.Monospace, clockSize = 12.sp, clockWeight = FontWeight.Bold, iconSize = 15.dp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Twin icons: a clean pale strip like its top screen.
+        HomeLayout.TWIN_ICONS -> StatusLook(BarBacking.TOOLBAR, bg = Color(0xE6EEF1F5), ink = Color(0xFF26303C), accent = Color(0xFF2E8BFF), rim = Color(0x26000000), iconSize = 15.dp, gap = 9.dp, avatarSize = 22.dp)
+        // Green Core: dark green glass, cut corners, green capitals.
+        HomeLayout.GREENCORE -> StatusLook(BarBacking.CAPSULE, bg = Color(0xB30E2A16), ink = Color(0xFFCFFFD8), accent = Color(0xFF6CF29A), rim = Color(0x9939D27A), corner = 8.dp, cut = true, caps = true, tracking = 0.08f, clockSize = 11.sp, clockWeight = FontWeight.Bold, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
+        // Pocket Quest (with Voltcap's bar): each group in its own blue window with a gold edge, pixel type.
+        HomeLayout.POCKET -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xF21B2766), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 1.5.dp, corner = 3.dp, font = pixel, clockSize = 12.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
+        // Cube menu: small indigo cubes, one per group.
+        HomeLayout.CUBE -> StatusLook(BarBacking.SEGMENTS, bg = Color(0xA62A2470), rim = Color(0x998C84FF), rimWidth = 1.5.dp, corner = 6.dp, gap = 5.dp, avatar = AvatarShape.ROUNDED, clockWeight = FontWeight.Bold, avatarSize = 22.dp)
+        // Memory card: the 2000s browser's pale grey — no box, its dark grey type.
+        HomeLayout.MEMCARD -> StatusLook(BarBacking.NONE, ink = Color(0xFF3A414B), accent = Color(0xFF2F6FD6), weight = FontWeight.Normal, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, avatar = AvatarShape.SQUARE, avatarSize = 24.dp)
+        // File select: chunky — a thick gold-rimmed blue box, bold capitals.
+        HomeLayout.FILESELECT -> StatusLook(BarBacking.CAPSULE, bg = Color(0xF21F2A8C), accent = Color(0xFFFFD34A), rim = Color(0xFFFFD34A), rimWidth = 2.5.dp, corner = 6.dp, caps = true, weight = FontWeight.Bold, clockWeight = FontWeight.Black, clockSize = 13.sp, gap = 8.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp)
+        // Airy home: its two-tone pixel display — no box, pixel type in its slate ink.
+        HomeLayout.AIRY -> StatusLook(BarBacking.NONE, ink = Color(0xFF3C4A5A), accent = Color(0xFF2E8BFF), font = pixel, clockSize = 12.sp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Night menu: moonlit type, nothing behind (its title sits just under the bar).
+        HomeLayout.NIGHT -> StatusLook(BarBacking.NONE, ink = Color(0xFFE4ECFF), accent = Color(0xFFBFD0FF), glow = Color(0xFF6E8BFF), weight = FontWeight.Light, clockWeight = FontWeight.Normal, clockSize = 13.sp, gap = 10.dp, sep = "·", avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
+        // Orbit deck: deep space — no box, light type, glowing dots between.
+        HomeLayout.ORBIT -> StatusLook(BarBacking.NONE, accent = Color(0xFF8FD3FF), glow = Color(0xFF6FA8FF), weight = FontWeight.Light, clockWeight = FontWeight.Light, clockSize = 14.sp, tracking = 0.06f, sep = "•", gap = 10.dp, avatar = AvatarShape.CIRCLE, avatarSize = 24.dp)
+        // Layout Studio: the theme's colours (its palette follows the theme).
+        HomeLayout.CUSTOM -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.7f).copy(alpha = 0.7f), rim = acc.copy(alpha = 0.45f), corner = 10.dp, avatarSize = 24.dp)
+        // The Pocket Classic / Ribbon bars are their own (Voltcap's isn't drawn there); anything else: the plain look.
         else -> PlainStatusLook.copy(shade = if (paleBehind) 0.62f else 0.32f)
     }
 }
 
 private fun mixC(a: Color, b: Color, t: Float) = Color(a.red + (b.red - a.red) * t, a.green + (b.green - a.green) * t, a.blue + (b.blue - a.blue) * t, 1f)
 
-/** Update 333: [look]'s colours, eased when the layout changes. */
+/** [look]'s colours, eased when the layout changes. */
 @Composable
 internal fun animatedLook(look: StatusLook): StatusLook {
     val bg by animateColorAsState(look.bg, tween(260), label = "barBg")
@@ -161,17 +262,99 @@ internal fun animatedLook(look: StatusLook): StatusLook {
     return look.copy(bg = bg, ink = ink)
 }
 
-/** The capsule round the clock and icons ([BarBacking.CAPSULE]); nothing for the other backings. */
-internal fun Modifier.statusCapsule(look: StatusLook): Modifier =
-    if (look.backing != BarBacking.CAPSULE) this
+private fun StatusLook.shape(): Shape = if (cut) CutCornerShape(corner) else RoundedCornerShape(corner)
+
+internal fun StatusLook.avatarShape(): Shape = when (avatar) {
+    AvatarShape.CIRCLE -> CircleShape
+    AvatarShape.SQUARE -> RoundedCornerShape(3.dp)
+    AvatarShape.ROUNDED -> RoundedCornerShape(8.dp)
+}
+
+/** Whether the pieces sit in one box (CAPSULE, LCD, LABEL). */
+internal val StatusLook.boxed: Boolean get() = backing == BarBacking.CAPSULE || backing == BarBacking.LCD || backing == BarBacking.LABEL
+
+/** The box round all the pieces (CAPSULE, LCD, LABEL) or the ruled line under them (UNDERLINE). */
+internal fun Modifier.statusContainer(look: StatusLook): Modifier = when {
+    look.boxed -> {
+        val shape = look.shape()
+        val round = look.corner >= 12.dp
+        this.drawBehind { look.drawDecorUnder(this) }
+            .background(look.bg, shape)
+            .then(
+                when {
+                    look.rim2 != null && look.rim != null -> Modifier.border(look.rimWidth, Brush.linearGradient(listOf(look.rim, look.rim2, look.rim)), shape)
+                    look.rim != null && look.decor != BarDecor.STRIPE -> Modifier.border(look.rimWidth, look.rim, shape)
+                    else -> Modifier
+                }
+            )
+            .drawBehind { look.drawDecorOver(this) }
+            .padding(
+                start = if (look.decor == BarDecor.STRIPE) 11.dp else if (round) 11.dp else 8.dp,
+                end = if (round) 4.dp else 4.dp, top = 2.dp, bottom = 2.dp
+            )
+    }
+    look.backing == BarBacking.UNDERLINE -> this.drawBehind {
+        val r = look.rim ?: return@drawBehind
+        val h = look.rimWidth.toPx()
+        drawRect(r, Offset(0f, size.height - h), Size(size.width, h))
+        // Ticks along it (a timeline's, a horizon's).
+        val step = 16.dp.toPx()
+        var x = 0f
+        while (x <= size.width) { drawRect(r.copy(alpha = 0.55f), Offset(x, size.height - h - 3.dp.toPx()), Size(1.dp.toPx(), 3.dp.toPx())); x += step }
+    }.padding(bottom = 6.dp)
+    else -> this
+}
+
+/** One group's own box (SEGMENTS). */
+internal fun Modifier.statusSegment(look: StatusLook): Modifier =
+    if (look.backing != BarBacking.SEGMENTS) this
     else {
-        val shape = RoundedCornerShape(look.corner)
+        val shape = look.shape()
         this.background(look.bg, shape)
             .then(if (look.rim != null) Modifier.border(look.rimWidth, look.rim, shape) else Modifier)
-            .padding(horizontal = if (look.corner >= 14.dp) 10.dp else 8.dp, vertical = 3.dp)
+            .padding(horizontal = if (look.corner >= 12.dp) 8.dp else 6.dp, vertical = 3.dp)
     }
 
-/** The bar's own backing behind everything: the edge shade, the toolbar band and its hairline. */
+/** Under the box: tape strips sticking out past its ends (the kraft label). */
+private fun StatusLook.drawDecorUnder(s: DrawScope) = with(s) {
+    if (decor == BarDecor.TAPE) {
+        val tw = 18.dp.toPx(); val th = size.height * 0.7f
+        val tape = Color(0xB3F3EBD3)
+        rotate(-14f, Offset(0f, size.height * 0.5f)) { drawRect(tape, Offset(-tw * 0.5f, size.height * 0.15f), Size(tw, th)) }
+        rotate(12f, Offset(size.width, size.height * 0.5f)) { drawRect(tape, Offset(size.width - tw * 0.5f, size.height * 0.15f), Size(tw, th)) }
+    }
+}
+
+/** Over the box (behind the pieces): grooves, traces, a gloss, a spine's band. */
+private fun StatusLook.drawDecorOver(s: DrawScope) = with(s) {
+    when (decor) {
+        BarDecor.GROOVES -> for (k in 1..2) {
+            // A record label's printed rings, inset from its edge.
+            val inset = (1.5f + k * 2.2f) * density
+            val h = size.height - inset * 2
+            drawRoundRect(ink.copy(alpha = 0.14f), Offset(inset, inset), Size(size.width - inset * 2, h), CornerRadius(h / 2), style = Stroke(0.8f * density))
+        }
+        BarDecor.TRACES -> {
+            val c = ink.copy(alpha = 0.14f); val w = 1f * density
+            val y1 = size.height * 0.2f; val y2 = size.height * 0.84f
+            drawLine(c, Offset(0f, y1), Offset(size.width * 0.28f, y1), w)
+            drawLine(c, Offset(size.width * 0.28f, y1), Offset(size.width * 0.34f, y2), w)
+            drawLine(c, Offset(size.width * 0.34f, y2), Offset(size.width, y2), w)
+            drawCircle(c, 1.8f * density, Offset(size.width * 0.28f, y1)); drawCircle(c, 1.8f * density, Offset(size.width * 0.34f, y2))
+        }
+        BarDecor.GLOSS -> drawRoundRect(
+            Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.15f), Color.Transparent), endY = size.height * 0.55f),
+            cornerRadius = CornerRadius(corner.toPx().coerceAtMost(size.height / 2)), size = Size(size.width, size.height * 0.55f)
+        )
+        BarDecor.STRIPE -> {
+            drawRect(rim ?: accent, Offset.Zero, Size(4.dp.toPx(), size.height))
+            drawRect(ink.copy(alpha = 0.2f), Offset(0f, size.height - 1f * density), Size(size.width, 1f * density))
+        }
+        else -> Unit
+    }
+}
+
+/** Behind the whole bar: the edge shade, and the toolbar's band with its hairline. */
 internal fun Modifier.statusBacking(look: StatusLook, atBottom: Boolean): Modifier = this.drawBehind {
     if (look.shade > 0f) drawRect(
         Brush.verticalGradient(
@@ -183,14 +366,25 @@ internal fun Modifier.statusBacking(look: StatusLook, atBottom: Boolean): Modifi
     if (look.backing == BarBacking.TOOLBAR) {
         drawRect(look.bg)
         look.rim?.let { r ->
-            val h = 1.dp.toPx()
+            val h = look.rimWidth.toPx()
             drawRect(r, Offset(0f, if (atBottom) 0f else size.height - h), Size(size.width, h))
         }
     }
 }
 
-/** The family for the bar's digits: a readout's monospace, else the layout's own type. */
-internal fun StatusLook.family(): FontFamily? = if (mono) FontFamily.Monospace else null
+/** The bar's type: the layout's face, spacing and glow / shadow over [base]. */
+internal fun StatusLook.textStyle(base: TextStyle): TextStyle {
+    var st = base
+    font?.let { st = st.merge(TextStyle(fontFamily = it)) }
+    if (tracking != 0f) st = st.merge(TextStyle(letterSpacing = TextUnit(tracking, TextUnitType.Em)))
+    val sh = glow?.let { Shadow(it.copy(alpha = 0.85f), Offset.Zero, 12f) }
+        ?: if (shadowed) Shadow(Color.Black.copy(alpha = 0.75f), Offset(0f, 1.5f), 5f) else null
+    if (sh != null) st = st.merge(TextStyle(shadow = sh))
+    return st
+}
+
+/** [s] in capitals where the look wants them. */
+internal fun StatusLook.cased(s: String): String = if (caps) s.uppercase() else s
 
 /**
  * Update 333: a layout drawing its own clock on the home screen (Case stacks' panel, Channel grid's bar) marks it while

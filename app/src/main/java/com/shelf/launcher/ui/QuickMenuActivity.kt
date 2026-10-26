@@ -110,7 +110,20 @@ class QuickMenuActivity : ComponentActivity() {
                 Spacer(Modifier.height(10.dp))
                 if (tab == 0) AchievementsTab() else BluetoothTab(ctx)
                 Spacer(Modifier.height(12.dp))
-                Chip("Done", accent = true) { onDone() }
+                ChipFlow {
+                    Chip("Done", accent = true) { onDone() }
+                    // (Update 334: change who's playing from a game — Voltcap opens on its profiles; the game keeps running.)
+                    Chip("Who's playing…", accent = false) {
+                        runCatching {
+                            ctx.startActivity(
+                                Intent(ctx, com.shelf.launcher.MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                                    .putExtra(ProfilePicker.EXTRA, true)
+                            )
+                        }
+                        onDone()
+                    }
+                }
             }
         }
     }

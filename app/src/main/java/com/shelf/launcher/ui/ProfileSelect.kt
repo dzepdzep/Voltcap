@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -88,6 +89,8 @@ import kotlinx.coroutines.launch
 /** Update 332: asked from elsewhere (R1, Settings): LauncherScreen opens the selector. */
 internal object ProfilePicker {
     var request by mutableStateOf(false)
+    /** Update 334: an intent extra (true) that opens Voltcap on "Who's playing?" (the in-game Quick menu). */
+    const val EXTRA = "voltcap_who_is_playing"
 }
 
 /** One choice on the selector: a profile, or the "Add" circle (null). */
@@ -109,6 +112,10 @@ internal fun ProfileSelectScreen(
     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
     var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
     var leaving by remember { mutableStateOf(false) }
+    // (Update 334: a locked profile asks its PIN before it plays or is edited — then [afterPin] goes ahead.)
+    var pinFor by remember { mutableStateOf<Profiles.Profile?>(null) }
+    var afterPin by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun unlockThen(p: Profiles.Profile, go: () -> Unit) { if (p.locked) { pinFor = p; afterPin = go } else go() }
     val scope = rememberCoroutineScope()
     val enter = remember { Animatable(0f) }
     val exit = remember { Animatable(0f) }
@@ -123,11 +130,13 @@ internal fun ProfileSelectScreen(
             Profiles.add(context, "Player ${profiles.size + 1}")?.let { editing = it; cursor = Profiles.list.value.indexOfFirst { p -> p.id == it.id } }
             return
         }
-        leaving = true
         val id = profiles[i].id
-        scope.launch {
-            exit.animateTo(1f, tween(if (lite) 120 else 430, easing = FastOutSlowInEasing))
-            onPick(id)
+        unlockThen(profiles[i]) {
+            leaving = true
+            scope.launch {
+                exit.animateTo(1f, tween(if (lite) 120 else 430, easing = FastOutSlowInEasing))
+                onPick(id)
+            }
         }
     }
 
@@ -140,13 +149,20 @@ internal fun ProfileSelectScreen(
                 .focusRequester(focus)
                 .focusable()
                 .onPreviewKeyEvent { e ->
-                    if (editing != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     when (e.key) {
                         Key.DirectionLeft -> { cursor = (cursor - 1).coerceAtLeast(0); true }
                         Key.DirectionRight -> { cursor = (cursor + 1).coerceAtMost(count - 1); true }
                         Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.NumPadEnter -> { pick(cursor); true }
-                        Key.ButtonY, Key.ButtonX -> { profiles.getOrNull(cursor)?.let { editing = it }; true }
-                        Key.ButtonB, Key.Back, Key.Escape -> { if (!leaving) onSkip(); true }
+                        Key.ButtonY, Key.ButtonX -> { profiles.getOrNull(cursor)?.let { p -> unlockThen(p) { editing = p } }; true }
+                        // (Update 334: at start-up a locked profile that played last isn't kept without its PIN.)
+                        Key.ButtonB, Key.Back, Key.Escape -> {
+                            if (!leaving) {
+                                val last = profiles.firstOrNull { it.id == activeId }
+                                if (atStart && last != null && last.locked) pick(profiles.indexOf(last)) else onSkip()
+                            }
+                            true
+                        }
                         else -> false
                     }
                 },
@@ -179,7 +195,7 @@ internal fun ProfileSelectScreen(
                             playing = p?.id == activeId,
                             ra = p?.raSlot?.let { raNames.getOrNull(it) },
                             onTap = { cursor = i; pick(i) },
-                            onLong = { if (p != null) { cursor = i; editing = p } }
+                            onLong = { if (p != null) { cursor = i; unlockThen(p) { editing = p } } }
                         )
                     }
                 }
@@ -194,6 +210,11 @@ internal fun ProfileSelectScreen(
                 )
             }
         }
+    }
+    pinFor?.let { p ->
+        PinPad("${p.name}'s PIN", check = { Profiles.pinOpens(p, it) }, onDone = {
+            val go = afterPin; pinFor = null; afterPin = null; go?.invoke()
+        }, onCancel = { pinFor = null; afterPin = null })
     }
     editing?.let { p ->
         ProfileEditDialog(p, raNames, steamAvatar, onDone = { editing = null }, onRemoved = {
@@ -257,6 +278,7 @@ private fun ProfileBubble(
             else -> null
         }
         if (sub != null) Text(sub, color = Color.White.copy(alpha = 0.45f * (0.5f + 0.5f * lift)), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (p?.locked == true) Icon(Icons.Filled.Lock, "Locked", tint = Color.White.copy(alpha = 0.55f), modifier = Modifier.padding(top = 3.dp).size(12.dp))
         if (playing) Box(Modifier.padding(top = 4.dp).size(6.dp).clip(CircleShape).background(glow))
     }
 }
@@ -323,6 +345,18 @@ private fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, stea
             }
         }
         MutedNote("A new account: pick this profile, then sign in under Settings › Accounts › RetroAchievements — it becomes this profile's.")
+        // Update 334: a PIN to play or edit this profile.
+        Spacer(Modifier.height(10.dp))
+        SettingsHeading("PIN")
+        var settingPin by remember { mutableStateOf(false) }
+        ChipFlow {
+            Chip(if (p.locked) "Change PIN…" else "Set a PIN…", accent = false) { settingPin = true }
+            if (p.locked) Chip("Remove the PIN", accent = false) { Profiles.setPin(context, p.id, null); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p }
+        }
+        MutedNote(if (p.locked) "Locked: its PIN is asked before it plays or is edited." else "Optional: 4 digits asked before this profile plays or is edited.")
+        if (settingPin) PinPad("A new PIN for ${p.name}", check = null, onDone = { pin ->
+            Profiles.setPin(context, p.id, pin); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p; settingPin = false
+        }, onCancel = { settingPin = false })
         if (p.id != 0) {
             Spacer(Modifier.height(10.dp))
             Chip("Remove this profile", accent = false) { Profiles.remove(context, p.id); onRemoved() }
@@ -416,5 +450,103 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
         val k = 0.96f + 0.04f * e
         scaleX = k; scaleY = k
         cameraDistance = 14f * density
+    }
+}
+
+/**
+ * Update 334: a profile's 4-digit PIN — entered ([check] given: true when it opens) or set ([check] null: typed twice, then
+ * [onDone] with it). A round keypad on the selector's night blue: ◀ ▲ ▼ ▶ and A, the number keys, or touch; ⌫ takes the
+ * last digit back, B cancels. A wrong PIN shakes the dots and clears them.
+ */
+@Composable
+internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (String) -> Unit, onCancel: () -> Unit) {
+    var digits by remember { mutableStateOf("") }
+    var first by remember { mutableStateOf<String?>(null) }
+    var cursor by remember { mutableIntStateOf(4) }
+    var wrong by remember { mutableIntStateOf(0) }
+    val shake = remember { Animatable(0f) }
+    LaunchedEffect(wrong) {
+        if (wrong > 0) { shake.snapTo(1f); shake.animateTo(0f, tween(380)) }
+    }
+    val keys = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK")
+    fun submit() {
+        if (digits.length < 4) return
+        when {
+            check != null -> if (check(digits)) onDone(digits) else { wrong++; digits = "" }
+            first == null -> { first = digits; digits = "" }
+            first == digits -> onDone(digits)
+            else -> { wrong++; first = null; digits = "" }
+        }
+    }
+    fun press(k: String) {
+        when (k) {
+            "⌫" -> digits = digits.dropLast(1)
+            "OK" -> submit()
+            else -> if (digits.length < 4) { digits += k; if (digits.length == 4) submit() }
+        }
+    }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } }
+    Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        ImmersiveDialogWindow()
+        Box(
+            Modifier.fillMaxSize().background(Color(0xE6030812))
+                .focusRequester(focus).focusable()
+                .onPreviewKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    val n = e.nativeKeyEvent.keyCode - android.view.KeyEvent.KEYCODE_0
+                    when {
+                        n in 0..9 -> { press("$n"); true }
+                        e.key == Key.Backspace || e.key == Key.Delete -> { press("⌫"); true }
+                        e.key == Key.DirectionLeft -> { if (cursor % 3 > 0) cursor--; true }
+                        e.key == Key.DirectionRight -> { if (cursor % 3 < 2) cursor++; true }
+                        e.key == Key.DirectionUp -> { if (cursor >= 3) cursor -= 3; true }
+                        e.key == Key.DirectionDown -> { if (cursor < 9) cursor += 3; true }
+                        e.key == Key.ButtonA || e.key == Key.Enter || e.key == Key.DirectionCenter -> { press(keys[cursor]); true }
+                        e.key == Key.ButtonX -> { press("⌫"); true }
+                        e.key == Key.ButtonB || e.key == Key.Back || e.key == Key.Escape -> { onCancel(); true }
+                        else -> false
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    if (check == null && first != null) "Enter it again" else title,
+                    color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.graphicsLayer { translationX = kotlin.math.sin(shake.value * 18f) * 14f * shake.value * density }
+                ) {
+                    for (i in 0 until 4) Box(
+                        Modifier.size(14.dp).clip(CircleShape)
+                            .background(if (i < digits.length) Color.White else Color.White.copy(alpha = 0.18f))
+                            .border(1.dp, if (shake.value > 0.01f) Color(0xFFFF7A7A) else Color.White.copy(alpha = 0.5f), CircleShape)
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                for (r in 0 until 4) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 5.dp)) {
+                        for (c in 0 until 3) {
+                            val i = r * 3 + c
+                            val on = i == cursor
+                            Box(
+                                Modifier.size(52.dp).clip(CircleShape)
+                                    .background(if (on) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.07f))
+                                    .border(if (on) 2.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.18f), CircleShape)
+                                    .pointerInput(i) { detectTapGestures { cursor = i; press(keys[i]) } },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(keys[i], color = Color.White, fontSize = if (keys[i].length > 1) 14.sp else 20.sp, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+            }
+        }
     }
 }

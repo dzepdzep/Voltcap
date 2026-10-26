@@ -630,7 +630,7 @@ internal object CartShells {
         val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
         val a = art.width.toFloat() / art.height.coerceAtLeast(1)
         if (kotlin.math.abs(a / tpl.frontAspect - 1f) > 0.06f) return art
-        val w = tpl.scanCut  // (Update 331: the scan's own banner, not the new frame's window)
+        val w = tpl.win
         val l = (w[0] * art.width).toInt(); val t = (w[1] * art.height).toInt()
         val r = (w[2] * art.width).toInt(); val b = (w[3] * art.height).toInt()
         if (r - l < 8 || b - t < 8 || (l == 0 && t == 0 && r >= art.width && b >= art.height)) art
@@ -650,7 +650,7 @@ internal object CartShells {
         val tpl = MediaCovers.of(platform)?.takeIf { !it.isOwn() }
         val a = art.width.toFloat() / art.height.coerceAtLeast(1)
         val pic = if (tpl != null && kotlin.math.abs(a / tpl.frontAspect - 1f) <= 0.06f) {
-            val w = tpl.scanCut  // (Update 331: the scan's own banner, not the new frame's window)
+            val w = tpl.win
             val l = (w[0] * art.width).toInt(); val t = (w[1] * art.height).toInt()
             val r = (w[2] * art.width).toInt().coerceAtMost(art.width); val b = (w[3] * art.height).toInt().coerceAtMost(art.height)
             if (r - l < 8 || b - t < 8 || (l == 0 && t == 0 && r >= art.width && b >= art.height)) art

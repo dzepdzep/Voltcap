@@ -1,5 +1,44 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 26 Oct 2026 (335): status bars put together each layout's own way
+
+- Update 333 gave every layout the same long rounded pill in other colours; now each is built differently
+  (`ui\StatusLooks.kt`, `ui\HomeChrome.kt`): the pieces are grouped (time · devices · search / trophy / bell · Wi-Fi and
+  battery · points and your picture) and each layout chooses what's behind them — nothing, the edge shade, a full-width
+  toolbar, one box, a small box per group, an LCD window, a printed label or a ruled line — what sits between groups
+  (dots, rules, slashes), the type (size and weight of the time, capitals and spacing, monospace / serif / pixel faces,
+  a phosphor or neon glow, a soft shadow), your picture's shape and size, and small details of the material (kraft tape,
+  record rings, circuit traces, a gloss, a spine's coloured band, an LCD's unlit 88:88).
+  E.g. Hero / Spotlight / Cross / Console hub / Resume / Memory card / Night / Orbit / Twin desk / Airy: no box at all
+  · Icon bar / Live tiles / Storage / Cube / Pocket Quest: separate small segments · Side menu / Library / Twin icons:
+  integrated toolbars · Disc station / Circuit board: LCD readouts · Shelf / Stacks / Console stack / Crate / Cardboard
+  box / Card binder: themed labels · Timeline: a ruled line with ticks · Dashboard / Arcade / Green Core / File select:
+  their own panels. Memory card's type is dark on its pale grey; Night menu's no longer runs into its title.
+
+Checked on the AYN Thor (release): screenshots of the bar in all 37 layouts that draw it, then the fixes above.
+Not tested: the bar at the bottom, the music player beside it, a second screen.
+- Smaller: avatars 20–24 dp on labels / readouts, tighter boxes; narrow screens drop separators and leave the
+  percentage to the gauge.
+- The battery gauge's cells are in the bar's ink (red only under 15 %) — the theme's coral read as a warning.
+  Accessory chips follow the ink too (they were always white).
+
+Files: `ui\StatusLooks.kt`, `ui\HomeChrome.kt`, `ui\HomeExtras.kt`, `ui\AccessoryStatus.kt`.
+
+## Update — 26 Oct 2026 (334): case pack undone; Who's playing mid-game; a PIN per profile
+
+- **Case pack (331) undone**: the case fronts / backs / cartridge shells are back to update 330's (`ui\CoverCases.kt`,
+  `ui\MediaCovers.kt`, `ui\MediaBacks.kt`, `ui\CartShells.kt`, `ui\CollectorBacks.kt`, `ui\PrintedBacks.kt` and 76
+  pictures in `res\drawable-nodpi`). The disc fit (331) stays. The 48 pictures the pack added are unused (the release
+  build drops them); delete them from `app\src\main\res\drawable-nodpi` if you like (cov_front_ps3, tpl_back_steam …).
+- **Who's playing? while a game runs**: the in-game Quick menu has a "Who's playing…" chip (Voltcap opens on the
+  profile screen); a hotkey action "Who's playing?"; still R1 › Who's playing and Settings › Start-up.
+- **PIN per profile** (optional): Edit profile › PIN › Set a PIN… (4 digits, asked twice) / Remove the PIN. A locked
+  profile shows a lock; picking it or editing it asks for the PIN — D-pad + A on the keypad, number keys, touch;
+  X deletes, B cancels. The PIN is kept only as a hash.
+
+Files: `ui\ProfileSelect.kt`, `data\Profiles.kt`, `MainActivity.kt`, `ui\QuickMenuActivity.kt`, `data\Hotkeys.kt`,
+`ui\LauncherScreen.kt`, the six case files above, 76 drawables (`project_copy`), test `CasePack331Test.kt`.
+
 ## Update — 26 Oct 2026 (333): the status bar dressed for each layout
 
 - **One status bar, each layout's own look** (`ui\StatusLooks.kt`, new; `ui\HomeChrome.kt`): everything the bar shows

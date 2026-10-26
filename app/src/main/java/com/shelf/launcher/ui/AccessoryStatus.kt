@@ -116,7 +116,7 @@ private fun Accessory.chipLevel(): Int? {
 
 /** Up to [maxChips] compact chips; the rest collapse into "+N". Whole group opens the popup. */
 @Composable
-internal fun AccessoryChips(accessories: List<Accessory>, maxChips: Int, onClick: () -> Unit) {
+internal fun AccessoryChips(accessories: List<Accessory>, maxChips: Int, tint: Color = Color.White, onClick: () -> Unit) {
     if (accessories.isEmpty() || maxChips <= 0) return
     val shape = RoundedCornerShape(8.dp)
     Row(
@@ -126,21 +126,21 @@ internal fun AccessoryChips(accessories: List<Accessory>, maxChips: Int, onClick
         val shown = if (accessories.size <= maxChips) accessories else accessories.take(1)
         shown.forEachIndexed { i, a ->
             if (i > 0) Spacer(Modifier.width(6.dp))
-            Icon(a.kind.icon(), a.name, tint = Color.White, modifier = Modifier.size(16.dp))
+            Icon(a.kind.icon(), a.name, tint = tint, modifier = Modifier.size(16.dp))
             val level = a.chipLevel()
             if (level != null) {
                 Spacer(Modifier.width(2.dp))
                 Icon(
                     batteryIconFor(level, a.battery?.charging == true), null,
-                    tint = if (level < 15 && a.battery?.charging != true) LowBatteryColor else Color.White,
+                    tint = if (level < 15 && a.battery?.charging != true) LowBatteryColor else tint,
                     modifier = Modifier.size(14.dp)
                 )
-                Text("$level%", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                Text("$level%", color = tint, fontSize = 11.sp, fontWeight = FontWeight.Medium)
             }
         }
         if (accessories.size > shown.size) {
             Spacer(Modifier.width(4.dp))
-            Text("+${accessories.size - shown.size}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("+${accessories.size - shown.size}", color = tint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
