@@ -1,5 +1,71 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (352, pass 5 batch A–C): category screen finished, smoother looks and home layouts
+
+Details: `tools\qa\REPORT.md` (pass 5, batch A–C), `defects.json` D46, D54–D58.
+- **Pocket Dashboard on the Thor's two screens:** the big preview on top, every system as a round icon on the lower screen.
+  Tap one to pick it, tap it again to open it.
+- **Game look per category** (Settings › Categories › Game look per category): a console or list can show its games its
+  own way (Covers, Wide, Box art, Cartridges & discs, Discs only); "Follow the layout", Reset, Reset all. File:
+  `data\CategoryGameLooks.kt` (new), `LauncherViewModel.kt`, `ui\SettingsDialog.kt`.
+- **Customize consoles** shows a small preview of each console's choice (built, not yet checked on screen).
+- **Disc games in their case:** with "Case + media" (or Disc in its case) a game with its own disc photo now shows its case
+  with that disc half out (it used to stay a bare disc).
+- **Smoother:** Collector's Drawers (about 9 % slow frames → 2 %), System Blades, Stage, Constellation, Vault; the Airy home
+  (13 % → 2 %), Circuit, Orbit deck, Panels, Night menu and the Blades home lists.
+- **Fixed:** Pocket Dashboard on a light theme (title and buttons were white on white).
+- Checked on the Thor: all 10 looks with reduced motion, Lite and a light theme; Follow home layout for 6 layouts.
+- QA tools: a test preview now ends with the run (before, a tried layout stayed until Voltcap restarted).
+
+
+## Update — 27 Oct 2026 (351, pass 4 batch 2): polish of the 10 category looks
+
+Details: `tools\qa\REPORT.md` (pass 4, batch 2), `defects.json` D47–D53. File: `ui\CategoryLooks.kt`.
+- Consoles now stand on their plinth / pedestal at their own size and proportions, never floating.
+- System Blades: clear of the header, readable side labels, much smoother (18.9 % → about 1–6 % slow frames).
+- Collector's Drawers: drawers open one at a time, with inner walls, handles and standing covers.
+- Pocket Worlds: richer pixel scenes per maker, a stone pedestal, no pixel filter on the console, a shade under the title.
+- Archive 1994: a fixed-size title (no flicker); "Last played" now fits in the facts table.
+- Channel Surf: a CRT set with a channel number, a short change effect and a lower-third.
+- Generations: real years; handhelds have their own lane under the line; the lane no longer touches the name.
+- Constellation: an even ring, with the system you're on brought out at the right.
+- System Vault: the module ejects, travels and is pushed home; the screen keeps the old one until then.
+- Pocket Dashboard: a big preview and a row of round icons.
+- Checked on the Thor: all 10 looks recorded at 120 fps with no flashes or black frames.
+- Not done yet: Pocket Dashboard on the Thor's second screen; light theme / Lite mode checks.
+
+
+## Update — 27 Oct 2026 (350, pass 4 batch 1): category looks, a home layout per category, a medium per console
+
+Details: `tools\qa\REPORT.md` (pass 4), `defects.json` D42–D46.
+- **10 new looks for the category screen** (Settings › Categories › Category screen › Look), beside Tiles, Slides, Wall and Grid:
+  - System Stage, System Blades, Collector's Drawers, Pocket Worlds, Archive 1994;
+  - Channel Surf, Generations, Constellation, System Vault, Pocket Dashboard.
+  - Each moves its own way: ◀ ▶, ▲ ▼, or a grid. Generations goes by release year and doesn't change your category order.
+  - Files: `ui\CategoryLooks.kt` (new), `ui\PlatformBrowser.kt`, `ui\PlatformBrowserSettings.kt`, `data\Features.kt`.
+  - New switch **Follow home layout**: the look goes with the home layout you open it from (Case stacks → System Stage,
+    TV room → Channel Surf…).
+- **A home layout per category** (Settings › Categories › Home layout per category):
+  - "Keep <layout> here", "Follow the default", Reset and Reset all.
+  - L2 / R2 switch the layout with the category, with no wrong frame in between. Checked on the Thor: GameCube in Case
+    stacks, the rest in Voltcap row.
+  - Files: `data\CategoryLayouts.kt` (new), `LauncherViewModel.kt`, `ui\SettingsDialog.kt`.
+- **Mix › Customize consoles** (Game look › Cartridges & discs › Mix): each console can be
+  - Automatic (its original medium),
+  - Cartridge / disc,
+  - Retail case,
+  - Case with its media,
+  - or Cover.
+  - It follows its games into Favorites and mixed lists.
+  - Files: `ui\MixConsoles.kt` (new), `ui\PhysicalMedia.kt` and the case / disc drawing files.
+- **Tile home:** round buttons dropped on the tiles in Edit Home go back under the tiles (D39).
+- **QA tools:** device scripts `looks.sh`, `catlayout.sh`, `mixcon.sh`; explorer fixes (D38, D42).
+- **Not done yet:**
+  - the second screen for the new looks;
+  - a per-category game look;
+  - the full Settings controller walk;
+  - Case stacks / Arcade category-switch speed.
+
 ## Update — 27 Oct 2026 (350, pass 3): every layout smoother, Tile home Switch-style, controller fixes in R1 / Settings
 
 Third QA pass on the Thor, all layouts. Details: `tools\qa\REPORT.md` (pass 3), `defects.json` D25–D41.

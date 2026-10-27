@@ -723,7 +723,7 @@ private fun HomeTile(
             )
             .pointerInput(game.stableKey) { detectTapGestures { tap() } }
     ) {
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl, game.platform)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
         // (Update 173: an app without art: its icon on the label / in the case.)
         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(game, coverUrl) else null
@@ -746,7 +746,7 @@ private fun HomeTile(
                     spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
             }
-        } else if (realScanOf(cardArtType, typedArtUrl) != null) {
+        } else if (realScanOf(cardArtType, typedArtUrl, game.platform) != null) {
             // Update 129: "Real discs": the game's own scan, standing free.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
                 MediaFocus(focused) { RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(8.dp), platform = game.platform, gameKey = game.stableKey) }

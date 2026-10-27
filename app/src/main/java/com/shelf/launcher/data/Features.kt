@@ -669,6 +669,14 @@ object Features {
      * fraction (0..1) of the free room inside the safe zone. Missing id = the widget's normal spot.
      */
     val widgetPositions = StringPref("widget_positions", "")
+    /** Pass 4: Game look › Cartridges & discs › Mix › Customize consoles — each console's medium (ui/MixConsoles.kt), JSON. */
+    val mixConsoles = StringPref("mix_consoles", "")
+    /** Pass 4: each category's own home layout (data/CategoryLayouts.kt), as JSON {category key: layout name}. */
+    val catLayouts = StringPref("cat_layouts", "")
+    /** Pass 4: the home layout of every category without its own (set the first time a category gets one). */
+    val catLayoutDefault = StringPref("cat_layout_default", "")
+    /** Pass 5: each category's own game look (data/CategoryGameLooks.kt), as JSON {category key: CardArtType name}. */
+    val catGameLooks = StringPref("cat_game_looks", "")
     /** Home widgets' sizes set in Edit Home ("id=1.2;…", 1 = normal; the corner handle or L2 / R2). */
     val widgetScales = StringPref("widget_scales", "")
     /** Widths (dp) that moved home parts keep (update 90: \"id=320.0;…\"). */
@@ -2061,9 +2069,32 @@ object Features {
     // ---- Platform browser (ui/PlatformBrowser.kt): Slides, Wall and Grid views of the platforms ----
     /** How the category screen looks: the classic tiles, or the platform browser's Slides / Wall / Grid. */
     enum class PlatformView(val label: String) {
-        TILES("Tiles"), SLIDES("Slides — one platform at a time"), WALL("Wall — slanted art slices"), GRID("Grid — horizontal cards")
+        TILES("Tiles"), SLIDES("Slides — one platform at a time"), WALL("Wall — slanted art slices"), GRID("Grid — horizontal cards"),
+        // Pass 4 (ui/CategoryLooks.kt).
+        STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
+        ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
+        VAULT("System Vault"), DASHBOARD("Pocket Dashboard")
     }
     val platformView = EnumPref("pb_view", PlatformView.TILES, PlatformView.values())
+    /** Pass 4: the category screen's look follows the home layout of the category you open it from (followLookFor). */
+    val pbFollowHome = BoolPref("pb_follow_home", false)
+
+    /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
+    fun followLookFor(l: HomeLayout): PlatformView = when (l) {
+        HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CASEFLOW, HomeLayout.HERO, HomeLayout.SPOT -> PlatformView.STAGE
+        HomeLayout.BLADES, HomeLayout.SIDE, HomeLayout.CROSS, HomeLayout.NIGHT -> PlatformView.BLADES
+        HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
+        HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
+        HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
+        HomeLayout.TV, HomeLayout.CHAN -> PlatformView.CHANNEL
+        HomeLayout.TIMELINE, HomeLayout.CONSOLES -> PlatformView.GENERATIONS
+        HomeLayout.ORBIT, HomeLayout.CIRCUIT, HomeLayout.CUBE, HomeLayout.BUBBLES -> PlatformView.CONSTELLATION
+        HomeLayout.MEMCARD, HomeLayout.FILESELECT, HomeLayout.DISCS -> PlatformView.VAULT
+        HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.TWIN_SHOWCASE, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.PANELS, HomeLayout.DASH -> PlatformView.DASHBOARD
+        HomeLayout.GRID, HomeLayout.HUB, HomeLayout.LIVE -> PlatformView.GRID
+        HomeLayout.ARCADE -> PlatformView.WALL
+        else -> PlatformView.TILES
+    }
     /** Slides view: the grey skewed bands behind the cover. */
     val pbBands = BoolPref("pb_bands", true)
     /** Every element of the platform slide can be switched off. */

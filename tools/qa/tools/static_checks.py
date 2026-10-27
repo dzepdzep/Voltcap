@@ -159,6 +159,72 @@ def check(src):
                     "read ShelfTheme.live.value in a draw / graphicsLayer lambda (or only in the branch that needs it)")
                 break
 
+
+        # GLIDE-COMPOSE (pass 5, D54): an animation's value read in composition (`val open = 1f - abs(i - pos.value)` at
+        # the top of a looped item) re-composes every item on every frame of the animation. Read it in graphicsLayer /
+        # draw lambdas, a local `fun`, or a derivedStateOf that changes rarely. (A review list: some reads are on purpose.)
+        anims = set(re.findall(r"val\s+(\w+)\s*=\s*(?:rememberLookGlide|remember\s*\{\s*Animatable|androidx\.compose\.animation\.core\.animateFloatAsState|animateFloatAsState|animateDpAsState)\b", s))
+        SAFE_OWNERS = {"graphicsLayer", "drawBehind", "drawWithContent", "drawWithCache", "Canvas", "derivedStateOf", "LaunchedEffect",
+                       "snapshotFlow", "offset", "layout", "onDrawBehind", "onDrawWithContent", "withFrameNanos", "animateTo", "snapTo",
+                       "launch", "pointerInput", "detectDragGestures", "detectTapGestures", "onKeyEvent", "onPreviewKeyEvent",
+                       "DisposableEffect", "SideEffect", "drawIntoCanvas", "withTransform", "translate", "rotate", "scale", "clipRect",
+                       "onGloballyPositioned", "onSizeChanged", "remember", "produceState", "coroutineScope", "withoutReadObservation"}
+
+        def enclosing_safe(pos):
+            j = pos
+            for _ in range(40):
+                depth = 0
+                while j > 0:
+                    j -= 1
+                    ch = s[j]
+                    if ch == "}":
+                        depth += 1
+                    elif ch == "{":
+                        if depth == 0:
+                            break
+                        depth -= 1
+                if j <= 0:
+                    return False
+                k = j - 1
+                while k > 0 and s[k] in " \t\n\r":
+                    k -= 1
+                if s[k] in "=,(" or s[k - 1:k + 1] == "->":
+                    return True  # a lambda value or argument: read when it's called
+                if s[k] == ")":
+                    d = 0
+                    while k > 0:
+                        if s[k] == ")":
+                            d += 1
+                        elif s[k] == "(":
+                            d -= 1
+                            if d == 0:
+                                break
+                        k -= 1
+                    k -= 1
+                e2 = k + 1
+                while k > 0 and (s[k].isalnum() or s[k] in "_."):
+                    k -= 1
+                owner = s[k + 1: e2].split(".")[-1]
+                if owner in SAFE_OWNERS:
+                    return True
+                pre = s[max(0, j - 160): j]
+                if re.search(r"\bfun\s+[\w.<>]+\s*\([^)]*\)[^{=]*$|\bget\(\)\s*$|\bobject\b[^{]*$|\bclass\b[^{]*$", pre):
+                    # A helper fun's body runs when it's called; a @Composable fun's body is composition.
+                    return not re.search(r"@Composable[^{}]*$", s[max(0, j - 400): j])
+            return False
+
+        if anims:
+            for m in re.finditer(r"\b(" + "|".join(map(re.escape, anims)) + r")\.value\b", s):
+                line = lines[s.count("\n", 0, m.start())]
+                col = m.start() - (s.rfind("\n", 0, m.start()) + 1)
+                if line[:col].count("{") > line[:col].count("}"):
+                    continue  # a lambda opened on this line
+                if re.search(r"\bfun\s+\w+\s*\([^)]*\)\s*(:\s*\w+\s*)?=", line):
+                    continue  # a local fun: read when it's called
+                if enclosing_safe(m.start()):
+                    continue
+                add("GLIDE-COMPOSE", "MED", m.start(), f"`{m.group(1)}.value` read in composition: every item re-composes on every animation frame; read it in a layer/draw lambda")
+
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

@@ -1020,6 +1020,39 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         TestHooks.look.value = null
     }
+    // Pass 5: a game with a cover for each console, for Customize consoles' previews (rebuilt when the games or their art change).
+    val mixSamples = remember(state.games, state.art, state.artOverrides) {
+        val out = HashMap<String, Pair<String, String>>()
+        for (g in state.games) {
+            if (g.platform in out) continue
+            val c = state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: continue
+            out[g.platform] = g.name to c
+        }
+        out as Map<String, Pair<String, String>>
+    }
+    // Pass 4: Mix › Customize consoles reads the look in force and your consoles.
+    SideEffect {
+        val carts = state.appearance.cardArtFor() == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC
+        if (MixConsoles.lookIsCarts.value != carts) MixConsoles.lookIsCarts.value = carts
+        if (MixConsoles.platforms.value != state.availablePlatforms) MixConsoles.platforms.value = state.availablePlatforms
+        if (MixConsoles.samples.value != mixSamples) MixConsoles.samples.value = mixSamples
+    }
+    // Pass 4: Settings › Categories › Home layout per category acts through the view model.
+    SideEffect {
+        CategoryLayoutActions.currentKey = { viewModel.currentCategoryKey() }
+        CategoryLayoutActions.set = { l -> viewModel.setCategoryLayout(l) }
+        CategoryLayoutActions.reset = { k ->
+            if (k == viewModel.currentCategoryKey()) viewModel.setCategoryLayout(null)
+            else com.shelf.launcher.data.CategoryLayouts.set(k, null, viewModel.uiState.value.appearance.homeLayout)
+        }
+        CategoryLayoutActions.clear = { viewModel.clearCategoryLayouts() }
+        CategoryGameLookActions.set = { l -> viewModel.setCategoryGameLook(l) }
+        CategoryGameLookActions.reset = { k ->
+            if (k == viewModel.currentCategoryKey()) viewModel.setCategoryGameLook(null)
+            else com.shelf.launcher.data.CategoryGameLooks.set(k, null)
+        }
+        CategoryGameLookActions.clear = { viewModel.clearCategoryGameLooks() }
+    }
     // (Update 330, phase 4: the round shortcuts for this session only — nothing saved.)
     val testShortcuts = TestHooks.shortcuts.value
     LaunchedEffect(testShortcuts) {
@@ -1058,6 +1091,27 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
 
+    // (Pass 5: theme / performance mode asked for by a QA run — TestHooks.kt, off without its flag file.)
+    val testTheme = TestHooks.theme.value
+    LaunchedEffect(testTheme) {
+        val name = testTheme ?: return@LaunchedEffect
+        TestHooks.theme.value = null
+        com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == name }?.let { t ->
+            android.util.Log.i("VoltcapQA", "theme old=${state.appTheme.name} new=${t.name}")
+            viewModel.setTheme(t)
+        }
+    }
+    val previewEnds = TestHooks.previewEnded.intValue
+    LaunchedEffect(previewEnds) { if (previewEnds > 0) { android.util.Log.i("VoltcapQA", "preview ended"); viewModel.reloadAppearance() } }
+    val testPerf = TestHooks.perf.value
+    LaunchedEffect(testPerf) {
+        val name = testPerf ?: return@LaunchedEffect
+        TestHooks.perf.value = null
+        com.shelf.launcher.data.PerformanceMode.values().firstOrNull { it.name == name }?.let { m ->
+            android.util.Log.i("VoltcapQA", "perf old=${state.appearance.performanceMode.name} new=${m.name} (preview)")
+            viewModel.previewAppearance(state.appearance.copy(performanceMode = m))
+        }
+    }
     // (Update 329: the R1 tile walk over adb — TestHooks / TileCheck, off without its flag file; previews only.)
     val tileWalk = TestHooks.tileWalk.value
     val walkContext = androidx.compose.ui.platform.LocalContext.current
@@ -1928,6 +1982,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 albumBlur = state.appearance.secondMusicBlurArt,
                 albumBlurPercent = state.appearance.secondMusicBlur
             )
+        } else if (LookSecondScreen.content != null && !(showDetails && state.appearance.secondDetails)) {
+            // Pass 5: a category look that uses the lower screen (Pocket Dashboard's grid of systems) while it's open.
+            LookSecondScreen.content?.invoke()
         } else if (TwinScreens.ctx != null && state.appearance.homeLayout.isTwin && SecondScreenShown.value &&
             !TwinScreens.dashboard && // Update 180: the dashboard asked for from the layout
             !(showDetails && state.appearance.secondDetails)) {
@@ -2460,6 +2517,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val a = state.appearance
         val moved = HomeWidgets.position(HomeWidgets.SHORTCUTS) != null
         val atTiles = tileLayout && a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW
+        // (QA pass 4, D39: on the Tile home, buttons dropped on or just under the tiles go back to "by the tiles" — a
+        // place saved there floated at that fixed spot, and once the tiles moved (Middle) they covered them.)
+        if (moved && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
+            val r = PartRects.at[HomeWidgets.SHORTCUTS]
+            if (r != null && r.top < TileRowSpan.bottom + 120f && r.bottom > TileRowSpan.top) HomeWidgets.reset(HomeWidgets.SHORTCUTS)
+        }
         if (moved && shortcutsMovable && a.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.FREE && !atTiles) {
             viewModel.setAppearance(a.copy(shortcutSpot = com.shelf.launcher.data.ShortcutSpot.FREE, tileShortcuts = true))
         }
@@ -3984,7 +4047,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
                     // Game row (update 202) — Tile home was out of the list when that came.)
                     Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")
-                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid() }) {
+                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid()
+                            // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
+                            val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
+                            TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
@@ -4597,7 +4663,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             enter = fadeIn(tween(160)),
             exit = fadeOut(tween(120))
         ) {
-            val browserView = com.shelf.launcher.data.Features.platformView.value
+            // (Pass 4: Follow home layout picks the look as it opens — CategoryLookNow.)
+            val browserView = CategoryLookNow.resolve(categoryScreenOpen, state.appearance.homeLayout)
             if (browserView == com.shelf.launcher.data.Features.PlatformView.TILES) {
                 CategoryScreen(
                     categoryTiles, categoryIndex, onPick = { pickCategory(it) },
@@ -6157,7 +6224,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     // Volume / media / power keys are not ours: the system gets them.
                     if (isSystemKey(event.nativeKeyEvent.keyCode)) return@onKeyEvent false
                     // The platform browser (Slides / Wall / Grid) has its own keys; the classic tiles keep these.
-                    val browserView = com.shelf.launcher.data.Features.platformView.value
+                    val browserView = CategoryLookNow.current()
                     if (browserView != com.shelf.launcher.data.Features.PlatformView.TILES) {
                         return@onKeyEvent platformBrowserKey(
                             event, pbState, browserView, categoryTiles, categoryIndex,
@@ -7009,3 +7076,6 @@ private fun ProvideNameColors(cat: com.shelf.launcher.ui.theme.ShelfColors?, con
     val c = cat?.let { base.copy(accent = it.accent, accentGlow = it.accentGlow, secondary = it.secondary) } ?: base
     androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides c, content = content)
 }
+
+/** QA pass 4 (D39): the Tile home tiles' top and bottom on the screen, in dp (written as they're placed). */
+internal object TileRowSpan { @JvmStatic var top = 0f; @JvmStatic var bottom = 0f }

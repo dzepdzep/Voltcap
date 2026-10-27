@@ -537,6 +537,279 @@
    "fix": "turnedFar is a plain mutableState set from snapshotFlow only when the answer changes (initial value computed synchronously).",
    "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% → 22.7%, p90 42 → 32 ms, p99 85 → 77 ms",
    "verified": "Thor, runs SB (before) / SA (after), 14:35 build"
+  },
+  {
+   "id": "D42",
+   "title": "Explorer (QA tool): page lost whenever a row walk started on the search field",
+   "rule": "TOOL",
+   "severity": "low",
+   "status": "fixed-compiles",
+   "found": "E6: 9 'row lost at Search settings' — each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
+   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every ◀ along a row counted as leaving the page.",
+   "files": [
+    "ui/QaExplore.kt"
+   ],
+   "fix": "pageLeft from the first row that isn't the search field / Close; no row walk on those two.",
+   "check": "next explorer run: no 'row lost at Search settings'"
+  },
+  {
+   "id": "D43",
+   "title": "Per-category home layouts (feature): a category can keep its own home layout",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified",
+   "files": [
+    "data/CategoryLayouts.kt",
+    "LauncherViewModel.kt",
+    "ui/SettingsDialog.kt",
+    "ui/LauncherScreen.kt",
+    "data/Features.kt",
+    "data/LayoutOnly.kt"
+   ],
+   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings › Categories › Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
+   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 → Voltcap row, GameCube → Case stacks, back → Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
+   "verified": "Thor, preview session (nothing saved), qa_runs/r7/CL"
+  },
+  {
+   "id": "D44",
+   "title": "Ten new category-screen looks + Follow home layout (feature)",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified-visual",
+   "files": [
+    "ui/CategoryLooks.kt",
+    "ui/PlatformBrowser.kt",
+    "ui/PlatformBrowserSettings.kt",
+    "data/Features.kt",
+    "ui/SettingsDialog.kt",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "System Stage, System Blades, Collector's Drawers, Pocket Worlds, Archive 1994, Channel Surf, Generations, Constellation, System Vault, Pocket Dashboard; D-pad per look (row / column / grid / release-year order for Generations, saved order untouched); Follow home layout resolved once as the screen opens.",
+   "check": "looks.sh L1 + hand screenshots; fixes after the first look at them: header overlaps (Blades, Vault), Archive title on paper, Constellation crowding, Drawers opening",
+   "verified": "Thor screenshots qa_runs/r7/L1 (before refinements) and screens/look_*.png; refined build not yet re-shot for every look"
+  },
+  {
+   "id": "D45",
+   "title": "Mix › Customize consoles (feature): each console its own medium",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified (CASE, COVER, AUTO, MEDIUM)",
+   "files": [
+    "ui/MixConsoles.kt",
+    "ui/PhysicalMedia.kt",
+    "ui/GameLookPicker.kt",
+    "ui/LauncherScreen.kt",
+    "ui/Carousel.kt",
+    "ui/RealMedia.kt",
+    "ui/DiscCase3D.kt",
+    "ui/GameCard.kt",
+    "ui/LaunchThrow.kt",
+    "ui/MediaInspectView.kt",
+    "ui/StyleDiscStation.kt"
+   ],
+   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing — fixed.",
+   "check": "mixcon.sh MY (GameCube): AUTO / MEDIUM discs, CASE retail boxes, COVER covers",
+   "verified": "Thor, preview session, qa_runs/r7/MY"
+  },
+  {
+   "id": "D47",
+   "title": "Looks: consoles floating above floors and inconsistent sizes",
+   "rule": "art-fit",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "ArtBounds measures the picture's opaque bounds; LookPicture content-fits and stands it on the floor."
+  },
+  {
+   "id": "D48",
+   "title": "Constellation focus panel / Vault reader screen invisible after a move",
+   "rule": "STEP-READ (R12)",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "LookStep.now() reads the Animatable before checking pending."
+  },
+  {
+   "id": "D49",
+   "title": "Pocket Worlds dropped a sliding world / clouds jumped edges",
+   "rule": "WINDOW-BY-GLIDE (R13), WRAP-AFTER-PARALLAX (R14)",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "lookWindow spans selection and glide; base.mod(W)+shift."
+  },
+  {
+   "id": "D50",
+   "title": "System Blades 18.85 % janky",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Face only for |i-sel|<=1, window ±3, shadow only on the blade coming forward → 1.14 % (L7)."
+  },
+  {
+   "id": "D51",
+   "title": "Archive: Last played row cut off under a two-line title",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Last played takes the fourth cell of the facts table.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D52",
+   "title": "Generations: handheld lane overlaps the selected system's name",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Axis at 0.46h, handheld objects 1.8:1, lane 24 dp under the line.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D53",
+   "title": "Pocket Worlds: header unreadable on a bright sky",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "72 dp shade under the title row.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D54",
+   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1–6 %)",
+   "rule": "GLIDE-COMPOSE (R17)",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 (looks.sh L8 numbers, code review)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "root_cause": "Drawers: `val o by animateFloatAsState` used for sizes / offsets in composition (and the auto-sized labels re-fitted every frame). Blades / Stage: `val open = 1f - abs(i - pos.value)` at the top of each item. Constellation / Vault: z-order read from the animation in composition.",
+   "fix": "Read in layer / draw lambdas or local funs; the drawer's insides are drawn full size and revealed with a clip (translate with the front); z-orders via derivedStateOf.",
+   "evidence": [
+    "qa_runs/r8 P1: Drawers 2.13 % / 1.61 % (was 9.42 %), Blades 1.73 % / 2.34 %"
+   ]
+  },
+  {
+   "id": "D55",
+   "title": "Pocket Dashboard lower screen: the grid scrolled on every move, so a second tap hit another system",
+   "rule": "TOUCH",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 (tap PlayStation twice on display 4: the second tap picked Sega CD)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Scrolls by whole rows only when the system you're on leaves the view.",
+   "evidence": [
+    "qa_runs/r8/T.tar: tap 1 → PlayStation focused, tap 2 → PlayStation opened"
+   ]
+  },
+  {
+   "id": "D56",
+   "title": "Light theme (Lobby): Pocket Dashboard's title, buttons and legend white on a light background",
+   "rule": "THEME",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 looksmodes M1 LIGHT",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "The look's ground is the theme background darkened when it is light (lookDarkBackground).",
+   "evidence": [
+    "qa_runs/r8/MX.tar M2_LIGHT_DASHBOARD"
+   ]
+  },
+  {
+   "id": "D57",
+   "title": "Home layouts re-composed their rows on every glide frame (Airy, Circuit, Orbit deck, Panels, Night menu, Blades lists)",
+   "rule": "GLIDE-COMPOSE (R17)",
+   "severity": "med",
+   "status": "verified (Airy); measured (others)",
+   "found": "2026-10-27 pass 5 static_checks GLIDE-COMPOSE",
+   "files": [
+    "ui/StyleAiryHome.kt",
+    "ui/StyleCircuit.kt",
+    "ui/StyleOrbitDeck.kt",
+    "ui/StylePanels.kt",
+    "ui/StyleNightMenu.kt",
+    "ui/StyleBlades.kt"
+   ],
+   "fix": "Visible windows / z-orders as derivedStateOf; positions read in offset {} / graphicsLayer.",
+   "evidence": [
+    "layouts.sh B5/B6 → A5: AIRY 12.80 → 1.82 % (p99 48 → 21 ms), CIRCUIT 13.55 → 11.84 %, ORBIT 8.33 → 7.85 %, PANELS 6.56 → 5.81 %; NIGHT 6.27 → 7.77 % and BLADES 2.26 → 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
+   ]
+  },
+  {
+   "id": "D58",
+   "title": "QA tooling: a run's preview lasted until Voltcap restarted (layout / look tried stayed; Toni's changes weren't saved)",
+   "rule": "PREVIEW-LEAK (R16)",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 code review of TestHooks.previewOnly",
+   "files": [
+    "ui/TestHooks.kt",
+    "ui/LauncherScreen.kt",
+    "LauncherViewModel.kt",
+    "tools/qa/device/*.sh"
+   ],
+   "fix": "`--ez voltcap_test_preview false` ends it (saved appearance reloaded); every preview script ends with it. Voltcap was force-stopped once to clear the open preview (no data touched).",
+   "evidence": [
+    "logcat 'preview ended' after the Customize consoles check"
+   ]
+  },
+  {
+   "id": "D46",
+   "title": "Disc games with a real disc photo never showed 'case with the disc half out'",
+   "rule": "PHYSICAL-MEDIA",
+   "severity": "low",
+   "status": "verified",
+   "found": "pass 4 mixcon",
+   "files": [
+    "ui/PhysicalMedia.kt",
+    "ui/GameCard.kt",
+    "ui/Carousel.kt",
+    "ui/GridHome.kt",
+    "ui/HeroCarousel.kt",
+    "ui/LaunchThrow.kt",
+    "ui/StyleHomes.kt",
+    "ui/TileHome.kt"
+   ],
+   "root_cause": "The game's own disc photo (realScanOf) won before the case template was consulted.",
+   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles › Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
+   "evidence": [
+    "qa_runs/r8/MX.tar MX_GameCube_CASE_MEDIA (cases with their own discs), _MEDIUM (discs), _CASE (boxes)"
+   ]
   }
  ]
 }

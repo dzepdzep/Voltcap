@@ -11,7 +11,7 @@ for L in $list; do
   am start -n com.shelf.launcher/.MainActivity --es voltcap_test_category ALL > /dev/null 2>&1; sleep 3
   sh vqa.sh seq "R L" 300 > /dev/null; sleep 1
   logcat -c; dumpsys gfxinfo com.shelf.launcher reset > /dev/null
-  (screenrecord --size 960x540 --time-limit 11 out/${run}_$L.mp4 > /dev/null 2>&1 &)
+  (nohup screenrecord --size 960x540 --time-limit 11 out/${run}_$L.mp4 > /dev/null 2>&1 &)
   sleep 1; log -t VoltcapQA "MARK layout $L"
   sh vqa.sh seq "$NAV" 300 > /dev/null; sleep 2
   sh vqa.sh perf_dump ${run}_$L > /dev/null 2>&1
@@ -19,5 +19,6 @@ for L in $list; do
   sleep 1
   echo "$L done"
 done
+am start -n com.shelf.launcher/.MainActivity --ez voltcap_test_preview false > /dev/null 2>&1; sleep 1
 sh vqa.sh hooks off > /dev/null; sh vqa.sh seq "B" 200
 echo "layouts $run done"

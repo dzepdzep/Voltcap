@@ -235,7 +235,8 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                 }
         ) {
             val half = rowsN / 2 + 1
-            val base = scroll.value.roundToInt()
+            // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
+            val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
             for (off in -half..half) {
                 var i = base + off
                 if (loop) i = ((i % count) + count) % count else if (i !in 0 until count) continue

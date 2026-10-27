@@ -250,3 +250,98 @@ TWIN_DESK: its first run drew only 2 focus events, so that row doesn't compare l
 ### Still open
 - STACKS / ARCADE etc.: the rest is render-bound (L2/R2 frames of 100–136 ms: command issue 30–48 ms, while the new collection's pictures are uploaded).
 - D24 cold start, as before.
+
+## Pass 4, batch 1 (2026-10-27 15:00–15:45): category system, Thor, release builds
+
+### VERIFIED on the device
+- **Per-category home layouts (D43).** GameCube was given Case stacks; the other categories used Voltcap row. With L2 / R2 into and out of GameCube, frames.py found 0 transients and 0 black frames. There was one 50 ms hitch, the frame where Case stacks is built. Checked in a preview session, so nothing was saved.
+- **Mix › Customize consoles (D45).** GameCube showed discs with Automatic and with Cartridge / disc, retail boxes with Case, and covers with Cover.
+- **Ten new category-screen looks (D44).** Screenshots of every look on the Thor, plus ◀ ▶ / ▲ ▼ moves. Refinements after review: Blades and Vault cleared of the header, the Archive masthead, a calmer Constellation, the Drawers opening. The refined Drawers was re-shot; the other refined looks still need a second screenshot pass.
+- **Settings explorer E6.** Stopped at the Theme category: 3 of 21 categories, 5,777 key presses. Settings, brightness, volume and the category order were all restored.
+
+### CODE-INSPECTED only
+- D39 follow-up: on Tile home, round buttons dropped in Edit Home on or just under the tiles go back to "by the tiles". Not dragged on the device.
+- D42 explorer fix.
+- Follow home layout's mapping. The switch exists; I didn't open the screen with Follow on.
+
+### UNTESTED / not done
+- The second screen (Thor bottom screen) for the new looks.
+- Touch on the new looks. Taps are wired, swipes are not.
+- A per-category game-look override.
+- A preview in Customize consoles.
+- "Case with its media" for disc games that have a real disc photo (D46, existing behaviour).
+- The full Settings walk: the explorer needs about 10 minutes per category, so it has to run in chunks (from=N to=N).
+
+## Pass 4, batch 2 (2026-10-27 16:00–17:20): visual polish of the 10 looks, Thor 1920×1080 @120 Hz, release builds
+
+Method: `device/looks.sh` for each look captures (a) the screen on opening, (b) after 7 steps, a 120 fps recording of 4 steps for
+frames.py, gfxinfo over the 7 steps, and (c) after 12 steps back (the lists: All games, Continue playing…). Settings snapshot
+around the run; hooks off afterwards. Before/after sheets: `looks_polish/before_after_1.jpg`, `_2.jpg`.
+
+### VERIFIED on the device (run L8, build 16:01; L7 for Blades and Vault)
+| Look | frames.py (transient / black / hitch) | janky (L8) | earlier |
+|---|---|---|---|
+| System Stage | 0 / 0 / 0 | 0.73 % | 0 % |
+| System Blades | 0 / 0 / 0 | 6.31 % (L7: 1.14 %) | 18.85 % |
+| Collector's Drawers | 0 / 0 / 0 | 9.42 % | 10 % |
+| Pocket Worlds | 0 / 0 / 0 | 0.29 % | 2.6 % |
+| Archive 1994 | 0 / 0 / 0 | 2.19 % | 1.8–10 % |
+| Channel Surf | 0 / 0 / 0 | 0.65 % | 1.5 % |
+| Generations | 0 / 0 / 0 | 1.83 % | 2.9 % |
+| Constellation | 0 / 0 / 0 | 0.72 % | 0.6 % |
+| System Vault | 3 flagged: the module crossing the reader screen (checked frame by frame, real motion) | 0.33 % | 0.67 % |
+| Pocket Dashboard | 0 / 0 / 0 | 1.46 % | 0.16 % |
+
+- Fixed and confirmed in the stills: consoles stand on their plinth/pedestal at their own proportions (ArtBounds); the Blades header
+  no longer collides; Drawers open one by one with walls and standing covers; Worlds dissolve without seam pops; the Archive title
+  no longer flickers; Constellation and Vault show the focused system after every move (R12); the Vault module travels eject → carry → home.
+- Janky % on the Thor varies ±5 points between runs of the same build (Blades 1.14 → 6.31 with no code change). Drawers stays near
+  10 %: the cabinet re-lays out the open drawer's covers. Not fixed.
+
+### Found in L8, fixed, VERIFIED in run L9 (build 0.6.45, 17:15)
+- Archive: "Last played" row cut off under a two-line title → it now takes the fourth cell of the facts table.
+- Generations: the handheld lane reached into the name of the system you're on → line at 0.46 h, smaller handheld objects.
+- Pocket Worlds: title and game count hard to read on a bright sky → shade under the title row.
+
+### CODE-INSPECTED only
+- Channel video after 900 ms (no platform on the Thor has a video). Reduced motion (pbAnimate off) snaps every look. Taps on all looks; swipes on the new looks (70 dp per step).
+
+### UNTESTED / not done
+- Pocket Dashboard's Thor top/bottom-screen arrangement (needs the second display; not built).
+- Light theme and Lite mode on the new looks.
+- L9 (Worlds, Archive, Generations): stills show the three fixes. frames.py: 0 transients for Worlds and Generations; 1 low-score
+  flag on Archive (frame 186: no visible change in the 7-frame sheet, encoder noise on text). Janky 0 % / 0 % / 0.22 %.
+- Pocket Worlds: the screen's own game-count chip stays semi-transparent over a bright sky (app-wide chip style; not changed).
+
+## Pass 5, batch A–C (2026-10-27 17:50–18:45): category system finished, look performance, home-layout glides — Thor, release builds
+
+### VERIFIED on the device
+| item | evidence |
+|---|---|
+| Collector's Drawers smoother (D54) | janky 9.42 % → 2.13 % / 1.61 % (two runs, P1) |
+| System Blades steadier (D54) | 1.73 % / 2.34 % (was 1.14–6.31 %) |
+| Pocket Dashboard on both Thor screens | top: the big preview; lower screen (display 4, 1240×1080): every system as a round icon with its name. Tap one → it's picked on top; tap again → it opens (after D55) |
+| Reduced motion (pb_animate off), all 10 looks | the frame 0.25 s after 3 moves = the settled frame: everything snaps |
+| Lite mode, all 10 looks | same pictures as Full; nothing missing |
+| Light theme (Lobby), all 10 looks | 9 looks keep their own grounds; Dashboard fixed (D56) and re-shot |
+| Follow home layout | Case stacks → System Stage, TV room → Channel Surf, Library → Archive 1994, Memory card → System Vault, Dashboard → Pocket Dashboard, Orbit deck → Constellation |
+| Game look per category (new) | GameCube with Box art while N64 / All keep covers; L2 / R2 in and out: 0 transients, 1 hitch of 17 ms (CG) |
+| D46 disc case with its media | GameCube set to Case + media shows each case with its own disc photo half out |
+| Home-layout glides (D57) | Airy 12.8 → **1.8 %** janky (p99 48 → 21 ms); Circuit 13.6 → 11.8 %; Orbit deck 8.3 → 7.9 %; Panels 6.6 → 5.8 % |
+| Preview leak in the QA tools (D58) | `voltcap_test_preview false` reloads the saved look ("preview ended" in the log) |
+
+### CODE-INSPECTED only (compiled, installed, not shown on screen)
+- Customize consoles previews (one of each console's games drawn as the choice picks). The settings page couldn't be reached
+  reliably by remote keys in this batch; next batch with the walk logger.
+- Swipes on the new looks (70 dp per step). Taps were tested on the lower screen only.
+- Channel Surf video (no system on the Thor has a video).
+
+### Measured, not fixed
+- Circuit is now render-bound: GPU ~10 ms + command issue ~6 ms per slow frame.
+- 46 GLIDE-COMPOSE review places remain (static_checks); HeroCarousel (Hero layout) is the largest one.
+- The SoC ran at 84–88 °C during the long runs, battery 12–16 % while charging. Frame numbers vary ±5 points between runs.
+
+### New QA tools
+- `device/looksmodes.sh` (looks in reduced motion / light theme / Lite), `device/catlook.sh`, `device/follow.sh`.
+- Hooks `voltcap_test_theme NAME` (logs the old theme to put back) and `voltcap_test_perf LITE|FULL|AUTO` (preview only).
+- static_checks GLIDE-COMPOSE (R17); RULES R16 PREVIEW-LEAK.

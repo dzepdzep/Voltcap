@@ -158,8 +158,8 @@ internal object LaunchThrow {
             CardArtType.CARTRIDGE_DISC -> {
                 val asDisc = chosen == CardArtType.DISC
                 val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform, game.stableKey)
-                val drawn = drawnMediaWanted(type, typed)
-                val realScan = if (drawn) null else realScanOf(type, typed)
+                val drawn = drawnMediaWanted(type, typed, game.platform)
+                val realScan = if (drawn) null else realScanOf(type, typed, game.platform)
                 val pick = if (drawn) mediaFor(game.platform, false, asDisc, gameKey = game.stableKey) else null
                 if (pick == null && realScan == null) return null
                 // (Update 295: the drawn piece wears its real label scan when it has one, as on the home row.)
@@ -207,8 +207,8 @@ internal object LaunchThrow {
             else -> cover ?: wide
         } ?: return null
         val typed = typedArtFor(CardArtType.CARTRIDGE_DISC, physical, null, game.platform, k)
-        val drawn = drawnMediaWanted(CardArtType.CARTRIDGE_DISC, typed)
-        val realScan = if (drawn) null else realScanOf(CardArtType.CARTRIDGE_DISC, typed)
+        val drawn = drawnMediaWanted(CardArtType.CARTRIDGE_DISC, typed, game.platform)
+        val realScan = if (drawn) null else realScanOf(CardArtType.CARTRIDGE_DISC, typed, game.platform)
         val pick = if (drawn) mediaFor(game.platform, false, false, gameKey = k) else null
         if (pick == null && realScan == null) return null
         val labelScan = if (typed == null && pick != null) drawnLabelScan(physical, game.platform) else null
@@ -245,7 +245,7 @@ private fun caseFaceAspect(platform: String, cover: String?, scan: String?): Flo
         if (cov == null && box == null) return null
         return cov?.frontAspectFor(cover ?: caseScan) ?: box?.let { if (it.frameRes != null) it.frameAspect else it.aspect }
     }
-    if (discCaseOn(tpl)) return null
+    if (discCaseOn(tpl, casePlatform)) return null
     val noBand = casePlatform == "PS1"
     val side = Features.boxSpine.value && !noBand
     if (Features.originalCases.value && caseScan != null) {
@@ -298,7 +298,7 @@ private fun ThrownPiece(p: ThrowPlan, pick: MediaPick?, label: Any?, labelIsScan
     } else {
         val own = isCustomPiece(pick.platform)
         val tpl = if (own) null else MediaTemplates.of(pick.platform)
-        if (tpl?.disc != null && discCaseOn(tpl)) TemplateMedia(
+        if (tpl?.disc != null && discCaseOn(tpl, pick.platform)) TemplateMedia(
             MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,
             cover = if (labelIsScan) null else label, modifier = modifier,
             smallDisc = pick.shell == MediaShell.MINI_DISC && !Features.bigGcDiscs.state.value

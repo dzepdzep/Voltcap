@@ -120,7 +120,7 @@ internal fun ShelfGameArt(
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
             // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The game's own
             // photo" decides in every cartridge look — realScanOf is null with it off — see drawnMediaWanted.)
-            val real = realScanOf(gArt, typed)
+            val real = realScanOf(gArt, typed, g.platform)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
                 rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
@@ -228,7 +228,7 @@ internal fun shelfArtAspect(
         // taller tilt cartridge — got that shell's shape for its slot, and its own photo, a plain cartridge's shape, was
         // fitted into it smaller than the others. With the photo shown, the console's own shape.)
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
-            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey)) != null
+            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey), g.platform) != null
             return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = if (photo) null else g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
         }
         // (Update 235, #27/#38: Voltcap's plain case at its real case's shape.)
@@ -1649,8 +1649,8 @@ private class CaseMedia(val pick: MediaPick, val discOut: Boolean) {
 /** Update 168: [g]'s media beside its 3D case in the look [type] (Case + disc / 3D case + disc / Case + its media), or null. */
 private fun caseMediaFor(g: Game, type: com.shelf.launcher.data.CardArtType, mixed: Boolean): CaseMedia? {
     if (type != com.shelf.launcher.data.CardArtType.CASE && type != com.shelf.launcher.data.CardArtType.CASE_REAL) return null
-    val disc = Features.discCase.state.value
-    val lean = Features.caseWithMedia.state.value
+    val disc = MixConsoles.discCase(g.platform)
+    val lean = MixConsoles.caseWithMedia(g.platform)
     if (!disc && !lean) return null
     val pick = mediaFor(g.platform, mixed, gameKey = g.stableKey) ?: return null
     val round = pick.shell.disc || pick.shell == MediaShell.UMD

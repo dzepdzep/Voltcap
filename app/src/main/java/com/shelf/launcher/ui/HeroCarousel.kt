@@ -485,7 +485,7 @@ private fun CoverWheel(
                         // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
                         // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The
                         // game's own photo" decides in every cartridge look, see drawnMediaWanted.)
-                        val real = realScanOf(gArt, typed)
+                        val real = realScanOf(gArt, typed, g.platform)
                         // (Update 173: an app without art: its icon on the label / in the case.)
                         val art = coverOrAppIcon(g, cover)
                         if (real != null) MediaFocus(v == loopFocus) { RealMediaPicture(real, mediaRound(g.platform), Modifier.fillMaxSize().padding(2.dp), platform = g.platform, gameKey = g.stableKey) }

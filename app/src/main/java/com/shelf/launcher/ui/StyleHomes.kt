@@ -1014,8 +1014,8 @@ internal fun StyleArt(
     // (Update 205: the drawn piece wears its real label scan when it has one.)
     val labelScan = if (typed == null) drawnLabelScan(c.state.physicalMedia[k], g.platform) else null
     val url = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
-    val free = isFreeMedia(gArt, g.platform) || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
-    val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC, gameKey = g.stableKey) else null
+    val free = isFreeMedia(gArt, g.platform) || (drawnMediaWanted(gArt, typed, g.platform) && MediaShell.of(g.platform) != null)
+    val pick = if (drawnMediaWanted(gArt, typed, g.platform)) mediaFor(g.platform, c.mixed, c.type == CardArtType.DISC, gameKey = g.stableKey) else null
     val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) else null
     // Update 173: an app without art wears its icon on its cartridge's label / case front (the window stayed black).
     val appIcon = if (url == null && cover == null && g.sourceType == com.shelf.launcher.data.SourceType.APP && (pick != null || box3d != null)) {
@@ -1034,7 +1034,7 @@ internal fun StyleArt(
                 spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
             ) }
             // Update 129: "Real discs": the game's own scan, standing free.
-            realScanOf(gArt, typed) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {
+            realScanOf(gArt, typed, g.platform) != null -> MediaFocus(g.stableKey == c.game?.stableKey) {
                 RealMediaPicture(typed!!, mediaRound(g.platform), Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = g.platform, gameKey = k)
             }
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the card.)
@@ -1247,7 +1247,7 @@ internal fun StyleHome(
             val shown = cardArtUrl(gArt, false, cover, o?.wide ?: a?.wideGridUrl, o?.hero ?: a?.heroUrl, typed)
             shown?.let { thumbs += it }
             if (i in (focus - near)..(focus + near)) {
-                shown?.let { near1 += it; if (it == cover && !drawnMediaWanted(gArt, typed)) nearCovers += it }
+                shown?.let { near1 += it; if (it == cover && !drawnMediaWanted(gArt, typed, g.platform)) nearCovers += it }
                 // Update 157: Disc station prints the game's own label scan on its disc when there is one: that too.
                 if (layout == HomeLayout.DISCS && mediaKind(g.platform) == "disc") typedArtFor(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, state.physicalMedia[k], state.screenshots[k], g.platform)?.let { near1 += it }
                 // Update 158: Hero tiles' square tiles show the cover whatever the game look is: that too.

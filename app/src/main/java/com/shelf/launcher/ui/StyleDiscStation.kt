@@ -323,7 +323,7 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
                     labelIsScan = cover == null && labelIsScan, title = g.name, noCase = true
                 )
             }
-        } else if (tpl != null && discCaseOn(tpl)) {
+        } else if (tpl != null && discCaseOn(tpl, pick.platform)) {
             TemplateMedia(
                 MediaTpl(null, null, tpl.disc, null), labelScan = if (labelIsScan) label else null,
                 cover = if (labelIsScan) null else label, modifier = Modifier.fillMaxSize(), smallDisc = small

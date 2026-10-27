@@ -44,6 +44,12 @@ internal object TestHooks {
     val window = mutableStateOf(false)
     /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
     val shortcuts = mutableStateOf<String?>(null)
+    /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
+    val theme = mutableStateOf<String?>(null)
+    /** Pass 5: `--es voltcap_test_perf LITE|FULL|AUTO` — performance mode for this session only (nothing saved). */
+    val perf = mutableStateOf<String?>(null)
+    /** Pass 5: counts previews ended (`--ez voltcap_test_preview false`); the launcher screen reloads your appearance. */
+    val previewEnded = androidx.compose.runtime.mutableIntStateOf(0)
     /**
      * Update 274: `--es voltcap_test_inspect "Game_name|shellId|yaw|pitch"` — that game's window with its piece out on that
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
@@ -97,6 +103,8 @@ internal object TestHooks {
         val po = intent?.getStringExtra("voltcap_test_pose")
         // Update 280: `--es voltcap_test_pref "key=value"` — one setting (saved, as Settings would; logged with its old value).
         val pr = intent?.getStringExtra("voltcap_test_pref")
+        val th = intent?.getStringExtra("voltcap_test_theme")
+        val pm = intent?.getStringExtra("voltcap_test_perf")
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")
@@ -116,6 +124,9 @@ internal object TestHooks {
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
+        // Pass 5: `--ez voltcap_test_preview false` ends a preview: your saved appearance back on screen, saving again.
+        // (QA: a run's preview lasted until Voltcap restarted — the layout tried stayed, and nothing you changed was saved.)
+        val pvEnd = intent?.hasExtra("voltcap_test_preview") == true && !pv
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1
         if (su >= 0 && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
@@ -128,10 +139,11 @@ internal object TestHooks {
             previewOnly = true
             tileWalk.value = tw
         }
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
+        if (pvEnd) { previewOnly = false; previewEnded.intValue = previewEnded.intValue + 1 }
         if (so) sort.value = true
         if (wi) window.value = true
         if (rs != null) { previewOnly = true; shortcuts.value = rs }
@@ -201,6 +213,8 @@ internal object TestHooks {
         if (st != null) settings.value = st.replace('_', ' ')
         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
         if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
+        if (th != null && com.shelf.launcher.ui.theme.AppTheme.values().any { it.name == th }) theme.value = th
+        if (pm != null && com.shelf.launcher.data.PerformanceMode.values().any { it.name == pm }) perf.value = pm
     }
 }
 

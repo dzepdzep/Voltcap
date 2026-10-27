@@ -168,7 +168,8 @@ private fun AiryRow(c: StyleCtx, loop: Boolean, modifier: Modifier) {
         val pitch = tileW * 0.82f
         val cy = hPx * 0.53f
         val visible = (wPx / (pitch * 0.7f) / 2f).toInt() + 2
-        val base = scroll.value.roundToInt()
+        // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
+        val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
         for (off in -visible..visible) {
             var i = base + off
             if (loop) i = ((i % count) + count) % count else if (i !in 0 until count) continue

@@ -5282,6 +5282,104 @@ private fun AwardRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null) {
 
 // ---- Category order ----
 
+/**
+ * Pass 4: Settings › Categories › Home layout per category. The category you're in: its own layout or the default, with
+ * "Keep this layout here" (copy the current one), "Follow the default" (reset) and the list of every category that has its
+ * own (each with its reset), plus Reset all. To give a category another layout: keep one here, then pick any layout
+ * (Settings › Home or R1) while you're in it.
+ */
+@Composable
+private fun CategoryLayoutsCard(appearance: AppearanceSettings) {
+    // (Read as state, so the card follows every change.)
+    com.shelf.launcher.data.Features.catLayouts.state.value; com.shelf.launcher.data.Features.catLayoutDefault.state.value
+    val all = com.shelf.launcher.data.CategoryLayouts.all()
+    val key = CategoryLayoutActions.currentKey()
+    val own = all[key]
+    val def = com.shelf.launcher.data.CategoryLayouts.defaultLayout() ?: appearance.homeLayout
+    val name = com.shelf.launcher.data.categoryKeyLabel(key)
+    ShelfCard {
+        SectionLabel("This category: $name")
+        MutedNote(
+            if (own != null) "$name always opens in ${own.label}. Pick another layout while you're in it and it keeps that one."
+            else "$name follows the default layout (${def.label})."
+        )
+        Spacer(Modifier.height(6.dp))
+        ChipFlow {
+            Chip("Keep ${appearance.homeLayout.label} here", accent = own == appearance.homeLayout) { CategoryLayoutActions.set(appearance.homeLayout) }
+            Chip("Follow the default", accent = own == null) { CategoryLayoutActions.set(null) }
+        }
+        if (all.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            SectionLabel("Categories with their own layout")
+            MutedNote("Default for the others: ${def.label}.")
+            Spacer(Modifier.height(4.dp))
+            all.entries.sortedBy { com.shelf.launcher.data.categoryKeyLabel(it.key) }.forEach { (k, l) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${com.shelf.launcher.data.categoryKeyLabel(k)} · ${l.label}", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Chip("Reset", accent = false) { CategoryLayoutActions.reset(k) }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Chip("Reset all", accent = false) { CategoryLayoutActions.clear() }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+@Composable
+private fun CategoryGameLooksCard(appearance: AppearanceSettings) {
+    com.shelf.launcher.data.Features.catGameLooks.state.value
+    val all = com.shelf.launcher.data.CategoryGameLooks.all()
+    val key = CategoryLayoutActions.currentKey()
+    val own = all[key]
+    val name = com.shelf.launcher.data.categoryKeyLabel(key)
+    val choices = listOf(
+        com.shelf.launcher.data.CardArtType.COVER, com.shelf.launcher.data.CardArtType.CAPSULE, com.shelf.launcher.data.CardArtType.CASE,
+        com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, com.shelf.launcher.data.CardArtType.DISC
+    )
+    ShelfCard {
+        SectionLabel("This category: $name")
+        MutedNote(
+            if (own != null) "$name always shows its games as ${own.label}. Pick another game look while you're in it and it keeps that one."
+            else "$name shows its games the way its home layout does (${appearance.cardArtType.label})."
+        )
+        Spacer(Modifier.height(6.dp))
+        ChipFlow {
+            choices.forEach { c -> Chip(c.label, accent = own == c) { CategoryGameLookActions.set(c) } }
+            Chip("Follow the layout", accent = own == null) { CategoryGameLookActions.set(null) }
+        }
+        if (all.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            SectionLabel("Categories with their own game look")
+            Spacer(Modifier.height(4.dp))
+            all.entries.sortedBy { com.shelf.launcher.data.categoryKeyLabel(it.key) }.forEach { (k, l) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${com.shelf.launcher.data.categoryKeyLabel(k)} · ${l.label}", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Chip("Reset", accent = false) { CategoryGameLookActions.reset(k) }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Chip("Reset all", accent = false) { CategoryGameLookActions.clear() }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+/** Pass 5: what Settings › Categories › Game look per category does (set by the launcher screen). */
+internal object CategoryGameLookActions {
+    var set: (com.shelf.launcher.data.CardArtType?) -> Unit = {}
+    var reset: (String) -> Unit = {}
+    var clear: () -> Unit = {}
+}
+
+/** Pass 4: what Settings › Categories › Home layout per category does (set by the launcher screen, which has the view model). */
+internal object CategoryLayoutActions {
+    var currentKey: () -> String = { "ALL" }
+    var set: (com.shelf.launcher.data.HomeLayout?) -> Unit = {}
+    var reset: (String) -> Unit = {}
+    var clear: () -> Unit = {}
+}
+
 private fun categoryLabel(key: String): String = when (key) {
     CategorySettings.ALL -> "All"
     CategorySettings.CONSOLES -> "Consoles (each console)"
@@ -5722,6 +5820,14 @@ private fun CategoriesContent(
             Spacer(Modifier.height(12.dp))
             CollectionsSettings(appearance, onChange, userCollections, onRenameCollection, onDeleteCollection)
         }
+        // Pass 4: each category its own home layout (data/CategoryLayouts.kt).
+        FoldGroup("Home layout per category", summary = "A console, collection or list can keep its own home layout", key = "cat_layouts") {
+            CategoryLayoutsCard(appearance)
+        }
+        // Pass 5: each category its own game look (data/CategoryGameLooks.kt).
+        FoldGroup("Game look per category", summary = "A console, collection or list can show its games its own way", key = "cat_game_looks") {
+            CategoryGameLooksCard(appearance)
+        }
         FoldGroup("On the home screen", summary = "The category's name above the games, logos, L2 / R2", key = "cat_home") {
             ShelfCard {
                 // Update 315: each layout keeps its own (the R1 Categories tile sets the same), shown as that layout shows it.
@@ -5795,6 +5901,14 @@ private fun CategoriesContent(
                 }
                 Spacer(Modifier.height(6.dp))
                 MutedNote(categoryLookNote(F.platformView.state.value))
+                Spacer(Modifier.height(8.dp))
+                // Pass 4: Follow home layout (Features.followLookFor).
+                SwitchRow(
+                    Icons.Filled.SwapHoriz, "Follow home layout",
+                    "The look goes with the home layout of the category you open it from (Case stacks → System Stage, TV room → Channel Surf…). Now: " +
+                        F.followLookFor(appearance.homeLayout).label + ". Off: the look picked above.",
+                    F.pbFollowHome.state.value, { F.pbFollowHome.value = it }
+                )
                 Spacer(Modifier.height(14.dp))
                 Text("Cards show", color = ShelfTheme.textMuted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))

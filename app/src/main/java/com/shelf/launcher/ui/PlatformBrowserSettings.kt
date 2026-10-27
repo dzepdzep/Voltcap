@@ -47,6 +47,16 @@ internal fun categoryLookNote(v: Features.PlatformView): String = when (v) {
     Features.PlatformView.SLIDES -> "Slides: one platform at a time filling the screen, ◀ ▶ or swipe to the next, every part placeable (Y › Design this slide)."
     Features.PlatformView.WALL -> "Wall: slanted slices of every platform side by side, the one you're on wider, its logo or name in the middle."
     Features.PlatformView.GRID -> "Grid: a horizontal grid of cards (wide in two rows, or tall 2:3), with drag-and-drop to reorder your platforms."
+    Features.PlatformView.STAGE -> "System Stage: the console on a lit exhibition platform, turning to face you; the neighbours either side. ◀ ▶."
+    Features.PlatformView.BLADES -> "System Blades: bevelled panels stacked on a slant; the one you're on slides forward with its art and count. ▲ ▼."
+    Features.PlatformView.DRAWERS -> "Collector's Drawers: a cabinet of labelled drawers; the one you're on opens on its games. ◀ ▶ ▲ ▼."
+    Features.PlatformView.WORLDS -> "Pocket Worlds: each system in its own pixel landscape, the layers moving at their own speeds. ◀ ▶."
+    Features.PlatformView.ARCHIVE -> "Archive 1994: a hardware catalogue page — the console large, its maker, year and your count. ◀ ▶."
+    Features.PlatformView.CHANNEL -> "Channel Surf: a TV — ▲ ▼ change channel with a short CRT roll; the channel number and the system's name on screen."
+    Features.PlatformView.GENERATIONS -> "Generations: the consoles on a timeline by generation and release year (your category order stays as it is). ◀ ▶."
+    Features.PlatformView.CONSTELLATION -> "Constellation: the systems as nodes round a glowing core; the one you're on turns to the front. ◀ ▶."
+    Features.PlatformView.VAULT -> "System Vault: storage modules in a rack; the one you're on slides into the reader, which shows its games. ▲ ▼."
+    Features.PlatformView.DASHBOARD -> "Pocket Dashboard: a compact list, a big preview of the system you're on and its information panels. ▲ ▼."
 }
 
 /** Settings › Categories › Category screen: the options of the look in use (only that look's). */
@@ -83,6 +93,8 @@ internal fun CategoryLookOptions(view: Features.PlatformView) {
                 Chip("Back to the alphabetical order", accent = false) { com.shelf.launcher.data.PlatformOrder.reset() }
                 Spacer(Modifier.height(12.dp))
             }
+            // Pass 4: the new looks have no options of their own yet (their motion follows Browsing animations below).
+            else -> { MutedNote(categoryLookNote(view)); Spacer(Modifier.height(10.dp)) }
         }
         if (view != Features.PlatformView.TILES) {
             Text("Every look but Tiles", color = ShelfTheme.textMuted, fontSize = 12.sp)
@@ -146,4 +158,22 @@ private fun FactsRow(label: String, pref: Features.SetPref) {
         }
     }
     Spacer(Modifier.height(12.dp))
+}
+
+/**
+ * Pass 4: the category screen's look in force. With Follow home layout on, it is worked out from the home layout once,
+ * as the screen opens, and kept while you browse (and while it fades out — it's only worked out again at the next
+ * opening); otherwise it's the look picked in Settings.
+ */
+internal object CategoryLookNow {
+    private var wasOpen = false
+    private var held: Features.PlatformView? = null
+
+    fun resolve(open: Boolean, layout: com.shelf.launcher.data.HomeLayout): Features.PlatformView {
+        if (open && !wasOpen) held = if (Features.pbFollowHome.value) Features.followLookFor(layout) else null
+        wasOpen = open
+        return current()
+    }
+
+    fun current(): Features.PlatformView = held ?: Features.platformView.state.value
 }

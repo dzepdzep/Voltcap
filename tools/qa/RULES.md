@@ -79,3 +79,51 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 - **Check:** static_checks THEME-COMPOSE; on device `--ez voltcap_test_churn true` → `inval <part>: Nx ShelfColors`
   lines (QaInval names the state that invalidated each registered part), and the `snap_colors` test fault (glide off)
   as the A/B.
+
+## R11 WALK-SAFETY — a controller walk must leave the handheld as it found it
+- **Found (pass 3):** a snake walk over the R1 panel pressed ◀ ▶ on the brightness and volume sliders (brightness 77 → 100 %,
+  volume 13 → 53 %). Restored by hand.
+- **Rules:** `walk.sh` / `explore.sh` save Voltcap's settings (`voltcap_test_snapshot save|restore`), the brightness and
+  the media volume first and put them back at the end. The explorer presses A only on navigation rows ("›") whose
+  name isn't destructive (delete, reset, sign out, restore, put everything back, Edit Home…), and stops on
+  `--es voltcap_test_explore stop`. Never send keys by hand while a walk runs (it mixes into the walk's log).
+
+## R12 STEP-READ — a "not yet" branch must still read the animation it guards
+- **Found (pass 4):** Constellation's focus panel and System Vault's reader screen stayed invisible after a move.
+  `LookStep.now()` returned 0 for the frame the key had changed in *without reading* the Animatable. The graphics layer
+  that called it subscribed to nothing, so it was never redrawn as the animation ran.
+- **Rule:** a helper used inside `graphicsLayer {}` / `drawBehind {}` reads every State unconditionally first, then
+  branches (`val v = a.value; return if (pending) 0f else v`).
+- **Check:** looks.sh still frame `_b` (taken 1.6 s after the last step) must show the focused system. The frames.py run
+  on the move recording shows a step that never finishes as a missing object.
+
+## R13 WINDOW-BY-GLIDE — build what's on screen, not only round the selection
+- **Found (pass 4):** Pocket Worlds dropped a world that was still sliding on screen after two quick presses. The window
+  was built round the selection while the glide lagged behind.
+- **Rule:** a look that builds a window of items uses `lookWindow(selected, pos, reach)`, which spans both the selection
+  and the glide's current place.
+- **Check:** frames.py on looks.sh recordings (two quick steps): no transient at the screen's edge.
+
+## R14 WRAP-AFTER-PARALLAX — wrap a moving object's base position, then add the parallax
+- **Found (pass 4):** clouds, stars and props in Pocket Worlds jumped from one edge to the other mid-slide.
+  `(base + shift).mod(W)` wraps as the shift changes.
+- **Rule:** `base.mod(W) + shift`.
+
+## R15 PATH-REUSE (tooling) — never commit a file to the PC from a reused outputs path
+- **Found (pass 4):** re-committing /mnt/user-data/outputs/qa/device/looks.sh after an edit wrote the *old* content, and
+  the device ran a stale script.
+- **Rule:** stage every commit from a fresh `/mnt/user-data/outputs/<unique>/` directory (ship.sh does this for the
+  sources), and check the pushed file on the device (`grep` for the change) before a run.
+
+## R16 PREVIEW-LEAK (tooling) — a run's preview must end with the run
+- **Found (pass 5):** `voltcap_test_preview true` lasted until Voltcap restarted. After layouts.sh / mixcon.sh / catlook.sh the
+  layout or look tried stayed on screen, and anything Toni changed afterwards in that session was not saved.
+- **Rule:** every script that starts a preview ends it with `--ez voltcap_test_preview false` (TestHooks → the saved
+  appearance reloaded, saving on again) before `vqa.sh hooks off`.
+
+## R17 GLIDE-COMPOSE — an animation read at the top of a looped item re-composes every item every frame
+- **Found (pass 5):** Collector's Drawers (`val o by animateFloatAsState`, used for sizes and offsets in composition) ~9 %
+  janky → 2 %; System Blades (`val open = 1f - abs(i - pos.value)`) 1–6 % → ~2 %; Stage, Constellation and Vault had the same.
+- **Rule:** keep the State; read `.value` in graphicsLayer / draw / layout lambdas or a local `fun`; a value that changes
+  the tree (show the insides or not, z-order) goes through `derivedStateOf` so it changes a few times, not every frame.
+- **Check:** static_checks GLIDE-COMPOSE (review list — 46 places across the app on 2026-10-27, most of them home layouts).

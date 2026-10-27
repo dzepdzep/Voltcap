@@ -848,6 +848,9 @@ internal fun LookChooser(appearance: AppearanceSettings, onChange: (AppearanceSe
                         LookChoiceCard(d.label, d.about, d == discs, enabled, sample) { onChange(pickDiscGames(d, appearance)) }
                     }
                 }
+                // Pass 4: each console its own medium (MixConsoles.kt).
+                androidx.compose.foundation.layout.Spacer(Modifier.height(10.dp))
+                MixConsolesCard()
             }
             // Update 212: Android games as a disc or a cartridge (AndroidMedia.kt).
             AndroidMediaChoice()

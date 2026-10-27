@@ -345,13 +345,13 @@ fun GameCard(
             else reveal.snapTo(0f)
         }
         // Cartridge / disc art, drawn: the console's cartridge or a disc with the game's label on it.
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl, game.platform)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         // (Update 240, #32/#57: a round disc — drawn (its console's, the plain CD, an Android game as a disc) or the game's
         // own disc photo — not a cartridge, a UMD, a pack shell or a disc in its case. On these the trophy count and the
         // game state go on a chip strip under the disc (Features.discTileChips), so they're never drawn over its curve.)
         val roundDisc = freeMedia && !banner && !(look.spines && !focused && !pinnedWide) && (
-            if (pick != null) pick.shell.isDisc && !isCustomPiece(pick.platform) && !discCaseOn(MediaTemplates.of(pick.platform))
-            else realScanOf(cardArtType, typedArtUrl) != null && mediaRound(game.platform))
+            if (pick != null) pick.shell.isDisc && !isCustomPiece(pick.platform) && !discCaseOn(MediaTemplates.of(pick.platform), pick.platform)
+            else realScanOf(cardArtType, typedArtUrl, game.platform) != null && mediaRound(game.platform))
         val discChips = roundDisc && com.shelf.launcher.data.Features.discTileChips.state.value
         // The strip: room for the chip (it sits 2 dp in) under the disc. On a 2:3 tile the space under the disc (and its
         // 6 dp margin) already is that big, so nothing changes there; on a square tile the disc is made just
@@ -414,7 +414,7 @@ fun GameCard(
                     spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
             }
-        } else if (realScanOf(cardArtType, typedArtUrl) != null) {
+        } else if (realScanOf(cardArtType, typedArtUrl, game.platform) != null) {
             // Update 129: "Real discs": the game's own cartridge / disc scan, standing free (no dark card behind it).
             Box(
                 Modifier.matchParentSize()

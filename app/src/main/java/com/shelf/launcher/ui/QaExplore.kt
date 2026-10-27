@@ -98,14 +98,18 @@ internal object QaExplore {
         // ▼ one step at a time, and at each row ◀ and ▶ along it (chips, tiles) while focus stays on that row, then back to
         // where the row was entered. (Pass 3: a chip row is entered on its picked chip — "Large" — so the chips left of it
         // were never seen, and ▶ off the row's end jumps to another row or to Close, so "◀ as many times" got lost.)
-        val pageLeft = (focusedBox()?.get(0) ?: 0) - 24
+        // (The page's left edge: from its first row that isn't the search field or Close at the top — E6: worked out from
+        // the search field, every row's ◀ sweep counted the page's own left column as "off the page", and the page was lost.)
+        var pageLeft = -1
         var lastRow = focusedLabel(); var same = 0; var rows = 0
         // (A row it couldn't find its way back to once: the rest of that page is walked ▼ only, logged "row lost".)
         var rowWalk = true
         while (rows++ < 80) {
             val home = focusedId(); val top = focusedBox()?.get(1) ?: 0
+            val header = Regex("^(Search settings|Close)").containsMatchIn(focusedLabel())
+            if (!header && pageLeft < 0) pageLeft = (focusedBox()?.get(0) ?: 0) - 24
             fun onRow() = focusedBox()?.let { kotlin.math.abs(it[1] - top) < 40 && it[0] >= pageLeft } ?: false
-            for ((dir, back) in (if (rowWalk) listOf("R" to "L", "L" to "R") else emptyList())) {
+            for ((dir, back) in (if (rowWalk && !header && pageLeft >= 0) listOf("R" to "L", "L" to "R") else emptyList())) {
                 var g = 0
                 while (g++ < 10) {
                     val before = focusedId(); key(dir)

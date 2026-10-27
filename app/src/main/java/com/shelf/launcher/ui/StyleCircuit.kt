@@ -218,8 +218,17 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
         val busY = maxHeight / 2f
         val anchorX = maxWidth * 0.3f
         val lead = 14.dp
-        val first = (kotlin.math.floor(pos.value).toInt() - ((anchorX / step).toInt() + 2)).let { if (loop) it else it.coerceAtLeast(0) }
-        val last = (kotlin.math.ceil(pos.value).toInt() + ((maxWidth - anchorX) / step).toInt() + 2).let { if (loop) it else it.coerceAtMost(count - 1) }
+        // (Pass 5, D57: the chips on screen as a derived range — read raw here, the whole board was re-composed on every
+        // frame of a glide; it changes only when a chip comes in or goes out at an edge.)
+        val before = (anchorX / step).toInt() + 2; val after = ((maxWidth - anchorX) / step).toInt() + 2
+        val span by remember(loop, count, before, after) {
+            androidx.compose.runtime.derivedStateOf {
+                val f = (kotlin.math.floor(pos.value).toInt() - before).let { if (loop) it else it.coerceAtLeast(0) }
+                val l = (kotlin.math.ceil(pos.value).toInt() + after).let { if (loop) it else it.coerceAtMost(count - 1) }
+                f..l
+            }
+        }
+        val first = span.first; val last = span.last
 
         // The traces, pads and the power line under the chips.
         Canvas(Modifier.fillMaxSize()) {
@@ -284,11 +293,12 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
             val sel = on && StyleNav.zone == StyleNav.Zone.GAMES
             androidx.compose.runtime.key(if (loop) "${g.stableKey}#${Math.floorDiv(i, count)}" else g.stableKey) {
                 val lift = styleLift(sel)
-                val x = anchorX + step * (i - pos.value) - chipW / 2
+                // (Placed in the layout step, so the glide moves the chip without composing it again.)
+                fun xNow() = anchorX + step * (i - pos.value) - chipW / 2
                 val y = if (up) busY - lead - chipH else busY + lead
                 Box(
                     Modifier
-                        .offset(x = x, y = y)
+                        .offset { androidx.compose.ui.unit.IntOffset(xNow().roundToPx(), y.roundToPx()) }
                         .size(chipW, chipH)
                         .zIndex(if (on) 2f else 1f)
                         // Update 125: the game window grows out of the chip, like on the other layouts.
@@ -316,7 +326,7 @@ private fun CircuitBoard(c: StyleCtx, ink: Color, modifier: Modifier) {
                 // Silkscreen label beside the chip.
                 if (labels) Text(
                     "U${real + 1}", color = (if (on) ink else Color.White.copy(alpha = 0.45f)), fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.offset(x = x + chipW + 3.dp, y = if (up) busY - lead - 14.dp else busY + lead + 2.dp)
+                    modifier = Modifier.offset { androidx.compose.ui.unit.IntOffset((xNow() + chipW + 3.dp).roundToPx(), (if (up) busY - lead - 14.dp else busY + lead + 2.dp).roundToPx()) }
                 )
             }
         }

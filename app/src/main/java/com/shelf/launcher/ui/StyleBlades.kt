@@ -586,7 +586,7 @@ private fun BladeGameList(c: StyleCtx, p: BladePalette, compact: Boolean, modifi
         val scroll = rememberBladeScroll(c.focus, count, visible, StyleLoop.on)
         val density = LocalDensity.current
         val stepPx = with(density) { (rowH + gap).toPx() }
-        val first = scroll.value.toInt().coerceAtLeast(0)
+        val first by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.toInt().coerceAtLeast(0) } } // (Pass 5, D57: derived — read raw, the list re-composed every scroll frame.)
         Box(
             Modifier.fillMaxSize().pointerInput(Unit) {
                 var acc = 0f
@@ -709,7 +709,7 @@ private fun BladeSystems(c: StyleCtx, p: BladePalette, compact: Boolean, systems
                 val visible = ((maxHeight + gap) / (rowH + gap)).toInt().coerceAtLeast(1)
                 val scroll = rememberBladeScroll(row, systems.size, visible, false)
                 val stepPx = with(LocalDensity.current) { (rowH + gap).toPx() }
-                val first = scroll.value.toInt().coerceAtLeast(0)
+                val first by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.toInt().coerceAtLeast(0) } } // (Pass 5, D57: derived — read raw, the list re-composed every scroll frame.)
                 for (i in first..(first + visible).coerceAtMost(systems.size - 1)) {
                     val st = c.stops.getOrNull(systems[i]) ?: continue
                     key(i) {

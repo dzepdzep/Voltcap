@@ -41,7 +41,7 @@ object LayoutOnly {
     /** Settings that are never one layout's own: the layout itself, the parked looks, device and account things. */
     private fun skip(key: String): Boolean {
         val k = key.substringAfter(':')
-        return k == "home_layout" || k == "arcade_restored" || k == "look_by_layout" || k.startsWith("defaults_v") ||
+        return k == "home_layout" || k == "cat_layouts" || k == "cat_layout_default" || k == "cat_game_looks" || k == "arcade_restored" || k == "look_by_layout" || k.startsWith("defaults_v") ||
             k.startsWith("lights") || k.startsWith("discord") || k.startsWith("battery_watch") || k.startsWith("who_plays") ||
             k.contains("token", ignoreCase = true) || k.contains("api_key", ignoreCase = true) || k.contains("account", ignoreCase = true)
     }

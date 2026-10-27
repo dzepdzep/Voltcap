@@ -40,7 +40,7 @@ internal fun disc3dPeek(p: String): Float? {
     // (Update 151: the case looks never stand a 3D model case — CaseArt draws the template's 3D box for every console.)
     if (p == "PS1") return null
     val shell = MediaShell.of(p)
-    if (Features.caseWithMedia.state.value && shell != null) return null
+    if (MixConsoles.caseWithMedia(p) && shell != null) return null
     val box = MediaTemplates.of(p)?.box ?: return null
     return discFrac(p, box.aspect, box, false) * DISC_OUT
 }

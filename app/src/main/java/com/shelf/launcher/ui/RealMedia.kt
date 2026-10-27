@@ -728,7 +728,7 @@ private fun CaseArtBody(
     // Settings › Game look › "Case with its cartridge / disc" (update 93): the case standing still, its cartridge or disc
     // leaning against its lower right; only the cartridge / disc moves (spin / bounce as set).
     val shell = platform?.let { MediaShell.of(it) }
-    if (com.shelf.launcher.data.Features.caseWithMedia.state.value && shell != null) {
+    if (MixConsoles.caseWithMedia(platform) && shell != null) {
         val cov0 = MediaCovers.used(platform)
         val box0 = MediaTemplates.of(platform)?.box
         // (Update 235, #27/#38: Voltcap's plain case too, for a console without a template case.)
@@ -823,7 +823,7 @@ private fun CaseArtFace(
     val turned = com.shelf.launcher.data.Features.boxSpine.state.value
     val side = turned && !noBand
     val box = tpl?.box
-    val discCase = allowDiscCase && discCaseOn(tpl)
+    val discCase = allowDiscCase && discCaseOn(tpl, platform)
     // (Update 280, Toni: "some games are shown from the side, some front — if side, all side": Cases · turned turned only
     // the consoles with a template box (PS2…); PS1, Android, PS3 / Xbox (plain cases) and the cover-template cases stayed
     // facing you. Every case is turned now: those as their real 3D case (Case3D, its catalog shape, its real spine),

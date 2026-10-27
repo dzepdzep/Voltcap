@@ -87,6 +87,7 @@ import com.shelf.launcher.data.ConsolePhotos
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.PlatformInfo
 import com.shelf.launcher.ui.theme.ShelfTheme
+import kotlin.math.abs
 
 /*
  * The platform browser: the category screen as Slides (one platform at a time, like a console's shelf
@@ -266,18 +267,31 @@ internal fun platformBrowserKey(
     val count = tiles.size
     // Wide cards in the grid sit in two rows: ▲ ▼ move between them, ◀ ▶ jump a whole column.
     val rows = if (view == Features.PlatformView.GRID && !Features.pbTallCards.value) 2 else 1
+    // Pass 4: the new looks step their own way (CategoryLooks.kt): along a row, down a column (◀ ▶ too), or a grid.
+    val nav = lookNavOf(view)
+    // (Generations goes by release year: the steps are taken in that order, the saved order stays as it is.)
+    val order = lookOrder(view, tiles)
     if (down) {
         var step = 0
         when (event.key) {
-            Key.DirectionLeft -> step = -rows
-            Key.DirectionRight -> step = rows
-            Key.DirectionUp -> step = if (rows > 1) -1 else 0
-            Key.DirectionDown -> step = if (rows > 1) 1 else 0
+            Key.DirectionLeft -> step = if (nav == LookNav.ROW || nav == LookNav.GRID) -rows else -1
+            Key.DirectionRight -> step = if (nav == LookNav.ROW || nav == LookNav.GRID) rows else 1
+            Key.DirectionUp -> step = when (nav) { LookNav.COLUMN -> -1; LookNav.GRID -> -DRAWER_COLS; else -> if (rows > 1) -1 else 0 }
+            Key.DirectionDown -> step = when (nav) { LookNav.COLUMN -> 1; LookNav.GRID -> DRAWER_COLS; else -> if (rows > 1) 1 else 0 }
             else -> Unit
+        }
+        if (step != 0 && count > 0 && order != null && st.grabbed < 0) {
+            val at = order.indexOf(index).coerceAtLeast(0)
+            val next = order[(at + step).mod(order.size)]
+            if (next != index) { st.direction = if (step > 0) 1 else -1; setIndex(next); onMoveSound() }
+            return true
         }
         if (step != 0 && count > 0) {
             // Wraps round at both ends (the last platform goes on to the first); picked up for moving, it stops at the ends.
-            val next = if (st.grabbed >= 0) (index + step).coerceIn(0, count - 1) else (index + step).mod(count)
+            // (A grid of drawers: ▲ ▼ stop at the top / bottom row instead of wrapping onto another column.)
+            val next = if (st.grabbed >= 0) (index + step).coerceIn(0, count - 1)
+                else if (nav == LookNav.GRID && abs(step) == DRAWER_COLS) (index + step).let { if (it in 0 until count) it else index }
+                else (index + step).mod(count)
             // A platform picked up only swaps with other platforms (not "All games", Favorites…).
             val blocked = st.grabbed >= 0 && tiles.getOrNull(next)?.platform == null
             if (next != index && !blocked) {
@@ -359,15 +373,50 @@ fun PlatformBrowser(
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { PlatformBrowserFocus.platform.value = null } }
     Box(modifier.fillMaxSize().background(ShelfTheme.background)) {
         // The platform's card art (its games fading, the last played one…, CategoryArt.kt), dimmed, behind everything.
-        if (tile != null && view != Features.PlatformView.WALL) {
+        if (tile != null && (view == Features.PlatformView.SLIDES || view == Features.PlatformView.GRID)) {
             CategoryArt(tile, CardShape.WIDE, Modifier.fillMaxSize().graphicsLayer { alpha = 0.22f })
         }
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.25f), Color.Black.copy(alpha = 0.55f)))))
-        Box(Modifier.fillMaxSize().padding(top = topInset)) {
+        // Pass 4: the new looks follow a swipe too — along their own direction (a column look up / down), one system per
+        // 70 dp dragged; Generations in its release-year order.
+        val latestIndex by rememberUpdatedState(selectedIndex)
+        val latestTiles by rememberUpdatedState(tiles)
+        val swipe = if (view.ordinal >= Features.PlatformView.STAGE.ordinal) Modifier.pointerInput(view) {
+            val col = lookNavOf(view) == LookNav.COLUMN
+            var acc = 0f
+            detectDragGestures(onDragStart = { acc = 0f }, onDragEnd = { acc = 0f }, onDragCancel = { acc = 0f }) { change, d ->
+                acc += if (col) d.y else d.x
+                val stepPx = 70.dp.toPx()
+                if (abs(acc) >= stepPx) {
+                    change.consume()
+                    val dir = if (acc < 0f) 1 else -1
+                    acc = 0f
+                    val list = latestTiles
+                    if (list.isNotEmpty()) {
+                        val order = lookOrder(view, list)
+                        val next = if (order != null) order[(order.indexOf(latestIndex).coerceAtLeast(0) + dir).mod(order.size)]
+                            else (latestIndex + dir).coerceIn(0, list.size - 1)
+                        if (next != latestIndex) { state.direction = dir; onFocus(next) }
+                    }
+                }
+            }
+        } else Modifier
+        Box(Modifier.fillMaxSize().padding(top = topInset).then(swipe)) {
         when (view) {
             Features.PlatformView.SLIDES -> SlidesView(tiles, selectedIndex, state, onFocus, onPick)
             Features.PlatformView.WALL -> WallView(tiles, selectedIndex, state.direction, Features.pbAnimate.value, onFocus, onPick, Modifier.fillMaxSize())
             Features.PlatformView.GRID -> GridView(tiles, selectedIndex, state, onFocus, onPick, onReorder)
+            // Pass 4 (CategoryLooks.kt).
+            Features.PlatformView.STAGE -> StageLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.BLADES -> BladesLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.DRAWERS -> DrawersLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.WORLDS -> WorldsLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.ARCHIVE -> ArchiveLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.CHANNEL -> ChannelLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.GENERATIONS -> GenerationsLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.CONSTELLATION -> ConstellationLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.VAULT -> VaultLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.DASHBOARD -> DashboardLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
             else -> Unit
         }
         // Action bar: the platform's name, the game count and the random-game button; it animates between views.
@@ -417,7 +466,7 @@ private fun PlatformActionBar(tile: CategoryTile?, index: Int, total: Int, view:
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            when (view) { Features.PlatformView.SLIDES -> "Platforms"; Features.PlatformView.WALL -> "Wall"; else -> "All platforms" },
+            when (view) { Features.PlatformView.SLIDES -> "Platforms"; Features.PlatformView.WALL -> "Wall"; Features.PlatformView.TILES, Features.PlatformView.GRID -> "All platforms"; else -> view.label },
             color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
         )
         Spacer(Modifier.width(12.dp))
