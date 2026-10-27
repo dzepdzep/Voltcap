@@ -304,17 +304,6 @@
    "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) — fix kept, effect unproven"
   },
   {
-   "id": "D24",
-   "title": "Cold start: first frame 830-880 ms; the main thread opens 3 encrypted credential stores (314 ms) behind the prewarm thread",
-   "rule": "PERF",
-   "severity": "medium",
-   "status": "open",
-   "found": "traces T3-T5 (VC:secureOpen:tgdb/screenscraper/rawg on the main thread, LauncherViewModel init)",
-   "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)",
-   "next": "build the first LauncherUiState without the *Connected flags and fill them from IO (behaviour change — needs a careful check of what reads them)",
-   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse, 324 ms spread over 5 stores), stores opened in parallel (CS3: 260 ms) — the Keystore itself is the bottleneck, both reverted. Real fix = the first UI state without the *Connected flags, filled from IO; held back: startup auto-scrape reads metadataReady once (VM :5980, :6743) and would skip a run."
-  },
-  {
    "id": "D25",
    "title": "One 47-58 ms main-thread decodeBitmap inside a recomposition the first time 'Nintendo 3DS' shows after a cold start",
    "rule": "MAIN-DECODE",
@@ -810,6 +799,59 @@
    "evidence": [
     "qa_runs/r8/MX.tar MX_GameCube_CASE_MEDIA (cases with their own discs), _MEDIUM (discs), _CASE (boxes)"
    ]
+  },
+  {
+   "id": "D59",
+   "title": "Start (game options), Y (achievements) and L1 (shortcuts) open with nothing focused; the first D-pad press only puts the focus in",
+   "rule": "CONTROLLER (R6)",
+   "severity": "low",
+   "status": "fix built (retried focus request); the last walk check was cut short — battery at 1 %",
+   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first ▶ lands on the first control)",
+   "files": [
+    "ui/DialogChrome.kt",
+    "ui/ShortcutsPanel.kt",
+    "ui/GameOptionsDialog.kt",
+    "ui/AchievementListDialog.kt"
+   ],
+   "note": "A generic first-focus in ShelfDialog (focus group / focus target + Enter) didn't take on this Compose version and was reverted. Now each of the three popups asks for focus on its first control (Play, the first shortcut, the filter in use), retried until the popup's window takes the keys."
+  },
+  {
+   "id": "D60",
+   "title": "Thor: an always-on accessibility service makes Compose check the semantics tree every frame (~12 % of the main thread in Case stacks)",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open (finding)",
+   "found": "2026-10-27 pass 5 atrace TR1 (Case stacks, 8 s): checkForSemanticsChanges 399 ms + sendAccessibilitySemanticsStructureChangeEvents 313 ms + getAllUncoveredSemanticsNodes 220 ms on the main thread",
+   "root_cause": "com.odin.gameassistant (ForegroundAppMonitorV4Service, the handheld's own game assistant) is enabled as an accessibility service, so Compose keeps its accessibility tree up to date for every app.",
+   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off — a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
+  },
+  {
+   "id": "D61",
+   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) — mirror, 3D cases and building the new list over several frames made no difference",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-10-27 pass 5 runs B7 / A7 / X3 (mirror off) / X4 (3D off): 24.6 / 25.1 / 25.0 / 23.8 %",
+   "note": "Main thread ~8.3 ms per frame at 120 Hz (animation 2.9 ms + traversal 5.4 ms, of which ~3.8 ms waiting for the RenderThread). The progressive build was reverted (no gain)."
+  },
+  {
+   "id": "D62",
+   "title": "Voltcap force-stopped during a QA trace — by the QA tools themselves",
+   "rule": "ENV",
+   "severity": "info",
+   "status": "tool artefact (closed)",
+   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 — not one of the QA scripts",
+   "note": "`vqa.sh hooks on|off` restarts Voltcap (force-stop + start). ltrace2.sh switched the hooks off while atrace was still recording. Each restart also brings up 'Who's playing?' on the next start."
+  },
+  {
+   "id": "D24",
+   "title": "Cold start: first frame 830-960 ms; the main thread opens encrypted credential stores behind the prewarm thread",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "open",
+   "found": "traces T3-T5; pass 5 am start -W: 889-963 ms",
+   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) — both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms → C1 877-1034 ms, no measurable change) — reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
+   "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)"
   }
  ]
 }

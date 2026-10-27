@@ -15,6 +15,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * Text that shrinks (from [maxSize] down to [minSize]) until it fits the room it's given in at most
@@ -73,6 +77,7 @@ internal fun FitText(
             text, color = color,
             fontSize = fit.first.sp, lineHeight = (fit.first * lineHeightRatio).sp,
             fontWeight = fontWeight, textAlign = textAlign, style = style,
+            // qa-ok: TRUNCATE (lyrics / song titles in a fixed box: only after the smallest readable size AND an extra line)
             maxLines = fit.second, overflow = TextOverflow.Ellipsis,
             modifier = if (wide) Modifier.fillMaxWidth() else Modifier
         )
@@ -93,3 +98,50 @@ internal fun uiFontStyle(): TextStyle = TextStyle(fontFamily = androidx.compose.
  */
 internal fun fitMin(size: TextUnit): TextUnit =
     if (size.isSp) kotlin.math.max(size.value * 0.6f, kotlin.math.min(size.value, 10f)).sp else size * 0.6f
+
+
+/**
+ * Permanent rule (CLAUDE.md #11, QA R18): a label shown whole, never cut with "…". It wraps onto up to [maxLines] lines,
+ * shrinks to a size that stays readable ([fitMin], when [autoFit]), and if it still doesn't fit it slides along one line
+ * (a slow marquee) so all of it can be read. Use it instead of `maxLines = n, overflow = TextOverflow.Ellipsis`.
+ */
+@androidx.compose.foundation.ExperimentalFoundationApi
+@Composable
+private fun FullTextMarquee(
+    text: String, color: Color, fontSize: TextUnit, modifier: Modifier, fontWeight: FontWeight?, fontFamily: androidx.compose.ui.text.font.FontFamily?,
+    letterSpacing: TextUnit, lineHeight: TextUnit, textAlign: TextAlign?, style: TextStyle
+) {
+    Text(
+        text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
+        lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
+        modifier = modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp)
+    )
+}
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+internal fun FullText(
+    text: String,
+    color: Color,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1,
+    fontWeight: FontWeight? = null,
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    textAlign: TextAlign? = null,
+    style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
+    /** Shrink (to [fitMin]) before sliding; off where a size that changes while the screen moves would flicker. */
+    autoFit: Boolean = true
+) {
+    var slide by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableStateOf(false) }
+    if (slide) FullTextMarquee(text, color, fontSize, modifier, fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
+    else Text(
+        text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
+        lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = maxLines, overflow = TextOverflow.Clip,
+        autoSize = if (autoFit) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(fontSize), maxFontSize = fontSize) else null,
+        onTextLayout = { if (it.hasVisualOverflow) slide = true },
+        modifier = modifier
+    )
+}

@@ -126,9 +126,9 @@ internal fun MixConsolesCard() {
             if (hw != null) coil.compose.AsyncImage(hw, null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, modifier = androidx.compose.ui.Modifier.size(54.dp, 36.dp))
             else androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.size(54.dp, 36.dp))
             androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.width(10.dp))
-            androidx.compose.material3.Text(
+            FullText(
                 com.shelf.launcher.data.ConsoleNames.label(p), color = com.shelf.launcher.ui.theme.ShelfTheme.colors.textPrimary, fontSize = 13.sp,
-                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = androidx.compose.ui.Modifier.width(150.dp)
+                maxLines = 2, modifier = androidx.compose.ui.Modifier.width(150.dp)
             )
             // Pass 5: one of its games as the choice draws it (its cover, case, case with its media, cartridge / disc).
             MixPreview(p, now)

@@ -93,7 +93,7 @@ fun GameOptionsDialog(
         onDismiss = onDismiss,
         icon = Icons.Filled.VideogameAsset
     ) {
-        MenuRow(Icons.Filled.PlayArrow, "Play", onClick = onPlay)
+        MenuRow(Icons.Filled.PlayArrow, "Play", focusFirst = true, onClick = onPlay)
         MenuRow(
             if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
             if (isFavorite) "Remove from favorites" else "Add to favorites",

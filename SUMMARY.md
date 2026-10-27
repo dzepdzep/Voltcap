@@ -1,5 +1,30 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (354): permanent rule — no text cut short with "…"
+
+- **New permanent rule** (CLAUDE.md #11, QA rule R18): Voltcap never shortens text with "..." / "…". Text wraps, uses its
+  space better, shrinks to a size that stays readable, or slides along slowly so all of it can be read. Only where a hard
+  limit can't be changed is it shortened, and then the full text is still reachable (focus, scrolling, a detail view).
+  Ellipses that belong to the text itself stay.
+- **New shared piece `FullText`** (`ui\FitText.kt`): wraps → shrinks readably → slides; used instead of "…".
+- **Fixed now:** the 10 category-screen looks and Customize consoles (13 places).
+- **QA:** `static_checks.py` TRUNCATE lists every remaining "…" cut: **585 places** left in older screens. They're fixed
+  as each screen is worked on, and the count is reported until it's zero. New code adds none.
+- Compiled (release build). Not checked on the Thor: its battery ran out.
+
+
+## Update — 27 Oct 2026 (353, pass 5 batch D–E): menus checked with the controller, performance findings
+
+Details: `tools\qa\REPORT.md` (pass 5, batch D–E), `defects.json` D24, D59–D62.
+- **Start, Y and L1 menus:** every button can be reached with the D-pad (checked on the Thor).
+- **Menus open on their first button** (Play, the first shortcut, the achievement filter in use). Before, the first press
+  was spent putting the focus in. Built; the last check was cut short because the Thor's battery ran down.
+- **Case stacks / Arcade:** three speed-ups were tried, none of them helped, and all three were undone.
+- **Found:** the Thor's own game assistant runs as an accessibility service, which costs Voltcap about 12 % of its main
+  thread in Case stacks. That's a system setting and wasn't changed.
+- QA tools: cold-start timing and a per-layout trace script.
+
+
 ## Update — 27 Oct 2026 (352, pass 5 batch A–C): category screen finished, smoother looks and home layouts
 
 Details: `tools\qa\REPORT.md` (pass 5, batch A–C), `defects.json` D46, D54–D58.

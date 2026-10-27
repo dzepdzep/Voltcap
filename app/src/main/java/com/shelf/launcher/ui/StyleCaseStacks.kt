@@ -347,19 +347,6 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
     val past by remember { derivedStateOf { pos.value - floor(pos.value) > 0.5f } }
     // (Update 230, #20: one reader of the glide for all the games, so a step doesn't rebuild every game on the stage.)
     val posFn: () -> Float = remember(pos) { { pos.value } }
-    // Pass 5 (D59): a new list's spines are built over a few frames, from the middle out. All of them at once (both
-    // stacks, their reflections, every spine's picture uploaded) made the frame after L2 / R2 take 100-270 ms; the
-    // category slide hides the outer ones coming in.
-    val listId = "${keys.firstOrNull()}|$count"
-    val firstList = remember { booleanArrayOf(true) }
-    val reach = remember(listId) { androidx.compose.runtime.mutableIntStateOf(if (firstList[0]) Int.MAX_VALUE else 2) }
-    SideEffect { firstList[0] = false }
-    LaunchedEffect(listId) {
-        while (reach.intValue != Int.MAX_VALUE) {
-            androidx.compose.runtime.withFrameNanos { }
-            reach.intValue = if (reach.intValue >= 40) Int.MAX_VALUE else reach.intValue + 4
-        }
-    }
     // A tap brings the D-pad back to the games too (as on the Library), then picks / opens the game.
     val tap: (Int) -> Unit = remember {
         { i: Int ->
@@ -437,8 +424,7 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
             val inGames = StyleNav.zone == StyleNav.Zone.GAMES
             // (Update 246, #60: the places picked before the loop — a `continue` in it made Compose give each pass its
             // own group, so a step that moved every game one place along threw them all away and built them again.)
-            val reachNow = reach.intValue
-            for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - lo, count)) && abs(i - lo) <= reachNow }) {
+            for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - lo, count)) }) {
                 // (Update 218, #105: going round a short list, each game once — no copies of the same game at the sides.)
                 val real = if (loop) i.mod(count) else i
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[i]) {

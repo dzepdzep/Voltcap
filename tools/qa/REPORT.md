@@ -345,3 +345,35 @@ around the run; hooks off afterwards. Before/after sheets: `looks_polish/before_
 - `device/looksmodes.sh` (looks in reduced motion / light theme / Lite), `device/catlook.sh`, `device/follow.sh`.
 - Hooks `voltcap_test_theme NAME` (logs the old theme to put back) and `voltcap_test_perf LITE|FULL|AUTO` (preview only).
 - static_checks GLIDE-COMPOSE (R17); RULES R16 PREVIEW-LEAK.
+
+## Pass 5, batch D–E (2026-10-27 18:45–19:40): Start / Y / L1 menus, Case stacks & Arcade, cold start — Thor
+
+Stopped early: the Thor's battery reached **1 %** (it charges from the PC's USB port slower than the runs drain it; the
+SoC ran at 84–88 °C). All runs stopped, the test hooks are off, Voltcap is on its normal home screen.
+
+### VERIFIED on the device
+- **Controller reach in the Start, Y and L1 menus** (explorer XS / XY / XL + hand walks): every control is reachable.
+  - Start (game options): 21 of 22 controls (the 22nd is the home screen behind it).
+  - Y (achievements): the filter chips Locked / Unlocked that the explorer missed are reachable with ▶ (walk WY).
+  - L1 (shortcuts): the second row (Discord, Moonlight, Files, Save Vault) is reachable with ▼ ▶ (walk WL2).
+  - The "stuck" presses in the explorer's list are ◀ ▶ at the ends of one-column menus (nothing to move to): not defects.
+- **D59 found:** the three menus open with nothing focused; the first D-pad press only puts the focus in.
+
+### Measured, no gain, reverted
+- Case stacks built over several frames from the middle out (D61): 24.6 → 25.1 % janky. Mirror off: 25.0 %, 3D cases off: 23.8 %.
+- Cold start with the account flags read off the main thread (D24): 889–963 ms → 877–1034 ms.
+
+### Found
+- **D60:** the Thor's own game assistant is an accessibility service, so Compose checks its accessibility tree on every
+  frame. In Case stacks that was ~12 % of the main thread (atrace TR1). It isn't changed by QA: it's a system setting.
+- Case stacks' main thread is ~8.3 ms per frame at 120 Hz (animation 2.9 ms + drawing 5.4 ms, most of it waiting for the
+  RenderThread).
+
+### Fixed in code, built, not yet confirmed
+- D59: Play, the first shortcut and the filter in use are asked for the focus when each menu opens (retried until the
+  window takes the keys). The last check was cut short by the battery.
+
+### Tool notes
+- `vqa.sh hooks on|off` restarts Voltcap. That is what force-stopped it during trace TR1 (D62, not another app), and it
+  brings up "Who's playing?" on the next start.
+- New: `device/coldw.sh` (cold start ×N with `am start -W`) and `device/ltrace2.sh` (one layout under atrace).

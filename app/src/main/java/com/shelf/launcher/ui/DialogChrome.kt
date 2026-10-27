@@ -691,7 +691,7 @@ internal fun ConnectionCard(name: String, subtitle: String, connected: Boolean, 
  * icon, title, optional subtitle. [destructive] tints it toward red for
  * things like "Remove" or "Hide". */
 @Composable
-internal fun MenuRow(icon: ImageVector, title: String, subtitle: String? = null, destructive: Boolean = false, onClick: () -> Unit) {
+internal fun MenuRow(icon: ImageVector, title: String, subtitle: String? = null, destructive: Boolean = false, focusFirst: Boolean = false, onClick: () -> Unit) {
     com.shelf.launcher.Breadcrumbs.mark("MenuRow")
     val red = Color(0xFFB5583C)
     val shape = uiRounded(16.dp)
@@ -699,6 +699,7 @@ internal fun MenuRow(icon: ImageVector, title: String, subtitle: String? = null,
     Row(
         Modifier
             .fillMaxWidth()
+            .then(if (focusFirst) Modifier.initialFocus() else Modifier)
             .voltSurface(shape)
             .shelfClickable(shape) { onClick() }
             .padding(horizontal = 14.dp, vertical = com.shelf.launcher.ui.theme.Ds.gap(12f)),
@@ -958,4 +959,25 @@ internal fun EmptyState(text: String) {
         lineHeight = 16.sp,
         modifier = Modifier.padding(vertical = 10.dp)
     )
+}
+
+
+/**
+ * Pass 5 (D59): the control a popup opens on. Without it nothing had the focus when Start's game options or L1's
+ * shortcuts opened, and the first D-pad press only put the focus in (QA walks: "focus=-" after opening). Asked a moment
+ * after the popup is drawn, once its window takes the keys (as the popups that bring the focus back already do).
+ */
+@Composable
+internal fun Modifier.initialFocus(): Modifier {
+    val r = remember { FocusRequester() }
+    val got = remember { booleanArrayOf(false) }
+    LaunchedEffect(Unit) {
+        // (The popup's window takes the keys a little after it is drawn; asked before that, nothing happens.)
+        for (d in longArrayOf(80, 120, 200, 300, 400)) {
+            kotlinx.coroutines.delay(d)
+            if (got[0]) break
+            runCatching { r.requestFocus() }
+        }
+    }
+    return this.focusRequester(r).onFocusChanged { if (it.isFocused) got[0] = true }
 }

@@ -127,3 +127,14 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 - **Rule:** keep the State; read `.value` in graphicsLayer / draw / layout lambdas or a local `fun`; a value that changes
   the tree (show the insides or not, z-order) goes through `derivedStateOf` so it changes a few times, not every frame.
 - **Check:** static_checks GLIDE-COMPOSE (review list — 46 places across the app on 2026-10-27, most of them home layouts).
+
+## R18 TRUNCATE — never cut user-facing text short with "…" (permanent rule, CLAUDE.md #11)
+- **Rule (Toni, 2026-10-27):** no `TextOverflow.Ellipsis`, no `take(n) + "…"` / `"..."` on text people read. Show all of it:
+  wrap, adapt the spacing, resize to a size that stays readable (`ui/FitText.kt`), or scroll it smoothly (marquee / on focus).
+- **Allowed only** when a strict hardware, system API, third-party UI or fixed-size constraint can't reasonably be changed —
+  and then never silently: the whole text stays reachable through focus, scrolling, expansion or a detail view. Mark the line
+  `qa-ok: TRUNCATE (why; where the full text is)`.
+- **Keep** ellipses that are part of the text itself (a game's title, menu labels like "Inspect…" that open more).
+- **Check:** static_checks TRUNCATE lists every `TextOverflow.Ellipsis` and every code-made "…" / "..." cut; screenshots: a
+  text ending in "…" that isn't in its source string is a defect. New code must add none; existing ones are fixed as their
+  screens are touched, and counted in REPORT.md until there are none left.

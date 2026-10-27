@@ -225,6 +225,13 @@ def check(src):
                     continue
                 add("GLIDE-COMPOSE", "MED", m.start(), f"`{m.group(1)}.value` read in composition: every item re-composes on every animation frame; read it in a layer/draw lambda")
 
+
+        # TRUNCATE (R18, permanent rule CLAUDE.md #11): user-facing text cut short with an ellipsis.
+        for m in re.finditer(r"TextOverflow\.Ellipsis", s):
+            add("TRUNCATE", "MED", m.start(), "text cut short with … — wrap, resize readably (FitText) or scroll it instead; if unavoidable, mark qa-ok: TRUNCATE with where the full text is")
+        for m in re.finditer(r"\.take\([^)]*\)\s*\+\s*\"(?:…|\\u2026|\.\.\.)\"|\"(?:…|\.\.\.)\"\s*\+|\.(?:ellipsize|truncate)\w*\(|TextUtils\.ellipsize", s):
+            add("TRUNCATE", "MED", m.start(), "text shortened in code with … — show the whole text (R18)")
+
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

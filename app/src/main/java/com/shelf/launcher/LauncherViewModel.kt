@@ -555,9 +555,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** Pass 5 (D24): done once the account flags are read (off the main thread) after start. */
-    private val accountFlagsLoaded = kotlinx.coroutines.CompletableDeferred<Unit>()
-
     private val _uiState = MutableStateFlow(
         LauncherUiState(
             games = applyOverrides(currentRomGames),
@@ -589,15 +586,25 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             specialFilter = startSpecialFilter(),
             searchQuery = restoreCtx?.searchQuery ?: "",
             focusedIndex = restoreCtx?.focusedIndex?.coerceAtLeast(0) ?: 0,
-            // Pass 5 (D24): the accounts are filled in from IO right after start (loadAccountFlags) — opening the encrypted
-            // stores here held the first frame up by ~300 ms. Until then they read as not connected.
+            igdbConnected = igdbCredentialsStore.load() != null,
+            rawgConnected = rawgKeyStore.load() != null,
             artSource = tgdbKeyStore.loadSource(),
+            tgdbConnected = tgdbKeyStore.loadKey() != null,
+            screenScraperConnected = screenScraperStore.load() != null,
+            screenScraperUsername = screenScraperStore.load()?.username,
             metadataSource = metadataSourceStore.loadSource(),
             // Loaded in the background right after start (see init) — reading
             // hundreds of saved entries here held up the first frame.
             metadata = emptyMap(),
             scrapeOptions = scrapeOptionsStore.load(),
-            metadataReady = false,
+            metadataReady = when (metadataSourceStore.loadSource()) {
+                MetadataSource.IGDB -> igdbCredentialsStore.load() != null
+                MetadataSource.SCREENSCRAPER -> screenScraperStore.load() != null
+                MetadataSource.RAWG -> rawgKeyStore.load() != null
+                MetadataSource.COMBINED -> igdbCredentialsStore.load() != null || rawgKeyStore.load() != null ||
+                    screenScraperStore.load() != null
+                MetadataSource.NONE -> false
+            },
             isRaKeyEncrypted = raCredentialsStore.isEncrypted(),
             raMatches = raMatchStore.loadEntries(),
             raCustomHashes = raMatchStore.loadCustomHashes(),
@@ -2712,11 +2719,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * Paced to stay well inside IGDB's and ScreenScraper's rate limits.
      */
     fun scrapeMissingMetadata(silent: Boolean = false, refreshAll: Boolean = false) {
-        // Pass 5 (D24): asked before the account flags are read (right after start): run once they are.
-        if (!accountFlagsLoaded.isCompleted) {
-            viewModelScope.launch { accountFlagsLoaded.await(); scrapeMissingMetadata(silent, refreshAll) }
-            return
-        }
         if (metadataScrapeJob?.isActive == true) return
         val fields = _uiState.value.scrapeOptions.details
         val rawgOn = rawgKeyStore.load() != null
@@ -6532,30 +6534,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
-        // Pass 5 (D24): the accounts (encrypted stores) read off the main thread; the first frame no longer waits for them.
-        viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
-                val igdb = igdbCredentialsStore.load() != null
-                val rawg = rawgKeyStore.load() != null
-                val tgdb = tgdbKeyStore.loadKey() != null
-                val ss = screenScraperStore.load()
-                val ready = when (metadataSourceStore.loadSource()) {
-                    MetadataSource.IGDB -> igdb
-                    MetadataSource.SCREENSCRAPER -> ss != null
-                    MetadataSource.RAWG -> rawg
-                    MetadataSource.COMBINED -> igdb || rawg || ss != null
-                    MetadataSource.NONE -> false
-                }
-                com.shelf.launcher.data.MetacriticFile.rawgConnected.value = rawg
-                _uiState.update {
-                    it.copy(
-                        igdbConnected = igdb, rawgConnected = rawg, tgdbConnected = tgdb,
-                        screenScraperConnected = ss != null, screenScraperUsername = ss?.username, metadataReady = ready
-                    )
-                }
-            }
-            accountFlagsLoaded.complete(Unit)
-        }
         // Pass 5: the start category's own game look (data/CategoryGameLooks.kt).
         runCatching { _uiState.update { it.copy(appearance = withCategoryArt(it, it.appearance)) } }
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the
@@ -6724,7 +6702,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         // 0.6.15: Metacritic scores from your file (Sort › Metacritic score): read once, and the lists sorted again when they change.
         com.shelf.launcher.data.MetacriticFile.onChange = { _uiState.update { it.copy(scoresVersion = it.scoresVersion + 1) } }
-        // (Pass 5, D24: rawgConnected is set with the other account flags, off the main thread — see init.)
+        com.shelf.launcher.data.MetacriticFile.rawgConnected.value = rawgKeyStore.load() != null
         run {
             val app = getApplication<Application>()
             Thread { runCatching { com.shelf.launcher.data.MetacriticFile.load(app) } }.start()

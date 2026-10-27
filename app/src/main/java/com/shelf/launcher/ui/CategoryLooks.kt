@@ -269,11 +269,8 @@ private fun Modifier.lookTap(index: Int, selected: Int, onFocus: (Int) -> Unit, 
 
 @Composable
 private fun LookTitle(tile: CategoryTile, size: Int, color: Color = Color.White, align: TextAlign = TextAlign.Start, weight: FontWeight = FontWeight.Black, family: FontFamily? = null) {
-    Text(
-        tile.label, color = color, fontSize = size.sp, fontWeight = weight, fontFamily = family, textAlign = align, maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(size.sp), maxFontSize = size.sp)
-    )
+    // (R18: shown whole — wraps, shrinks readably, else slides; never "…".)
+    FullText(tile.label, color = color, fontSize = size.sp, fontWeight = weight, fontFamily = family, textAlign = align, maxLines = 2)
 }
 
 /** Which way the D-pad steps a look (platformBrowserKey). */
@@ -387,9 +384,7 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                         .clip(RoundedCornerShape(3.dp)).background(Color(0xFF0B0B0D)).border(0.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text(
-                        tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
-                    )
+                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(3.dp))
                     Text(
                         listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 1,
@@ -474,9 +469,9 @@ internal fun BladesLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
                 }
                 // Its edge (when it stands at the side): the name read bottom to top, as on a spine.
                 Box(Modifier.fillMaxHeight().width(edge).align(if (i < selected) Alignment.CenterEnd else Alignment.CenterStart).graphicsLayer { alpha = 1f - open() }) {
-                    Text(
-                        tile.label, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-                        modifier = Modifier.align(Alignment.Center).requiredWidth(bladeH * 0.8f).graphicsLayer { rotationZ = -90f }, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis
+                    FullText(
+                        tile.label, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.align(Alignment.Center).requiredWidth(bladeH * 0.8f).graphicsLayer { rotationZ = -90f }, textAlign = TextAlign.Center
                     )
                 }
             }
@@ -585,9 +580,8 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                             Box(Modifier.fillMaxWidth(0.80f).height(cellH * 0.36f).clip(RoundedCornerShape(2.dp))
                                 .background(Brush.verticalGradient(listOf(Color(0xFFE8CF8E), brass, Color(0xFF8E6F33))))
                                 .padding(3.dp).background(Color(0xFFF2EAD6)).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
-                                Text(tile.label, color = Color(0xFF2B2016), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, maxLines = 1, textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis,
-                                    style = androidx.compose.ui.text.TextStyle(lineHeight = 14.sp, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)),
-                                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp))
+                                FullText(tile.label, color = Color(0xFF2B2016), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
+                                    style = androidx.compose.ui.text.TextStyle(lineHeight = 14.sp, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
                             }
                             // Cup pull: a half-round brass shell with its shadow.
                             Canvas(Modifier.width(cellW * 0.26f).height(12.dp)) {
@@ -847,7 +841,7 @@ internal fun ArchiveLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                     Row(Modifier.fillMaxWidth()) {
                         Text("Fig. %02d".format(i + 1), color = ink, fontSize = 11.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.width(10.dp))
-                        Text(t.label + (lookFacts(t)?.let { ", $it" } ?: ""), color = faint, fontSize = 11.sp, fontFamily = FontFamily.Serif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        FullText(t.label + (lookFacts(t)?.let { ", $it" } ?: ""), color = faint, fontSize = 11.sp, fontFamily = FontFamily.Serif)
                     }
                 }
                 Spacer(Modifier.width(44.dp))
@@ -855,7 +849,8 @@ internal fun ArchiveLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                     Text("SYSTEM %02d / %02d".format(i + 1, tiles.size), color = faint, fontSize = 11.sp, letterSpacing = 3.sp)
                     Spacer(Modifier.height(10.dp))
                     // (A fixed size, two lines at most: an auto size re-fitted while the page slid and the title flickered.)
-                    Text(t.label, color = ink, fontSize = if (t.label.length > 22) 28.sp else 34.sp, fontFamily = FontFamily.Serif, lineHeight = 34.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    // (R18: a name longer than two lines slides along one, never "…".)
+                    FullText(t.label, color = ink, fontSize = if (t.label.length > 22) 28.sp else 34.sp, fontFamily = FontFamily.Serif, lineHeight = 34.sp, maxLines = 2, autoFit = false)
                     Spacer(Modifier.height(14.dp))
                     Box(Modifier.width(48.dp).height(3.dp).background(ink))
                     Spacer(Modifier.weight(1f))
@@ -875,7 +870,7 @@ internal fun ArchiveLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                                 Column(Modifier.weight(1f)) {
                                     Text(k.uppercase(), color = faint, fontSize = 9.sp, letterSpacing = 2.sp, maxLines = 1)
                                     Spacer(Modifier.height(2.dp))
-                                    Text(v, color = ink, fontSize = 14.sp, fontFamily = FontFamily.Serif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    FullText(v, color = ink, fontSize = 14.sp, fontFamily = FontFamily.Serif)
                                 }
                             }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -1254,7 +1249,7 @@ internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
             val current = shown == selected
             if (t != null) Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = modH + 38.dp, bottom = 16.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF0A0C0E)).padding(12.dp)
                 .graphicsLayer { val m = move.now(); alpha = if (current) ((m - 0.8f) / 0.2f).coerceIn(0.3f, 1f) else 0.3f }) {
-                Text("READING  ·  ${t.label.uppercase()}", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText("READING  ·  ${t.label.uppercase()}", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     t.coverSlides.take(5).forEach { u -> AsyncImage(u, null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(3.dp))) }
@@ -1319,7 +1314,7 @@ internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     Row(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(3.dp)).background(Color(0xFFE9E6DE)), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.width(6.dp).fillMaxHeight().background(lookHue(t, 0.48f, 0.6f)))
                         LookObject(t, Modifier.fillMaxHeight().width(modH * 1.25f).padding(4.dp))
-                        Text(t.label, color = Color(0xFF22252A), fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(end = 6.dp))
+                        FullText(t.label, color = Color(0xFF22252A), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).padding(end = 6.dp))
                     }
                     Spacer(Modifier.width(6.dp))
                     // Grip ridges and the gold contacts at its far end.
@@ -1362,8 +1357,7 @@ internal fun DashboardLook(tiles: List<CategoryTile>, selected: Int, animate: Bo
             Row(Modifier.fillMaxSize().padding(26.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(lookFacts(t)?.uppercase() ?: if (t.platform == null) "LIST" else "", color = accent, fontSize = 11.sp, letterSpacing = 2.sp)
-                    Text(t.label, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, lineHeight = 34.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 18.sp, maxFontSize = 30.sp))
+                    FullText(t.label, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, lineHeight = 34.sp, maxLines = 2)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                         @Composable fun stat(v: String, k: String) = Column {
@@ -1375,7 +1369,7 @@ internal fun DashboardLook(tiles: List<CategoryTile>, selected: Int, animate: Bo
                     }
                     t.lastPlayedTitle?.let {
                         Spacer(Modifier.height(10.dp))
-                        Text("Last played  ·  " + titles.display(it), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        FullText("Last played  ·  " + titles.display(it), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
                     }
                 }
                 LookObject(t, Modifier.fillMaxHeight().weight(0.9f))
@@ -1488,8 +1482,8 @@ private fun DashboardLower(tiles: List<CategoryTile>, selected: Int, onFocus: (I
                             contentAlignment = Alignment.Center
                         ) { LookObject(tile, Modifier.fillMaxSize().padding(13.dp)) }
                         Spacer(Modifier.height(5.dp))
-                        Text(tile.label, color = if (on) ink else ink.copy(alpha = 0.6f), fontSize = 10.sp, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 4.dp))
+                        FullText(tile.label, color = if (on) ink else ink.copy(alpha = 0.6f), fontSize = 10.sp, maxLines = 2,
+                            textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 4.dp))
                     }
                 }
             }

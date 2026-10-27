@@ -182,7 +182,8 @@ private fun IconGrid(apps: List<Game>, removable: Boolean = false, onClick: (Gam
             apps.chunked(perRow).forEach { row ->
                 Row(Modifier.fillMaxWidth()) {
                     row.forEach { app ->
-                        AppTile(app, removable, Modifier.weight(1f)) { onClick(app) }
+                        // (Pass 5, D59: the popup opens on its first shortcut.)
+                        AppTile(app, removable, Modifier.weight(1f).then(if (app === apps.first()) Modifier.initialFocus() else Modifier)) { onClick(app) }
                     }
                     // Keep a partial last row aligned to the grid.
                     repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
