@@ -10,9 +10,10 @@ for L in $list; do
   am start -n com.shelf.launcher/.MainActivity --ez voltcap_test_preview true --es voltcap_test_layout $L > /dev/null 2>&1; sleep 4
   am start -n com.shelf.launcher/.MainActivity --es voltcap_test_category ALL > /dev/null 2>&1; sleep 3
   sh vqa.sh seq "R L" 300 > /dev/null; sleep 1
+  screencap -p out/${run}_${L}.png   # the still at native resolution (clipping / overlap / cut text)
   logcat -c; dumpsys gfxinfo com.shelf.launcher reset > /dev/null
   (nohup screenrecord --size 960x540 --time-limit 11 out/${run}_$L.mp4 > /dev/null 2>&1 &)
-  sleep 1; log -t VoltcapQA "MARK layout $L"
+  sleep 1; log -p e -t VoltcapQA "MARK layout $L"
   sh vqa.sh seq "$NAV" 300 > /dev/null; sleep 2
   sh vqa.sh perf_dump ${run}_$L > /dev/null 2>&1
   logcat -d -s VoltcapQA > out/${run}_${L}_qa.txt

@@ -569,7 +569,7 @@ private fun InfoRegion(
             add(info.console.uppercase())
             if (info.playtimeMs >= 60_000L) add("PLAYTIME " + PlaytimeStore.format(info.playtimeMs).uppercase())
         }.joinToString(" · ")
-        Text(line, color = ShelfTheme.accent, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(line, color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1)
         if (info.total > 0) {
             Spacer(Modifier.height(3.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -593,13 +593,12 @@ private fun InfoRegion(
                 modifier = Modifier.height(54.dp).widthIn(max = 320.dp)
             )
         } else {
-            Text(
-                info.title, color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), fontWeight = FontWeight.Bold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, textAlign = infoTextAlign(), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em)
+            FullText(
+                info.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = infoTextAlign(), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em)
             )
         }
         if (categoryLabel.isNotBlank()) {
-            Text(categoryLabel, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(categoryLabel, color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp, maxLines = 1)
         }
         Spacer(Modifier.height(10.dp))
         // Page names: the current one bright with a short underline. ◀ ▶ / tap.
@@ -612,7 +611,7 @@ private fun InfoRegion(
             Text("◀", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
                 modifier = Modifier.pointerInput(p) { detectTapGestures { pageTap((p.ordinal - 1).mod(count)) } })
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("${p.label}  ${p.ordinal + 1}/$count", color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                FullText("${p.label}  ${p.ordinal + 1}/$count", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 Spacer(Modifier.height(3.dp))
                 Box(Modifier.width(18.dp).height(2.dp).background(ShelfTheme.accent))
             }
@@ -627,9 +626,9 @@ private fun InfoRegion(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.pointerInput(i) { detectTapGestures { pageTap(i) } }
                 ) {
-                    Text(
+                    FullText(
                         hp.label, color = if (on) Color.White else Color.White.copy(alpha = 0.5f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        fontSize = 11.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1
                     )
                     Spacer(Modifier.height(3.dp))
                     Box(Modifier.width(if (on) 18.dp else 0.dp).height(2.dp).background(ShelfTheme.accent))

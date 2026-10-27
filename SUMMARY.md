@@ -1,5 +1,29 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (355, RP Classic pass): Retroid Pocket Classic checked, Tile home names, charge limit, text
+
+Details: `tools\qa\REPORT.md` (RP Classic pass), `defects.json` D59, D63–D72. All on `qa-pass-1`, built and installed on
+the RP Classic only (the Thor wasn't connected). Not merged, not published.
+- **Tile home:** the game's name above the tiles disappeared after a move (your report). Fixed; checked on the RP. The same
+  mistake was fixed in Resume & discover, Custom and Magazine.
+- **Charge limit on the RP Classic:** it stopped charging the wrong way (still 180–310 mA going in at 91 %). Now it really
+  stops at 80 % — checked: the battery stays at 79–80 % with nothing going in. It still can't do anything while Voltcap
+  isn't running at all.
+- **Menus open on their first button** — checked on the RP (Start: Play, L1: first shortcut, Y: the filter in use).
+- **Category screen at the RP's size:** Worlds' buttons readable, the open bottom drawer no longer covers its name, drawer
+  names on two lines (Drawers 15 % → 3 % janky frames), Dashboard's name clear of the console.
+- **No "…" in 47 home layouts** (182 places): names shrink, then slide; checked in 14 layouts on the RP. The slide stops
+  when the home screen rests.
+- **Settings tidied:** 15 settings that did nothing removed (none were shown in Settings). Duplicated rows wait for you.
+- **3D cartridge carousel crash:** not reproduced (3 carousel views × 5 categories with fast presses). The OpenGL crash on
+  file is RetroArch's own.
+- **Found, waiting for you:** the background clip keeps the RP's GPU busy at 30 fps while idle; a big logo you placed in
+  Edit Home covers the name line on the RP's shorter screen; Tile home vs the Switch home.
+- The RP's system crashed in a loop from its own "Virtual Mouse" (not Voltcap); a restart of the RP fixed it.
+- **Settings walk:** 12 of 21 categories walked with the controller on the RP; a few wrapped chip rows (Overlay times, Sync
+  intervals) still to check by hand, 7 categories still to walk.
+- QA: new rules for silent clipping and stuck animations, stills / idle / crash scripts, Settings explorer for narrow screens.
+
 ## Update — 27 Oct 2026 (354): permanent rule — no text cut short with "…"
 
 - **New permanent rule** (CLAUDE.md #11, QA rule R18): Voltcap never shortens text with "..." / "…". Text wraps, uses its

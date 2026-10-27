@@ -289,7 +289,7 @@ internal fun HomeGameGrid(
                             // (TrimMargins.kt); other pictures as before.
                             url != null -> AsyncImage(if (!realScan && url == cover) rememberStyleArtRequest(url, trim = true) else url, g.name, contentScale = if (realScan) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize().then(if (realScan) Modifier.padding(6.dp) else Modifier).pixelArtwork())
                             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = gridAspect(cardArtType, tiles) > 1f, modifier = Modifier.fillMaxSize())
-                            else -> Text(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), textAlign = TextAlign.Center, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            else -> FullText(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp))
                         }
                         // Update 115: the console's badge (update 141: on every look; too narrow a slot skips it).
                         ConsoleBadge(g.platform, packageName = g.packageName)

@@ -206,7 +206,7 @@ private fun NextAchievementsTicker(list: List<com.shelf.launcher.data.RaAchievem
                         modifier = Modifier.size(20.dp).clip(uiRounded(3.dp))
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text(a.title.orEmpty(), color = Color.White, fontSize = 11.sp, maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    FullText(a.title.orEmpty(), color = Color.White, fontSize = 11.sp, maxLines = 1)
                 }
             }
         }
@@ -843,7 +843,8 @@ private fun ResumeSpot(
     // the move back a frame later, so that frame used to show the NEW game already sitting in the big spot, then it jumped
     // to the row and flew in: a one-frame flash on every ◀ ▶ in Resume & discover.)
     val pend = anim && (prev[2] != v || prev[0] != c.focus)
-    val q = if (pend) 0f else p.value
+    val pv = p.value // (read always: read only when not pending, the move that follows was never observed — LAYER-BRANCH)
+    val q = if (pend) 0f else pv
     val dirNow = if (pend) (if (v != prev[2]) (if (v > prev[2]) 1 else -1) else (if (c.focus > prev[0]) 1 else -1)) else dir
     Box(Modifier.fillMaxSize()) {
         // The game you leave.

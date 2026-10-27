@@ -14,6 +14,12 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
 8. Keep explanations short; spend tokens on implementation.
 9. Run only the build/checks the change needs.
 10. Do not modify CLAUDE.md during normal tasks unless I ask or the project structure changes significantly.
+11. **No truncated text.** Never shorten user-facing text with "..." or "…" anywhere in VoltCap (no `TextOverflow.Ellipsis`,
+    no `take(n) + "…"`). Show the whole text: wrapping, adaptive spacing, readable font resizing (`ui/FitText.kt`, a minimum
+    that stays readable), or smooth scrolling (marquee / scroll on focus). Truncation only when a strict hardware, system API,
+    third-party UI or fixed-size constraint can't reasonably be changed — then never silently: the full text stays
+    reachable through focus, scrolling, expansion or a detail view. Ellipses that are part of the original text (a game's
+    title, "Inspect…" style menu labels that open more) stay. Checked by `tools/qa/tools/static_checks.py` TRUNCATE (QA rule R18).
 
 ## Workflow (always)
 - **Edit `src_copy/` only**, never `app/src/main/java/com/shelf/launcher/` directly. I robocopy `src_copy` into the real source myself. `src_copy/` mirrors `app/src/main/java/com/shelf/launcher/` 1:1.

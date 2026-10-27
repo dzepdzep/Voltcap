@@ -410,9 +410,9 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
             maxLines = 2, fontWeight = FontWeight.Bold, style = ink
         )
         Spacer(Modifier.height(4.dp))
-        Text(
+        FullText(
             titles.console(g.platform) + " · " + discKind(g.platform), color = Color.White.copy(alpha = 0.8f),
-            fontSize = if (compact) 11.sp else 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+            fontSize = if (compact) 11.sp else 14.sp, maxLines = 1, style = ink
         )
         Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -430,9 +430,9 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
                 val lh = if (compact) 13.sp else 16.sp
                 val fits = with(androidx.compose.ui.platform.LocalDensity.current) { (maxHeight.toPx() / lh.toPx()).toInt() }
                 val lines = minOf(fits, if (compact) 4 else 7)
-                if (lines > 0) Text(
+                if (lines > 0) FullText(
                     summary, color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 10.sp else 12.sp,
-                    lineHeight = lh, maxLines = lines, overflow = TextOverflow.Ellipsis, style = ink
+                    lineHeight = lh, maxLines = lines, style = ink
                 )
             }
             Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
@@ -449,9 +449,9 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
         // (Update 315: off for this layout — Categories tile / Settings — no caption.)
         val catOn = CategoryTitle.captionOn(c.state.appearance)
         if (catOn) CategoryTitle.Native() // (Update 212: the layout's own category title.)
-        Text(
+        FullText(
             (if (catOn) "${c.categoryLabel} · " else "") + "${c.focus + 1} / ${c.games.size}", color = Color.White.copy(alpha = 0.6f),
-            fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+            fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, style = ink
         )
     }
 }
@@ -508,6 +508,6 @@ private fun DiscPill(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
     ) {
         Icon(icon, null, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
         Spacer(Modifier.width(6.dp))
-        Text(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }

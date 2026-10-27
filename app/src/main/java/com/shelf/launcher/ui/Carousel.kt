@@ -162,7 +162,7 @@ internal fun ShelfGameArt(
         ) {
             // (Update 202: the cover, when it stands in for missing wide art, with its file's flat strips trimmed.)
             if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
-            else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             ConsoleBadge(g.platform, packageName = g.packageName)
         }
     } else if (cov != null) {
@@ -200,7 +200,7 @@ internal fun ShelfGameArt(
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(10.dp))
-            else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             // Case gloss.
             Canvas(Modifier.fillMaxSize()) {
                 drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
@@ -1825,10 +1825,9 @@ private fun RecedeName(g: Game, playedMs: Long?, modifier: Modifier) {
                 style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
                 modifier = Modifier.fillMaxWidth()
             )
-            if (playedMs != null) Text(
+            if (playedMs != null) FullText(
                 // (The same short time as the other "Played …" lines: "Played <1 min", not "Played Under a minute".)
-                "Played " + com.shelf.launcher.data.PlaytimeStore.format(playedMs), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
+                "Played " + com.shelf.launcher.data.PlaytimeStore.format(playedMs), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
             )
         }
     }

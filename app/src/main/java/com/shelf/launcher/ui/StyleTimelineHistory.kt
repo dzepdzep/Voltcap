@@ -411,22 +411,22 @@ private fun HistoryTile(
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    FullText(
                         titles.display(g.name), color = Color.White, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                        maxLines = 1, textAlign = TextAlign.Center,
                         style = nameTextStyle(NameBackdrop.SHADOW)
                     )
-                    Text(
+                    FullText(
                         listOfNotNull(date, titles.console(g.platform)).joinToString("  ·  "),
                         color = accent, fontSize = if (compact) 10.sp else 11.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+                        maxLines = 1, textAlign = TextAlign.Center
                     )
                 }
             } else {
                 Box(Modifier.height(if (compact) 32.dp else 38.dp).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                    if (date != null) Text(
+                    if (date != null) FullText(
                         date, color = Color.White.copy(alpha = 0.72f), fontSize = 10.sp, fontWeight = FontWeight.Medium,
-                        maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
                         modifier = Modifier.padding(top = 4.dp), style = nameTextStyle(NameBackdrop.SHADOW)
                     )
                 }

@@ -370,8 +370,7 @@ private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
             GenericCardSymbol(Modifier.size(30.dp))
             Spacer(Modifier.width(8.dp))
             Column {
-                Text(c.categoryLabel, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, style = outline)
+                FullText(c.categoryLabel, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = outline)
                 val n = c.games.size
                 Text("$n ${if (n == 1) "Game" else "Games"}", color = Color.White.copy(alpha = 0.92f), fontSize = 14.sp, maxLines = 1, style = outline)
             }
@@ -381,19 +380,17 @@ private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
                 val l1 = save?.takeIf { !it.fromDb }?.sys?.line1?.takeIf { it.isNotBlank() }
                 val l2 = save?.takeIf { !it.fromDb }?.sys?.line2?.takeIf { it.isNotBlank() }
                 if (l1 != null) {
-                    Text(l1, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
-                    if (l2 != null) Text(l2, color = McYellow, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+                    FullText(l1, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
+                    if (l2 != null) FullText(l2, color = McYellow, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                 } else {
-                    Text(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-                        overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+                    FullText(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.End, style = outline)
                 }
                 val bits = listOfNotNull(
                     titles.console(g.platform).takeIf { it.isNotBlank() },
                     c.playtime(g)?.let { stylePlaytime(it) },
                     c.progress(g)?.let { (e, t) -> "★ $e / $t" }
                 )
-                if (bits.isNotEmpty()) Text(bits.joinToString("  ·  "), color = Color.White, fontSize = 12.sp, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+                if (bits.isNotEmpty()) FullText(bits.joinToString("  ·  "), color = Color.White, fontSize = 12.sp, maxLines = 1, textAlign = TextAlign.End, style = outline)
             }
         } else Spacer(Modifier.weight(0.55f))
     }
@@ -656,10 +653,9 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
         // The save's title and the facts, top right.
         Column(Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 4.dp).fillMaxWidth(0.52f), horizontalAlignment = Alignment.End) {
             if (l1 != null) {
-                Text(l1, color = McYellow, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
-                if (l2 != null) Text(l2, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
-            } else Text(ctx.name, color = McYellow, fontSize = 21.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline)
+                FullText(l1, color = McYellow, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
+                if (l2 != null) FullText(l2, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
+            } else FullText(ctx.name, color = McYellow, fontSize = 21.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.End, style = outline)
             Spacer(Modifier.height(6.dp))
             listOfNotNull(
                 listOfNotNull(ctx.year, ctx.developer).joinToString("  ·  ").takeIf { it.isNotBlank() },
@@ -667,7 +663,7 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
                 "Played  " + ctx.played + (ctx.last?.let { "  ·  $it" } ?: ""),
                 if (ctx.total > 0) "Achievements  ${ctx.earned} / ${ctx.total}" else null,
                 if (save?.mesh != null) (if (save.fromDb) "Icon from PS2IODB" else "Save icon from your memory card") else null
-            ).forEach { Text(it, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, style = outline) }
+            ).forEach { FullText(it, color = Color.White, fontSize = 13.sp, maxLines = 1, textAlign = TextAlign.End, style = outline) }
         }
         // The icon, big, over its light.
         Box(

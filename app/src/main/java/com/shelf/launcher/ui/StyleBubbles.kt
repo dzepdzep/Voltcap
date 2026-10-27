@@ -434,13 +434,13 @@ internal fun StyleBubbles(c: StyleCtx, modifier: Modifier = Modifier) {
             ) {
                 Icon(if (view == BubbleNav.View.FOLDERS) Icons.Filled.Folder else Icons.Filled.BubbleChart, null, tint = Color.White, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(if (view == BubbleNav.View.FOLDERS) "Folders" else c.categoryLabel + "  ·  " + c.games.size, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(if (view == BubbleNav.View.FOLDERS) "Folders" else c.categoryLabel + "  ·  " + c.games.size, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
             // The name of the bubble you're on, in a white pill at the top in the middle.
             val name = if (view == BubbleNav.View.FOLDERS) c.stops.getOrNull(systems.getOrNull(BubbleNav.folder) ?: -1)?.label
                 else g?.let { LocalTitleOptions.current.display(it.name) }
             if (name != null) androidx.compose.animation.Crossfade(targetState = name, label = "bvName", modifier = Modifier.align(Alignment.TopCenter).padding(top = 2.dp)) { nm ->
-                Text(nm, color = Color(0xFF16202C), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                FullText(nm, color = Color(0xFF16202C), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                     modifier = Modifier.widthIn(max = nameMax).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.9f)).padding(horizontal = 16.dp, vertical = 5.dp))
             }
         }
@@ -766,7 +766,7 @@ private fun LiveAreaBody(c: StyleCtx, g: Game, compact: Boolean) {
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(titles.display(g.name), color = Color.White, fontSize = if (compact) 18.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = if (compact) 20.sp else 27.sp)
+                        FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 18.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = if (compact) 20.sp else 27.sp)
                         Text(if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform), color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 1)
                     }
                 }
@@ -862,7 +862,7 @@ private fun LiveInfoPanel(c: StyleCtx, g: Game, compact: Boolean) {
         @Composable
         fun line(label: String, value: String?) {
             if (value.isNullOrBlank()) return
-            Row { Text(label, color = Color(0xFF5B6B7C), fontSize = 12.sp, modifier = Modifier.width(86.dp)); Text(value, color = Color(0xFF1A2633), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Row { Text(label, color = Color(0xFF5B6B7C), fontSize = 12.sp, modifier = Modifier.width(86.dp)); FullText(value, color = Color(0xFF1A2633), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1) }
         }
         line("Played", stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
         line("Last played", c.lastPlayed(g)?.let { lastPlayedLabel(it) })

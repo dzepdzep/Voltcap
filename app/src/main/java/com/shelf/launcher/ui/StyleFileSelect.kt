@@ -317,9 +317,8 @@ private fun FileBlock(c: StyleCtx, g: Game, index: Int, slot: Int, on: Boolean, 
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(consoleLabel, color = ink.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(titles.display(g.name), color = ink, fontSize = 17.sp, lineHeight = 19.sp, fontWeight = FontWeight.Black, maxLines = 2,
-                        overflow = TextOverflow.Ellipsis, style = if (ink == Color.White) TextStyle(shadow = FsShadow) else TextStyle())
+                    FullText(consoleLabel, color = ink.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    FullText(titles.display(g.name), color = ink, fontSize = 17.sp, lineHeight = 19.sp, fontWeight = FontWeight.Black, maxLines = 2, style = if (ink == Color.White) TextStyle(shadow = FsShadow) else TextStyle())
                     Spacer(Modifier.height(4.dp))
                     val p = c.progress(g)
                     Row(verticalAlignment = Alignment.CenterVertically) {

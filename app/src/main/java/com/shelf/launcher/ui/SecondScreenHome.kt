@@ -476,7 +476,7 @@ fun SecondScreenHome(
             // Volt look: the Voltcap mark, underlined tabs and the clock over a voltage line Volt sits on.
             Box(Modifier.fillMaxWidth().padding(end = headerEndInset)) {
             if (gameOpen) PageSwitcher(page, visiblePages.size + 1, latestStep) {
-                Text("Game", color = ShelfTheme.accent, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+                FullText("Game", color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
             else if (VoltUi.on) VoltSecondHeader(page, visiblePages, selectPage, nowPlaying, titleOnly = options.pageTitleOnly, onStep = latestStep)
             else if (options.pageTitleOnly) PageSwitcher(page, visiblePages.size, latestStep)
@@ -555,9 +555,8 @@ fun SecondScreenHome(
         // Update 193: what a dock shortcut just did.
         dockNote?.let { note ->
             Box(Modifier.fillMaxSize().padding(top = 58.dp), contentAlignment = Alignment.TopCenter) {
-                Text(
+                FullText(
                     note, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 520.dp).clip(RoundedCornerShape(50))
                         .background(Color.Black.copy(alpha = 0.72f)).padding(horizontal = 16.dp, vertical = 8.dp)
                 )
@@ -606,7 +605,7 @@ const val SECOND_DOCK_MAX = 8
  */
 @Composable
 internal fun PageSwitcher(page: SecondPage, pageCount: Int, onStep: (Int) -> Unit, modifier: Modifier = Modifier, title: @Composable () -> Unit = {
-    Text(page.label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+    FullText(page.label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
 }) {
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         PageArrow(left = true, visible = pageCount > 1) { onStep(-1) }
@@ -662,10 +661,10 @@ private fun PageTabs(
                     .clickable { onPage(p) }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Text(
+                FullText(
                     p.label,
                     color = if (selected) onAccentColor() else ShelfTheme.colors.textPrimary,
-                    fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
                 )
             }
     }
@@ -800,22 +799,22 @@ private fun ArtPage(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Column {
-                        Text(
-                            gameDisplayName(game.name), color = Color.White, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp),
-                            fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
+                        FullText(
+                            gameDisplayName(game.name), color = Color.White, fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold, maxLines = 2
                         )
                         val bits = listOfNotNull(
                             game.platform,
                             info.playtimeMs?.takeIf { it > 0 }?.let { "Played ${PlaytimeStore.format(it)}" }
                         )
-                        Text(bits.joinToString(" · "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        FullText(bits.joinToString(" · "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 2)
                         if (stillOpen) {
                             Spacer(Modifier.height(6.dp))
-                            Text(
+                            FullText(
                                 if (game.stableKey in com.shelf.launcher.data.RunningGames.confirmed) "● Still open · A resumes · X closes"
                                 else "● Probably still open · X closes",
-                                color = RunningGlowColor, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                                fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                color = RunningGlowColor, fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold, maxLines = 2,
                                 modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))
                                     .padding(horizontal = 8.dp, vertical = 3.dp)
                             )
@@ -868,12 +867,12 @@ private fun AchievementsPage(info: SecondHomeGame) {
             VoltAchievementBoard(game, earned, possible, info.award?.label, list)
         } else
         Column(Modifier.fillMaxSize().then(if (list.isEmpty()) Modifier.verticalScroll(rememberScrollState()) else Modifier)) {
-            Text(gameDisplayName(game.name), color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(gameDisplayName(game.name), color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Spacer(Modifier.height(6.dp))
             if (possible > 0) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("$earned", color = ShelfTheme.accent, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-                    Text(" / $possible achievements", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).padding(bottom = 6.dp))
+                    FullText(" / $possible achievements", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, maxLines = 1, modifier = Modifier.weight(1f, fill = false).padding(bottom = 6.dp))
                     Spacer(Modifier.weight(1f))
                     info.award?.let {
                         Text(it.label.uppercase(), color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
@@ -909,8 +908,8 @@ private fun AchievementsPage(info: SecondHomeGame) {
                             )
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(a.Title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                Text(a.Description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                FullText(a.Title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                FullText(a.Description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2)
                             }
                             a.Points?.let { Text("$it pts", color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
                         }
@@ -950,9 +949,9 @@ private fun AchievementList(list: List<RaAchievementDetail>, modifier: Modifier 
                         .clickable { filter = f }
                         .padding(horizontal = 12.dp, vertical = 5.dp)
                 ) {
-                    Text(
+                    FullText(
                         f.label, color = if (selected) onAccentColor() else ShelfTheme.colors.textPrimary,
-                        fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1
                     )
                 }
         }
@@ -974,8 +973,8 @@ private fun AchievementList(list: List<RaAchievementDetail>, modifier: Modifier 
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                            Text(a.description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            FullText(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                            FullText(a.description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2)
                         }
                         if (a.isMissable) {
                             Icon(
@@ -1105,9 +1104,9 @@ private fun DockAppMenu(
                 .padding(vertical = 6.dp)
                 .width(200.dp)
         ) {
-            Text(
-                title, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            FullText(
+                title, color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                maxLines = 2, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
             )
             if (canMoveLeft) MenuItem("Move left") { onMove(-1) }
             if (canMoveRight) MenuItem("Move right") { onMove(1) }
@@ -1161,7 +1160,7 @@ private fun SecondScreenAppPicker(apps: List<Game>, onPick: (Game) -> Unit, onCl
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Add to dock", color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            FullText("Add to dock", color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
             RoundIcon(Icons.Filled.Close, "Close", onClose)
         }
         Spacer(Modifier.height(10.dp))
@@ -1188,9 +1187,9 @@ private fun SecondScreenAppPicker(apps: List<Game>, onPick: (Game) -> Unit, onCl
                         ) {
                             SecondDockShortcuts.Icon(app.packageName, Modifier.size(48.dp).aspectRatio(1f))
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                                maxLines = 2, overflow = TextOverflow.Ellipsis
+                            FullText(
+                                app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp,
+                                maxLines = 2
                             )
                         }
                     }
@@ -1245,7 +1244,7 @@ private fun SecondScreenDrawer(apps: List<Game>, onLaunch: (Game) -> Unit, onClo
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("All apps", color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            FullText("All apps", color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f))
             RoundIcon(Icons.Filled.Close, "Close", onClose)
         }
         Spacer(Modifier.height(10.dp))
@@ -1270,9 +1269,9 @@ private fun SecondScreenDrawer(apps: List<Game>, onLaunch: (Game) -> Unit, onClo
                     ) {
                         AppIconArt(app.packageName, wide = false, modifier = Modifier.size(48.dp).aspectRatio(1f))
                         Spacer(Modifier.height(4.dp))
-                        Text(
-                            app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                            maxLines = 2, overflow = TextOverflow.Ellipsis
+                        FullText(
+                            app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp,
+                            maxLines = 2
                         )
                     }
                 }

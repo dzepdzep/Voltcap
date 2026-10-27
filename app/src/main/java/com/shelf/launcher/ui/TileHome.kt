@@ -764,13 +764,12 @@ private fun HomeTile(
             AppIconArt(game.packageName, wide = false, modifier = Modifier.fillMaxSize())
         } else {
             // No art yet: the name, so the tile still says which game it is.
-            Text(
+            FullText(
                 titles.display(game.name),
                 color = Color.White.copy(alpha = 0.92f),
-                fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
             )
         }

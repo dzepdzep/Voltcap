@@ -11,7 +11,7 @@ V3=$(cmd media_session volume --stream 3 --get 2>/dev/null | grep -o "volume is 
 am start -n com.shelf.launcher/.MainActivity --es voltcap_test_snapshot save > /dev/null 2>&1; sleep 1
 am start -n com.shelf.launcher/.MainActivity --ez voltcap_test_walk true > /dev/null 2>&1; sleep 1.5
 logcat -c
-for k in $keys; do log -t VoltcapQA "MARK key $k"; sh vqa.sh seq "$k" $gap > /dev/null; done; sleep 1
+for k in $keys; do log -p e -t VoltcapQA "MARK key $k"; sh vqa.sh seq "$k" $gap > /dev/null; done; sleep 1
 logcat -d -s VoltcapQA > out/${n}_qa.txt
 sh vqa.sh seq "B B B B" 300
 am start -n com.shelf.launcher/.MainActivity --es voltcap_test_snapshot restore > /dev/null 2>&1; sleep 1

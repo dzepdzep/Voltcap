@@ -665,10 +665,10 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
                 .border(1.dp, Color(0xFF8E7F63), RoundedCornerShape(3.dp))
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            Text(titles.display(g.name), color = Color(0xFF2B2620), fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            FullText(titles.display(g.name), color = Color(0xFF2B2620), fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, maxLines = 3)
             Spacer(Modifier.height(3.dp))
             listOfNotNull(titles.console(g.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { Text(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { FullText(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1) }
             Spacer(Modifier.height(4.dp))
             Text("A  pull it out\nY  look at its cover", color = Color(0xFF8A7D69), fontSize = 10.sp, lineHeight = 13.sp, fontFamily = FontFamily.Monospace)
         }

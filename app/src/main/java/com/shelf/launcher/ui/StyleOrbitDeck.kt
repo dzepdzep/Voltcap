@@ -272,10 +272,11 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             animationSpec = tween(if (animate) 200 else 0), label = "odName") { k ->
             val gg = c.games.firstOrNull { it.stableKey == k } ?: g
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    titles.display(gg.name).uppercase(), fontSize = 30.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                    style = TextStyle(brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFB9C4D6), Color(0xFF6F7C92), Color(0xFFE6ECF5))),
+                // (RP Classic QA: "POKEMON SILVER VERSION (GB ..." — two lines, then shrink, then slide; R18.)
+                FullText(
+                    titles.display(gg.name).uppercase(), color = Color.Unspecified, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2,
+                    textAlign = TextAlign.Center,
+                    style = TextStyle(fontStyle = FontStyle.Italic, brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFB9C4D6), Color(0xFF6F7C92), Color(0xFFE6ECF5))),
                         shadow = Shadow(glow.copy(alpha = 0.55f), Offset(0f, 0f), 12f))
                 )
                 val bits = listOfNotNull(titles.console(gg.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(gg), c.lastPlayed(gg) != null),

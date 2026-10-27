@@ -585,9 +585,9 @@ private fun PqCover(c: StyleCtx, g: Game, modifier: Modifier) {
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the chamfered card.)
             url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == c.cover(g)), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
-            else -> Text(
+            else -> FullText(
                 titles.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, textAlign = TextAlign.Center,
-                maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp)
+                maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp)
             )
         }
         ConsoleBadge(g.platform, packageName = g.packageName)
@@ -641,9 +641,9 @@ private fun PqInfoText(c: StyleCtx, g: Game, pal: PqPalette, compact: Boolean, d
         val summary = meta?.summary?.trim()?.takeIf { it.isNotEmpty() }
         if (descOn && summary != null) {
             Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-            Text(
+            FullText(
                 summary, color = pal.muted, fontSize = if (compact) 11.sp else 13.sp, lineHeight = if (compact) 14.sp else 18.sp,
-                maxLines = if (compact) 2 else 4, overflow = TextOverflow.Ellipsis
+                maxLines = if (compact) 2 else 4
             )
         }
     }
@@ -664,7 +664,7 @@ private fun PqMetaLine(c: StyleCtx, g: Game, pal: PqPalette, compact: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         PqStopIcon(StyleStop(null, g.platform, titles.console(g.platform), null), pal.accent, icon)
         Spacer(Modifier.width(6.dp))
-        Text(facts.joinToString("  ·  "), color = pal.ink.copy(alpha = 0.9f), fontSize = size, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(facts.joinToString("  ·  "), color = pal.ink.copy(alpha = 0.9f), fontSize = size, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
     Spacer(Modifier.height(3.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1054,9 +1054,9 @@ private fun PqSystemCard(pal: PqPalette, st: StyleStop, count: Int?, lit: Boolea
                     PlatformLogo(p, st.label, Modifier.fillMaxWidth(0.86f).fillMaxHeight(0.8f), textColor = pal.ink, textSize = if (compact) 11.sp else 13.sp)
                 } else Icon(st.icon, null, tint = if (lit) pal.accentLight else pal.accent, modifier = Modifier.fillMaxSize(0.55f))
             }
-            Text(
+            FullText(
                 pqShortName(st), color = pal.ink, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+                maxLines = 1, textAlign = TextAlign.Center
             )
             Text(
                 when { count == null -> if (here) "You're here" else " "; count == 1 -> "1 Game"; else -> "$count Games" },
@@ -1149,7 +1149,7 @@ private fun PqDetails(c: StyleCtx, pal: PqPalette, compact: Boolean) {
                     val summary = c.state.metadata[g.stableKey]?.summary?.trim()?.takeIf { it.isNotEmpty() }
                     if (Features.pqDescription.state.value && summary != null) {
                         Spacer(Modifier.height(5.dp))
-                        Text(summary, color = pal.muted, fontSize = if (compact) 10.sp else 12.sp, lineHeight = if (compact) 13.sp else 16.sp, maxLines = if (compact) 2 else 3, overflow = TextOverflow.Ellipsis)
+                        FullText(summary, color = pal.muted, fontSize = if (compact) 10.sp else 12.sp, lineHeight = if (compact) 13.sp else 16.sp, maxLines = if (compact) 2 else 3)
                     }
                     Spacer(Modifier.height(if (compact) 5.dp else 8.dp))
                     val list = rememberLazyListState()
@@ -1197,9 +1197,9 @@ private fun PqActionRow(pal: PqPalette, a: PqAction, lit: Boolean, compact: Bool
         ) {
             Icon(a.icon, null, tint = if (lit) pal.onAccent else pal.accent, modifier = Modifier.size(if (compact) 14.dp else 17.dp))
             Spacer(Modifier.width(8.dp))
-            Text(
+            FullText(
                 a.label, color = if (lit) pal.onAccent else pal.ink, fontSize = if (compact) 12.sp else 14.sp,
-                fontWeight = if (lit) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                fontWeight = if (lit) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1,
                 modifier = Modifier.weight(1f)
             )
             a.sub?.let {

@@ -489,9 +489,9 @@ private fun StackGames(c: StyleCtx, centreY: Dp, infoH: Dp, compact: Boolean, mo
             verticalAlignment = Alignment.CenterVertically
         ) {
             CategoryTitle.Native() // (Update 212: the layout's own category title.)
-            Text(
+            FullText(
                 c.categoryLabel, color = Color.White, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold,
-                maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),
+                maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW),
                 modifier = Modifier.weight(1f, fill = false)
             )
             Text(
@@ -591,11 +591,10 @@ private fun StackInfo(c: StyleCtx, g: Game, compact: Boolean) {
             fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW)
         )
         Spacer(Modifier.height(2.dp))
-        Text(
+        FullText(
             titles.console(g.platform) + "  ·  ◷ " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null) +
                 (c.lastPlayed(g)?.let { "  ·  Last played: " + lastPlayedLabel(it) } ?: ""),
-            color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 11.sp else 12.sp, maxLines = 1, softWrap = false,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+            color = Color.White.copy(alpha = 0.82f), fontSize = if (compact) 11.sp else 12.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
         )
     }
 }

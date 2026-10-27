@@ -162,14 +162,12 @@ internal fun StyleDashboard(c: StyleCtx, modifier: Modifier) {
 @Composable
 private fun DashTitle(title: String, subtitle: String) {
     Column(Modifier.editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.DASH, "title"), "Title").padding(start = 4.dp, bottom = 6.dp)) {
-        if (title.isNotBlank()) Text(
-            title, color = Color.White, fontSize = 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(22.sp), maxFontSize = 22.sp), fontWeight = FontWeight.Bold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+        if (title.isNotBlank()) FullText(
+            title, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
         )
-        if (subtitle.isNotBlank()) Text(
+        if (subtitle.isNotBlank()) FullText(
             // A dark theme accent (e.g. deep green) disappears on a picture; lifted toward white so it still reads.
-            subtitle, color = ShelfTheme.accent.let { a -> if (a.luminance() < 0.3f) androidx.compose.ui.graphics.lerp(a, Color.White, 0.55f) else a }, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+            subtitle, color = ShelfTheme.accent.let { a -> if (a.luminance() < 0.3f) androidx.compose.ui.graphics.lerp(a, Color.White, 0.55f) else a }, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
         )
     }
 }
@@ -240,7 +238,7 @@ private fun DashMenu(menu: List<HomeShortcut>, title: String, subtitle: String, 
 /** A panel's small heading. */
 @Composable
 private fun PanelLabel(text: String, ink: Color) {
-    Text(text, color = ink.copy(alpha = 0.85f), fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    FullText(text, color = ink.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
 }
 
 /** The game you're on, big: its art, its name and Play / Continue. */
@@ -273,9 +271,9 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
                 val small = maxHeight < 150.dp
                 val tiny = maxHeight < 96.dp
                 Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().riseOnChange(g.stableKey).padding(if (small) 8.dp else 14.dp)) {
-                    if (!tiny) Text(
-                        titles.display(g.name), color = Color.White, fontSize = if (small) 16.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (small) 16.sp else 22.sp), maxFontSize = if (small) 16.sp else 22.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.18f, androidx.compose.ui.unit.TextUnitType.Em),
-                        fontWeight = FontWeight.Bold, maxLines = if (small) 1 else 2, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                    if (!tiny) FullText(
+                        titles.display(g.name), color = Color.White, fontSize = if (small) 16.sp else 22.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.18f, androidx.compose.ui.unit.TextUnitType.Em),
+                        fontWeight = FontWeight.Bold, maxLines = if (small) 1 else 2, style = nameTextStyle(NameBackdrop.SHADOW)
                     )
                     Spacer(Modifier.height(if (small) 6.dp else 10.dp))
                     // Play on the left, last played on the right, on one line (they never overlap).
@@ -396,9 +394,9 @@ private fun DashQuick(quick: List<HomeShortcut>, panel: Features.PanelLook, op: 
                     Icon(s.icon, s.label, tint = if (on) Color.White else ink, modifier = Modifier.size(18.dp))
                     if (roomy || on) {
                         Spacer(Modifier.width(6.dp))
-                        Text(
-                            s.label, color = if (on) Color.White else ink, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.Medium,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                        FullText(
+                            s.label, color = if (on) Color.White else ink, fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                     }
                 }
@@ -437,7 +435,7 @@ private fun DashProfile(c: StyleCtx, panel: Features.PanelLook, op: Float, shape
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(name, color = ink, fontSize = 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(name, color = ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val online = profile != null
                     Box(Modifier.size(6.dp).clip(CircleShape).background(if (online) Color(0xFF4CC46B) else ink.copy(alpha = 0.4f)))
@@ -548,7 +546,7 @@ private fun DashPlayer(c: StyleCtx, ink: Color, focusedSlot: Int?, room: Dp) {
 @Composable
 private fun DashSongText(playing: com.shelf.launcher.data.NowPlaying, ink: Color) {
     Column(Modifier.fillMaxWidth()) {
-        Text(playing.title ?: "Unknown track", color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        playing.artist?.let { Text(it, color = ink.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        FullText(playing.title ?: "Unknown track", color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        playing.artist?.let { FullText(it, color = ink.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 1) }
     }
 }

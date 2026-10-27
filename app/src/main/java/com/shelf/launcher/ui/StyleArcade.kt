@@ -793,8 +793,8 @@ private fun ArcadeLedSign(text: String, size: TextUnit, modifier: Modifier = Mod
             .background(Color(0xF00A0A0D), RoundedCornerShape(4.dp))
             .padding(horizontal = 10.dp, vertical = 3.dp)
     ) {
-        Text(
-            text, color = ArcadeLed, fontSize = size, fontFamily = pocketFont(), maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+        FullText(
+            text, color = ArcadeLed, fontSize = size, fontFamily = pocketFont(), maxLines = 1,
             letterSpacing = 1.5.sp, style = TextStyle(shadow = Shadow(Color(0xFFFF8A1E).copy(alpha = 0.85f), Offset.Zero, 14f)),
             modifier = Modifier.drawWithContent {
                 drawContent()
@@ -819,11 +819,11 @@ private fun ArcadeInfo(c: StyleCtx, g: Game, trim: Color, compact: Boolean, plaq
         )
         Spacer(Modifier.height(if (plaque) 1.dp else 4.dp))
         val last = c.lastPlayed(g)
-        Text(
+        FullText(
             (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)) +
                 if (plaque) "  ·  " + stylePlaytime(c.playtime(g), last != null) else "",
             color = lerp(trim, Color.White, 0.35f), fontSize = if (compact) 12.sp else 14.sp,
-            fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+            fontWeight = FontWeight.SemiBold, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
         )
         if (!plaque) {
             Spacer(Modifier.height(if (compact) 3.dp else 6.dp))

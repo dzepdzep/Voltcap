@@ -285,8 +285,8 @@ private fun NightBar(c: StyleCtx, g: Game, on: Boolean, pull: Float, col: Featur
                     c.cover(g)?.let { AsyncImage(rememberStyleArtRequest(it, trim = true), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                 }
                 Spacer(Modifier.width(14.dp))
-                Text(titles.display(g.name).uppercase(), color = if (on) Color(0xFF0B1424) else Color.White, fontSize = if (on) 22.sp else 18.sp,
-                    fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                FullText(titles.display(g.name).uppercase(), color = if (on) Color(0xFF0B1424) else Color.White, fontSize = if (on) 22.sp else 18.sp,
+                    fontWeight = FontWeight.Black, style = androidx.compose.ui.text.TextStyle(fontStyle = FontStyle.Italic), modifier = Modifier.weight(1f))
             }
         }
     }

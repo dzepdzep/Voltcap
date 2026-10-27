@@ -229,9 +229,9 @@ private fun StorageScreen(c: StyleCtx, modifier: Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("◀", color = Color(0xFF4C6A8E), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text(
+                FullText(
                     (if (caption) c.categoryLabel else "Box") + (if (pages > 1) "  ·  Box ${page + 1} / $pages" else ""),
-                    color = Color(0xFF233248), fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    color = Color(0xFF233248), fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1,
                     textAlign = TextAlign.Center, modifier = Modifier.weight(1f)
                 )
                 Text("▶", color = Color(0xFF4C6A8E), fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -435,8 +435,7 @@ private fun StoragePreview(c: StyleCtx, modifier: Modifier) {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Text(titles.display(g.name), color = Color(0xFF1E2A3A), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, lineHeight = 18.sp)
+        FullText(titles.display(g.name), color = Color(0xFF1E2A3A), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 18.sp)
         Text(titles.console(g.platform), color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 1)
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

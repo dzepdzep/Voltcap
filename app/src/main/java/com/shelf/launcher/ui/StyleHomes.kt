@@ -1134,9 +1134,9 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 @Composable
 internal fun StyleNamePlate(name: String) {
     Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
-        Text(
-            name, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
-            textAlign = TextAlign.Center, maxLines = 4, overflow = TextOverflow.Ellipsis
+        FullText(
+            name, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+            textAlign = TextAlign.Center, maxLines = 4
         )
     }
 }

@@ -1097,18 +1097,18 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val name = testTheme ?: return@LaunchedEffect
         TestHooks.theme.value = null
         com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == name }?.let { t ->
-            android.util.Log.i("VoltcapQA", "theme old=${state.appTheme.name} new=${t.name}")
+            android.util.Log.e("VoltcapQA", "theme old=${state.appTheme.name} new=${t.name}")
             viewModel.setTheme(t)
         }
     }
     val previewEnds = TestHooks.previewEnded.intValue
-    LaunchedEffect(previewEnds) { if (previewEnds > 0) { android.util.Log.i("VoltcapQA", "preview ended"); viewModel.reloadAppearance() } }
+    LaunchedEffect(previewEnds) { if (previewEnds > 0) { android.util.Log.e("VoltcapQA", "preview ended"); viewModel.reloadAppearance() } }
     val testPerf = TestHooks.perf.value
     LaunchedEffect(testPerf) {
         val name = testPerf ?: return@LaunchedEffect
         TestHooks.perf.value = null
         com.shelf.launcher.data.PerformanceMode.values().firstOrNull { it.name == name }?.let { m ->
-            android.util.Log.i("VoltcapQA", "perf old=${state.appearance.performanceMode.name} new=${m.name} (preview)")
+            android.util.Log.e("VoltcapQA", "perf old=${state.appearance.performanceMode.name} new=${m.name} (preview)")
             viewModel.previewAppearance(state.appearance.copy(performanceMode = m))
         }
     }

@@ -130,9 +130,9 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
         Text("◀", color = Color.White.copy(alpha = if (on) 0.9f else 0.45f), fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.pointerInput(Unit) { detectTapGestures { step(-1) } })
         // (Update 212: the layout's own category title, CategoryTitle.kt.)
         CategoryTitle.Native()
-        Text(
+        FullText(
             c.categoryLabel, color = Color.White.copy(alpha = if (on) 1f else 0.92f), fontSize = if (compact) 15.sp else 19.sp,
-            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.SemiBold, maxLines = 1,
             style = nameTextStyle(NameBackdrop.SHADOW),
             modifier = Modifier.weight(1f, fill = false).pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, 0); step(1) } }
         )

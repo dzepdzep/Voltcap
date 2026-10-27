@@ -270,15 +270,14 @@ private fun TimelineHeader(c: StyleCtx, mode: Features.TimelineBy, compact: Bool
                 // (Update 315: off for this layout — Categories tile / Settings — no caption.)
                 if (CategoryTitle.captionOn(c.state.appearance)) {
                 CategoryTitle.Native(LayoutParts.id(HomeLayout.TIMELINE, "title"))
-                Text(
+                FullText(
                     c.categoryLabel, color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.Bold,
-                    maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                    maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
                 )
                 }
-                if (g != null) Text(
+                if (g != null) FullText(
                     titles.display(g.name) + "  ·  " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                    color = Color.White.copy(alpha = 0.75f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, softWrap = false,
-                    overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                    color = Color.White.copy(alpha = 0.75f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
                 )
             }
         }

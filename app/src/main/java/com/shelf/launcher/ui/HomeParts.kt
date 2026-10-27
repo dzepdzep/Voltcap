@@ -68,9 +68,8 @@ internal fun HomeLogoPart(name: String, logo: String?) {
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            Text(
-                gameDisplayName(name), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            FullText(
+                gameDisplayName(name), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
@@ -90,9 +89,8 @@ internal fun HomeRaLogoPart(name: String, icon: String?) {
                 modifier = Modifier.fillMaxHeight().aspectRatio(1f).clip(RoundedCornerShape(10.dp))
             )
         } else {
-            Text(
-                gameDisplayName(name), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            FullText(
+                gameDisplayName(name), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW), textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
@@ -107,9 +105,8 @@ internal fun HomeRaLogoPart(name: String, icon: String?) {
 @Composable
 internal fun CategoryNamePart(label: String, backdrop: NameBackdrop) {
     // (Update 212: a long name ends in "…" instead of running over the screen.)
-    Text(
-        label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-        overflow = TextOverflow.Ellipsis, style = nameTextStyle(backdrop), modifier = Modifier.widthIn(max = 420.dp)
+    FullText(
+        label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(backdrop), modifier = Modifier.widthIn(max = 420.dp)
     )
 }
 
@@ -167,10 +164,10 @@ internal fun categoryPartSpot(layout: HomeLayout): Pair<Float, Float> = when (la
 
 @Composable
 internal fun HomeDescriptionPart(game: com.shelf.launcher.data.Game, summary: String?) {
-    Text(
+    FullText(
         summary?.takeIf { it.isNotBlank() } ?: "No description for ${gameDisplayName(game.name)} yet.",
         color = Color.White.copy(alpha = if (summary.isNullOrBlank()) 0.6f else 0.92f), fontSize = 13.sp, lineHeight = 18.sp,
-        maxLines = 6, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+        maxLines = 6, style = nameTextStyle(NameBackdrop.SHADOW)
     )
 }
 
@@ -223,7 +220,7 @@ internal fun HomeAchievementsPart(
                     }
                 }
                 next.firstOrNull()?.title?.let { t ->
-                    Text("Next: $t", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW))
+                    FullText("Next: $t", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW))
                 }
             }
         }

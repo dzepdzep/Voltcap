@@ -598,9 +598,9 @@ private fun CardFront(f: CardFrontData, g: Game, game: Int, d: CardDims, centre:
                     AsyncImage(req, g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.fillMaxSize().pixelArtwork())
                 }
                 else if (g.sourceType == SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
-                else Text(
+                else FullText(
                     titles.display(g.name), color = Color.White, fontSize = d.titleSp, fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(d.pad)
+                    textAlign = TextAlign.Center, maxLines = 3, modifier = Modifier.padding(d.pad)
                 )
             }
             Spacer(Modifier.height(d.gap))
@@ -608,9 +608,9 @@ private fun CardFront(f: CardFrontData, g: Game, game: Int, d: CardDims, centre:
             Row(Modifier.fillMaxWidth().height(d.typeH), verticalAlignment = Alignment.CenterVertically) {
                 TypeGem(g, d.gem * 0.85f)
                 Spacer(Modifier.width(d.gap))
-                Text(
+                FullText(
                     titles.console(g.platform), color = p.ink, fontSize = d.bodySp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    maxLines = 1, modifier = Modifier.weight(1f)
                 )
                 Text("No. ${game + 1} / ${f.count}", color = p.muted, fontSize = d.smallSp, maxLines = 1, softWrap = false)
             }
@@ -647,9 +647,9 @@ private fun CardBack(c: StyleCtx, g: Game, d: CardDims, modifier: Modifier) {
             ) {
                 Text("About", color = p.muted, fontSize = d.smallSp, fontWeight = FontWeight.Bold, maxLines = 1)
                 Spacer(Modifier.height(d.gap * 0.5f))
-                Text(
+                FullText(
                     summary ?: "No details yet. Fetch them in Settings › Metadata › Scraping.",
-                    color = p.ink, fontSize = d.bodySp, lineHeight = d.bodySp * 1.3f, maxLines = 9, overflow = TextOverflow.Ellipsis
+                    color = p.ink, fontSize = d.bodySp, lineHeight = d.bodySp * 1.3f, maxLines = 9
                 )
             }
             Spacer(Modifier.height(d.gap))
@@ -662,8 +662,8 @@ private fun CardBack(c: StyleCtx, g: Game, d: CardDims, modifier: Modifier) {
                 if (maker != null) StatLine(Icons.Filled.Person, "Made by", maker, p, d)
             }
             Spacer(Modifier.height(d.gap))
-            Text(
-                playedOn, color = p.muted, fontSize = d.smallSp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            FullText(
+                playedOn, color = p.muted, fontSize = d.smallSp, maxLines = 2,
                 textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
             )
         }
@@ -691,9 +691,8 @@ private fun CardTitle(name: String, g: Game, p: CardPalette, d: CardDims) {
             .padding(horizontal = d.pad * 0.7f),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            name, color = p.ink, fontSize = d.titleSp, fontWeight = FontWeight.Bold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+        FullText(
+            name, color = p.ink, fontSize = d.titleSp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(d.gap))
         TypeGem(g, d.gem)
@@ -719,9 +718,8 @@ private fun StatLine(icon: ImageVector, label: String, value: String, p: CardPal
         Icon(icon, null, tint = p.muted, modifier = Modifier.size(d.icon))
         Spacer(Modifier.width(d.gap))
         Text(label, color = p.muted, fontSize = d.smallSp, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip, modifier = Modifier.weight(0.42f))
-        Text(
-            value, color = p.ink, fontSize = d.bodySp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.weight(0.58f)
+        FullText(
+            value, color = p.ink, fontSize = d.bodySp, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.weight(0.58f)
         )
     }
 }

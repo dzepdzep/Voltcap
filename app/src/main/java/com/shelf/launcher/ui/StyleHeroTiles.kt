@@ -237,10 +237,9 @@ private fun HeroTitle(c: StyleCtx, g: Game, compact: Boolean) {
             maxLines = 2, fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW)
         )
         Spacer(Modifier.height(4.dp))
-        Text(
+        FullText(
             titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-            color = Color.White.copy(alpha = 0.88f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+            color = Color.White.copy(alpha = 0.88f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
         )
     }
 }

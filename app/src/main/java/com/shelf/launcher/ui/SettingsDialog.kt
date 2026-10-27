@@ -162,6 +162,9 @@ private val CATEGORIES = listOf(
     SettingsCategory("Updates & downloads", "Voltcap's version, checking GitHub for a new one and installing it, and the extra art packs (cartridges, spines, discs, 3D models).", Icons.Filled.SystemUpdate),
 )
 
+/** QA (RP Classic pass): the category names, for the explorer to open each one directly (QaExplore "SETTINGS"). */
+internal val SETTINGS_CATEGORY_NAMES: List<String> get() = CATEGORIES.map { it.label }
+
 /**
  * Settings: a fixed sidebar of categories on the left, the selected one
  * filled with the accent colour, and that category's controls on the right

@@ -294,7 +294,7 @@ internal fun pickCart(c: LookCart) {
     F.modelFinishLast.value = c.finish
     when (c) {
         // (The flat pieces too — a cartridge leaning against its case, a list mixing consoles — on the real shell.)
-        LookCart.REAL -> { F.authenticCarts.value = true; F.cartSource.value = CartSource.ORIGINAL }
+        LookCart.REAL -> { F.cartSource.value = CartSource.ORIGINAL }
         LookCart.PACK -> { F.cartSource.value = CartSource.CUSTOM; F.cartClear.value = false }
         LookCart.CLEAR -> { F.cartSource.value = CartSource.CUSTOM; F.cartClear.value = true }
     }

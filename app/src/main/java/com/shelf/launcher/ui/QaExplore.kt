@@ -59,7 +59,7 @@ internal object QaExplore {
         }
         // Stopped (`--es voltcap_test_explore stop`, or the walk switched off): no further key is pressed.
         if (stopAsked || !QaWalk.on) throw IllegalStateException("stopped")
-        android.util.Log.i("VoltcapQA", "MARK key $name")
+        android.util.Log.e("VoltcapQA", "MARK key $name")
         // A real key event through the input system (Instrumentation, as UI tests do): allowed into the app's own
         // focused window, and it takes exactly the path of a pad press — first-press focus, dialogs, back included.
         val sent = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -196,7 +196,24 @@ internal object QaExplore {
                 kotlinx.coroutines.delay(600)
                 // Nothing focused yet (a menu opens with no focus until the first press): one ▼ takes it in.
                 if (focusedLabel() == "-") key("D")
-                if (start.contains("SELECT")) {
+                if (start.contains("SETTINGS")) {
+                    // RP Classic pass: on a narrow screen Settings has its categories as tabs across the top, not a list
+                    // down the left, so the ▲ / ▼ category walk below found a page's buttons instead. Each category is
+                    // opened directly by name (the voltcap_test_settings path), then its page explored.
+                    val cats = SETTINGS_CATEGORY_NAMES
+                    QaTrace.event("explore", "categories ${cats.size}: ${cats.joinToString(" | ")}")
+                    for ((i, c) in cats.withIndex()) {
+                        if (i < from || i >= to) continue
+                        if (deny.containsMatchIn(c)) { QaTrace.event("explore", "skip category $c"); continue }
+                        var g = 0
+                        while (windowId() != homeWin && g++ < 6) key("B")
+                        TestHooks.settings.value = c
+                        kotlinx.coroutines.delay(1300)
+                        if (focusedLabel() == "-") key("D")
+                        QaTrace.event("explore", "category $c")
+                        explorePage(1)
+                    }
+                } else if (start.contains("SELECT")) {
                     // Settings: every category in the left list, its page explored.
                     // The list starts at the first category (the first ▼ lands there); ▲ from it goes to the search field.
                     // (Settings opens on the category last used, so first ▲ to the top of the list — one ▲ more is the

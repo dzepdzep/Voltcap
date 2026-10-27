@@ -377,3 +377,66 @@ SoC ran at 84–88 °C). All runs stopped, the test hooks are off, Voltcap is on
 - `vqa.sh hooks on|off` restarts Voltcap. That is what force-stopped it during trace TR1 (D62, not another app), and it
   brings up "Who's playing?" on the next start.
 - New: `device/coldw.sh` (cold start ×N with `am start -W`) and `device/ltrace2.sh` (one layout under atrace).
+
+## RP Classic pass (2026-10-27 19:40–22:40): Retroid Pocket Classic, 1240×1080 @60 Hz, density 320, Android 14, Adreno A12 — release builds
+
+Device checked with `adb devices -l` before every run (serial MC94516AQF091001112, model Retroid_Pocket_Classic). The Thor
+wasn't connected; a Google TV Streamer and an emulator were, and nothing ran on them. Settings snapshot around every run,
+previews only, hooks off afterwards.
+
+### Device problems met first (not Voltcap)
+- **D65:** system_server aborted 5× (20:38–20:40) plus restarts at 20:43 / 20:45 / 20:48: "Got MOVE, but no touching pointers
+  for device 8" — the vendor's *Retro Station Virtual Mouse* with a stale button, on any window (Voltcap's and RP Settings').
+  Cleared by a full restart of the RP. MuMu (its own adb) caused the USB drops before that; Toni removed it.
+- QA presses on the RP now go through Android (`vqa.sh` keyevent mode, `touch $D/usekey`) instead of the gamepad's evdev node.
+- RP logd drops I/W from apps: QA logs moved to Log.e (built, VERIFIED: VoltcapQA lines arrive).
+
+### VERIFIED on the device
+- **Menu focus (D59):** Start opens on Play, L1 on the first shortcut, Y on the filter chip in use once loaded.
+- **Tile home names (D68, Toni's report):** the name above the tiles vanished after a move. Cause: `riseOnChange` read its
+  animation only in the else-branch of its layer. Fixed (+3 same patterns); names show after every move.
+- **Category looks at native resolution (D69):** Worlds header chips readable, the Drawers' pulled bottom drawer clear of
+  its name line, drawer labels on two lines, Dashboard name clear of the console. Category tiles: no "…" (D66).
+- **Charge limit (D63):** at 80 % the RP stops with restrict_chg = 1 + restrict_cur = **0** (was 1000, which still let
+  180–310 mA in). After the update: −260..−460 mA (not charging) at 79–80 %.
+- **3D cartridge carousel crash (D72): not reproduced** — Voltcap row carousel (Tucked, Wheel, Deck, Flip) × Cartridges
+  look with Real 3D, turning and reflection × GBC / SNES / GBA / GB / All, 22 fast presses each: same process, no crash or
+  ANR. The "OpenGL crash" on file is RetroArch's own (gambatte core, Adreno libgsl abort in eglSwapBuffers, 24 Oct).
+
+| Category look | janky before (RPL1) | after (RPL2) |
+|---|---|---|
+| Collector's Drawers | 15.1 % | **2.8 %** |
+| System Stage | 9.1 % | 3.7 % |
+| Tiles (category screen) | 4.9 % | 3.6 % |
+| Pocket Worlds | 14.7 % | 14.8 % |
+| Pocket Dashboard | 12.6 % | 14.2 % |
+| Channel Surf | 7.1 % | 12.4 % (±5 run to run) |
+
+Home layouts, 48 at native resolution (RPY1–4, 30 presses each, keyevent input): janky 0.8–8.6 %; the worst are Shelf
+8.6 %, TV room 7.1 %, Twin desk / Twin icons 7.2 %.
+
+### Found
+- **D64:** the home's gameplay clip keeps the GPU at ~30 fps forever while idle (29 ms frames, 72–85 % janky) — by design
+  since update 307. Needs Toni's decision.
+- **D67:** a big logo placed in Edit Home covers the dock's name line on the RP's shorter screen.
+- **D70 (VERIFIED, stills ST2 / ST3):** names / labels cut with "…" across 47 home-layout files → FullText; 14 layouts
+  re-checked show the whole name.
+  FullText's slide now rests with the home screen (HomeIdle.calm), so long names never redraw forever.
+- GBC with Balanced: not re-run this pass. Updates 254 / 258 measured it twice on the RP (100 % even 16.7 ms frames at
+  Stock and Balanced) after the clock-stuck fix; there's no test hook for the power tier.
+
+### Settings walk (explorer, D73)
+12 of 21 categories walked in 3 × 14 min (Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync,
+Permissions, Device, Diagnostics). Wrapped chip rows on the narrow screen weren't reached by the explorer (Overlay's
+times, Sync's intervals, some Home chips) — to check by hand. 7 categories still to walk.
+
+### Settings tidy (D71, Toni)
+15 stored settings that nothing reads removed from Features.kt (none had a row in Settings). 11 Appearance fields read only
+by migrations kept. Duplicated rows (Shimmer twice; the TV room and Carousel blocks) left for Toni.
+
+### QA system
+- New rules R19 TRUNCATE-CLIP (289 places) and R20 LAYER-BRANCH (0 left) in static_checks.
+- New scripts: `stills.sh` (one still per layout), `idle.sh` (idle frame cost under variations), `crash3d.sh`.
+- Explorer: "SETTINGS" opens each category by name (on a narrow screen Settings has tabs across the top, not a list);
+  explore.sh closes the category screen first (a run that ended on B left it open).
+- Tool note: re-committing the same staged path to the PC can deliver the old content — every commit now uses a fresh copy.

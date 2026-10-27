@@ -289,9 +289,9 @@ internal fun PocketText(
         Box(if (screenX) Modifier.atScreen(x, y, w, h) else Modifier.at(x, y, w, h), contentAlignment = when (align) {
             TextAlign.Center -> Alignment.Center; TextAlign.End -> Alignment.CenterEnd; else -> Alignment.CenterStart
         }) {
-            Text(
-                text, maxLines = maxLines, overflow = TextOverflow.Ellipsis, softWrap = maxLines > 1,
-                style = TextStyle(color = color, fontSize = sp(fitSize), lineHeight = sp(fitSize * 1.15f), fontFamily = font, textAlign = align)
+            // (RP Classic QA: "Pokemon Silver ..." — FullText shrinks further, then slides; R18.)
+            FullText(
+                text, color = color, fontSize = sp(fitSize * 0.98f), maxLines = maxLines, lineHeight = sp(fitSize * 1.15f), fontFamily = font, textAlign = align
             )
         }
     }

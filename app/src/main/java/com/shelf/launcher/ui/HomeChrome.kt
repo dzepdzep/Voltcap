@@ -222,7 +222,7 @@ internal fun StatusBar(
                         val t = look.cased(clockText!!)
                         // An LCD's unlit segments behind the digits.
                         if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)))
-                        Text(t, color = ink, fontSize = look.clockSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(look.clockSize), maxFontSize = look.clockSize), lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
+                        FullText(t, color = ink, fontSize = look.clockSize, lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, style = textStyle)
                     }
                 }
                 Sep()
@@ -257,7 +257,7 @@ internal fun StatusBar(
                         tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
                         modifier = Modifier.size(look.iconSize)
                     )
-                    if (bar.showPercent && !(compact && voltGauge)) Text("${battery.percent}%", color = ink, fontSize = small, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(small), maxFontSize = small), lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false, style = textStyle)
+                    if (bar.showPercent && !(compact && voltGauge)) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
                 }
             }
             Sep()
@@ -732,7 +732,7 @@ internal fun SortChip(label: String, onClick: () -> Unit, modifier: Modifier = M
     ) {
         Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort games", tint = Color.White, modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(5.dp))
-        Text(label, color = Color.White, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 
@@ -926,12 +926,11 @@ internal fun ControlsHelpCard(
                     column.forEach { (button, what) ->
                         Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.widthIn(min = 64.dp).padding(end = 8.dp)) { GlyphPill(button) }
-                            Text(
+                            FullText(
                                 what,
                                 color = ShelfTheme.textMuted,
-                                fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                                maxLines = 2,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                fontSize = 11.sp,
+                                maxLines = 2
                             )
                         }
                     }
@@ -1018,13 +1017,12 @@ internal fun HintEntry(hint: HintSpec, labels: HintLabels) {
         }
         if (text.isNotEmpty()) {
             Spacer(Modifier.width(6.dp))
-            Text(
+            FullText(
                 text,
                 color = ShelfTheme.textMuted,
-                fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
+                fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                softWrap = false
+                maxLines = 1
             )
         }
     }
@@ -1154,14 +1152,13 @@ internal fun GlyphPill(symbol: String) {
             .padding(horizontal = if (single) 0.dp else 6.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
+        FullText(
             text,
             color = tint,
-            fontSize = fontSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(fontSize), maxFontSize = fontSize),
+            fontSize = fontSize,
             lineHeight = fontSize,
             fontWeight = FontWeight.Bold,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            softWrap = false,
+            maxLines = 1,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
                 platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),

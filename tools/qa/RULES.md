@@ -138,3 +138,18 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 - **Check:** static_checks TRUNCATE lists every `TextOverflow.Ellipsis` and every code-made "…" / "..." cut; screenshots: a
   text ending in "…" that isn't in its source string is a defect. New code must add none; existing ones are fixed as their
   screens are touched, and counted in REPORT.md until there are none left.
+
+## R19 TRUNCATE-CLIP — a one-line text with no overflow is cut off silently (RP Classic pass, 2026-10-27)
+- **Why:** `Text(..., maxLines = 1)` with no `overflow` clips the end with nothing to show text is missing — worse than "…".
+  On the RP Classic's 620 dp width the Worlds sign, Channel / Vault captions and Stage plaques were cut like that.
+- **Rule:** use `FullText` (shrinks to a readable size, then slides; the slide rests with the home screen) or let it wrap.
+  A label with free width (placed by translation, nothing to fit) takes `softWrap = false` instead of `maxLines = 1`.
+- **Check:** static_checks TRUNCATE-CLIP (review list, 289 places on 2026-10-27; fixed as screens are touched).
+
+## R20 LAYER-BRANCH — read an animation before branching on it in a layer / draw lambda
+- **Why (Tile home, Toni: "the names disappear"):** `val v = if (pending) 0f else p.value` inside `graphicsLayer {}`. While
+  `pending` was true the lambda read no state, so the animation that followed never invalidated the layer: the name stayed
+  at alpha 0 until something else recomposed it.
+- **Rule:** read `.value` into a local first, then branch. Same in composition (a body that skips the read never re-runs).
+- **Check:** static_checks LAYER-BRANCH (0 left after the fix). Device: after a move the focused name must be visible in
+  the still (stills.sh / walk screenshots).

@@ -288,7 +288,7 @@ private fun SceneButtons(c: StyleCtx, p: ScenePart, g: Game, ph: Float) {
                     .clickable { if (i == 0) c.actions.play(g) else c.actions.open() },
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, color = ink, fontSize = fontSp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(label, color = ink, fontSize = fontSp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
     }
@@ -448,8 +448,8 @@ private fun SceneGames(c: StyleCtx, p: ScenePart, pw: Float, ph: Float) {
                         Modifier.offset { IntOffset((centre - cardMain * 1.2f).roundToInt(), nameTop.roundToInt()) }.size(nameW, with(density) { (cross * 0.14f).toDp() }),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        Text(
-                            titles.display(g.name), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        FullText(
+                            titles.display(g.name), color = Color.White, maxLines = 1,
                             fontSize = with(density) { (cross * 0.075f).toSp() }, fontWeight = FontWeight.SemiBold,
                             style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 2f), 6f))
                         )
@@ -508,7 +508,8 @@ private fun Modifier.sceneEnterOn(enter: SceneEnter, trigger: Any, w: Float, h: 
         e.animateTo(1f, tween(enter.ms, easing = if (enter.kind == "pop") CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f) else FastOutSlowInEasing))
     }
     return this.graphicsLayer {
-        val v = if (seen[0] != trigger) 0f else e.value
+        val ev = e.value // (read always — LAYER-BRANCH: read only in the else-branch the entrance that follows never redrew the layer)
+        val v = if (seen[0] != trigger) 0f else ev
         val r = 1f - v
         alpha = v.coerceIn(0f, 1f)
         when (enter.kind) {

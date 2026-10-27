@@ -264,9 +264,9 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
 private fun CaseFlowTitle(c: StyleCtx, g: Game) {
     val titles = LocalTitleOptions.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
+        FullText(
             titles.display(g.name), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+            maxLines = 1, textAlign = TextAlign.Center
         )
         val bits = listOfNotNull(
             titles.console(g.platform).takeIf { it.isNotBlank() },
@@ -274,7 +274,7 @@ private fun CaseFlowTitle(c: StyleCtx, g: Game) {
             c.progress(g)?.let { (e, t) -> "$e / $t achievements" }
         )
         Spacer(Modifier.height(2.dp))
-        Text(bits.joinToString("  ·  "), color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(bits.joinToString("  ·  "), color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp, maxLines = 1)
     }
 }
 

@@ -232,6 +232,26 @@ def check(src):
         for m in re.finditer(r"\.take\([^)]*\)\s*\+\s*\"(?:…|\\u2026|\.\.\.)\"|\"(?:…|\.\.\.)\"\s*\+|\.(?:ellipsize|truncate)\w*\(|TextUtils\.ellipsize", s):
             add("TRUNCATE", "MED", m.start(), "text shortened in code with … — show the whole text (R18)")
 
+        # TRUNCATE-CLIP (R18, RP Classic pass): a plain Text held to one line with no overflow given clips its end
+        # silently (worse than an ellipsis: nothing says text is missing). FullText / FitText shrink or slide instead.
+        for m in re.finditer(r"(?<![\w.])Text\(", s):
+            d = 0; k = m.end() - 1
+            while k < len(s):
+                if s[k] == "(": d += 1
+                elif s[k] == ")":
+                    d -= 1
+                    if d == 0: break
+                k += 1
+            call = s[m.start(): k + 1]
+            if re.search(r"\bmaxLines\s*=\s*1\b", call) and "overflow" not in call and "qa-ok" not in call:
+                add("TRUNCATE-CLIP", "LOW", m.start(), "one-line Text with no overflow: a long text is cut off silently — FullText (shrink, then slide) or wrap it")
+
+        # LAYER-BRANCH (RP Classic pass, the vanishing Tile home name): an animation read only in one branch of a draw /
+        # layer lambda. While the other branch is taken the lambda observes nothing, so the animation that follows never
+        # redraws it and the frame stays stuck (an invisible name). Read the value into a local first.
+        for m in re.finditer(r"=\s*if\s*\((?:[^()]|\([^()]*\))*\)\s*-?[\d.]+f\s*else\s*\w+\.value\b", s):
+            add("LAYER-BRANCH", "MED", m.start(), "animation read only in the else-branch: while the if-branch is taken nothing is observed and the layer can stay stuck; read `.value` into a local first")
+
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

@@ -380,9 +380,9 @@ private fun ConsoleSticker(platform: String?, namesCategory: Boolean = false) {
                 AsyncImage(url, null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(8.dp))
             }
-            Text(
-                platform?.let { ConsoleNames.label(it) } ?: "All games", color = Color.White, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp),
-                fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis
+            FullText(
+                platform?.let { ConsoleNames.label(it) } ?: "All games", color = Color.White, fontSize = 16.sp,
+                fontWeight = FontWeight.Bold, maxLines = 1
             )
         }
     }
@@ -727,8 +727,8 @@ private fun SpineShelf(
                         SpinePicture(spineTpl, Modifier.fillMaxSize()) { ink ->
                             Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
                                 // (Update 124: as big as fits, down to 6 sp, over two lines when it has to.)
-                                Text(
-                                    gameDisplayName(g.name), color = ink, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 4.5.sp, maxFontSize = 11.sp, stepSize = 0.5.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                FullText(
+                                    gameDisplayName(g.name), color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
                                     style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(if (ink == Color.White) Color.Black else Color.White, blurRadius = 4f)),
                                     modifier = Modifier.sideways()
@@ -743,7 +743,7 @@ private fun SpineShelf(
                                 com.shelf.launcher.data.ConsoleLogos.raIcon(g.platform)?.let { AsyncImage(it, null, modifier = Modifier.size(18.dp)) }
                             }
                             Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                                Text(gameDisplayName(g.name), color = spineInk(c), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 4.5.sp, maxFontSize = 11.sp, stepSize = 0.5.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em, modifier = Modifier.sideways())
+                                FullText(gameDisplayName(g.name), color = spineInk(c), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em, modifier = Modifier.sideways())
                             }
                         }
                     }
@@ -791,9 +791,9 @@ private fun TvInfoBar(game: Game, metaAll: GameMetadata?, playtimeMs: Long?, las
                 Text(stars, color = ShelfTheme.accent, fontSize = if (narrow) 11.sp else 12.sp, maxLines = 1, softWrap = false)
             }
         }
-        Text(facts, color = ShelfTheme.textMuted, fontSize = if (narrow) 10.sp else 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (narrow) 10.sp else 11.sp), maxFontSize = if (narrow) 10.sp else 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.25.em)
+        FullText(facts, color = ShelfTheme.textMuted, fontSize = if (narrow) 10.sp else 11.sp, maxLines = 1, lineHeight = 1.25.em)
         // (Update 341: own line heights — the default 24 sp line under each small line pushed the story out of the strip.)
-        if (!short) meta?.summary?.let { Text(it, color = ShelfTheme.textMuted.copy(alpha = 0.8f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.25.em) }
+        if (!short) meta?.summary?.let { FullText(it, color = ShelfTheme.textMuted.copy(alpha = 0.8f), fontSize = 10.sp, maxLines = 1, lineHeight = 1.25.em) }
     }
     }
     }

@@ -371,7 +371,7 @@ private fun PanelProfile(c: StyleCtx, p: PanelPalette, modifier: Modifier) {
             }
         }
         Spacer(Modifier.height(22.dp))
-        Text(prof?.User ?: c.state.raUsername ?: "Player", color = p.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(prof?.User ?: c.state.raUsername ?: "Player", color = p.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.EmojiEvents, null, tint = p.accent, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(4.dp))
@@ -494,7 +494,7 @@ private fun PanelFace(c: StyleCtx, p: PanelPalette, ch: Int, i: Int, lit: Boolea
                 if (gg != null) {
                     (c.wide(gg) ?: c.cover(gg))?.let { AsyncImage(rememberStyleArtRequest(it), gg.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.6f))))
-                    Text(item.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    FullText(item.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                         modifier = Modifier.align(Alignment.BottomStart).padding(8.dp))
                 } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(p.accent.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
@@ -536,7 +536,7 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
     when (ch) {
         PanelNav.GAMES -> c.games.getOrNull(focus)?.let { g ->
             Column {
-                Text(titles.display(g.name), color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(titles.display(g.name), color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text((if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)) + "  ·  " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
                         color = p.sub, fontSize = 13.sp, maxLines = 1)
@@ -563,7 +563,7 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
         else -> PanelNav.itemsOf(ch).getOrNull(focus)?.let { item ->
             Column {
                 val gg = item.game
-                Text(gg?.let { titles.display(it.name) } ?: item.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(gg?.let { titles.display(it.name) } ?: item.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text(if (gg != null) titles.console(gg.platform) + "  ·  " + stylePlaytime(c.playtime(gg), true) else item.sub, color = p.sub, fontSize = 13.sp, maxLines = 1)
             }
         }

@@ -114,7 +114,9 @@ private fun FullTextMarquee(
     Text(
         text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
-        modifier = modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp)
+        // (RP Classic QA: a slide never stops, so a home screen with long names redrew forever. It rests with the home
+        // screen — 30 s without input, HomeIdle.calm — and starts again with the first press.)
+        modifier = if (HomeIdle.calm) modifier else modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp)
     )
 }
 

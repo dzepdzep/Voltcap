@@ -39,8 +39,29 @@ code_of() {
 ev() { sendevent $P $1 $2 $3; }
 syn() { sendevent $P 0 0 0; }
 
+# Android key names for keyevent mode ($D/usekey present): presses go through Android's input service instead of the
+# gamepad driver. Needed on the RP Classic since Oct 27 2026: its mapping service turned driver presses into
+# "Retro Station Virtual Mouse" moves and system_server aborted (InputVerifier "Got MOVE, but no touching pointers").
+kc_of() {
+  case $1 in
+    U) echo DPAD_UP;; D) echo DPAD_DOWN;; L) echo DPAD_LEFT;; R) echo DPAD_RIGHT;;
+    A) echo BUTTON_A;; B) echo BUTTON_B;; X) echo BUTTON_X;; Y) echo BUTTON_Y;; L1) echo BUTTON_L1;; R1) echo BUTTON_R1;;
+    L2) echo BUTTON_L2;; R2) echo BUTTON_R2;; SELECT) echo BUTTON_SELECT;; START) echo BUTTON_START;; HOME) echo HOME;;
+    L3) echo BUTTON_THUMBL;; R3) echo BUTTON_THUMBR;; *) echo "";;
+  esac
+}
+
 press() { # $1 name, $2 hold ms (default 40)
   h=${2:-40}
+  if [ -f $D/usekey ]; then
+    case $1 in
+      W*) sleep_ms ${1#W}; return;;
+      K*) input keyevent ${1#K}; return;;
+    esac
+    k=$(kc_of $1); [ -z "$k" ] && { echo "unknown key $1"; return; }
+    if [ $h -ge 500 ]; then input keyevent --longpress KEYCODE_$k; else input keyevent KEYCODE_$k; fi
+    return
+  fi
   case $1 in
     U) ev 3 17 -1; syn; sleep_ms $h; ev 3 17 0; syn;;
     D) ev 3 17 1; syn; sleep_ms $h; ev 3 17 0; syn;;
@@ -58,7 +79,7 @@ sleep_ms() { # toybox sleep takes fractions
   sleep $s.$(printf %03d $ms)
 }
 
-log_mark() { log -t VoltcapQA "MARK $*"; }
+log_mark() { log -p e -t VoltcapQA "MARK $*"; }
 
 P=$(pad_dev)
 cmd=$1; shift

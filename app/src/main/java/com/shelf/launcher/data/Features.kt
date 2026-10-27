@@ -176,9 +176,6 @@ object Features {
     /** Use the theme's own colours only (ignore game / album / custom colours). */
     val themeColorsOnly = BoolPref("theme_colors_only", false)
 
-    // ---- Overlays over other apps ----
-    /** Voltcap's overlays (stats, music, trophies) only appear over games when this is on. */
-    val overlaysOverApps = BoolPref("overlays_over_apps", false)
 
     // ---- Achievements ----
     /** Badge view: which text shows under each badge (independent). Hidden text = bigger badges. */
@@ -204,7 +201,6 @@ object Features {
         RELIC("Treasure / Relic", "Gold and stone, like found relics."),
         PARADE("Badge Parade", "Badges march in with a bounce.")
     }
-    val achievementTheme = EnumPref("achievement_theme", AchievementTheme.INHERIT, AchievementTheme.values())
     val achievementIntensity = EnumPref("achievement_intensity", Intensity.NORMAL, Intensity.values())
 
     // ---- Post-session, journey, states ----
@@ -223,8 +219,6 @@ object Features {
     val llHighlightUnfinished = BoolPref("ll_unfinished", false)
     val llHighlightNear = BoolPref("ll_near", true)
     val llSubdueInactive = BoolPref("ll_subdue", false)
-    /** Sorting never follows activity (always on unless switched off on purpose). */
-    val llNeverReorder = BoolPref("ll_never_reorder", true)
     /** Explore: everything shown equally for now (not saved: resets on restart). */
     val exploreMode = mutableStateOf(false)
 
@@ -233,7 +227,6 @@ object Features {
     val heroDim = BoolPref("hero_dim", true)
     /** Hides most of the UI after a while without input; any input brings it back. */
     val idleFocusMode = BoolPref("idle_focus", false)
-    val heroParallax = BoolPref("hero_parallax", true)
 
     // ---- Artwork ----
     /**
@@ -386,12 +379,6 @@ object Features {
     val modelAngle = EnumPref("model_angle", com.shelf.launcher.ui.ModelAngle.FACE_PICKED, com.shelf.launcher.ui.ModelAngle.values())
     /** Update 136: the game's name on a strip along the bottom of the 3D model's label (Settings › Game look › 3D models). */
     val modelName = BoolPref("model_name", false)
-    /**
-     * Update 151 (Settings › Game look › 3D models): disc consoles stand as their 3D case (off) or, with Custom / Clear,
-     * as your custom cartridge (on); the piece you're on turns slowly to and fro; a faint reflection on the floor under
-     * each piece.
-     */
-    val modelDiscAsCart = BoolPref("model_disc_as_cart", false)
     // Update 158: off by default (the one you're on stands still, facing you); switched off once for existing installs too
     // ([migrate158]), and switching it back on sticks.
     val modelTurn = BoolPref("model_turn", false)
@@ -450,7 +437,6 @@ object Features {
     enum class PixelSize(val label: String, val px: Float) { FINE("Fine", 2f), CLASSIC("Classic", 3f), CHUNKY("Chunky", 4f) }
     val pixelSize = EnumPref("pixel_size", PixelSize.CLASSIC, PixelSize.values())
     enum class IntroStyle(val label: String) { CLASSIC("Voltcap"), PIXEL("32-bit capsule"), OFF("Off") }
-    val introStyle = EnumPref("intro_style", IntroStyle.CLASSIC, IntroStyle.values())
 
     // ---- Dock backing (behind the row of games) ----
     enum class DockBack(val label: String) { OFF("Nothing"), COLOR("Solid colour"), IMAGE("Animated picture") }
@@ -472,7 +458,6 @@ object Features {
     // ---- Save Vault look ----
     /** Squares (the classic save icons) or upright pills. */
     enum class SaveShape(val label: String) { SQUARE("Squares"), PILL("Pills") }
-    val saveShape = EnumPref("save_shape", SaveShape.SQUARE, SaveShape.values())
     /** The picked save turns slowly in 3D and idle ones tilt as they bob (off: they stay upright). */
     val saveTurn = BoolPref("save_turn", false)
 
@@ -837,8 +822,6 @@ object Features {
     /** Update 136: the 3D card's model (SD card or a memory card colour) and whether it's the clear one. */
     val saveVaultCard = EnumPref("save_vault_card", com.shelf.launcher.ui.ModelSpare.SD, com.shelf.launcher.ui.ModelSpare.values())
     val saveVaultClear = BoolPref("save_vault_clear", false)
-    /** Insert / load / eject / crack-open animations. */
-    val saveVaultAnimations = BoolPref("save_vault_animations", true)
     enum class SaveVaultBackdrop(val label: String) {
         THEME("Theme background"),
         PLAIN("Plain dark"),
@@ -1170,8 +1153,6 @@ object Features {
     val saveEngraving = BoolPref("save_engraving", true)
     /** (Update 241, #49: Save Vault › a save › Inspect turns the object by itself — off by default; ui/SaveInspect.kt.) */
     val saveInspectAutoRotate = BoolPref("save_inspect_auto_rotate", false)
-    /** Update 195: every cartridge console on its own drawn authentic shell (Settings › Game look). */
-    val authenticCarts = BoolPref("authentic_carts", false)
     /**
      * Update 210: games whose real cartridge came in its own plastic or shell (the gold Zelda, Pokémon Crystal's clear
      * cyan, the DS infrared cards…) are drawn on it by themselves when the file name says which release it is
@@ -1496,8 +1477,6 @@ object Features {
     /** Game shelf: the whole screen behind the shelves is the bookcase (back panel, side uprights, top crown). */
     val shelfBackdrop = BoolPref("shelf_backdrop", true)
 
-    /** Spotlight: the small tiles along the top as squares (off: the card artwork's own shape). */
-    val spotSquares = BoolPref("spot_squares", true)
     /** Spotlight: the tiles' shape — squares, wide capsules, or the game look's own shape (update 84; replaces [spotSquares]). */
     enum class TileShape(val label: String) { SQUARE("Squares"), WIDE("Wide capsules"), LOOK("The game look's shape") }
     val spotShape = EnumPref("spot_shape", TileShape.SQUARE, TileShape.values())
@@ -1754,8 +1733,6 @@ object Features {
 
     /** Channel grid (update 104): profile, Settings, notifications and sync buttons in the top right corner. */
     val chanCorner = BoolPref("chan_corner", true)
-    /** Circuit board (update 106): the board's colour — green board and traces, else near-black with the theme's colour. */
-    val circuitGreen = BoolPref("circuit_green", true)
     /**
      * Update 112: the board's colours — your theme's (its background and accent, the default), the green board, or
      * near-black with the theme's accent. Replaces [circuitGreen] (no longer read; the theme's colours are the new default).
@@ -1877,7 +1854,6 @@ object Features {
     val cfTitle = BoolPref("cf_title", true)
 
     // ---- Update 330: Cardboard box — the games filed spine-up in rows in an open cardboard box (StyleCardboardBox.kt) ----
-    val boxLanes = IntPref("box_lanes", 2, 2..3)
     enum class BoxArrange(val label: String) { NEAT("Neat"), MESSY("Messy") }
     val boxArrange = EnumPref("box_arrange", BoxArrange.NEAT, BoxArrange.values())
     /** Room between the games, in % of the standard. */
@@ -1886,8 +1862,6 @@ object Features {
     val boxLift = IntPref("box_lift", 100, 40..160)
     /** Update 330 (top-down box): the camera's angle — 0 straight down into the box, more: tilted toward its back wall. */
     val boxTilt = IntPref("box_tilt", 8, 0..32)
-    /** How deep the box looks (its walls), in %. */
-    val boxDepth = IntPref("box_depth", 100, 60..140)
     enum class BoxCardboard(val label: String, val top: Long, val deep: Long) {
         KRAFT("Brown cardboard", 0xFFC79A62, 0xFF8A6235), WHITE("White box", 0xFFE9E4DA, 0xFFB9B1A2), DARK("Dark box", 0xFF4A4038, 0xFF241E19)
     }
@@ -1907,7 +1881,6 @@ object Features {
     val boxSwitch = EnumPref("box_switch", BoxSwitch.EDGE, BoxSwitch.values())
     /** (Update 330 first draft: what stood in the box — no longer read; always the games' cases by their spines.) */
     enum class BoxMedia(val label: String) { LOOK("Your game look"), CASES("Cases and boxes") }
-    val boxMedia = EnumPref("box_media", BoxMedia.LOOK, BoxMedia.values())
 
     // ---- Update 330: Storage boxes — categories as storage boxes of small icons (StyleStorageBoxes.kt) ----
     enum class StSize(val label: String, val cols: Int, val rows: Int) { COMPACT("Compact (6 × 5)", 6, 5), ROOMY("Roomy (5 × 4)", 5, 4) }
@@ -2109,8 +2082,6 @@ object Features {
     val pbShowLegend = BoolPref("pb_show_legend", true)
     /** Grid view: tall 2:3 cards (off: wide cards). */
     val pbTallCards = BoolPref("pb_tall_cards", true)
-    /** Grid view: A picks the platform up, ◀ ▶ (or a drag) moves it, A drops it. */
-    val pbReorder = BoolPref("pb_reorder", false)
     /** Slides view animates when switching platform; Wall view animates in the direction you browse. */
     val pbAnimate = BoolPref("pb_animate", true)
     /** The game count and the random-game button in the platform views' action bar. */
@@ -2313,7 +2284,6 @@ object Features {
     val stageSeconds = BoolPref("stage_seconds", true)
     /** Update 200, Lyrics stage: interface size, in %. */
     val stageUiScale = IntPref("stage_ui_scale", 100, 70..130)
-    val stageStats = BoolPref("stage_stats", true)
     val stageCpu = BoolPref("stage_cpu", true)
     val stageGpu = BoolPref("stage_gpu", true)
     val stageRam = BoolPref("stage_ram", true)

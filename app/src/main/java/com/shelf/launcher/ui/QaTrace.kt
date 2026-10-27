@@ -73,9 +73,11 @@ internal object QaTrace {
     /** Refresh rate changed (the Thor switches 60 / 120 Hz): the frame budget follows. */
     fun refresh(hz: Float) { if (on && hz > 1f) budgetNs = (1_000_000_000.0 / hz).toLong() }
 
+    // (Pass 5: QA lines are logged as errors — the Retroid Pocket Classic's logd keeps nothing below error from apps or the
+    // shell, so on it every QA run saw an empty log. Only with the test hooks on.)
     fun event(kind: String, detail: String = "") {
         if (!on) return
-        android.util.Log.i("VoltcapQA", "${android.os.SystemClock.uptimeMillis()} $kind $detail")
+        android.util.Log.e("VoltcapQA", "${android.os.SystemClock.uptimeMillis()} $kind $detail")
     }
 
     @Volatile private var lastFocus: String? = null
@@ -108,7 +110,7 @@ internal object QaTrace {
         val vsync = if (android.os.Build.VERSION.SDK_INT >= 26) m.getMetric(android.view.FrameMetrics.INTENDED_VSYNC_TIMESTAMP) / 1_000_000 else 0L
         fun ms(id: Int) = "%.1f".format(m.getMetric(id) / 1e6)
         val gpu = if (android.os.Build.VERSION.SDK_INT >= 31) " gpu=${ms(android.view.FrameMetrics.GPU_DURATION)}" else ""
-        android.util.Log.i(
+        android.util.Log.e(
             "VoltcapQA",
             "$vsync slow ${"%.1f".format(total / 1e6)} budget=${"%.1f".format(budgetNs / 1e6)} " +
                 "in=${ms(android.view.FrameMetrics.INPUT_HANDLING_DURATION)} anim=${ms(android.view.FrameMetrics.ANIMATION_DURATION)} " +

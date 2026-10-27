@@ -521,9 +521,9 @@ private fun GcMenuPanel(i: Int, label: String, sub: String, on: Boolean, height:
                     label, color = if (on) Color(0xFFF2FFF4) else Color(0xFFB4D6BB), fontSize = if (height < 46.dp) 15.sp else 18.sp,
                     fontWeight = FontWeight.Bold, letterSpacing = 3.sp, maxLines = 1, softWrap = false
                 )
-                Text(
+                FullText(
                     sub, color = accent.copy(alpha = if (on) 0.95f else 0.5f), fontSize = 9.sp, fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    letterSpacing = 1.5.sp, maxLines = 1
                 )
             }
         }
@@ -684,13 +684,13 @@ private fun GcGameRow(c: StyleCtx, i: Int, on: Boolean, rowH: Dp, compact: Boole
         Box(Modifier.size(rowH - 14.dp).clip(RoundedCornerShape(3.dp)).background(placeholderBrush(g.hue))) { GcThumb(c, g) }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            FullText(
                 titles.display(g.name), color = if (on) Color.White else Color(0xFFC2E2C8), fontSize = if (compact) 12.sp else 14.sp,
-                fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis
+                fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1
             )
-            Text(
+            FullText(
                 titles.console(g.platform).uppercase(), color = accent.copy(alpha = if (on) 0.95f else 0.5f), fontSize = 9.sp,
-                fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1
             )
         }
         if (fav) Icon(Icons.Filled.Star, "Favourite", tint = accent, modifier = Modifier.size(14.dp))
@@ -743,9 +743,9 @@ private fun GcInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Color) {
                 PlatformLogo(g.platform, titles.console(g.platform), Modifier.fillMaxSize(), textSize = 9.sp)
             }
             Spacer(Modifier.width(8.dp))
-            Text(
+            FullText(
                 titles.console(g.platform).uppercase(), color = accent, fontSize = 9.sp, fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                letterSpacing = 1.sp, maxLines = 1
             )
         }
         Spacer(Modifier.height(if (compact) 5.dp else 8.dp))
@@ -883,12 +883,12 @@ private fun GcInfoStrip(c: StyleCtx, g: Game, compact: Boolean, accent: Color, m
     ) {
         Column(Modifier.weight(1f)) {
             FitText(titles.display(g.name), color = Color.White, maxSize = if (compact) 14.sp else 17.sp, minSize = 10.sp, maxLines = 1, fontWeight = FontWeight.Bold)
-            Text(
+            FullText(
                 titles.console(g.platform).uppercase() + " · " + stylePlaytime(c.playtime(g), last != null).uppercase() + " · " +
                     (last?.let { lastPlayedLabel(it).uppercase() } ?: "NEVER PLAYED") +
                     (progress?.let { " · ${it.first}/${it.second} ACHIEVEMENTS" } ?: ""),
                 color = accent.copy(alpha = 0.85f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp,
-                maxLines = 1, overflow = TextOverflow.Ellipsis
+                maxLines = 1
             )
         }
         Spacer(Modifier.width(10.dp))
@@ -1018,9 +1018,9 @@ private fun GcSystemRow(st: StyleStop, count: Int?, on: Boolean, rowH: Dp, accen
     ) {
         Box(Modifier.width(rowH * 1.1f).height(rowH * 0.5f), contentAlignment = Alignment.CenterStart) { GcStopLogo(st, accent, Modifier.fillMaxSize(), big = false) }
         Spacer(Modifier.width(10.dp))
-        Text(
+        FullText(
             st.label.uppercase(), color = if (on) Color.White else Color(0xFFC2E2C8), fontSize = if (rowH < 46.dp) 12.sp else 14.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+            fontWeight = FontWeight.Bold, letterSpacing = 2.sp, maxLines = 1, modifier = Modifier.weight(1f)
         )
         if (count != null) Text(
             "$count", color = accent.copy(alpha = if (on) 1f else 0.6f), fontSize = 12.sp, fontFamily = FontFamily.Monospace,
@@ -1051,9 +1051,9 @@ private fun GcHeader(c: StyleCtx, path: String, right: String?, accent: Color, c
     Row(modifier.fillMaxWidth().height(if (compact) 26.dp else 30.dp), verticalAlignment = Alignment.CenterVertically) {
         GcChip("◀", accent) { gcBack(live) }
         Spacer(Modifier.width(8.dp))
-        Text(
+        FullText(
             path, color = Color(0xFFD9F6DE), fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp,
-            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
+            maxLines = 1, modifier = Modifier.weight(1f, fill = false)
         )
         if (right != null) {
             Spacer(Modifier.width(8.dp))
@@ -1118,9 +1118,8 @@ private fun GcStat(label: String, value: String, accent: Color) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = accent.copy(alpha = 0.7f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
         Spacer(Modifier.width(8.dp))
-        Text(
-            value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
+        FullText(
+            value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
         )
     }
 }

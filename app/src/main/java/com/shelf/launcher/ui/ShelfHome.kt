@@ -484,9 +484,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // Footer: the game you're on and the count, like a shelf label.
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(footerH), verticalArrangement = Arrangement_Center()) {
             c.game?.let { gg ->
-                Text(
+                FullText(
                     LocalTitleOptions.current.display(gg.name), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
+                    maxLines = 1, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
                 )
                 Text(
                     listOfNotNull(LocalTitleOptions.current.console(gg.platform), c.playtime(gg)?.let { stylePlaytime(it, c.lastPlayed(gg) != null) }, gamesCount(games.size)).joinToString("  ·  "),
@@ -770,11 +770,10 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, content: @Composable (M
  */
 @Composable
 private fun SpineName(name: String, ink: Color, modifier: Modifier) {
-    Text(
+    FullText(
         // (Update 129: down to 4.5 sp, so a name like "God of War" fits a slim spine whole instead of being cut.)
-        name, color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        name, color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
         textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
-        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 4.5.sp, maxFontSize = 11.sp, stepSize = 0.5.sp),
         modifier = modifier
     )
 }

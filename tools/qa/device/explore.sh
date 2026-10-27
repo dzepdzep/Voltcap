@@ -5,6 +5,9 @@
 n=$1; start=$2; max=${3:-900}
 sh vqa.sh hooks on > /dev/null
 sh vqa.sh ready > /dev/null || { sh vqa.sh hooks off > /dev/null; echo "explore $n ABORTED (not on home)"; exit 1; }
+# (RP Classic pass: a run that ended with B left "Choose a category" open, and SELECT there does nothing — the explorer then
+# walked whatever page it found. The category hook closes every dialog and the category screen first.)
+am start -n com.shelf.launcher/.MainActivity --es voltcap_test_category ALL > /dev/null 2>&1; sleep 2
 B0=$(settings get system screen_brightness); BM=$(settings get system screen_brightness_mode)
 V3=$(cmd media_session volume --stream 3 --get 2>/dev/null | grep -o "volume is [0-9]*" | grep -o "[0-9]*$")
 am start -n com.shelf.launcher/.MainActivity --es voltcap_test_snapshot save > /dev/null 2>&1; sleep 1

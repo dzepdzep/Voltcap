@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -386,9 +387,8 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                 ) {
                     FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(3.dp))
-                    Text(
-                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 1,
-                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 10.sp)
+                    FullText(
+                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp
                     )
                 }
                 // The object, standing on the plinth's top.
@@ -496,7 +496,9 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
         val firstRow = (row - 1).coerceIn(0, (totalRows - rowsVisible).coerceAtLeast(0))
         val cabX = 64.dp; val cabTop = 82.dp
         val cabW = w - cabX * 2
-        val cellH = (h - cabTop - 64.dp - 40.dp) / rowsVisible
+        // (RP Classic QA: a bottom-row drawer pulled out by 0.55 of a cell ran over the name line under the cabinet.
+        // The cells leave room for that pull above the name line: 76 dp = the line at 50 dp + its height.)
+        val cellH = minOf((h - cabTop - 64.dp - 40.dp) / rowsVisible, (h - cabTop - 76.dp) / (rowsVisible + 0.55f))
         val cellW = cabW / cols
         // The cabinet: thick frame, the dark recesses the drawers sit in.
         Box(Modifier.offset(cabX - 14.dp, cabTop - 14.dp).size(cabW + 28.dp, cellH * rowsVisible + 28.dp).clip(RoundedCornerShape(6.dp))
@@ -580,7 +582,8 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                             Box(Modifier.fillMaxWidth(0.80f).height(cellH * 0.36f).clip(RoundedCornerShape(2.dp))
                                 .background(Brush.verticalGradient(listOf(Color(0xFFE8CF8E), brass, Color(0xFF8E6F33))))
                                 .padding(3.dp).background(Color(0xFFF2EAD6)).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
-                                FullText(tile.label, color = Color(0xFF2B2016), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
+                                // (Two lines before it shrinks or slides: on a narrow screen every label slid at once.)
+                                FullText(tile.label, color = Color(0xFF2B2016), fontSize = 12.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
                                     style = androidx.compose.ui.text.TextStyle(lineHeight = 14.sp, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
                             }
                             // Cup pull: a half-round brass shell with its shadow.
@@ -594,10 +597,10 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
             }
         }
         tiles.getOrNull(selected)?.let { t ->
-            Row(Modifier.align(Alignment.BottomStart).padding(start = cabX, bottom = 50.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(t.label, color = Color(0xFFF2EAD6), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, maxLines = 1)
+            Row(Modifier.align(Alignment.BottomStart).padding(start = cabX, end = cabX, bottom = 50.dp), verticalAlignment = Alignment.CenterVertically) {
+                FullText(t.label, color = Color(0xFFF2EAD6), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, modifier = Modifier.weight(1f, fill = false))
                 Spacer(Modifier.width(14.dp))
-                Text(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = Color(0xFFF2EAD6).copy(alpha = 0.65f), fontSize = 12.sp)
+                FullText(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = Color(0xFFF2EAD6).copy(alpha = 0.65f), fontSize = 12.sp, modifier = Modifier.weight(1f, fill = false))
             }
         }
     }
@@ -791,19 +794,20 @@ internal fun WorldsLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
             }
         }
         // A shade under the screen's title row: on a bright daytime sky the title and the game count were hard to read.
-        Box(Modifier.fillMaxWidth().height(72.dp).align(Alignment.TopCenter)
-            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.25f), Color.Transparent))))
+        // (RP Classic QA: on a short screen the header's chips sit below 72 dp — clouds and stars showed through them.)
+        Box(Modifier.fillMaxWidth().height(112.dp).align(Alignment.TopCenter)
+            .background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.6f), 0.7f to Color.Black.copy(alpha = 0.4f), 1f to Color.Transparent)))
         // (The sign changes once the new world has slid in: before, the new name stood over the old world while it slid.)
         val sign = rememberLookStep(selected, animate, 260, delayMs = 180)
         tiles.getOrNull(selected)?.let { t ->
             // The world's name on a pixel signboard.
             Column(Modifier.align(Alignment.TopCenter).padding(top = 70.dp).graphicsLayer { alpha = sign.now(); translationY = (1f - sign.now()) * -8.dp.toPx() }, horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.background(Color(0xFF1B1410)).border(4.dp, Color(0xFFE8D8B0)).padding(4.dp).border(2.dp, Color(0xFF8C6A3E)).padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    Text(t.label.uppercase(), color = Color(0xFFFFF4D6), fontSize = 18.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1)
+                    FullText(t.label.uppercase(), color = Color(0xFFFFF4D6), fontSize = 18.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, modifier = Modifier.widthIn(max = w * 0.86f))
                 }
                 Spacer(Modifier.height(6.dp))
-                Text("${t.count} GAMES" + (lookFacts(t)?.let { "  ·  " + it.uppercase() } ?: ""), color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.background(Color.Black.copy(alpha = 0.45f)).padding(horizontal = 8.dp, vertical = 2.dp))
+                FullText("${t.count} GAMES" + (lookFacts(t)?.let { "  ·  " + it.uppercase() } ?: ""), color = Color.White, fontSize = 12.sp, fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.widthIn(max = w * 0.86f).background(Color.Black.copy(alpha = 0.45f)).padding(horizontal = 8.dp, vertical = 2.dp))
             }
         }
     }
@@ -868,7 +872,7 @@ internal fun ArchiveLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                         Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                             row.forEach { (k, v) ->
                                 Column(Modifier.weight(1f)) {
-                                    Text(k.uppercase(), color = faint, fontSize = 9.sp, letterSpacing = 2.sp, maxLines = 1)
+                                    FullText(k.uppercase(), color = faint, fontSize = 9.sp, letterSpacing = 2.sp)
                                     Spacer(Modifier.height(2.dp))
                                     FullText(v, color = ink, fontSize = 14.sp, fontFamily = FontFamily.Serif)
                                 }
@@ -944,8 +948,8 @@ internal fun ChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                     Column(Modifier.background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = 14.dp, vertical = 8.dp)) {
                         val logo = lookLogo(t)
                         if (logo != null) AsyncImage(logo, t.label, contentScale = ContentScale.Fit, alignment = Alignment.CenterStart, modifier = Modifier.height(26.dp).width(200.dp))
-                        else Text(t.label, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                        Text(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp, letterSpacing = 1.5.sp, maxLines = 1)
+                        else FullText(t.label, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                        FullText(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp, letterSpacing = 1.5.sp)
                     }
                 }
             }
@@ -1063,7 +1067,7 @@ internal fun GenerationsLook(tiles: List<CategoryTile>, selected: Int, animate: 
         GENERATION.values.toSet().forEach { g ->
             val ks = order.indices.filter { generationOf(tiles[order[it]]) == g }
             if (ks.isNotEmpty()) Text(
-                "${ordinal(g)} generation".uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp, letterSpacing = 1.5.sp, maxLines = 1,
+                "${ordinal(g)} generation".uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp, letterSpacing = 1.5.sp, softWrap = false,
                 modifier = Modifier.align(Alignment.TopStart).graphicsLayer {
                     translationX = w.toPx() / 2f + (slots[ks.first()] - slotX(pos.value) - 0.35f) * yearW.toPx()
                     translationY = axisY.toPx() - 27.dp.toPx()
@@ -1256,7 +1260,7 @@ internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     if (t.coverSlides.isEmpty()) LookObject(t, Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.height(8.dp))
-                Text(listOfNotNull(lookCount(t), if (t.favorites > 0) "${t.favorites} fav" else null, lookFacts(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
+                FullText(listOfNotNull(lookCount(t), if (t.favorites > 0) "${t.favorites} fav" else null, lookFacts(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontFamily = FontFamily.Monospace)
             }
         }
         // The modules. The middle slot holds the one you're on until it's carried away (its slot then stays empty).
@@ -1372,6 +1376,8 @@ internal fun DashboardLook(tiles: List<CategoryTile>, selected: Int, animate: Bo
                         FullText("Last played  ·  " + titles.display(it), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
                     }
                 }
+                // (RP Classic QA: a two-line name ran right up to the console on a narrow screen.)
+                Spacer(Modifier.width(14.dp))
                 LookObject(t, Modifier.fillMaxHeight().weight(0.9f))
             }
         }

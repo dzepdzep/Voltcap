@@ -435,7 +435,7 @@ private fun ShopTalker(c: StyleCtx, g: Game, modifier: Modifier) {
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(titles.display(g.name).uppercase(), color = Color(0xFF1C1C1C), fontSize = 14.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        FullText(titles.display(g.name).uppercase(), color = Color(0xFF1C1C1C), fontSize = 14.sp, fontWeight = FontWeight.Black, maxLines = 1,
             modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(10.dp))
         Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color(0xFF3A3A3A), fontSize = 12.sp, maxLines = 1)
@@ -482,7 +482,7 @@ private fun ShopMap(c: StyleCtx, sc: ShopColors, systems: List<Int>, modifier: M
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text("AISLE ${i + 1}", color = Color(0xFF1C1C1C).copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                    Text(st.label.uppercase(), color = Color(0xFF1C1C1C), fontSize = 12.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    FullText(st.label.uppercase(), color = Color(0xFF1C1C1C), fontSize = 12.sp, fontWeight = FontWeight.Black, maxLines = 1)
                                     st.platform?.let { p -> counts[p]?.let { Text("$it GAMES", color = Color(0xFF1C1C1C).copy(alpha = 0.7f), fontSize = 9.sp) } }
                                 }
                             }

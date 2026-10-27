@@ -217,9 +217,9 @@ private fun SpotTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
         val on = here
         val sel = on && StyleNav.zone == StyleNav.Zone.GAMES
         val nameText: @Composable (Modifier) -> Unit = { mod ->
-            Text(
+            FullText(
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = grow.coerceIn(0f, 1f)), fontSize = if (compact) 14.sp else 17.sp,
-                maxLines = if (beside) 2 else 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW), modifier = mod
+                maxLines = if (beside) 2 else 1, style = nameTextStyle(NameBackdrop.SHADOW), modifier = mod
             )
         }
         val art: @Composable () -> Unit = {
@@ -263,10 +263,10 @@ private fun SpotTitle(c: StyleCtx, g: Game, tier: Int, align: Alignment = Alignm
             modifier = Modifier.heightIn(max = when (tier) { 0 -> 60.dp; 1 -> 84.dp; else -> 104.dp }).widthIn(max = 420.dp)
         )
     } else {
-        Text(
-            LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = when (tier) { 0 -> 28.sp; 1 -> 36.sp; else -> 44.sp }, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(when (tier) { 0 -> 28.sp; 1 -> 36.sp; else -> 44.sp }), maxFontSize = when (tier) { 0 -> 28.sp; 1 -> 36.sp; else -> 44.sp }),
+        FullText(
+            LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = when (tier) { 0 -> 28.sp; 1 -> 36.sp; else -> 44.sp },
             lineHeight = androidx.compose.ui.unit.TextUnit(1.14f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif,
-            maxLines = 2, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),
+            maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW),
             textAlign = when (align) { Alignment.TopCenter -> androidx.compose.ui.text.style.TextAlign.Center; Alignment.TopEnd -> androidx.compose.ui.text.style.TextAlign.End; else -> androidx.compose.ui.text.style.TextAlign.Start },
             modifier = Modifier.widthIn(max = 640.dp)
         )
@@ -338,9 +338,9 @@ private fun SpotCards(c: StyleCtx, g: Game) {
             ) {
                 Text(heads[i], color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
                 Spacer(Modifier.height(4.dp))
-                Text(title, color = Color.White, fontSize = 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Spacer(Modifier.height(2.dp))
-                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 1)
             }
         }
         Spacer(Modifier.weight(0.4f))
@@ -509,7 +509,7 @@ private fun SpotRecent(c: StyleCtx, g: Game, compact: Boolean) {
                 com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { AsyncImage(it, null, modifier = Modifier.size(if (compact) 28.dp else 36.dp).clip(uiRounded(5.dp))) }
                 Spacer(Modifier.width(8.dp))
                 Column {
-                    Text(a.title ?: "Achievement", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(a.title ?: "Achievement", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                     Text("Unlocked", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, maxLines = 1)
                 }
             }
@@ -538,7 +538,7 @@ private fun SpotInfoCard(head: String, value: String, compact: Boolean, bar: Flo
     ) {
         Text(head, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, maxLines = 1)
         Spacer(Modifier.height(2.dp))
-        Text(value, color = Color.White, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(value, color = Color.White, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         if (bar != null) {
             Spacer(Modifier.height(5.dp))
             Box(Modifier.width(90.dp).height(3.dp).clip(uiRounded(2.dp)).background(Color.White.copy(alpha = 0.2f))) {
@@ -749,8 +749,10 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
                 // (Update 211: a Text placed under the tile by a zero-size layout, at a fixed width and any height — the
                 // name drawn into the tile's spacer (update 136) still never showed when it needed two lines, e.g.
                 // "Pokémon - Silver Version" or Yu-Gi-Oh! on the RP Classic; one-line names did.)
-                Text(
-                    nameText, style = nameStyle, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                // (RP Classic QA: "POKEMON SILVER VERSION (GB COMP..." — shrink, then slide instead; R18.)
+                FullText(
+                    nameText, color = Color.White, fontSize = if (compact) 14.sp else 18.sp, style = nameStyle, maxLines = 2,
+                    lineHeight = if (compact) 16.sp else 21.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier
                         .layout { m, _ ->
                             val wPx = nameW.roundToPx()
