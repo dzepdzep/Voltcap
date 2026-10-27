@@ -170,7 +170,7 @@ internal fun SwayingModel(
     val tint = Models3D.tintFor(card, platform, name, shell, badge)
     // (Update 241, #44/#46: its back carries the SaveVault mark, moulded in the back's own plastic — saveCardBack.)
     val engrave = Features.saveEngraving.state.value
-    val backBmp by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave, platform) {
+    val backBmp by produceKeyed<android.graphics.Bitmap?>(null, card, card, version, tint?.key, engrave, platform) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { saveCardBack(card, tint, engrave, vaultConsole(platform)) }
     }
     // (Update 236, #42: its sides in the picked shell colour too.)

@@ -18,6 +18,15 @@ object RomHacks {
      * the title is just the base game's ("Pokemon Emerald (Hack)") and only a checksum can tell them apart. */
     data class FanHack(val ownTitle: String, val distinctive: Boolean)
 
+    // (QA pass 3: compiled once — these ran for every game on every library refresh, on the main thread: a 24 ms stall
+    // in a start-up trace was Pattern.compile here.)
+    private val BRACKETS = Regex("""[(\[{][^)\]}]*[)\]}]""")
+    private val TILDES = Regex("~[^~]*~")
+    private val MARKS = Regex("\\p{M}+")
+    private val NON_ALNUM = Regex("[^a-z0-9 ]")
+    private val SPACES = Regex("\\s+")
+    private val HACK_SUFFIX = Regex("""\b(rom ?hack|hack(ed)?)\b""", RegexOption.IGNORE_CASE)
+    private val VERSION_TAIL = Regex("""\s+v(er(sion)?)?\.?\s*\d+(\.\d+)*[a-z]?\b.*$""", RegexOption.IGNORE_CASE)
     /** A bracketed part naming a hack: "(Hack)", "[Hack]", "(Rom Hack)", "(Kaizo Hack)", "[Hack by X]", "(Randomizer)". */
     private val HACK_TAG = Regex(
         """[(\[{]([^)\]}]*\b(hack|hacked|romhack|rom hack|kaizo|randomi[sz]ed|randomi[sz]er|nuzlocke)\b[^)\]}]*)[)\]}]""",
@@ -54,11 +63,11 @@ object RomHacks {
     private fun hasHackTag(s: String): Boolean =
         HACK_TAG.findAll(s).any { !TECHNICAL.containsMatchIn(it.groupValues[1]) } || s.contains("~hack~", ignoreCase = true)
 
-    private fun bare(s: String): String = s.replace(Regex("""[(\[{][^)\]}]*[)\]}]"""), " ").replace(Regex("~[^~]*~"), " ")
+    private fun bare(s: String): String = s.replace(BRACKETS, " ").replace(TILDES, " ")
 
     private fun plain(s: String): String =
-        java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
-            .lowercase().replace('_', ' ').replace(Regex("[^a-z0-9 ]"), " ").replace(Regex("\\s+"), " ").trim()
+        java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(MARKS, "")
+            .lowercase().replace('_', ' ').replace(NON_ALNUM, " ").replace(SPACES, " ").trim()
 
     private fun knownPokemonHack(s: String): Boolean {
         val p = " ${plain(bare(s))} "
@@ -97,11 +106,11 @@ object RomHacks {
     /** "Pokemon_-_Radical_Red_v4.1_(Hack)_(USA)" → "Pokemon - Radical Red": tags, ~Hack~, versions gone; the hack's name kept. */
     fun ownTitle(raw: String): String {
         var t = raw.replace('_', ' ')
-        t = t.replace(Regex("~[^~]*~"), " ")
-        t = t.replace(Regex("""[(\[{][^)\]}]*[)\]}]"""), " ")
-        t = t.replace(Regex("""\b(rom ?hack|hack(ed)?)\b""", RegexOption.IGNORE_CASE), " ")
-        t = t.replace(Regex("""\s+v(er(sion)?)?\.?\s*\d+(\.\d+)*[a-z]?\b.*$""", RegexOption.IGNORE_CASE), " ")
-        t = t.replace(Regex("\\s+"), " ").trim().trim('-', ':', '|', '~', ',').trim()
+        t = t.replace(TILDES, " ")
+        t = t.replace(BRACKETS, " ")
+        t = t.replace(HACK_SUFFIX, " ")
+        t = t.replace(VERSION_TAIL, " ")
+        t = t.replace(SPACES, " ").trim().trim('-', ':', '|', '~', ',').trim()
         return t.ifBlank { raw.trim() }
     }
 

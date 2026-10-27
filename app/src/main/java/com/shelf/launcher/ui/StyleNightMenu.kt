@@ -235,7 +235,8 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                 }
         ) {
             val half = rowsN / 2 + 1
-            val base = scroll.value.roundToInt()
+            // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
+            val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
             for (off in -half..half) {
                 var i = base + off
                 if (loop) i = ((i % count) + count) % count else if (i !in 0 until count) continue
@@ -284,8 +285,8 @@ private fun NightBar(c: StyleCtx, g: Game, on: Boolean, pull: Float, col: Featur
                     c.cover(g)?.let { AsyncImage(rememberStyleArtRequest(it, trim = true), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                 }
                 Spacer(Modifier.width(14.dp))
-                Text(titles.display(g.name).uppercase(), color = if (on) Color(0xFF0B1424) else Color.White, fontSize = if (on) 22.sp else 18.sp,
-                    fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                FullText(titles.display(g.name).uppercase(), color = if (on) Color(0xFF0B1424) else Color.White, fontSize = if (on) 22.sp else 18.sp,
+                    fontWeight = FontWeight.Black, style = androidx.compose.ui.text.TextStyle(fontStyle = FontStyle.Italic), modifier = Modifier.weight(1f))
             }
         }
     }

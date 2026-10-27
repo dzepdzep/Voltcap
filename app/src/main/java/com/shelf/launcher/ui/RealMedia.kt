@@ -100,13 +100,13 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                 Box(Modifier.fillMaxSize().clip(DiscRing(MediaTemplates.RING_INNER, MediaTemplates.RING_OUTER)).background(Color(0xFFE9E6DF))) {
                     if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
-                Image(painterResource(disc), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Image(com.shelf.launcher.ui.cachedPainterResource(disc), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         } else if (cart != null) {
             val w = minOf(maxWidth, maxHeight * cart.aspect)
             val h = w / cart.aspect
             val win = cart.win
-            val mask = ImageBitmap.imageResource(cart.mask)
+            val mask = com.shelf.launcher.ui.cachedImageResource(cart.mask)
             Box(Modifier.size(w, h)) {
                 Box(
                     Modifier
@@ -143,7 +143,7 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                         modifier = Modifier.fillMaxSize()
                     ) // (Update 157)
                 }
-                Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Image(com.shelf.launcher.ui.cachedPainterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         }
     }
@@ -254,12 +254,16 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
         ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
         // (Update 208: a flat-colour stand-in is no picture.)
         ?.takeUnless { FlatArt.isKnown(model) }
-    val state by produceState(cached, model, trim) {
-        if (model == null) { value = null; return@produceState }
-        if (cached != null) { value = cached; if (PerfDiag.on) PerfDiag.softHits++; return@produceState }
+    // QA (V4): the value is tagged with the picture it belongs to — produceState keeps its last value when [model] changes,
+    // so for the first frame(s) after a slot moved on to another game it returned the LAST game's cover (a case or
+    // cartridge wearing the previous game's picture for a moment).
+    val tag = model to trim
+    val st by produceState<Pair<Any?, android.graphics.Bitmap?>>(tag to cached, model, trim) {
+        if (model == null) { value = tag to null; return@produceState }
+        if (cached != null) { value = tag to cached; if (PerfDiag.on) PerfDiag.softHits++; return@produceState }
         if (PerfDiag.on) PerfDiag.softMisses++
-        value = null
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        value = tag to null
+        value = tag to kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 // (Update 147: always a still picture — an animated cover came back as an animated drawable, not a bitmap,
                 // and the 3D pieces and cases stayed a plain grey card.)
@@ -278,7 +282,7 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
             }.getOrNull()
         }
     }
-    return state
+    return cached ?: st.second.takeIf { st.first == tag || QaFault.on("stale_soft") }
 }
 
 /**
@@ -331,9 +335,11 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
         ?.takeUnless { FlatArt.isKnown(model) }
     val start = remember(model, cached) { SoftLoad(cached, model == null || cached != null) }
-    val state by produceState(start, model) {
-        if (model == null || cached != null) { value = start; return@produceState }
-        value = SoftLoad(null, false)
+    // QA (V4): tagged with its model, as rememberSoftBitmap — the previous game's spine showed for a frame.
+    val st by produceState<Pair<Any?, SoftLoad>>(model to start, model) {
+        val tag = model
+        if (model == null || cached != null) { value = tag to start; return@produceState }
+        value = tag to SoftLoad(null, false)
         val b = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
@@ -347,9 +353,9 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
                     ?.also { bmp -> prepareSoft(bmp) }
             }.getOrNull()
         }
-        value = SoftLoad(b, true)
+        value = tag to SoftLoad(b, true)
     }
-    return state
+    return if (cached != null || st.first != model) start else st.second
 }
 
 /**
@@ -447,7 +453,7 @@ internal fun Box3D(
     /** (Update 240, #26: the game's console, for the spine drawn when there's no picture of one: its colour and logo.) */
     platform: String? = null
 ): Boolean {
-    val overlay = ImageBitmap.imageResource(tpl.res)
+    val overlay = com.shelf.launcher.ui.cachedImageResource(tpl.res)
     val spineRes = tpl.spineRes
     // (Update 131: your downloaded spine pack too — spineImage loads both kinds.)
     // (Update 134: the console's spine with the name made once, away from the screen's thread — SpineCache.)
@@ -545,7 +551,7 @@ private fun cropToAspect(src: android.graphics.Bitmap, aspect: Float): android.g
 @Composable
 private fun rememberBoxFace(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, detail: Int): android.graphics.Bitmap? {
     val frameRes = tpl.frameRes
-    val framePic: ImageBitmap? = if (frameRes != null && !frontIsBox) ImageBitmap.imageResource(frameRes) else null
+    val framePic: ImageBitmap? = if (frameRes != null && !frontIsBox) com.shelf.launcher.ui.cachedImageResource(frameRes) else null
     // (Update 202: the cover / box scan with flat strips in its file trimmed off, TrimMargins.kt; the window below already
     // fills with a centred crop, never stretched.)
     val art = rememberSoftBitmap(front, detail, trim = true)
@@ -592,7 +598,7 @@ internal fun FrontBox(
     val face = rememberBoxFace(tpl, front, frontIsBox, detail)
     val img = remember(face) { face?.asImageBitmap() }
     // The template pack's own case (its glass overlay): its front, straightened so it faces you, laid over the face.
-    val overlay = ImageBitmap.imageResource(tpl.res)
+    val overlay = com.shelf.launcher.ui.cachedImageResource(tpl.res)
     // The front's real proportions, from the template's front corners (TL, TR, BR, BL; x is a share of the width).
     val q = tpl.front
     fun dist(ax: Float, ay: Float, bx: Float, by: Float) = kotlin.math.hypot(((bx - ax) * tpl.aspect).toDouble(), (by - ay).toDouble()).toFloat()
@@ -722,7 +728,7 @@ private fun CaseArtBody(
     // Settings › Game look › "Case with its cartridge / disc" (update 93): the case standing still, its cartridge or disc
     // leaning against its lower right; only the cartridge / disc moves (spin / bounce as set).
     val shell = platform?.let { MediaShell.of(it) }
-    if (com.shelf.launcher.data.Features.caseWithMedia.state.value && shell != null) {
+    if (MixConsoles.caseWithMedia(platform) && shell != null) {
         val cov0 = MediaCovers.used(platform)
         val box0 = MediaTemplates.of(platform)?.box
         // (Update 235, #27/#38: Voltcap's plain case too, for a console without a template case.)
@@ -817,7 +823,7 @@ private fun CaseArtFace(
     val turned = com.shelf.launcher.data.Features.boxSpine.state.value
     val side = turned && !noBand
     val box = tpl?.box
-    val discCase = allowDiscCase && discCaseOn(tpl)
+    val discCase = allowDiscCase && discCaseOn(tpl, platform)
     // (Update 280, Toni: "some games are shown from the side, some front — if side, all side": Cases · turned turned only
     // the consoles with a template box (PS2…); PS1, Android, PS3 / Xbox (plain cases) and the cover-template cases stayed
     // facing you. Every case is turned now: those as their real 3D case (Case3D, its catalog shape, its real spine),

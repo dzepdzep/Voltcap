@@ -611,12 +611,12 @@ private fun CubeCaption(c: StyleCtx, extra: Boolean, tint: Color, portrait: Bool
     }
     val live by rememberUpdatedState(c)
     Column(modifier, horizontalAlignment = if (portrait) Alignment.CenterHorizontally else Alignment.Start) {
-        Text(
-            title, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        FullText(
+            title, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold, maxLines = 2,
             style = nameTextStyle(NameBackdrop.SHADOW)
         )
         Spacer(Modifier.height(4.dp))
-        Text(sub, color = Color.White.copy(alpha = 0.72f), fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(sub, color = Color.White.copy(alpha = 0.72f), fontSize = 14.sp, maxLines = 1)
         Spacer(Modifier.height(14.dp))
         CubePill(if (tip == 0) "Open" else "Go", if (tip == 0) Icons.Filled.ViewInAr else if (tip < 0) Icons.Filled.Apps else Icons.Filled.Settings, true, tint) {
             cubeOpenFace(live, ::cubeSound)
@@ -627,7 +627,7 @@ private fun CubeCaption(c: StyleCtx, extra: Boolean, tint: Color, portrait: Bool
             if (extra) append("   ▲ Apps   ▼ Settings")
             append("   L2 / R2 Category")
         }
-        Text(hint, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(hint, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, maxLines = 2)
     }
 }
 
@@ -637,9 +637,9 @@ private fun CubeDockLabel(c: StyleCtx, column: Boolean, on: Boolean, tint: Color
     val live by rememberUpdatedState(c)
     val multi = c.stops.size > 1
     Column(horizontalAlignment = if (column) Alignment.CenterHorizontally else Alignment.Start) {
-        Text(
+        FullText(
             c.categoryLabel, color = if (on) Color.White else Color.White.copy(alpha = 0.9f), fontSize = if (column) 15.sp else 18.sp,
-            fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+            fontWeight = FontWeight.Bold, maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW)
         )
         Text(
             "${c.games.size} " + if (c.games.size == 1) "game" else "games", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1
@@ -723,9 +723,9 @@ private fun CubeBrowser(c: StyleCtx, chip: Boolean, chipOn: Boolean, homeOn: Boo
                     Modifier.fillMaxWidth().height(infoH).padding(start = 10.dp)
                         .editablePart(LayoutParts.id(HomeLayout.CUBE, "info"), "Title & buttons")
                 ) {
-                    Text(
+                    FullText(
                         titles.display(g.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                        maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
                     )
                     val last = c.lastPlayed(g)
                     val line = buildString {
@@ -739,7 +739,7 @@ private fun CubeBrowser(c: StyleCtx, chip: Boolean, chipOn: Boolean, homeOn: Boo
                         }
                     }
                     // (The achievement chip is on the card itself — StyleArt — as in the other style homes.)
-                    Text(line, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(line, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 1)
                     Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         CubePill("Play", Icons.Filled.PlayArrow, StyleNav.on(StyleNav.Zone.BAR, 0), tint, small = compact) { live.game?.let { live.actions.play(it) } }
@@ -770,7 +770,7 @@ private fun CubePill(label: String, icon: ImageVector?, on: Boolean, tint: Color
             Icon(icon, null, tint = Color.White, modifier = Modifier.size(if (small) 13.dp else 16.dp))
             Spacer(Modifier.width(6.dp))
         }
-        Text(label, color = Color.White, fontSize = if (small) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(label, color = Color.White, fontSize = if (small) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 

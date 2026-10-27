@@ -162,6 +162,9 @@ private val CATEGORIES = listOf(
     SettingsCategory("Updates & downloads", "Voltcap's version, checking GitHub for a new one and installing it, and the extra art packs (cartridges, spines, discs, 3D models).", Icons.Filled.SystemUpdate),
 )
 
+/** QA (RP Classic pass): the category names, for the explorer to open each one directly (QaExplore "SETTINGS"). */
+internal val SETTINGS_CATEGORY_NAMES: List<String> get() = CATEGORIES.map { it.label }
+
 /**
  * Settings: a fixed sidebar of categories on the left, the selected one
  * filled with the accent colour, and that category's controls on the right
@@ -3193,7 +3196,7 @@ private fun ThemeTile(theme: AppTheme, selected: Boolean, onFocus: (AppTheme?) -
     if (focusFirst) LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { requester.requestFocus() } }
     val context = androidx.compose.ui.platform.LocalContext.current
     val c = theme.colors
-    val thumb by androidx.compose.runtime.produceState(ThemeThumbs.cached(theme), theme) {
+    val thumb by produceKeyed(ThemeThumbs.cached(theme), theme, theme) {
         if (value == null) value = ThemeThumbs.get(context, theme)
     }
     val shape = uiRounded(10.dp)
@@ -3291,7 +3294,7 @@ private fun ScenePickerTile(label: String, selected: Boolean, theme: AppTheme?, 
             if (theme != null) {
                 // The same still pictures as the theme browser (no live shader per tile).
                 val context = androidx.compose.ui.platform.LocalContext.current
-                val thumb by androidx.compose.runtime.produceState(ThemeThumbs.cached(theme), theme) {
+                val thumb by produceKeyed(ThemeThumbs.cached(theme), theme, theme) {
                     if (value == null) value = ThemeThumbs.get(context, theme)
                 }
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(theme.colors.background, theme.colors.accent.copy(alpha = 0.6f)))))
@@ -5282,6 +5285,104 @@ private fun AwardRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null) {
 
 // ---- Category order ----
 
+/**
+ * Pass 4: Settings › Categories › Home layout per category. The category you're in: its own layout or the default, with
+ * "Keep this layout here" (copy the current one), "Follow the default" (reset) and the list of every category that has its
+ * own (each with its reset), plus Reset all. To give a category another layout: keep one here, then pick any layout
+ * (Settings › Home or R1) while you're in it.
+ */
+@Composable
+private fun CategoryLayoutsCard(appearance: AppearanceSettings) {
+    // (Read as state, so the card follows every change.)
+    com.shelf.launcher.data.Features.catLayouts.state.value; com.shelf.launcher.data.Features.catLayoutDefault.state.value
+    val all = com.shelf.launcher.data.CategoryLayouts.all()
+    val key = CategoryLayoutActions.currentKey()
+    val own = all[key]
+    val def = com.shelf.launcher.data.CategoryLayouts.defaultLayout() ?: appearance.homeLayout
+    val name = com.shelf.launcher.data.categoryKeyLabel(key)
+    ShelfCard {
+        SectionLabel("This category: $name")
+        MutedNote(
+            if (own != null) "$name always opens in ${own.label}. Pick another layout while you're in it and it keeps that one."
+            else "$name follows the default layout (${def.label})."
+        )
+        Spacer(Modifier.height(6.dp))
+        ChipFlow {
+            Chip("Keep ${appearance.homeLayout.label} here", accent = own == appearance.homeLayout) { CategoryLayoutActions.set(appearance.homeLayout) }
+            Chip("Follow the default", accent = own == null) { CategoryLayoutActions.set(null) }
+        }
+        if (all.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            SectionLabel("Categories with their own layout")
+            MutedNote("Default for the others: ${def.label}.")
+            Spacer(Modifier.height(4.dp))
+            all.entries.sortedBy { com.shelf.launcher.data.categoryKeyLabel(it.key) }.forEach { (k, l) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${com.shelf.launcher.data.categoryKeyLabel(k)} · ${l.label}", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Chip("Reset", accent = false) { CategoryLayoutActions.reset(k) }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Chip("Reset all", accent = false) { CategoryLayoutActions.clear() }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+@Composable
+private fun CategoryGameLooksCard(appearance: AppearanceSettings) {
+    com.shelf.launcher.data.Features.catGameLooks.state.value
+    val all = com.shelf.launcher.data.CategoryGameLooks.all()
+    val key = CategoryLayoutActions.currentKey()
+    val own = all[key]
+    val name = com.shelf.launcher.data.categoryKeyLabel(key)
+    val choices = listOf(
+        com.shelf.launcher.data.CardArtType.COVER, com.shelf.launcher.data.CardArtType.CAPSULE, com.shelf.launcher.data.CardArtType.CASE,
+        com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, com.shelf.launcher.data.CardArtType.DISC
+    )
+    ShelfCard {
+        SectionLabel("This category: $name")
+        MutedNote(
+            if (own != null) "$name always shows its games as ${own.label}. Pick another game look while you're in it and it keeps that one."
+            else "$name shows its games the way its home layout does (${appearance.cardArtType.label})."
+        )
+        Spacer(Modifier.height(6.dp))
+        ChipFlow {
+            choices.forEach { c -> Chip(c.label, accent = own == c) { CategoryGameLookActions.set(c) } }
+            Chip("Follow the layout", accent = own == null) { CategoryGameLookActions.set(null) }
+        }
+        if (all.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            SectionLabel("Categories with their own game look")
+            Spacer(Modifier.height(4.dp))
+            all.entries.sortedBy { com.shelf.launcher.data.categoryKeyLabel(it.key) }.forEach { (k, l) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${com.shelf.launcher.data.categoryKeyLabel(k)} · ${l.label}", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Chip("Reset", accent = false) { CategoryGameLookActions.reset(k) }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Chip("Reset all", accent = false) { CategoryGameLookActions.clear() }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+/** Pass 5: what Settings › Categories › Game look per category does (set by the launcher screen). */
+internal object CategoryGameLookActions {
+    var set: (com.shelf.launcher.data.CardArtType?) -> Unit = {}
+    var reset: (String) -> Unit = {}
+    var clear: () -> Unit = {}
+}
+
+/** Pass 4: what Settings › Categories › Home layout per category does (set by the launcher screen, which has the view model). */
+internal object CategoryLayoutActions {
+    var currentKey: () -> String = { "ALL" }
+    var set: (com.shelf.launcher.data.HomeLayout?) -> Unit = {}
+    var reset: (String) -> Unit = {}
+    var clear: () -> Unit = {}
+}
+
 private fun categoryLabel(key: String): String = when (key) {
     CategorySettings.ALL -> "All"
     CategorySettings.CONSOLES -> "Consoles (each console)"
@@ -5305,8 +5406,23 @@ private fun CategoryOrderCard(
         SectionLabel("Category order")
         MutedNote("The order of the category pills above the dock, and of L2 / R2. Hidden ones are skipped.")
         Spacer(Modifier.height(8.dp))
-        order.forEachIndexed { index, key ->
+        // QA pass 3 (D36): rows keyed by category and focus kept on the category that moved, so ▲ / ▲ / ▲ keeps moving the
+        // same one (before, focus stayed on the row slot and the next press moved the neighbour). At the top / bottom the
+        // pressed arrow turns off, so focus goes to the other arrow of the same category.
+        val ups = androidx.compose.runtime.remember { mutableMapOf<String, androidx.compose.ui.focus.FocusRequester>() }
+        val downs = androidx.compose.runtime.remember { mutableMapOf<String, androidx.compose.ui.focus.FocusRequester>() }
+        var follow by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Int>?>(null) }
+        androidx.compose.runtime.LaunchedEffect(follow, order) {
+            val (k, d) = follow ?: return@LaunchedEffect
+            val i = order.indexOf(k)
+            val wantUp = if (d < 0) i > 0 else i == order.lastIndex
+            runCatching { (if (wantUp) ups[k] else downs[k])?.requestFocus() }
+            follow = null
+        }
+        order.forEachIndexed { index, key -> androidx.compose.runtime.key(key) {
             val hidden = key in categories.hidden
+            val up = ups.getOrPut(key) { androidx.compose.ui.focus.FocusRequester() }
+            val down = downs.getOrPut(key) { androidx.compose.ui.focus.FocusRequester() }
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -5318,13 +5434,13 @@ private fun CategoryOrderCard(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
-                Chip("▲", accent = false, enabled = index > 0) { onMove(key, -1) }
+                Chip("▲", accent = false, enabled = index > 0, modifier = Modifier.focusRequester(up)) { onMove(key, -1); follow = key to -1 }
                 Spacer(Modifier.width(6.dp))
-                Chip("▼", accent = false, enabled = index < order.lastIndex) { onMove(key, 1) }
+                Chip("▼", accent = false, enabled = index < order.lastIndex, modifier = Modifier.focusRequester(down)) { onMove(key, 1); follow = key to 1 }
                 Spacer(Modifier.width(6.dp))
                 Chip(if (hidden) "Hidden" else "Shown", accent = !hidden) { onToggleHidden(key) }
             }
-        }
+        } }
         Spacer(Modifier.height(8.dp))
         Chip("Reset order", accent = false, onClick = onReset)
     }
@@ -5707,6 +5823,14 @@ private fun CategoriesContent(
             Spacer(Modifier.height(12.dp))
             CollectionsSettings(appearance, onChange, userCollections, onRenameCollection, onDeleteCollection)
         }
+        // Pass 4: each category its own home layout (data/CategoryLayouts.kt).
+        FoldGroup("Home layout per category", summary = "A console, collection or list can keep its own home layout", key = "cat_layouts") {
+            CategoryLayoutsCard(appearance)
+        }
+        // Pass 5: each category its own game look (data/CategoryGameLooks.kt).
+        FoldGroup("Game look per category", summary = "A console, collection or list can show its games its own way", key = "cat_game_looks") {
+            CategoryGameLooksCard(appearance)
+        }
         FoldGroup("On the home screen", summary = "The category's name above the games, logos, L2 / R2", key = "cat_home") {
             ShelfCard {
                 // Update 315: each layout keeps its own (the R1 Categories tile sets the same), shown as that layout shows it.
@@ -5780,6 +5904,14 @@ private fun CategoriesContent(
                 }
                 Spacer(Modifier.height(6.dp))
                 MutedNote(categoryLookNote(F.platformView.state.value))
+                Spacer(Modifier.height(8.dp))
+                // Pass 4: Follow home layout (Features.followLookFor).
+                SwitchRow(
+                    Icons.Filled.SwapHoriz, "Follow home layout",
+                    "The look goes with the home layout of the category you open it from (Case stacks → System Stage, TV room → Channel Surf…). Now: " +
+                        F.followLookFor(appearance.homeLayout).label + ". Off: the look picked above.",
+                    F.pbFollowHome.state.value, { F.pbFollowHome.value = it }
+                )
                 Spacer(Modifier.height(14.dp))
                 Text("Cards show", color = ShelfTheme.textMuted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))
@@ -5982,7 +6114,8 @@ internal fun OverlayPartsChoice(layout: com.shelf.launcher.data.HomeLayout) {
         Spacer(Modifier.height(6.dp))
         Chip("Edit Home…") { HomeEditState.open() }
     }
-    MutedNote("In Edit Home: + Add (Start) picks what to show, a part's red ✕ (Select) takes it off again.")
+    // QA: (C15) the real Edit Home keys (HomeEdit.onKey): Start saves, Select hides / shows the part, L3 opens the parts list.
+    MutedNote("In Edit Home: L3 (☰ Elements) lists the parts, Select hides or shows the one you're on, Start saves.")
 }
 
 

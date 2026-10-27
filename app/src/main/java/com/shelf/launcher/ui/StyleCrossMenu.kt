@@ -250,9 +250,8 @@ private fun CrossIcons(c: StyleCtx, baseX: Dp, top: Dp, spacing: Dp, big: Dp, sm
         // Update 122: a folder shows only its console's logo, no name under it (a console without a logo has its
         // name on the folder itself).
         if (d == 0 && labels && !crossFolderStop(stop)) {
-            Text(
-                stop.label, color = Color.White, fontSize = 13.sp * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp * k), maxFontSize = 13.sp * k), fontWeight = FontWeight.SemiBold, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
+            FullText(
+                stop.label, color = Color.White, fontSize = 13.sp * k, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
                 modifier = Modifier.offset(x = baseX + spacing * slide - 70.dp, y = top + big + 4.dp).width(140.dp).alpha(stripAlpha)
             )
         }
@@ -372,10 +371,10 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                 )
                 Spacer(Modifier.width(gapX))
                 Column(Modifier.widthIn(max = textMax)) {
-                    Text(
+                    FullText(
                         titles.display(g.name), color = Color.White.copy(alpha = if (on) 1f else 0.82f),
-                        fontSize = (if (on) 19.sp else 15.sp) * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin((if (on) 19.sp else 15.sp) * k), maxFontSize = (if (on) 19.sp else 15.sp) * k), fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                        fontSize = (if (on) 19.sp else 15.sp) * k, fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
+                        maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)
                     )
                     // Update 132, Trophies category: how far you are, with a bar, under the game you're on.
                     val trophyRow = on && trophies
@@ -393,16 +392,16 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                                 Box(Modifier.fillMaxWidth(p.first.toFloat() / p.second).height(3.dp).background(ShelfTheme.accent))
                             }
                         }
-                        Text("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
+                        FullText("A: its achievements", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp * k, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
                     }
                     if (on && info && !trophyRow) Column(Modifier.riseOnEnter()) {
                         Spacer(Modifier.height(2.dp))
                         // (Update 252, #94: the lines under the name with the name's dark edge — white on a light picture (the RP
                         // Classic's Pokémon art) couldn't be read.)
-                        Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
-                        Text(
+                        FullText(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW)) // (Update 234, #14: ends in "…")
+                        FullText(
                             titles.console(g.platform) + (c.lastPlayed(g)?.let { " · Last played: " + lastPlayedLabel(it) } ?: ""),
-                            color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp * k, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp * k), maxFontSize = 11.sp * k), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp * k, maxLines = 1,
                             style = nameTextStyle(NameBackdrop.SHADOW)
                         )
                     }

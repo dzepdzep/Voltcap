@@ -37,3 +37,6 @@ __pycache__/
 
 # Claude screenshots / device pulls (not source)
 shots*/
+
+# QA runs: recordings, frame stats and dumps pulled from the handhelds (tools/qa)
+/qa_runs/

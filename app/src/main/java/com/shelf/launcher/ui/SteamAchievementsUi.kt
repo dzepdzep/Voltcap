@@ -146,7 +146,7 @@ internal fun SteamAccountCard() {
 @Composable
 internal fun SteamAchievementsDialog(game: Game, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val list by produceState<List<SteamAchievements.Achievement>?>(null, game.steamAppId) {
+    val list by produceKeyed<List<SteamAchievements.Achievement>?>(null, game.steamAppId, game.steamAppId) {
         value = game.steamAppId?.let { SteamAchievements.forGame(context, it) } ?: emptyList()
     }
     val l = list

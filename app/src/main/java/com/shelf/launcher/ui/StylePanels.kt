@@ -312,13 +312,16 @@ internal fun StylePanels(c: StyleCtx, modifier: Modifier = Modifier) {
         val rowH = maxHeight * (if (compact) 0.6f else 0.56f)
         val stepPx = with(density) { (maxHeight * 0.62f).toPx() }
         val baseX = leftW + 16.dp
-        for (i in 0 until PanelNav.COUNT) {
-            val d = i - chPos.value
-            if (abs(d) > 1.6f) continue
+        // (Pass 5, D57: the channels on screen as a derived list and their place read in the layer / draw lambdas — read
+        // raw here, every channel's panels were re-composed on every frame of an L / R glide.)
+        val chShown by remember { androidx.compose.runtime.derivedStateOf { (0 until PanelNav.COUNT).filter { abs(it - chPos.value) <= 1.6f } } }
+        for (i in chShown) {
+            fun dNow() = i - chPos.value
             key(i) {
                 Box(
                     Modifier.offset(x = baseX).width(maxWidth - baseX).height(rowH + 90.dp)
                         .graphicsLayer {
+                            val d = dNow()
                             translationY = (this@BoxWithConstraints.maxHeight.toPx() - (rowH + 90.dp).toPx()) * 0.42f + d * stepPx
                             val s = 1f - 0.32f * abs(d).coerceAtMost(1f)
                             scaleX = s; scaleY = s
@@ -330,6 +333,7 @@ internal fun StylePanels(c: StyleCtx, modifier: Modifier = Modifier) {
                         // blank tops of its panels cut off by the screen, which read as grey placeholder bars.)
                         .drawWithContent {
                             drawContent()
+                            val d = dNow()
                             val t = abs(d).coerceAtMost(1f)
                             if (t > 0.01f) {
                                 val h = size.height
@@ -367,7 +371,7 @@ private fun PanelProfile(c: StyleCtx, p: PanelPalette, modifier: Modifier) {
             }
         }
         Spacer(Modifier.height(22.dp))
-        Text(prof?.User ?: c.state.raUsername ?: "Player", color = p.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(prof?.User ?: c.state.raUsername ?: "Player", color = p.ink, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.EmojiEvents, null, tint = p.accent, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(4.dp))
@@ -420,16 +424,17 @@ private fun PanelChannel(c: StyleCtx, p: PanelPalette, ch: Int, on: Boolean, row
             }
         ) {
             if (n == 0) Text(EmptyShelf.text, color = p.sub, fontSize = 15.sp, modifier = Modifier.align(Alignment.CenterStart))
-            val sv = scroll.value
-            val first = (sv - 1.5f).toInt().coerceAtLeast(0)
-            val last = (sv + 6f).toInt().coerceAtMost(n - 1)
-            for (i in first..last) {
-                val d = i - sv
+            // (Pass 5, D57: as above — the panels in view derived, their place read while laid out and drawn.)
+            val shownRange by remember(n) { androidx.compose.runtime.derivedStateOf { (scroll.value - 1.5f).toInt().coerceAtLeast(0)..(scroll.value + 6f).toInt().coerceAtMost(n - 1) } }
+            for (i in shownRange) {
+                fun dNow() = i - scroll.value
+                val zOrder by remember(i) { androidx.compose.runtime.derivedStateOf { 100f - (dNow() * 4f).roundToInt() * 2.5f } }
                 key(i) {
                     val lit = on && i == focus
                     Box(
-                        Modifier.size(panelW, panelH).zIndex(100f - d * 10f)
+                        Modifier.size(panelW, panelH).zIndex(zOrder)
                             .graphicsLayer {
+                                val d = dNow()
                                 val dd = d.coerceAtLeast(0f)
                                 val s = if (d <= 0f) 1f else 0.72f.pow(dd)
                                 val x = if (d <= 0f) d * wPx * 1.15f else wPx * 0.78f * (1f - 0.72f.pow(dd)) / (1f - 0.72f)
@@ -489,7 +494,7 @@ private fun PanelFace(c: StyleCtx, p: PanelPalette, ch: Int, i: Int, lit: Boolea
                 if (gg != null) {
                     (c.wide(gg) ?: c.cover(gg))?.let { AsyncImage(rememberStyleArtRequest(it), gg.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.55f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.6f))))
-                    Text(item.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    FullText(item.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                         modifier = Modifier.align(Alignment.BottomStart).padding(8.dp))
                 } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center) {
                     Box(Modifier.size(64.dp).clip(CircleShape).background(p.accent.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
@@ -509,7 +514,7 @@ private fun PanelFace(c: StyleCtx, p: PanelPalette, ch: Int, i: Int, lit: Boolea
 private fun PanelSystemFace(st: StyleStop, p: PanelPalette) {
     val context = LocalContext.current
     val platform = st.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
-    val photo by produceState<String?>(null, platform) {
+    val photo by produceKeyed<String?>(null, platform, platform) {
         value = if (platform != null && com.shelf.launcher.data.ConsolePhotos.hasPhoto(platform)) runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull() else null
     }
     Column(Modifier.fillMaxSize().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -531,7 +536,7 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
     when (ch) {
         PanelNav.GAMES -> c.games.getOrNull(focus)?.let { g ->
             Column {
-                Text(titles.display(g.name), color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(titles.display(g.name), color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text((if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)) + "  ·  " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
                         color = p.sub, fontSize = 13.sp, maxLines = 1)
@@ -558,7 +563,7 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
         else -> PanelNav.itemsOf(ch).getOrNull(focus)?.let { item ->
             Column {
                 val gg = item.game
-                Text(gg?.let { titles.display(it.name) } ?: item.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(gg?.let { titles.display(it.name) } ?: item.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text(if (gg != null) titles.console(gg.platform) + "  ·  " + stylePlaytime(c.playtime(gg), true) else item.sub, color = p.sub, fontSize = 13.sp, maxLines = 1)
             }
         }

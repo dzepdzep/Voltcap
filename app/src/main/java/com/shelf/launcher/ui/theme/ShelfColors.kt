@@ -1060,6 +1060,16 @@ enum class AppTheme(
 
 val LocalShelfColors = compositionLocalOf { AppTheme.EMBER.colors }
 
+/**
+ * (QA pass 2, D22) The same colours as one State that never changes identity: read `.value` while DRAWING
+ * (drawBehind, graphicsLayer, a draw lambda) and the colour glide only redraws, instead of re-composing every reader
+ * ~100 times a second while the colours follow the game. Not overridden by nested LocalShelfColors providers — use it
+ * only where the screen's own theme colours are meant.
+ */
+val LocalShelfColorsLive = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.runtime.State<ShelfColors>> {
+    androidx.compose.runtime.mutableStateOf(AppTheme.EMBER.colors)
+}
+
 /** Shorthand so screens can write ShelfTheme.accent instead of reaching for
  * the CompositionLocal every time. */
 object ShelfTheme {
@@ -1068,6 +1078,10 @@ object ShelfTheme {
 
     val accent: Color
         @Composable @ReadOnlyComposable get() = colors.accent
+
+    /** The theme colours as a State, for reading while drawing (see [LocalShelfColorsLive]). */
+    val live: androidx.compose.runtime.State<ShelfColors>
+        @Composable @ReadOnlyComposable get() = LocalShelfColorsLive.current
 
     val accentGlow: Color
         @Composable @ReadOnlyComposable get() = colors.accentGlow

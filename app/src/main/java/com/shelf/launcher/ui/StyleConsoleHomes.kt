@@ -206,7 +206,7 @@ private fun NextAchievementsTicker(list: List<com.shelf.launcher.data.RaAchievem
                         modifier = Modifier.size(20.dp).clip(uiRounded(3.dp))
                     )
                     Spacer(Modifier.width(6.dp))
-                    Text(a.title.orEmpty(), color = Color.White, fontSize = 11.sp, maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    FullText(a.title.orEmpty(), color = Color.White, fontSize = 11.sp, maxLines = 1)
                 }
             }
         }
@@ -839,17 +839,23 @@ private fun ResumeSpot(
     val dx = if (s != null && r != null) r.left - s.left else with(density) { (tile + 14.dp).toPx() }
     val dy = if (s != null && r != null) r.top - s.top else 0f
     val small = if (s != null && r != null && s.height > 0f) (r.height / s.height).coerceIn(0.2f, 1f) else 0.5f
-    val q = p.value
+    // (QA pass 3, D32: the frame in which the game changes is drawn as the move's start — the effect below only snaps
+    // the move back a frame later, so that frame used to show the NEW game already sitting in the big spot, then it jumped
+    // to the row and flew in: a one-frame flash on every ◀ ▶ in Resume & discover.)
+    val pend = anim && (prev[2] != v || prev[0] != c.focus)
+    val pv = p.value // (read always: read only when not pending, the move that follows was never observed — LAYER-BRANCH)
+    val q = if (pend) 0f else pv
+    val dirNow = if (pend) (if (v != prev[2]) (if (v > prev[2]) 1 else -1) else (if (c.focus > prev[0]) 1 else -1)) else dir
     Box(Modifier.fillMaxSize()) {
         // The game you leave.
-        val old = c.games.getOrNull(leaving)
+        val old = c.games.getOrNull(if (pend) prev[0] else leaving)
         if (old != null && q < 1f) {
             StyleArt(
                 c, old,
                 Modifier.fillMaxSize().graphicsLayer {
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                     val t = q.coerceIn(0f, 1f)
-                    if (dir > 0) {
+                    if (dirNow > 0) {
                         // Off to the left, fading.
                         translationX = -size.width * 0.55f * t
                         val k = 1f - 0.25f * t
@@ -872,7 +878,7 @@ private fun ResumeSpot(
                 Modifier.fillMaxSize().graphicsLayer {
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
                     val t = 1f - q
-                    if (dir > 0) {
+                    if (dirNow > 0) {
                         // Out of the row's first place, growing into the spot.
                         translationX = dx * t; translationY = dy * t
                         val k = 1f + (small - 1f) * t.coerceIn(0f, 1f)

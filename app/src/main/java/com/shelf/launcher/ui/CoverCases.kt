@@ -277,7 +277,7 @@ internal object PackSpines {
     fun load(id: Int): ImageBitmap {
         cache.get(id)?.let { return it }
         val file = synchronized(this) { names[id] }?.let { com.shelf.launcher.data.Packs.spineFile(it) }
-        val bmp = file?.let { runCatching { android.graphics.BitmapFactory.decodeFile(it.path) }.getOrNull() }
+        val bmp = file?.let { vcTrace("VC:spineDecode") { runCatching { android.graphics.BitmapFactory.decodeFile(it.path) }.getOrNull() } }
         val img = bmp?.asImageBitmap() ?: ImageBitmap(1, 1)
         if (bmp != null) cache.put(id, img)
         return img
@@ -287,7 +287,7 @@ internal object PackSpines {
 /** A spine picture by its id: a resource (Voltcap's own spines) or your downloaded pack's ([PackSpines]). */
 @Composable
 internal fun spineImage(res: Int): ImageBitmap =
-    if (res >= 0) ImageBitmap.imageResource(res) else remember(res, com.shelf.launcher.data.Packs.version.intValue) { PackSpines.load(res) }
+    if (res >= 0) com.shelf.launcher.ui.cachedImageResource(res) else remember(res, com.shelf.launcher.data.Packs.version.intValue) { PackSpines.load(res) }
 
 /**
  * Update 169: a case's front drawn to its cover's shape: the frame cut in three along one axis — the band before the
@@ -575,7 +575,7 @@ internal fun fittedFrameBitmap(frame: android.graphics.Bitmap, cov: CoverTpl, fi
 /** Update 169: the frame drawn reshaped ([CaseFit]): its bands as they are, its window's part stretched. */
 @Composable
 private fun FittedFrame(cov: CoverTpl, fit: CaseFit) {
-    val img = ImageBitmap.imageResource(cov.frontRes)
+    val img = com.shelf.launcher.ui.cachedImageResource(cov.frontRes)
     val src = cov.win; val dst = fit.win
     val s0 = if (fit.vertical) src[1] else src[0]; val s1 = if (fit.vertical) src[3] else src[2]
     val d0 = if (fit.vertical) dst[1] else dst[0]; val d1 = if (fit.vertical) dst[3] else dst[2]
@@ -666,7 +666,7 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
         }
         if (owner == null && boxFront) { /* (Update 171: the cover is the printed front itself — no frame over it.) */ }
         else if (owner == null && fit != null) FittedFrame(cov, fit)
-        else if (owner == null) Image(painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+        else if (owner == null) Image(com.shelf.launcher.ui.cachedPainterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         else PlainFrame(cov, owner, w, h)
     }
 }
@@ -736,7 +736,7 @@ private fun PlainFrame(cov: CoverTpl, owner: String, w: androidx.compose.ui.unit
     val win = cov.win
     // Only what lies outside the art window, so the console's marks printed over the art (ratings, publisher) go.
     Image(
-        painterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds,
+        com.shelf.launcher.ui.cachedPainterResource(cov.frontRes), null, contentScale = ContentScale.FillBounds,
         colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(color, androidx.compose.ui.graphics.BlendMode.SrcIn),
         modifier = Modifier.fillMaxSize().drawWithContent {
             val path = androidx.compose.ui.graphics.Path().apply {

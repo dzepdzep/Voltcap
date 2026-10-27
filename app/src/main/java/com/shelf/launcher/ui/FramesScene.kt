@@ -22,7 +22,7 @@ import kotlin.math.roundToInt
  */
 @Composable
 internal fun FramesScene(res: Int, frames: Int, frameMs: Long, modifier: Modifier = Modifier) {
-    val strip: ImageBitmap = ImageBitmap.imageResource(res)
+    val strip: ImageBitmap = com.shelf.launcher.ui.cachedImageResource(res)
     var frame by remember { mutableIntStateOf(0) }
     val lite = LocalLiteEffects.current && !LocalAnimateOnLite.current
     val moving = !lite && !LocalSceneCovered.current && !HomeIdle.still && rememberAnimationsEnabled()

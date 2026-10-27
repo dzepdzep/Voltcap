@@ -216,10 +216,10 @@ internal fun HomeGameGrid(
                 val scanCaseOnly = gArt == CardArtType.CASE && typed != null && caseMarker(g.platform) == null &&
                     com.shelf.launcher.data.Features.originalCases.state.value && !androidOwnCase(g.platform) &&
                     !LookStyles.caseForAll() && CaseCatalog.of(LookStyles.casePlatform(g.platform), CaseRegion.US) != null
-                val free = isFreeMedia(gArt, g.platform) || realScan || scanCaseOnly || (drawnMediaWanted(gArt, typed) && MediaShell.of(g.platform) != null)
+                val free = isFreeMedia(gArt, g.platform) || realScan || scanCaseOnly || (drawnMediaWanted(gArt, typed, g.platform) && MediaShell.of(g.platform) != null)
                 // Update 203: a drawn cartridge turns as a solid piece (its thickness showing) — the slot hands it the turn
                 // instead of turning the flat picture (SolidPiece.kt).
-                val solidCart = spin != null && !spines && gArt == CardArtType.CARTRIDGE_DISC && !realScan && drawnMediaWanted(gArt, typed)
+                val solidCart = spin != null && !spines && gArt == CardArtType.CARTRIDGE_DISC && !realScan && drawnMediaWanted(gArt, typed, g.platform)
                 // (Update 329, seen on the AYN Thor: with Case + media each disc sticks out past its case to the right — meant to
                 // tuck behind the next game, as on the Voltcap row — but the grid drew it over its neighbour's case. Each game
                 // now sits a little above the one on its left; the one you're on above all.)
@@ -259,7 +259,7 @@ internal fun HomeGameGrid(
                             // middle copy, as rememberLoopPlace counts).
                             .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
                     ) { ProvidePieceTurn(if (solidCart) PieceTurn({ (spin?.value ?: 0f) * lift }, 12f) else null) {
-                        val pick = if (drawnMediaWanted(gArt, typed)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
+                        val pick = if (drawnMediaWanted(gArt, typed, g.platform)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
                         // (Update 235, #27/#38: consoles without a template case too — Voltcap's plain case, caseMarker /
                         // plainCaseSpec — instead of the flat cover / turned "Box (3D)" picture cropped to the cell below.)
                         val box3d = if (gArt == CardArtType.CASE) caseMarker(g.platform) ?: (if (scanCaseOnly) Unit else null) else null
@@ -289,7 +289,7 @@ internal fun HomeGameGrid(
                             // (TrimMargins.kt); other pictures as before.
                             url != null -> AsyncImage(if (!realScan && url == cover) rememberStyleArtRequest(url, trim = true) else url, g.name, contentScale = if (realScan) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize().then(if (realScan) Modifier.padding(6.dp) else Modifier).pixelArtwork())
                             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = gridAspect(cardArtType, tiles) > 1f, modifier = Modifier.fillMaxSize())
-                            else -> Text(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), textAlign = TextAlign.Center, maxLines = 4, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            else -> FullText(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp))
                         }
                         // Update 115: the console's badge (update 141: on every look; too narrow a slot skips it).
                         ConsoleBadge(g.platform, packageName = g.packageName)

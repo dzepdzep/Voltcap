@@ -36,6 +36,7 @@ object FrameWatch {
         if (Build.VERSION.SDK_INT < 24 || listener != null) return
         val t = HandlerThread("voltcap-frames").also { it.start() }
         thread = t
+        com.shelf.launcher.ui.QaTrace.init(activity)
         ignoreUntil = SystemClock.uptimeMillis() + GRACE_MS
         val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
         listener = l
@@ -55,6 +56,7 @@ object FrameWatch {
 
     private fun onFrame(m: FrameMetrics) {
         if (Build.VERSION.SDK_INT < 24) return
+        com.shelf.launcher.ui.QaTrace.frame(m)
         if (SystemClock.uptimeMillis() < ignoreUntil) { frames = 0; slow = 0; return }
         if (m.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == 1L) return
         frames++

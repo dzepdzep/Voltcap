@@ -3,6 +3,8 @@ package com.shelf.launcher.ui
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -102,7 +104,11 @@ fun NotificationsPanel(
     /** Clears every notification in one go (falls back to one by one). */
     onDismissAll: (() -> Unit)? = null,
     /** Just the notifications (update 105: opened from a bell), without the quick tiles and background jobs. */
-    notificationsOnly: Boolean = false
+    notificationsOnly: Boolean = false,
+    /** QA: (C3) opens the per-job Background work window (its Stop buttons); null hides the "Details" chip. */
+    onShowWork: (() -> Unit)? = null,
+    /** QA: (C4) opens the Drive sync status window; shown only while Drive is connected; null hides it. */
+    onShowSyncStatus: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("NotificationsPanel")
     val context = LocalContext.current
@@ -133,6 +139,12 @@ fun NotificationsPanel(
         )
         Spacer(Modifier.height(8.dp))
         // Drive sync moved to the home status bar (tap the cloud there).
+        // QA: (C4) …and here, for the controller: "Sync status" opens the same window while Drive is connected.
+        val driveSync by com.shelf.launcher.data.CloudSync.state.collectAsState()
+        if (!notificationsOnly && onShowSyncStatus != null && driveSync.settings.connected) {
+            Chip("Sync status", accent = false, onClick = onShowSyncStatus)
+            Spacer(Modifier.height(12.dp))
+        }
 
         val running = if (notificationsOnly) emptyList() else backgroundTasks.filter { (_, p) -> p.second > 0 }
         if (running.isNotEmpty()) {
@@ -170,9 +182,13 @@ fun NotificationsPanel(
                         )
                     }
                 }
-                if (onStopTasks != null) {
+                // QA: (C3) "Details" opens BackgroundWorkDialog (stop one job) with the controller, not only by tapping the status bar.
+                if (onStopTasks != null || onShowWork != null) {
                     Spacer(Modifier.height(10.dp))
-                    Chip("Stop all", accent = false, onClick = onStopTasks)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (onStopTasks != null) Chip("Stop all", accent = false, onClick = onStopTasks)
+                        if (onShowWork != null) Chip("Details", accent = false, onClick = onShowWork)
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -320,11 +336,25 @@ private fun NotificationGroup(
             }
         }
         group.sortedByDescending { it.postedAt }.forEach { notification ->
+            // (QA pass 3, D26: the ✕ sits inside the notification's own button, so ▶ never reached it — focus search
+            // looks beside the row, not inside it. ▶ / ◀ now step between the notification and its ✕.)
+            val rowFocus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            val dismissFocus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            var onDismissBtn by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
                     .clip(uiRounded(12.dp))
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) false
+                        else when (e.key) {
+                            androidx.compose.ui.input.key.Key.DirectionRight -> if (!onDismissBtn) runCatching { dismissFocus.requestFocus() }.isSuccess else true
+                            androidx.compose.ui.input.key.Key.DirectionLeft -> if (onDismissBtn) runCatching { rowFocus.requestFocus() }.isSuccess else false
+                            else -> false
+                        }
+                    }
+                    .focusRequester(rowFocus)
                     .shelfClickable { onOpen(notification.packageName) }
                     .padding(start = 25.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
                 verticalAlignment = Alignment.Top
@@ -359,6 +389,8 @@ private fun NotificationGroup(
                     Modifier
                         .size(22.dp)
                         .clip(CircleShape)
+                        .onFocusChanged { onDismissBtn = it.isFocused }
+                        .focusRequester(dismissFocus)
                         .shelfClickable(CircleShape) { onDismiss(notification.key) },
                     contentAlignment = Alignment.Center
                 ) {

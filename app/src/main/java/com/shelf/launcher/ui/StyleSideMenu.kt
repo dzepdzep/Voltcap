@@ -97,9 +97,9 @@ internal fun StyleSideMenu(c: StyleCtx, modifier: Modifier) {
                     // (Update 315: off for this layout — Categories tile / Settings — no caption.)
                     if (Features.sideRowTitle.state.value && CategoryTitle.captionOn(c.state.appearance)) {
                         CategoryTitle.Native() // (Update 212: the layout's own category title.)
-                        Text(
-                            c.categoryLabel.uppercase(), color = Color.White, fontSize = if (compact) 13.sp else 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 13.sp else 16.sp), maxFontSize = if (compact) 13.sp else 16.sp), fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),
+                        FullText(
+                            c.categoryLabel.uppercase(), color = Color.White, fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW),
                             modifier = Modifier.padding(start = 6.dp, bottom = 6.dp)
                         )
                     }
@@ -169,7 +169,7 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
                         c.categoryLabel.let { if (caps) it.uppercase() else it }, color = trim, maxSize = 11.sp, minSize = 7.sp, maxLines = 2,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(gamesCount(c.games.size), color = trim.copy(alpha = 0.7f), fontSize = 9.sp, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis) // (Update 234, #14: ends in "…")
+                    FullText(gamesCount(c.games.size), color = trim.copy(alpha = 0.7f), fontSize = 9.sp, maxLines = 1) // (Update 234, #14: ends in "…")
                 }
             }
         }

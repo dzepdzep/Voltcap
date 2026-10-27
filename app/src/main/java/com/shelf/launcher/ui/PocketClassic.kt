@@ -289,9 +289,9 @@ internal fun PocketText(
         Box(if (screenX) Modifier.atScreen(x, y, w, h) else Modifier.at(x, y, w, h), contentAlignment = when (align) {
             TextAlign.Center -> Alignment.Center; TextAlign.End -> Alignment.CenterEnd; else -> Alignment.CenterStart
         }) {
-            Text(
-                text, maxLines = maxLines, overflow = TextOverflow.Ellipsis, softWrap = maxLines > 1,
-                style = TextStyle(color = color, fontSize = sp(fitSize), lineHeight = sp(fitSize * 1.15f), fontFamily = font, textAlign = align)
+            // (RP Classic QA: "Pokemon Silver ..." — FullText shrinks further, then slides; R18.)
+            FullText(
+                text, color = color, fontSize = sp(fitSize * 0.98f), maxLines = maxLines, lineHeight = sp(fitSize * 1.15f), fontFamily = font, textAlign = align
             )
         }
     }
@@ -713,7 +713,9 @@ internal fun pocketClassicKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boo
     val tools = if (toolbar) pocketTools(c, ribbon = false) else emptyList()
     val rows = listOf(
         listOf(CARD to 132f), listOf(ACH to 86f, CAT to 178f), listOf(ALL to 132f),
-        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f },
+        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f }
+            // QA: (C5) toolbar hidden: the second screen's "Dashboard" chip (TwinSecondScreen, bottom right) takes the tools' row.
+            .ifEmpty { if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) listOf(PocketSpot.DASH to 236f) else emptyList() },
         if (pocketStripOn()) pocketStripSpots(c) else emptyList()
     ).filter { it.isNotEmpty() }
     fun dirKey(d: Int): Boolean {

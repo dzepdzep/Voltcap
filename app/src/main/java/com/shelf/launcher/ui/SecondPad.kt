@@ -75,7 +75,8 @@ internal object SecondPad {
      * Update 200: [rect] is snapshot state so the gliding ring (read in its draw phase) follows its control while a list
      * scrolls or a popup scales in, and [plain] marks a control that shows it's lit in its own style (no ring over it).
      */
-    private class Target(val id: String, rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null, var layer: Int = 0, var plain: Boolean = false) {
+    // QA: (C7) [menu]: what X does on the control (its long-press menu), or null.
+    private class Target(val id: String, rect: Rect, var press: () -> Unit, var order: Long, var move: ((Int) -> Boolean)? = null, var layer: Int = 0, var plain: Boolean = false, var menu: (() -> Unit)? = null) {
         var rect by mutableStateOf(rect)
     }
 
@@ -90,10 +91,10 @@ internal object SecondPad {
     private var counter = 0L
     private val keysDown = HashSet<Int>()
 
-    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null, layer: Int = 0, plain: Boolean = false) {
+    fun register(id: String, rect: Rect, press: () -> Unit, move: ((Int) -> Boolean)? = null, layer: Int = 0, plain: Boolean = false, menu: (() -> Unit)? = null) {
         synchronized(targets) {
             val t = targets[id]
-            if (t == null) targets[id] = Target(id, rect, press, counter++, move, layer, plain) else { t.rect = rect; t.press = press; t.move = move; t.layer = layer; t.plain = plain }
+            if (t == null) targets[id] = Target(id, rect, press, counter++, move, layer, plain, menu) else { t.rect = rect; t.press = press; t.move = move; t.layer = layer; t.plain = plain; t.menu = menu }
         }
         if (layer > topLayer) topLayer = layer // (Update 200)
     }
@@ -117,6 +118,9 @@ internal object SecondPad {
 
     /** Update 200: control [id] draws its own lit style (padTargetPlain), so the gliding ring stays off it. */
     internal fun isPlain(id: String?): Boolean = id != null && synchronized(targets) { targets[id] }?.plain == true
+
+    /** QA: (C7) control [id] has a long-press menu (X opens it). */
+    internal fun hasMenu(id: String?): Boolean = id != null && synchronized(targets) { targets[id] }?.menu != null
 
     fun unregister(id: String) {
         val top = synchronized(targets) { targets.remove(id); targets.values.maxOfOrNull { it.layer } ?: 0 }
@@ -195,6 +199,18 @@ internal object SecondPad {
                 if (up) { leave(); sound(UiSound.BACK) }
                 true
             }
+            // QA: (C7) X on a control with a long-press menu (folder, dock app) opens it; elsewhere X goes back up as before.
+            Key.ButtonX -> {
+                val menu = synchronized(targets) { targets[focused] }?.menu
+                if (menu == null) { if (down) leave(); false }
+                else {
+                    if (down) {
+                        keysDown += code // (its key-up is swallowed at the top)
+                        if (event.nativeKeyEvent.repeatCount == 0) { sound(UiSound.OPEN); runCatching { menu() } }
+                    }
+                    true
+                }
+            }
             else -> {
                 // Any other button: back to the main screen, where it does its usual job.
                 if (down) leave()
@@ -238,13 +254,16 @@ internal object SecondPad {
  * Update 177: a control on the second screen the controller can reach ([SecondPad]): [id] unique on the screen, [onPress]
  * what A does (the same as a tap). Lit with an accent ring while the controller is on it, and scrolled into view.
  */
-internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, onPress: () -> Unit): Modifier = composed {
+internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, onMenu: (() -> Unit)? = null, onPress: () -> Unit): Modifier = composed {
     // Only on the second screen (the same piece can be drawn on the main screen, where the D-pad has its own focus).
     // (No early return: the same steps run every time.)
     val here = LocalOnSecondScreen.current
     val press by rememberUpdatedState(onPress)
     val move by rememberUpdatedState(onMove)
     val hasMove = onMove != null
+    // QA: (C7) X = the control's long-press menu.
+    val menu by rememberUpdatedState(onMenu)
+    val hasMenu = onMenu != null
     // Update 200: derived, so a move recomposes only the two controls whose lit state changed (not every target).
     val lit by remember(id, here) { derivedStateOf { here && SecondPad.active && SecondPad.focused == id } }
     val layer = LocalPadLayer.current
@@ -257,7 +276,7 @@ internal fun Modifier.padTarget(id: String, onMove: ((Int) -> Boolean)? = null, 
     // from the control that was lit to this one (the old per-control border jumped from one to the next).
     if (!here) this else this
         .bringIntoViewRequester(bring)
-        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null, layer) }
+        .onGloballyPositioned { SecondPad.register(id, it.boundsInWindow(), { press() }, if (hasMove) { d -> move?.invoke(d) == true } else null, layer, menu = if (hasMenu) { { menu?.invoke() } } else null) }
 }
 
 /** Update 195: which layer a second-screen control is on (a popup over the page is 1): only the top one is reachable. */
@@ -277,7 +296,9 @@ internal fun rememberPadId(prefix: String): String = remember { prefix + "-" + (
 internal fun SecondPadHint() {
     if (SecondPad.active) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         androidx.compose.material3.Text(
-            "Controller here · B or ▲ at the top: back up",
+            // QA: (C7) "X: menu" while the lit control has one.
+            if (SecondPad.hasMenu(SecondPad.focused)) "Controller here · X: menu · B or ▲ at the top: back up"
+            else "Controller here · B or ▲ at the top: back up",
             color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier

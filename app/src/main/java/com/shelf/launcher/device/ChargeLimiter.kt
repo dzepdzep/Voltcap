@@ -226,6 +226,10 @@ object ChargeLimiter {
 
     private fun ownSwitch(context: Context): Boolean = prefs(context).getBoolean(KEY_ON, false)
 
+    private fun isRetroid(): Boolean = BuildFingerprint.current().let {
+        it.model.contains("Retroid", true) || it.manufacturer.equals("Moorechip", true) || it.brand.contains("Retroid", true)
+    }
+
     private fun isAyn(): Boolean = BuildFingerprint.current().let {
         it.manufacturer.equals("AYN", true) || it.brand.equals("AYN", true)
     }
@@ -443,9 +447,11 @@ object ChargeLimiter {
         val restrictChg = RESTRICT_CHG
         val restrictCur = RESTRICT_CUR
         if (read(restrictCur)?.trim()?.toIntOrNull() != null) {
-            // Same values AYN's own charge bypass writes.
+            // Same values AYN's own charge bypass writes. (RP Classic QA, 27 Oct 2026: on the Retroid Pocket Classic's driver
+            // restrict_cur = 1000 still let 180-310 mA in at 91 % with restrict_chg = 1 — measured; 0 stops it: the battery
+            // drew -250..-540 mA from the charger's side within seconds, read back 0. So the Retroid stops at 0.)
             candidates += ChargeSwitch(restrictChg, Kind.STOP_FLAG, "1", "0",
-                beforeStop = listOf(restrictCur to "1000"), afterResume = listOf(restrictCur to "1000000"))
+                beforeStop = listOf(restrictCur to (if (isRetroid()) "0" else "1000")), afterResume = listOf(restrictCur to "1000000"))
         } else {
             candidates += ChargeSwitch(restrictChg, Kind.STOP_FLAG, "1", "0")
         }

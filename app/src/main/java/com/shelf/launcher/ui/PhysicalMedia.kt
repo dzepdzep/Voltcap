@@ -197,6 +197,10 @@ internal fun artForGame(
     /** Update 212: the game's key, for an Android game's own Disc / Cartridge choice (AndroidMedia.kt). */
     gameKey: String? = null
 ): com.shelf.launcher.data.CardArtType {
+    // Pass 4: the console's own medium (Mix › Customize consoles) — by the game's own platform, also in mixed lists
+    // unless those draw every game one way ("All covers"…).
+    if (!mixed || Features.mixedArt.state.value == MixedArt.BASIC || Features.mixedArt.state.value == MixedArt.AS_CHOSEN)
+        MixConsoles.artFor(type, platform)?.let { return it }
     if (mixed) mixedArtFor(type, platform, hidden)?.let { return it }
     return artForGameOwn(type, platform, hidden, mixed, gameKey)
 }
@@ -567,18 +571,25 @@ internal val mediaShellsOn: Boolean get() = Features.mediaShells.state.value
  * while the game has no scan of its own yet ([typed] null: not scraped, or ScreenScraper not reachable). It used to
  * fall back to the cover, so "Real discs" showed no discs at all until everything was scraped.
  */
-internal fun drawnMediaWanted(type: com.shelf.launcher.data.CardArtType, typed: String?): Boolean =
+internal fun drawnMediaWanted(type: com.shelf.launcher.data.CardArtType, typed: String?, platform: String? = null): Boolean =
     // (Update 200: the 3D cartridges looks always drew their pieces. Update 202: the 3D finish is every cartridge look now,
     // so "The game's own photo" (Features.mediaShells off) decides there too: its own photo when found, else the shell.)
-    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null)
+    type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && (mediaShellsOn || typed == null || discInItsCase(platform))
+
+/**
+ * Pass 5 (D46): a disc game set to show its case with the disc half out (Disc games › "In its case", or the console's
+ * choice in Mix › Customize consoles) is drawn that way even when it has its own disc photo — the photo becomes the disc
+ * that sticks out of the case (it used to win and the game stood as a bare disc).
+ */
+internal fun discInItsCase(platform: String?): Boolean = platform != null && discCaseOn(MediaTemplates.of(platform), platform)
 
 /**
  * Update 129: with "Real discs", the game's own cartridge / disc scan ([typed]) a Cartridges & discs card shows — it
  * stands free like the drawn ones (it used to sit in a dark card in the Voltcap row and the other rows). Null when the
  * drawn one shows.
  */
-internal fun realScanOf(type: com.shelf.launcher.data.CardArtType, typed: String?): String? =
-    typed?.takeIf { type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !mediaShellsOn }
+internal fun realScanOf(type: com.shelf.launcher.data.CardArtType, typed: String?, platform: String? = null): String? =
+    typed?.takeIf { type == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC && !mediaShellsOn && !discInItsCase(platform) }
 
 /** Update 129: [platform]'s game is round (a disc or UMD), for its own scan's picture. */
 // (Update 207: not a UMD — its photo is the UMD in its shell, which isn't round; it was cut to a circle and spun as a disc.)
@@ -676,7 +687,7 @@ internal fun PhysicalMedia(
     }
     val tpl = MediaTemplates.of(platform)
     // "Disc in its case": the case with the disc half out of it, spinning (disc games only).
-    if (tpl != null && discCaseOn(tpl) && !noCase) {
+    if (tpl != null && discCaseOn(tpl, platform) && !noCase) {
         val front = caseCover ?: label.takeIf { !labelIsScan }
         DiscInCase(tpl, boxFront(tpl.box!!, front, null).first, false, label ?: caseCover, modifier.followTurn(), platform = platform)
         return
@@ -737,7 +748,7 @@ internal fun PhysicalMedia(
                     if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = if (labelIsScan) ContentScale.FillBounds else if (shell == MediaShell.UMD) ContentScale.Crop else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157; 206: stretched to the label window)
                 }
             }
-            Image(painterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            Image(com.shelf.launcher.ui.cachedPainterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         }
     }
 }
@@ -934,21 +945,22 @@ internal fun casePeek(type: Art, platform: String?): Float {
     disc3dPeek(p)?.let { return it }
     // (Update 151: no 3D case models in the plain case looks any more — every console's case is flat there, see CaseArt.)
     val shell = MediaShell.of(p)
-    if (Features.caseWithMedia.state.value && shell != null) {
+    if (MixConsoles.caseWithMedia(platform) && shell != null) {
         val round = shell.disc || shell == MediaShell.UMD
         return (if (round) 0.6f else 0.5f) * (if (round) 1f else shell.aspect) * 0.62f
     }
     val tpl = MediaTemplates.of(p) ?: return 0f
     val box = tpl.box ?: return 0f
-    if (!discCaseOn(tpl)) return 0f
+    if (!discCaseOn(tpl, p)) return 0f
     val cov = MediaCovers.used(p)
     val scan = Features.originalCases.state.value
     val aspect = if (scan) cov?.frontAspect ?: box.aspect else if (p == "PS1") cov?.frontAspect ?: box.aspect else box.aspect
     return discFrac(p, aspect, box, scan) * DISC_OUT
 }
 
-internal fun discCaseOn(tpl: MediaTpl?): Boolean =
-    tpl != null && tpl.disc != null && tpl.box != null && Features.discCase.state.value
+internal fun discCaseOn(tpl: MediaTpl?, platform: String? = null): Boolean =
+    // (Pass 4: a console's own choice in Mix › Customize consoles, MixConsoles.)
+    tpl != null && tpl.disc != null && tpl.box != null && (if (platform != null) MixConsoles.discCase(platform) else Features.discCase.state.value)
 
 /**
  * A disc game as a case with its disc half out of it, spinning: the game's box (its cover in the system's template, with

@@ -181,6 +181,7 @@ private fun PackDetailDialog(pack: CustomPack, onDismiss: () -> Unit) {
     val off = CustomPacks.isOff(pack.id)
     // Update 144: the test build runs off the main thread (it used to hitch the D-pad on the first open).
     // null = still checking, "" = builds fine, else the reason it doesn't.
+    // qa-ok: STALE-PRODUCE (a build status text, re-checked per pack; a stale line for a frame is harmless)
     val buildState by androidx.compose.runtime.produceState<String?>(if (pack.report.ok) null else "", pack.id, pack.text) {
         value = if (pack.report.ok) withContext(Dispatchers.Default) { CustomPacks.compileProblem(pack).orEmpty() } else ""
     }

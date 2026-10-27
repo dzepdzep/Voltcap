@@ -331,7 +331,7 @@ private fun RecapAppsDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val keys by produceState<List<YearRecap.GameTime>?>(null, period) {
+    val keys by produceKeyed<List<YearRecap.GameTime>?>(null, period, period) {
         value = withContext(Dispatchers.IO) { YearRecap.keysIn(context, period) }
     }
     var hidden by remember { mutableStateOf(YearRecap.hiddenKeys(context)) }

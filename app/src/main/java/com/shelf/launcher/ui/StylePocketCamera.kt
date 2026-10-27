@@ -340,7 +340,7 @@ private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFa
     val time = stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase()
     val fav = g.stableKey in c.state.favorites
     if (stacked) {
-        Text(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(6f), lineHeight = fs(7.5f), maxLines = 3, overflow = TextOverflow.Ellipsis)
+        FullText(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(6f), lineHeight = fs(7.5f), maxLines = 3)
         Spacer(Modifier.height(u * 2))
         Box(Modifier.fillMaxWidth().height(u).background(c0))
         Spacer(Modifier.height(u * 3))
@@ -357,7 +357,7 @@ private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFa
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             PixelIcon(PX_CLOCK, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
-            Text(time, color = c0, fontFamily = font, fontSize = fs(5f), lineHeight = fs(6.5f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FullText(time, color = c0, fontFamily = font, fontSize = fs(5f), lineHeight = fs(6.5f), maxLines = 2)
         }
         if (fav) {
             Spacer(Modifier.height(u * 2))
@@ -368,8 +368,8 @@ private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFa
         }
         return
     }
-    Text(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-    Text(listOfNotNull(year, console).joinToString("  "), color = c1, fontFamily = font, fontSize = fs(5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    FullText(titles.display(g.name).uppercase(), color = c0, fontFamily = font, fontSize = fs(7f), maxLines = 1)
+    FullText(listOfNotNull(year, console).joinToString("  "), color = c1, fontFamily = font, fontSize = fs(5f), maxLines = 1)
     Spacer(Modifier.height(u * 2))
     Row(verticalAlignment = Alignment.CenterVertically) {
         c.progress(g)?.let { (e, t) ->
@@ -377,7 +377,7 @@ private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFa
             Text("$e/$t", color = c0, fontFamily = font, fontSize = fs(5f)); Spacer(Modifier.width(u * 5))
         }
         PixelIcon(PX_CLOCK, u * 0.9f, c0); Spacer(Modifier.width(u * 2))
-        Text(time, color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        FullText(time, color = c0, fontFamily = font, fontSize = fs(5f), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
         if (fav) { Spacer(Modifier.width(u * 5)); PixelIcon(PX_STAR, u * 0.9f, c0) }
     }
 }

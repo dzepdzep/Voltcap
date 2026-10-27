@@ -270,7 +270,8 @@ internal fun StyleMagazine(c: StyleCtx, modifier: Modifier = Modifier) {
         // the turn's effect started — the turn still at its end and the old page unknown, so the new spread showed whole for
         // a frame. A focus that moved on and isn't turning yet is the turn's first frame now.)
         val pending = prevFocus[0] != c.focus && !reduced
-        val t = if (pending) 0f else turn.value
+        val tv = turn.value // (read always — LAYER-BRANCH)
+        val t = if (pending) 0f else tv
         val old = c.games.getOrNull(if (pending) prevFocus[0] else from.intValue) ?: g
         val forward = MagNav.dir >= 0
         val turning = t < 1f && old.stableKey != g.stableKey
@@ -328,8 +329,8 @@ private fun MagTurnPage(modifier: Modifier, origin: TransformOrigin, angle: Floa
 /** The kicker over a headline: a coloured block of capitals. */
 @Composable
 private fun MagKicker(text: String, st: MagStyle, compact: Boolean) {
-    Text(text.uppercase(), color = Color.White, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp,
-        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.background(st.accent).padding(horizontal = 6.dp, vertical = 2.dp))
+    FullText(text.uppercase(), color = Color.White, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp,
+        maxLines = 1, modifier = Modifier.background(st.accent).padding(horizontal = 6.dp, vertical = 2.dp))
 }
 
 /** The left page: the game's big art, its headline and kicker, a product shot of the game in your look. */
@@ -346,8 +347,8 @@ private fun MagLeftPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, mo
             // (Update 346: "Feature", not "Review" — there's no review of ours behind it.)
             MagKicker(if (c.games.indexOf(g) == 0) "Cover story" else "Feature", st, compact)
             Spacer(Modifier.width(6.dp))
-            Text((if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)).uppercase(), color = Color.White, fontFamily = st.head,
-                fontWeight = FontWeight.Bold, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            FullText((if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)).uppercase(), color = Color.White, fontFamily = st.head,
+                fontWeight = FontWeight.Bold, fontSize = if (compact) 9.sp else 11.sp, letterSpacing = 1.sp, maxLines = 1)
         }
         // The product shot: the game in your game look, a little tilted, bottom right.
         if (Features.mgShot.state.value) Box(Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = if (compact) 64.dp else 86.dp)
@@ -363,11 +364,11 @@ private fun MagLeftPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, mo
             val name = titles.display(g.name).uppercase()
             val big = if (compact) 22.sp else 32.sp
             val hs = if (name.length > 34) big * 0.72f else if (name.length > 22) big * 0.85f else big
-            Text(
-                name, color = Color.White, fontFamily = st.head, fontWeight = st.headWeight,
-                fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal, fontSize = hs,
-                lineHeight = hs * 1.04f, maxLines = 3, overflow = TextOverflow.Ellipsis,
-                style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.6f), Offset(2f, 2f), 4f))
+            FullText(
+                name, color = Color.White, fontFamily = st.head, fontWeight = st.headWeight, fontSize = hs,
+                lineHeight = hs * 1.04f, maxLines = 3,
+                style = androidx.compose.ui.text.TextStyle(fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.6f), Offset(2f, 2f), 4f))
             )
             Box(Modifier.padding(top = 4.dp).width(60.dp).height(4.dp).background(st.accent2))
         }
@@ -382,11 +383,11 @@ private fun MagRightPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, m
     val shots = c.state.screenshots[g.stableKey].orEmpty()
     val idx = c.games.indexOf(g).coerceAtLeast(0)
     Column(modifier.clipToBounds().background(st.paper).padding(start = 18.dp, end = 14.dp, top = 12.dp, bottom = 8.dp)) {
-        Text(titles.display(g.name), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 15.sp else 20.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal)
-        Text(
+        FullText(titles.display(g.name), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 15.sp else 20.sp, maxLines = 2,
+            style = androidx.compose.ui.text.TextStyle(fontStyle = if (st.italicHead) FontStyle.Italic else FontStyle.Normal))
+        FullText(
             listOfNotNull(meta?.developer, meta?.releaseYear?.toString(), meta?.genres?.firstOrNull()).joinToString("  ·  ").ifEmpty { titles.console(g.platform) },
-            color = st.muted, fontFamily = st.body, fontSize = if (compact) 10.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+            color = st.muted, fontFamily = st.body, fontSize = if (compact) 10.sp else 11.sp, maxLines = 1
         )
         Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(st.ink))
         Row(Modifier.weight(1f)) {
@@ -433,8 +434,8 @@ private fun MagRightPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, m
         }
         // The running foot.
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(st.masthead + "  ·  " + c.categoryLabel.uppercase(), color = st.muted, fontFamily = st.head, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            FullText(st.masthead + "  ·  " + c.categoryLabel.uppercase(), color = st.muted, fontFamily = st.head, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+                maxLines = 1, modifier = Modifier.weight(1f))
             Text("${idx * 2 + 3}", color = st.ink, fontFamily = st.head, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
@@ -473,9 +474,9 @@ private fun MagVerdict(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean) {
         }
         Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            FullText(
                 magScoreLine(score != null, c.playtime(g)?.takeIf { it > 0 } != null),
-                color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+                color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 2
             )
         }
     }
@@ -538,7 +539,7 @@ private fun MagStats(c: StyleCtx, g: Game, st: MagStyle) {
             // "Played  Never played" was cut to "Playe".)
             androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(l, color = st.muted, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 1, softWrap = false, modifier = Modifier.padding(end = 6.dp))
-                Text(v, color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(v, color = st.ink, fontFamily = st.body, fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
         line("Played", stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
@@ -577,8 +578,8 @@ private fun MagContents(c: StyleCtx, st: MagStyle, modifier: Modifier, select: (
                             .pointerInput(i) { detectTapGestures { MagNav.contents = false; if (i != c.focus) { MagNav.dir = if (i > c.focus) 1 else -1; select(i) } } }
                             .padding(vertical = 3.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("${i * 2 + 3}".padStart(3, ' '), color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 15.sp, modifier = Modifier.width(38.dp))
-                            Text(titles.display(c.games[i].name), color = st.ink, fontFamily = st.body, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            FullText(titles.display(c.games[i].name), color = st.ink, fontFamily = st.body, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp,
+                                maxLines = 1)
                         }
                     }
                 }

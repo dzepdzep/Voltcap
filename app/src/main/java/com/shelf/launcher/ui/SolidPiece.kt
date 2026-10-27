@@ -268,6 +268,33 @@ internal object CustomPieceTones {
         return packs[f.path]?.takeIf { it != 0 }?.let { Color(it) }
     }
 
+    // (QA pass 3, D25: read off the picture only once EVER, not once per start — the tones are kept in
+    // files/piece_tones.txt (path, size, date → colour). The first frame of a cartridge from your pack used to decode
+    // its picture on the main thread, ~50 ms, every time Voltcap had started fresh.)
+    @Volatile private var store: java.io.File? = null
+
+    /** Once at start: the tones read in earlier runs come back (on a background thread), for pictures unchanged since. */
+    fun attach(context: android.content.Context) {
+        if (store != null) return
+        val f = java.io.File(context.filesDir, "piece_tones.txt"); store = f
+        Thread({
+            runCatching {
+                if (!f.exists()) return@runCatching
+                f.forEachLine { l ->
+                    val p = l.split('\t'); if (p.size != 4) return@forEachLine
+                    val pic = java.io.File(p[0])
+                    if (pic.length() == p[1].toLongOrNull() && pic.lastModified() == p[2].toLongOrNull()) p[3].toIntOrNull()?.let { packs.putIfAbsent(p[0], it) }
+                }
+            }
+        }, "voltcap-piece-tones").start()
+    }
+
+    private fun keepTone(f: java.io.File, argb: Int) {
+        if (packs.size < 512) packs[f.path] = argb
+        val s = store ?: return
+        runCatching { s.appendText("${f.path}\t${f.length()}\t${f.lastModified()}\t$argb\n") }
+    }
+
     /** Update 308: the plastic of the pack picture [f] (read at 1/8 size once, then kept); null when none can be read. */
     fun toneOfFile(f: java.io.File): Color? {
         packs[f.path]?.let { c -> return if (c != 0) Color(c) else null }
@@ -278,7 +305,7 @@ internal object CustomPieceTones {
             }.getOrNull() ?: return null
             val t = runCatching { pictureTone(b) }.getOrNull()
             b.recycle()
-            if (packs.size < 512) packs[f.path] = t?.toArgb() ?: 0
+            keepTone(f, t?.toArgb() ?: 0)
             return t
         }
     }
@@ -294,7 +321,7 @@ internal object CustomPieceTones {
             }.getOrNull() ?: return null
             val t = runCatching { pictureTone(b) }.getOrNull()
             b.recycle()
-            if (packs.size < 512) packs[f.path] = t?.toArgb() ?: 0
+            keepTone(f, t?.toArgb() ?: 0)
             return t
         }
     }

@@ -1,0 +1,964 @@
+{
+ "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete \u2014 mark it.",
+ "defects": [
+  {
+   "id": "D1",
+   "title": "New category's row drawn in place for a frame on L2/R2, then jumps aside and slides in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 run r1 (frames.py transient, Thor 120 Hz)",
+   "evidence": [
+    "qa_runs/r1/nav120_frames/ev_00438_transient.png",
+    "qa_runs/r1/nav120_frames/ev_00698_transient.png",
+    "qa_runs/r1/base_nav_frames/ev_00702_transient.png"
+   ],
+   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) \u2014 those frames drew the new row at rest, full strength.",
+   "files": [
+    "ui/HomeExtras.kt"
+   ],
+   "fix": "graphicsLayer draws the slide's start position while the effect hasn't caught up with the tick (as StyleCrossMenu update 166).",
+   "check": "home_nav scenario: no transient at the R2/L2 frames; static rule SNAP-ANIMATE",
+   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 \u2014 no full-strength row; one empty frame (D17), then the slide"
+  },
+  {
+   "id": "D2",
+   "title": "Game info/header shown fully for one frame on every focus move, then hidden and risen in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "visual review agent (V1); consistent with run r1 ev_00572",
+   "root_cause": "Motion.riseOnChange: p stayed 1 in the key-change frame; snapTo(0) ran a frame later.",
+   "files": [
+    "ui/Motion.kt"
+   ],
+   "fix": "draw p=0 while seen != key",
+   "check": "home_nav header region; static rule"
+  },
+  {
+   "id": "D3",
+   "title": "3D cases / cartridges / spines wear the previous game's picture for a frame (rememberSoftBitmap / rememberSoftLoad)",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "visual review agent (V4)",
+   "files": [
+    "ui/RealMedia.kt"
+   ],
+   "fix": "value tagged with its model; another model's bitmap is never returned"
+  },
+  {
+   "id": "D4",
+   "title": "Endless rows keyed by place: a category change reused the old games' slot state (old covers, old shapes resizing)",
+   "rule": "SLOT-KEY",
+   "severity": "high",
+   "status": "fixed",
+   "found": "visual review agent (V5)",
+   "files": [
+    "ui/Carousel.kt",
+    "ui/GameDock.kt"
+   ],
+   "fix": "key = place + game key (scrolling keeps keys; a new list gets fresh slots)"
+  },
+  {
+   "id": "D5",
+   "title": "Cartridge sticker shows the game name for a frame before its cover",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "visual review agent (V6); matches Toni's 'Switch cartridges first show text quickly'",
+   "files": [
+    "ui/CartShells.kt"
+   ]
+  },
+  {
+   "id": "D6",
+   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals\u2026)",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "static_checks.py",
+   "files": [
+    "ui/ProduceKeyed.kt (new)",
+    "26 call sites"
+   ],
+   "fix": "produceKeyed(initial, identity, keys\u2026)"
+  },
+  {
+   "id": "D7",
+   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) \u2026 })",
+   "rule": "STALE-FOREVER",
+   "severity": "medium",
+   "status": "fixed",
+   "files": [
+    "ui/SettingsDialog.kt:3196, 3294"
+   ]
+  },
+  {
+   "id": "D8",
+   "title": "Focus pulse rebuilt the whole focused card ~20\u00d7/s while idle on Home",
+   "rule": "PULSE-COMPOSE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "perf review agent (P1); idle frame count 101 frames / 5 s in run r1",
+   "files": [
+    "ui/PowerSaver.kt",
+    "ui/FocusEffects.kt",
+    "ui/GameCard.kt"
+   ],
+   "fix": "pulse as State read only in draw (softGlow lambda, pulseBorder)",
+   "remaining": "GridHome, TvRoomHome, StyleSideMenu, StyleSpotlight, TileHome still read it in composition (15 sites, static rule PULSE-COMPOSE)"
+  },
+  {
+   "id": "D9",
+   "title": "Sliders: \u25c0 \u25b6 step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "controller review agent (C2, C9)",
+   "files": [
+    "ui/SettingsSlider.kt"
+   ]
+  },
+  {
+   "id": "D10",
+   "title": "Cartridge shell / DS case pickers missing from the 'a dialog is open' list (update prompt could stack over the DS case picker)",
+   "rule": "CONTROLLER",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "ui/LauncherScreen.kt"
+   ]
+  },
+  {
+   "id": "D11",
+   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) \u2014 cause found: the theme colour glide (D22)",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "verified",
+   "found": "QaTrace focus SideEffect: 409 runs in 8 s of navigation (run fix_nav); perf agent P2",
+   "note": "see D22 for numbers"
+  },
+  {
+   "id": "D12",
+   "title": "Render-thread spikes 36\u201348 ms (CommandIssue) right after focus moves \u2014 likely software bitmaps uploaded at draw",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "QaTrace slow-frame log, run fix_nav",
+   "next": "Perfetto trace to confirm uploads vs shader compile; perf agent P4 (trim transform keeps covers software)",
+   "note": "pass 2 atrace: the render-thread spikes right after install were shader compiles (shader_compile slices); after warm-up the render thread showed none over 20 ms in T2"
+  },
+  {
+   "id": "D13",
+   "title": "Composition spikes 25\u201354 ms (ANIMATION phase) during navigation / category switch",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "QaTrace slow-frame log",
+   "next": "trace with vcTrace sections; perf agent P2/P7",
+   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) \u2192 D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
+  },
+  {
+   "id": "D14",
+   "title": "Category caption kept the old category's name ~16 frames after the row changed (CategoryNameSwap AnimatedContent fade)",
+   "rule": "STALE-ANIM",
+   "severity": "medium",
+   "status": "verified",
+   "found": "qa_runs/r2/B_nav frames 712-720",
+   "files": [
+    "ui/HomeChrome.kt"
+   ],
+   "fix": "the outgoing name is hidden (draw-time alpha) in the switch frame; the new one keeps its fade"
+  },
+  {
+   "id": "D15",
+   "title": "Game title jumps when its logo loads (0-width slot) and again when the logo changes size",
+   "rule": "LAYOUT-POP",
+   "severity": "medium",
+   "status": "verified",
+   "found": "qa_runs/r2/B_nav 720\u2192730\u2192745",
+   "files": [
+    "ui/GameCard.kt",
+    "ui/GameDock.kt"
+   ],
+   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos \u00b12 prefetched"
+  },
+  {
+   "id": "D16",
+   "title": "(not a defect) repeated header/cover shake when pressing \u25b6 on the last game",
+   "status": "wontfix",
+   "note": "EdgeBump \u2014 intended; scenarios now start from All, first game"
+  },
+  {
+   "id": "D17",
+   "title": "One empty frame of the row before the category slide starts",
+   "severity": "low",
+   "status": "verified",
+   "found": "qa_runs/r2/C_nav ev_00518, ev_00764",
+   "fix": "GameDock.rowPosNow: while the row's list is not the one the slide started from (or the row is >4 places from its target) the cards are placed at the target, not at the old row position",
+   "files": [
+    "ui/GameDock.kt"
+   ],
+   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 \u2014 no empty frame"
+  },
+  {
+   "id": "D18",
+   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames \u2014 explained",
+   "severity": "medium",
+   "status": "wontfix",
+   "found": "suite A/B idlecalm",
+   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings \u203a Device \u203a Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
+  },
+  {
+   "id": "D19",
+   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts \u2715 badge, Edit Home hint",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "controller review C3-C7, C12, C15",
+   "files": [
+    "ui/NotificationsPanel.kt",
+    "ui/LauncherScreen.kt",
+    "ui/TwinShowcase.kt",
+    "ui/TwinScreens.kt",
+    "ui/PocketClassic.kt",
+    "ui/SecondScreenTools.kt",
+    "ui/SecondPad.kt",
+    "ui/SecondGamesPage.kt",
+    "ui/SecondScreenHome.kt",
+    "ui/SecondShowcase.kt",
+    "ui/ShortcutsPanel.kt",
+    "ui/SettingsDialog.kt"
+   ],
+   "check": "not yet run on device \u2014 key sequences in audit/2026-10-27/controller.md"
+  },
+  {
+   "id": "D20",
+   "title": "Tile home 'Middle' placement: the tiles sat below the screen's middle (centre at 570 px of 1080)",
+   "rule": "LAYOUT",
+   "severity": "medium",
+   "status": "verified",
+   "found": "Toni (update 350)",
+   "files": [
+    "ui/LauncherScreen.kt",
+    "ui/TileHome.kt"
+   ],
+   "fix": "the tile box reports its middle in root coordinates (onTilesMid); the layout shifts by areaTop + h/2 - rootH/2",
+   "verified": "screenshot after the fix: tiles y 118-242 of 360 (scaled), centre 180 = screen middle"
+  },
+  {
+   "id": "D21",
+   "title": "QA cost: the snapshot churn observer (on whenever the test-hooks file existed) made Voltcap draw ~8 fps",
+   "rule": "QA-COST",
+   "severity": "high",
+   "status": "verified",
+   "found": "Toni: 'very low fps now' (suite D: 41 frames in a nav run, p90 1500 ms)",
+   "files": [
+    "ui/QaTrace.kt",
+    "ui/QaInval.kt",
+    "tools/qa/device/vqa.sh"
+   ],
+   "fix": "churn opt-in only (--ez voltcap_test_churn true); never toString() a state's value; hooks file paused between runs (vqa.sh hooks on|off; suite/selftest switch it)",
+   "verified": "hooks paused: 2040 frames, 6.2 % janky; churn on with the new describe(): no slow frames from the observer (RC runs)"
+  },
+  {
+   "id": "D22",
+   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110\u00d7/s and every game card (~1000 card rebuilds/s) while navigating",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "QaTrace recomposition counters (suite G: GameCard 830-1000/s, Screen 90-115/s); cause proven with the QaFault 'snap_colors' test fault (glide off: Screen 13/s, GameCard 65/s) and QaInval (the invalidating state = the ShelfColors provider)",
+   "files": [
+    "ui/theme/ShelfColors.kt (LocalShelfColorsLive, ShelfTheme.live)",
+    "ui/theme/Theme.kt",
+    "ui/GameCard.kt",
+    "ui/LauncherScreen.kt",
+    "ui/EdgeBump.kt",
+    "ui/StatusLooks.kt",
+    "ui/LivingLibrary.kt",
+    "ui/TileHome.kt",
+    "ui/FocusEffects.kt (softGlowLive, pulseBorderLive, electricFrameLive)"
+   ],
+   "fix": "colours read while drawing through one stable State (ShelfTheme.live) in the hot paths: root background, dim wash, EdgeBump glow, status bar (only layouts that use the accent), card shadow (graphicsLayer), glow, frames, Living Library bars, unlock pill, progress bars, accent icons in their own scope; the no-op mediaFloorGlow argument removed. The glide itself is unchanged.",
+   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 \u2192 8, GameCard 1000 \u2192 48 (+ focused 6), GameDock unchanged 6",
+   "remaining": "static rule THEME-COMPOSE lists 37 more sites (other layouts, dialogs)"
+  },
+  {
+   "id": "D23",
+   "title": "Template pictures (case / cartridge / box frames, masks, spines) decoded again on the main thread for every card that came on screen",
+   "rule": "MAIN-DECODE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "pass 2 atrace T1: decodeBitmap 45 ms inside Compose:recompose",
+   "files": [
+    "ui/ResImages.kt (new)",
+    "ui/CoverCases.kt",
+    "ui/RealMedia.kt",
+    "ui/StyleCardboardBox.kt",
+    "ui/TvRoomHome.kt",
+    "ui/FramesScene.kt"
+   ],
+   "fix": "cachedImageResource(): one decode per app run, LRU-bounded at 64 MB; traced as VC:resDecode",
+   "check": "atrace of a category switch: VC:resDecode only on the first appearance of each template",
+   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) \u2014 fix kept, effect unproven"
+  },
+  {
+   "id": "D25",
+   "title": "One 47-58 ms main-thread decodeBitmap inside a recomposition the first time 'Nintendo 3DS' shows after a cold start",
+   "rule": "MAIN-DECODE",
+   "severity": "low",
+   "status": "fixed",
+   "found": "T3/T4/T5; not imageResource / painterResource (ResImages), PlatformLogos or PackSpines (instrumented: VC:resDecode / VC:logoDecode / VC:spineDecode never fire)",
+   "next": "sampling profile (am profile) around the first 3DS category switch",
+   "root_cause": "second screen: MediaInspectView.secondCasePiece \u2192 CustomPieceTones.of \u2192 CartShells.packColour \u2192 CustomPieceTones.toneOfFile \u2192 BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
+   "files": [
+    "ui/SolidPiece.kt (CustomPieceTones.attach / keepTone)",
+    "MainActivity.kt"
+   ],
+   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date \u2192 colour); restored on a background thread at start",
+   "verified": "coldsample CS2 / CS3 (cold starts, same category switches): 0 main-thread decodes (CS1: 1, 47-58 ms)"
+  },
+  {
+   "id": "D26",
+   "title": "R1 panel: a notification's \u2715 (Dismiss) could not be reached with the D-pad \u2014 it sits inside the notification's own button, \u25b6 went to 'Clear all' instead",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "verified",
+   "found": "controller walk W1/W2 (QaWalk + walkcheck.py: Dismiss NOT REACHED)",
+   "files": [
+    "ui/NotificationsPanel.kt"
+   ],
+   "fix": "\u25b6 on a notification moves to its \u2715, \u25c0 back (focus requesters on the row and the \u2715)",
+   "verified": "walk W5 on the Thor: \u25b6 \u2192 'Dismiss', \u25c0 \u2192 the notification"
+  },
+  {
+   "id": "D27",
+   "title": "The \u2715 close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
+   "rule": "CONTROLLER",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "ui/DialogChrome.kt (CloseButton)"
+   ],
+   "found": "walk W1 / W4"
+  },
+  {
+   "id": "D28",
+   "title": "RomHacks compiled 7 regular expressions for every game on every library refresh, on the main thread (24 ms stall at start)",
+   "rule": "PERF",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "data/RomHacks.kt"
+   ],
+   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < \u2026 LauncherViewModel.recombineGames"
+  },
+  {
+   "id": "D29",
+   "title": "Controller light flashes ran the AYN root-shell binder call on the main thread (60 ms stall)",
+   "rule": "PERF",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "data/ControllerLights.kt (flash on Dispatchers.IO)"
+   ],
+   "found": "QaSampler CS1: BinderProxy.transactNative < RootShell.exec < AynSticks < ControllerLights.flash < LauncherScreen"
+  },
+  {
+   "id": "D30",
+   "title": "Tile home (Middle): the tile row jumped ~15 px for one frame when the name above the tiles changed height (its middle was measured after placing, a frame late)",
+   "rule": "SNAP-LATE-LAYOUT",
+   "severity": "medium",
+   "status": "verified",
+   "found": "layout sweep LA_TILES frames 224\u2192226 (frames.py transient ev_00225)",
+   "files": [
+    "ui/TileHome.kt (TilesMidLine)",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "the tiles' middle is an alignment line read by the Middle placement in the same layout pass (fallback: the measured value as before)",
+   "verified": "layout sweep LD_TILES: 0 transients (LA_TILES: 4, the row jump at 224-226)"
+  },
+  {
+   "id": "D31",
+   "title": "Most layouts with the category name bar re-composed the whole home screen every frame of the colour glide (CategoriesBar read the theme colours in the screen's scope): Screen ~80-110/s in Grid, Cross, TV, Dashboard, Live, Side, Circuit, Hub, Library, Resume, Shelf, Timeline, Consoles, Discs, Crate, Cards, Studio, Twin icons",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "layout sweep (recomp Screen=\u2026), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
+   "files": [
+    "ui/LauncherScreen.kt (ProvideNameColors)"
+   ],
+   "verified": "layout sweep LE vs LA\u2013LD: Grid Screen 91 \u2192 9/s, janky 15.8 \u2192 7.5 %"
+  },
+  {
+   "id": "D32",
+   "title": "Resume & discover: on every \u25c0 \u25b6 the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "layout sweep LB_RESUME: frames.py transients on each move (ev_00207: frames 206 007 / 207 Cookie / 208 007)",
+   "files": [
+    "ui/StyleConsoleHomes.kt (ResumeSpot)"
+   ],
+   "fix": "the change frame is drawn as the move's start (pending = the effect hasn't caught up)",
+   "verified": "LD_RESUME: 1 transient left, and that one is the background clip (LB_RESUME: 10, one per move)"
+  },
+  {
+   "id": "D34",
+   "title": "26 layouts re-composed the whole home screen every frame of the colour glide: the status bar's look (statusLookFor, reading the accent for these layouts' bars) was made in the home screen's own scope",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "QaInval themeread stacks on 9 layouts (lchurn LC3): ShelfTheme.getAccent < statusLookFor < LauncherScreenContent$HomeStatusBar (a local composable: no scope of its own)",
+   "files": [
+    "ui/HomeChrome.kt (StatusBar lookLayout)",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "the look is made inside StatusBar (its own recompose scope)",
+   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s \u2192 9-14/s in every one; janky % e.g. Cross 12.2 \u2192 3.4, Live 4.8 \u2192 1.3, Cards 9.7 \u2192 3.7, Green Core 17.3 \u2192 5.7, Crate 8.1 \u2192 2.9, Side 8.4 \u2192 3.4 (full table: REPORT.md pass 3)"
+  },
+  {
+   "id": "D33",
+   "title": "Layout Studio: a part's entrance ('move') drew the new game's part fully for one frame, then it vanished and came in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "layout sweep LC_CUSTOM ev_00212 (title of the next game at full strength, then gone, then fading in)",
+   "files": [
+    "ui/StyleCustom.kt (sceneEnterOn)"
+   ]
+  },
+  {
+   "id": "D35",
+   "title": "Layout Studio: on L2 / R2 the row spun through every game between the old category's place and the new one's (~10 frames of other games)",
+   "rule": "CATEGORY-SPIN",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "LE_CUSTOM ev_01191-01202 (Continue playing after L2: a different set of games each frame)",
+   "files": [
+    "ui/StyleCustom.kt (SceneGames)"
+   ],
+   "fix": "a new category snaps the row to its own game (draw-time pending as D1); moves inside a category still glide"
+  },
+  {
+   "id": "D36",
+   "title": "Settings \u203a Categories: after \u25b2/\u25bc the focus stayed on the row slot, so the next press moved the neighbouring category",
+   "rule": "FOCUS-FOLLOWS",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-10-27 walk ST3 (Thor): A on \u25bc of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
+   "root_cause": "CategoryOrderCard drew the rows with forEachIndexed and no key(): the chip nodes belong to the slot, not the category, so focus stays put while the categories swap under it.",
+   "files": [
+    "ui/SettingsDialog.kt"
+   ],
+   "fix": "Rows keyed by category; after a move, focus is requested on the same arrow of the moved category (the other arrow when it reaches the top/bottom and the pressed one turns off).",
+   "check": "walk D36: \u25b2 \u25b2 \u25bc \u25bc on one category \u2014 focus y 945\u2192822\u2192699 then 699\u2192822\u2192945 (one row per press, following the category)",
+   "verified": "walk D36 (14:10 build) on the Thor; category order back exactly as saved (snapshot file compared)"
+  },
+  {
+   "id": "D37",
+   "title": "QA tooling: walk snapshot did not cover the category order/hidden list",
+   "rule": "WALK-SAFETY",
+   "severity": "medium",
+   "status": "verified",
+   "found": "walk ST3 pressed A on a \u25bc in Settings \u203a Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
+   "root_cause": "voltcap_test_snapshot only saves Features prefs; CategoryStore lives in its own SharedPreferences.",
+   "files": [
+    "ui/TestHooks.kt"
+   ],
+   "fix": "snapshot save/restore also keeps the 'categories' order + hidden set (voltcap_test_snapshot_categories.txt); the walk restarts Voltcap after restore so it is read again.",
+   "check": "after walk D36 the snapshot file order equals the order shown",
+   "verified": "walk D36"
+  },
+  {
+   "id": "D38",
+   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; \u25b6 off a row's end jumps rows; settings opened on the last-used category",
+   "rule": "TOOL",
+   "severity": "low",
+   "status": "fixed-compiles",
+   "found": "E4: Theme \u203a Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with \u25c0 (no app defect)",
+   "root_cause": "explorePage swept \u25b6 only, and came back with the same number of \u25c0; QaExplore took the first focused category as the list's start.",
+   "files": [
+    "ui/QaExplore.kt"
+   ],
+   "fix": "Row walk \u25c0 and \u25b6 while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
+   "check": "next explorer run E6: Size & text chips reached; categories list starts at Home"
+  },
+  {
+   "id": "D39",
+   "title": "Tile home: round shortcuts moved in Edit Home covered the tiles after the tiles were re-centred",
+   "rule": "LAYOUT",
+   "severity": "medium",
+   "status": "fixed-on-device (data); design note open",
+   "found": "Toni 2026-10-27 ('would it break when I added the rounded shortcuts under the tiles'); preview TILES with shortcuts ROW: bar drawn over the tiles at y=0.42",
+   "root_cause": "A bar moved in Edit Home floats at a saved screen fraction (widget_positions shortcuts=0.5,0.42); it doesn't follow the tiles, so Update 350 / D30 moving the tiles up left it over them.",
+   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) \u2014 the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
+   "check": "tilemid log: group=721 (bar included), screenshot tiles_sc2",
+   "verified": "screens/tiles_sc2.png (Thor, preview TILES)"
+  },
+  {
+   "id": "D40",
+   "title": "Tile home Middle: tiles + round buttons centred as one group (Switch home), tiles alone without buttons",
+   "rule": "LAYOUT",
+   "severity": "request",
+   "status": "verified",
+   "found": "Toni's request with the Switch home screenshot",
+   "files": [
+    "ui/LauncherScreen.kt",
+    "ui/TileHome.kt"
+   ],
+   "fix": "TilesTopLine alignment line; Middle uses (tiles top + group bottom without padding)/2 when the buttons are by the row under the tiles.",
+   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 \u2192 tiles 282\u2013652 + buttons to ~780 (group centre \u2248 531 vs screen 540 minus bottom padding)",
+   "verified": "Thor preview TILES, 14:25 build"
+  },
+  {
+   "id": "D41",
+   "title": "Carousel (all carousel views, e.g. STACKS with Carousel on): every game re-composed every frame of a glide",
+   "rule": "PER-FRAME-COMPOSITION",
+   "severity": "high",
+   "status": "verified",
+   "found": "atrace TS (STACKS): 35\u201346 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) \u2248 1,000/s with no input changed",
+   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this \u2014 checked, CH4 \u2014 so it is specific to this derived state, not derivedStateOf in general).",
+   "files": [
+    "ui/Carousel.kt"
+   ],
+   "fix": "turnedFar is a plain mutableState set from snapshotFlow only when the answer changes (initial value computed synchronously).",
+   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% \u2192 22.7%, p90 42 \u2192 32 ms, p99 85 \u2192 77 ms",
+   "verified": "Thor, runs SB (before) / SA (after), 14:35 build"
+  },
+  {
+   "id": "D42",
+   "title": "Explorer (QA tool): page lost whenever a row walk started on the search field",
+   "rule": "TOOL",
+   "severity": "low",
+   "status": "fixed-compiles",
+   "found": "E6: 9 'row lost at Search settings' \u2014 each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
+   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every \u25c0 along a row counted as leaving the page.",
+   "files": [
+    "ui/QaExplore.kt"
+   ],
+   "fix": "pageLeft from the first row that isn't the search field / Close; no row walk on those two.",
+   "check": "next explorer run: no 'row lost at Search settings'"
+  },
+  {
+   "id": "D43",
+   "title": "Per-category home layouts (feature): a category can keep its own home layout",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified",
+   "files": [
+    "data/CategoryLayouts.kt",
+    "LauncherViewModel.kt",
+    "ui/SettingsDialog.kt",
+    "ui/LauncherScreen.kt",
+    "data/Features.kt",
+    "data/LayoutOnly.kt"
+   ],
+   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings \u203a Categories \u203a Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
+   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 \u2192 Voltcap row, GameCube \u2192 Case stacks, back \u2192 Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
+   "verified": "Thor, preview session (nothing saved), qa_runs/r7/CL"
+  },
+  {
+   "id": "D44",
+   "title": "Ten new category-screen looks + Follow home layout (feature)",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified-visual",
+   "files": [
+    "ui/CategoryLooks.kt",
+    "ui/PlatformBrowser.kt",
+    "ui/PlatformBrowserSettings.kt",
+    "data/Features.kt",
+    "ui/SettingsDialog.kt",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "System Stage, System Blades, Collector's Drawers, Pocket Worlds, Archive 1994, Channel Surf, Generations, Constellation, System Vault, Pocket Dashboard; D-pad per look (row / column / grid / release-year order for Generations, saved order untouched); Follow home layout resolved once as the screen opens.",
+   "check": "looks.sh L1 + hand screenshots; fixes after the first look at them: header overlaps (Blades, Vault), Archive title on paper, Constellation crowding, Drawers opening",
+   "verified": "Thor screenshots qa_runs/r7/L1 (before refinements) and screens/look_*.png; refined build not yet re-shot for every look"
+  },
+  {
+   "id": "D45",
+   "title": "Mix \u203a Customize consoles (feature): each console its own medium",
+   "rule": "FEATURE",
+   "severity": "request",
+   "status": "verified (CASE, COVER, AUTO, MEDIUM)",
+   "files": [
+    "ui/MixConsoles.kt",
+    "ui/PhysicalMedia.kt",
+    "ui/GameLookPicker.kt",
+    "ui/LauncherScreen.kt",
+    "ui/Carousel.kt",
+    "ui/RealMedia.kt",
+    "ui/DiscCase3D.kt",
+    "ui/GameCard.kt",
+    "ui/LaunchThrow.kt",
+    "ui/MediaInspectView.kt",
+    "ui/StyleDiscStation.kt"
+   ],
+   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing \u2014 fixed.",
+   "check": "mixcon.sh MY (GameCube): AUTO / MEDIUM discs, CASE retail boxes, COVER covers",
+   "verified": "Thor, preview session, qa_runs/r7/MY"
+  },
+  {
+   "id": "D47",
+   "title": "Looks: consoles floating above floors and inconsistent sizes",
+   "rule": "art-fit",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "ArtBounds measures the picture's opaque bounds; LookPicture content-fits and stands it on the floor."
+  },
+  {
+   "id": "D48",
+   "title": "Constellation focus panel / Vault reader screen invisible after a move",
+   "rule": "STEP-READ (R12)",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "LookStep.now() reads the Animatable before checking pending."
+  },
+  {
+   "id": "D49",
+   "title": "Pocket Worlds dropped a sliding world / clouds jumped edges",
+   "rule": "WINDOW-BY-GLIDE (R13), WRAP-AFTER-PARALLAX (R14)",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "lookWindow spans selection and glide; base.mod(W)+shift."
+  },
+  {
+   "id": "D50",
+   "title": "System Blades 18.85 % janky",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Face only for |i-sel|<=1, window \u00b13, shadow only on the blade coming forward \u2192 1.14 % (L7)."
+  },
+  {
+   "id": "D51",
+   "title": "Archive: Last played row cut off under a two-line title",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Last played takes the fourth cell of the facts table.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D52",
+   "title": "Generations: handheld lane overlaps the selected system's name",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Axis at 0.46h, handheld objects 1.8:1, lane 24 dp under the line.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D53",
+   "title": "Pocket Worlds: header unreadable on a bright sky",
+   "rule": "LAYOUT",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "72 dp shade under the title row.",
+   "evidence": [
+    "qa_runs/r7/L9.tgz"
+   ]
+  },
+  {
+   "id": "D54",
+   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1\u20136 %)",
+   "rule": "GLIDE-COMPOSE (R17)",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 (looks.sh L8 numbers, code review)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "root_cause": "Drawers: `val o by animateFloatAsState` used for sizes / offsets in composition (and the auto-sized labels re-fitted every frame). Blades / Stage: `val open = 1f - abs(i - pos.value)` at the top of each item. Constellation / Vault: z-order read from the animation in composition.",
+   "fix": "Read in layer / draw lambdas or local funs; the drawer's insides are drawn full size and revealed with a clip (translate with the front); z-orders via derivedStateOf.",
+   "evidence": [
+    "qa_runs/r8 P1: Drawers 2.13 % / 1.61 % (was 9.42 %), Blades 1.73 % / 2.34 %"
+   ]
+  },
+  {
+   "id": "D55",
+   "title": "Pocket Dashboard lower screen: the grid scrolled on every move, so a second tap hit another system",
+   "rule": "TOUCH",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 (tap PlayStation twice on display 4: the second tap picked Sega CD)",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "Scrolls by whole rows only when the system you're on leaves the view.",
+   "evidence": [
+    "qa_runs/r8/T.tar: tap 1 \u2192 PlayStation focused, tap 2 \u2192 PlayStation opened"
+   ]
+  },
+  {
+   "id": "D56",
+   "title": "Light theme (Lobby): Pocket Dashboard's title, buttons and legend white on a light background",
+   "rule": "THEME",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 looksmodes M1 LIGHT",
+   "files": [
+    "ui/CategoryLooks.kt"
+   ],
+   "fix": "The look's ground is the theme background darkened when it is light (lookDarkBackground).",
+   "evidence": [
+    "qa_runs/r8/MX.tar M2_LIGHT_DASHBOARD"
+   ]
+  },
+  {
+   "id": "D57",
+   "title": "Home layouts re-composed their rows on every glide frame (Airy, Circuit, Orbit deck, Panels, Night menu, Blades lists)",
+   "rule": "GLIDE-COMPOSE (R17)",
+   "severity": "med",
+   "status": "verified (Airy); measured (others)",
+   "found": "2026-10-27 pass 5 static_checks GLIDE-COMPOSE",
+   "files": [
+    "ui/StyleAiryHome.kt",
+    "ui/StyleCircuit.kt",
+    "ui/StyleOrbitDeck.kt",
+    "ui/StylePanels.kt",
+    "ui/StyleNightMenu.kt",
+    "ui/StyleBlades.kt"
+   ],
+   "fix": "Visible windows / z-orders as derivedStateOf; positions read in offset {} / graphicsLayer.",
+   "evidence": [
+    "layouts.sh B5/B6 \u2192 A5: AIRY 12.80 \u2192 1.82 % (p99 48 \u2192 21 ms), CIRCUIT 13.55 \u2192 11.84 %, ORBIT 8.33 \u2192 7.85 %, PANELS 6.56 \u2192 5.81 %; NIGHT 6.27 \u2192 7.77 % and BLADES 2.26 \u2192 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
+   ]
+  },
+  {
+   "id": "D58",
+   "title": "QA tooling: a run's preview lasted until Voltcap restarted (layout / look tried stayed; Toni's changes weren't saved)",
+   "rule": "PREVIEW-LEAK (R16)",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 pass 5 code review of TestHooks.previewOnly",
+   "files": [
+    "ui/TestHooks.kt",
+    "ui/LauncherScreen.kt",
+    "LauncherViewModel.kt",
+    "tools/qa/device/*.sh"
+   ],
+   "fix": "`--ez voltcap_test_preview false` ends it (saved appearance reloaded); every preview script ends with it. Voltcap was force-stopped once to clear the open preview (no data touched).",
+   "evidence": [
+    "logcat 'preview ended' after the Customize consoles check"
+   ]
+  },
+  {
+   "id": "D46",
+   "title": "Disc games with a real disc photo never showed 'case with the disc half out'",
+   "rule": "PHYSICAL-MEDIA",
+   "severity": "low",
+   "status": "verified",
+   "found": "pass 4 mixcon",
+   "files": [
+    "ui/PhysicalMedia.kt",
+    "ui/GameCard.kt",
+    "ui/Carousel.kt",
+    "ui/GridHome.kt",
+    "ui/HeroCarousel.kt",
+    "ui/LaunchThrow.kt",
+    "ui/StyleHomes.kt",
+    "ui/TileHome.kt"
+   ],
+   "root_cause": "The game's own disc photo (realScanOf) won before the case template was consulted.",
+   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles \u203a Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
+   "evidence": [
+    "qa_runs/r8/MX.tar MX_GameCube_CASE_MEDIA (cases with their own discs), _MEDIUM (discs), _CASE (boxes)"
+   ]
+  },
+  {
+   "id": "D59",
+   "title": "Start (game options), Y (achievements) and L1 (shortcuts) open with nothing focused; the first D-pad press only puts the focus in",
+   "rule": "CONTROLLER (R6)",
+   "severity": "low",
+   "status": "verified-rp",
+   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first \u25b6 lands on the first control)",
+   "files": [
+    "ui/DialogChrome.kt",
+    "ui/ShortcutsPanel.kt",
+    "ui/GameOptionsDialog.kt",
+    "ui/AchievementListDialog.kt"
+   ],
+   "note": "A generic first-focus in ShelfDialog (focus group / focus target + Enter) didn't take on this Compose version and was reverted. Now each of the three popups asks for focus on its first control (Play, the first shortcut, the filter in use), retried until the popup's window takes the keys.",
+   "verified": "RP Classic 20:51 (walks RPWS / RPWL / RPWY): Start opens on Play, L1 on the first shortcut (Chrome), Y on the filter chip \"All (66)\" once the list has loaded (Close for the first 1.5 s while it loads). Thor still to check."
+  },
+  {
+   "id": "D60",
+   "title": "Thor: an always-on accessibility service makes Compose check the semantics tree every frame (~12 % of the main thread in Case stacks)",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open (finding)",
+   "found": "2026-10-27 pass 5 atrace TR1 (Case stacks, 8 s): checkForSemanticsChanges 399 ms + sendAccessibilitySemanticsStructureChangeEvents 313 ms + getAllUncoveredSemanticsNodes 220 ms on the main thread",
+   "root_cause": "com.odin.gameassistant (ForegroundAppMonitorV4Service, the handheld's own game assistant) is enabled as an accessibility service, so Compose keeps its accessibility tree up to date for every app.",
+   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off \u2014 a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
+  },
+  {
+   "id": "D61",
+   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) \u2014 mirror, 3D cases and building the new list over several frames made no difference",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-10-27 pass 5 runs B7 / A7 / X3 (mirror off) / X4 (3D off): 24.6 / 25.1 / 25.0 / 23.8 %",
+   "note": "Main thread ~8.3 ms per frame at 120 Hz (animation 2.9 ms + traversal 5.4 ms, of which ~3.8 ms waiting for the RenderThread). The progressive build was reverted (no gain)."
+  },
+  {
+   "id": "D62",
+   "title": "Voltcap force-stopped during a QA trace \u2014 by the QA tools themselves",
+   "rule": "ENV",
+   "severity": "info",
+   "status": "tool artefact (closed)",
+   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 \u2014 not one of the QA scripts",
+   "note": "`vqa.sh hooks on|off` restarts Voltcap (force-stop + start). ltrace2.sh switched the hooks off while atrace was still recording. Each restart also brings up 'Who's playing?' on the next start."
+  },
+  {
+   "id": "D24",
+   "title": "Cold start: first frame 830-960 ms; the main thread opens encrypted credential stores behind the prewarm thread",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "open",
+   "found": "traces T3-T5; pass 5 am start -W: 889-963 ms",
+   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) \u2014 both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms \u2192 C1 877-1034 ms, no measurable change) \u2014 reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
+   "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)"
+  },
+  {
+   "id": "D63",
+   "title": "RP Classic: the 80 % charge limit holds restrict_chg=1 / restrict_cur=1000 but the battery still charges (+180..+310 mA at 91 %)",
+   "rule": "DEVICE",
+   "severity": "high",
+   "status": "verified-rp",
+   "found": "RP Classic 2026-10-27 20:30-20:38: charge_log.csv ticks 'charging' with positive current while ChargeLimitService ran; restrict_chg=1 cur=1000 read back. Battery 78 % on 24 Oct -> 94 % on 27 Oct with no plug rows (Voltcap not running then).",
+   "note": "VERIFIED node values + current. Next (Toni: at the end of the RP batch): find a switch that really stops on this kernel (charge_control_limit is root-only), and keep the limit when Voltcap's process is gone. Charging change: show Toni before shipping.",
+   "fix": "ChargeLimiter: the Retroid stops with restrict_cur = 0 (was 1000). Measured by hand at 78 %: 0 took the battery from +56..+122 mA to -250..-545 mA within 8 s; put back to 1000000 afterwards. Built; to be confirmed at 80 % on the device.",
+   "note2": "Still open: the 78 -> 94 % between 24 and 27 Oct happened with no log rows at all (Voltcap not running); nothing in an app can stop charging while its process is gone.",
+   "verified": "23:28 build at 79-80 %: restrict_chg 1 + restrict_cur 0 held, battery -260..-460 mA (not charging)."
+  },
+  {
+   "id": "D64",
+   "title": "RP Classic: the home screen's gameplay clip keeps the GPU busy at ~30 fps forever while idle (29 ms frames, gpu 17-25 ms, 72-85 % janky)",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "open",
+   "found": "RP Classic, Dash layout, Game art background with a scraped clip: gfxinfo idle 5 min after the last press: 241 frames / 8 s, 85 % janky.",
+   "note": "By design since update 307 (clips loop while the home screen rests; only a low battery or the long rest holds them). Update 221 had paused them after 30 s for exactly this reason on the RP. Option for Toni: hold the clip after the 30 s idle on weak GPUs, or a setting."
+  },
+  {
+   "id": "D65",
+   "title": "RP Classic: system_server aborts in a loop ('Got MOVE, but no touching pointers for device 8') \u2014 the vendor's 'Retro Station Virtual Mouse'",
+   "rule": "DEVICE",
+   "severity": "high",
+   "status": "third-party",
+   "found": "dropbox system_server_native_crash x5 20:38-20:40 and restarts 20:43 / 20:45 / 20:48, on Voltcap's window and on com.rp.settings; cleared by a full restart of the RP.",
+   "note": "Not Voltcap code (InputVerifier in system_server, vendor uinput mouse with a stale button). QA on the RP now presses through Android (vqa.sh keyevent mode: touch $D/usekey) instead of the gamepad's evdev node."
+  },
+  {
+   "id": "D66",
+   "title": "Category screen tiles: 'Super Nintendo Entertainment ...' cut with an ellipsis (R18)",
+   "rule": "TRUNCATE",
+   "severity": "low",
+   "status": "verified-rp",
+   "found": "RP Classic screenshot 20:53 (Choose a category, tiles).",
+   "note": "CategoryScreen.kt: the 3 tile labels and 3 subtitles -> FullText (shrink, then slide).",
+   "verified": "RPL2: the SNES tile name slides, no \"...\""
+  },
+  {
+   "id": "D67",
+   "title": "RP Classic: a big game logo placed in Edit Home (Voltcap row) covers the dock's name line on the shorter screen",
+   "rule": "OVERLAP",
+   "severity": "low",
+   "status": "open",
+   "found": "crash3d runs E3T / E3W (carousel, 3D cartridges): logo over 'Game Boy Color \u00b7 Pokemon Silver Version'",
+   "note": "User-placed part (fractions of the screen); the Thor's taller dp height leaves room. Option: keep the logo clear of the dock like the category part's keepClearOf."
+  },
+  {
+   "id": "D68",
+   "title": "Tile home: the game's name above the tiles disappears after a move (Toni)",
+   "rule": "LAYER-BRANCH",
+   "severity": "high",
+   "status": "verified-rp",
+   "found": "RP Classic 21:52 screenshot: no name after \u25b6; with QaFault rise_old the name shows -> Motion.riseOnChange",
+   "fix": "riseOnChange read p.value only in the else-branch of its layer; the frame drawn at 0 observed nothing, so the rise never redrew. Read first. Same pattern fixed in StyleConsoleHomes, StyleCustom, StyleMagazine (new static rule LAYER-BRANCH).",
+   "verified": "t3/t4 21:56: ActRaiser and Contra Advance names shown after moves"
+  },
+  {
+   "id": "D69",
+   "title": "Category looks at 1240x1080: Worlds header chips under clouds/stars, Drawers' pulled bottom drawer over its name line, every Drawers label sliding at once, Dashboard name against the console",
+   "rule": "OVERLAP",
+   "severity": "medium",
+   "status": "verified-rp",
+   "found": "RPL1 sheets",
+   "fix": "Worlds shade 112 dp; Drawers cells leave room for the pull, labels on 2 lines; Dashboard 14 dp gap; 6 silent one-line clips -> FullText",
+   "verified": "RPL2: all four fixed; Drawers 15.1 % -> 2.8 % janky"
+  },
+  {
+   "id": "D70",
+   "title": "Home layouts: 176 names / labels cut with '...' (R18) \u2014 Airy, Bubbles, Camera, Cards, File select, Green core, Hero, Magazine, Night, Orbit, Pocket, Spotlight, Storage, Timeline \u2026",
+   "rule": "TRUNCATE",
+   "severity": "medium",
+   "status": "verified-rp",
+   "found": "stills ST1 (48 layouts at 1240x1080)",
+   "fix": "Text(... Ellipsis) -> FullText (shrink, then slide) in 43 layout files by tools/fulltext_fix.py; 20 left (annotated strings, other parameters). The slide now rests with the home screen (HomeIdle.calm) so it never redraws forever.",
+   "verified": "stills ST2 / ST3 23:15-23:23: Bubbles, Camera, Cards, File select, Green core, Live, Storage, Timeline, Spotlight, Night, Orbit, Magazine, Pocket classic / ribbon show the whole name (wrapped, shrunk or sliding). Night / Orbit / Magazine / Spotlight / Pocket fixed by hand (italic and gradient text)."
+  },
+  {
+   "id": "D71",
+   "title": "Settings tidy: 15 stored settings that nothing reads",
+   "rule": "CLEANUP",
+   "severity": "low",
+   "status": "fixed-built",
+   "fix": "Removed from Features.kt: overlays_over_apps, achievement_theme, ll_never_reorder, hero_parallax, model_disc_as_cart, intro_style (duplicate of Appearance's), save_shape, save_vault_animations, authentic_carts (+ its write), spot_squares, circuit_green, box_lanes, box_depth, box_media, pb_reorder, stage_stats. None had a row in Settings. Kept: 11 Appearance fields read only by old-version migrations.",
+   "note": "Duplicated rows (Shimmer on mastered games twice, the TV room / Carousel blocks) left for Toni to decide."
+  },
+  {
+   "id": "D72",
+   "title": "3D cartridge carousel crash",
+   "rule": "CRASH",
+   "severity": "high",
+   "status": "not-reproduced",
+   "found": "crash3d.sh C3/D3/E3: Voltcap row carousel (Tucked, Wheel, Deck, Flip), Cartridges look, 3D Real + turning + reflection, GBC/SNES/GBA/GB/All, 22 fast presses each: same process throughout, no crash/ANR. Exit info since 7 Oct: none.",
+   "note": "The RetroArch crash of 24 Oct is RetroArch's own (Adreno GL driver abort in eglSwapBuffers)."
+  },
+  {
+   "id": "D73",
+   "title": "Settings explorer on the RP Classic: 12 of 21 categories walked (time limit); unreached chips to check by hand",
+   "rule": "FOCUS",
+   "severity": "low",
+   "status": "open",
+   "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home \u203a Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
+   "note": "Theme, Screensaver, Categories, Achievements, Music & sound, Metadata, Performance not walked yet."
+  }
+ ]
+}

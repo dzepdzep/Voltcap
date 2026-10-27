@@ -1545,9 +1545,12 @@ internal fun CartShellArt(
         // (Update 325, Toni: "Switch cartridges first show text quickly and then the picture": while its cover is still on
         // its way the sticker stays plain — the game's name only if no cover has come after a moment.)
         val waitingArt = art != null && bmpArt == null
-        val nameLate by androidx.compose.runtime.produceState(!waitingArt, art, bmpArt) {
-            if (waitingArt) { value = false; kotlinx.coroutines.delay(1500); value = true } else value = true
+        // (QA V6: tagged with its cover — the value kept from the game before said "late" for the first frame, and the
+        // name was painted on the sticker for a moment.)
+        val nameLateTag by androidx.compose.runtime.produceState(art to !waitingArt, art, bmpArt) {
+            if (waitingArt) { value = art to false; kotlinx.coroutines.delay(1500); value = art to true } else value = art to true
         }
+        val nameLate = nameLateTag.first == art && nameLateTag.second
         val titleNow = if (waitingArt && !nameLate) null else title
         // (Update 297: the Switch card's red header strip, loaded once — SwitchLabel.)
         val ctxSw = androidx.compose.ui.platform.LocalContext.current

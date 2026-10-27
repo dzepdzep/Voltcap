@@ -44,6 +44,12 @@ internal object TestHooks {
     val window = mutableStateOf(false)
     /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
     val shortcuts = mutableStateOf<String?>(null)
+    /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
+    val theme = mutableStateOf<String?>(null)
+    /** Pass 5: `--es voltcap_test_perf LITE|FULL|AUTO` — performance mode for this session only (nothing saved). */
+    val perf = mutableStateOf<String?>(null)
+    /** Pass 5: counts previews ended (`--ez voltcap_test_preview false`); the launcher screen reloads your appearance. */
+    val previewEnded = androidx.compose.runtime.mutableIntStateOf(0)
     /**
      * Update 274: `--es voltcap_test_inspect "Game_name|shellId|yaw|pitch"` — that game's window with its piece out on that
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
@@ -97,15 +103,30 @@ internal object TestHooks {
         val po = intent?.getStringExtra("voltcap_test_pose")
         // Update 280: `--es voltcap_test_pref "key=value"` — one setting (saved, as Settings would; logged with its old value).
         val pr = intent?.getStringExtra("voltcap_test_pref")
+        val th = intent?.getStringExtra("voltcap_test_theme")
+        val pm = intent?.getStringExtra("voltcap_test_perf")
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")
+        // QA: `--ez voltcap_test_churn true|false` — the state-churn log (QaTrace.watchChurn), only while asked for.
+        // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
+        // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
+        intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
+        if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
+        if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
+        // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
+        intent?.getStringExtra("voltcap_test_fault")?.let { f ->
+            if (runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) QaFault.set(f)
+        }
         // Update 281: `--es voltcap_test_labelaudit <systemeid|all>` — every game's saved real-media list (ScreenScraper's
         // "support-texture" = Disc label, "support-2D" = Disc / cartridge): which it has, and those pictures downloaded
         // into <external files>/label_audit/ for checking the label pipeline. Only ids, never the account, are written.
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
+        // Pass 5: `--ez voltcap_test_preview false` ends a preview: your saved appearance back on screen, saving again.
+        // (QA: a run's preview lasted until Voltcap restarted — the layout tried stayed, and nothing you changed was saved.)
+        val pvEnd = intent?.hasExtra("voltcap_test_preview") == true && !pv
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1
         if (su >= 0 && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
@@ -118,10 +139,11 @@ internal object TestHooks {
             previewOnly = true
             tileWalk.value = tw
         }
-        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null) return
+        if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return
         if (pv) previewOnly = true
+        if (pvEnd) { previewOnly = false; previewEnded.intValue = previewEnded.intValue + 1 }
         if (so) sort.value = true
         if (wi) window.value = true
         if (rs != null) { previewOnly = true; shortcuts.value = rs }
@@ -129,10 +151,23 @@ internal object TestHooks {
             val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
             if (snap == "save") {
                 f.writeText(org.json.JSONObject(com.shelf.launcher.data.Features.snapshot() as Map<*, *>).toString())
+                // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
+                val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
+                java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
+                    .writeText((cp.getString("order", "") ?: "") + "\n" + (cp.getStringSet("hidden", null)?.joinToString(",") ?: "\u0000"))
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
                 com.shelf.launcher.data.Features.restore(j.keys().asSequence().associateWith { j.getString(it) })
+                val cf = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
+                if (cf.exists()) {
+                    val l = cf.readText().split('\n')
+                    val e = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE).edit()
+                    if (l[0].isBlank()) e.remove("order") else e.putString("order", l[0])
+                    val h = l.getOrNull(1)
+                    if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
+                    e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
+                }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
@@ -178,6 +213,8 @@ internal object TestHooks {
         if (st != null) settings.value = st.replace('_', ' ')
         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
         if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
+        if (th != null && com.shelf.launcher.ui.theme.AppTheme.values().any { it.name == th }) theme.value = th
+        if (pm != null && com.shelf.launcher.data.PerformanceMode.values().any { it.name == pm }) perf.value = pm
     }
 }
 

@@ -153,9 +153,9 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
                     }
                     if (!compact) {
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            LocalTitleOptions.current.display(g.name), modifier = Modifier.riseOnChange(g.stableKey), color = ink.copy(alpha = 0.85f), fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp),
-                            fontWeight = FontWeight.Light, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        FullText(
+                            LocalTitleOptions.current.display(g.name), modifier = Modifier.riseOnChange(g.stableKey), color = ink.copy(alpha = 0.85f), fontSize = 20.sp,
+                            fontWeight = FontWeight.Light, maxLines = 1
                         )
                         Text(
                             c.lastPlayed(g)?.let { "Last played: " + lastPlayedLabel(it) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null) } ?: "Never played",
@@ -259,9 +259,9 @@ private fun LiveTile(c: StyleCtx, g: Game, i: Int, on: Boolean, ink: Color, tint
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
-                Text(
-                    LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Medium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                FullText(
+                    LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                    maxLines = 1
                 )
             }
         }

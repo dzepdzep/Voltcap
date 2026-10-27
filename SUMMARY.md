@@ -1,5 +1,228 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (355, RP Classic pass): Retroid Pocket Classic checked, Tile home names, charge limit, text
+
+Details: `tools\qa\REPORT.md` (RP Classic pass), `defects.json` D59, D63–D72. All on `qa-pass-1`, built and installed on
+the RP Classic only (the Thor wasn't connected). Not merged, not published.
+- **Tile home:** the game's name above the tiles disappeared after a move (your report). Fixed; checked on the RP. The same
+  mistake was fixed in Resume & discover, Custom and Magazine.
+- **Charge limit on the RP Classic:** it stopped charging the wrong way (still 180–310 mA going in at 91 %). Now it really
+  stops at 80 % — checked: the battery stays at 79–80 % with nothing going in. It still can't do anything while Voltcap
+  isn't running at all.
+- **Menus open on their first button** — checked on the RP (Start: Play, L1: first shortcut, Y: the filter in use).
+- **Category screen at the RP's size:** Worlds' buttons readable, the open bottom drawer no longer covers its name, drawer
+  names on two lines (Drawers 15 % → 3 % janky frames), Dashboard's name clear of the console.
+- **No "…" in 47 home layouts** (182 places): names shrink, then slide; checked in 14 layouts on the RP. The slide stops
+  when the home screen rests.
+- **Settings tidied:** 15 settings that did nothing removed (none were shown in Settings). Duplicated rows wait for you.
+- **3D cartridge carousel crash:** not reproduced (3 carousel views × 5 categories with fast presses). The OpenGL crash on
+  file is RetroArch's own.
+- **Found, waiting for you:** the background clip keeps the RP's GPU busy at 30 fps while idle; a big logo you placed in
+  Edit Home covers the name line on the RP's shorter screen; Tile home vs the Switch home.
+- The RP's system crashed in a loop from its own "Virtual Mouse" (not Voltcap); a restart of the RP fixed it.
+- **Settings walk:** 12 of 21 categories walked with the controller on the RP; a few wrapped chip rows (Overlay times, Sync
+  intervals) still to check by hand, 7 categories still to walk.
+- QA: new rules for silent clipping and stuck animations, stills / idle / crash scripts, Settings explorer for narrow screens.
+
+## Update — 27 Oct 2026 (354): permanent rule — no text cut short with "…"
+
+- **New permanent rule** (CLAUDE.md #11, QA rule R18): Voltcap never shortens text with "..." / "…". Text wraps, uses its
+  space better, shrinks to a size that stays readable, or slides along slowly so all of it can be read. Only where a hard
+  limit can't be changed is it shortened, and then the full text is still reachable (focus, scrolling, a detail view).
+  Ellipses that belong to the text itself stay.
+- **New shared piece `FullText`** (`ui\FitText.kt`): wraps → shrinks readably → slides; used instead of "…".
+- **Fixed now:** the 10 category-screen looks and Customize consoles (13 places).
+- **QA:** `static_checks.py` TRUNCATE lists every remaining "…" cut: **585 places** left in older screens. They're fixed
+  as each screen is worked on, and the count is reported until it's zero. New code adds none.
+- Compiled (release build). Not checked on the Thor: its battery ran out.
+
+
+## Update — 27 Oct 2026 (353, pass 5 batch D–E): menus checked with the controller, performance findings
+
+Details: `tools\qa\REPORT.md` (pass 5, batch D–E), `defects.json` D24, D59–D62.
+- **Start, Y and L1 menus:** every button can be reached with the D-pad (checked on the Thor).
+- **Menus open on their first button** (Play, the first shortcut, the achievement filter in use). Before, the first press
+  was spent putting the focus in. Built; the last check was cut short because the Thor's battery ran down.
+- **Case stacks / Arcade:** three speed-ups were tried, none of them helped, and all three were undone.
+- **Found:** the Thor's own game assistant runs as an accessibility service, which costs Voltcap about 12 % of its main
+  thread in Case stacks. That's a system setting and wasn't changed.
+- QA tools: cold-start timing and a per-layout trace script.
+
+
+## Update — 27 Oct 2026 (352, pass 5 batch A–C): category screen finished, smoother looks and home layouts
+
+Details: `tools\qa\REPORT.md` (pass 5, batch A–C), `defects.json` D46, D54–D58.
+- **Pocket Dashboard on the Thor's two screens:** the big preview on top, every system as a round icon on the lower screen.
+  Tap one to pick it, tap it again to open it.
+- **Game look per category** (Settings › Categories › Game look per category): a console or list can show its games its
+  own way (Covers, Wide, Box art, Cartridges & discs, Discs only); "Follow the layout", Reset, Reset all. File:
+  `data\CategoryGameLooks.kt` (new), `LauncherViewModel.kt`, `ui\SettingsDialog.kt`.
+- **Customize consoles** shows a small preview of each console's choice (built, not yet checked on screen).
+- **Disc games in their case:** with "Case + media" (or Disc in its case) a game with its own disc photo now shows its case
+  with that disc half out (it used to stay a bare disc).
+- **Smoother:** Collector's Drawers (about 9 % slow frames → 2 %), System Blades, Stage, Constellation, Vault; the Airy home
+  (13 % → 2 %), Circuit, Orbit deck, Panels, Night menu and the Blades home lists.
+- **Fixed:** Pocket Dashboard on a light theme (title and buttons were white on white).
+- Checked on the Thor: all 10 looks with reduced motion, Lite and a light theme; Follow home layout for 6 layouts.
+- QA tools: a test preview now ends with the run (before, a tried layout stayed until Voltcap restarted).
+
+
+## Update — 27 Oct 2026 (351, pass 4 batch 2): polish of the 10 category looks
+
+Details: `tools\qa\REPORT.md` (pass 4, batch 2), `defects.json` D47–D53. File: `ui\CategoryLooks.kt`.
+- Consoles now stand on their plinth / pedestal at their own size and proportions, never floating.
+- System Blades: clear of the header, readable side labels, much smoother (18.9 % → about 1–6 % slow frames).
+- Collector's Drawers: drawers open one at a time, with inner walls, handles and standing covers.
+- Pocket Worlds: richer pixel scenes per maker, a stone pedestal, no pixel filter on the console, a shade under the title.
+- Archive 1994: a fixed-size title (no flicker); "Last played" now fits in the facts table.
+- Channel Surf: a CRT set with a channel number, a short change effect and a lower-third.
+- Generations: real years; handhelds have their own lane under the line; the lane no longer touches the name.
+- Constellation: an even ring, with the system you're on brought out at the right.
+- System Vault: the module ejects, travels and is pushed home; the screen keeps the old one until then.
+- Pocket Dashboard: a big preview and a row of round icons.
+- Checked on the Thor: all 10 looks recorded at 120 fps with no flashes or black frames.
+- Not done yet: Pocket Dashboard on the Thor's second screen; light theme / Lite mode checks.
+
+
+## Update — 27 Oct 2026 (350, pass 4 batch 1): category looks, a home layout per category, a medium per console
+
+Details: `tools\qa\REPORT.md` (pass 4), `defects.json` D42–D46.
+- **10 new looks for the category screen** (Settings › Categories › Category screen › Look), beside Tiles, Slides, Wall and Grid:
+  - System Stage, System Blades, Collector's Drawers, Pocket Worlds, Archive 1994;
+  - Channel Surf, Generations, Constellation, System Vault, Pocket Dashboard.
+  - Each moves its own way: ◀ ▶, ▲ ▼, or a grid. Generations goes by release year and doesn't change your category order.
+  - Files: `ui\CategoryLooks.kt` (new), `ui\PlatformBrowser.kt`, `ui\PlatformBrowserSettings.kt`, `data\Features.kt`.
+  - New switch **Follow home layout**: the look goes with the home layout you open it from (Case stacks → System Stage,
+    TV room → Channel Surf…).
+- **A home layout per category** (Settings › Categories › Home layout per category):
+  - "Keep <layout> here", "Follow the default", Reset and Reset all.
+  - L2 / R2 switch the layout with the category, with no wrong frame in between. Checked on the Thor: GameCube in Case
+    stacks, the rest in Voltcap row.
+  - Files: `data\CategoryLayouts.kt` (new), `LauncherViewModel.kt`, `ui\SettingsDialog.kt`.
+- **Mix › Customize consoles** (Game look › Cartridges & discs › Mix): each console can be
+  - Automatic (its original medium),
+  - Cartridge / disc,
+  - Retail case,
+  - Case with its media,
+  - or Cover.
+  - It follows its games into Favorites and mixed lists.
+  - Files: `ui\MixConsoles.kt` (new), `ui\PhysicalMedia.kt` and the case / disc drawing files.
+- **Tile home:** round buttons dropped on the tiles in Edit Home go back under the tiles (D39).
+- **QA tools:** device scripts `looks.sh`, `catlayout.sh`, `mixcon.sh`; explorer fixes (D38, D42).
+- **Not done yet:**
+  - the second screen for the new looks;
+  - a per-category game look;
+  - the full Settings controller walk;
+  - Case stacks / Arcade category-switch speed.
+
+## Update — 27 Oct 2026 (350, pass 3): every layout smoother, Tile home Switch-style, controller fixes in R1 / Settings
+
+Third QA pass on the Thor, all layouts. Details: `tools\qa\REPORT.md` (pass 3), `defects.json` D25–D41.
+- **All 27 layouts: the home screen no longer rebuilds on every frame of a glide** (D31, D34).
+  - Measured on the Thor: Screen rebuilds drop from 42–112/s to 9–14/s.
+  - Janky frames, before → after: Cross 12.2 → 3.4 %, Green Core 17.3 → 5.7 %, Cube 14.1 → 5.4 %, Grid 15.8 → 7.5 %,
+    Cards 9.7 → 3.7 %, Side 8.4 → 3.4 %, Live 4.8 → 1.3 %.
+  - Files: `ui\LauncherScreen.kt` (CategoriesBar colours in their own scope), `ui\HomeChrome.kt` (status bar look).
+- **Carousel views (e.g. Case stacks with Carousel on): each game rebuilt every frame of a glide** (D41, `ui\Carousel.kt`).
+  - About 1,000 → 50 rebuilds/s.
+  - Case stacks, measured on the Thor: janky 26.6 → 22.7 %, p90 42 → 32 ms.
+- **Tile home**
+  - Middle is Switch-style now: tiles + round buttons centred as one group, tiles a little above the middle (D40).
+    Without the buttons, the tiles themselves are in the middle.
+  - The row no longer jumps for a frame (D30).
+  - Round shortcuts placed in Edit Home had landed on top of the tiles. Your saved spot was removed, so they sit under the
+    tiles again (D39). Files: `ui\LauncherScreen.kt`, `ui\TileHome.kt`.
+- **Flashes gone:**
+  - Resume & discover first frame (D32, `ui\StyleConsoleHomes.kt`);
+  - Layout Studio parts entrance (D33) and its row on L2 / R2 (D35), `ui\StyleCustom.kt`.
+- **Controller**
+  - R1 panel: each notification's ✕ can be reached with ▶ (D26, `ui\NotificationsPanel.kt`).
+  - Settings › Categories: after ▲ / ▼ the focus follows the category, so pressing again keeps moving the same one (D36,
+    `ui\SettingsDialog.kt`).
+  - Panel ✕ buttons are named "Close" (D27).
+- **Start-up:** no picture decoding on the main thread at cold start (D25, `ui\SolidPiece.kt`: piece tones cached in a
+  file). Still open: ~0.3 s waiting for the account stores (D24). This needs a careful change because of login, so I left it.
+- **Smaller fixes:** RomHacks regexes compiled once (D28); controller-light flashes off the main thread (D29).
+- **QA tools (test hooks only, nothing in normal use):**
+  - QaWalk (controller walk log) and QaExplore (drives the D-pad through all of Settings by itself);
+  - QaSampler (main-thread stall stacks);
+  - device scripts `walk.sh`, `explore.sh`, `layouts.sh`, `lchurn.sh`, `ltrace.sh`, `coldsample.sh`;
+  - `walkcheck.py`, `coverage.py`, `layoutreport.py`, `retrace.py`.
+  - The walk snapshot now also keeps the category order (D37).
+- **Not done yet:**
+  - the full Settings explorer run (running now);
+  - the home dialogs (Start / Y / L1);
+  - game launch / return, profiles, second screen, RetroAchievements screens;
+  - the render-heavy layouts (Case stacks, Arcade, Shelf, Memory card, Twin icons).
+
+## Update — 27 Oct 2026 (350, pass 2): Classic much smoother — the colour glide rebuilt the whole home screen every frame
+
+Second QA pass on the Thor (Classic). Details: `tools\qa\REPORT.md` (pass 2), `defects.json` D17, D20–D25.
+- **Smoother navigation, measured on the Thor with the same scenarios as the first baseline.**
+  - Janky frames: 7.4 % → 1.6 % while moving, 5.9 % → 1.7 % with rapid input.
+  - p90 frame time: 19 → 12 ms. p99: 26 → 19 ms.
+  - Video hitches in the recorded run: 24 → 2.
+  - Cause: the theme colours glide for 600 ms after each game change, and everything that read them in composition was
+    rebuilt on every frame of it — the home screen ~110×/s, the game cards ~1000×/s. Now one rebuild per button press.
+    The glide itself is unchanged.
+  - How: the colours are read while drawing through the new `ShelfTheme.live`.
+  - Files: `ui\theme\ShelfColors.kt`, `ui\theme\Theme.kt`, `ui\GameCard.kt`, `ui\LauncherScreen.kt`, `ui\EdgeBump.kt`,
+    `ui\StatusLooks.kt`, `ui\LivingLibrary.kt`, `ui\TileHome.kt`, `ui\FocusEffects.kt` (softGlowLive, pulseBorderLive),
+    and AccentIcon in GameCard.
+- **Empty frame before the category slide** (`ui\GameDock.kt`): gone. Checked frame by frame on a 120 fps recording.
+- **Tile home "Middle"** (`ui\LauncherScreen.kt`, `ui\TileHome.kt`): the tiles now sit in the middle of the screen.
+- **Template pictures** (`ui\ResImages.kt` new; CoverCases, RealMedia, PhysicalMedia, StyleCardboardBox, TvRoomHome,
+  FramesScene): case, cartridge and box frames are decoded once and shared, not again in every card.
+- **Start-up** (`data\SecureStore.kt`): an already-open account store no longer waits for another one being opened.
+  Still open: the first frame waits ~0.3 s for 3 account stores (D24).
+- **QA system tested against injected faults** (test builds only, `ui\QaFault.kt`). Recordings capture every frame
+  (1391/1391). These were all caught:
+  - single-frame flashes (11/11, no false alarms);
+  - injected stalls (6/6);
+  - wrong focus moves (2/2);
+  - a re-introduced category-switch flash (2/2).
+- **New QA tools**:
+  - `ui\QaInval.kt` names the state that makes a part rebuild.
+  - Device scripts `rc.sh`, `churn.sh`, `tcold.sh`, and `vqa.sh memtest`.
+  - Static rule THEME-COMPOSE (R10).
+  - The churn observer that made the app crawl during testing (D21) is now opt-in only.
+- **Not done yet**: other layouts, R1 / Settings / dialogs walked with the controller on the device, game launch and
+  return, second screen, the calm-idle redraws (D18).
+
+## Update — 27 Oct 2026 (350): QA system (tools/qa) + first QA pass — flashes on category switch, stale pictures, controller gaps
+
+Toni's brief "VoltCap — Complete Autonomous App QA, Visual Inspection & Optimization System". First pass on the Thor
+(Classic layout); everything is in `tools\qa\` (README = how to run, RULES = bug patterns, defects.json, REPORT.md).
+- **QA system** (new, `tools\qa\`): `device\vqa.sh` on the handheld (real controller input through the built-in pad,
+  120 fps recordings, frame stats, Perfetto, memory, a whole `suite`), `tools\frames.py` (finds 1–3-frame flashes, blank
+  frames and hitches in a recording, with contact sheets), `framestats.py`, `compare.py` (before/after),
+  `static_checks.py` (code checks for the bug patterns), `settings_inventory.py` (all 851 settings: readers, UI, search,
+  backup). In the app, test builds only (the voltcap_test_hooks file): `ui\QaTrace.kt` logs focus / category events
+  and every slow frame with its breakdown (logcat VoltcapQA). `/qa_runs/` holds pulled recordings (git-ignored).
+  Skill `tools\qa\SKILL.md` runs a pass (Cowork: offered as the voltcap-qa skill; Claude Code: copy it to `.claude\skills\voltcap-qa\`).
+- **L2 / R2 flash fixed** (`ui\HomeExtras.kt`): the new category's row was drawn in place at full strength for 1–3 frames,
+  then jumped aside and slid in (seen on every switch in the recordings). Now it starts from the slide's start.
+- **Category caption** (`ui\HomeChrome.kt`): kept the old category's name ~130 ms after the row changed; now hidden at once.
+- **Game title jumping when its logo loads** (`ui\GameCard.kt`, `ui\GameDock.kt`): the logo's place is kept while it
+  loads; logos of the games next to you are loaded ahead.
+- **Old pictures for a frame**: the info header rising in (`ui\Motion.kt`), 3D cases / cartridges / spines
+  (`ui\RealMedia.kt`), the cartridge sticker's name (`ui\CartShells.kt`), endless rows keeping the old games' places
+  (`ui\Carousel.kt`, `ui\GameDock.kt`), and 27 more places (console photos, second-screen screenshots, case faces,
+  theme thumbnails that could stay on the old theme, history, manuals…) through the new `ui\ProduceKeyed.kt`.
+- **Focus pulse** (`ui\PowerSaver.kt`, `ui\FocusEffects.kt`, `ui\GameCard.kt`): only redraws, no longer rebuilds the card 20×/s.
+- **Controller**: sliders step by 1 on small ranges and let focus leave at the ends (`ui\SettingsSlider.kt`); R1 panel:
+  "Details" for Background work and a "Sync status" chip (`ui\NotificationsPanel.kt`); the Dashboard chip on Twin
+  Showcase / Pocket Classic; second-screen Wall edit mode by D-pad, X opens a control's menu on the second screen;
+  Shortcuts ✕ no longer an invisible focus stop; Edit Home hint text; two pickers added to the "dialog open" list.
+
+Copy: `src_copy\` (53 files: see `git status`; new `ui\ProduceKeyed.kt`, `ui\QaTrace.kt`); `tools\qa\` (new);
+`tools\qa\SKILL.md` (new); `.gitignore` and `project_copy\.gitignore` (+ /qa_runs/).
+
+Tested on the Thor (release, AOT-compiled, same scenario before/after): category switches recorded at 120 fps — the
+full-strength flash is gone (one empty frame before the slide remains, D17); caption and logo fixed; idle janky frames
+45.6 → 31.2 %, Java heap 117 → 60 MB; navigation smoothness unchanged (p90 ≈ 19 ms at 120 Hz — next pass, D11–D13).
+Not tested on the device: the controller additions, other layouts, the second screen, other handhelds (REPORT.md).
+
 ## Update — 26 Oct 2026 (349): Sound per screen widget, the category screen's buttons by controller
 
 Toni's notes after 0.6.44.

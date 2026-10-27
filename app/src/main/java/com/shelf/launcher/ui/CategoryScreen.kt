@@ -388,17 +388,16 @@ private fun CompactTile(
             }
         }
         Spacer(Modifier.height(5.dp))
-        Text(
+        FullText(
             tile.label,
             color = if (selected) ShelfTheme.accent else Color.White,
-            fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
             lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em)
         )
         tile.subtitle?.let {
-            Text(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
         }
     }
 }
@@ -446,17 +445,16 @@ private fun Tile(
                     .then(if (fan) Modifier.fillMaxWidth(0.58f) else Modifier)
                     .padding(12.dp)
             ) {
-                Text(
+                FullText(
                     tile.label,
                     color = Color.White,
-                    fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp),
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em)
                 )
                 tile.subtitle?.let {
-                    Text(it, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(it, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                 }
             }
         }
@@ -597,13 +595,13 @@ private fun TileLookTile(
             else CategoryArt(tile, CardShape.SQUARE, Modifier.matchParentSize(), art)
         }
         Spacer(Modifier.height(6.dp))
-        Text(
+        FullText(
             tile.label,
             color = if (selected) ShelfTheme.accent else Color.White,
-            fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 2,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
-        tile.subtitle?.let { Text(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+        tile.subtitle?.let { FullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp) }
     }
 }
 

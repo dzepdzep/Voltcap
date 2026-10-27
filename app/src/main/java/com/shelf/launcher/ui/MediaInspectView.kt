@@ -599,7 +599,7 @@ private fun mediaPiece(
     val tpl = if (custom) null else MediaTemplates.of(pick.platform)
     return when {
         // "Disc in its case": the card shows the case — that's what comes out.
-        tpl != null && discCaseOn(tpl) -> boxPiece(g, physical, cover, own = true, mixed = mixed)
+        tpl != null && discCaseOn(tpl, pick.platform) -> boxPiece(g, physical, cover, own = true, mixed = mixed)
         pick.shell.disc -> InspectPiece(
             g, InspectKind.DISC, 1f, 0.012f, pick, label, isScan, null, cover, null, null, physical, null, PLAIN_SHELL,
             pick.shell == MediaShell.MINI_DISC && small
@@ -1602,7 +1602,7 @@ private fun PieceFace(p: InspectPiece, modifier: Modifier) {
             val own = isCustomPiece(pick.platform)
             val tpl = if (own) null else MediaTemplates.of(pick.platform)
             // A disc that the card shows in its case: here the disc alone.
-            if (tpl?.disc != null && discCaseOn(tpl)) TemplateMedia(
+            if (tpl?.disc != null && discCaseOn(tpl, pick.platform)) TemplateMedia(
                 MediaTpl(null, null, tpl.disc, null), labelScan = if (p.labelIsScan) p.label else null,
                 cover = if (p.labelIsScan) null else p.label, modifier = modifier, smallDisc = p.smallDisc
             )
@@ -1951,7 +1951,7 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // (Update 189: a mini disc at its real 8 cm against 12 cm.)
     val k = if (p.smallDisc) 80f / 120f else 1f
     // Update 189: its real format, for its data side (DiscUnderside.kt): from the console at once, from the image after.
-    val format by produceState(DiscFormats.quick(p.game.platform), p.game.stableKey) {
+    val format by produceKeyed(DiscFormats.quick(p.game.platform), p.game.stableKey, p.game.stableKey) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { DiscFormats.of(p.game) }.getOrDefault(value) }
     }
     // Update 288: the edge is the disc's own outline — its label face recorded (below) and drawn again, darker, slice

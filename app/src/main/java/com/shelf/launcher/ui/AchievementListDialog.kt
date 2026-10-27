@@ -271,6 +271,8 @@ fun AchievementListDialog(
                         Chip(
                             "${option.label} ($count)",
                             accent = option == filter,
+                            // (Pass 5, D59: the list opens on the filter in use — before, nothing had the focus.)
+                            modifier = if (option == filter) Modifier.initialFocus() else Modifier,
                             onClick = { filter = option; lastAchievementFilter = option.name }
                         )
                     }

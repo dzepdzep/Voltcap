@@ -261,11 +261,18 @@ internal fun TwinSecondScreen(c: StyleCtx) {
             (c.state.appearance.homeLayout == HomeLayout.POCKET_CLASSIC && !com.shelf.launcher.data.Features.classicToolbar.state.value)) &&
             com.shelf.launcher.data.Features.twinDashboardAccess.state.value
         ) {
+            // QA: (C5) reachable with the controller: Showcase's top zone (StyleNav.top, after the shortcut buttons),
+            // Pocket Classic's PocketSpot.DASH row, and SecondPad (padTarget). Lit with an accent border.
+            val dashLit = if (c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE) StyleNav.on(StyleNav.Zone.TOP, twinShowDashIndex(c))
+            else PocketNav.page == PocketNav.Page.HOME && PocketNav.spot == PocketSpot.DASH
             Row(
                 // (Update 325, Toni: "the second screen button should be smaller and named something more fitting":
                 // a small chip named for what it opens — the second screen's own dashboard.)
                 Modifier.align(Alignment.BottomEnd).padding(6.dp).clip(RoundedCornerShape(50))
-                    .background(Color(0xD8F8F9FB)).tapOnly { TwinScreens.dashboard = true }
+                    .background(Color(0xD8F8F9FB))
+                    .then(if (dashLit) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(50)) else Modifier)
+                    .tapOnly { TwinScreens.dashboard = true }
+                    .padTarget("twin-dash") { TwinScreens.dashboard = true }
                     .padding(horizontal = 6.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

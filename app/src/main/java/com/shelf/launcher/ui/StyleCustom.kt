@@ -288,7 +288,7 @@ private fun SceneButtons(c: StyleCtx, p: ScenePart, g: Game, ph: Float) {
                     .clickable { if (i == 0) c.actions.play(g) else c.actions.open() },
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, color = ink, fontSize = fontSp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(label, color = ink, fontSize = fontSp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
     }
@@ -358,6 +358,7 @@ private fun SceneText(c: StyleCtx, p: ScenePart, g: Game, h: Float) {
 /** The time now, moving on every 10 s while [ticking] (a clock on screen). */
 @Composable
 private fun rememberSceneNow(ticking: Boolean): Long {
+    // qa-ok: STALE-PRODUCE (a clock, not a picture)
     val now by produceState(System.currentTimeMillis(), ticking) {
         while (ticking) {
             kotlinx.coroutines.delay(10_000L - System.currentTimeMillis() % 10_000L)
@@ -373,7 +374,15 @@ private fun rememberSceneNow(ticking: Boolean): Long {
 private fun SceneGames(c: StyleCtx, p: ScenePart, pw: Float, ph: Float) {
     val density = LocalDensity.current
     val n = c.games.size
-    val fa by animateFloatAsState(c.focus.toFloat(), spring(dampingRatio = 0.86f, stiffness = 380f), label = "sceneRow")
+    // (QA pass 3, D35: a new category starts at its own game — animated, the row spun through every game between the old
+    // category's place and the new one's for ~10 frames (layout sweep LC_CUSTOM / LE_CUSTOM after L2 / R2).)
+    val faAnim = remember { Animatable(c.focus.toFloat()) }
+    val seenCat = remember { arrayOf(c.categoryLabel) }
+    LaunchedEffect(c.focus, c.categoryLabel) {
+        if (seenCat[0] != c.categoryLabel) { faAnim.snapTo(c.focus.toFloat()); seenCat[0] = c.categoryLabel }
+        else faAnim.animateTo(c.focus.toFloat(), spring(dampingRatio = 0.86f, stiffness = 380f))
+    }
+    val fa = if (seenCat[0] != c.categoryLabel) c.focus.toFloat() else faAnim.value
     val column = p.direction == "column"
     val arc = p.direction == "arc"
     val aspect = when (p.art) { "square" -> 1f; "wide" -> 1.78f; else -> styleAspect(c.type) }
@@ -439,8 +448,8 @@ private fun SceneGames(c: StyleCtx, p: ScenePart, pw: Float, ph: Float) {
                         Modifier.offset { IntOffset((centre - cardMain * 1.2f).roundToInt(), nameTop.roundToInt()) }.size(nameW, with(density) { (cross * 0.14f).toDp() }),
                         contentAlignment = Alignment.TopCenter
                     ) {
-                        Text(
-                            titles.display(g.name), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        FullText(
+                            titles.display(g.name), color = Color.White, maxLines = 1,
                             fontSize = with(density) { (cross * 0.075f).toSp() }, fontWeight = FontWeight.SemiBold,
                             style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 2f), 6f))
                         )
@@ -489,13 +498,18 @@ private fun Modifier.sceneEnter(enter: SceneEnter?, trigger: Any, w: Float, h: F
 @Composable
 private fun Modifier.sceneEnterOn(enter: SceneEnter, trigger: Any, w: Float, h: Float): Modifier {
     val e = remember { Animatable(0f) }
+    // (QA pass 3, D33: the frame in which [trigger] changes is drawn at the entrance's start — the effect snaps to 0 only
+    // a frame later, so that frame showed the new game's part fully, then it vanished and came in: Layout Studio flash.)
+    val seen = remember { arrayOf<Any?>(trigger) }
     LaunchedEffect(trigger) {
         e.snapTo(0f)
+        seen[0] = trigger
         if (enter.delay > 0) kotlinx.coroutines.delay(enter.delay.toLong())
         e.animateTo(1f, tween(enter.ms, easing = if (enter.kind == "pop") CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f) else FastOutSlowInEasing))
     }
     return this.graphicsLayer {
-        val v = e.value
+        val ev = e.value // (read always — LAYER-BRANCH: read only in the else-branch the entrance that follows never redrew the layer)
+        val v = if (seen[0] != trigger) 0f else ev
         val r = 1f - v
         alpha = v.coerceIn(0f, 1f)
         when (enter.kind) {

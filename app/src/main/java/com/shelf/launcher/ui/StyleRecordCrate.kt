@@ -418,10 +418,10 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
                 // (Update 315: off for this layout — Categories tile / Settings — no caption.)
                 if (CategoryTitle.captionOn(c.state.appearance)) {
                 CategoryTitle.Native() // (Update 212: the layout's own category title.)
-                Text(
+                FullText(
                     c.categoryLabel.uppercase(), color = wood.paint.copy(alpha = 0.74f), fontSize = fs,
                     fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                    maxLines = 1, textAlign = TextAlign.Center,
                     modifier = Modifier
                         .border(1.5.dp, wood.paint.copy(alpha = 0.45f), RoundedCornerShape(2.dp))
                         .padding(horizontal = 8.dp, vertical = 1.dp)
@@ -515,9 +515,9 @@ private fun CrateSleeve(c: StyleCtx, g: Game, focused: Boolean, centre: Boolean,
                 AsyncImage(req, g.name, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.fillMaxSize().pixelArtwork())
             }
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
-            else -> Text(
+            else -> FullText(
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,
-                textAlign = TextAlign.Center, maxLines = 4, overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center, maxLines = 4,
                 modifier = Modifier.align(Alignment.Center).padding(8.dp)
             )
         }
@@ -762,9 +762,9 @@ private fun CrateInfo(c: StyleCtx, g: Game, compact: Boolean, wide: Boolean, woo
                         maxLines = 2, fontWeight = FontWeight.Bold, style = ink
                     )
                     Spacer(Modifier.height(3.dp))
-                    Text(
+                    FullText(
                         titles.console(shown.platform), color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 11.sp else 13.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+                        maxLines = 1, style = ink
                     )
                 }
             }
@@ -798,17 +798,17 @@ private fun CrateInfo(c: StyleCtx, g: Game, compact: Boolean, wide: Boolean, woo
                         maxLines = 1, fontWeight = FontWeight.Bold, style = ink
                     )
                     Spacer(Modifier.height(2.dp))
-                    Text(
+                    FullText(
                         titles.console(shown.platform), color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 10.sp else 12.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+                        maxLines = 1, style = ink
                     )
                     Spacer(Modifier.height(2.dp))
                     val shownAch = c.progress(shown)
-                    Text(
+                    FullText(
                         stylePlaytime(c.playtime(shown), c.lastPlayed(shown) != null) +
                             (if (shownAch != null) "  ·  ${shownAch.first} / ${shownAch.second} achievements" else ""),
                         color = wood.light.copy(alpha = 0.95f), fontSize = if (compact) 10.sp else 12.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+                        maxLines = 1, style = ink
                     )
                 }
             }
@@ -848,7 +848,7 @@ private fun CratePill(label: String, on: Boolean, compact: Boolean, modifier: Mo
     ) {
         Icon(Icons.Filled.PlayArrow, null, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
         Spacer(Modifier.width(6.dp))
-        Text(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 

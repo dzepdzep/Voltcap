@@ -366,7 +366,7 @@ internal fun Case3D(
     // (Made off the main thread: it decodes the shell's picture — Update 285, after an ANR on the Thor while inspecting.)
     val facePick = inside?.pick?.takeIf { canOpen && inside.real == null && !inside.round }
     val faceScan = inside?.scan == true
-    val itemFace by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, facePick, faceScan, itemLabel) {
+    val itemFace by produceKeyed<android.graphics.Bitmap?>(null, facePick, facePick, faceScan, itemLabel) {
         value = if (facePick == null) null else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { CaseFaces.of(ctx, facePick, itemLabel, faceScan) }
     }
     val itemBmp = remember(canOpen, itemReal, itemFace, itemLabel, itemAspect, openKind) {

@@ -221,6 +221,8 @@ internal fun TileHomeRow(
     nameAnchor: TileNameAnchor? = null,
     /** Where the tiles start (root px), for "Whole picture" (the hero ends right above them). */
     onTilesTop: ((Float) -> Unit)? = null,
+    /** QA: the tiles' own middle (root y), for Middle placement — the name line above them isn't part of it. */
+    onTilesMid: ((Float) -> Unit)? = null,
     /** Asks for a game's box / label scans (only for the few games around the focus). */
     onNeedPhysical: (Game) -> Unit = {},
     /** Asks for a game's screenshots (Screenshot card art). */
@@ -459,10 +461,18 @@ internal fun TileHomeRow(
                             }
                         } else Modifier
                     )
+                    // (QA pass 3, D30: the tiles' middle as an alignment line, read by Middle placement in the SAME layout pass —
+                    // measured after placing, it arrived a frame late whenever the name above the tiles changed height:
+                    // the row jumped ~15 px for one frame on a move.)
+                    .layout { m, c ->
+                        val pl = m.measure(c)
+                        layout(pl.width, pl.height, mapOf(TilesMidLine to pl.height / 2, TilesTopLine to 0)) { pl.place(0, 0) }
+                    }
                     .then(
-                        if (onTilesTop != null) Modifier.onGloballyPositioned {
+                        if (onTilesTop != null || onTilesMid != null) Modifier.onGloballyPositioned {
                             // The tiles themselves start 8 dp in (the ring's room).
-                            onTilesTop(it.positionInRoot().y + ringPx)
+                            onTilesTop?.invoke(it.positionInRoot().y + ringPx)
+                            onTilesMid?.invoke(it.positionInRoot().y + it.size.height / 2f)
                         } else Modifier
                     )
                     .pointerInput(strideDpValue, looping) {
@@ -653,7 +663,7 @@ private fun HomeTile(
     Box(
         modifier
             .size(tile)
-            .livingLibrary(living, focused, accent, (look.cornerDp.coerceAtLeast(6) * 1.1f))
+            .livingLibrary(living, focused, { accent }, (look.cornerDp.coerceAtLeast(6) * 1.1f))
             // Soft glow: a real blurred halo outside the ring.
             .then(if (free) Modifier.mediaFloorGlow(focused && !dimmed, accent, pulse) else Modifier)
             .then(
@@ -713,7 +723,7 @@ private fun HomeTile(
             )
             .pointerInput(game.stableKey) { detectTapGestures { tap() } }
     ) {
-        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
+        val pick = if (drawnMediaWanted(cardArtType, typedArtUrl, game.platform)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
         // (Update 173: an app without art: its icon on the label / in the case.)
         val artOrIcon = if (pick != null || box3d != null) coverOrAppIcon(game, coverUrl) else null
@@ -736,7 +746,7 @@ private fun HomeTile(
                     spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
             }
-        } else if (realScanOf(cardArtType, typedArtUrl) != null) {
+        } else if (realScanOf(cardArtType, typedArtUrl, game.platform) != null) {
             // Update 129: "Real discs": the game's own scan, standing free.
             Box(Modifier.fillMaxSize().then(if (shineOn) Modifier.masteredShineOverShape(if (focused) 0.55f else 0.32f) else Modifier)) {
                 MediaFocus(focused) { RealMediaPicture(typedArtUrl!!, mediaRound(game.platform), Modifier.fillMaxSize().padding(8.dp), platform = game.platform, gameKey = game.stableKey) }
@@ -754,13 +764,12 @@ private fun HomeTile(
             AppIconArt(game.packageName, wide = false, modifier = Modifier.fillMaxSize())
         } else {
             // No art yet: the name, so the tile still says which game it is.
-            Text(
+            FullText(
                 titles.display(game.name),
                 color = Color.White.copy(alpha = 0.92f),
-                fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
             )
         }
@@ -1057,3 +1066,7 @@ internal fun CornerShortcuts(
     }
 }
 
+/** QA pass 3 (D30): where the tiles' middle is, for Tile home's "Middle" placement (LauncherScreen). */
+internal val TilesMidLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }
+/** The tiles' top (Tile home Middle with the round buttons under them centres tiles + buttons as one group, as the Switch home does). */
+internal val TilesTopLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }

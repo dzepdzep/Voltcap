@@ -276,6 +276,7 @@ private class Placer(val area: IntSize, val avoid: List<ClosedFloatingPointRange
 @Composable
 internal fun rememberLyricPalette(art: Bitmap?, colors: ShelfColors): List<Color> {
     val fallback = remember(colors) { listOf(colors.accent, colors.secondary, colors.textPrimary).map { readable(it.toArgbInt()) } }
+    // qa-ok: STALE-PRODUCE (colours glide from the last song on purpose)
     val fromArt by produceState<List<Color>?>(null, art) {
         value = if (art == null) null else withContext(Dispatchers.Default) { runCatching { coverHues(art) }.getOrNull() }
     }

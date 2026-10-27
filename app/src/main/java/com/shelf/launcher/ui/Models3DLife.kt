@@ -182,7 +182,7 @@ private fun rememberModelPicture(
 ): android.graphics.Bitmap? {
     val waiting = source != null && cover == null
     val now = if (waiting && source is String) Models3D.cachedFor(id, angle, source, title, pos, tint) else Models3D.cached(id, angle, cover, title, pos, tint)
-    val made by produceState(now, id, angle, cover, version, title, pos.key, tint?.key) {
+    val made by produceKeyed(now, id to title, id, angle, cover, version, title, pos.key, tint?.key) {
         if (now == null && !waiting) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, cover, title, pos, tint) }
     }
     return now ?: made

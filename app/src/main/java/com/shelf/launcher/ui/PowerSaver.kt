@@ -200,8 +200,16 @@ internal fun EffectClockDriver() {
  * is false, with Lite effects, or while idle. Updated ~20 times a second rather than every frame.
  */
 @Composable
-internal fun rememberFocusPulse(animate: Boolean): Float {
-    var pulse by remember { mutableFloatStateOf(0.75f) }
+internal fun rememberFocusPulse(animate: Boolean): Float = rememberFocusPulseState(animate).value
+
+/**
+ * QA (P1): the same pulse as a State, to be read only inside drawing (draw / graphicsLayer lambdas) — reading the value in
+ * composition rebuilt the whole focused card ~20 times a second while you just looked at it.
+ */
+@Composable
+internal fun rememberFocusPulseState(animate: Boolean): androidx.compose.runtime.State<Float> {
+    val pulseState = remember { mutableFloatStateOf(0.75f) }
+    var pulse by pulseState
     val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.calm
     LaunchedEffect(on) {
         if (!on) { pulse = 0.75f; return@LaunchedEffect }
@@ -213,5 +221,5 @@ internal fun rememberFocusPulse(animate: Boolean): Float {
             delay(50)
         }
     }
-    return pulse
+    return pulseState
 }

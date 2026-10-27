@@ -68,7 +68,7 @@ internal fun rememberPainting(motif: ThemeMotif): State<ScenePainting?> {
     val context = LocalContext.current
     // (update 91) Always this motif's painting: produceState keeps the last value when the motif changes, so a
     // second painted theme used to keep showing the first one's painting.
-    return produceState(ScenePainting.cached(motif), motif) { value = ScenePainting.cached(motif) ?: ScenePainting.load(context, motif) }
+    return produceKeyed(ScenePainting.cached(motif), motif, motif) { value = ScenePainting.cached(motif) ?: ScenePainting.load(context, motif) }
 }
 
 /** Android 12 and older (no scene shaders): the painting itself, still, filling the screen. */

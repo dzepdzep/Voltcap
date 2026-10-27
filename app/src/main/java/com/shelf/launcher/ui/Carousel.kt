@@ -120,7 +120,7 @@ internal fun ShelfGameArt(
             // Update 129: "Real discs": the game's own scan (not a drawn shell with the scan as its label).
             // (Update 200: the 3D cartridges looks drew their drawn piece whatever the scans. Update 202: "The game's own
             // photo" decides in every cartridge look — realScanOf is null with it off — see drawnMediaWanted.)
-            val real = realScanOf(gArt, typed)
+            val real = realScanOf(gArt, typed, g.platform)
             // (Update 173: an app without art: its icon on the label / case front — they stayed blank.)
             val appIcon = if (cover == null && typed == null && g.sourceType == com.shelf.launcher.data.SourceType.APP) {
                 rememberOwnAppIcon(g.packageName)?.let { remember(it) { it.asAndroidBitmap() } }
@@ -162,7 +162,7 @@ internal fun ShelfGameArt(
         ) {
             // (Update 202: the cover, when it stands in for missing wide art, with its file's flat strips trimmed.)
             if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
-            else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             ConsoleBadge(g.platform, packageName = g.packageName)
         }
     } else if (cov != null) {
@@ -200,7 +200,7 @@ internal fun ShelfGameArt(
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(10.dp))
-            else Text(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp))
             // Case gloss.
             Canvas(Modifier.fillMaxSize()) {
                 drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
@@ -228,7 +228,7 @@ internal fun shelfArtAspect(
         // taller tilt cartridge — got that shell's shape for its slot, and its own photo, a plain cartridge's shape, was
         // fitted into it smaller than the others. With the photo shown, the console's own shape.)
         if (gArt == com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC) {
-            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey)) != null
+            val photo = physical != null && realScanOf(gArt, typedArtFor(gArt, physical, null, g.platform, g.stableKey), g.platform) != null
             return mediaFor(g.platform, mixed, cardArtType == com.shelf.launcher.data.CardArtType.DISC && !(mixed && Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = if (photo) null else g.stableKey)?.aspect ?: 0.7f // (Update 229, #31)
         }
         // (Update 235, #27/#38: Voltcap's plain case at its real case's shape.)
@@ -720,6 +720,7 @@ internal fun GameCarousel(
     /** Update 146: time played per game (stableKey → ms), for the Receding row's line under its big game. */
     playtime: Map<String, Long> = emptyMap()
 ) {
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch("Carousel", qaScope, qaComp) } }
     // Update 156: the covers a few games either side decoded ahead, in the shape the carousel draws them (the Grid and TV
     // room carousels warmed nothing: each new cover came in empty for a moment).
     val warmCtx = androidx.compose.ui.platform.LocalContext.current.applicationContext
@@ -1165,7 +1166,7 @@ internal fun GameCarousel(
                 for (i in places) {
                     val real = if (lLoop) i.mod(ln) else i
                     val g = list[real]
-                    androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
+                    androidx.compose.runtime.key(old, if (lLoop) "$i|${g.stableKey}" else g.stableKey) { // (QA V5: an endless row's place keeps its game while scrolling; a new category gets fresh places, not the old games' state)
                         // (Update 246, #60: made inside the game's own group and kept while its place and the slide are the
                         // same. Made before it at the loop's position, every step shifted each position's place by one, so
                         // every game in the carousel got new ones and rebuilt — about a hundred 3D cases per step in a big
@@ -1414,6 +1415,16 @@ private fun CarouselItem(
     c: CarouselCtx, g: Game, real: Int, i: Int, atFocus: Boolean, on: Boolean, interactive: Boolean,
     relOf: () -> Float, fadeOf: () -> Float, onTap: (Int) -> Unit, modifier: Modifier
 ) {
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch(if (on) "CarItemF" else "CarItem", qaScope, qaComp) } }
+    // QA: which of its inputs made a carousel game re-run (counted per second in the "recomp" line as CarP_<input>).
+    if (QaTrace.on) {
+        val prev = remember { arrayOfNulls<Any?>(10) }
+        val now = arrayOf<Any?>(c, g, real, i, atFocus, on, relOf, fadeOf, onTap, modifier)
+        val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
+        QaTrace.count("CarRun")
+        for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
+        for (k in now.indices) prev[k] = now[k]
+    }
     val relNow = rememberUpdatedState(relOf)
     val fadeNow = rememberUpdatedState(fadeOf)
     val tapNow = rememberUpdatedState(onTap)
@@ -1428,10 +1439,17 @@ private fun CarouselItem(
     // Update 117: a game turned almost side-on (Record flip) shows its real spine, facing you, instead of a squashed cover.
     // (Update 162: worked out from the moving place, so only this game redraws when it flips to its spine.)
     val sidewaysCan = !c.cases3d && !c.spines && !atFocus && caseType
+    // (QA pass 3, D41: was a derivedStateOf read here — it is worked out again every frame of a glide, and each time it
+    // re-ran this whole game (Thor, STACKS carousel: ~1,000 game re-runs a second, 35–46 ms frames) although its answer
+    // stayed "no". Now a plain state, set only when the answer changes: the games re-run when one turns to its spine.)
+    val turnedFarNow: () -> Boolean = { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
     val turnedFar = remember(sidewaysCan) {
-        androidx.compose.runtime.derivedStateOf { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
+        androidx.compose.runtime.mutableStateOf(androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { turnedFarNow() })
     }
-    val sideways = turnedFar.value
+    if (sidewaysCan) androidx.compose.runtime.LaunchedEffect(turnedFar) {
+        androidx.compose.runtime.snapshotFlow { turnedFarNow() }.collect { turnedFar.value = it }
+    }
+    val sideways = sidewaysCan && turnedFar.value
     // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
     val spineHere = !c.cases3d && ((c.spines && !atFocus) || sideways)
     val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed, gameKey = g.stableKey)
@@ -1631,8 +1649,8 @@ private class CaseMedia(val pick: MediaPick, val discOut: Boolean) {
 /** Update 168: [g]'s media beside its 3D case in the look [type] (Case + disc / 3D case + disc / Case + its media), or null. */
 private fun caseMediaFor(g: Game, type: com.shelf.launcher.data.CardArtType, mixed: Boolean): CaseMedia? {
     if (type != com.shelf.launcher.data.CardArtType.CASE && type != com.shelf.launcher.data.CardArtType.CASE_REAL) return null
-    val disc = Features.discCase.state.value
-    val lean = Features.caseWithMedia.state.value
+    val disc = MixConsoles.discCase(g.platform)
+    val lean = MixConsoles.caseWithMedia(g.platform)
     if (!disc && !lean) return null
     val pick = mediaFor(g.platform, mixed, gameKey = g.stableKey) ?: return null
     val round = pick.shell.disc || pick.shell == MediaShell.UMD
@@ -1807,10 +1825,9 @@ private fun RecedeName(g: Game, playedMs: Long?, modifier: Modifier) {
                 style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
                 modifier = Modifier.fillMaxWidth()
             )
-            if (playedMs != null) Text(
+            if (playedMs != null) FullText(
                 // (The same short time as the other "Played …" lines: "Played <1 min", not "Played Under a minute".)
-                "Played " + com.shelf.launcher.data.PlaytimeStore.format(playedMs), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
+                "Played " + com.shelf.launcher.data.PlaytimeStore.format(playedMs), color = ShelfTheme.colors.textPrimary.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
             )
         }
     }

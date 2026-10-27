@@ -337,9 +337,9 @@ private class BoxMaterials(val face: android.graphics.Bitmap, val wall: android.
 @Composable
 private fun rememberBoxMaterials(board: Features.BoxCardboard): BoxMaterials {
     val white = board == Features.BoxCardboard.WHITE
-    val face = androidx.compose.ui.graphics.ImageBitmap.imageResource(if (white) com.shelf.launcher.R.drawable.box_white else com.shelf.launcher.R.drawable.box_kraft)
-    val wall = androidx.compose.ui.graphics.ImageBitmap.imageResource(if (white) com.shelf.launcher.R.drawable.box_white_wall else com.shelf.launcher.R.drawable.box_kraft_wall)
-    val flute = androidx.compose.ui.graphics.ImageBitmap.imageResource(com.shelf.launcher.R.drawable.box_flute)
+    val face = com.shelf.launcher.ui.cachedImageResource(if (white) com.shelf.launcher.R.drawable.box_white else com.shelf.launcher.R.drawable.box_kraft)
+    val wall = com.shelf.launcher.ui.cachedImageResource(if (white) com.shelf.launcher.R.drawable.box_white_wall else com.shelf.launcher.R.drawable.box_kraft_wall)
+    val flute = com.shelf.launcher.ui.cachedImageResource(com.shelf.launcher.R.drawable.box_flute)
     return remember(face, wall, flute, board) {
         BoxMaterials(face.asAndroidBitmap(), wall.asAndroidBitmap(), flute.asAndroidBitmap(),
             if (board == Features.BoxCardboard.DARK) android.graphics.LightingColorFilter(0xFF6A625A.toInt(), 0) else null, board.top, board.deep)
@@ -665,10 +665,10 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
                 .border(1.dp, Color(0xFF8E7F63), RoundedCornerShape(3.dp))
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            Text(titles.display(g.name), color = Color(0xFF2B2620), fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            FullText(titles.display(g.name), color = Color(0xFF2B2620), fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, maxLines = 3)
             Spacer(Modifier.height(3.dp))
             listOfNotNull(titles.console(g.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { Text(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { FullText(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1) }
             Spacer(Modifier.height(4.dp))
             Text("A  pull it out\nY  look at its cover", color = Color(0xFF8A7D69), fontSize = 10.sp, lineHeight = 13.sp, fontFamily = FontFamily.Monospace)
         }

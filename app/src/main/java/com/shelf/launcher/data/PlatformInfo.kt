@@ -27,6 +27,9 @@ object PlatformInfo {
         "Atari2600" to ("ATARI" to 1977), "Atari7800" to ("ATARI" to 1986), "Lynx" to ("ATARI" to 1989),
         "Jaguar" to ("ATARI" to 1993),
         "3DO" to ("PANASONIC" to 1993), "Xbox" to ("MICROSOFT" to 2001), "Xbox360" to ("MICROSOFT" to 2005),
+        // (Pass 4: first release, any region — for Generations.)
+        "XboxOne" to ("MICROSOFT" to 2013), "XboxSeries" to ("MICROSOFT" to 2020), "PS5" to ("SONY" to 2020),
+        "Atari5200" to ("ATARI" to 1982),
         "Amiga" to ("COMMODORE" to 1985), "C64" to ("COMMODORE" to 1982),
         "ColecoVision" to ("COLECO" to 1982), "Intellivision" to ("MATTEL" to 1979), "Vectrex" to ("GCE" to 1982)
     )

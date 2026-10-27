@@ -190,6 +190,7 @@ class MainActivity : ComponentActivity() {
 
         // Watches real frame times so Automatic quality can step down on devices that can't keep up.
         com.shelf.launcher.device.FrameWatch.start(this)
+        com.shelf.launcher.ui.CustomPieceTones.attach(this) // (QA pass 3, D25: pack-cartridge tones kept across starts)
         setContent {
             // "Hide navigation bar" switched: the window follows at once.
             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
@@ -226,6 +227,8 @@ class MainActivity : ComponentActivity() {
             } else {
                 Box(Modifier.fillMaxSize()) {
                     Launcher()
+                    // (QA self-test overlay: draws nothing unless TestHooks voltcap_test_fault is on.)
+                    com.shelf.launcher.ui.QaFaultOverlay()
                     if (CrashGuard.safeMode) {
                         SafeModeBanner(
                             onExport = {
@@ -292,6 +295,7 @@ class MainActivity : ComponentActivity() {
                 else -> false
             }) com.shelf.launcher.data.AnimatedArt.onMove()
         runCatching { com.shelf.launcher.data.SystemButtonLayout.observe(this, event) }
+        com.shelf.launcher.ui.QaWalk.afterKey(event) // (QA: the controller walk, test hooks + voltcap_test_walk only)
         return super.dispatchKeyEvent(event)
     }
 

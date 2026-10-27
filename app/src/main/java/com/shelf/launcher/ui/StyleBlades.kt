@@ -520,8 +520,7 @@ private fun BladeTitle(title: String, sub: String?, p: BladePalette, compact: Bo
         Text(title, color = Color.White, fontSize = if (compact) 24.sp else 34.sp, fontWeight = FontWeight.Light, maxLines = 1)
         if (sub != null) {
             Spacer(Modifier.width(12.dp))
-            Text(sub, color = lerp(p.glow, Color.White, 0.4f), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Medium, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(bottom = if (compact) 3.dp else 6.dp))
+            FullText(sub, color = lerp(p.glow, Color.White, 0.4f), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, modifier = Modifier.weight(1f).padding(bottom = if (compact) 3.dp else 6.dp))
         }
     }
 }
@@ -586,7 +585,7 @@ private fun BladeGameList(c: StyleCtx, p: BladePalette, compact: Boolean, modifi
         val scroll = rememberBladeScroll(c.focus, count, visible, StyleLoop.on)
         val density = LocalDensity.current
         val stepPx = with(density) { (rowH + gap).toPx() }
-        val first = scroll.value.toInt().coerceAtLeast(0)
+        val first by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.toInt().coerceAtLeast(0) } } // (Pass 5, D57: derived — read raw, the list re-composed every scroll frame.)
         Box(
             Modifier.fillMaxSize().pointerInput(Unit) {
                 var acc = 0f
@@ -610,8 +609,8 @@ private fun BladeGameList(c: StyleCtx, p: BladePalette, compact: Boolean, modifi
                                 else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
                             }
                             Spacer(Modifier.width(10.dp))
-                            Text(titles.display(g.name), color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp,
-                                fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            FullText(titles.display(g.name), color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp,
+                                fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal, maxLines = 1, modifier = Modifier.weight(1f))
                             if (g.stableKey in c.state.favorites) Icon(Icons.Filled.Star, null, tint = if (lit) p.ink else p.glow, modifier = Modifier.size(14.dp))
                         }
                     }
@@ -648,12 +647,12 @@ private fun BladeGamePreview(c: StyleCtx, g: Game, p: BladePalette, compact: Boo
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text(titles.display(g.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
+                FullText(
                     (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform)) + "  ·  " +
                         stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                    color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 12.sp else 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 12.sp else 14.sp, maxLines = 1
                 )
             }
             c.progress(g)?.let { (e, t) ->
@@ -709,7 +708,7 @@ private fun BladeSystems(c: StyleCtx, p: BladePalette, compact: Boolean, systems
                 val visible = ((maxHeight + gap) / (rowH + gap)).toInt().coerceAtLeast(1)
                 val scroll = rememberBladeScroll(row, systems.size, visible, false)
                 val stepPx = with(LocalDensity.current) { (rowH + gap).toPx() }
-                val first = scroll.value.toInt().coerceAtLeast(0)
+                val first by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.toInt().coerceAtLeast(0) } } // (Pass 5, D57: derived — read raw, the list re-composed every scroll frame.)
                 for (i in first..(first + visible).coerceAtMost(systems.size - 1)) {
                     val st = c.stops.getOrNull(systems[i]) ?: continue
                     key(i) {
@@ -720,8 +719,8 @@ private fun BladeSystems(c: StyleCtx, p: BladePalette, compact: Boolean, systems
                                 if (plat != null) PlatformLogo(plat, st.label, Modifier.width(rowH * 1.4f).fillMaxHeight(0.62f), textColor = if (lit) p.ink else Color.White, textSize = 11.sp, blackToWhite = !lit)
                                 else Icon(st.icon, null, tint = if (lit) p.ink else Color.White, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(10.dp))
-                                Text(st.label, color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp, fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                FullText(st.label, color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp, fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1, modifier = Modifier.weight(1f))
                                 st.platform?.let { pl -> counts[pl]?.let { Text("$it", color = if (lit) p.ink.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.6f), fontSize = 13.sp) } }
                             }
                         }
@@ -740,7 +739,7 @@ private fun BladeSystemPreview(st: StyleStop, count: Int, p: BladePalette, compa
     val context = LocalContext.current
     val platform = st.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
     val photosOn = Features.consolePhotos.state.value
-    val photo by produceState<String?>(null, platform, photosOn) {
+    val photo by produceKeyed<String?>(null, platform, platform, photosOn) {
         value = if (photosOn && platform != null && com.shelf.launcher.data.ConsolePhotos.hasPhoto(platform)) {
             runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull()
         } else null
@@ -832,8 +831,8 @@ private fun BladeMenu(c: StyleCtx, p: BladePalette, compact: Boolean, b: Int, it
                                     c.cover(gg)?.let { cv -> AsyncImage(rememberStyleArtRequest(cv, trim = true), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                                 } else Icon(it.icon, null, tint = if (lit) p.ink else Color.White, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(10.dp))
-                                Text(it.label, color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp, fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                FullText(it.label, color = if (lit) p.ink else Color.White, fontSize = if (compact) 14.sp else 16.sp, fontWeight = if (lit) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1, modifier = Modifier.weight(1f))
                             }
                         }
                     }
@@ -855,7 +854,7 @@ private fun BladeMenu(c: StyleCtx, p: BladePalette, compact: Boolean, b: Int, it
                                 Box(Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent))))
                                 Box(Modifier.fillMaxSize().border(2.dp, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.2f))), pod))
                                 Column(Modifier.align(Alignment.BottomStart).padding(start = 26.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)) {
-                                    Text(titles.display(gg.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    FullText(titles.display(gg.name), color = Color.White, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                                     Text(titles.console(gg.platform) + "  ·  " + stylePlaytime(c.playtime(gg), true), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                                 }
                             }
@@ -914,11 +913,11 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             val ink = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.45f), Offset(0f, 1.5f), 3f))
-            Text(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink)
-            Text(
+            FullText(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = ink)
+            FullText(
                 listOfNotNull(prof?.TotalPoints?.let { "$it points" }, stats.mastered.takeIf { it > 0 }?.let { "$it mastered" }, stylePlaytime(total.takeIf { it > 0 }, true).takeIf { total > 0 }?.let { "$it played" })
                     .joinToString("  ·  ").ifEmpty { "${c.state.games.size} games" },
-                color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, style = ink
+                color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 1, style = ink
             )
         }
     }

@@ -693,11 +693,73 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setAppearance(settingsIn: AppearanceSettings) {
+    fun setAppearance(settingsIn0: AppearanceSettings) {
         // Update 328: during a test-hook preview (adb walk, TestHooks.previewOnly) nothing is saved, whatever asks — found
         // on the Thor: turning the in-game second screen's page saved the whole previewed appearance (Twin desk) as yours.
-        if (com.shelf.launcher.ui.TestHooks.previewOnly) { previewAppearance(settingsIn); return }
-        val old = _uiState.value.appearance
+        if (com.shelf.launcher.ui.TestHooks.previewOnly) { previewAppearance(settingsIn0); return }
+        val shown = _uiState.value.appearance
+        // Pass 5 (data/CategoryGameLooks.kt): in a category with its own game look, a look picked is that category's; what
+        // is saved keeps the layout's own look.
+        val old = savedOf(shown)
+        val ownArt = com.shelf.launcher.data.CategoryGameLooks.of(categoryKeyOf(_uiState.value))
+        val settingsIn = if (ownArt != null) {
+            if (settingsIn0.cardArtType != shown.cardArtType) com.shelf.launcher.data.CategoryGameLooks.set(categoryKeyOf(_uiState.value), settingsIn0.cardArtType)
+            settingsIn0.copy(cardArtType = old.cardArtType)
+        } else settingsIn0
+        // Pass 4 (data/CategoryLayouts.kt): a layout picked by you is this category's when it has its own, else the default.
+        if (settingsIn.homeLayout != old.homeLayout) {
+            val key = categoryKeyOf(_uiState.value)
+            if (com.shelf.launcher.data.CategoryLayouts.of(key) != null) com.shelf.launcher.data.CategoryLayouts.set(key, settingsIn.homeLayout, old.homeLayout)
+            else if (com.shelf.launcher.data.CategoryLayouts.defaultLayout() != null) com.shelf.launcher.data.CategoryLayouts.setDefault(settingsIn.homeLayout)
+        }
+        val settings = withCategoryArt(_uiState.value, persistAppearance(old, settingsIn))
+        applyAppearanceEffects(shown, settings)
+    }
+
+    /** Pass 5: the category's own game look shown over the saved one: (shown, saved under it), or null. */
+    private var artShown: Pair<com.shelf.launcher.data.CardArtType, com.shelf.launcher.data.CardArtType>? = null
+
+    /** Pass 5: [a] as saved — without a category's own game look shown over it. */
+    private fun savedOf(a: AppearanceSettings): AppearanceSettings {
+        val p = artShown ?: return a
+        return if (a.cardArtType == p.first) a.copy(cardArtType = p.second) else a
+    }
+
+    /** Pass 5: [saved] as the category of [next] shows it — with its own game look when it has one. */
+    private fun withCategoryArt(next: LauncherUiState, saved: AppearanceSettings): AppearanceSettings {
+        val want = com.shelf.launcher.data.CategoryGameLooks.of(categoryKeyOf(next))
+        artShown = if (want != null && want != saved.cardArtType) want to saved.cardArtType else null
+        return if (want != null) saved.copy(cardArtType = want) else saved
+    }
+
+    /** Pass 5 (QA): the saved appearance back on screen after a test preview (TestHooks). */
+    fun reloadAppearance() {
+        artShown = null
+        _uiState.update { it.copy(appearance = withCategoryArt(it, appearanceStore.load())) }
+    }
+
+    /** Pass 5 (Settings › Categories): the category you're in keeps [look] as its own game look (null: its layout's). */
+    fun setCategoryGameLook(look: com.shelf.launcher.data.CardArtType?) {
+        val s = _uiState.value
+        val saved = savedOf(s.appearance)
+        com.shelf.launcher.data.CategoryGameLooks.set(categoryKeyOf(s), look)
+        _uiState.update { it.copy(appearance = withCategoryArt(it, saved)) }
+    }
+
+    /** Pass 5: every category back to its layout's game look. */
+    fun clearCategoryGameLooks() {
+        val saved = savedOf(_uiState.value.appearance)
+        com.shelf.launcher.data.CategoryGameLooks.clear()
+        _uiState.update { it.copy(appearance = withCategoryArt(it, saved)) }
+    }
+
+    /**
+     * Saves [settingsIn] as the appearance, with a layout switch done the usual way (each layout's look parked and brought
+     * back, its "Only this layout" settings swapped) — the part of [setAppearance] that the category layouts (pass 4) use
+     * too. Returns what is now in force. Nothing is shown here.
+     */
+    private fun persistAppearance(old: AppearanceSettings, settingsIn: AppearanceSettings): AppearanceSettings {
+        if (com.shelf.launcher.ui.TestHooks.previewOnly) return com.shelf.launcher.data.swapLayoutLook(old, settingsIn)
         // Update 133: a layout's own settings ("Only for this layout", data/LayoutOnly.kt) are kept before it's left…
         val switching = settingsIn.homeLayout != old.homeLayout
         if (switching) com.shelf.launcher.data.LayoutOnly.leaving(getApplication(), old.homeLayout)
@@ -712,8 +774,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         } else swapped0
         appearanceStore.save(swapped)
         // …and after the switch the shared settings come back and the next layout's own ones come in.
-        val settings = if (switching && com.shelf.launcher.data.LayoutOnly.entered(getApplication(), old.homeLayout, swapped.homeLayout))
+        return if (switching && com.shelf.launcher.data.LayoutOnly.entered(getApplication(), old.homeLayout, swapped.homeLayout))
             appearanceStore.load() else swapped
+    }
+
+    private fun applyAppearanceEffects(old: AppearanceSettings, settings: AppearanceSettings) {
         val raLogosTurnedOn = settings.raLogos && !old.raLogos
         // A new global sort re-orders the dock: stay on the same game.
         if (settings.sortMode != old.sortMode) updateKeepingFocus { it.copy(appearance = settings) }
@@ -2011,7 +2076,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Move relative to the current selection (holding the D-pad). Reads the
      * latest state, so fast key repeats never skip or repeat a step. */
-    fun moveFocus(delta: Int) {
+    fun moveFocus(requested: Int) {
+        // (QA self-test: TestHooks voltcap_test_fault focus_skip — a deliberate wrong step; nothing otherwise.)
+        val delta = com.shelf.launcher.ui.QaFault.focusDelta(requested)
         val s = _uiState.value
         val size = s.visibleGames.size
         // A looping row wraps around from the last game to the first — and
@@ -2136,7 +2203,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         preferencesStore.setLastPlatformFilter(platform)
         preferencesStore.setLastSpecialFilter(null)
         rememberCategoryFocus()
-        _uiState.update { it.copy(platformFilter = platform, specialFilter = null, focusedIndex = 0).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
+        val next = _uiState.value.copy(platformFilter = platform, specialFilter = null)
+        val look = withCategoryArt(next, categoryLayoutFor(next) ?: savedOf(_uiState.value.appearance))
+        _uiState.update { it.copy(platformFilter = platform, specialFilter = null, focusedIndex = 0, appearance = look).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
     }
 
     fun setSpecialFilter(filter: SpecialFilter?) {
@@ -2144,7 +2213,40 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         preferencesStore.setLastSpecialFilter(filter?.name)
         preferencesStore.setLastPlatformFilter(null)
         rememberCategoryFocus()
-        _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
+        val next = _uiState.value.copy(specialFilter = filter, platformFilter = null)
+        val look = withCategoryArt(next, categoryLayoutFor(next) ?: savedOf(_uiState.value.appearance))
+        _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0, appearance = look).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
+    }
+
+    /**
+     * Pass 4: the appearance for the category in [next] when it shows another home layout than the one on screen (its own,
+     * or the default when it has none), switched and saved the usual way; null when the layout stays. Shown by the caller
+     * in the same update as the new category, so no frame has the new category in the old layout (or the reverse).
+     */
+    private fun categoryLayoutFor(next: LauncherUiState): AppearanceSettings? {
+        val old = savedOf(_uiState.value.appearance)
+        val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(next)) ?: return null
+        if (want == old.homeLayout) return null
+        return persistAppearance(old, old.copy(homeLayout = want))
+    }
+
+    /** Pass 4 (Settings › Categories): the category you're in keeps [layout] as its own (null: it follows the default). */
+    fun setCategoryLayout(layout: com.shelf.launcher.data.HomeLayout?) {
+        val s = _uiState.value
+        com.shelf.launcher.data.CategoryLayouts.set(categoryKeyOf(s), layout, s.appearance.homeLayout)
+        val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(s)) ?: return
+        if (want != s.appearance.homeLayout) setAppearance(s.appearance.copy(homeLayout = want))
+    }
+
+    /** Pass 4: the key of the category you're in (for Settings › Categories). */
+    fun currentCategoryKey(): String = categoryKeyOf(_uiState.value)
+
+    /** Pass 4: every category back to the default layout. */
+    fun clearCategoryLayouts() {
+        val d = com.shelf.launcher.data.CategoryLayouts.defaultLayout()
+        com.shelf.launcher.data.CategoryLayouts.clear()
+        val s = _uiState.value
+        if (d != null && d != s.appearance.homeLayout) setAppearance(s.appearance.copy(homeLayout = d))
     }
 
     /** Update 186: a validated internet connection right now. */
@@ -6432,6 +6534,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        // Pass 5: the start category's own game look (data/CategoryGameLooks.kt).
+        runCatching { _uiState.update { it.copy(appearance = withCategoryArt(it, it.appearance)) } }
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the
         // Flip 2 and froze the game window that asked for it.)
         viewModelScope.launch(Dispatchers.IO) { raCredentialsStore.warm() }

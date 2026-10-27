@@ -200,6 +200,13 @@ internal fun SecondWallPage(
     var layout by remember(ofPlatforms, layoutRaw) { mutableStateOf(SlideLayout.parse(layoutRaw, SlideLayout.wallDefaults)) }
     var editing by remember { mutableStateOf(false) }
     var editKey by remember { mutableStateOf("LOGO") }
+    // QA: (C6) controller on the second screen: A on the Wall while editing toggles moving the chosen part with the D-pad.
+    var nudging by remember { mutableStateOf(false) }
+    fun nudge(dx: Float, dy: Float) {
+        val r = layout[editKey] ?: return
+        // (The same steps and limits as the slide editor's keys, PlatformBrowserState.move.)
+        layout = layout + (editKey to r.copy(x = (r.x + dx).coerceIn(-0.3f, 1.1f), y = (r.y + dy).coerceIn(-0.3f, 1.1f)))
+    }
     fun save() {
         val encoded = SlideLayout.encode(layout)
         if (ofPlatforms) Features.pbWallPlatformsLayout.value = encoded else Features.pbWallGamesLayout.value = encoded
@@ -217,19 +224,25 @@ internal fun SecondWallPage(
             Spacer(Modifier.width(6.dp))
             Chip("Games", accent = !ofPlatforms, modifier = Modifier.padTarget("wall-games") { Features.wallOfPlatforms.value = false }) { Features.wallOfPlatforms.value = false }
             Spacer(Modifier.weight(1f))
-            if (!editing) Chip("Edit layout", accent = false, modifier = Modifier.padTarget("wall-edit") { editing = true }) { editing = true }
+            if (!editing) Chip("Edit layout", accent = false, modifier = Modifier.padTarget("wall-edit") { editing = true; nudging = false }) { editing = true; nudging = false }
         }
         // Update 144: the edit chips wrap onto their own line(s), so Reset and Done always fit on the narrow second screen.
         if (editing) {
             ChipFlow(Modifier.padding(bottom = 6.dp)) {
-                Chip("LOGO", accent = editKey == "LOGO") { editKey = "LOGO" }
-                Chip("NAME", accent = editKey == "NAME") { editKey = "NAME" }
-                Chip("COUNT", accent = editKey == "COUNT") { editKey = "COUNT" }
-                Chip("–", accent = false) { scale(0.94f) }
-                Chip("+", accent = false) { scale(1.06f) }
-                Chip("Reset", accent = false) { layout = SlideLayout.wallDefaults; save() }
-                Chip("Done", modifier = Modifier.padTarget("wall-done") { save(); editing = false }) { save(); editing = false }
+                // QA: (C6) every edit chip reachable with SecondPad too (A = the same as a tap).
+                Chip("LOGO", accent = editKey == "LOGO", modifier = Modifier.padTarget("wall-key-LOGO") { editKey = "LOGO" }) { editKey = "LOGO" }
+                Chip("NAME", accent = editKey == "NAME", modifier = Modifier.padTarget("wall-key-NAME") { editKey = "NAME" }) { editKey = "NAME" }
+                Chip("COUNT", accent = editKey == "COUNT", modifier = Modifier.padTarget("wall-key-COUNT") { editKey = "COUNT" }) { editKey = "COUNT" }
+                Chip("–", accent = false, modifier = Modifier.padTarget("wall-smaller") { scale(0.94f) }) { scale(0.94f) }
+                Chip("+", accent = false, modifier = Modifier.padTarget("wall-bigger") { scale(1.06f) }) { scale(1.06f) }
+                Chip("Reset", accent = false, modifier = Modifier.padTarget("wall-reset") { layout = SlideLayout.wallDefaults; save() }) { layout = SlideLayout.wallDefaults; save() }
+                Chip("Done", modifier = Modifier.padTarget("wall-done") { save(); editing = false; nudging = false }) { save(); editing = false; nudging = false }
             }
+            // QA: (C6) what A on the Wall does while editing with the controller.
+            if (SecondPad.active) Text(
+                if (nudging) "◀ ▶ ▲ ▼ move $editKey · A: stop moving" else "A on the Wall: move $editKey with the D-pad",
+                color = ShelfTheme.textMuted, fontSize = 11.sp, modifier = Modifier.padding(bottom = 4.dp)
+            )
         }
         WallView(
             tiles = tiles, selected = selected, direction = holder.dir, animate = Features.pbAnimate.state.value,
@@ -239,14 +252,24 @@ internal fun SecondWallPage(
             modifier = Modifier.fillMaxSize().padTarget(
                 "wall-view",
                 onMove = { d ->
-                    val step = when (d) { 0 -> -1; 1 -> 1; else -> 0 }
-                    val to = selected + step
-                    if (step != 0 && to in tiles.indices) {
-                        tiles.getOrNull(to)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(to) }
+                    // QA: (C6) moving a part: the D-pad nudges it (0.01 a press, as the slide editor), all four ways stay here.
+                    if (editing && nudging) {
+                        when (d) { 0 -> nudge(-0.01f, 0f); 1 -> nudge(0.01f, 0f); 2 -> nudge(0f, -0.01f); else -> nudge(0f, 0.01f) }
                         true
-                    } else step != 0
+                    } else {
+                        val step = when (d) { 0 -> -1; 1 -> 1; else -> 0 }
+                        val to = selected + step
+                        if (step != 0 && to in tiles.indices) {
+                            tiles.getOrNull(to)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(to) }
+                            true
+                        } else step != 0
+                    }
                 }
-            ) { tiles.getOrNull(selected)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(selected) }; SecondPad.leave() },
+            ) {
+                // QA: (C6) while editing, A starts / stops moving the chosen part instead of picking and leaving.
+                if (editing) nudging = !nudging
+                else { tiles.getOrNull(selected)?.let { if (ofPlatforms) onPickCategory(it) else onFocusGame(selected) }; SecondPad.leave() }
+            },
             layout = layout, editing = editing, editKey = editKey,
             onEditKey = { editKey = it }, onLayoutChange = { layout = it }
         )

@@ -207,7 +207,9 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             drawOrbitPath(cx, cy, rx, ry, glow, front = true, turn = clock.floatValue)
         }
         val half = ringN / 2
-        val base = scroll.value.roundToInt()
+        // (Pass 5, D57: the ring's place as a derived whole number — read raw, every disc was re-composed on every frame
+        // of a turn; it changes once per place now.)
+        val base by remember { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
         val lo = if (loop && count <= ringN + 1) -((count - 1) / 2) else -half - 1
         val hi = if (loop && count <= ringN + 1) count / 2 else half + 1
         for (off in lo..hi) {
@@ -219,6 +221,15 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                 val on = i == focus
                 // The one you're on comes forward a little more and grows, easing in and out.
                 val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (animate) 420 else 0, easing = FastOutSlowInEasing), label = "odLift")
+                // (Drawing order by depth, in small steps, so it changes a few times per turn instead of every frame.)
+                val zNow by remember(slot, step) {
+                    androidx.compose.runtime.derivedStateOf {
+                        val th = (slot - scroll.value) * step
+                        val depth = (cos(th) + 1f) / 2f
+                        val z = if (depth < 0.5f) 0.1f + depth * 0.3f else 1f + depth + lift
+                        (z * 40f).roundToInt() / 40f
+                    }
+                }
                 Box(
                     Modifier.size(with(density) { disc.toDp() })
                         .graphicsLayer {
@@ -240,11 +251,7 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                                 // (Its window's disc takes over as it flies out — and hands back as it lands.)
                                 (if (on && MediaInspect.key == g.stableKey) 1f - MediaInspect.amount.floatValue else 1f)
                         }
-                        .zIndex(run {
-                            val th = (slot - scroll.value) * step
-                            val depth = (cos(th) + 1f) / 2f
-                            if (depth < 0.5f) 0.1f + depth * 0.3f else 1f + depth + lift
-                        })
+                        .zIndex(zNow)
                         .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }
                 ) {
                     OrbitDisc(
@@ -265,10 +272,11 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             animationSpec = tween(if (animate) 200 else 0), label = "odName") { k ->
             val gg = c.games.firstOrNull { it.stableKey == k } ?: g
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    titles.display(gg.name).uppercase(), fontSize = 30.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                    style = TextStyle(brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFB9C4D6), Color(0xFF6F7C92), Color(0xFFE6ECF5))),
+                // (RP Classic QA: "POKEMON SILVER VERSION (GB ..." — two lines, then shrink, then slide; R18.)
+                FullText(
+                    titles.display(gg.name).uppercase(), color = Color.Unspecified, fontSize = 30.sp, fontWeight = FontWeight.Black, maxLines = 2,
+                    textAlign = TextAlign.Center,
+                    style = TextStyle(fontStyle = FontStyle.Italic, brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFB9C4D6), Color(0xFF6F7C92), Color(0xFFE6ECF5))),
                         shadow = Shadow(glow.copy(alpha = 0.55f), Offset(0f, 0f), 12f))
                 )
                 val bits = listOfNotNull(titles.console(gg.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(gg), c.lastPlayed(gg) != null),

@@ -332,9 +332,9 @@ private fun LibraryPanelInfo(c: StyleCtx, g: Game, compact: Boolean, roomy: Bool
                 titles.display(g.name), color = Color.White, maxSize = if (compact) 15.sp else 19.sp, minSize = 11.sp,
                 maxLines = 2, fontWeight = FontWeight.Bold
             )
-            Text(
+            FullText(
                 titles.console(g.platform), color = ShelfTheme.accent, fontSize = if (compact) 10.sp else 12.sp,
-                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis
+                fontWeight = FontWeight.SemiBold, maxLines = 1
             )
             Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
             LibraryStats(c, g, compact)
@@ -342,9 +342,9 @@ private fun LibraryPanelInfo(c: StyleCtx, g: Game, compact: Boolean, roomy: Bool
             val summary = c.state.metadata[g.stableKey]?.summary?.trim()?.takeIf { it.isNotEmpty() }
             if (!compact && summary != null) {
                 Spacer(Modifier.height(8.dp))
-                Text(
+                FullText(
                     summary, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 15.sp,
-                    maxLines = if (roomy) 3 else 2, overflow = TextOverflow.Ellipsis
+                    maxLines = if (roomy) 3 else 2
                 )
             }
         }
@@ -387,7 +387,7 @@ private fun LibraryStatBox(label: String, value: String, progress: Pair<Int, Int
         modifier.clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.07f))
             .padding(horizontal = 7.dp, vertical = if (compact) 4.dp else 6.dp)
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.55f), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+        FullText(label, color = Color.White.copy(alpha = 0.55f), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         Spacer(Modifier.height(2.dp))
         FitText(value, color = Color.White, maxSize = if (compact) 11.sp else 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold)
         if (progress != null) {
@@ -402,9 +402,8 @@ private fun LibraryStatLine(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Color.White.copy(alpha = 0.55f), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
         Spacer(Modifier.width(6.dp))
-        Text(
-            value, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
-            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
+        FullText(
+            value, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
         )
     }
 }
@@ -611,9 +610,9 @@ private fun LibraryTile(
             if (on && !sel) Box(Modifier.matchParentSize().border(1.5.dp, ShelfTheme.accent.copy(alpha = 0.6f), uiRounded(corner)))
         }
         Spacer(Modifier.height(4.dp))
-        Text(
+        FullText(
             titles.display(g.name), color = if (on) ShelfTheme.accent else Color.White.copy(alpha = 0.85f), fontSize = 11.sp,
-            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1,
             style = nameTextStyle(NameBackdrop.SHADOW), modifier = Modifier.fillMaxWidth()
         )
     }

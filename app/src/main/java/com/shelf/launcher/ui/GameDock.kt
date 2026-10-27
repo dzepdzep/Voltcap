@@ -101,6 +101,7 @@ internal fun GameDock(
     onNeedPhysical: (Game) -> Unit = {},
     onNeedScreenshots: (Game) -> Unit = {}
 ) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("GameDock") } // (QA: rebuilds per second)
     com.shelf.launcher.Breadcrumbs.mark("GameDock")
     // Unlocks not looked at yet, per game (Living Library's small gold mark).
     val seenAll by com.shelf.launcher.data.AchievementSeen.all.collectAsState()
@@ -232,6 +233,14 @@ internal fun GameDock(
             if (newList || kotlin.math.abs(rowPos.value - target) > 4f) rowPos.snapTo(target)
             else rowPos.animateTo(target, rowSpec)
         }
+        // QA (D17): the snap above runs after the frame where the list changed — that frame drew the new category's games
+        // at the OLD row position (often many places away, so off-screen): one empty frame before the category slide.
+        // While a snap is due, the cards already use the new place (read while placing, not in composition).
+        val rowPosNow: () -> Float = {
+            val t = virtualFocus.toFloat()
+            val l = rowList[0]
+            if ((l != null && l !== games && l != games) || kotlin.math.abs(rowPos.value - t) > 4f) t else rowPos.value
+        }
         val firstIndex = if (loop) virtualFocus - coversBefore else (focus - coversBefore).coerceAtLeast(0)
         val lastIndex = if (loop) virtualFocus + coversAfter else (focus + coversAfter).coerceAtMost(games.lastIndex)
         // With the fixed first capsule the cover you're on is a bit taller than the capsule: room for both.
@@ -247,6 +256,9 @@ internal fun GameDock(
         val density = androidx.compose.ui.platform.LocalDensity.current.density
         val prefetchSizes = sizes
         val prefetchWide = look.focusedWide
+        // QA (logo pop): the name line's logo was never warmed — landing on a game it loaded from storage while the name
+        // waited next to an empty slot. The logos of the games ±2 from the focus are warmed too (below).
+        val prefetchLogos = LocalTitleOptions.current.let { it.showLogos && it.placement != com.shelf.launcher.data.TitlePlacement.HIDDEN }
         // Box / disc / screenshot art is looked up lazily: only for the few games
         // around the focus, after the selection has rested a moment, one at a
         // time (the lookups are idempotent and remembered by the view model).
@@ -265,7 +277,7 @@ internal fun GameDock(
                 }
             }
         }
-        LaunchedEffect(focus, games.size, loop, prefetchSizes, prefetchWide, density, cardArtType, if (needsLookup) physicalMedia else null, if (needsLookup) screenshots else null) {
+        LaunchedEffect(focus, games.size, loop, prefetchSizes, prefetchWide, density, cardArtType, if (needsLookup) physicalMedia else null, if (needsLookup) screenshots else null, prefetchLogos) {
             kotlinx.coroutines.delay(80)
             val loader = context.imageLoader
             val handles = ArrayList<coil.request.Disposable>()
@@ -309,6 +321,15 @@ internal fun GameDock(
                             else -> Unit
                         }
                     }
+                }
+                // QA (logo pop): the name line's logos for the games ±2 from the focus, in the shared style shape the
+                // logo's own request is decoded in (SharedArtInterceptor), so it shows in the slot at once.
+                if (prefetchLogos) {
+                    val logos = ((focus - 2)..(focus + 2)).mapNotNull { i ->
+                        val g = games.getOrNull(if (loop) i.mod(games.size) else i) ?: return@mapNotNull null
+                        artOverrides[g.stableKey]?.logo ?: art[g.stableKey]?.logoUrl
+                    }
+                    handles += warmStyleArt(context, logos)
                 }
                 kotlinx.coroutines.awaitCancellation()
             } finally {
@@ -537,7 +558,7 @@ internal fun GameDock(
                 val index = if (loop) slot.mod(games.size) else slot
                 val game = games[index]
                 val rel = slot - (if (loop) virtualFocus else focus)
-                key(if (loop) "loop:$slot" else game.stableKey) {
+                key(if (loop) "loop:$slot:${game.stableKey}" else game.stableKey) { // (QA V5: a new category no longer reuses the old games' places on an endless row)
                     // (Update 237, #30: alone in the row, the game you're on stays in its place and fades in as you move,
                     // instead of sliding in across an empty row.)
                     val appear = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(if (onlyFocused) 0f else 1f) }
@@ -637,11 +658,11 @@ internal fun GameDock(
                                 // The card's place for where the row is now (between two games while it glides).
                                 // (Update 237, #30: alone in the row it sits where the game you're on always settles.)
                                 val xd = if (onlyFocused) focusX else if (pinnedFirst) {
-                                    val p = rowPos.value
+                                    val p = rowPosNow()
                                     val a0 = kotlin.math.floor(p).toInt()
                                     lerp(pinX(index, a0), pinX(index, a0 + 1), p - a0)
                                 } else {
-                                    val rf = slotF - rowPos.value
+                                    val rf = slotF - rowPosNow()
                                     val f0 = kotlin.math.floor(rf).toInt()
                                     lerp(xAt(f0), xAt(f0 + 1), rf - f0)
                                 }
