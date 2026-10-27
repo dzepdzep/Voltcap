@@ -53,6 +53,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import android.view.InputDevice
@@ -345,8 +346,22 @@ private fun isSystemKey(code: Int): Boolean = when (code) {
     else -> code in 85..90 || code in android.view.KeyEvent.KEYCODE_MEDIA_PLAY..android.view.KeyEvent.KEYCODE_MEDIA_RECORD
 }
 
+/** QA (D11): follows the (gliding) accent for the controller lights without rebuilding the home screen each frame. */
+@Composable
+private fun LightsAccentFollower(onSettled: (Int) -> Unit) {
+    val accentArgb = ShelfTheme.accent.toArgb()
+    val settled = androidx.compose.runtime.rememberUpdatedState(onSettled)
+    LaunchedEffect(accentArgb) {
+        kotlinx.coroutines.delay(400)
+        com.shelf.launcher.data.LightsTheme.accent = accentArgb
+        settled.value(accentArgb)
+    }
+}
+
 @Composable
 private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("Screen") } // (QA: rebuilds per second)
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch("Screen", qaScope, qaComp) } }
     com.shelf.launcher.Breadcrumbs.mark("LauncherScreenContent")
     val sounds = LocalUiSounds.current
     val uiState by viewModel.uiState.collectAsState()
@@ -1508,13 +1523,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     }
     val lightsActive = rememberIsActive()
     // "Theme colour" for the lights: follow the accent, settled (not every animation frame).
-    val accentArgb = ShelfTheme.accent.toArgb()
     var lightsAccent by remember { mutableStateOf(com.shelf.launcher.data.LightsTheme.accent) }
-    LaunchedEffect(accentArgb) {
-        kotlinx.coroutines.delay(400)
-        com.shelf.launcher.data.LightsTheme.accent = accentArgb
-        lightsAccent = accentArgb
-    }
+    // QA (D11): the accent glides every frame for ~0.6 s after each move (colours following the game); reading it here
+    // made this whole screen (LauncherScreenContent) rebuild on every frame of the glide (~50 times a second while
+    // navigating). Read in a small part of its own instead; it still settles the lights' colour 400 ms after the glide.
+    LightsAccentFollower { lightsAccent = it }
     val lightsHeldOff = com.shelf.launcher.data.Features.lightsHeldOff.state.value
     LaunchedEffect(
         state.appearance.lightsEnabled, state.appearance.lightsColor, state.appearance.lightsBrightness, lightsHeldOff,
@@ -2565,7 +2578,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 329: the pale backdrops — the status bar's white needs a darker band there.)
             paleBehind = paleBehind,
             // (Update 333: dressed for the layout — StatusLooks.)
-            look0 = statusLookFor(state.appearance.homeLayout, paleBehind),
+            lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
             modifier = modifier,
             menuSlot = menuSlot,
             onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r }
@@ -2961,9 +2974,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val frost = if (!blurOn && look.blur > 0) look.blur / 100f * 0.35f else 0f
         if (look.dim > 0 || frost > 0f) {
             val dimA = look.dim / 100f * 0.85f
-            val wash = com.shelf.launcher.ui.theme.ShelfTheme.colors.surface
+            // (QA pass 2, D22: the wash colour is read while drawing, so the colour glide doesn't re-compose the screen.)
+            val washLive = com.shelf.launcher.ui.theme.ShelfTheme.live
             val onlyBand = look.blurArea == com.shelf.launcher.data.Features.BlurArea.GAME_UI
             if (!onlyBand || uiBand != null) Spacer(Modifier.fillMaxSize().drawBehind {
+                val wash = washLive.value.surface
                 val band = if (onlyBand) uiBand else null
                 // Game UI only: the shade fades out softly instead of stopping at a hard line.
                 if (band != null) {
@@ -3597,8 +3612,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             com.shelf.launcher.data.CategoryScenes.parse(state.appearance.categoryScenes)[catKey]
                                 ?.let { n -> com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == n } }?.colors
                         }
-                        val baseColors = com.shelf.launcher.ui.theme.ShelfTheme.colors
-                        val nameColors = catColors?.let { c -> baseColors.copy(accent = c.accent, accentGlow = c.accentGlow, secondary = c.secondary) } ?: baseColors
+                        // (QA pass 3, D31: the theme colours are read inside ProvideNameColors' own scope — read here, in the
+                        // home screen's, the colour glide re-composed the whole screen every frame in the layouts with this bar.)
                         if (pin != com.shelf.launcher.data.Features.ConsoleNamePin.HIDDEN) Row(
                             Modifier
                                 .fillMaxWidth()
@@ -3637,7 +3652,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val logos = remember { HashMap<String, String?>() }
                             logos[catLabel] = catLogo
                             val catSize = if (LocalCompactPills.current) 12.sp * LocalTileScale.current else 15.sp
-                            androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides nameColors) {
+                            ProvideNameColors(catColors) {
                                 // L2 / R2: the name swaps, fades, slides or drops in (Appearance › Name & category).
                                 CategoryNameSwap(catLabel, state.appearance.categoryAnim) { label ->
                                     Row(Modifier.nameBackdrop(backdrop).onGloballyPositioned { c -> GlanceOrigin.category = GlanceOrigin.onScreen(c) }, verticalAlignment = Alignment.CenterVertically) {
@@ -3849,16 +3864,33 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 317ah) The group's and the tiles' coordinates (plain holders, not state) and the tiles' middle in the group.
             val tileCoords = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(2) }
             val tileMid = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+            // QA (Toni: "move middle Tile home placement so the games are in the middle of the screen"): the area the group
+            // is centred in sits between the status bar and the button legend, so its middle was ~10 dp below the screen's.
+            // [tileScreenShift] = that area's middle minus the screen's (px), measured once placed; Middle subtracts it.
+            val tileScreenShift = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+            val tilePlaced = remember { intArrayOf(0, 0) } // the group's y in its area, the area's height
+            val tileMidRoot = remember { floatArrayOf(-1f) } // the tiles' own middle (root y), from TileHomeRow
             val measureTileMid = {
                 val g = tileCoords[0]; val t = tileCoords[1]
                 if (g != null && t != null && g.isAttached && t.isAttached) {
                     // The same wherever the group is placed, so it settles at once.
-                    val m = g.localPositionOf(t, androidx.compose.ui.geometry.Offset.Zero).y + t.size.height / 2f
+                    // (QA: the tiles' own middle when known — the row's box also holds the game's name above the tiles,
+                    // so its middle sat ~30 px above theirs and the tiles ended up that much below the screen's middle.)
+                    val m = if (tileMidRoot[0] > 0f) tileMidRoot[0] - g.positionInRoot().y
+                        else g.localPositionOf(t, androidx.compose.ui.geometry.Offset.Zero).y + t.size.height / 2f
                     if (kotlin.math.abs(m - tileMid.floatValue) > 1f) tileMid.floatValue = m
+                    val rootH = g.findRootCoordinates().size.height
+                    if (rootH > 0 && tilePlaced[1] > 0) {
+                        val areaTop = g.positionInRoot().y - tilePlaced[0]
+                        val shift = areaTop + tilePlaced[1] / 2f - rootH / 2f
+                        if (kotlin.math.abs(shift - tileScreenShift.floatValue) > 1f) tileScreenShift.floatValue = shift
+                    }
                 }
             }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
+            val buttonsUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
+                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && !shortcutsFloating && tileShortcuts.isNotEmpty()
             Column(
                 Modifier
                     .align(
@@ -3874,11 +3906,23 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     .then(
                         if (dockPosition != com.shelf.launcher.data.DockPosition.MIDDLE) Modifier
                         else Modifier.layout { measurable, constraints ->
+                            val bottomPadPx = (if (legendShown) 26.dp else 8.dp).toPx()
                             val p = measurable.measure(constraints.copy(minHeight = 0))
                             val h = constraints.maxHeight
                             if (h == androidx.compose.ui.unit.Constraints.Infinity) return@layout layout(p.width, p.height) { p.place(0, 0) }
-                            val mid = tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
-                            val y = (h / 2f - mid).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            // (QA pass 3, D30: the tiles' middle from this very measure, not from the frame before.)
+                            val line = p[TilesMidLine]
+                            val tilesMid = if (line != androidx.compose.ui.layout.AlignmentLine.Unspecified) line.toFloat()
+                                else tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
+                            // (Toni, with the Switch home as the example: the round buttons under the tiles belong to the
+                            // tiles — the tiles and the buttons are centred as one group, so the tiles sit a little above the
+                            // middle. The name and categories above stay out of it, as before.)
+                            val top = p[TilesTopLine]
+                            val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
+                                (top + (p.height - bottomPadPx)) / 2f else tilesMid
+                            val y = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            tilePlaced[0] = y; tilePlaced[1] = h
+                            if (QaTrace.on) QaTrace.event("tilemid", "h=$h group=${p.height} line=$line mid=$mid shift=${tileScreenShift.floatValue} y=$y")
                             layout(p.width, h) { p.place(0, y) }
                         }
                     )
@@ -3944,6 +3988,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
+                        onTilesMid = { y -> tileMidRoot[0] = y; measureTileMid() },
                         games = visibleGames,
                         art = displayArt,
                         artOverrides = state.artOverrides,
@@ -5906,10 +5951,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     }
     }
 
+    // (QA pass 2, D22: the background colour is read while drawing — read here, its glide re-composed the whole home
+    // screen ~100 times a second while the colours followed the game.)
+    val rootColors = ShelfTheme.live
     Box(
         Modifier
             .fillMaxSize()
-            .background(ShelfTheme.background)
+            .drawBehind { drawRect(rootColors.value.background) }
             .focusRequester(rootFocusRequester)
             .focusable()
             // Update 212: while editing, a touch that isn't on a part or Edit Home's bars goes nowhere (HomeEditSession.kt).
@@ -6952,4 +7000,12 @@ private fun gameWindowOptions(
             }
         }))
     }
+}
+
+/** QA pass 3 (D31): the category name's colours — the theme's, with a category scene's accent — in a scope of their own. */
+@Composable
+private fun ProvideNameColors(cat: com.shelf.launcher.ui.theme.ShelfColors?, content: @Composable () -> Unit) {
+    val base = com.shelf.launcher.ui.theme.ShelfTheme.colors
+    val c = cat?.let { base.copy(accent = it.accent, accentGlow = it.accentGlow, secondary = it.secondary) } ?: base
+    androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides c, content = content)
 }

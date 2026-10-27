@@ -100,6 +100,16 @@ internal object TestHooks {
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")
+        // QA: `--ez voltcap_test_churn true|false` — the state-churn log (QaTrace.watchChurn), only while asked for.
+        // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
+        // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
+        intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
+        if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
+        if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
+        // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
+        intent?.getStringExtra("voltcap_test_fault")?.let { f ->
+            if (runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) QaFault.set(f)
+        }
         // Update 281: `--es voltcap_test_labelaudit <systemeid|all>` — every game's saved real-media list (ScreenScraper's
         // "support-texture" = Disc label, "support-2D" = Disc / cartridge): which it has, and those pictures downloaded
         // into <external files>/label_audit/ for checking the label pipeline. Only ids, never the account, are written.
@@ -129,10 +139,23 @@ internal object TestHooks {
             val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
             if (snap == "save") {
                 f.writeText(org.json.JSONObject(com.shelf.launcher.data.Features.snapshot() as Map<*, *>).toString())
+                // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
+                val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
+                java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
+                    .writeText((cp.getString("order", "") ?: "") + "\n" + (cp.getStringSet("hidden", null)?.joinToString(",") ?: "\u0000"))
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
                 com.shelf.launcher.data.Features.restore(j.keys().asSequence().associateWith { j.getString(it) })
+                val cf = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
+                if (cf.exists()) {
+                    val l = cf.readText().split('\n')
+                    val e = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE).edit()
+                    if (l[0].isBlank()) e.remove("order") else e.putString("order", l[0])
+                    val h = l.getOrNull(1)
+                    if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
+                    e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
+                }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }

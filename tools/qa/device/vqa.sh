@@ -111,9 +111,54 @@ EOF
     while [ $i -lt $n ]; do
       for k in $keys; do press $k 30; sleep_ms $gap; i=$((i+1)); [ $i -ge $n ] && break; done
     done;;
+  hooks)
+    # The test-hooks file turns on TestHooks + QaTrace (read at app start): on for a QA run, off again afterwards so the
+    # handheld is used without any QA code running. Restarts Voltcap.
+    F=/sdcard/Android/data/$PKG/files
+    if [ "$1" = on ]; then [ -f $F/voltcap_test_hooks.paused ] && mv $F/voltcap_test_hooks.paused $F/voltcap_test_hooks; touch $F/voltcap_test_hooks
+    else [ -f $F/voltcap_test_hooks ] && mv $F/voltcap_test_hooks $F/voltcap_test_hooks.paused; fi
+    am force-stop $PKG; sleep 1; am start -n $PKG/.MainActivity > /dev/null 2>&1; sleep 7; log_mark "hooks $1"; echo "hooks $1";;
+  ready)
+    # Precondition: Voltcap's home screen is in front and taking the controller (needs the hooks on: QaTrace logs focus).
+    # A cold start can open "Who's playing?" first — B keeps the current profile. Fails loudly instead of measuring the
+    # wrong screen (pass 2: a whole suite ran on the profile picker).
+    for i in 1 2 3 4; do
+      logcat -c; sh $0 seq "R L" 250 > /dev/null
+      if logcat -d -s VoltcapQA | grep -q " focus "; then echo ready; exit 0; fi
+      press B; sleep 2
+    done
+    echo "NOT READY: home screen not in front"; log_mark "not ready"; exit 1;;
+  memtest)
+    # Memory over use (no QA code running: hooks stay as they are): home, 3 rapid-navigation bursts, 20 s idle.
+    n=${1:-MT}; o=$OUT/${n}_memtest.txt; : > $o
+    mm() { echo "$1 $(dumpsys meminfo $PKG | grep -E 'TOTAL PSS|Graphics:|Native Heap:|Java Heap:' | tr -s ' ' | tr '\n' ' ')" >> $o; }
+    press B; sleep 3; mm start
+    for r in 1 2 3; do sh $0 stress ${n}_m$r 80 70 > /dev/null; mm stress$r; done
+    sleep 20; mm idle20; cat $o;;
+  atrace)
+    # Text systrace (tools/qa/tools/systrace.py) with Voltcap's own sections (vcTrace, Compose); background, returns at once.
+    s=${2:-8}; rm -f $OUT/$1.atrace
+    (atrace -a $PKG -b 65536 -t $s gfx view input dalvik am > $OUT/$1.atrace 2>/dev/null &)
+    sleep 1.5; log_mark "atrace $1 $s";;
+  selftest)
+    # Testing the tester (QaFault): known faults in, then counter.py / frames.py / focuscheck.py must find them.
+    n=${1:-ST}; f=${2:-"counter,flash:12,jank:6,focus_skip:2"}
+    sh $0 hooks on > /dev/null
+    sh $0 ready || { sh $0 hooks off > /dev/null; echo "selftest $n ABORTED (not on the home screen)"; exit 1; }
+    am start -n $PKG/.MainActivity --es voltcap_test_category ALL > /dev/null 2>&1; sleep 5
+    logcat -c
+    sh $0 seq "R L" 300   # (a known focus before the faults, so the first checked move has a "before")
+    am start -n $PKG/.MainActivity --es voltcap_test_fault "$f" > /dev/null 2>&1; sleep 1
+    sh $0 perf_reset; sh $0 rec $n 12
+    sh $0 seq "R R R R R R W400 L L L L R2 W800 R R R L2 W800 R R L L" 300; sleep 5
+    sh $0 perf_dump $n > /dev/null
+    am start -n $PKG/.MainActivity --es voltcap_test_fault off > /dev/null 2>&1
+    logcat -d -s VoltcapQA > $OUT/${n}_qa.txt; sh $0 hooks off > /dev/null; echo "selftest $n done";;
   suite)
     # A whole measured pass, for before / after (run in the background: sh vqa.sh suite NAME > out/NAME.log 2>&1 &).
     n=$1; NAV="R R R R R R W400 L L L L R2 W800 R R R L2 W800"
+    sh $0 hooks on > /dev/null
+    sh $0 ready || { sh $0 hooks off > /dev/null; echo "suite $n ABORTED (not on the home screen)"; exit 1; }
     log_mark "suite $n start"
     # Same start every time: All games, first game (TestHooks; needs the voltcap_test_hooks file). A row's last game
     # would make every ▶ an edge bump (an intended shake that frames.py flags as a transient).
@@ -129,6 +174,6 @@ EOF
     for r in 1 2; do sh $0 perf_reset; sh $0 stress ${n}_stress$r 80 70; sleep 1; sh $0 perf_dump ${n}_stress$r > /dev/null; done
     sh $0 mem $n > /dev/null
     logcat -d -s VoltcapQA > $OUT/${n}_qa.txt
-    log_mark "suite $n done"; echo "suite $n done";;
+    log_mark "suite $n done"; sh $0 hooks off > /dev/null; echo "suite $n done";;
   *) echo "commands: dev seq hold perf_reset perf_dump rec rate60 rate_restore mem trace stress";;
 esac

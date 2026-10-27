@@ -51,3 +51,31 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 ## R7 NEVER report a pass that wasn't run
 - A clean recording is not proof: note the capture rate (frames.py prints it; the Thor records every 120 Hz frame,
   other devices may not — use `vqa.sh rate60` there) and what was on screen.
+
+## R8 QA-COST — the measuring must not change what is measured
+- **Found (pass 2, D21):** a state-churn observer (every snapshot change named on the main thread) left on with the
+  hook file made the home screen crawl on Toni's Thor (41 frames in a nav run, p90 1.5 s).
+- **Rules:** heavy diagnostics are opt-in per run (`--ez voltcap_test_churn true`), never on just because the hook file
+  exists; `vqa.sh suite`/`selftest` switch the hook file on at the start and off at the end (`vqa.sh hooks on|off`), so
+  the handheld is used without QA code; every new probe gets an A/B run (hooks on vs off, same scenario) before trusting
+  its numbers.
+
+## R9 SNAP-LATE-LAYOUT — a snap that runs after the frame it is for (HIGH)
+- **Looks like:** one empty or misplaced frame when a list is replaced (D17: the new category's row drawn at the old row
+  position — off-screen — for one frame before the slide).
+- **Why:** `LaunchedEffect(list) { pos.snapTo(new) }` runs after the frame in which the list changed.
+- **Fix:** while a snap is due, read the target directly where the value is used (placement / draw lambdas).
+
+## R10 THEME-COMPOSE — theme colours read where the colour glide re-composes everything (HIGH for home screens)
+- **Found (pass 2, D22):** the theme colours glide for 600 ms after every game change. Anything that read
+  `ShelfTheme.accent` / `.colors` in composition was rebuilt every frame of it: the whole home screen (a Modifier
+  factory — EdgeBump — and the status-bar look read the accent in the screen's own scope) ~110×/s and every game card
+  (~1000 card rebuilds/s) while navigating.
+- **Why it hides:** Modifier factories and value-returning `@Composable` functions run in the CALLER's recompose scope, as
+  do Box/Row/Column contents — one read in a helper rebuilds the whole caller.
+- **Fix:** read `ShelfTheme.live.value` (one stable State) inside draw / graphicsLayer lambdas (`softGlowLive`,
+  `pulseBorderLive`, `drawBehind { drawRect(live.value.accent) }`, `graphicsLayer { ambientShadowColor = … }`); an icon
+  tinted with the accent → `AccentIcon` (its own scope); read the colour only in the branch that uses it.
+- **Check:** static_checks THEME-COMPOSE; on device `--ez voltcap_test_churn true` → `inval <part>: Nx ShelfColors`
+  lines (QaInval names the state that invalidated each registered part), and the `snap_colors` test fault (glide off)
+  as the A/B.

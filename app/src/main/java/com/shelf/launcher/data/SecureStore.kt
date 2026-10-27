@@ -30,15 +30,25 @@ object SecureStore {
     /** The prefs and whether they are really encrypted on disk. */
     class Opened(val prefs: SharedPreferences, val encrypted: Boolean)
 
-    private val cache = HashMap<String, Opened>()
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, Opened>()
 
     /**
      * Opens [encryptedName]. [service] is the friendly name shown in
      * "Sign in again to …". [plainNames] are older plain-text files whose
      * values move into the encrypted store once (then the plain file goes).
      */
+    fun open(context: Context, encryptedName: String, service: String, plainNames: List<String> = emptyList()): Opened =
+        // (QA pass 2, D24: an already open store is returned without the lock — the main thread used to wait up to
+        // 0.3 s at start-up behind another thread creating a different store. Creating stays one at a time: they share
+        // one master key, which must never be made twice.)
+        cache[encryptedName] ?: run {
+            // (QA: named in a system trace, so a wait for a store shows which one.)
+            android.os.Trace.beginSection("VC:secureOpen:" + encryptedName.take(60))
+            try { openLocked(context, encryptedName, service, plainNames) } finally { android.os.Trace.endSection() }
+        }
+
     @Synchronized
-    fun open(context: Context, encryptedName: String, service: String, plainNames: List<String> = emptyList()): Opened {
+    private fun openLocked(context: Context, encryptedName: String, service: String, plainNames: List<String>): Opened {
         cache[encryptedName]?.let { return it }
         val app = context.applicationContext
         val opened = create(app, encryptedName, service, plainNames)

@@ -374,7 +374,15 @@ private fun rememberSceneNow(ticking: Boolean): Long {
 private fun SceneGames(c: StyleCtx, p: ScenePart, pw: Float, ph: Float) {
     val density = LocalDensity.current
     val n = c.games.size
-    val fa by animateFloatAsState(c.focus.toFloat(), spring(dampingRatio = 0.86f, stiffness = 380f), label = "sceneRow")
+    // (QA pass 3, D35: a new category starts at its own game — animated, the row spun through every game between the old
+    // category's place and the new one's for ~10 frames (layout sweep LC_CUSTOM / LE_CUSTOM after L2 / R2).)
+    val faAnim = remember { Animatable(c.focus.toFloat()) }
+    val seenCat = remember { arrayOf(c.categoryLabel) }
+    LaunchedEffect(c.focus, c.categoryLabel) {
+        if (seenCat[0] != c.categoryLabel) { faAnim.snapTo(c.focus.toFloat()); seenCat[0] = c.categoryLabel }
+        else faAnim.animateTo(c.focus.toFloat(), spring(dampingRatio = 0.86f, stiffness = 380f))
+    }
+    val fa = if (seenCat[0] != c.categoryLabel) c.focus.toFloat() else faAnim.value
     val column = p.direction == "column"
     val arc = p.direction == "arc"
     val aspect = when (p.art) { "square" -> 1f; "wide" -> 1.78f; else -> styleAspect(c.type) }
@@ -490,13 +498,17 @@ private fun Modifier.sceneEnter(enter: SceneEnter?, trigger: Any, w: Float, h: F
 @Composable
 private fun Modifier.sceneEnterOn(enter: SceneEnter, trigger: Any, w: Float, h: Float): Modifier {
     val e = remember { Animatable(0f) }
+    // (QA pass 3, D33: the frame in which [trigger] changes is drawn at the entrance's start — the effect snaps to 0 only
+    // a frame later, so that frame showed the new game's part fully, then it vanished and came in: Layout Studio flash.)
+    val seen = remember { arrayOf<Any?>(trigger) }
     LaunchedEffect(trigger) {
         e.snapTo(0f)
+        seen[0] = trigger
         if (enter.delay > 0) kotlinx.coroutines.delay(enter.delay.toLong())
         e.animateTo(1f, tween(enter.ms, easing = if (enter.kind == "pop") CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f) else FastOutSlowInEasing))
     }
     return this.graphicsLayer {
-        val v = e.value
+        val v = if (seen[0] != trigger) 0f else e.value
         val r = 1f - v
         alpha = v.coerceIn(0f, 1f)
         when (enter.kind) {

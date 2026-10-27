@@ -3,6 +3,8 @@ package com.shelf.launcher.ui
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -334,11 +336,25 @@ private fun NotificationGroup(
             }
         }
         group.sortedByDescending { it.postedAt }.forEach { notification ->
+            // (QA pass 3, D26: the ✕ sits inside the notification's own button, so ▶ never reached it — focus search
+            // looks beside the row, not inside it. ▶ / ◀ now step between the notification and its ✕.)
+            val rowFocus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            val dismissFocus = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+            var onDismissBtn by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
                     .clip(uiRounded(12.dp))
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) false
+                        else when (e.key) {
+                            androidx.compose.ui.input.key.Key.DirectionRight -> if (!onDismissBtn) runCatching { dismissFocus.requestFocus() }.isSuccess else true
+                            androidx.compose.ui.input.key.Key.DirectionLeft -> if (onDismissBtn) runCatching { rowFocus.requestFocus() }.isSuccess else false
+                            else -> false
+                        }
+                    }
+                    .focusRequester(rowFocus)
                     .shelfClickable { onOpen(notification.packageName) }
                     .padding(start = 25.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
                 verticalAlignment = Alignment.Top
@@ -373,6 +389,8 @@ private fun NotificationGroup(
                     Modifier
                         .size(22.dp)
                         .clip(CircleShape)
+                        .onFocusChanged { onDismissBtn = it.isFocused }
+                        .focusRequester(dismissFocus)
                         .shelfClickable(CircleShape) { onDismiss(notification.key) },
                     contentAlignment = Alignment.Center
                 ) {

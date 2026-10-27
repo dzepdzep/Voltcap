@@ -126,7 +126,13 @@ internal val PlainStatusLook = StatusLook(BarBacking.SHADE, shade = 0.32f, plain
 @Composable
 internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook {
     if (!Features.statusMatchesLayout.state.value) return PlainStatusLook.copy(shade = if (paleBehind) 0.62f else 0.32f)
-    val acc = ShelfTheme.accent
+    // (QA pass 2, D22: only the bars that use the accent read it — read for every layout, its glide re-composed the
+    // whole home screen ~100 times a second while the colours followed the game.)
+    val acc = when (layout) {
+        HomeLayout.CLASSIC, HomeLayout.TILES, HomeLayout.GRID, HomeLayout.HERO, HomeLayout.SPOT, HomeLayout.CASEFLOW,
+        HomeLayout.HERO_TILES, HomeLayout.TWIN_SHOWCASE, HomeLayout.BAR -> Color.Unspecified
+        else -> ShelfTheme.accent
+    }
     val pixel = pocketFont()
     return when (layout) {
         // Voltcap row: Voltcap's own — the edge shade only, clean.

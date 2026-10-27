@@ -101,6 +101,7 @@ internal fun GameDock(
     onNeedPhysical: (Game) -> Unit = {},
     onNeedScreenshots: (Game) -> Unit = {}
 ) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("GameDock") } // (QA: rebuilds per second)
     com.shelf.launcher.Breadcrumbs.mark("GameDock")
     // Unlocks not looked at yet, per game (Living Library's small gold mark).
     val seenAll by com.shelf.launcher.data.AchievementSeen.all.collectAsState()
@@ -231,6 +232,14 @@ internal fun GameDock(
             rowList[0] = games
             if (newList || kotlin.math.abs(rowPos.value - target) > 4f) rowPos.snapTo(target)
             else rowPos.animateTo(target, rowSpec)
+        }
+        // QA (D17): the snap above runs after the frame where the list changed — that frame drew the new category's games
+        // at the OLD row position (often many places away, so off-screen): one empty frame before the category slide.
+        // While a snap is due, the cards already use the new place (read while placing, not in composition).
+        val rowPosNow: () -> Float = {
+            val t = virtualFocus.toFloat()
+            val l = rowList[0]
+            if ((l != null && l !== games && l != games) || kotlin.math.abs(rowPos.value - t) > 4f) t else rowPos.value
         }
         val firstIndex = if (loop) virtualFocus - coversBefore else (focus - coversBefore).coerceAtLeast(0)
         val lastIndex = if (loop) virtualFocus + coversAfter else (focus + coversAfter).coerceAtMost(games.lastIndex)
@@ -649,11 +658,11 @@ internal fun GameDock(
                                 // The card's place for where the row is now (between two games while it glides).
                                 // (Update 237, #30: alone in the row it sits where the game you're on always settles.)
                                 val xd = if (onlyFocused) focusX else if (pinnedFirst) {
-                                    val p = rowPos.value
+                                    val p = rowPosNow()
                                     val a0 = kotlin.math.floor(p).toInt()
                                     lerp(pinX(index, a0), pinX(index, a0 + 1), p - a0)
                                 } else {
-                                    val rf = slotF - rowPos.value
+                                    val rf = slotF - rowPosNow()
                                     val f0 = kotlin.math.floor(rf).toInt()
                                     lerp(xAt(f0), xAt(f0 + 1), rf - f0)
                                 }

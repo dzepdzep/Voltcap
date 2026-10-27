@@ -47,16 +47,22 @@ private fun blurPaint(color: Color, radiusPx: Float, strokePx: Float? = null): a
 internal fun Modifier.softGlow(color: Color, corner: Dp, strength: Float, outset: Dp = 0.dp): Modifier = softGlow(color, corner, { strength }, outset)
 
 /** QA (P1): [strength] read while drawing only — a pulsing glow redraws, it doesn't rebuild the card. */
-internal fun Modifier.softGlow(color: Color, corner: Dp, strength: () -> Float, outset: Dp = 0.dp): Modifier = this.drawWithCache {
+internal fun Modifier.softGlow(color: Color, corner: Dp, strength: () -> Float, outset: Dp = 0.dp): Modifier =
+    softGlowLive({ color }, corner, strength, outset)
+
+/** QA pass 2 (D22): the colour read while drawing too — the theme's colour glide redraws the glow, not the card. */
+internal fun Modifier.softGlowLive(colorNow: () -> Color, corner: Dp, strength: () -> Float, outset: Dp = 0.dp): Modifier = this.drawWithCache {
     val out = outset.toPx()
     val r = corner.toPx() + out
     val spread = 14.dp.toPx()
     val blurOk = android.os.Build.VERSION.SDK_INT >= 28
-    val paint = blurPaint(color, spread)
+    val paint = blurPaint(Color.White, spread)
     onDrawBehind {
         val a = (0.62f * strength()).coerceIn(0f, 1f)
         if (a <= 0f) return@onDrawBehind
+        val color = colorNow()
         if (blurOk) {
+            paint.color = color.toArgb()
             paint.alpha = (a * 255).toInt()
             drawIntoCanvas { c ->
                 c.nativeCanvas.drawRoundRect(-out - 2f, -out - 2f, size.width + out + 2f, size.height + out + 2f, r, r, paint)
@@ -86,6 +92,11 @@ private const val ELECTRIC_BOLTS = false
  * draws it around its ring); [corner] is the outline's corner radius at that outset. The caller
  * gives the focused card a higher zIndex so neighbours don't paint over the bolts.
  */
+/** QA pass 2 (D22): [electricFrame] with its colour taken only when the bolts are drawn at all (they are switched off). */
+@Composable
+internal fun Modifier.electricFrameLive(colorNow: () -> Color, corner: Dp): Modifier =
+    if (!ELECTRIC_BOLTS) this else electricFrame(colorNow(), corner)
+
 @Composable
 internal fun Modifier.electricFrame(color: Color, corner: Dp, outset: Dp = 0.dp, pulse: Float = 1f): Modifier {
     // The lightning arcs around the art are switched off everywhere (the soft glow stays).
@@ -194,6 +205,10 @@ internal fun Modifier.electricFrame(color: Color, corner: Dp, outset: Dp = 0.dp,
  * rebuilt the card and its border shape ~20 times a second.
  */
 internal fun Modifier.pulseBorder(width: Dp, color: Color, shape: androidx.compose.ui.graphics.Shape, alpha: () -> Float): Modifier =
+    pulseBorderLive(width, { color }, shape, alpha)
+
+/** QA pass 2 (D22): [pulseBorder] with its colour read while drawing (the theme's colour glide only redraws it). */
+internal fun Modifier.pulseBorderLive(width: Dp, colorNow: () -> Color, shape: androidx.compose.ui.graphics.Shape, alpha: () -> Float): Modifier =
     this.drawWithCache {
         val w = width.toPx()
         val inset = w / 2f
@@ -206,6 +221,7 @@ internal fun Modifier.pulseBorder(width: Dp, color: Color, shape: androidx.compo
             drawContent()
             if (w <= 0f) return@onDrawWithContent
             val a = alpha().coerceIn(0f, 1f)
+            val color = colorNow()
             translate(inset, inset) {
                 drawOutline(outline, color.copy(alpha = color.alpha * a), style = stroke)
             }

@@ -2011,7 +2011,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Move relative to the current selection (holding the D-pad). Reads the
      * latest state, so fast key repeats never skip or repeat a step. */
-    fun moveFocus(delta: Int) {
+    fun moveFocus(requested: Int) {
+        // (QA self-test: TestHooks voltcap_test_fault focus_skip — a deliberate wrong step; nothing otherwise.)
+        val delta = com.shelf.launcher.ui.QaFault.focusDelta(requested)
         val s = _uiState.value
         val size = s.visibleGames.size
         // A looping row wraps around from the last game to the first — and

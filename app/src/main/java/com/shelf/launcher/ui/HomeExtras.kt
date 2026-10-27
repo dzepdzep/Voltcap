@@ -86,7 +86,7 @@ internal fun Modifier.categorySlide(): Modifier {
         anim.animateTo(0f, tween(340, easing = FastOutSlowInEasing))
     }
     return this.graphicsLayer {
-        val pending = on && CategorySlide.tick != seen && CategorySlide.pathOwners == 0
+        val pending = on && CategorySlide.tick != seen && CategorySlide.pathOwners == 0 && !QaFault.on("slide_old")
         val v = if (pending) CategorySlide.dir.toFloat() else anim.value
         translationX = if (slide) v * 64.dp.toPx() else 0f
         alpha = 1f - abs(v) * (if (slide) 0.75f else 1f)

@@ -139,6 +139,26 @@ def check(src):
                     continue
                 add("TOUCH-ONLY", "LOW", m.start(), "tap handler with no focus/key handling nearby — check a controller can reach and press it")
 
+        # THEME-COMPOSE (pass 2, D22): theme colours read at the top of a Modifier factory or a value-returning composable.
+        # Those run in the CALLER's recompose scope, and the colours glide every frame after each game change, so the
+        # whole caller (the home screen, every card) re-composes ~100×/s. Read ShelfTheme.live.value while drawing.
+        for m in re.finditer(r"@Composable(?:\s+@\w+)*\s+(?:(?:private|internal|public)\s+)*fun\s+(Modifier\.)?(\w+)\s*\(", s):
+            i, depth = m.end(), 1
+            while depth and i < len(s):
+                depth += {"(": 1, ")": -1}.get(s[i], 0); i += 1
+            head = s[i:i + 120]
+            returns = bool(m.group(1)) or bool(re.match(r"\s*:\s*(?!Unit\b)[\w.<>?]", head))
+            if not returns:
+                continue
+            body = s[i: i + 2500]
+            e = re.search(r"\n(?:@Composable|(?:private |internal )?fun |/\*\*)", body)
+            body = body[: e.start()] if e else body
+            for r in re.finditer(r"ShelfTheme\.(accent|accentGlow|background|secondary|textMuted|colors)\b|LocalShelfColors\.current", body):
+                add("THEME-COMPOSE", "MED", i + r.start(),
+                    f"`{m.group(2)}` reads the theme colours in the caller's composition: the colour glide re-composes the caller every frame; "
+                    "read ShelfTheme.live.value in a draw / graphicsLayer lambda (or only in the branch that needs it)")
+                break
+
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

@@ -124,7 +124,7 @@ object PlatformLogos {
     private fun asset(context: android.content.Context, path: String): androidx.compose.ui.graphics.ImageBitmap? {
         bakedCache[path]?.let { return it }
         if (path in bakedMissing) return null
-        val b = runCatching { context.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it) } }.getOrNull()
+        val b = vcTrace("VC:logoDecode") { runCatching { context.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it) } }.getOrNull() }
         if (b == null) { bakedMissing += path; return null }
         val img = b.asImageBitmap().also { it.prepareToDraw() }
         bakedCache[path] = img

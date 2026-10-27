@@ -576,7 +576,7 @@ internal fun CloseButton(onClick: () -> Unit, size: Dp = 36.dp) {
             .shelfClickable(CircleShape) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Icon(Icons.Filled.Close, null, tint = ShelfTheme.textMuted, modifier = Modifier.size(size * 0.5f))
+        Icon(Icons.Filled.Close, "Close", tint = ShelfTheme.textMuted, modifier = Modifier.size(size * 0.5f)) // (QA pass 3: named — screen readers and the controller walk said nothing)
     }
 }
 

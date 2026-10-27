@@ -145,7 +145,9 @@ object ControllerLights {
         restoreBrightness: Int,
         onMs: Long = 170,
         offMs: Long = 130
-    ) {
+    ) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // (QA pass 3: off the main thread — on the AYN handhelds a step goes through the root shell, a binder call that
+        // held the home screen up 60 ms on each flash, e.g. right after start.)
         repeat(times) {
             apply(context, enabled = true, on = true, color = color, brightness = 100)
             kotlinx.coroutines.delay(onMs)

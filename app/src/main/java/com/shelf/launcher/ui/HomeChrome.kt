@@ -152,10 +152,13 @@ internal fun StatusBar(
     menuSlot: Int = 0,
     onMenuSlot: (androidx.compose.ui.geometry.Rect) -> Unit = {},
     /** Update 333: how it's dressed for the layout it's on (StatusLooks.kt); the plain look by default. */
-    look0: StatusLook = PlainStatusLook
+    look0: StatusLook = PlainStatusLook,
+    /** QA pass 3 (D34): the layout to dress it for — the look is then made HERE, in the bar's own scope (made by the
+     *  caller, its accent was read in the home screen's scope and the colour glide re-composed the whole screen). */
+    lookLayout: com.shelf.launcher.data.HomeLayout? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
-    val look = animatedLook(look0)
+    val look = animatedLook(if (lookLayout != null) statusLookFor(lookLayout, paleBehind) else look0)
     val ink = look.ink
     val barAccent = if (look.accent == Color.Unspecified) ShelfTheme.accent else look.accent
     val battery = rememberBatteryInfo()

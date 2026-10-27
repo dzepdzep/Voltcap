@@ -337,9 +337,9 @@ private class BoxMaterials(val face: android.graphics.Bitmap, val wall: android.
 @Composable
 private fun rememberBoxMaterials(board: Features.BoxCardboard): BoxMaterials {
     val white = board == Features.BoxCardboard.WHITE
-    val face = androidx.compose.ui.graphics.ImageBitmap.imageResource(if (white) com.shelf.launcher.R.drawable.box_white else com.shelf.launcher.R.drawable.box_kraft)
-    val wall = androidx.compose.ui.graphics.ImageBitmap.imageResource(if (white) com.shelf.launcher.R.drawable.box_white_wall else com.shelf.launcher.R.drawable.box_kraft_wall)
-    val flute = androidx.compose.ui.graphics.ImageBitmap.imageResource(com.shelf.launcher.R.drawable.box_flute)
+    val face = com.shelf.launcher.ui.cachedImageResource(if (white) com.shelf.launcher.R.drawable.box_white else com.shelf.launcher.R.drawable.box_kraft)
+    val wall = com.shelf.launcher.ui.cachedImageResource(if (white) com.shelf.launcher.R.drawable.box_white_wall else com.shelf.launcher.R.drawable.box_kraft_wall)
+    val flute = com.shelf.launcher.ui.cachedImageResource(com.shelf.launcher.R.drawable.box_flute)
     return remember(face, wall, flute, board) {
         BoxMaterials(face.asAndroidBitmap(), wall.asAndroidBitmap(), flute.asAndroidBitmap(),
             if (board == Features.BoxCardboard.DARK) android.graphics.LightingColorFilter(0xFF6A625A.toInt(), 0) else null, board.top, board.deep)

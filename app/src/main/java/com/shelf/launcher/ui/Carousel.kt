@@ -720,6 +720,7 @@ internal fun GameCarousel(
     /** Update 146: time played per game (stableKey → ms), for the Receding row's line under its big game. */
     playtime: Map<String, Long> = emptyMap()
 ) {
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch("Carousel", qaScope, qaComp) } }
     // Update 156: the covers a few games either side decoded ahead, in the shape the carousel draws them (the Grid and TV
     // room carousels warmed nothing: each new cover came in empty for a moment).
     val warmCtx = androidx.compose.ui.platform.LocalContext.current.applicationContext
@@ -1414,6 +1415,16 @@ private fun CarouselItem(
     c: CarouselCtx, g: Game, real: Int, i: Int, atFocus: Boolean, on: Boolean, interactive: Boolean,
     relOf: () -> Float, fadeOf: () -> Float, onTap: (Int) -> Unit, modifier: Modifier
 ) {
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch(if (on) "CarItemF" else "CarItem", qaScope, qaComp) } }
+    // QA: which of its inputs made a carousel game re-run (counted per second in the "recomp" line as CarP_<input>).
+    if (QaTrace.on) {
+        val prev = remember { arrayOfNulls<Any?>(10) }
+        val now = arrayOf<Any?>(c, g, real, i, atFocus, on, relOf, fadeOf, onTap, modifier)
+        val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
+        QaTrace.count("CarRun")
+        for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
+        for (k in now.indices) prev[k] = now[k]
+    }
     val relNow = rememberUpdatedState(relOf)
     val fadeNow = rememberUpdatedState(fadeOf)
     val tapNow = rememberUpdatedState(onTap)
@@ -1428,10 +1439,17 @@ private fun CarouselItem(
     // Update 117: a game turned almost side-on (Record flip) shows its real spine, facing you, instead of a squashed cover.
     // (Update 162: worked out from the moving place, so only this game redraws when it flips to its spine.)
     val sidewaysCan = !c.cases3d && !c.spines && !atFocus && caseType
+    // (QA pass 3, D41: was a derivedStateOf read here — it is worked out again every frame of a glide, and each time it
+    // re-ran this whole game (Thor, STACKS carousel: ~1,000 game re-runs a second, 35–46 ms frames) although its answer
+    // stayed "no". Now a plain state, set only when the answer changes: the games re-run when one turns to its spine.)
+    val turnedFarNow: () -> Boolean = { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
     val turnedFar = remember(sidewaysCan) {
-        androidx.compose.runtime.derivedStateOf { sidewaysCan && kotlin.math.abs(ctxNow.value.place(ps.q, relNow.value()).turnY) > 50f }
+        androidx.compose.runtime.mutableStateOf(androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { turnedFarNow() })
     }
-    val sideways = turnedFar.value
+    if (sidewaysCan) androidx.compose.runtime.LaunchedEffect(turnedFar) {
+        androidx.compose.runtime.snapshotFlow { turnedFarNow() }.collect { turnedFar.value = it }
+    }
+    val sideways = sidewaysCan && turnedFar.value
     // Update 113, Spines look: the games aside as their spines (closer together), the middle one its cover.
     val spineHere = !c.cases3d && ((c.spines && !atFocus) || sideways)
     val gArt = artForGame(c.cardArtType, g.platform, c.hidden, c.mixed, gameKey = g.stableKey)

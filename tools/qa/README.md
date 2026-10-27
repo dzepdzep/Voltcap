@@ -49,3 +49,16 @@ the panel's frame time with its breakdown). Nothing is written without the file.
 | r1_open | `R1 W600 D D U U B W400` | R1 panel first frame, focus on open, B closes |
 | window | `A W800 B W600` | game window open/close flash, focus restore |
 | layouts | `am start … --es voltcap_test_layout X --ez voltcap_test_preview true` then home_nav | every layout, nothing saved |
+
+## Pass 2 additions
+- `device/rc.sh NAME [FAULTS]` — recompositions per second while navigating (`recomp Screen=… GameCard=… GameCardF=…`).
+  Run it with `snap_colors` as the A/B fault (the colour glide off).
+- `device/churn.sh` — why parts re-compose. It writes `churn` lines (the busiest states) and `inval <part>: Nx <state>`
+  lines (QaInval names the state that invalidated each watched part). Opt-in only, rule R8.
+- `device/tcold.sh NAME` — cold start plus category switches under atrace. It leaves Voltcap's main-thread trace for
+  `tools/systrace.py`; `VC:*` sections name Voltcap's own work (resDecode, logoDecode, spineDecode, secureOpen:<store>).
+- `vqa.sh memtest NAME` — memory before and after 3 rapid-navigation bursts and 20 s of idle.
+- Test faults (`--es voltcap_test_fault`): `counter`, `flash:N`, `jank:N`, `focus_skip:N`, `slide_old`, `rise_old`,
+  `stale_soft`, `snap_colors`. Self-test: `vqa.sh selftest NAME "<faults>"`, then counter.py, frames.py and
+  focuscheck.py. See REPORT.md pass 2 for what each one is proven to catch.
+- static_checks.py rule THEME-COMPOSE (R10).

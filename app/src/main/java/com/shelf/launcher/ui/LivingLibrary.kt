@@ -78,9 +78,11 @@ internal fun livingLook(
  * Draws [look] over a card ([cornerDp] = the card's corners). Focused cards are never calmed. Nothing
  * animates: it's a few shapes drawn with the card.
  */
-internal fun Modifier.livingLibrary(look: LivingLook, focused: Boolean, accent: Color, cornerDp: Float): Modifier =
+internal fun Modifier.livingLibrary(look: LivingLook, focused: Boolean, accentNow: () -> Color, cornerDp: Float): Modifier =
     if (look.isPlain) this else this.drawWithContent {
         drawContent()
+        // (QA pass 2, D22: the accent is read here, while drawing — its glide no longer re-composes every card.)
+        val accent = accentNow()
         val r = CornerRadius(cornerDp.dp.toPx())
         if (look.calm > 0f && !focused) drawRoundRect(Color.Black.copy(alpha = 0.24f * look.calm), cornerRadius = r)
         val h = size.height

@@ -121,8 +121,10 @@ fun ShelfLauncherTheme(
 
     // (Update 240, #23: the accent glides as long as the background does when it follows the art — it used to jump in
     // 220 ms while the background took 600 / 900, so the two visibly came apart on every game change.)
-    val accent by animateColorAsState(fixedAccent, tween(if (music || useAlbum) 900 else if (useGame) 600 else 220), label = "accent")
-    val fade: AnimationSpec<Color> = if (music || useAlbum) tween(900) else if (useGame) tween(600) else snap()
+    // (QA: the "snap_colors" test fault turns the glide off, to measure what it costs — never on in normal use.)
+    val qaSnap = com.shelf.launcher.ui.QaFault.version.intValue >= 0 && com.shelf.launcher.ui.QaFault.on("snap_colors")
+    val accent by animateColorAsState(fixedAccent, if (qaSnap) snap() else tween(if (music || useAlbum) 900 else if (useGame) 600 else 220), label = "accent")
+    val fade: AnimationSpec<Color> = if (qaSnap) snap() else if (music || useAlbum) tween(900) else if (useGame) tween(600) else snap()
     val backgroundA by animateColorAsState(background, fade, label = "background")
     val surfaceA by animateColorAsState(surface, fade, label = "surface")
     val raisedA by animateColorAsState(surfaceRaised, fade, label = "raised")
@@ -207,7 +209,9 @@ fun ShelfLauncherTheme(
         ) else normal
     }
 
-    CompositionLocalProvider(LocalShelfColors provides colors, LocalDensity provides scaled) {
+    // (QA pass 2, D22: the same colours as one stable State, for draw-time readers — see LocalShelfColorsLive.)
+    val live = androidx.compose.runtime.rememberUpdatedState(colors)
+    CompositionLocalProvider(LocalShelfColors provides colors, LocalShelfColorsLive provides live, LocalDensity provides scaled) {
         MaterialTheme(colorScheme = scheme, typography = typography, content = content)
     }
 }

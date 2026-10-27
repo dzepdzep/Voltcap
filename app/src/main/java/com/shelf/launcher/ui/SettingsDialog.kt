@@ -5305,8 +5305,23 @@ private fun CategoryOrderCard(
         SectionLabel("Category order")
         MutedNote("The order of the category pills above the dock, and of L2 / R2. Hidden ones are skipped.")
         Spacer(Modifier.height(8.dp))
-        order.forEachIndexed { index, key ->
+        // QA pass 3 (D36): rows keyed by category and focus kept on the category that moved, so ▲ / ▲ / ▲ keeps moving the
+        // same one (before, focus stayed on the row slot and the next press moved the neighbour). At the top / bottom the
+        // pressed arrow turns off, so focus goes to the other arrow of the same category.
+        val ups = androidx.compose.runtime.remember { mutableMapOf<String, androidx.compose.ui.focus.FocusRequester>() }
+        val downs = androidx.compose.runtime.remember { mutableMapOf<String, androidx.compose.ui.focus.FocusRequester>() }
+        var follow by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Pair<String, Int>?>(null) }
+        androidx.compose.runtime.LaunchedEffect(follow, order) {
+            val (k, d) = follow ?: return@LaunchedEffect
+            val i = order.indexOf(k)
+            val wantUp = if (d < 0) i > 0 else i == order.lastIndex
+            runCatching { (if (wantUp) ups[k] else downs[k])?.requestFocus() }
+            follow = null
+        }
+        order.forEachIndexed { index, key -> androidx.compose.runtime.key(key) {
             val hidden = key in categories.hidden
+            val up = ups.getOrPut(key) { androidx.compose.ui.focus.FocusRequester() }
+            val down = downs.getOrPut(key) { androidx.compose.ui.focus.FocusRequester() }
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -5318,13 +5333,13 @@ private fun CategoryOrderCard(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
-                Chip("▲", accent = false, enabled = index > 0) { onMove(key, -1) }
+                Chip("▲", accent = false, enabled = index > 0, modifier = Modifier.focusRequester(up)) { onMove(key, -1); follow = key to -1 }
                 Spacer(Modifier.width(6.dp))
-                Chip("▼", accent = false, enabled = index < order.lastIndex) { onMove(key, 1) }
+                Chip("▼", accent = false, enabled = index < order.lastIndex, modifier = Modifier.focusRequester(down)) { onMove(key, 1); follow = key to 1 }
                 Spacer(Modifier.width(6.dp))
                 Chip(if (hidden) "Hidden" else "Shown", accent = !hidden) { onToggleHidden(key) }
             }
-        }
+        } }
         Spacer(Modifier.height(8.dp))
         Chip("Reset order", accent = false, onClick = onReset)
     }

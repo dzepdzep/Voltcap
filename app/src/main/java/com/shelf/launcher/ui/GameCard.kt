@@ -156,6 +156,8 @@ fun GameCard(
     asDisc: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count(if (focused) "GameCardF" else "GameCard") } // (QA: rebuilds per second)
+    if (QaInval.on) { val qaScope = androidx.compose.runtime.currentRecomposeScope; val qaComp = androidx.compose.runtime.currentComposer.composition; androidx.compose.runtime.SideEffect { QaInval.watch(if (focused) "GameCardF" else "GameCard", qaScope, qaComp) } }
     com.shelf.launcher.Breadcrumbs.mark("GameCard " + game.name)
     // (Update 332: the games rolling in after "Who's playing?" — Rollout; nothing while it isn't running.)
     @Suppress("NAME_SHADOWING") val modifier = modifier.rolloutItem()
@@ -188,9 +190,11 @@ fun GameCard(
     // Golden-border style: the award is the frame itself.
     // Its colour: gold / silver, or the theme's accent (Colours & background).
     // Independent of the coloured frame — switching that off never hides it.
-    val accentForAward = ShelfTheme.accent
+    // (QA pass 2, D22: the accent is read only by a card that shows it — every card read it here, so the theme's
+    // colour glide re-composed the whole row ~100 times a second while you moved.)
     val awardFrame = award?.takeIf { masteredStyle == com.shelf.launcher.data.MasteredStyle.BORDER }
-        ?.let { if (look.masteredThemeColor) accentForAward else awardTint(it) }
+        ?.let { if (look.masteredThemeColor) ShelfTheme.accent else awardTint(it) }
+    val liveColors = ShelfTheme.live
     // Electric / glow effect on the game you're on (Game row › Effect). Lite effects: a still glow
     // instead of crackling arcs, and no pulse (nothing redraws while you just look at the screen).
     val lite = LocalLiteEffects.current
@@ -231,30 +235,37 @@ fun GameCard(
             // Still open in the background (RunningGames): a pulsing green glow round the card.
             .runningGlow(game.stableKey in com.shelf.launcher.data.RunningGames.keys, look.cornerDp.dp)
             // Living Library: calmer / alive / fresh unlock / progress, drawn over the art (never moves anything).
-            .livingLibrary(living, focused, ShelfTheme.accent, look.cornerDp.toFloat())
+            .livingLibrary(living, focused, { liveColors.value.accent }, look.cornerDp.toFloat())
             // The free-standing cartridge / disc / box: no card frame, glow or clip — the one you're on gets a
             // light pool under it instead (and is a bit bigger, see bigCover).
-            .then(if (freeMedia) Modifier.mediaFloorGlow(focused, ShelfTheme.accent) else Modifier
+            .then(if (freeMedia) Modifier /* (mediaFloorGlow is a no-op since update 84; QA D22: its accent argument re-composed every free-standing card) */ else Modifier
             // Soft glow: a real blurred halo round the card (a lighter one under the electric bolts).
             .then(
                 when (effect) {
-                    com.shelf.launcher.data.FocusEffect.GLOW -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, { 0.55f + 0.6f * pulse() })
-                    com.shelf.launcher.data.FocusEffect.ELECTRIC -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, { 0.3f + 0.2f * pulse() })
+                    com.shelf.launcher.data.FocusEffect.GLOW -> Modifier.softGlowLive({ liveColors.value.accent }, look.cornerDp.dp, { 0.55f + 0.6f * pulse() })
+                    com.shelf.launcher.data.FocusEffect.ELECTRIC -> Modifier.softGlowLive({ liveColors.value.accent }, look.cornerDp.dp, { 0.3f + 0.2f * pulse() })
                     else -> Modifier
                 }
             )
-            .shadow(
+            .then(run {
                 // A fixed elevation: animating it re-rendered the shadow every frame (costly on
                 // slower GPUs); the pulse lives in the frame's brightness instead.
-                elevation = when {
+                val elevation = when {
                     effect != com.shelf.launcher.data.FocusEffect.NONE -> 18.dp
                     focused && look.focusBorder -> 16.dp
                     else -> 0.dp
-                },
-                shape = cardShape,
-                ambientColor = ShelfTheme.accentGlow,
-                spotColor = ShelfTheme.accentGlow
-            )
+                }
+                // (QA pass 2, D22: no shadow, no accent read — a card without one isn't re-composed by the glide.)
+                // (The shadow's colour is set in the layer, so the colour glide changes it without re-composing the card.)
+                if (elevation == 0.dp) Modifier
+                else Modifier.graphicsLayer {
+                    shadowElevation = elevation.toPx()
+                    shape = cardShape
+                    clip = true // (as Modifier.shadow)
+                    ambientShadowColor = liveColors.value.accentGlow
+                    spotShadowColor = liveColors.value.accentGlow
+                }
+            })
             .then(
                 if (awardFrame != null) {
                     // Metallic frame: dark edges keep it visible on light
@@ -269,14 +280,14 @@ fun GameCard(
                     // Crackling arcs that jump around the frame (drawn below) —
                     // on purpose nothing like the mastered frame's smooth sweep.
                     Modifier
-                        .then(if (look.focusBorder) Modifier.pulseBorder(1.5.dp, ShelfTheme.accent, cardShape) { 0.35f + 0.4f * pulse() } else Modifier)
-                        .electricFrame(ShelfTheme.accent, look.cornerDp.dp)
+                        .then(if (look.focusBorder) Modifier.pulseBorderLive(1.5.dp, { liveColors.value.accent }, cardShape) { 0.35f + 0.4f * pulse() } else Modifier)
+                        .electricFrameLive({ liveColors.value.accent }, look.cornerDp.dp)
                 } else {
                     // The accent frame only with Coloured frame on (the soft glow itself is Game row › Effect).
                     val rim = focused && look.focusBorder
                     if (!rim) Modifier
-                    else if (effect == com.shelf.launcher.data.FocusEffect.GLOW) Modifier.pulseBorder(2.dp, ShelfTheme.accent, cardShape) { 0.55f + 0.45f * pulse() }
-                    else Modifier.border(2.dp, ShelfTheme.accent, cardShape)
+                    else if (effect == com.shelf.launcher.data.FocusEffect.GLOW) Modifier.pulseBorderLive(2.dp, { liveColors.value.accent }, cardShape) { 0.55f + 0.45f * pulse() }
+                    else Modifier.pulseBorderLive(2.dp, { liveColors.value.accent }, cardShape) { 1f }
                 }
             )
             .clip(cardShape)
@@ -398,7 +409,7 @@ fun GameCard(
                 MediaFocus(focused) { CaseArt(
                     game.platform, coverUrl ?: appIcon, typedArtUrl, Modifier.fillMaxSize().padding(top = pillTopRoom).padding(4.dp), title = gameDisplayName(game.name), real = realCase,
                     // The coloured frame hugs the case itself (Settings › Cards & frames › Coloured frame).
-                    caseModifier = if (focused && look.focusBorder) Modifier.border(2.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier,
+                    caseModifier = if (focused && look.focusBorder) Modifier.pulseBorderLive(2.dp, { liveColors.value.accent }, RoundedCornerShape(2.dp)) { 1f } else Modifier,
                     // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
                     spine = BoxTexture.realSpine(HomeScans.map[game.stableKey], game.platform), game = game, physical = HomeScans.map[game.stableKey]
                 ) }
@@ -576,7 +587,7 @@ fun GameCard(
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(ShelfTheme.accent)
+                    .drawBehind { drawRect(liveColors.value.accent) }
                     .padding(horizontal = 5.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -635,10 +646,7 @@ fun GameCard(
                                 tint = awardTint(cornerAward), modifier = Modifier.size(9.dp)
                             )
                         } else {
-                            Icon(
-                                Icons.Filled.EmojiEvents, null,
-                                tint = ShelfTheme.accent, modifier = Modifier.size(9.dp)
-                            )
+                            AccentIcon(Icons.Filled.EmojiEvents, null, Modifier.size(9.dp))
                         }
                         // Update 151: a small upright tick between the trophy and "0/69", so they read as two parts.
                         ProgressTick(height = 7.dp, gap = 2.dp)
@@ -671,7 +679,7 @@ fun GameCard(
                     ) {
                         Box(
                             Modifier.fillMaxWidth(((progress.NumAchieved ?: 0).toFloat() / possible).coerceIn(0f, 1f))
-                                .fillMaxHeight().background(ShelfTheme.accent)
+                                .fillMaxHeight().drawBehind { drawRect(liveColors.value.accent) }
                         )
                     }
                 }
@@ -696,8 +704,8 @@ fun GameCard(
         val starAlign = if ((pillAlign == Alignment.TopStart || badgeTop) && !showNewUnlock && pillAlign != Alignment.TopEnd && !awardTopRight) Alignment.TopEnd
         else Alignment.TopStart
         if (isFavorite && look.favoriteStar) {
-            Icon(
-                Icons.Filled.Star, contentDescription = "Favorite", tint = ShelfTheme.accent,
+            AccentIcon(
+                Icons.Filled.Star, contentDescription = "Favorite",
                 modifier = Modifier.align(starAlign)
                     .then(if (starAlign == Alignment.TopStart && badgeTop) Modifier.padding(start = 6.dp, top = belowBadge) else Modifier.padding(6.dp))
                     .size(12.dp)
@@ -801,11 +809,10 @@ fun GameCard(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, ShelfTheme.background.copy(alpha = 0.75f))
-                            )
-                        )
+                        // (QA D22: the theme colour read while drawing.)
+                        .drawBehind {
+                            drawRect(Brush.verticalGradient(colors = listOf(Color.Transparent, liveColors.value.background.copy(alpha = 0.75f))))
+                        }
                 )
                 // The default progress bar ("under") sits in the button row,
                 // next to Play, so the two can never overlap.
@@ -924,7 +931,7 @@ fun GameCard(
                         Modifier
                             .size(34.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(ShelfTheme.accent),
+                            .drawBehind { drawRect(liveColors.value.accent) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = "Play", tint = onAccentColor())
@@ -1095,6 +1102,14 @@ internal const val DockStiffness = 1100f
 internal fun <T> dockMotion(): androidx.compose.animation.core.SpringSpec<T> =
     // (Update 141: as quick as Settings › Home › Animations › Moving between games says; Quick is the old one.)
     androidx.compose.animation.core.spring(dampingRatio = 1f, stiffness = com.shelf.launcher.data.Features.rowGlide.value.stiffness)
+
+/**
+ * QA pass 2 (D22): an icon in the theme's accent that reads the accent in its own small scope, so the colour glide
+ * re-composes just this icon instead of the whole card it sits on.
+ */
+@Composable
+internal fun AccentIcon(imageVector: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String?, modifier: Modifier = Modifier) =
+    Icon(imageVector, contentDescription, modifier, tint = ShelfTheme.accent)
 
 @Composable
 private fun MiniIcon(

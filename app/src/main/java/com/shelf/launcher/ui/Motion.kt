@@ -249,7 +249,7 @@ internal fun Modifier.riseOnChange(key: Any?): Modifier {
     return this.graphicsLayer {
         // QA (V1): in the frame the game changes the effect hasn't snapped yet — the new info was drawn fully for that
         // frame, then hidden and risen in (a flicker on every move). Until it has, draw it at the start of the rise.
-        val v = if (animOn && seen[0] != key) 0f else p.value
+        val v = if (animOn && seen[0] != key && !QaFault.on("rise_old")) 0f else p.value
         alpha = (if (rise) 0.25f else 0f) + (if (rise) 0.75f else 1f) * v
         translationY = if (rise) (1f - v) * 14f * density else 0f
     }

@@ -1,5 +1,79 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (350, pass 3): every layout smoother, Tile home Switch-style, controller fixes in R1 / Settings
+
+Third QA pass on the Thor, all layouts. Details: `tools\qa\REPORT.md` (pass 3), `defects.json` D25–D41.
+- **All 27 layouts: the home screen no longer rebuilds on every frame of a glide** (D31, D34).
+  - Measured on the Thor: Screen rebuilds drop from 42–112/s to 9–14/s.
+  - Janky frames, before → after: Cross 12.2 → 3.4 %, Green Core 17.3 → 5.7 %, Cube 14.1 → 5.4 %, Grid 15.8 → 7.5 %,
+    Cards 9.7 → 3.7 %, Side 8.4 → 3.4 %, Live 4.8 → 1.3 %.
+  - Files: `ui\LauncherScreen.kt` (CategoriesBar colours in their own scope), `ui\HomeChrome.kt` (status bar look).
+- **Carousel views (e.g. Case stacks with Carousel on): each game rebuilt every frame of a glide** (D41, `ui\Carousel.kt`).
+  - About 1,000 → 50 rebuilds/s.
+  - Case stacks, measured on the Thor: janky 26.6 → 22.7 %, p90 42 → 32 ms.
+- **Tile home**
+  - Middle is Switch-style now: tiles + round buttons centred as one group, tiles a little above the middle (D40).
+    Without the buttons, the tiles themselves are in the middle.
+  - The row no longer jumps for a frame (D30).
+  - Round shortcuts placed in Edit Home had landed on top of the tiles. Your saved spot was removed, so they sit under the
+    tiles again (D39). Files: `ui\LauncherScreen.kt`, `ui\TileHome.kt`.
+- **Flashes gone:**
+  - Resume & discover first frame (D32, `ui\StyleConsoleHomes.kt`);
+  - Layout Studio parts entrance (D33) and its row on L2 / R2 (D35), `ui\StyleCustom.kt`.
+- **Controller**
+  - R1 panel: each notification's ✕ can be reached with ▶ (D26, `ui\NotificationsPanel.kt`).
+  - Settings › Categories: after ▲ / ▼ the focus follows the category, so pressing again keeps moving the same one (D36,
+    `ui\SettingsDialog.kt`).
+  - Panel ✕ buttons are named "Close" (D27).
+- **Start-up:** no picture decoding on the main thread at cold start (D25, `ui\SolidPiece.kt`: piece tones cached in a
+  file). Still open: ~0.3 s waiting for the account stores (D24). This needs a careful change because of login, so I left it.
+- **Smaller fixes:** RomHacks regexes compiled once (D28); controller-light flashes off the main thread (D29).
+- **QA tools (test hooks only, nothing in normal use):**
+  - QaWalk (controller walk log) and QaExplore (drives the D-pad through all of Settings by itself);
+  - QaSampler (main-thread stall stacks);
+  - device scripts `walk.sh`, `explore.sh`, `layouts.sh`, `lchurn.sh`, `ltrace.sh`, `coldsample.sh`;
+  - `walkcheck.py`, `coverage.py`, `layoutreport.py`, `retrace.py`.
+  - The walk snapshot now also keeps the category order (D37).
+- **Not done yet:**
+  - the full Settings explorer run (running now);
+  - the home dialogs (Start / Y / L1);
+  - game launch / return, profiles, second screen, RetroAchievements screens;
+  - the render-heavy layouts (Case stacks, Arcade, Shelf, Memory card, Twin icons).
+
+## Update — 27 Oct 2026 (350, pass 2): Classic much smoother — the colour glide rebuilt the whole home screen every frame
+
+Second QA pass on the Thor (Classic). Details: `tools\qa\REPORT.md` (pass 2), `defects.json` D17, D20–D25.
+- **Smoother navigation, measured on the Thor with the same scenarios as the first baseline.**
+  - Janky frames: 7.4 % → 1.6 % while moving, 5.9 % → 1.7 % with rapid input.
+  - p90 frame time: 19 → 12 ms. p99: 26 → 19 ms.
+  - Video hitches in the recorded run: 24 → 2.
+  - Cause: the theme colours glide for 600 ms after each game change, and everything that read them in composition was
+    rebuilt on every frame of it — the home screen ~110×/s, the game cards ~1000×/s. Now one rebuild per button press.
+    The glide itself is unchanged.
+  - How: the colours are read while drawing through the new `ShelfTheme.live`.
+  - Files: `ui\theme\ShelfColors.kt`, `ui\theme\Theme.kt`, `ui\GameCard.kt`, `ui\LauncherScreen.kt`, `ui\EdgeBump.kt`,
+    `ui\StatusLooks.kt`, `ui\LivingLibrary.kt`, `ui\TileHome.kt`, `ui\FocusEffects.kt` (softGlowLive, pulseBorderLive),
+    and AccentIcon in GameCard.
+- **Empty frame before the category slide** (`ui\GameDock.kt`): gone. Checked frame by frame on a 120 fps recording.
+- **Tile home "Middle"** (`ui\LauncherScreen.kt`, `ui\TileHome.kt`): the tiles now sit in the middle of the screen.
+- **Template pictures** (`ui\ResImages.kt` new; CoverCases, RealMedia, PhysicalMedia, StyleCardboardBox, TvRoomHome,
+  FramesScene): case, cartridge and box frames are decoded once and shared, not again in every card.
+- **Start-up** (`data\SecureStore.kt`): an already-open account store no longer waits for another one being opened.
+  Still open: the first frame waits ~0.3 s for 3 account stores (D24).
+- **QA system tested against injected faults** (test builds only, `ui\QaFault.kt`). Recordings capture every frame
+  (1391/1391). These were all caught:
+  - single-frame flashes (11/11, no false alarms);
+  - injected stalls (6/6);
+  - wrong focus moves (2/2);
+  - a re-introduced category-switch flash (2/2).
+- **New QA tools**:
+  - `ui\QaInval.kt` names the state that makes a part rebuild.
+  - Device scripts `rc.sh`, `churn.sh`, `tcold.sh`, and `vqa.sh memtest`.
+  - Static rule THEME-COMPOSE (R10).
+  - The churn observer that made the app crawl during testing (D21) is now opt-in only.
+- **Not done yet**: other layouts, R1 / Settings / dialogs walked with the controller on the device, game launch and
+  return, second screen, the calm-idle redraws (D18).
+
 ## Update — 27 Oct 2026 (350): QA system (tools/qa) + first QA pass — flashes on category switch, stale pictures, controller gaps
 
 Toni's brief "VoltCap — Complete Autonomous App QA, Visual Inspection & Optimization System". First pass on the Thor

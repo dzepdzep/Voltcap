@@ -332,7 +332,7 @@ internal object TvRoomArt {
 /** Just the room picture (no game focused). */
 @Composable
 private fun TvRoomPicture(place: TvRoomArt.Place) {
-    val room = androidx.compose.ui.graphics.ImageBitmap.imageResource(com.shelf.launcher.R.drawable.tv_room)
+    val room = com.shelf.launcher.ui.cachedImageResource(com.shelf.launcher.R.drawable.tv_room)
     Canvas(Modifier.fillMaxSize()) {
         val h = (place.roomBottom - place.roomTop).toInt()
         drawImage(
@@ -482,7 +482,7 @@ private fun RetroTv(
             }
         }
         // The plush figure sits in front of the screen's corner: drawn again over the game.
-        val front = androidx.compose.ui.graphics.ImageBitmap.imageResource(com.shelf.launcher.R.drawable.tv_room_front)
+        val front = com.shelf.launcher.ui.cachedImageResource(com.shelf.launcher.R.drawable.tv_room_front)
         val fr = place.map(TvRoomArt.front)
         Canvas(Modifier.fillMaxSize()) {
             drawImage(

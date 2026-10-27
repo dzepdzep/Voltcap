@@ -132,11 +132,12 @@
   },
   {
    "id": "D11",
-   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState)",
+   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) — cause found: the theme colour glide (D22)",
    "rule": "PERF",
    "severity": "medium",
-   "status": "open",
-   "found": "QaTrace focus SideEffect: 409 runs in 8 s of navigation (run fix_nav); perf agent P2"
+   "status": "verified",
+   "found": "QaTrace focus SideEffect: 409 runs in 8 s of navigation (run fix_nav); perf agent P2",
+   "note": "see D22 for numbers"
   },
   {
    "id": "D12",
@@ -145,7 +146,8 @@
    "severity": "medium",
    "status": "suspect",
    "found": "QaTrace slow-frame log, run fix_nav",
-   "next": "Perfetto trace to confirm uploads vs shader compile; perf agent P4 (trim transform keeps covers software)"
+   "next": "Perfetto trace to confirm uploads vs shader compile; perf agent P4 (trim transform keeps covers software)",
+   "note": "pass 2 atrace: the render-thread spikes right after install were shader compiles (shader_compile slices); after warm-up the render thread showed none over 20 ms in T2"
   },
   {
    "id": "D13",
@@ -154,7 +156,8 @@
    "severity": "medium",
    "status": "suspect",
    "found": "QaTrace slow-frame log",
-   "next": "trace with vcTrace sections; perf agent P2/P7"
+   "next": "trace with vcTrace sections; perf agent P2/P7",
+   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) → D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
   },
   {
    "id": "D14",
@@ -191,15 +194,21 @@
    "id": "D17",
    "title": "One empty frame of the row before the category slide starts",
    "severity": "low",
-   "status": "open",
-   "found": "qa_runs/r2/C_nav ev_00518, ev_00764"
+   "status": "verified",
+   "found": "qa_runs/r2/C_nav ev_00518, ev_00764",
+   "fix": "GameDock.rowPosNow: while the row's list is not the one the slide started from (or the row is >4 places from its target) the cards are placed at the target, not at the old row position",
+   "files": [
+    "ui/GameDock.kt"
+   ],
+   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 — no empty frame"
   },
   {
    "id": "D18",
-   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames",
+   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames — explained",
    "severity": "medium",
-   "status": "open",
-   "found": "suite A/B idlecalm"
+   "status": "wontfix",
+   "found": "suite A/B idlecalm",
+   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings › Device › Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
   },
   {
    "id": "D19",
@@ -223,6 +232,311 @@
     "ui/SettingsDialog.kt"
    ],
    "check": "not yet run on device — key sequences in audit/2026-10-27/controller.md"
+  },
+  {
+   "id": "D20",
+   "title": "Tile home 'Middle' placement: the tiles sat below the screen's middle (centre at 570 px of 1080)",
+   "rule": "LAYOUT",
+   "severity": "medium",
+   "status": "verified",
+   "found": "Toni (update 350)",
+   "files": [
+    "ui/LauncherScreen.kt",
+    "ui/TileHome.kt"
+   ],
+   "fix": "the tile box reports its middle in root coordinates (onTilesMid); the layout shifts by areaTop + h/2 - rootH/2",
+   "verified": "screenshot after the fix: tiles y 118-242 of 360 (scaled), centre 180 = screen middle"
+  },
+  {
+   "id": "D21",
+   "title": "QA cost: the snapshot churn observer (on whenever the test-hooks file existed) made Voltcap draw ~8 fps",
+   "rule": "QA-COST",
+   "severity": "high",
+   "status": "verified",
+   "found": "Toni: 'very low fps now' (suite D: 41 frames in a nav run, p90 1500 ms)",
+   "files": [
+    "ui/QaTrace.kt",
+    "ui/QaInval.kt",
+    "tools/qa/device/vqa.sh"
+   ],
+   "fix": "churn opt-in only (--ez voltcap_test_churn true); never toString() a state's value; hooks file paused between runs (vqa.sh hooks on|off; suite/selftest switch it)",
+   "verified": "hooks paused: 2040 frames, 6.2 % janky; churn on with the new describe(): no slow frames from the observer (RC runs)"
+  },
+  {
+   "id": "D22",
+   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110×/s and every game card (~1000 card rebuilds/s) while navigating",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "QaTrace recomposition counters (suite G: GameCard 830-1000/s, Screen 90-115/s); cause proven with the QaFault 'snap_colors' test fault (glide off: Screen 13/s, GameCard 65/s) and QaInval (the invalidating state = the ShelfColors provider)",
+   "files": [
+    "ui/theme/ShelfColors.kt (LocalShelfColorsLive, ShelfTheme.live)",
+    "ui/theme/Theme.kt",
+    "ui/GameCard.kt",
+    "ui/LauncherScreen.kt",
+    "ui/EdgeBump.kt",
+    "ui/StatusLooks.kt",
+    "ui/LivingLibrary.kt",
+    "ui/TileHome.kt",
+    "ui/FocusEffects.kt (softGlowLive, pulseBorderLive, electricFrameLive)"
+   ],
+   "fix": "colours read while drawing through one stable State (ShelfTheme.live) in the hot paths: root background, dim wash, EdgeBump glow, status bar (only layouts that use the accent), card shadow (graphicsLayer), glow, frames, Living Library bars, unlock pill, progress bars, accent icons in their own scope; the no-op mediaFloorGlow argument removed. The glide itself is unchanged.",
+   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 → 8, GameCard 1000 → 48 (+ focused 6), GameDock unchanged 6",
+   "remaining": "static rule THEME-COMPOSE lists 37 more sites (other layouts, dialogs)"
+  },
+  {
+   "id": "D23",
+   "title": "Template pictures (case / cartridge / box frames, masks, spines) decoded again on the main thread for every card that came on screen",
+   "rule": "MAIN-DECODE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "pass 2 atrace T1: decodeBitmap 45 ms inside Compose:recompose",
+   "files": [
+    "ui/ResImages.kt (new)",
+    "ui/CoverCases.kt",
+    "ui/RealMedia.kt",
+    "ui/StyleCardboardBox.kt",
+    "ui/TvRoomHome.kt",
+    "ui/FramesScene.kt"
+   ],
+   "fix": "cachedImageResource(): one decode per app run, LRU-bounded at 64 MB; traced as VC:resDecode",
+   "check": "atrace of a category switch: VC:resDecode only on the first appearance of each template",
+   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) — fix kept, effect unproven"
+  },
+  {
+   "id": "D24",
+   "title": "Cold start: first frame 830-880 ms; the main thread opens 3 encrypted credential stores (314 ms) behind the prewarm thread",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "open",
+   "found": "traces T3-T5 (VC:secureOpen:tgdb/screenscraper/rawg on the main thread, LauncherViewModel init)",
+   "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)",
+   "next": "build the first LauncherUiState without the *Connected flags and fill them from IO (behaviour change — needs a careful check of what reads them)",
+   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse, 324 ms spread over 5 stores), stores opened in parallel (CS3: 260 ms) — the Keystore itself is the bottleneck, both reverted. Real fix = the first UI state without the *Connected flags, filled from IO; held back: startup auto-scrape reads metadataReady once (VM :5980, :6743) and would skip a run."
+  },
+  {
+   "id": "D25",
+   "title": "One 47-58 ms main-thread decodeBitmap inside a recomposition the first time 'Nintendo 3DS' shows after a cold start",
+   "rule": "MAIN-DECODE",
+   "severity": "low",
+   "status": "fixed",
+   "found": "T3/T4/T5; not imageResource / painterResource (ResImages), PlatformLogos or PackSpines (instrumented: VC:resDecode / VC:logoDecode / VC:spineDecode never fire)",
+   "next": "sampling profile (am profile) around the first 3DS category switch",
+   "root_cause": "second screen: MediaInspectView.secondCasePiece → CustomPieceTones.of → CartShells.packColour → CustomPieceTones.toneOfFile → BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
+   "files": [
+    "ui/SolidPiece.kt (CustomPieceTones.attach / keepTone)",
+    "MainActivity.kt"
+   ],
+   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date → colour); restored on a background thread at start",
+   "verified": "coldsample CS2 / CS3 (cold starts, same category switches): 0 main-thread decodes (CS1: 1, 47-58 ms)"
+  },
+  {
+   "id": "D26",
+   "title": "R1 panel: a notification's ✕ (Dismiss) could not be reached with the D-pad — it sits inside the notification's own button, ▶ went to 'Clear all' instead",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "verified",
+   "found": "controller walk W1/W2 (QaWalk + walkcheck.py: Dismiss NOT REACHED)",
+   "files": [
+    "ui/NotificationsPanel.kt"
+   ],
+   "fix": "▶ on a notification moves to its ✕, ◀ back (focus requesters on the row and the ✕)",
+   "verified": "walk W5 on the Thor: ▶ → 'Dismiss', ◀ → the notification"
+  },
+  {
+   "id": "D27",
+   "title": "The ✕ close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
+   "rule": "CONTROLLER",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "ui/DialogChrome.kt (CloseButton)"
+   ],
+   "found": "walk W1 / W4"
+  },
+  {
+   "id": "D28",
+   "title": "RomHacks compiled 7 regular expressions for every game on every library refresh, on the main thread (24 ms stall at start)",
+   "rule": "PERF",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "data/RomHacks.kt"
+   ],
+   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < … LauncherViewModel.recombineGames"
+  },
+  {
+   "id": "D29",
+   "title": "Controller light flashes ran the AYN root-shell binder call on the main thread (60 ms stall)",
+   "rule": "PERF",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "data/ControllerLights.kt (flash on Dispatchers.IO)"
+   ],
+   "found": "QaSampler CS1: BinderProxy.transactNative < RootShell.exec < AynSticks < ControllerLights.flash < LauncherScreen"
+  },
+  {
+   "id": "D30",
+   "title": "Tile home (Middle): the tile row jumped ~15 px for one frame when the name above the tiles changed height (its middle was measured after placing, a frame late)",
+   "rule": "SNAP-LATE-LAYOUT",
+   "severity": "medium",
+   "status": "verified",
+   "found": "layout sweep LA_TILES frames 224→226 (frames.py transient ev_00225)",
+   "files": [
+    "ui/TileHome.kt (TilesMidLine)",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "the tiles' middle is an alignment line read by the Middle placement in the same layout pass (fallback: the measured value as before)",
+   "verified": "layout sweep LD_TILES: 0 transients (LA_TILES: 4, the row jump at 224-226)"
+  },
+  {
+   "id": "D31",
+   "title": "Most layouts with the category name bar re-composed the whole home screen every frame of the colour glide (CategoriesBar read the theme colours in the screen's scope): Screen ~80-110/s in Grid, Cross, TV, Dashboard, Live, Side, Circuit, Hub, Library, Resume, Shelf, Timeline, Consoles, Discs, Crate, Cards, Studio, Twin icons",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "layout sweep (recomp Screen=…), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
+   "files": [
+    "ui/LauncherScreen.kt (ProvideNameColors)"
+   ],
+   "verified": "layout sweep LE vs LA–LD: Grid Screen 91 → 9/s, janky 15.8 → 7.5 %"
+  },
+  {
+   "id": "D32",
+   "title": "Resume & discover: on every ◀ ▶ the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "layout sweep LB_RESUME: frames.py transients on each move (ev_00207: frames 206 007 / 207 Cookie / 208 007)",
+   "files": [
+    "ui/StyleConsoleHomes.kt (ResumeSpot)"
+   ],
+   "fix": "the change frame is drawn as the move's start (pending = the effect hasn't caught up)",
+   "verified": "LD_RESUME: 1 transient left, and that one is the background clip (LB_RESUME: 10, one per move)"
+  },
+  {
+   "id": "D34",
+   "title": "26 layouts re-composed the whole home screen every frame of the colour glide: the status bar's look (statusLookFor, reading the accent for these layouts' bars) was made in the home screen's own scope",
+   "rule": "THEME-COMPOSE",
+   "severity": "high",
+   "status": "verified",
+   "found": "QaInval themeread stacks on 9 layouts (lchurn LC3): ShelfTheme.getAccent < statusLookFor < LauncherScreenContent$HomeStatusBar (a local composable: no scope of its own)",
+   "files": [
+    "ui/HomeChrome.kt (StatusBar lookLayout)",
+    "ui/LauncherScreen.kt"
+   ],
+   "fix": "the look is made inside StatusBar (its own recompose scope)",
+   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s → 9-14/s in every one; janky % e.g. Cross 12.2 → 3.4, Live 4.8 → 1.3, Cards 9.7 → 3.7, Green Core 17.3 → 5.7, Crate 8.1 → 2.9, Side 8.4 → 3.4 (full table: REPORT.md pass 3)"
+  },
+  {
+   "id": "D33",
+   "title": "Layout Studio: a part's entrance ('move') drew the new game's part fully for one frame, then it vanished and came in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "layout sweep LC_CUSTOM ev_00212 (title of the next game at full strength, then gone, then fading in)",
+   "files": [
+    "ui/StyleCustom.kt (sceneEnterOn)"
+   ]
+  },
+  {
+   "id": "D35",
+   "title": "Layout Studio: on L2 / R2 the row spun through every game between the old category's place and the new one's (~10 frames of other games)",
+   "rule": "CATEGORY-SPIN",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "LE_CUSTOM ev_01191-01202 (Continue playing after L2: a different set of games each frame)",
+   "files": [
+    "ui/StyleCustom.kt (SceneGames)"
+   ],
+   "fix": "a new category snaps the row to its own game (draw-time pending as D1); moves inside a category still glide"
+  },
+  {
+   "id": "D36",
+   "title": "Settings › Categories: after ▲/▼ the focus stayed on the row slot, so the next press moved the neighbouring category",
+   "rule": "FOCUS-FOLLOWS",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-10-27 walk ST3 (Thor): A on ▼ of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
+   "root_cause": "CategoryOrderCard drew the rows with forEachIndexed and no key(): the chip nodes belong to the slot, not the category, so focus stays put while the categories swap under it.",
+   "files": [
+    "ui/SettingsDialog.kt"
+   ],
+   "fix": "Rows keyed by category; after a move, focus is requested on the same arrow of the moved category (the other arrow when it reaches the top/bottom and the pressed one turns off).",
+   "check": "walk D36: ▲ ▲ ▼ ▼ on one category — focus y 945→822→699 then 699→822→945 (one row per press, following the category)",
+   "verified": "walk D36 (14:10 build) on the Thor; category order back exactly as saved (snapshot file compared)"
+  },
+  {
+   "id": "D37",
+   "title": "QA tooling: walk snapshot did not cover the category order/hidden list",
+   "rule": "WALK-SAFETY",
+   "severity": "medium",
+   "status": "verified",
+   "found": "walk ST3 pressed A on a ▼ in Settings › Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
+   "root_cause": "voltcap_test_snapshot only saves Features prefs; CategoryStore lives in its own SharedPreferences.",
+   "files": [
+    "ui/TestHooks.kt"
+   ],
+   "fix": "snapshot save/restore also keeps the 'categories' order + hidden set (voltcap_test_snapshot_categories.txt); the walk restarts Voltcap after restore so it is read again.",
+   "check": "after walk D36 the snapshot file order equals the order shown",
+   "verified": "walk D36"
+  },
+  {
+   "id": "D38",
+   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; ▶ off a row's end jumps rows; settings opened on the last-used category",
+   "rule": "TOOL",
+   "severity": "low",
+   "status": "fixed-compiles",
+   "found": "E4: Theme › Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with ◀ (no app defect)",
+   "root_cause": "explorePage swept ▶ only, and came back with the same number of ◀; QaExplore took the first focused category as the list's start.",
+   "files": [
+    "ui/QaExplore.kt"
+   ],
+   "fix": "Row walk ◀ and ▶ while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
+   "check": "next explorer run E6: Size & text chips reached; categories list starts at Home"
+  },
+  {
+   "id": "D39",
+   "title": "Tile home: round shortcuts moved in Edit Home covered the tiles after the tiles were re-centred",
+   "rule": "LAYOUT",
+   "severity": "medium",
+   "status": "fixed-on-device (data); design note open",
+   "found": "Toni 2026-10-27 ('would it break when I added the rounded shortcuts under the tiles'); preview TILES with shortcuts ROW: bar drawn over the tiles at y=0.42",
+   "root_cause": "A bar moved in Edit Home floats at a saved screen fraction (widget_positions shortcuts=0.5,0.42); it doesn't follow the tiles, so Update 350 / D30 moving the tiles up left it over them.",
+   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) — the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
+   "check": "tilemid log: group=721 (bar included), screenshot tiles_sc2",
+   "verified": "screens/tiles_sc2.png (Thor, preview TILES)"
+  },
+  {
+   "id": "D40",
+   "title": "Tile home Middle: tiles + round buttons centred as one group (Switch home), tiles alone without buttons",
+   "rule": "LAYOUT",
+   "severity": "request",
+   "status": "verified",
+   "found": "Toni's request with the Switch home screenshot",
+   "files": [
+    "ui/LauncherScreen.kt",
+    "ui/TileHome.kt"
+   ],
+   "fix": "TilesTopLine alignment line; Middle uses (tiles top + group bottom without padding)/2 when the buttons are by the row under the tiles.",
+   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 → tiles 282–652 + buttons to ~780 (group centre ≈ 531 vs screen 540 minus bottom padding)",
+   "verified": "Thor preview TILES, 14:25 build"
+  },
+  {
+   "id": "D41",
+   "title": "Carousel (all carousel views, e.g. STACKS with Carousel on): every game re-composed every frame of a glide",
+   "rule": "PER-FRAME-COMPOSITION",
+   "severity": "high",
+   "status": "verified",
+   "found": "atrace TS (STACKS): 35–46 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) ≈ 1,000/s with no input changed",
+   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this — checked, CH4 — so it is specific to this derived state, not derivedStateOf in general).",
+   "files": [
+    "ui/Carousel.kt"
+   ],
+   "fix": "turnedFar is a plain mutableState set from snapshotFlow only when the answer changes (initial value computed synchronously).",
+   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% → 22.7%, p90 42 → 32 ms, p99 85 → 77 ms",
+   "verified": "Thor, runs SB (before) / SA (after), 14:35 build"
   }
  ]
 }

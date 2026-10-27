@@ -401,6 +401,7 @@ internal fun HomeShowcaseHeader(
     /** The category being shown (the tight header puts it above the title). */
     category: String? = null
 ) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("Header") } // (QA: rebuilds per second)
     val total = if (game.raGameId != null) raProgress?.NumPossibleAchievements ?: 0 else 0
     val stats = showcaseStats(
         playtimeMs = playtimeMs, lastPlayedAt = lastPlayedAt,

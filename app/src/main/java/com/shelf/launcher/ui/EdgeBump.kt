@@ -85,7 +85,9 @@ internal fun Modifier.edgeBump(): Modifier {
             }
         }
     }
-    val accent = ShelfTheme.accent
+    // (QA pass 2, D22: the accent is read while drawing — read here it re-composed the home screen with every frame of
+    // the colour glide, since this modifier sits on the row's box in the screen itself.)
+    val live = ShelfTheme.live
     return this
         .graphicsLayer {
             translationX = offset.value * size.width
@@ -95,6 +97,7 @@ internal fun Modifier.edgeBump(): Modifier {
             drawContent()
             val g = glow.value
             if (g > 0.01f && shownDir != 0) {
+                val accent = live.value.accent
                 val w = size.width * 0.12f
                 val right = shownDir > 0
                 drawRect(

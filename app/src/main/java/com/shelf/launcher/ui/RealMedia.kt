@@ -100,13 +100,13 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                 Box(Modifier.fillMaxSize().clip(DiscRing(MediaTemplates.RING_INNER, MediaTemplates.RING_OUTER)).background(Color(0xFFE9E6DF))) {
                     if (art != null) AsyncImage(mediaArtModel(art), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) // (Update 157)
                 }
-                Image(painterResource(disc), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Image(com.shelf.launcher.ui.cachedPainterResource(disc), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         } else if (cart != null) {
             val w = minOf(maxWidth, maxHeight * cart.aspect)
             val h = w / cart.aspect
             val win = cart.win
-            val mask = ImageBitmap.imageResource(cart.mask)
+            val mask = com.shelf.launcher.ui.cachedImageResource(cart.mask)
             Box(Modifier.size(w, h)) {
                 Box(
                     Modifier
@@ -143,7 +143,7 @@ internal fun TemplateMedia(tpl: MediaTpl, labelScan: Any?, cover: Any?, modifier
                         modifier = Modifier.fillMaxSize()
                     ) // (Update 157)
                 }
-                Image(painterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+                Image(com.shelf.launcher.ui.cachedPainterResource(cart.res), null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
             }
         }
     }
@@ -282,7 +282,7 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
             }.getOrNull()
         }
     }
-    return cached ?: st.second.takeIf { st.first == tag }
+    return cached ?: st.second.takeIf { st.first == tag || QaFault.on("stale_soft") }
 }
 
 /**
@@ -453,7 +453,7 @@ internal fun Box3D(
     /** (Update 240, #26: the game's console, for the spine drawn when there's no picture of one: its colour and logo.) */
     platform: String? = null
 ): Boolean {
-    val overlay = ImageBitmap.imageResource(tpl.res)
+    val overlay = com.shelf.launcher.ui.cachedImageResource(tpl.res)
     val spineRes = tpl.spineRes
     // (Update 131: your downloaded spine pack too — spineImage loads both kinds.)
     // (Update 134: the console's spine with the name made once, away from the screen's thread — SpineCache.)
@@ -551,7 +551,7 @@ private fun cropToAspect(src: android.graphics.Bitmap, aspect: Float): android.g
 @Composable
 private fun rememberBoxFace(tpl: BoxTpl, front: Any?, frontIsBox: Boolean, detail: Int): android.graphics.Bitmap? {
     val frameRes = tpl.frameRes
-    val framePic: ImageBitmap? = if (frameRes != null && !frontIsBox) ImageBitmap.imageResource(frameRes) else null
+    val framePic: ImageBitmap? = if (frameRes != null && !frontIsBox) com.shelf.launcher.ui.cachedImageResource(frameRes) else null
     // (Update 202: the cover / box scan with flat strips in its file trimmed off, TrimMargins.kt; the window below already
     // fills with a centred crop, never stretched.)
     val art = rememberSoftBitmap(front, detail, trim = true)
@@ -598,7 +598,7 @@ internal fun FrontBox(
     val face = rememberBoxFace(tpl, front, frontIsBox, detail)
     val img = remember(face) { face?.asImageBitmap() }
     // The template pack's own case (its glass overlay): its front, straightened so it faces you, laid over the face.
-    val overlay = ImageBitmap.imageResource(tpl.res)
+    val overlay = com.shelf.launcher.ui.cachedImageResource(tpl.res)
     // The front's real proportions, from the template's front corners (TL, TR, BR, BL; x is a share of the width).
     val q = tpl.front
     fun dist(ax: Float, ay: Float, bx: Float, by: Float) = kotlin.math.hypot(((bx - ax) * tpl.aspect).toDouble(), (by - ay).toDouble()).toFloat()

@@ -737,7 +737,7 @@ internal fun PhysicalMedia(
                     if (label != null) AsyncImage(mediaArtModel(label), null, contentScale = if (labelIsScan) ContentScale.FillBounds else if (shell == MediaShell.UMD) ContentScale.Crop else ContentScale.Fit, modifier = Modifier.fillMaxSize()) // (Update 157; 206: stretched to the label window)
                 }
             }
-            Image(painterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            Image(com.shelf.launcher.ui.cachedPainterResource(shell.res), contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
         }
     }
 }

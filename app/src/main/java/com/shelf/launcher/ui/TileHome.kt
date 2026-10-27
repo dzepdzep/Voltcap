@@ -221,6 +221,8 @@ internal fun TileHomeRow(
     nameAnchor: TileNameAnchor? = null,
     /** Where the tiles start (root px), for "Whole picture" (the hero ends right above them). */
     onTilesTop: ((Float) -> Unit)? = null,
+    /** QA: the tiles' own middle (root y), for Middle placement — the name line above them isn't part of it. */
+    onTilesMid: ((Float) -> Unit)? = null,
     /** Asks for a game's box / label scans (only for the few games around the focus). */
     onNeedPhysical: (Game) -> Unit = {},
     /** Asks for a game's screenshots (Screenshot card art). */
@@ -459,10 +461,18 @@ internal fun TileHomeRow(
                             }
                         } else Modifier
                     )
+                    // (QA pass 3, D30: the tiles' middle as an alignment line, read by Middle placement in the SAME layout pass —
+                    // measured after placing, it arrived a frame late whenever the name above the tiles changed height:
+                    // the row jumped ~15 px for one frame on a move.)
+                    .layout { m, c ->
+                        val pl = m.measure(c)
+                        layout(pl.width, pl.height, mapOf(TilesMidLine to pl.height / 2, TilesTopLine to 0)) { pl.place(0, 0) }
+                    }
                     .then(
-                        if (onTilesTop != null) Modifier.onGloballyPositioned {
+                        if (onTilesTop != null || onTilesMid != null) Modifier.onGloballyPositioned {
                             // The tiles themselves start 8 dp in (the ring's room).
-                            onTilesTop(it.positionInRoot().y + ringPx)
+                            onTilesTop?.invoke(it.positionInRoot().y + ringPx)
+                            onTilesMid?.invoke(it.positionInRoot().y + it.size.height / 2f)
                         } else Modifier
                     )
                     .pointerInput(strideDpValue, looping) {
@@ -653,7 +663,7 @@ private fun HomeTile(
     Box(
         modifier
             .size(tile)
-            .livingLibrary(living, focused, accent, (look.cornerDp.coerceAtLeast(6) * 1.1f))
+            .livingLibrary(living, focused, { accent }, (look.cornerDp.coerceAtLeast(6) * 1.1f))
             // Soft glow: a real blurred halo outside the ring.
             .then(if (free) Modifier.mediaFloorGlow(focused && !dimmed, accent, pulse) else Modifier)
             .then(
@@ -1057,3 +1067,7 @@ internal fun CornerShortcuts(
     }
 }
 
+/** QA pass 3 (D30): where the tiles' middle is, for Tile home's "Middle" placement (LauncherScreen). */
+internal val TilesMidLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }
+/** The tiles' top (Tile home Middle with the round buttons under them centres tiles + buttons as one group, as the Switch home does). */
+internal val TilesTopLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }
