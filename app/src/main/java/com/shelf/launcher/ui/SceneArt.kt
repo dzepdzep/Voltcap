@@ -158,7 +158,7 @@ internal object SceneArt {
 internal fun rememberSceneMedia(): State<SceneArt.Media?> {
     val context = LocalContext.current
     val g = SceneArt.game
-    return produceState<SceneArt.Media?>(null, g?.key, g?.scan, g?.cover) {
+    return produceKeyed<SceneArt.Media?>(null, g?.key, g?.key, g?.scan, g?.cover) {
         value = if (g == null) null else SceneArt.media(context, g)
     }
 }
@@ -168,7 +168,7 @@ internal fun rememberSceneMedia(): State<SceneArt.Media?> {
 internal fun rememberRowCovers(): State<SceneArt.Covers?> {
     val context = LocalContext.current
     val urls = SceneArt.rowCovers
-    return produceState<SceneArt.Covers?>(null, urls) { value = SceneArt.covers(context, urls) }
+    return produceKeyed<SceneArt.Covers?>(null, urls, urls) { value = SceneArt.covers(context, urls) }
 }
 
 /** The game's art for a console-era music scene while [enabled] (null otherwise, or until loaded). */
@@ -176,7 +176,7 @@ internal fun rememberRowCovers(): State<SceneArt.Covers?> {
 internal fun rememberGameMusicArt(enabled: Boolean): State<SceneArt.MusicArt?> {
     val context = LocalContext.current
     val g = if (enabled) SceneArt.game else null
-    return produceState<SceneArt.MusicArt?>(null, g?.key, g?.hero, g?.cover) {
+    return produceKeyed<SceneArt.MusicArt?>(null, g?.key, g?.key, g?.hero, g?.cover) {
         value = if (g == null) null else SceneArt.musicArt(context, g)
     }
 }

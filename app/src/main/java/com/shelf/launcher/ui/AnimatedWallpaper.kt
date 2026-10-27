@@ -76,7 +76,7 @@ internal enum class WallpaperKind {
 private fun WallpaperAnimatedImage(uri: String, active: Boolean, modifier: Modifier) {
     val context = LocalContext.current
     val low = remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(context) || com.shelf.launcher.device.MemoryBudget.small(context) }
-    val drawable by produceState<Drawable?>(null, uri) {
+    val drawable by produceKeyed<Drawable?>(null, uri, uri) {
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val src = ImageDecoder.createSource(context.contentResolver, Uri.parse(uri))

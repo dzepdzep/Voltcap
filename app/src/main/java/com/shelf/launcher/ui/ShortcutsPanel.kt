@@ -361,7 +361,8 @@ private fun AppTile(
                         .size(22.dp)
                         .clip(CircleShape)
                         .background(com.shelf.launcher.ui.theme.Ds.danger)
-                        .then(if (onRemove != null) Modifier.clickable { onRemove() } else Modifier),
+                        // QA: (C12) tap only: no second, unringed D-pad stop inside the tile (X on the tile removes).
+                        .then(if (onRemove != null) Modifier.tapOnly { onRemove() } else Modifier),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Filled.Close, "Remove", tint = Color.White, modifier = Modifier.size(12.dp))

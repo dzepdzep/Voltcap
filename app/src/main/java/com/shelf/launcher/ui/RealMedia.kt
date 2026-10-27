@@ -254,12 +254,16 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
         ?.also { b -> (model as? String)?.let { Models3D.noteSource(b, it) } }
         // (Update 208: a flat-colour stand-in is no picture.)
         ?.takeUnless { FlatArt.isKnown(model) }
-    val state by produceState(cached, model, trim) {
-        if (model == null) { value = null; return@produceState }
-        if (cached != null) { value = cached; if (PerfDiag.on) PerfDiag.softHits++; return@produceState }
+    // QA (V4): the value is tagged with the picture it belongs to — produceState keeps its last value when [model] changes,
+    // so for the first frame(s) after a slot moved on to another game it returned the LAST game's cover (a case or
+    // cartridge wearing the previous game's picture for a moment).
+    val tag = model to trim
+    val st by produceState<Pair<Any?, android.graphics.Bitmap?>>(tag to cached, model, trim) {
+        if (model == null) { value = tag to null; return@produceState }
+        if (cached != null) { value = tag to cached; if (PerfDiag.on) PerfDiag.softHits++; return@produceState }
         if (PerfDiag.on) PerfDiag.softMisses++
-        value = null
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        value = tag to null
+        value = tag to kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 // (Update 147: always a still picture — an animated cover came back as an animated drawable, not a bitmap,
                 // and the 3D pieces and cases stayed a plain grey card.)
@@ -278,7 +282,7 @@ internal fun rememberSoftBitmap(model: Any?, maxSide: Int = 720, trim: Boolean =
             }.getOrNull()
         }
     }
-    return state
+    return cached ?: st.second.takeIf { st.first == tag }
 }
 
 /**
@@ -331,9 +335,11 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
     val cached = remember(key) { key?.let { coil.Coil.imageLoader(context).memoryCache?.get(it)?.bitmap } }
         ?.takeUnless { FlatArt.isKnown(model) }
     val start = remember(model, cached) { SoftLoad(cached, model == null || cached != null) }
-    val state by produceState(start, model) {
-        if (model == null || cached != null) { value = start; return@produceState }
-        value = SoftLoad(null, false)
+    // QA (V4): tagged with its model, as rememberSoftBitmap — the previous game's spine showed for a frame.
+    val st by produceState<Pair<Any?, SoftLoad>>(model to start, model) {
+        val tag = model
+        if (model == null || cached != null) { value = tag to start; return@produceState }
+        value = tag to SoftLoad(null, false)
         val b = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 val req = coil.request.ImageRequest.Builder(context).data(model).size(maxSide, maxSide)
@@ -347,9 +353,9 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
                     ?.also { bmp -> prepareSoft(bmp) }
             }.getOrNull()
         }
-        value = SoftLoad(b, true)
+        value = tag to SoftLoad(b, true)
     }
-    return state
+    return if (cached != null || st.first != model) start else st.second
 }
 
 /**

@@ -31,9 +31,9 @@ internal fun rememberDithered(url: String?, w: Int, h: Int, palette: IntArray, c
     val src = rememberSoftBitmap(url, maxSide = max(w, h) * 3)
     val key = remember(url, w, h, palette.contentHashCode(), crop) { url?.let { "$it|$w|$h|${palette.contentHashCode()}|$crop" } }
     val cached = remember(key) { key?.let { DitherCache.cache.get(it) } }
-    val out by produceState(cached, key, src) {
-        if (cached != null) { value = cached; return@produceState }
-        val s = src ?: run { value = null; return@produceState }
+    val out by produceKeyed(cached, key, key, src) {
+        if (cached != null) { value = cached; return@produceKeyed }
+        val s = src ?: run { value = null; return@produceKeyed }
         val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { runCatching { ditherBitmap(s, w, h, palette, crop) }.getOrNull() }
         if (made != null && key != null) DitherCache.cache.put(key, made)
         value = made

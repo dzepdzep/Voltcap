@@ -358,7 +358,7 @@ internal fun Ps2SaveTile(
         refs.firstNotNullOfOrNull { r -> Ps2Icons.cached(r.id)?.takeIf { it.icon != null }?.let { Ps2Pick(r, it, true) } }
             ?: Ps2Pick(refs.firstOrNull(), null, false)
     }
-    val pick by produceState(initial, refs, version, slug) {
+    val pick by produceKeyed(initial, slug, refs, version, slug) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             var first: Ps2Pick? = null
             for (r in refs.take(8)) {

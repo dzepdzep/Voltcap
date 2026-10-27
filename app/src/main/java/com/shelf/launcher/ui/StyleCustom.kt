@@ -358,6 +358,7 @@ private fun SceneText(c: StyleCtx, p: ScenePart, g: Game, h: Float) {
 /** The time now, moving on every 10 s while [ticking] (a clock on screen). */
 @Composable
 private fun rememberSceneNow(ticking: Boolean): Long {
+    // qa-ok: STALE-PRODUCE (a clock, not a picture)
     val now by produceState(System.currentTimeMillis(), ticking) {
         while (ticking) {
             kotlinx.coroutines.delay(10_000L - System.currentTimeMillis() % 10_000L)

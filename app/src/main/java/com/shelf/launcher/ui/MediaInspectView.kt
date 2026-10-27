@@ -1951,7 +1951,7 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // (Update 189: a mini disc at its real 8 cm against 12 cm.)
     val k = if (p.smallDisc) 80f / 120f else 1f
     // Update 189: its real format, for its data side (DiscUnderside.kt): from the console at once, from the image after.
-    val format by produceState(DiscFormats.quick(p.game.platform), p.game.stableKey) {
+    val format by produceKeyed(DiscFormats.quick(p.game.platform), p.game.stableKey, p.game.stableKey) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { DiscFormats.of(p.game) }.getOrDefault(value) }
     }
     // Update 288: the edge is the disc's own outline — its label face recorded (below) and drawn again, darker, slice

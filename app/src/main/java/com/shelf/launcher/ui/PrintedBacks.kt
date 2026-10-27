@@ -157,8 +157,8 @@ internal object PrintedBacks {
 internal fun rememberPrintedBack(spec: PrintedBack?): Bitmap? {
     val context = LocalContext.current.applicationContext
     val now = remember(spec) { spec?.let { PrintedBacks.cached(it) } }
-    val made by produceState(now, spec) {
-        if (spec == null || now != null) { value = now; return@produceState }
+    val made by produceKeyed(now, spec, spec) {
+        if (spec == null || now != null) { value = now; return@produceKeyed }
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching {
                 val loader = coil.Coil.imageLoader(context)

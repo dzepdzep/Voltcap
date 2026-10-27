@@ -169,7 +169,7 @@ internal fun RaLeaderboardsDialog(game: Game, onDismiss: () -> Unit) {
                         ).joinToString("\n")
                     ) { open = if (open == lb.id) null else lb.id }
                     if (open == lb.id && creds != null) {
-                        val entries by produceState<List<RaSocial.Entry>?>(null, lb.id) { value = RaSocial.entries(creds, lb.id) }
+                        val entries by produceKeyed<List<RaSocial.Entry>?>(null, lb.id, lb.id) { value = RaSocial.entries(creds, lb.id) }
                         val e = entries
                         if (e == null) MutedNote("Loading…")
                         else Column(Modifier.padding(start = 16.dp)) {

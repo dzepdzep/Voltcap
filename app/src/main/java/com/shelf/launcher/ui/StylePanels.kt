@@ -509,7 +509,7 @@ private fun PanelFace(c: StyleCtx, p: PanelPalette, ch: Int, i: Int, lit: Boolea
 private fun PanelSystemFace(st: StyleStop, p: PanelPalette) {
     val context = LocalContext.current
     val platform = st.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
-    val photo by produceState<String?>(null, platform) {
+    val photo by produceKeyed<String?>(null, platform, platform) {
         value = if (platform != null && com.shelf.launcher.data.ConsolePhotos.hasPhoto(platform)) runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull() else null
     }
     Column(Modifier.fillMaxSize().padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {

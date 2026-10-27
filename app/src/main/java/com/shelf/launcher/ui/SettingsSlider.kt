@@ -69,10 +69,16 @@ internal fun PercentSlider(
                     else -> 0
                 }
                 if (!enabled || dir == 0) return@onPreviewKeyEvent false
+                // QA (C2): small ranges (a count of buttons, an angle) step by 1 — by 5 only 0, 5 and 8 of "0..8" could be
+                // picked with the D-pad. QA (C9): at the end of the range ◀ ▶ are let through, so focus can leave the
+                // slider sideways (two-column settings, the R1 panel) instead of being stuck on it.
+                val step = if (max - min <= 30) 1 else 5
+                val cur = drag.roundToInt()
+                if ((dir < 0 && cur <= min) || (dir > 0 && cur >= max)) return@onPreviewKeyEvent false
                 if (event.type == KeyEventType.KeyDown) {
-                    val next = ((drag / 5f).roundToInt() + dir) * 5
+                    val next = if (step == 1) cur + dir else ((drag / 5f).roundToInt() + dir) * 5
                     val clamped = next.coerceIn(min, max)
-                    if (clamped != drag.roundToInt()) {
+                    if (clamped != cur) {
                         drag = clamped.toFloat()
                         onChange(clamped)
                     }

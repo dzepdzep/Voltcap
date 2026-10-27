@@ -1165,7 +1165,7 @@ internal fun GameCarousel(
                 for (i in places) {
                     val real = if (lLoop) i.mod(ln) else i
                     val g = list[real]
-                    androidx.compose.runtime.key(old, if (lLoop) i else g.stableKey) {
+                    androidx.compose.runtime.key(old, if (lLoop) "$i|${g.stableKey}" else g.stableKey) { // (QA V5: an endless row's place keeps its game while scrolling; a new category gets fresh places, not the old games' state)
                         // (Update 246, #60: made inside the game's own group and kept while its place and the slide are the
                         // same. Made before it at the loop's position, every step shifted each position's place by one, so
                         // every game in the carousel got new ones and rebuilt — about a hundred 3D cases per step in a big

@@ -147,7 +147,7 @@ internal fun rememberConsolePhoto(tile: CategoryTile, mode: CategoryTileArt): St
     Features.consoleHwPick.state.value
     com.shelf.launcher.data.ConsoleArt.model(platform)?.let { return it }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val url by produceState<String?>(null, platform) { value = com.shelf.launcher.data.ConsolePhotos.url(context, platform) }
+    val url by produceKeyed<String?>(null, platform, platform) { value = com.shelf.launcher.data.ConsolePhotos.url(context, platform) }
     return url
 }
 

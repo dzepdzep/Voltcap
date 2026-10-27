@@ -287,7 +287,8 @@ internal fun ShowcaseDock(
             apps.forEach { app ->
                 val id = rememberPadId("sc-app")
                 Box(
-                    Modifier.size(40.dp).padTarget(id) { onLaunch(app) }.clip(CircleShape).background(Color.White.copy(alpha = if (mono) 0.10f else 0.95f))
+                    // QA: (C7) X on a dock app = its long-press menu.
+                    Modifier.size(40.dp).padTarget(id, onMenu = { onMenu(app) }) { onLaunch(app) }.clip(CircleShape).background(Color.White.copy(alpha = if (mono) 0.10f else 0.95f))
                         .combinedClickable(onClick = { onLaunch(app) }, onLongClick = { onMenu(app) }),
                     contentAlignment = Alignment.Center
                 ) { SecondDockShortcuts.Icon(app.packageName, Modifier.fillMaxSize().padding(5.dp)) }

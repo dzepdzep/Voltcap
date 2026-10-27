@@ -1,0 +1,228 @@
+{
+ "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete — mark it.",
+ "defects": [
+  {
+   "id": "D1",
+   "title": "New category's row drawn in place for a frame on L2/R2, then jumps aside and slides in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-27 run r1 (frames.py transient, Thor 120 Hz)",
+   "evidence": [
+    "qa_runs/r1/nav120_frames/ev_00438_transient.png",
+    "qa_runs/r1/nav120_frames/ev_00698_transient.png",
+    "qa_runs/r1/base_nav_frames/ev_00702_transient.png"
+   ],
+   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) — those frames drew the new row at rest, full strength.",
+   "files": [
+    "ui/HomeExtras.kt"
+   ],
+   "fix": "graphicsLayer draws the slide's start position while the effect hasn't caught up with the tick (as StyleCrossMenu update 166).",
+   "check": "home_nav scenario: no transient at the R2/L2 frames; static rule SNAP-ANIMATE",
+   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 — no full-strength row; one empty frame (D17), then the slide"
+  },
+  {
+   "id": "D2",
+   "title": "Game info/header shown fully for one frame on every focus move, then hidden and risen in",
+   "rule": "SNAP-ANIMATE",
+   "severity": "high",
+   "status": "verified",
+   "found": "visual review agent (V1); consistent with run r1 ev_00572",
+   "root_cause": "Motion.riseOnChange: p stayed 1 in the key-change frame; snapTo(0) ran a frame later.",
+   "files": [
+    "ui/Motion.kt"
+   ],
+   "fix": "draw p=0 while seen != key",
+   "check": "home_nav header region; static rule"
+  },
+  {
+   "id": "D3",
+   "title": "3D cases / cartridges / spines wear the previous game's picture for a frame (rememberSoftBitmap / rememberSoftLoad)",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "visual review agent (V4)",
+   "files": [
+    "ui/RealMedia.kt"
+   ],
+   "fix": "value tagged with its model; another model's bitmap is never returned"
+  },
+  {
+   "id": "D4",
+   "title": "Endless rows keyed by place: a category change reused the old games' slot state (old covers, old shapes resizing)",
+   "rule": "SLOT-KEY",
+   "severity": "high",
+   "status": "fixed",
+   "found": "visual review agent (V5)",
+   "files": [
+    "ui/Carousel.kt",
+    "ui/GameDock.kt"
+   ],
+   "fix": "key = place + game key (scrolling keeps keys; a new list gets fresh slots)"
+  },
+  {
+   "id": "D5",
+   "title": "Cartridge sticker shows the game name for a frame before its cover",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "visual review agent (V6); matches Toni's 'Switch cartridges first show text quickly'",
+   "files": [
+    "ui/CartShells.kt"
+   ]
+  },
+  {
+   "id": "D6",
+   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals…)",
+   "rule": "STALE-PRODUCE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "static_checks.py",
+   "files": [
+    "ui/ProduceKeyed.kt (new)",
+    "26 call sites"
+   ],
+   "fix": "produceKeyed(initial, identity, keys…)"
+  },
+  {
+   "id": "D7",
+   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) … })",
+   "rule": "STALE-FOREVER",
+   "severity": "medium",
+   "status": "fixed",
+   "files": [
+    "ui/SettingsDialog.kt:3196, 3294"
+   ]
+  },
+  {
+   "id": "D8",
+   "title": "Focus pulse rebuilt the whole focused card ~20×/s while idle on Home",
+   "rule": "PULSE-COMPOSE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "perf review agent (P1); idle frame count 101 frames / 5 s in run r1",
+   "files": [
+    "ui/PowerSaver.kt",
+    "ui/FocusEffects.kt",
+    "ui/GameCard.kt"
+   ],
+   "fix": "pulse as State read only in draw (softGlow lambda, pulseBorder)",
+   "remaining": "GridHome, TvRoomHome, StyleSideMenu, StyleSpotlight, TileHome still read it in composition (15 sites, static rule PULSE-COMPOSE)"
+  },
+  {
+   "id": "D9",
+   "title": "Sliders: ◀ ▶ step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "controller review agent (C2, C9)",
+   "files": [
+    "ui/SettingsSlider.kt"
+   ]
+  },
+  {
+   "id": "D10",
+   "title": "Cartridge shell / DS case pickers missing from the 'a dialog is open' list (update prompt could stack over the DS case picker)",
+   "rule": "CONTROLLER",
+   "severity": "low",
+   "status": "fixed",
+   "files": [
+    "ui/LauncherScreen.kt"
+   ]
+  },
+  {
+   "id": "D11",
+   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState)",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "open",
+   "found": "QaTrace focus SideEffect: 409 runs in 8 s of navigation (run fix_nav); perf agent P2"
+  },
+  {
+   "id": "D12",
+   "title": "Render-thread spikes 36–48 ms (CommandIssue) right after focus moves — likely software bitmaps uploaded at draw",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "QaTrace slow-frame log, run fix_nav",
+   "next": "Perfetto trace to confirm uploads vs shader compile; perf agent P4 (trim transform keeps covers software)"
+  },
+  {
+   "id": "D13",
+   "title": "Composition spikes 25–54 ms (ANIMATION phase) during navigation / category switch",
+   "rule": "PERF",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "QaTrace slow-frame log",
+   "next": "trace with vcTrace sections; perf agent P2/P7"
+  },
+  {
+   "id": "D14",
+   "title": "Category caption kept the old category's name ~16 frames after the row changed (CategoryNameSwap AnimatedContent fade)",
+   "rule": "STALE-ANIM",
+   "severity": "medium",
+   "status": "verified",
+   "found": "qa_runs/r2/B_nav frames 712-720",
+   "files": [
+    "ui/HomeChrome.kt"
+   ],
+   "fix": "the outgoing name is hidden (draw-time alpha) in the switch frame; the new one keeps its fade"
+  },
+  {
+   "id": "D15",
+   "title": "Game title jumps when its logo loads (0-width slot) and again when the logo changes size",
+   "rule": "LAYOUT-POP",
+   "severity": "medium",
+   "status": "verified",
+   "found": "qa_runs/r2/B_nav 720→730→745",
+   "files": [
+    "ui/GameCard.kt",
+    "ui/GameDock.kt"
+   ],
+   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos ±2 prefetched"
+  },
+  {
+   "id": "D16",
+   "title": "(not a defect) repeated header/cover shake when pressing ▶ on the last game",
+   "status": "wontfix",
+   "note": "EdgeBump — intended; scenarios now start from All, first game"
+  },
+  {
+   "id": "D17",
+   "title": "One empty frame of the row before the category slide starts",
+   "severity": "low",
+   "status": "open",
+   "found": "qa_runs/r2/C_nav ev_00518, ev_00764"
+  },
+  {
+   "id": "D18",
+   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames",
+   "severity": "medium",
+   "status": "open",
+   "found": "suite A/B idlecalm"
+  },
+  {
+   "id": "D19",
+   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts ✕ badge, Edit Home hint",
+   "rule": "CONTROLLER",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "controller review C3-C7, C12, C15",
+   "files": [
+    "ui/NotificationsPanel.kt",
+    "ui/LauncherScreen.kt",
+    "ui/TwinShowcase.kt",
+    "ui/TwinScreens.kt",
+    "ui/PocketClassic.kt",
+    "ui/SecondScreenTools.kt",
+    "ui/SecondPad.kt",
+    "ui/SecondGamesPage.kt",
+    "ui/SecondScreenHome.kt",
+    "ui/SecondShowcase.kt",
+    "ui/ShortcutsPanel.kt",
+    "ui/SettingsDialog.kt"
+   ],
+   "check": "not yet run on device — key sequences in audit/2026-10-27/controller.md"
+  }
+ ]
+}

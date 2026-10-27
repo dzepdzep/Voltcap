@@ -95,7 +95,7 @@ private fun DockAnimatedImage(uri: String, fallback: Color) {
     val active = rememberIsActive() && !LocalSceneCovered.current && !HomeIdle.still
     val low = remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(context) || com.shelf.launcher.device.MemoryBudget.small(context) }
     // null = still loading; Result.failure = use the still / colour.
-    val drawable by produceState<Result<Drawable>?>(null, uri) {
+    val drawable by produceKeyed<Result<Drawable>?>(null, uri, uri) {
         value = withContext(Dispatchers.IO) {
             runCatching {
                 if (Build.VERSION.SDK_INT < 28) error("no animated decoder")

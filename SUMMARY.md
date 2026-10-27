@@ -1,5 +1,39 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 27 Oct 2026 (350): QA system (tools/qa) + first QA pass — flashes on category switch, stale pictures, controller gaps
+
+Toni's brief "VoltCap — Complete Autonomous App QA, Visual Inspection & Optimization System". First pass on the Thor
+(Classic layout); everything is in `tools\qa\` (README = how to run, RULES = bug patterns, defects.json, REPORT.md).
+- **QA system** (new, `tools\qa\`): `device\vqa.sh` on the handheld (real controller input through the built-in pad,
+  120 fps recordings, frame stats, Perfetto, memory, a whole `suite`), `tools\frames.py` (finds 1–3-frame flashes, blank
+  frames and hitches in a recording, with contact sheets), `framestats.py`, `compare.py` (before/after),
+  `static_checks.py` (code checks for the bug patterns), `settings_inventory.py` (all 851 settings: readers, UI, search,
+  backup). In the app, test builds only (the voltcap_test_hooks file): `ui\QaTrace.kt` logs focus / category events
+  and every slow frame with its breakdown (logcat VoltcapQA). `/qa_runs/` holds pulled recordings (git-ignored).
+  Skill `tools\qa\SKILL.md` runs a pass (Cowork: offered as the voltcap-qa skill; Claude Code: copy it to `.claude\skills\voltcap-qa\`).
+- **L2 / R2 flash fixed** (`ui\HomeExtras.kt`): the new category's row was drawn in place at full strength for 1–3 frames,
+  then jumped aside and slid in (seen on every switch in the recordings). Now it starts from the slide's start.
+- **Category caption** (`ui\HomeChrome.kt`): kept the old category's name ~130 ms after the row changed; now hidden at once.
+- **Game title jumping when its logo loads** (`ui\GameCard.kt`, `ui\GameDock.kt`): the logo's place is kept while it
+  loads; logos of the games next to you are loaded ahead.
+- **Old pictures for a frame**: the info header rising in (`ui\Motion.kt`), 3D cases / cartridges / spines
+  (`ui\RealMedia.kt`), the cartridge sticker's name (`ui\CartShells.kt`), endless rows keeping the old games' places
+  (`ui\Carousel.kt`, `ui\GameDock.kt`), and 27 more places (console photos, second-screen screenshots, case faces,
+  theme thumbnails that could stay on the old theme, history, manuals…) through the new `ui\ProduceKeyed.kt`.
+- **Focus pulse** (`ui\PowerSaver.kt`, `ui\FocusEffects.kt`, `ui\GameCard.kt`): only redraws, no longer rebuilds the card 20×/s.
+- **Controller**: sliders step by 1 on small ranges and let focus leave at the ends (`ui\SettingsSlider.kt`); R1 panel:
+  "Details" for Background work and a "Sync status" chip (`ui\NotificationsPanel.kt`); the Dashboard chip on Twin
+  Showcase / Pocket Classic; second-screen Wall edit mode by D-pad, X opens a control's menu on the second screen;
+  Shortcuts ✕ no longer an invisible focus stop; Edit Home hint text; two pickers added to the "dialog open" list.
+
+Copy: `src_copy\` (53 files: see `git status`; new `ui\ProduceKeyed.kt`, `ui\QaTrace.kt`); `tools\qa\` (new);
+`tools\qa\SKILL.md` (new); `.gitignore` and `project_copy\.gitignore` (+ /qa_runs/).
+
+Tested on the Thor (release, AOT-compiled, same scenario before/after): category switches recorded at 120 fps — the
+full-strength flash is gone (one empty frame before the slide remains, D17); caption and logo fixed; idle janky frames
+45.6 → 31.2 %, Java heap 117 → 60 MB; navigation smoothness unchanged (p90 ≈ 19 ms at 120 Hz — next pass, D11–D13).
+Not tested on the device: the controller additions, other layouts, the second screen, other handhelds (REPORT.md).
+
 ## Update — 26 Oct 2026 (349): Sound per screen widget, the category screen's buttons by controller
 
 Toni's notes after 0.6.44.

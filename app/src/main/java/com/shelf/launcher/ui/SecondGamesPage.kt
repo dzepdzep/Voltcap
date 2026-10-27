@@ -305,7 +305,8 @@ private fun ConsoleTile(
     val pic = if (look == com.shelf.launcher.data.Features.FolderLook.LOGOS) null else rememberFolderPicture(f.platform)
     val logoOn = pic == null || com.shelf.launcher.data.Features.secondFolderLogo.state.value
     Box(
-        modifier.padTarget("folder-" + f.platform) { onClick() }.clip(shape)
+        // QA: (C7) X on the folder = its long-press menu.
+        modifier.padTarget("folder-" + f.platform, onMenu = onLongClick) { onClick() }.clip(shape)
             .background(
                 if (look == com.shelf.launcher.data.Features.FolderLook.LOGOS) Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.04f)))
                 else Brush.linearGradient(listOf(lerp(accent, Color.White, 0.12f), lerp(accent, Color.Black, 0.3f)))

@@ -68,7 +68,7 @@ internal fun RetroBounceLayer(colors: ShelfColors, modifier: Modifier) {
         if (mode == Features.RetroIcons.CURRENT && own != null) listOf(own)
         else library.mapNotNull { ConsoleLogos.raIcon(it) }.distinct().take(14).ifEmpty { listOfNotNull(own) }
     }
-    val icons by produceState(emptyList<ImageBitmap>(), urls) {
+    val icons by produceKeyed(emptyList<ImageBitmap>(), urls, urls) {
         value = urls.mapNotNull { url ->
             runCatching {
                 val req = coil.request.ImageRequest.Builder(context).data(url).allowHardware(false).build()

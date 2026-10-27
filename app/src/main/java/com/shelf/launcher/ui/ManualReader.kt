@@ -346,8 +346,8 @@ internal fun rememberHasManual(g: Game?): Boolean {
     val context = LocalContext.current.applicationContext
     val listed = ManualLinks.url(g.stableKey) != null
     val v = ManualLinks.version
-    val onDevice by produceState(false, g.stableKey, v, listed) {
-        if (listed) return@produceState
+    val onDevice by produceKeyed(false, g.stableKey, g.stableKey, v, listed) {
+        if (listed) return@produceKeyed
         value = withContext(Dispatchers.IO) { runCatching { com.shelf.launcher.data.Manuals.local(context, g) != null }.getOrDefault(false) }
     }
     return listed || onDevice
@@ -358,7 +358,7 @@ internal fun rememberHasManual(g: Game?): Boolean {
 internal fun rememberManualCover(g: Game, on: Boolean): Bitmap? {
     val context = LocalContext.current.applicationContext
     val v = ManualLinks.version
-    val cover by produceState<Bitmap?>(null, g.stableKey, on, v) {
+    val cover by produceKeyed<Bitmap?>(null, g.stableKey, g.stableKey, on, v) {
         value = if (!on) null else withContext(Dispatchers.IO) { runCatching { ManualLinks.firstPage(context, g) }.getOrNull() }
     }
     return cover

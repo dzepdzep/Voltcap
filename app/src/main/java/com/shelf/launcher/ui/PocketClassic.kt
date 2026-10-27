@@ -713,7 +713,9 @@ internal fun pocketClassicKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boo
     val tools = if (toolbar) pocketTools(c, ribbon = false) else emptyList()
     val rows = listOf(
         listOf(CARD to 132f), listOf(ACH to 86f, CAT to 178f), listOf(ALL to 132f),
-        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f },
+        tools.mapIndexed { i, (id, _) -> id to pocketToolX(i, tools.size) + 9f }
+            // QA: (C5) toolbar hidden: the second screen's "Dashboard" chip (TwinSecondScreen, bottom right) takes the tools' row.
+            .ifEmpty { if (twinOnSecond(c.state) && Features.twinDashboardAccess.state.value) listOf(PocketSpot.DASH to 236f) else emptyList() },
         if (pocketStripOn()) pocketStripSpots(c) else emptyList()
     ).filter { it.isNotEmpty() }
     fun dirKey(d: Int): Boolean {

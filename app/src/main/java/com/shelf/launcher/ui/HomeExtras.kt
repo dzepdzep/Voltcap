@@ -48,7 +48,7 @@ internal object CategorySlide {
      * jumping right and back.
      */
     var tick by mutableIntStateOf(0)
-    fun step(direction: Int) { dir = direction; tick++ }
+    fun step(direction: Int) { dir = direction; tick++; QaTrace.event("category", "step $direction tick $tick") }
     /**
      * Update 162: carousels on screen (GameCarousel) that slide their own collection along their path on a category
      * change — the slide round them ([categorySlide]) then stays still, so the two never move at once.
@@ -64,17 +64,21 @@ internal object CategorySlide {
 internal fun Modifier.categorySlide(): Modifier {
     val tick = CategorySlide.tick
     val anim = remember { Animatable(0f) }
-    var first by remember { mutableStateOf(true) }
+    // QA (V2): the step this slide has caught up with. In the frame the category changes (and the two frames the
+    // slide waits) the row used to be drawn in place at full strength, then jump aside and slide back — the new games
+    // flashed. Until the effect has snapped, the drawing already uses the slide's start position (StyleCrossMenu, 166).
+    var seen by remember { mutableIntStateOf(tick) }
     // Update 112: Slide / Fade / Just change (Home › Animations, per layout too).
     MotionPrefs.observe()
     val kind = MotionPrefs.page()
     val on = Features.categorySlide.state.value && !LocalLiteEffects.current && kind != Features.PageAnim.NONE
     val slide = kind == Features.PageAnim.SLIDE
     LaunchedEffect(tick) {
-        if (first) { first = false; return@LaunchedEffect }
+        if (tick == seen) return@LaunchedEffect
         // (Update 162: not round a carousel that slides its games along its own path, CategorySlide.pathOwners.)
-        if (!on || CategorySlide.pathOwners > 0) return@LaunchedEffect
+        if (!on || CategorySlide.pathOwners > 0) { seen = tick; return@LaunchedEffect }
         anim.snapTo(CategorySlide.dir.toFloat())
+        seen = tick
         // (Update 207: started once the new category has been drawn — two frames on — and a little longer, so the time
         // spent making it doesn't eat the slide: it jumped part of the way, then rushed.)
         androidx.compose.runtime.withFrameNanos { }
@@ -82,8 +86,10 @@ internal fun Modifier.categorySlide(): Modifier {
         anim.animateTo(0f, tween(340, easing = FastOutSlowInEasing))
     }
     return this.graphicsLayer {
-        translationX = if (slide) anim.value * 64.dp.toPx() else 0f
-        alpha = 1f - abs(anim.value) * (if (slide) 0.75f else 1f)
+        val pending = on && CategorySlide.tick != seen && CategorySlide.pathOwners == 0
+        val v = if (pending) CategorySlide.dir.toFloat() else anim.value
+        translationX = if (slide) v * 64.dp.toPx() else 0f
+        alpha = 1f - abs(v) * (if (slide) 0.75f else 1f)
     }
 }
 

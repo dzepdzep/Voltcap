@@ -235,8 +235,8 @@ internal fun rememberBoxSides(
     val fill = mode == com.shelf.launcher.data.Features.BoxSides.FILL
     // (Update 319: with the print off, these sides take the cover's edge colour instead of plain card.)
     val colorSides = com.shelf.launcher.data.Features.boxSideColors.state.value
-    val made by androidx.compose.runtime.produceState<Array<Bitmap?>?>(null, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
-        if (plain && (colorSides.isEmpty() || front == null)) { value = null; return@produceState }
+    val made by produceKeyed<Array<Bitmap?>?>(null, title to platform, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
+        if (plain && (colorSides.isEmpty() || front == null)) { value = null; return@produceKeyed }
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             runCatching {
                 val accent = front?.let { f -> DerivedArt.of(f, "accent") { CollectorBacks.accentOf(f) ?: 0 } }?.takeIf { it != 0 }

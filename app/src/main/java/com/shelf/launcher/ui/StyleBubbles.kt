@@ -627,7 +627,7 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
             key(i) {
                 val grow by animateFloatAsState(if (on) 1.14f else 1f, spring(dampingRatio = 0.45f, stiffness = 380f), label = "bvFold")
                 val platform = st.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
-                val photo by produceState<String?>(null, platform) {
+                val photo by produceKeyed<String?>(null, platform, platform) {
                     value = if (platform != null && com.shelf.launcher.data.ConsolePhotos.hasPhoto(platform)) runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull() else null
                 }
                 Box(Modifier.offset { IntOffset((x - dPx / 2f + shiftX).roundToInt(), (y - dPx / 2f).roundToInt()) }.size(d).graphicsLayer { scaleX = grow; scaleY = grow }

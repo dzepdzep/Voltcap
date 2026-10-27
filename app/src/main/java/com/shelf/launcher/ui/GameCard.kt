@@ -199,8 +199,10 @@ fun GameCard(
     else if (lite && look.focusEffect == com.shelf.launcher.data.FocusEffect.ELECTRIC) com.shelf.launcher.data.FocusEffect.GLOW
     else look.focusEffect
     // ~20 updates a second (not every display frame), and still while the handheld sits idle.
-    val pulse = if (effect == com.shelf.launcher.data.FocusEffect.NONE) 0f
-    else rememberFocusPulse(animate = !lite)
+    // (QA P1: read only while drawing, through [pulse] — the card isn't rebuilt by the pulse any more.)
+    val pulseState = if (effect == com.shelf.launcher.data.FocusEffect.NONE) null
+    else rememberFocusPulseState(animate = !lite)
+    val pulse: () -> Float = { pulseState?.value ?: 0f }
 
     Column(modifier.width(width)) {
     // Latest values for the tap handler, so it never has to restart (a restart mid-tap loses the tap).
@@ -232,12 +234,12 @@ fun GameCard(
             .livingLibrary(living, focused, ShelfTheme.accent, look.cornerDp.toFloat())
             // The free-standing cartridge / disc / box: no card frame, glow or clip — the one you're on gets a
             // light pool under it instead (and is a bit bigger, see bigCover).
-            .then(if (freeMedia) Modifier.mediaFloorGlow(focused, ShelfTheme.accent, pulse) else Modifier
+            .then(if (freeMedia) Modifier.mediaFloorGlow(focused, ShelfTheme.accent) else Modifier
             // Soft glow: a real blurred halo round the card (a lighter one under the electric bolts).
             .then(
                 when (effect) {
-                    com.shelf.launcher.data.FocusEffect.GLOW -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, 0.55f + 0.6f * pulse)
-                    com.shelf.launcher.data.FocusEffect.ELECTRIC -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, 0.3f + 0.2f * pulse)
+                    com.shelf.launcher.data.FocusEffect.GLOW -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, { 0.55f + 0.6f * pulse() })
+                    com.shelf.launcher.data.FocusEffect.ELECTRIC -> Modifier.softGlow(ShelfTheme.accent, look.cornerDp.dp, { 0.3f + 0.2f * pulse() })
                     else -> Modifier
                 }
             )
@@ -267,18 +269,14 @@ fun GameCard(
                     // Crackling arcs that jump around the frame (drawn below) —
                     // on purpose nothing like the mastered frame's smooth sweep.
                     Modifier
-                        .then(if (look.focusBorder) Modifier.border(1.5.dp, ShelfTheme.accent.copy(alpha = 0.35f + 0.4f * pulse), cardShape) else Modifier)
-                        .electricFrame(ShelfTheme.accent, look.cornerDp.dp, pulse = pulse)
+                        .then(if (look.focusBorder) Modifier.pulseBorder(1.5.dp, ShelfTheme.accent, cardShape) { 0.35f + 0.4f * pulse() } else Modifier)
+                        .electricFrame(ShelfTheme.accent, look.cornerDp.dp)
                 } else {
                     // The accent frame only with Coloured frame on (the soft glow itself is Game row › Effect).
                     val rim = focused && look.focusBorder
-                    Modifier.border(
-                        width = if (rim) 2.dp else 0.dp,
-                        color = if (rim) ShelfTheme.accent.copy(
-                            alpha = if (effect == com.shelf.launcher.data.FocusEffect.GLOW) 0.55f + 0.45f * pulse else 1f
-                        ) else Color.Transparent,
-                        shape = cardShape
-                    )
+                    if (!rim) Modifier
+                    else if (effect == com.shelf.launcher.data.FocusEffect.GLOW) Modifier.pulseBorder(2.dp, ShelfTheme.accent, cardShape) { 0.55f + 0.45f * pulse() }
+                    else Modifier.border(2.dp, ShelfTheme.accent, cardShape)
                 }
             )
             .clip(cardShape)
@@ -987,6 +985,29 @@ internal fun GameLogo(url: String?, height: androidx.compose.ui.unit.Dp, maxWidt
 }
 
 /**
+ * QA (logo pop): the shape (width / height) of the logos seen this session, so [LogoAndName] can give a logo its exact
+ * slot before it loads. Also read from the memory cache in the shared style shape (what the row's warm-up decodes,
+ * warmStyleArt / SharedArtInterceptor). Not a loader: it only remembers or peeks.
+ */
+internal object LogoAspects {
+    private val known = java.util.concurrent.ConcurrentHashMap<String, Float>()
+
+    fun note(url: String, drawable: android.graphics.drawable.Drawable) {
+        val w = drawable.intrinsicWidth
+        val h = drawable.intrinsicHeight
+        if (w > 0 && h > 0) known[url] = w.toFloat() / h
+    }
+
+    fun of(context: android.content.Context, url: String): Float? {
+        known[url]?.let { return it }
+        val bmp = runCatching {
+            coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key("$url|style|${styleArtPx(context)}"))?.bitmap
+        }.getOrNull() ?: return null
+        return if (bmp.width > 0 && bmp.height > 0) (bmp.width.toFloat() / bmp.height).also { known[url] = it } else null
+    }
+}
+
+/**
  * The game's name with its logo left, right, above, under or instead of it
  * (Appearance › Game names). No logo (or one that fails to load): just the name.
  * [name] gets the modifier to put on the text.
@@ -1006,15 +1027,37 @@ internal fun LogoAndName(
         name(modifier)
         return
     }
+    // QA (logo pop / title jump): the bare AsyncImage sized itself from its picture: 0 wide while empty (the name sat
+    // further left), then from the bitmap's own pixel size (Coil's content-painter: width = intrinsic px, then Fit) — so
+    // every picture that passed through it (the previous game's bitmap kept for a frame by the reused node, the
+    // stand-in, then the real decode) laid the name out at another place. Now the slot has a fixed size chosen before
+    // anything loads: the logo's real width when its shape is already known (seen before, or warmed — LogoAspects),
+    // else the full logo width; whatever arrives is fitted inside it, so the name never moves. Its decode size is
+    // the same as before (the line's max logo width × height, so SharedArtInterceptor still shares it with the warm-up).
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val slotWidth = remember(logoUrl, logoHeight, logoMaxWidth) {
+        LogoAspects.of(context, logoUrl)?.let { (logoHeight * it).coerceAtMost(logoMaxWidth) } ?: logoMaxWidth
+    }
+    val logoRequest = remember(logoUrl, logoHeight, logoMaxWidth, density) {
+        coil.request.ImageRequest.Builder(context)
+            .data(logoUrl)
+            .size(with(density) { logoMaxWidth.roundToPx() }.coerceAtLeast(1), with(density) { logoHeight.roundToPx() }.coerceAtLeast(1))
+            .build()
+    }
     val logo: @Composable () -> Unit = {
-        AsyncImage(
-            model = logoUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            alignment = if (centered) Alignment.Center else Alignment.CenterStart,
-            onError = { failed = true },
-            modifier = Modifier.height(logoHeight).widthIn(max = logoMaxWidth)
-        )
+        // (QA: a new painter per logo, so the last game's logo is never drawn for a frame in the new game's slot.)
+        key(logoUrl) {
+            AsyncImage(
+                model = logoRequest,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                alignment = if (centered) Alignment.Center else Alignment.CenterStart,
+                onSuccess = { s -> LogoAspects.note(logoUrl, s.result.drawable) },
+                onError = { failed = true },
+                modifier = Modifier.width(slotWidth).height(logoHeight)
+            )
+        }
     }
     when (placement) {
         com.shelf.launcher.data.LogoPlacement.LEFT -> Row(modifier, verticalAlignment = Alignment.CenterVertically) {

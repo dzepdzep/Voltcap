@@ -706,7 +706,7 @@ private fun ArtPage(
     val game = info.game
     val wantsShots = options.artType == SecondArtType.SCREENSHOTS || options.artType == SecondArtType.SLIDESHOW
     // Your own emulator screenshots, only looked up when the setting needs them.
-    val shots by produceState(emptyList<String>(), game?.stableKey, options.screenshotFolders, wantsShots) {
+    val shots by produceKeyed(emptyList<String>(), game?.stableKey, game?.stableKey, options.screenshotFolders, wantsShots) {
         value = if (game != null && wantsShots) {
             withContext(Dispatchers.IO) {
                 runCatching { Screenshots.find(game, options.screenshotFolders).map { it.absolutePath } }
@@ -1058,7 +1058,8 @@ private fun DockSlot(app: Game?, onClick: () -> Unit, onLongClick: () -> Unit) {
     Box(
         Modifier
             .size(SLOT)
-            .padTarget(rememberPadId("dock")) { onClick() }
+            // QA: (C7) X on a dock app = its long-press menu (move / remove).
+            .padTarget(rememberPadId("dock"), onMenu = if (app != null) onLongClick else null) { onClick() }
             .clip(RoundedCornerShape(14.dp))
             // (Update 319, Toni: "remove the square look with the blur behind": a plate only for the empty "+" slot; the apps
             // stand on the dock itself.)

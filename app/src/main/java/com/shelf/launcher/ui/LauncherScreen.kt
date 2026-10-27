@@ -435,6 +435,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // 0.6.17: the Metacritic chip on the wide / row cards reads the details from here (GameCard).
     SideEffect { if (MetacriticCards.metadata !== state.metadata) MetacriticCards.metadata = state.metadata }
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
+    // (QA: what the home screen shows from this frame on, for the frame checks — test builds with the hook file only.)
+    SideEffect { if (QaTrace.on) QaTrace.focus("${state.focusedIndex} ${state.platformFilter}|${state.specialFilter} ${focusedGame?.stableKey}") }
     // Update 181: only the game you're on moves (Settings › Artwork › Only the game you're on moves; on by default).
     val animFocusOnly = com.shelf.launcher.data.Features.animatedFocusOnly.state.value
     SideEffect { com.shelf.launcher.data.AnimatedArt.focusOnly = animFocusOnly }
@@ -722,7 +724,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     collectionsForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
                     screensForGame != null || profileForGame != null || showControlsHelp || showSortDialog || showWhatToPlay || manualFor != null || steamAchFor != null || leaderboardsFor != null || uiState.syncOfflinePrompt != null ||
                     saveSyncForGame != null || runningAsk != null || yearRecap != null || manualMissing != null || hubScreen != null ||
-                    perfForGame != null
+                    perfForGame != null ||
+                    // (QA C10: the cartridge shell and DS case pickers take the controller too.)
+                    cartShellForGame != null || dsCaseForGame != null
     // Google Drive sync conflicts: always shown while a game waits on them,
     // otherwise only when nothing else is open (and not snoozed).
     val cloudSync by com.shelf.launcher.data.CloudSync.state.collectAsState()
@@ -5301,7 +5305,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             syncGameName = r1SyncGame?.let { gameDisplayName(it.name) },
             onOpenGameSync = r1SyncGame?.let { g -> { showNotifications = false; saveSyncForGame = g } },
             onOpenSyncSettings = { showNotifications = false; menuStartCategory = "Sync"; showMenu = true },
-            onDismissAll = { viewModel.dismissAllNotifications() }
+            onDismissAll = { viewModel.dismissAllNotifications() },
+            // QA: (C3/C4) controller paths to the two status-bar-only windows (NotificationsPanel shows them only while relevant).
+            onShowWork = { showNotifications = false; showWork = true },
+            onShowSyncStatus = { showNotifications = false; showSyncStatus = true }
         )
     }
 
@@ -5818,7 +5825,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // details / category screen, the screensaver or Edit Home — it waits until all of that is gone.
     UpdatePromptHost(
         canShow = !aDialogIsOpen && !showFirstRun && !whoAsk && launchingGame == null && LaunchThrow.plan == null &&
-            introVideo == null && cartShellForGame == null && !showDetails && !categoryScreenOpen && !screensaverOn &&
+            introVideo == null && cartShellForGame == null && dsCaseForGame == null && !showDetails && !categoryScreenOpen && !screensaverOn &&
             !showSearchBar && !HomeEditState.active && GamePopup.game == null && WhatsNew.shown.value == null &&
             !(saverIntro && saverIntroReady) && !(showPermissionsPrompt && promptReady) &&
             (com.shelf.launcher.data.Packs.asked.value || state.games.isEmpty())

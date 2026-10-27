@@ -753,7 +753,7 @@ internal fun Model3DArt(
     // (Update 151: while its cover is still loading, the piece made before with that cover — never an empty case first.)
     val waiting = cover != null && coverBmp == null
     val first = if (waiting && cover is String) Models3D.cachedFor(id, angle, cover, title, pos, tint) else Models3D.cached(id, angle, coverBmp, title, pos, tint)
-    val bmp by produceState(first, id, angle, coverBmp, version, title, pos.key, tk) {
+    val bmp by produceKeyed(first, id to title, id, angle, coverBmp, version, title, pos.key, tk) {
         if (!waiting) value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { Models3D.compose(id, angle, coverBmp, title, pos, tint) }
     }
     val shown = bmp

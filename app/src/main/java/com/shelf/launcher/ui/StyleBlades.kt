@@ -740,7 +740,7 @@ private fun BladeSystemPreview(st: StyleStop, count: Int, p: BladePalette, compa
     val context = LocalContext.current
     val platform = st.platform?.takeIf { st.special == null && !com.shelf.launcher.data.isCollectionKey(it) }
     val photosOn = Features.consolePhotos.state.value
-    val photo by produceState<String?>(null, platform, photosOn) {
+    val photo by produceKeyed<String?>(null, platform, platform, photosOn) {
         value = if (photosOn && platform != null && com.shelf.launcher.data.ConsolePhotos.hasPhoto(platform)) {
             runCatching { com.shelf.launcher.data.ConsolePhotos.url(context, platform) }.getOrNull()
         } else null

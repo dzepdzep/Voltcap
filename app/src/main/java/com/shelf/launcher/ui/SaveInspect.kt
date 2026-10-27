@@ -703,7 +703,7 @@ private fun InspectFace(obj: InspectObject, back: Boolean, game: Game, icon: Str
             val version = com.shelf.launcher.data.Packs.version.intValue
             val tint = Models3D.tintFor(card, game.platform, name, look?.shell, look?.trim)
             val engrave = Features.saveEngraving.state.value
-            val bmp by produceState<android.graphics.Bitmap?>(null, card, version, tint?.key, engrave, game.platform) {
+            val bmp by produceKeyed<android.graphics.Bitmap?>(null, card, card, version, tint?.key, engrave, game.platform) {
                 value = withContext(Dispatchers.Default) { saveCardBack(card, tint, engrave, vaultConsole(game.platform)) }
             }
             if (!back) {

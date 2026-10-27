@@ -1674,6 +1674,8 @@ internal fun DockScrim() {
 @Composable
 internal fun CategoryNameSwap(label: String, anim: com.shelf.launcher.data.CategoryAnim, content: @Composable (String) -> Unit) {
     if (anim == com.shelf.launcher.data.CategoryAnim.NONE) { content(label); return }
+    // (QA: the name on screen now, read while drawing — see below.)
+    val current = androidx.compose.runtime.rememberUpdatedState(label)
     androidx.compose.animation.AnimatedContent(
         targetState = label,
         transitionSpec = {
@@ -1689,7 +1691,14 @@ internal fun CategoryNameSwap(label: String, anim: com.shelf.launcher.data.Categ
             }.using(androidx.compose.animation.SizeTransform(clip = false))
         },
         label = "categoryName"
-    ) { l -> content(l) }
+    ) { l ->
+        // QA (caption lag): the outgoing name used to fade out (180 ms) over the incoming one (260 ms) in the same
+        // place, so the old category stayed the readable one for ~130 ms after the row (which swaps its games at once
+        // and only fades / slides the new ones in, categorySlide) already showed the new category. Now the old name is
+        // hidden in the very frame the category changes (read while drawing, so it doesn't wait for the transition's
+        // first animation frame) and only the new one plays its fade / slide / drop in.
+        androidx.compose.foundation.layout.Box(Modifier.graphicsLayer { alpha = if (l == current.value) 1f else 0f }) { content(l) }
+    }
 }
 
 

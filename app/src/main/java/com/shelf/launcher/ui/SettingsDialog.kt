@@ -3193,7 +3193,7 @@ private fun ThemeTile(theme: AppTheme, selected: Boolean, onFocus: (AppTheme?) -
     if (focusFirst) LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { requester.requestFocus() } }
     val context = androidx.compose.ui.platform.LocalContext.current
     val c = theme.colors
-    val thumb by androidx.compose.runtime.produceState(ThemeThumbs.cached(theme), theme) {
+    val thumb by produceKeyed(ThemeThumbs.cached(theme), theme, theme) {
         if (value == null) value = ThemeThumbs.get(context, theme)
     }
     val shape = uiRounded(10.dp)
@@ -3291,7 +3291,7 @@ private fun ScenePickerTile(label: String, selected: Boolean, theme: AppTheme?, 
             if (theme != null) {
                 // The same still pictures as the theme browser (no live shader per tile).
                 val context = androidx.compose.ui.platform.LocalContext.current
-                val thumb by androidx.compose.runtime.produceState(ThemeThumbs.cached(theme), theme) {
+                val thumb by produceKeyed(ThemeThumbs.cached(theme), theme, theme) {
                     if (value == null) value = ThemeThumbs.get(context, theme)
                 }
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(theme.colors.background, theme.colors.accent.copy(alpha = 0.6f)))))
@@ -5982,7 +5982,8 @@ internal fun OverlayPartsChoice(layout: com.shelf.launcher.data.HomeLayout) {
         Spacer(Modifier.height(6.dp))
         Chip("Edit Home…") { HomeEditState.open() }
     }
-    MutedNote("In Edit Home: + Add (Start) picks what to show, a part's red ✕ (Select) takes it off again.")
+    // QA: (C15) the real Edit Home keys (HomeEdit.onKey): Start saves, Select hides / shows the part, L3 opens the parts list.
+    MutedNote("In Edit Home: L3 (☰ Elements) lists the parts, Select hides or shows the one you're on, Start saves.")
 }
 
 

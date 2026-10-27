@@ -107,11 +107,13 @@ internal object TwinShowNav {
 
 @Composable
 internal fun StyleTwinShowcase(c: StyleCtx, modifier: Modifier = Modifier) {
+    // QA: (C5) the second screen's "Dashboard" chip (TwinSecondScreen) joins the top zone after the shortcut buttons.
+    val dash = twinShowDashOn(c)
     SideEffect {
         StyleLoop.on = false
         StyleNav.side = emptyList()
         // (Update 308: ▲ from the grid's top row reaches the two shortcut buttons on the top screen.)
-        StyleNav.top = showTools(c).map { it.onClick }
+        StyleNav.top = showTools(c).map { it.onClick } + (if (dash) listOf<() -> Unit>({ TwinScreens.dashboard = true }) else emptyList<() -> Unit>())
         StyleNav.topStart = -1
         StyleNav.bar = emptyList()
     }
@@ -189,6 +191,13 @@ internal fun TwinShowcaseBackdrop(modifier: Modifier) {
 /** Update 308: the two round shortcut buttons in the capsule (your round shortcuts, Twin icons' order). */
 private fun showTools(c: StyleCtx): List<HomeShortcut> =
     TwinToolOrder.mapNotNull { l -> c.shortcuts.firstOrNull { it.label == l } }.ifEmpty { c.shortcuts }.take(2)
+
+/** QA: (C5) the second screen shows the "Dashboard" chip (two screens in use, Layout options › dashboard access on). */
+internal fun twinShowDashOn(c: StyleCtx): Boolean =
+    twinOnSecond(c.state) && Features.twinDashboardAccess.state.value
+
+/** QA: (C5) the chip's place in StyleNav.top: right after the shortcut buttons. */
+internal fun twinShowDashIndex(c: StyleCtx): Int = showTools(c).size
 
 // ---- Top screen: the game you're on ----
 

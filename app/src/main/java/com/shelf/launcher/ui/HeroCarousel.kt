@@ -749,7 +749,7 @@ private fun AchievementsPage(info: HeroInfo, onOpen: () -> Unit) {
 @Composable
 private fun HistoryPage(info: HeroInfo) {
     val context = LocalContext.current
-    val sessions by produceState<List<PlaytimeStore.Session>>(emptyList(), info.game.stableKey, info.playtimeMs) {
+    val sessions by produceKeyed<List<PlaytimeStore.Session>>(emptyList(), info.game.stableKey, info.game.stableKey, info.playtimeMs) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching { PlaytimeStore(context).loadSessions().filter { it.key == info.game.stableKey }.sortedByDescending { it.start } }.getOrDefault(emptyList())
         }
