@@ -294,7 +294,7 @@ internal fun TileHomeRow(
             // (all centred) line up with it.
             // Measured on the row itself (not the display's size, which can leave out the navigation
             // bar's room and put the "middle" left of the real middle).
-            com.shelf.launcher.data.TileFocus.CENTER -> vFocus - (((if (rowWidth > 0.dp) rowWidth else screenSizeDp().width) / 2 - m.tile / 2 - m.start) / m.stride)
+            com.shelf.launcher.data.TileFocus.CENTER -> tileCenterAnchor(vFocus, (if (rowWidth > 0.dp) rowWidth else screenSizeDp().width).value, m.tile.value, m.start.value, m.stride.value)
             com.shelf.launcher.data.TileFocus.RIGHT -> (vFocus - m.visible + 1).toFloat()
         }
         // (Update 156: going round, the tiles before the first game are the last ones, so the row may start before it.)
@@ -303,9 +303,14 @@ internal fun TileHomeRow(
         // Scroll position in dp. A long jump (wrapping from the last game to the
         // first) snaps instead of racing past the whole library.
         val scroll = remember { Animatable(anchorFirst * strideDpValue) }
+        // Update 369: the row's width is measured after the first frame; the middle anchor moved with it, and the row then
+        // glided a few dp from the first guess to the real middle on opening. A new width snaps instead.
+        val lastRowWidth = remember { floatArrayOf(rowWidth.value) }
         LaunchedEffect(anchorFirst, strideDpValue) {
             val target = anchorFirst * strideDpValue
-            if (abs(target - scroll.value) > strideDpValue * (m.visible + 1)) scroll.snapTo(target)
+            val resized = abs(rowWidth.value - lastRowWidth[0]) > 0.5f
+            lastRowWidth[0] = rowWidth.value
+            if (tileScrollSnaps(target, scroll.value, strideDpValue, m.visible, resized)) scroll.snapTo(target)
             else scroll.animateTo(target, dockMotion())
         }
         // The name follows the ring with the same motion as the row.
@@ -1101,3 +1106,14 @@ internal fun CornerShortcuts(
 internal val TilesMidLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }
 /** The tiles' top (Tile home Middle with the round buttons under them centres tiles + buttons as one group, as the Switch home does). */
 internal val TilesTopLine = androidx.compose.ui.layout.HorizontalAlignmentLine { a, _ -> a }
+
+/**
+ * Update 369: the row's first-tile position (in tiles) that puts tile [vFocus] exactly in the middle of a row [rowW] dp wide
+ * (tile width [tile], row start [start], stride [stride], all dp).
+ */
+internal fun tileCenterAnchor(vFocus: Int, rowW: Float, tile: Float, start: Float, stride: Float): Float =
+    vFocus - ((rowW / 2f - tile / 2f - start) / stride)
+
+/** Update 369: whether the row jumps to [target] instead of gliding: a long way ([visible] + 1 tiles), or the row was resized. */
+internal fun tileScrollSnaps(target: Float, current: Float, stride: Float, visible: Int, resized: Boolean): Boolean =
+    resized || abs(target - current) > stride * (visible + 1)

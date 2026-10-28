@@ -170,12 +170,19 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean, 
         }
     }
     val got = made?.takeIf { it.first == key }
+    // Update 369: the same game's own spine made with another accent (its cover arrived or changed) keeps showing until the
+    // new one is ready — the key changed, the picture did not (it flashed to the plain spine and back).
+    val stale = if (own && res != null) made?.takeIf {
+        SpineCache.sameOwnSpine(it.first, SpineCache.key(res, landscape, title, com.shelf.launcher.data.Packs.version.intValue))
+    }?.second else null
     return when {
         res == null -> SpineCache.Titled(true, null)
         now != null -> SpineCache.Titled(true, now)
         got != null -> SpineCache.Titled(true, got.second)
-        // (Update 348: while it's being made, the console's spine without the name — not a dark strip flashing in.)
-        else -> SpineCache.Titled(false, if (own) null else SpineCache.peekUntitled(res, landscape))
+        stale != null -> SpineCache.Titled(false, stale)
+        // (Update 348: while it's being made, the console's spine without the name — not a dark strip flashing in.
+        // Update 369: the own Steam / Android spine too — OwnSpine drew a dark strip while it was made.)
+        else -> SpineCache.Titled(false, SpineCache.peekUntitled(res, landscape))
     }
 }
 
@@ -210,6 +217,9 @@ internal object SpineCache {
 
     fun key(res: Int, landscape: Boolean, title: String?, version: Int): String = "$res|$landscape|$version|${title ?: ""}"
 
+    /** Update 369: [oldKey] is the own spine of the game whose key without the accent is [baseKey]. */
+    fun sameOwnSpine(oldKey: String, baseKey: String): Boolean = oldKey.startsWith(baseKey + "|own2|")
+
     fun peekReady(key: String): Ready? = readyMap.get(key)
     fun peekTitled(key: String): android.graphics.Bitmap? = titledMap.get(key)
 
@@ -243,6 +253,9 @@ internal object SpineCache {
     @Synchronized
     fun own(context: android.content.Context, res: Int, title: String?, accent: Int?, landscape: Boolean, key: String): android.graphics.Bitmap? {
         titledMap.get(key)?.let { return it }
+        // Update 369: the plain spine shown meanwhile for the next game that needs one made.
+        val uk = "$res|$landscape|" + com.shelf.launcher.data.Packs.version.intValue
+        if (untitled.get(uk) == null) runCatching { flatOf(context, res)?.let { untitled.put(uk, orientSpine(it, landscape)) } }
         val out = runCatching { orientSpine(OwnSpines.compose(context, res, title, accent), landscape) }.getOrNull() ?: return null
         titledMap.put(key, out)
         return out

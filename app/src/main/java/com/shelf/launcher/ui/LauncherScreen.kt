@@ -6154,13 +6154,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // (Update 260, Thor: Choose a category's tile and the game window's row and scroll were missing
                             // here, so a ▼ that moved down the category grid or scrolled the game window still sent the
                             // controller to the second screen 160 ms later — it skipped what was left to scroll.)
-                            categoryIndex, detailsAction, detailsScroll.value, detailsScroll.isScrollInProgress
+                            categoryIndex, detailsAction, detailsScroll.value, detailsScroll.isScrollInProgress,
+                            CategoryHeader.focus, CategoryReorder.on, CategoryReorder.held // (Update 369)
                         )
                     }
                     val before = padSnapshot()
+                    val onCategoryScreen = categoryScreenOpen
+                    val headerOrReorder = CategoryHeader.focus >= 0 || CategoryReorder.on
                     detailsScope.launch {
                         kotlinx.coroutines.delay(160)
-                        if (!SecondPad.active && !HomeEditState.active && padSnapshot() == before && SecondPad.enter()) sounds?.play(UiSound.MOVE)
+                        val unchanged = !SecondPad.active && !HomeEditState.active && padSnapshot() == before
+                        // Update 369: on the category screen a single ▼ never leaves it, see SecondPadGate.
+                        if (SecondPadGate.allowEnter(onCategoryScreen, headerOrReorder, unchanged, System.currentTimeMillis()) &&
+                            SecondPad.enter()) sounds?.play(UiSound.MOVE)
                     }
                 }
                 // Select is a MODIFIER. Music buttons and hotkeys come first, on

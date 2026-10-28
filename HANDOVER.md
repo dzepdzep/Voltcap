@@ -1,5 +1,7 @@
 # Voltcap — handover to a new Claude
 
+> Update 369 (28 Oct 2026, device-free): see COWORK_HANDOFF.md section 2d and SUMMARY.md. Claude Code must not touch the Thor / Google TV Streamer without the user's explicit permission; physical QA must not interrupt normal device use.
+
 > Update 368 (28 Oct 2026, 0.6.54, not yet released): see COWORK_HANDOFF.md section 2c and SUMMARY.md - empty-collection category fix, combination matrix in tools/qa (COMBOS.md).
 
 > **Update 28 Oct 2026:** after an interruption (Cowork timed out 28 Oct) read **COWORK_HANDOFF.md** first: current branch / commits / release

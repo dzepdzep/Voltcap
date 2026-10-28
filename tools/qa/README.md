@@ -92,3 +92,6 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
 - **Hardware safety**: sweeps only use QA scratch (`/data/local/tmp/vqa`), preview mode, the settings snapshot, and put brightness /
   volume / refresh rate back. Never uninstall, clear data, touch charging or run on a device that is not a known dev target
   (the Google TV Streamer is not one).
+
+## Physical QA needs permission (update 369)
+Claude Code / Cowork must not send ADB commands, inject keys, install, force-stop or record on the user's Thor or Google TV Streamer unless the user explicitly allows it in that session; a simulated test is never hardware verification. Mark such rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the opt-in, device-free element geometry check.

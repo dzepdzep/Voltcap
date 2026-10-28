@@ -493,3 +493,8 @@ Portrait, other aspect ratios, second screen, R1 dynamic options, 9 of 21 settin
   shows the full name; R18 TRUNCATE area, not changed). No application change; no defect confirmed.
 - Safety: battery 83 -> 80 %, 26 -> 29 C; hooks off afterwards (`voltcap_test_hooks.paused`), settings snapshot file byte-identical, refresh
   rate 120 / 120 unchanged, no recorder left, Google TV Streamer not touched, emulator not used.
+
+## Update 369 (28 Oct 2026) - device-free run, no hardware touched
+- New: `tools/geomcheck.py` (opt-in element geometry: size, row spacing, focus ring, unexpected movement; INFRA on an empty trace). Self-tests 57 OK. Not part of QUICK; no recorder emits its trace yet.
+- Regression tests (Gradle, device-free): SecondPadGate369Test, SpineFlicker369Test, CarouselModes369Test, TileHome369Test. 309 unit tests, 0 failures.
+- NOT TESTED on hardware: category-screen ▼ hand-over to the second screen, own-spine flicker during carousel movement, Case Stacks view list, Tile home motion. Physical QA needs the user's separate permission and must not interrupt normal use.

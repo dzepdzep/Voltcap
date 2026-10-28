@@ -396,3 +396,33 @@ internal fun SecondPadRing() {
             }
     )
 }
+
+/**
+ * Update 369: when the ▼ that "changed nothing" may carry the controller onto the second screen (the 160 ms fallback in
+ * LauncherScreen). On the category screen it used to fire far too easily: ▼ on the bottom row, ▼ in a look that is steered
+ * with ◀ ▶ (nothing below), ▼ out of the header buttons (CategoryHeader.focus was not in the snapshot) and in reorder mode.
+ * Now the category screen only hands over on a deliberate second ▼ at the edge ([CATEGORY_CONFIRM_MS]); the header and
+ * reorder mode never do. Other screens keep the single-▼ behaviour. Pure, so it is unit-tested without a device.
+ */
+internal object SecondPadGate {
+    const val CATEGORY_CONFIRM_MS = 900L
+
+    /** Time of the last edge ▼ on the category screen that changed nothing, or -1. */
+    private var lastEdgeDown = -1L
+
+    fun reset() { lastEdgeDown = -1L }
+
+    /**
+     * Called once the 160 ms check found ▼ changed nothing ([unchanged]). True = enter the second screen.
+     * [categoryScreen]: the category screen is open; [headerOrReorder]: header button focused / reorder mode on.
+     */
+    fun allowEnter(categoryScreen: Boolean, headerOrReorder: Boolean, unchanged: Boolean, now: Long): Boolean {
+        if (!unchanged) { lastEdgeDown = -1L; return false }
+        if (!categoryScreen) return true
+        if (headerOrReorder) { lastEdgeDown = -1L; return false }
+        val previous = lastEdgeDown
+        if (previous >= 0 && now - previous <= CATEGORY_CONFIRM_MS) { lastEdgeDown = -1L; return true }
+        lastEdgeDown = now
+        return false
+    }
+}

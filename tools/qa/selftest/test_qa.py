@@ -571,5 +571,49 @@ class TestCombos(unittest.TestCase):
         self.assertEqual(coverage.combo_problems(coverage.load_combos()), [])
 
 
+class TestGeomcheck(Base):
+    """Update 369: the opt-in element geometry check (controlled fixtures, device-free)."""
+    def trace(self, **kw):
+        fr = []
+        for i in range(8):
+            x0 = 100 + i * 4
+            fr.append({"t": i * 16, "key": "R" if i == 0 else None, "focused": "b", "focus": [x0 + 196 - 4, 96, 168, 168],
+                       "elements": {"a": [x0, 100, 160, 160], "b": [x0 + 200, 100, 160, 160], "c": [x0 + 400, 100, 160, 160]}})
+        d = {"screen": [1920, 1080], "row": ["a", "b", "c"], "frames": fr}
+        d.update(kw)
+        return d
+
+    def status(self, d):
+        import geomcheck
+        return {r.name: r.status for r in geomcheck.evaluate(d)}
+
+    def test_clean_glide_after_a_key_passes(self):
+        self.assertEqual(set(self.status(self.trace()).values()), {"PASS"})
+
+    def test_empty_trace_is_infra(self):
+        import geomcheck
+        self.assertEqual(geomcheck.evaluate({"frames": []})[0].status, "INFRA")
+
+    def test_size_gap_focus_and_drift_are_caught(self):
+        d = self.trace(); d["frames"][5]["elements"]["b"][2] = 190
+        self.assertEqual(self.status(d)["geometry size"], "FAIL")
+        d = self.trace(); d["frames"][4]["elements"]["c"][0] += 30
+        self.assertEqual(self.status(d)["geometry spacing"], "FAIL")
+        d = self.trace(); d["frames"][3]["focus"][0] += 300
+        self.assertEqual(self.status(d)["geometry focus"], "FAIL")
+        d = self.trace(); d["frames"][2]["focus"] = None
+        self.assertEqual(self.status(d)["geometry focus"], "FAIL")
+        d = self.trace()
+        for f in d["frames"][:]: f["t"] += 2000
+        d["frames"][0]["key"] = None
+        for f in d["frames"][4:]:
+            for e in f["elements"].values(): e[0] += 80
+        self.assertEqual(self.status(d)["geometry movement"], "FAIL")  # a jump with no key
+
+    def test_animating_ids_may_change_size(self):
+        d = self.trace(animating=["b"]); d["frames"][5]["elements"]["b"][2] = 190
+        self.assertEqual(self.status(d)["geometry size"], "PASS")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
