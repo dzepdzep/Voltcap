@@ -12,23 +12,9 @@ man_expect() { echo "expect $2" >> $(man_file $1); }
 man_done() { echo "done $2" >> $(man_file $1); }
 man_skip() { r=$1; n=$2; shift 2; echo "skip $n $*" >> $(man_file $r); }
 man_end() { echo "end $(date +%s)" >> $(man_file $1); }
-# picker.sh prints PICKER or HOME from ONE pixel, so a black screen (display off / locked / screensaver / failed capture)
-# also reads HOME (seen on the Thor, 28 Oct: a black 1920x1080 capture printed HOME). screen_state therefore also samples four
-# more points of the capture picker.sh just wrote: all (near) black = UNKNOWN, never HOME.
+# screen_state: picker.sh itself prints PICKER / HOME / UNKNOWN (a black or malformed capture is UNKNOWN, never HOME).
 screen_state() {
   s=$(sh ./picker.sh 2>/dev/null)
-  case $s in PICKER|HOME) ;; *) echo UNKNOWN; return;; esac
-  f=/data/local/tmp/pk.raw
-  [ -s $f ] || { echo UNKNOWN; return; }
-  w=$(od -An -tu4 -N4 $f | tr -d ' '); h=$(od -An -tu4 -j4 -N4 $f | tr -d ' ')
-  [ "$w" -gt 0 ] 2>/dev/null && [ "$h" -gt 0 ] 2>/dev/null || { echo UNKNOWN; return; }
-  lit=0
-  for pt in "$((w / 2)) $((h / 2))" "$((w / 4)) $((h / 4))" "$((w * 3 / 4)) $((h * 3 / 4))" "$((w / 2)) $((h * 4 / 5))" "60 60"; do
-    set -- $pt
-    set -- $(od -An -tu1 -j $(( 16 + ($2 * w + $1) * 4 )) -N3 $f)
-    [ $(( $1 + $2 + $3 )) -gt 36 ] && lit=$((lit + 1))
-  done
-  [ $lit -eq 0 ] && { echo UNKNOWN; return; }
-  echo $s
+  case $s in PICKER|HOME) echo $s;; *) echo UNKNOWN;; esac
 }
 man_screen() { echo "screen $2 $(screen_state)" >> $(man_file $1); }

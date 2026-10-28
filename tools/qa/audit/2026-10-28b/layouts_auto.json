@@ -1,0 +1,821 @@
+{
+ "collected_from": "qa_runs/r52a/sweep",
+ "layouts": {
+  "CLASSIC": {
+   "recording": "S4_CLASSIC.mp4",
+   "status": "PASS",
+   "frames": 1291,
+   "seconds": 10.938,
+   "fps": 120.0,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 9,
+    "repeat": 6
+   },
+   "reason": "1291 frames analysed, none of [black,white,dip] found"
+  },
+  "TILES": {
+   "recording": "S4_TILES.mp4",
+   "status": "PASS",
+   "frames": 1245,
+   "seconds": 10.948,
+   "fps": 119.5,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 42,
+    "repeat": 7
+   },
+   "reason": "1245 frames analysed, none of [black,white,dip] found"
+  },
+  "HERO": {
+   "recording": "S4_HERO.mp4",
+   "status": "PASS",
+   "frames": 1287,
+   "seconds": 10.959,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 23,
+    "repeat": 0
+   },
+   "reason": "1287 frames analysed, none of [black,white,dip] found"
+  },
+  "GRID": {
+   "recording": "S4_GRID.mp4",
+   "status": "PASS",
+   "frames": 1139,
+   "seconds": 10.946,
+   "fps": 119.5,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 32,
+    "repeat": 0
+   },
+   "reason": "1139 frames analysed, none of [black,white,dip] found"
+  },
+  "TV": {
+   "recording": "S4_TV.mp4",
+   "status": "PASS",
+   "frames": 1017,
+   "seconds": 10.953,
+   "fps": 118.7,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 65,
+    "repeat": 4
+   },
+   "reason": "1017 frames analysed, none of [black,white,dip] found"
+  },
+  "DASH": {
+   "recording": "S4_DASH.mp4",
+   "status": "PASS",
+   "frames": 1139,
+   "seconds": 10.954,
+   "fps": 119.5,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 43,
+    "repeat": 1
+   },
+   "reason": "1139 frames analysed, none of [black,white,dip] found"
+  },
+  "LIVE": {
+   "recording": "S4_LIVE.mp4",
+   "status": "PASS",
+   "frames": 1314,
+   "seconds": 10.94,
+   "fps": 119.8,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 2
+   },
+   "reason": "1314 frames analysed, none of [black,white,dip] found"
+  },
+  "SIDE": {
+   "recording": "S4_SIDE.mp4",
+   "status": "PASS",
+   "frames": 1279,
+   "seconds": 10.953,
+   "fps": 119.8,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 10,
+    "repeat": 1
+   },
+   "reason": "1279 frames analysed, none of [black,white,dip] found"
+  },
+  "CROSS": {
+   "recording": "S4_CROSS.mp4",
+   "status": "PASS",
+   "frames": 1249,
+   "seconds": 10.947,
+   "fps": 119.7,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 39,
+    "repeat": 0
+   },
+   "reason": "1249 frames analysed, none of [black,white,dip] found"
+  },
+  "SPOT": {
+   "recording": "S4_SPOT.mp4",
+   "status": "PASS",
+   "frames": 1291,
+   "seconds": 10.947,
+   "fps": 120.0,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 18,
+    "repeat": 0
+   },
+   "reason": "1291 frames analysed, none of [black,white,dip] found"
+  },
+  "BAR": {
+   "recording": "S4_BAR.mp4",
+   "status": "PASS",
+   "frames": 1275,
+   "seconds": 10.946,
+   "fps": 119.8,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 19,
+    "repeat": 2
+   },
+   "reason": "1275 frames analysed, none of [black,white,dip] found"
+  },
+  "SHELF": {
+   "recording": "S4_SHELF.mp4",
+   "status": "PASS",
+   "frames": 813,
+   "seconds": 10.951,
+   "fps": 115.1,
+   "counts": {
+    "transient": 31,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 209,
+    "repeat": 0
+   },
+   "reason": "813 frames analysed, none of [black,white,dip] found"
+  },
+  "HUB": {
+   "recording": "S4_HUB.mp4",
+   "status": "PASS",
+   "frames": 1187,
+   "seconds": 10.949,
+   "fps": 119.6,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 55,
+    "repeat": 7
+   },
+   "reason": "1187 frames analysed, none of [black,white,dip] found"
+  },
+  "RESUME": {
+   "recording": "S4_RESUME.mp4",
+   "status": "PASS",
+   "frames": 1220,
+   "seconds": 10.948,
+   "fps": 119.7,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 49,
+    "repeat": 1
+   },
+   "reason": "1220 frames analysed, none of [black,white,dip] found"
+  },
+  "CHAN": {
+   "recording": "S4_CHAN.mp4",
+   "status": "PASS",
+   "frames": 1241,
+   "seconds": 10.934,
+   "fps": 120.0,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 19,
+    "repeat": 0
+   },
+   "reason": "1241 frames analysed, none of [black,white,dip] found"
+  },
+  "CIRCUIT": {
+   "recording": "S4_CIRCUIT.mp4",
+   "status": "PASS",
+   "frames": 1131,
+   "seconds": 10.939,
+   "fps": 119.2,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 77,
+    "repeat": 0
+   },
+   "reason": "1131 frames analysed, none of [black,white,dip] found"
+  },
+  "LIBRARY": {
+   "recording": "S4_LIBRARY.mp4",
+   "status": "PASS",
+   "frames": 1181,
+   "seconds": 10.953,
+   "fps": 119.7,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 23,
+    "repeat": 1
+   },
+   "reason": "1181 frames analysed, none of [black,white,dip] found"
+  },
+  "STACKS": {
+   "recording": "S4_STACKS.mp4",
+   "status": "PASS",
+   "frames": 969,
+   "seconds": 11.055,
+   "fps": 118.0,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 143,
+    "repeat": 0
+   },
+   "reason": "969 frames analysed, none of [black,white,dip] found"
+  },
+  "TIMELINE": {
+   "recording": "S4_TIMELINE.mp4",
+   "status": "PASS",
+   "frames": 1215,
+   "seconds": 10.952,
+   "fps": 119.7,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 33,
+    "repeat": 0
+   },
+   "reason": "1215 frames analysed, none of [black,white,dip] found"
+  },
+  "ARCADE": {
+   "recording": "S4_ARCADE.mp4",
+   "status": "PASS",
+   "frames": 908,
+   "seconds": 10.979,
+   "fps": 118.3,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 125,
+    "repeat": 0
+   },
+   "reason": "908 frames analysed, none of [black,white,dip] found"
+  },
+  "CONSOLES": {
+   "recording": "S4_CONSOLES.mp4",
+   "status": "PASS",
+   "frames": 1175,
+   "seconds": 10.949,
+   "fps": 119.7,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 75,
+    "repeat": 0
+   },
+   "reason": "1175 frames analysed, none of [black,white,dip] found"
+  },
+  "DISCS": {
+   "recording": "S4_DISCS.mp4",
+   "status": "PASS",
+   "frames": 1313,
+   "seconds": 10.932,
+   "fps": 119.8,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1313 frames analysed, none of [black,white,dip] found"
+  },
+  "HERO_TILES": {
+   "recording": "S4_HERO_TILES.mp4",
+   "status": "PASS",
+   "frames": 1229,
+   "seconds": 10.947,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 26,
+    "repeat": 0
+   },
+   "reason": "1229 frames analysed, none of [black,white,dip] found"
+  },
+  "TWIN_DESK": {
+   "recording": "S4_TWIN_DESK.mp4",
+   "status": "PASS",
+   "frames": 1312,
+   "seconds": 10.956,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 0
+   },
+   "reason": "1312 frames analysed, none of [black,white,dip] found"
+  },
+  "TWIN_ICONS": {
+   "recording": "S4_TWIN_ICONS.mp4",
+   "status": "PASS",
+   "frames": 1054,
+   "seconds": 10.952,
+   "fps": 118.9,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 35,
+    "repeat": 0
+   },
+   "reason": "1054 frames analysed, none of [black,white,dip] found"
+  },
+  "TWIN_SHOWCASE": {
+   "recording": "S4_TWIN_SHOWCASE.mp4",
+   "status": "PASS",
+   "frames": 1315,
+   "seconds": 10.956,
+   "fps": 120.0,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1315 frames analysed, none of [black,white,dip] found"
+  },
+  "CRATE": {
+   "recording": "S4_CRATE.mp4",
+   "status": "PASS",
+   "frames": 1265,
+   "seconds": 10.948,
+   "fps": 120.0,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 27,
+    "repeat": 0
+   },
+   "reason": "1265 frames analysed, none of [black,white,dip] found"
+  },
+  "CARDS": {
+   "recording": "S4_CARDS.mp4",
+   "status": "PASS",
+   "frames": 1125,
+   "seconds": 10.943,
+   "fps": 119.5,
+   "counts": {
+    "transient": 4,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 86,
+    "repeat": 1
+   },
+   "reason": "1125 frames analysed, none of [black,white,dip] found"
+  },
+  "CUSTOM": {
+   "recording": "S4_CUSTOM.mp4",
+   "status": "PASS",
+   "frames": 1242,
+   "seconds": 10.947,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 48,
+    "repeat": 3
+   },
+   "reason": "1242 frames analysed, none of [black,white,dip] found"
+  },
+  "POCKET_CLASSIC": {
+   "recording": "S4_POCKET_CLASSIC.mp4",
+   "status": "PASS",
+   "frames": 1317,
+   "seconds": 10.967,
+   "fps": 120.0,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1317 frames analysed, none of [black,white,dip] found"
+  },
+  "POCKET_RIBBON": {
+   "recording": "S4_POCKET_RIBBON.mp4",
+   "status": "PASS",
+   "frames": 1297,
+   "seconds": 10.958,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 6,
+    "repeat": 0
+   },
+   "reason": "1297 frames analysed, none of [black,white,dip] found"
+  },
+  "GREENCORE": {
+   "recording": "S4_GREENCORE.mp4",
+   "status": "PASS",
+   "frames": 1129,
+   "seconds": 10.951,
+   "fps": 119.8,
+   "counts": {
+    "transient": 15,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 32,
+    "repeat": 5
+   },
+   "reason": "1129 frames analysed, none of [black,white,dip] found"
+  },
+  "POCKET": {
+   "recording": "S4_POCKET.mp4",
+   "status": "PASS",
+   "frames": 1314,
+   "seconds": 10.942,
+   "fps": 120.0,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 2
+   },
+   "reason": "1314 frames analysed, none of [black,white,dip] found"
+  },
+  "CUBE": {
+   "recording": "S4_CUBE.mp4",
+   "status": "PASS",
+   "frames": 1104,
+   "seconds": 10.952,
+   "fps": 119.4,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1104 frames analysed, none of [black,white,dip] found"
+  },
+  "MEMCARD": {
+   "recording": "S4_MEMCARD.mp4",
+   "status": "PASS",
+   "frames": 1030,
+   "seconds": 10.94,
+   "fps": 118.9,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 1,
+    "repeat": 0
+   },
+   "reason": "1030 frames analysed, none of [black,white,dip] found"
+  },
+  "CASEFLOW": {
+   "recording": "S4_CASEFLOW.mp4",
+   "status": "PASS",
+   "frames": 1235,
+   "seconds": 10.939,
+   "fps": 119.7,
+   "counts": {
+    "transient": 5,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 36,
+    "repeat": 5
+   },
+   "reason": "1235 frames analysed, none of [black,white,dip] found"
+  },
+  "BOX": {
+   "recording": "S4_BOX.mp4",
+   "status": "PASS",
+   "frames": 1113,
+   "seconds": 10.951,
+   "fps": 119.2,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 1,
+    "repeat": 0
+   },
+   "reason": "1113 frames analysed, none of [black,white,dip] found"
+  },
+  "STORAGE": {
+   "recording": "S4_STORAGE.mp4",
+   "status": "PASS",
+   "frames": 1313,
+   "seconds": 10.937,
+   "fps": 119.8,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1313 frames analysed, none of [black,white,dip] found"
+  },
+  "FILESELECT": {
+   "recording": "S4_FILESELECT.mp4",
+   "status": "PASS",
+   "frames": 1175,
+   "seconds": 10.942,
+   "fps": 119.5,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 0
+   },
+   "reason": "1175 frames analysed, none of [black,white,dip] found"
+  },
+  "ORBIT": {
+   "recording": "S4_ORBIT.mp4",
+   "status": "PASS",
+   "frames": 1120,
+   "seconds": 10.943,
+   "fps": 119.2,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 1,
+    "repeat": 1
+   },
+   "reason": "1120 frames analysed, none of [black,white,dip] found"
+  },
+  "AIRY": {
+   "recording": "S4_AIRY.mp4",
+   "status": "PASS",
+   "frames": 1283,
+   "seconds": 10.953,
+   "fps": 119.8,
+   "counts": {
+    "transient": 3,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 19,
+    "repeat": 5
+   },
+   "reason": "1283 frames analysed, none of [black,white,dip] found"
+  },
+  "NIGHT": {
+   "recording": "S4_NIGHT.mp4",
+   "status": "PASS",
+   "frames": 1314,
+   "seconds": 10.945,
+   "fps": 120.0,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1314 frames analysed, none of [black,white,dip] found"
+  },
+  "BLADES": {
+   "recording": "S4_BLADES.mp4",
+   "status": "PASS",
+   "frames": 1087,
+   "seconds": 10.959,
+   "fps": 119.8,
+   "counts": {
+    "transient": 5,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 10,
+    "repeat": 0
+   },
+   "reason": "1087 frames analysed, none of [black,white,dip] found"
+  },
+  "BUBBLES": {
+   "recording": "S3_BUBBLES.mp4",
+   "status": "PASS",
+   "frames": 1217,
+   "seconds": 10.964,
+   "fps": 119.7,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 0,
+    "repeat": 1
+   },
+   "reason": "1217 frames analysed, none of [black,white,dip] found"
+  },
+  "CAMERA": {
+   "recording": "S1_CAMERA.mp4",
+   "status": "PASS",
+   "frames": 1155,
+   "seconds": 10.947,
+   "fps": 119.8,
+   "counts": {
+    "transient": 13,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 20,
+    "repeat": 0
+   },
+   "reason": "1155 frames analysed, none of [black,white,dip] found"
+  },
+  "PANELS": {
+   "recording": "S4_PANELS.mp4",
+   "status": "PASS",
+   "frames": 1185,
+   "seconds": 10.959,
+   "fps": 119.6,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 47,
+    "repeat": 0
+   },
+   "reason": "1185 frames analysed, none of [black,white,dip] found"
+  },
+  "MAGAZINE": {
+   "recording": "S1_MAGAZINE.mp4",
+   "status": "PASS",
+   "frames": 1125,
+   "seconds": 10.953,
+   "fps": 119.5,
+   "counts": {
+    "transient": 7,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 121,
+    "repeat": 0
+   },
+   "reason": "1125 frames analysed, none of [black,white,dip] found"
+  },
+  "SHOP": {
+   "recording": "S2_SHOP.mp4",
+   "status": "PASS",
+   "frames": 1034,
+   "seconds": 10.941,
+   "fps": 119.5,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 1,
+    "repeat": 1
+   },
+   "reason": "1034 frames analysed, none of [black,white,dip] found"
+  },
+  "TERMINAL": {
+   "recording": "S1_TERMINAL.mp4",
+   "status": "PASS",
+   "frames": 1238,
+   "seconds": 10.955,
+   "fps": 119.8,
+   "counts": {
+    "transient": 0,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 2,
+    "repeat": 0
+   },
+   "reason": "1238 frames analysed, none of [black,white,dip] found"
+  },
+  "CINEMA": {
+   "recording": "S4_CINEMA.mp4",
+   "status": "PASS",
+   "frames": 1289,
+   "seconds": 10.945,
+   "fps": 119.8,
+   "counts": {
+    "transient": 2,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 12,
+    "repeat": 0
+   },
+   "reason": "1289 frames analysed, none of [black,white,dip] found"
+  },
+  "ARCTIC": {
+   "recording": "S4_ARCTIC.mp4",
+   "status": "PASS",
+   "frames": 1274,
+   "seconds": 10.947,
+   "fps": 119.8,
+   "counts": {
+    "transient": 1,
+    "black": 0,
+    "white": 0,
+    "dip": 0,
+    "hitch": 6,
+    "repeat": 0
+   },
+   "reason": "1274 frames analysed, none of [black,white,dip] found"
+  }
+ }
+}

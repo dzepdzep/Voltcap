@@ -424,6 +424,75 @@ class TestRuncheck(Base):
         self.assertEqual(qalib.verdict(res), NOT_TESTED)
 
 
+class TestDeviceScreenScripts(unittest.TestCase):
+    """picker.sh / guard.sh screen_state / pop.sh on synthetic raw screencaps (header w,h,fmt,cs + RGBA): wrong screens are rejected."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+    W, H = 200, 120
+
+    def raw(self, name, fn, size=None):
+        import struct
+        w, h = self.W, self.H
+        px = bytearray()
+        for y in range(h):
+            for x in range(w):
+                px += bytes(fn(x, y) + (255,))
+        data = struct.pack("<4I", w, h, 1, 0) + bytes(px)
+        if size is not None:
+            data = data[:size]
+        p = os.path.join(self.tmp, name)
+        with open(p, "wb") as f:
+            f.write(data)
+        return p
+
+    def setUp(self):
+        if not shutil.which("sh") or not shutil.which("od"):
+            self.skipTest("no POSIX sh/od")
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def picker(self, raw):
+        env = dict(os.environ, PK_RAW=raw)
+        r = subprocess.run(["sh", os.path.join(self.DEV, "picker.sh")], capture_output=True, text=True, env=env)
+        return r.stdout.strip()
+
+    def state(self, raw):
+        env = dict(os.environ, PK_RAW=raw)
+        cmd = ". %s; screen_state" % os.path.join(self.DEV, "guard.sh").replace("\\", "/")
+        r = subprocess.run(["sh", "-c", "cd %s && cp %s ./picker.sh && %s" % (self.tmp.replace("\\", "/"), os.path.join(self.DEV, "picker.sh").replace("\\", "/"), cmd)],
+                           capture_output=True, text=True, env=env)
+        return r.stdout.strip()
+
+    def test_black_screen_is_unknown_not_home(self):
+        raw = self.raw("black.raw", lambda x, y: (0, 0, 0))
+        self.assertEqual(self.picker(raw), "UNKNOWN")
+        self.assertEqual(self.state(raw), "UNKNOWN")
+
+    def test_missing_empty_truncated_are_unknown(self):
+        self.assertEqual(self.picker(os.path.join(self.tmp, "none.raw")), "UNKNOWN")
+        empty = os.path.join(self.tmp, "empty.raw"); open(empty, "wb").close()
+        self.assertEqual(self.picker(empty), "UNKNOWN")
+        cut = self.raw("cut.raw", lambda x, y: (90, 90, 90), size=1000)
+        self.assertEqual(self.picker(cut), "UNKNOWN")
+        junk = os.path.join(self.tmp, "junk.raw")
+        with open(junk, "wb") as f:
+            f.write(b"not a screencap" * 40)
+        self.assertEqual(self.picker(junk), "UNKNOWN")
+
+    def test_picker_blue_is_picker_lit_other_is_home(self):
+        blue = self.raw("blue.raw", lambda x, y: (10, 30, 140))
+        self.assertEqual(self.picker(blue), "PICKER")
+        self.assertEqual(self.state(blue), "PICKER")
+        home = self.raw("home.raw", lambda x, y: (120, 100, 90))
+        self.assertEqual(self.picker(home), "HOME")
+        self.assertEqual(self.state(home), "HOME")
+
+    def test_pop_requires_verified_home(self):
+        src = open(os.path.join(self.DEV, "pop.sh"), encoding="utf-8").read()
+        self.assertIn("screen_state", src)
+        self.assertIn('= HOME ]', src)
+        self.assertNotIn("picker.sh)\" = PICKER", src)
+
+
 class TestRepoIntegrity(unittest.TestCase):
     """Fixtures and scripts the CI relies on exist and parse."""
 

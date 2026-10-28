@@ -7,62 +7,62 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 ## Home layouts (from `enum HomeLayout`)
 
 - Layouts in the source: **51**
-- With a validated device recording analysed by frames.py: **46** (blank-frame scan PASS 46, FAIL 0); no usable recording / never recorded: **5**
+- With a validated device recording analysed by frames.py: **51** (blank-frame scan PASS 51, FAIL 0); no usable recording / never recorded: **0**
 - Looked at by a human (contact sheets): **7** layouts; the other **44** have no human visual verdict recorded here
 
 | layout | name | blank-frame scan | transients / hitches | human review | recording |
 |---|---|---|---|---|---|
-| CLASSIC | Voltcap row | PASS | 0 / 6 | NOT TESTED | LE_CLASSIC.mp4 |
-| TILES | Tile home | PASS | 0 / 67 | PASS: Thor 28 Oct: names, facts, buttons steady; RP Classic 27 Oct name fix (D68) verified | f651_TILES.mp4 |
-| HERO | Hero carousel | PASS | 0 / 28 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | f651_HERO.mp4 |
-| GRID | Grid | PASS | 0 / 25 | NOT TESTED | LD_GRID.mp4 |
-| TV | TV room | PASS | 0 / 39 | NOT TESTED | LE_TV.mp4 |
-| DASH | Dashboard | PASS | 1 / 49 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | f651_DASH.mp4 |
-| LIVE | Live tiles | PASS | 5 / 19 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | f651_LIVE.mp4 |
-| SIDE | Side menu | PASS | 2 / 25 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | f651_SIDE.mp4 |
-| CROSS | Cross menu | PASS | 0 / 28 | NOT TESTED | LE_CROSS.mp4 |
-| SPOT | Spotlight | PASS | 1 / 9 | NOT TESTED | LA_SPOT.mp4 |
-| BAR | Icon bar | PASS | 1 / 14 | NOT TESTED | LB_BAR.mp4 |
-| SHELF | Game shelf | PASS | 28 / 174 | NOT TESTED | LE_SHELF.mp4 |
-| HUB | Console hub | PASS | 0 / 37 | NOT TESTED | LE_HUB.mp4 |
-| RESUME | Resume & discover | PASS | 1 / 17 | NOT TESTED | LE_RESUME.mp4 |
-| CHAN | Channel grid | PASS | 0 / 15 | NOT TESTED | LB_CHAN.mp4 |
-| CIRCUIT | Circuit board | PASS | 0 / 75 | NOT TESTED | LE_CIRCUIT.mp4 |
-| LIBRARY | Library panel | PASS | 0 / 20 | NOT TESTED | LE_LIBRARY.mp4 |
-| STACKS | Case stacks | PASS | 0 / 130 | NOT TESTED | LE_STACKS.mp4 |
-| TIMELINE | Timeline | PASS | 0 / 38 | NOT TESTED | LE_TIMELINE.mp4 |
-| ARCADE | Arcade cabinets | PASS | 0 / 117 | NOT TESTED | LE_ARCADE.mp4 |
-| CONSOLES | Console stack | PASS | 0 / 65 | NOT TESTED | LE_CONSOLES.mp4 |
-| DISCS | Disc station | PASS | 0 / 63 | NOT TESTED | LE_DISCS.mp4 |
-| HERO_TILES | Hero tiles | PASS | 0 / 13 | NOT TESTED | LC_HERO_TILES.mp4 |
-| TWIN_DESK | Twin desk | PASS | 0 / 0 | NOT TESTED | LE_TWIN_DESK.mp4 |
-| TWIN_ICONS | Twin icons | PASS | 0 / 35 | NOT TESTED | LE_TWIN_ICONS.mp4 |
-| TWIN_SHOWCASE | Twin showcase | PASS | 0 / 9 | NOT TESTED | LC_TWIN_SHOWCASE.mp4 |
-| CRATE | Record crate | PASS | 0 / 26 | NOT TESTED | LE_CRATE.mp4 |
-| CARDS | Card binder | PASS | 2 / 27 | NOT TESTED | LE_CARDS.mp4 |
-| CUSTOM | Layout Studio | PASS | 3 / 39 | NOT TESTED | LE_CUSTOM.mp4 |
-| POCKET_CLASSIC | Pocket classic | PASS | 0 / 0 | NOT TESTED | LC_POCKET_CLASSIC.mp4 |
-| POCKET_RIBBON | Pocket ribbon | PASS | 0 / 1 | NOT TESTED | LD_POCKET_RIBBON.mp4 |
-| GREENCORE | Green Core (2001) | PASS | 16 / 33 | NOT TESTED | LE_GREENCORE.mp4 |
-| POCKET | Pocket Quest | PASS | 0 / 89 | NOT TESTED | LD_POCKET.mp4 |
-| CUBE | Cube menu | PASS | 0 / 26 | NOT TESTED | LE_CUBE.mp4 |
-| MEMCARD | Memory card (2000) | PASS | 0 / 2 | NOT TESTED | LE_MEMCARD.mp4 |
-| CASEFLOW | Case flow | PASS | 2 / 24 | NOT TESTED | LD_CASEFLOW.mp4 |
-| BOX | Cardboard box | PASS | 0 / 2 | NOT TESTED | LE_BOX.mp4 |
-| STORAGE | Storage boxes | PASS | 2 / 24 | NOT TESTED | LE_STORAGE.mp4 |
-| FILESELECT | File select (1996) | PASS | 0 / 19 | NOT TESTED | LE_FILESELECT.mp4 |
-| ORBIT | Orbit deck (1995) | PASS | 0 / 64 | NOT TESTED | B5_ORBIT.mp4 |
-| AIRY | Airy home (1999) | PASS | 4 / 11 | NOT TESTED | A5_AIRY.mp4 |
-| NIGHT | Night menu (2006) | PASS | 31 / 100 | NOT TESTED | A5_NIGHT.mp4 |
-| BLADES | Blades (2005) | PASS | 6 / 1 | NOT TESTED | A5_BLADES.mp4 |
-| BUBBLES | Bubble home (2011) | NOT TESTED | - | NOT TESTED | - |
-| CAMERA | Pocket camera (1998) | NOT TESTED | - | NOT TESTED | - |
-| PANELS | Panel dashboard (2008) | PASS | 2 / 56 | NOT TESTED | B5_PANELS.mp4 |
-| MAGAZINE | Game magazine | NOT TESTED | - | NOT TESTED | - |
-| SHOP | Rental shop | NOT TESTED | - | NOT TESTED | - |
-| TERMINAL | Terminal | NOT TESTED | - | NOT TESTED | - |
-| CINEMA | Cinema | PASS | 1 / 43 | PASS: Thor 28 Oct: contact sheets, no shift of name / logo / facts / buttons / rows, no flicker (no new evidence of a regression) | f651_CINEMA.mp4 |
-| ARCTIC | Arctic hub | PASS | 0 / 8 | PASS: Thor 28 Oct: contact sheets, same checks as Cinema | f651_ARCTIC.mp4 |
+| CLASSIC | Voltcap row | PASS | 1 / 9 | NOT TESTED | S4_CLASSIC.mp4 |
+| TILES | Tile home | PASS | 1 / 42 | PASS: Thor 28 Oct: names, facts, buttons steady; RP Classic 27 Oct name fix (D68) verified | S4_TILES.mp4 |
+| HERO | Hero carousel | PASS | 0 / 23 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | S4_HERO.mp4 |
+| GRID | Grid | PASS | 0 / 32 | NOT TESTED | S4_GRID.mp4 |
+| TV | TV room | PASS | 0 / 65 | NOT TESTED | S4_TV.mp4 |
+| DASH | Dashboard | PASS | 1 / 43 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | S4_DASH.mp4 |
+| LIVE | Live tiles | PASS | 2 / 0 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | S4_LIVE.mp4 |
+| SIDE | Side menu | PASS | 1 / 10 | PASS: Thor 28 Oct: contact sheets, no shift or flicker | S4_SIDE.mp4 |
+| CROSS | Cross menu | PASS | 2 / 39 | NOT TESTED | S4_CROSS.mp4 |
+| SPOT | Spotlight | PASS | 1 / 18 | NOT TESTED | S4_SPOT.mp4 |
+| BAR | Icon bar | PASS | 1 / 19 | NOT TESTED | S4_BAR.mp4 |
+| SHELF | Game shelf | PASS | 31 / 209 | NOT TESTED | S4_SHELF.mp4 |
+| HUB | Console hub | PASS | 1 / 55 | NOT TESTED | S4_HUB.mp4 |
+| RESUME | Resume & discover | PASS | 0 / 49 | NOT TESTED | S4_RESUME.mp4 |
+| CHAN | Channel grid | PASS | 0 / 19 | NOT TESTED | S4_CHAN.mp4 |
+| CIRCUIT | Circuit board | PASS | 0 / 77 | NOT TESTED | S4_CIRCUIT.mp4 |
+| LIBRARY | Library panel | PASS | 0 / 23 | NOT TESTED | S4_LIBRARY.mp4 |
+| STACKS | Case stacks | PASS | 0 / 143 | NOT TESTED | S4_STACKS.mp4 |
+| TIMELINE | Timeline | PASS | 1 / 33 | NOT TESTED | S4_TIMELINE.mp4 |
+| ARCADE | Arcade cabinets | PASS | 0 / 125 | NOT TESTED | S4_ARCADE.mp4 |
+| CONSOLES | Console stack | PASS | 1 / 75 | NOT TESTED | S4_CONSOLES.mp4 |
+| DISCS | Disc station | PASS | 2 / 0 | NOT TESTED | S4_DISCS.mp4 |
+| HERO_TILES | Hero tiles | PASS | 0 / 26 | NOT TESTED | S4_HERO_TILES.mp4 |
+| TWIN_DESK | Twin desk | PASS | 0 / 0 | NOT TESTED | S4_TWIN_DESK.mp4 |
+| TWIN_ICONS | Twin icons | PASS | 0 / 35 | NOT TESTED | S4_TWIN_ICONS.mp4 |
+| TWIN_SHOWCASE | Twin showcase | PASS | 2 / 0 | NOT TESTED | S4_TWIN_SHOWCASE.mp4 |
+| CRATE | Record crate | PASS | 0 / 27 | NOT TESTED | S4_CRATE.mp4 |
+| CARDS | Card binder | PASS | 4 / 86 | NOT TESTED | S4_CARDS.mp4 |
+| CUSTOM | Layout Studio | PASS | 0 / 48 | NOT TESTED | S4_CUSTOM.mp4 |
+| POCKET_CLASSIC | Pocket classic | PASS | 2 / 0 | NOT TESTED | S4_POCKET_CLASSIC.mp4 |
+| POCKET_RIBBON | Pocket ribbon | PASS | 0 / 6 | NOT TESTED | S4_POCKET_RIBBON.mp4 |
+| GREENCORE | Green Core (2001) | PASS | 15 / 32 | NOT TESTED | S4_GREENCORE.mp4 |
+| POCKET | Pocket Quest | PASS | 2 / 0 | NOT TESTED | S4_POCKET.mp4 |
+| CUBE | Cube menu | PASS | 2 / 0 | NOT TESTED | S4_CUBE.mp4 |
+| MEMCARD | Memory card (2000) | PASS | 0 / 1 | NOT TESTED | S4_MEMCARD.mp4 |
+| CASEFLOW | Case flow | PASS | 5 / 36 | NOT TESTED | S4_CASEFLOW.mp4 |
+| BOX | Cardboard box | PASS | 0 / 1 | NOT TESTED | S4_BOX.mp4 |
+| STORAGE | Storage boxes | PASS | 2 / 0 | NOT TESTED | S4_STORAGE.mp4 |
+| FILESELECT | File select (1996) | PASS | 2 / 0 | NOT TESTED | S4_FILESELECT.mp4 |
+| ORBIT | Orbit deck (1995) | PASS | 2 / 1 | NOT TESTED | S4_ORBIT.mp4 |
+| AIRY | Airy home (1999) | PASS | 3 / 19 | NOT TESTED | S4_AIRY.mp4 |
+| NIGHT | Night menu (2006) | PASS | 2 / 0 | NOT TESTED | S4_NIGHT.mp4 |
+| BLADES | Blades (2005) | PASS | 5 / 10 | NOT TESTED | S4_BLADES.mp4 |
+| BUBBLES | Bubble home (2011) | PASS | 2 / 0 | NOT TESTED | S3_BUBBLES.mp4 |
+| CAMERA | Pocket camera (1998) | PASS | 13 / 20 | NOT TESTED | S1_CAMERA.mp4 |
+| PANELS | Panel dashboard (2008) | PASS | 0 / 47 | NOT TESTED | S4_PANELS.mp4 |
+| MAGAZINE | Game magazine | PASS | 7 / 121 | NOT TESTED | S1_MAGAZINE.mp4 |
+| SHOP | Rental shop | PASS | 2 / 1 | NOT TESTED | S2_SHOP.mp4 |
+| TERMINAL | Terminal | PASS | 0 / 2 | NOT TESTED | S1_TERMINAL.mp4 |
+| CINEMA | Cinema | PASS | 2 / 12 | PASS: Thor 28 Oct: contact sheets, no shift of name / logo / facts / buttons / rows, no flicker (no new evidence of a regression) | S4_CINEMA.mp4 |
+| ARCTIC | Arctic hub | PASS | 1 / 6 | PASS: Thor 28 Oct: contact sheets, same checks as Cinema | S4_ARCTIC.mp4 |
 
 `transients / hitches` are counts to look at, not verdicts: a slide, a crossfade or the intended edge-bump shake is a transient too. The blank-frame scan only fails on black / white / brightness-dip frames.
 
@@ -70,16 +70,16 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 
 | id | feature | test | device | mode | status | evidence | limits |
 |---|---|---|---|---|---|---|---|
-| QA-01 | QA tooling: false-pass detection | tools/qa/selftest/test_qa.py (broken fixtures: missing / empty / truncated / garbage / stale recordings and logs, wrong screen, interrupted sweep, empty suite, SKIP never PASS) | none (CI + dev PC) | automated | **PASS** | 42 tests OK (dev PC, Python 3.13 + ffmpeg 9.0.2); same suite in GitHub Actions qa.yml | proves the tools reject bad evidence; says nothing about the app |
+| QA-01 | QA tooling: false-pass detection | tools/qa/selftest/test_qa.py (broken fixtures: missing / empty / truncated / garbage / stale recordings and logs, wrong screen, interrupted sweep, empty suite, SKIP never PASS) | none (CI + dev PC) | automated | **PASS** | 46 tests OK (dev PC, Python 3.13 + ffmpeg 9.0.2), incl. 4 new device-script tests (picker.sh / guard.sh screen_state / pop.sh on synthetic captures); same suite in GitHub Actions qa.yml | proves the tools reject bad evidence; says nothing about the app |
 | QA-02 | frames.py on recent Thor and emulator recording formats | regression: 960x540@120, 1920x1080@120 and 540x1200@60 synthetic recordings + real Thor recordings in qa_runs | none (synthetic) + Thor recordings | automated | **PASS** | TestFramesPy.test_decodes_thor_and_emulator_formats; 46 real Thor recordings analysed (audit/2026-10-28/layouts_auto.json) | the IndexError came from ffmpeg 8+/9 dropping -vsync; no real emulator recording exists in qa_runs, so emulator format is synthetic only |
 | QA-03 | Static checks (RULES.md patterns) | static_checks.py --strict on the tracked app source (CI) | none | automated | **PASS** | 649 Kotlin files scanned, 0 HIGH findings | strict only fails on HIGH; 397 TRUNCATE (R18) and 79 SNAP-ANIMATE etc. MED findings are open and not gating; scans app/src (what git has), not src_copy (gitignored) |
 | QA-04 | Controller walk: duplicate-label controls | walkcheck.py identity = label + position; fixtures with three identical 'Play' buttons | none (fixtures) | automated | **PASS** | TestWalkcheck.test_duplicate_labels_are_told_apart | identity relies on reading order inside one screen snapshot; a panel that scrolls re-numbers same-label controls |
-| QA-05 | Device screen guard (profile picker vs home vs black screen) | device/picker.sh + guard.sh screen_state, read-only screencap on the Thor; runcheck.py wrong-screen verdict (fixtures) (hardware, not run in CI) | AYN Thor 3140972f | automated | **PASS** | capture header = 16 bytes (w,h,format,colorspace) confirmed; a black 1920x1080 screen made picker.sh print HOME (false pass) and guard.sh screen_state print UNKNOWN | the PICKER and lit-HOME paths were not exercised live (no app launch, to keep the device untouched); pop.sh still uses the bare picker.sh check |
-| QA-06 | Sweep validation (device/layouts.sh manifest -> runcheck.py) | runcheck.py on a pulled sweep (hardware, not run in CI) | AYN Thor | automated | **NOT TESTED** | - | new this session: the manifest and guard are covered by fixtures, but no real device sweep has been run with them yet |
-| LY-01 | Home layouts: sweep recording + blank-frame scan | layouts.sh navigation recorded at 960x540, frames.py black / white / dip scan | AYN Thor 1920x1080 @120 Hz (RP Classic for a subset) | automated | **PASS** | 46 of 51 layouts: no black / white / dip frames (see table) | 5 layouts never recorded: BUBBLES, CAMERA, MAGAZINE, SHOP, TERMINAL. Recordings are Oct 27-28 runs, validated now, not re-recorded |
-| LY-02 | Home layouts: frame pacing | layouts.sh gfxinfo (janky %, p90, p99) | AYN Thor | automated | **FAIL** | REPORT.md layout sweep table (run LE): STACKS 28.2 %, ARCADE 25.7 %, SHELF 22.2 %, MEMCARD 18.2 %, TWIN_ICONS 16.6 %, CIRCUIT 14.1 % janky | no pass threshold exists; these are open measured performance findings, not crashes. Instrumentation (QaTrace) was on during the runs |
+| QA-05 | Device screen guard (profile picker vs home vs black screen) | device/picker.sh + guard.sh screen_state, read-only screencap on the Thor; runcheck.py wrong-screen verdict (fixtures) (hardware, not run in CI) | AYN Thor 3140972f | automated | **PASS** | picker.sh now prints PICKER / HOME / UNKNOWN itself (5 pixels + full-frame size check; black, missing, short or garbage capture = UNKNOWN); guard.sh screen_state delegates; pop.sh requires a verified HOME. Host tests on synthetic captures. Live on the Thor: the real 'Who's playing?' screen read PICKER (BUBBLES / SHOP sweep start, S1 / S2) and was skipped, never measured; a lit screen read HOME | a black screen was only tested synthetically after the fix (the earlier black capture was live); HOME means 'lit and not the picker', so layouts.sh also needs vqa.sh ready (Voltcap focus) to prove it is Voltcap |
+| QA-06 | Sweep validation (device/layouts.sh manifest -> runcheck.py) | runcheck.py on a pulled sweep (hardware, not run in CI) | AYN Thor | automated | **PASS** | real sweeps with guard.sh manifests validated by runcheck.py: S4 PASS 46/46, S3 PASS 1/1, S1 3 PASS + 2 SKIP (picker), S2 1 PASS + 1 SKIP (picker); the skips were reported as SKIP, never PASS | only the Thor was swept; 'done' in the script still only means it ran, the verdict comes from runcheck.py |
+| LY-01 | Home layouts: sweep recording + blank-frame scan | layouts.sh navigation recorded at 960x540, frames.py black / white / dip scan | AYN Thor 1920x1080 @120 Hz (RP Classic for a subset) | automated | **PASS** | 51 of 51 layouts recorded in this session's real sweep (S1-S4, Thor, 960x540 @120, 11 s each): validated recordings, no black / white / dip frames, no crash in any QaTrace log (runcheck + coverage collect) | layout looks were checked by eye for the 5 formerly missing layouts only (BUBBLES / SHOP open on their category chooser; TERMINAL list shows '...' on long names, the preview pane shows the full name); the other 46 were not re-reviewed by a human this run. Only one device and aspect ratio |
+| LY-02 | Home layouts: frame pacing | layouts.sh gfxinfo (janky %, p90, p99) | AYN Thor | automated | **FAIL** | S4 + S1-S3 (28 Oct, janky % by gfxinfo): ARCADE 25.4, SHELF 24.3, STACKS 19.9, MEMCARD 18.1, TV 18.1, TWIN_ICONS 16.9, GRID 12.8, CIRCUIT 12.7, DASH 12.5, BOX 12.1, MAGAZINE 11.5, CAMERA 10.0; median 5.2 %. Earlier run LE: STACKS 28.2, ARCADE 25.7, SHELF 22.2, MEMCARD 18.2 | no pass threshold exists; these are open measured performance findings, not crashes. Instrumentation (QaTrace) was on during the runs |
 | LY-03 | Cinema / Arctic hub (365ff8e): fixed name + logo slots, StableFullText, reserved detail room, HeldImage per-picture zoom | Thor recordings read as ffmpeg contact sheets | AYN Thor 1920x1080 @120 Hz | manual | **PASS** | REPORT.md 'Final pass before 0.6.51'; qa_runs/363, qa_runs/final651 | no confirmed regression; frames.py was broken then, so the automated scan was added afterwards (0 black frames, Cinema 1 / Arctic 0 transients). Other aspect ratios and the second screen not covered |
-| LY-04 | Cinema / Arctic: rapid selection and category navigation | stress (vqa.sh stress) on Cinema / Arctic (hardware, not run in CI) | AYN Thor | automated | **NOT TESTED** | - | only the standard 30 s sweep (R/L, D/U, R2/L2 at 300 ms) was recorded for these layouts, not an 80 x 70 ms burst |
+| LY-04 | Cinema / Arctic: rapid selection and category navigation | stress (vqa.sh stress) on Cinema / Arctic (hardware, not run in CI) | AYN Thor | automated | **PASS** | 80 steps at 70 ms (vqa.sh stress) on CINEMA and ARCTIC, 12 s recordings, runcheck PASS 2/2, janky 3.1 % / 2.7 %, no black / white / dip frame, no crash; frames.py: Cinema 12 transients (none in the title area), Arctic 2 | one Arctic transient (t = 11.28 s, title area) shows one frame with the title missing next to dimmed facts; seen once, not reproduced by a pixel check, not confirmed as a defect (candidate for a per-frame title check). Cinema's one standard-sweep transient (t = 10.7 s, bottom right) is the intended card-row slide-in after R2 (also in Arctic). Controller walk on these layouts not done |
 | LY-05 | Dashboard, Hero, Tile Home, Live tiles, Side menu related regressions | Thor recordings read as contact sheets (28 Oct) | AYN Thor | manual | **PASS** | REPORT.md 'Final pass before 0.6.51' | limited Thor testing; the Thor 'Cube hub' (CUBE) only has the automated blank-frame scan, no human visual review |
 | LY-06 | Layout-specific popups (game details, Start / Y / L1 menus) | menu focus verification | AYN Thor | manual | **PASS** | REPORT.md pass 4 batch 2 D59: Start opens on Play, L1 on first shortcut, Y on the filter chip | checked on Classic; popups of the other 50 layouts not walked |
 | CT-01 | Controller walk: Settings (explorer + QaWalk), 12 of 21 categories | walkcheck.py on E3 / E4 / E6 logs (qa_runs) | AYN Thor / RP Classic | automated | **FAIL** | walkcheck --strict on E6: 374/578 focusable controls reached, focus lost 4x, duplicate controls listed (identity-aware count; the old label-merged tool said 363/551) | unreached controls are mostly 'not visited by this walk' (needs a longer walk); focus loss is unconfirmed as an app defect. Reproduce: python3 tools/qa/tools/walkcheck.py qa_runs/final651/out/E6_qa.txt --strict |
@@ -102,12 +102,10 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | BG-01 | Background video / animation interactions | idle.sh idle cost (hardware, not run in CI) | AYN Thor | automated | **FAIL** | REPORT.md D64: the home gameplay clip holds the GPU at ~30 fps while idle (29 ms frames, 72-85 % janky) | by design since update 307; open for a product decision, not a regression |
 | CI-01 | GitHub Actions: QA self-tests + strict static checks + coverage check | .github/workflows/qa.yml | ubuntu-latest (no Android device) | automated | **PASS** | run 40680336896 on 4f4375f: 42 self-tests OK on ffmpeg 6.1, static --strict PASS, coverage check PASS | a deliberately failing push was not made; failure detection is proven by the self-tests and exit codes, not by a red CI run. Hardware rows are not run in CI |
 
-Feature rows: 31 - PASS 19, FAIL 3, SKIP 0, NOT TESTED 9; hardware-only rows: 14.
+Feature rows: 31 - PASS 21, FAIL 3, SKIP 0, NOT TESTED 7; hardware-only rows: 14.
 
 ## Genuinely untested (no claim made)
 
-- **Sweep validation (device/layouts.sh manifest -> runcheck.py)** (runcheck.py on a pulled sweep): new this session: the manifest and guard are covered by fixtures, but no real device sweep has been run with them yet
-- **Cinema / Arctic: rapid selection and category navigation** (stress (vqa.sh stress) on Cinema / Arctic): only the standard 30 s sweep (R/L, D/U, R2/L2 at 300 ms) was recorded for these layouts, not an 80 x 70 ms burst
 - **Settings: remaining 9 categories / wrapped chip rows** (explorer walk): needs ~14 minutes per chunk on a device
 - **R1 quick menu and its dynamic options** (R1 panel walk): only code review so far; dynamic options (depend on device / state) never enumerated on a device
 - **Portrait orientation** (none): no portrait device used; the emulator (emulator-5554, 1080x2400) has no installed debug build with the test hooks

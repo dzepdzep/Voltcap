@@ -79,9 +79,10 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
   crossfade is a transient too, so transients are for human review of the contact sheets.
 - **Device sweeps**: `device/layouts.sh` sources `device/guard.sh` (needs `guard.sh` + `picker.sh` next to `vqa.sh`), writes
   `out/RUN_manifest.txt`, skips a layout showing "Who's playing?" (SKIP) or a black screen (UNKNOWN). After pulling `out/`:
-  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` alone reads ONE pixel, so a black screen printed HOME
-  (seen on the Thor); guard.sh's `screen_state` also checks that the capture is not black. `pop.sh` still uses the bare picker
-  check (it stops on PICKER, but not on a black screen) - kept as written.
+  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` prints PICKER / HOME / UNKNOWN (a black, missing, short or garbage capture is UNKNOWN, never HOME);
+  `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
+  the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
+  folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
 - **Controller walk**: `walkcheck.py LOG [--strict]` tells controls with the same label apart (label + reading order, focus matched
   by box); reports TOUCH-ONLY / NOT REACHED / DUPLICATE / SAME LABEL / FOCUS ON UNKNOWN / focus lost. `--strict` fails on those.
 - **Coverage**: edit `coverage.json`, then `python3 tools/qa/tools/coverage.py render`; `coverage.py collect OUT_DIR audit/<date>/layouts_auto.json`

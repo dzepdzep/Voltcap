@@ -1,3 +1,9 @@
+# CURRENT_TASK — status 28 Oct 2026, update 366 (0.6.52)
+
+**Read COWORK_HANDOFF.md first.** Update 366 (SUMMARY.md): picker.sh / pop.sh false pass fixed, 46 self-tests, first real Thor sweep: 51/51 layouts
+recorded and validated, stress on Cinema / Arctic PASS, version 0.6.52. Next for Cowork (from 1 Nov): the 9 Settings categories, R1 quick-menu
+options, second screen / portrait / other aspect ratios, missing-artwork fixtures, Cinema / Arctic controller walk, per-frame title check.
+
 # CURRENT_TASK — status 28 Oct 2026 (after 0.6.51 + the QA overhaul)
 
 **Read COWORK_HANDOFF.md first** (the current state, what is done, what is open). The text below is the older history and may be out of date.

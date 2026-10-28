@@ -13,6 +13,8 @@ sh vqa.sh ready > /dev/null || { sh vqa.sh hooks off > /dev/null; echo "layouts 
 for L in $list; do
   am start -n com.shelf.launcher/.MainActivity --ez voltcap_test_preview true --es voltcap_test_layout $L > /dev/null 2>&1; sleep 4
   am start -n com.shelf.launcher/.MainActivity --es voltcap_test_category ALL > /dev/null 2>&1; sleep 3
+  # "Who's playing?" can open over a layout on a (re)start: B keeps the current profile (nothing is changed), then look again (up to 3 tries; still PICKER = skipped, never measured)
+  for try in 1 2 3; do [ "$(screen_state)" = PICKER ] || break; sh vqa.sh seq "B" 300 > /dev/null; sleep 3; done
   man_screen $run $L
   [ "$(screen_state)" = HOME ] || { man_skip $run $L "not on the home screen ($(screen_state))"; echo "$L SKIPPED: not home"; continue; }
   sh vqa.sh seq "R L" 300 > /dev/null; sleep 1

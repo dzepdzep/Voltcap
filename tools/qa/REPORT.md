@@ -479,3 +479,17 @@ No new evidence of a regression, none claimed. Fresh automated scan of the Thor 
 
 ## Not done / still open (see COVERAGE.md for the full list)
 Portrait, other aspect ratios, second screen, R1 dynamic options, 9 of 21 settings categories, artwork-missing fixtures, game launch / return, profile flows, stress on layouts other than Classic, a real device sweep through the new manifest (`layouts.sh` + `runcheck.py`), and CI's first run.
+
+## Update 366 (28 Oct 2026): real Thor sweep, picker.sh / pop.sh fixed, 0.6.52
+
+- picker.sh false pass fixed (black screen = UNKNOWN); pop.sh requires a verified HOME; 4 new tests (46 total). Live on the Thor the guard
+  correctly read the real "Who's playing?" screen as PICKER (BUBBLES / SHOP at sweep start) and skipped it; B x up to 3 now clears it.
+- Real sweep (Thor 3140972f, 1920x1080 @120, run folder `/data/local/tmp/vqa_r52a`): **51 of 51 layouts recorded and validated** by runcheck
+  (S4 PASS 46/46; S1 3 PASS + 2 SKIP; S2 SHOP PASS; S3 BUBBLES PASS), 0 black / white / dip frames, 0 crashes. Janky %: ARCADE 25.4, SHELF 24.3,
+  STACKS 19.9, MEMCARD 18.1, TV 18.1, TWIN_ICONS 16.9, GRID 12.8, CIRCUIT 12.7, DASH 12.5, BOX 12.1, MAGAZINE 11.5, CAMERA 10.0; median 5.2.
+- Stress 80 x 70 ms on Cinema / Arctic: PASS (janky 3.1 / 2.7 %). Cinema's standard-sweep transient (t = 10.7 s) is the intended card-row
+  slide-in after R2. Unconfirmed: one Arctic frame (t = 11.28 s) without the title next to dimmed facts; a pixel check did not reproduce it.
+- Looks seen: BUBBLES and SHOP open on their category chooser; TERMINAL shows "..." on long names in its fixed-width list (the preview pane
+  shows the full name; R18 TRUNCATE area, not changed). No application change; no defect confirmed.
+- Safety: battery 83 -> 80 %, 26 -> 29 C; hooks off afterwards (`voltcap_test_hooks.paused`), settings snapshot file byte-identical, refresh
+  rate 120 / 120 unchanged, no recorder left, Google TV Streamer not touched, emulator not used.

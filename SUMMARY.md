@@ -1,5 +1,30 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (366): QA reliability finished, first real 51-layout Thor sweep, release 0.6.52 (no app code change)
+
+**What changed:** `device/picker.sh` itself now prints PICKER / HOME / UNKNOWN (5 pixels + full-frame size check; a black, missing, short or
+garbage capture is UNKNOWN, never HOME; `PK_RAW=file` reads a saved capture for host tests). `guard.sh screen_state` delegates to it.
+`pop.sh` now needs a verified HOME (via `guard.sh`; `VQA=` overrides the folder). `layouts.sh` presses B (keeps the current profile) up to
+3 times when "Who's playing?" is in front, then checks again; a screen still not HOME is SKIP. 4 new self-tests (46 total) run the two
+scripts on synthetic captures (black / missing / empty / truncated / garbage = UNKNOWN, blue corner = PICKER, lit = HOME, pop.sh uses
+screen_state). **App code: unchanged.** Version 0.6.51 -> **0.6.52 (versionCode 59)** in `app/build.gradle.kts` (+ `project_copy/`) only so the
+QA-tooling state has its own release; the APK behaves like 0.6.51.
+**Real Thor sweep (3140972f, battery 83 -> 80 %, 26 -> 29 C, run-specific folder `/data/local/tmp/vqa_r52a`, removed afterwards):**
+S1 (5 formerly missing layouts) 3 PASS + 2 SKIP: BUBBLES and SHOP opened the real profile picker, the guard read PICKER and skipped them
+(honest SKIP); S2 SHOP PASS; S3 BUBBLES PASS (after the B retry); S4 46 layouts PASS 46/46. Together **51 of 51 layouts recorded, validated
+by `runcheck.py`, 0 black / white / dip frames, 0 crashes**; `audit/2026-10-28b/layouts_auto.json`. Janky %: ARCADE 25.4, SHELF 24.3, STACKS
+19.9, MEMCARD 18.1, TV 18.1 (known baseline), median 5.2. Stress X1 (80 steps / 70 ms) on Cinema and Arctic: PASS, janky 3.1 / 2.7 %.
+Cinema's one standard-sweep transient (t = 10.7 s, bottom right) = the intended card-row slide-in after R2 (Arctic shows the same).
+One unconfirmed observation: Arctic stress, t = 11.28 s, one frame with the title missing beside dimmed facts; not reproduced by a pixel
+check, not a confirmed defect, no app change.
+**Copy:** nothing to copy (tools + gradle version only). To sweep a device push `vqa.sh`, `guard.sh`, `picker.sh`, `layouts.sh` into one folder.
+**Files:** tools/qa/device/{picker,guard,pop,layouts}.sh, selftest/test_qa.py, coverage.json, COVERAGE.md, REPORT.md, README.md, audit/2026-10-28b/,
+app/build.gradle.kts, project_copy/app/build.gradle.kts, COWORK_HANDOFF.md, HANDOVER.md, CURRENT_TASK.md.
+**Checked:** 46 self-tests OK, strict static checks exit 0, coverage check PASS, release build OK (Voltcap-0.6.52-release.apk, signed with the
+release key), `adb install -r` over 0.6.51 on the Thor (data kept), app starts, no crash. **Not checked:** the other 9 Settings categories,
+R1 quick-menu options, second screen, portrait, other aspect ratios, profile flows, game launch / return, emulator fixtures, human review
+of 46 layout looks, controller walk on Cinema / Arctic.
+
 ## Update — 28 Oct 2026 (365): QA overhaul (tools only; no app change, no version bump, no release)
 
 **What changed:** the QA system no longer passes on missing evidence. `frames.py` works again on the Thor / emulator recordings
