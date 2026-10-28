@@ -24,11 +24,23 @@ import argparse, json, os, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import qalib
+from qalib import Result, PASS, FAIL, INFRA
+
+EVENT_KINDS = ("transient", "black", "white", "dip", "hitch", "repeat")
+
 
 def probe_times(path):
     out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "frame=pts_time",
                           "-of", "csv=p=0", path], capture_output=True, text=True).stdout
-    return [float(x) for x in out.split() if x.strip()]
+    vals = []
+    for x in out.split():
+        try:
+            vals.append(float(x.split(",")[0]))  # "N/A" (a frame without a timestamp) is dropped, not fatal
+        except ValueError:
+            pass
+    return vals
 
 
 def probe_size(path):
@@ -37,13 +49,32 @@ def probe_size(path):
     return int(out[0]), int(out[1])
 
 
+def _decode(path, vf, passthrough_flag):
+    cmd = ["ffmpeg", "-v", "error", "-i", path] + passthrough_flag + ["-vf", vf, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
+    return subprocess.run(cmd, capture_output=True)
+
+
 def read_frames(path, scale):
+    """Every frame, scaled to `scale` px wide, as (n, h, w, 3) uint8. Raises RuntimeError when nothing can be decoded.
+
+    ffmpeg 7+/8+/9 removed `-vsync`; `-fps_mode passthrough` replaced it (older builds only know `-vsync 0`). The
+    recent Thor / emulator recordings made frames.py decode ZERO frames on a new ffmpeg, which then crashed with an
+    IndexError on times[-1]; both flags are tried and an empty decode is reported, never indexed.
+    """
     w, h = probe_size(path)
     sw = scale; sh = int(round(h * scale / w / 2)) * 2
-    cmd = ["ffmpeg", "-v", "error", "-i", path, "-vsync", "0", "-vf", f"scale={sw}:{sh}:flags=area",
-           "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
-    raw = subprocess.run(cmd, capture_output=True).stdout
+    vf = f"scale={sw}:{sh}:flags=area"
+    raw = b""
+    err = ""
+    for flag in (["-fps_mode", "passthrough"], ["-vsync", "0"]):
+        p = _decode(path, vf, flag)
+        err = p.stderr.decode("utf-8", "replace")
+        if p.stdout:
+            raw = p.stdout
+            break
     n = len(raw) // (sw * sh * 3)
+    if n == 0:
+        raise RuntimeError("ffmpeg decoded no frames" + (": " + err.strip().splitlines()[-1][:200] if err.strip() else ""))
     return np.frombuffer(raw[: n * sw * sh * 3], np.uint8).reshape(n, sh, sw, 3), (w, h)
 
 
@@ -72,14 +103,37 @@ def main():
     ap.add_argument("--ratio", type=float, default=1.6, help="transient score threshold")
     ap.add_argument("--max-sheets", type=int, default=40)
     ap.add_argument("--skip-start", type=float, default=0.3, help="seconds ignored at the start")
+    ap.add_argument("--fail-on", default="", help="comma list of event kinds (%s) that make the run FAIL (exit 1); "
+                    "default: report only" % ",".join(EVENT_KINDS))
+    ap.add_argument("--not-before", type=float, default=None, help="epoch seconds: an older recording is stale evidence")
+    ap.add_argument("--max-age", type=float, default=None, help="seconds: an older recording is stale evidence")
+    ap.add_argument("--min-frames", type=int, default=10)
     args = ap.parse_args()
     gw, gh = [int(x) for x in args.grid.lower().split("x")]
     out = args.out or os.path.splitext(args.video)[0] + "_frames"
     os.makedirs(out, exist_ok=True)
 
+    # Exit codes: 0 PASS (nothing in --fail-on found), 1 FAIL (a --fail-on event), 2 INFRA (the recording can't be
+    # trusted: missing, empty, truncated, stale, undecodable), 3 nothing analysable. Never a silent pass.
+    def stop(res, reason=None):
+        qalib.write_json(os.path.join(out, "events.json"), [res], dict(summary=dict(video=os.path.basename(args.video)), events=[]))
+        print(res)
+        sys.exit(qalib.exit_code([res]))
+
+    rec = qalib.check_recording(args.video, min_frames=args.min_frames, not_before=args.not_before, max_age_s=args.max_age)
+    if rec[0].status != PASS:
+        stop(rec[0])
     times = probe_times(args.video)
-    F, (W, H) = read_frames(args.video, args.scale)
+    try:
+        F, (W, H) = read_frames(args.video, args.scale)
+    except RuntimeError as e:
+        stop(Result(os.path.basename(args.video), INFRA, str(e), args.video))
     n = min(len(F), len(times))
+    if n < args.min_frames or len(times) < args.min_frames:
+        stop(Result(os.path.basename(args.video), INFRA,
+                    f"decoded {len(F)} frames but {len(times)} timestamps: not enough to analyse", args.video))
+    if abs(len(F) - len(times)) > max(2, len(times) // 50):
+        print(f"warning: {len(F)} frames decoded vs {len(times)} timestamps; analysing the first {n}", file=sys.stderr)
     F = F[:n]; times = times[:n]
     iv = np.diff(times) * 1000
     vs = float(np.median(iv)) if len(iv) else 16.7
@@ -152,6 +206,8 @@ def main():
         for j in idxs:
             p = os.path.join(out, f"_f{j}.png")
             full_frame(args.video, j, times, p, 480)
+            if not os.path.exists(p):
+                continue  # the sheet is only a convenience; the event itself is already recorded
             im = Image.open(p).convert("RGB")
             if e["kind"] == "transient":
                 sx = im.width / W
@@ -160,6 +216,8 @@ def main():
             ImageDraw.Draw(im).text((6, 6), f"#{j} {times[j]-times[0]:.3f}s" + (" <" if e["at"] <= j < e["at"] + k else ""), fill=(255, 255, 0))
             tiles.append(im)
             os.remove(p)
+        if not tiles:
+            continue
         sheet = Image.new("RGB", (sum(t.width for t in tiles) + 4 * len(tiles), tiles[0].height), (40, 0, 40))
         x = 0
         for t in tiles:
@@ -170,12 +228,24 @@ def main():
         sheets += 1
 
     summary = dict(video=os.path.basename(args.video), frames=n, seconds=round(times[-1] - times[0], 3),
-                   vsync_ms=round(vs, 2), fps=round(1000 / vs, 1),
-                   counts={k: sum(1 for e in events if e["kind"] == k) for k in ("transient", "black", "white", "dip", "hitch", "repeat")})
-    json.dump(dict(summary=summary, events=events), open(os.path.join(out, "events.json"), "w"), indent=1)
+                   vsync_ms=round(vs, 2), fps=round(1000 / vs, 1) if vs > 0 else 0,
+                   counts={k: sum(1 for e in events if e["kind"] == k) for k in EVENT_KINDS})
+    fail_kinds = [k for k in args.fail_on.split(",") if k]
+    bad = [k for k in fail_kinds if summary["counts"].get(k)]
+    res = Result(os.path.basename(args.video), FAIL if bad else PASS,
+                 ("found " + ", ".join(f"{summary['counts'][k]} {k}" for k in bad)) if bad else
+                 f"{n} frames analysed, none of [{args.fail_on}] found", args.video)
+    json.dump(dict(summary=summary, events=events, verdict=res.status if fail_kinds else "REPORT", reason=res.reason),
+              open(os.path.join(out, "events.json"), "w"), indent=1)
     print(json.dumps(summary))
     for e in events:
         print(e)
+    if not fail_kinds:  # inspection mode: nothing was asserted, so no PASS is claimed
+        print(f"[REPORT] {os.path.basename(args.video)}: {n} frames analysed, {len(events)} events to review "
+              "(no --fail-on, so no verdict)")
+        sys.exit(0)
+    print(res)
+    sys.exit(qalib.exit_code([res]))
 
 
 if __name__ == "__main__":

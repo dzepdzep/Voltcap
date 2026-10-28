@@ -7,7 +7,10 @@ Uses the per-frame PROFILEDATA rows (Android keeps the last ~120 frames) for the
 histogram/percentiles from the summary part. The budget is the frame interval Android reports (FrameInterval), so a
 120 Hz screen is judged against 8.3 ms, not 16.7 ms.
 """
-import json, re, statistics, sys
+import json, os, re, statistics, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import qalib
 
 
 def parse(path):
@@ -53,7 +56,17 @@ def parse(path):
 
 
 if __name__ == "__main__":
-    r = parse(sys.argv[1])
+    if len(sys.argv) < 2:
+        sys.exit("usage: framestats.py RUN_framestats.txt [--json out.json]")
+    # A missing / empty dump, or one with no frame counters (gfxinfo of another package, a crashed app), is
+    # INFRA (exit 2): printing "{}" and exiting 0 would read as a clean run.
+    bad = [r for r in qalib.check_log(sys.argv[1], min_lines=3) if r.status != qalib.PASS]
+    r = parse(sys.argv[1]) if not bad else {}
+    if not bad and not r.get("total") and not r.get("recent"):
+        bad = [qalib.Result(os.path.basename(sys.argv[1]), qalib.INFRA, "no frame counters in the gfxinfo dump (no frames rendered?)", sys.argv[1])]
+    if bad:
+        for b in bad: print(b)
+        sys.exit(qalib.exit_code(bad))
     print(json.dumps(r, indent=1))
     if "--json" in sys.argv:
         json.dump(r, open(sys.argv[sys.argv.index("--json") + 1], "w"), indent=1)

@@ -1,0 +1,73 @@
+name: QA tooling checks
+
+# Cheap, device-free checks of the QA system itself and of the code rules it enforces. Runs on every push to main,
+# every pull request into main, and by hand. Physical-device tests (Thor, RP Classic, emulator sweeps) are NOT run
+# here and are never reported as passing: they are listed as hardware-only in the job summary.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa:
+    name: QA self-tests, strict static checks, coverage matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QA_REQUIRE_FFMPEG: "1"      # the video self-tests FAIL instead of skipping when ffmpeg / numpy are missing
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ffmpeg and Python packages
+        run: |
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
+          ffmpeg -version | head -1
+          python -m pip install --quiet numpy pillow
+      - name: QA self-tests (broken fixtures must be detected)
+        run: |
+          set -o pipefail
+          mkdir -p qa-out
+          python tools/qa/selftest/test_qa.py -v 2>&1 | tee qa-out/selftest.log
+      - name: Static checks, strict (HIGH findings fail)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          python tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher --strict --min-files 100 --json qa-out/static.json 2>&1 | tee qa-out/static.log
+      - name: Coverage matrix valid and up to date
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          python tools/qa/tools/coverage.py check 2>&1 | tee qa-out/coverage.log
+      - name: Job summary
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## QA tooling checks"
+            echo
+            echo "Exit codes of the QA tools: 0 PASS, 1 FAIL (a defect / failed assertion), 2 INFRA (evidence missing, empty, truncated, stale or a tool broke), 3 nothing ran (SKIP / NOT TESTED). Only 0 is a pass."
+            echo
+            for f in selftest static coverage; do
+              if [ -f qa-out/$f.log ]; then echo "<details><summary>$f</summary>"; echo; echo '```'; tail -n 25 qa-out/$f.log; echo '```'; echo "</details>"; fi
+            done
+            echo
+            python tools/qa/tools/coverage.py summary || true
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload QA reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-reports
+          path: qa-out
+          if-no-files-found: ignore

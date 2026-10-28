@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """VoltCap QA — static checks for the bug patterns that caused real, user-visible defects (see tools/qa/RULES.md).
 
-  python3 static_checks.py SRC_DIR [--json out.json] [--strict]
+  python3 static_checks.py SRC_DIR [--json out.json] [--strict] [--min-files N]
 
 Each rule prints file:line and why. A line (or the line before it) carrying `qa-ok: <RULE>` is accepted on purpose.
---strict exits 1 when any HIGH rule fires (for a pre-ship check). Python 3 stdlib only. Never reads ThemeShaders.kt.
+--strict exits 1 when any HIGH rule fires (for a pre-ship check). Exit 2 (infrastructure) when SRC_DIR is missing or
+holds fewer than --min-files (default 1) Kotlin files: scanning nothing is not a pass. Python 3 stdlib only. Never reads ThemeShaders.kt.
 """
 import json, os, re, sys
 
@@ -260,7 +261,18 @@ def check(src):
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # messages hold "…" / "≥"; a cp1252 console must not crash the run
+    if len(sys.argv) < 2 or sys.argv[1].startswith("--"):
+        sys.exit("usage: static_checks.py SRC_DIR [--json out.json] [--strict] [--all] [--min-files N]")
     src = sys.argv[1]
+    min_files = int(sys.argv[sys.argv.index("--min-files") + 1]) if "--min-files" in sys.argv else 1
+    if not os.path.isdir(src):
+        print(f"[INFRA] static checks: no such source folder: {src}"); sys.exit(2)
+    scanned = sum(1 for _ in files(src))
+    if scanned < max(1, min_files):
+        print(f"[INFRA] static checks: only {scanned} Kotlin files under {src} (need {max(1, min_files)}): nothing was checked")
+        sys.exit(2)
     res = check(src)
     order = {"HIGH": 0, "MED": 1, "LOW": 2}
     res.sort(key=lambda r: (order[r["sev"]], r["rule"], r["file"], r["line"]))
@@ -270,8 +282,10 @@ if __name__ == "__main__":
     for r in res:
         if r["sev"] != "LOW" or "--all" in sys.argv:
             print(f'{r["sev"]:4} {r["rule"]:14} {r["file"]}:{r["line"]}  {r["msg"]}\n      {r["code"]}')
-    print("\nsummary:", ", ".join(f"{k[0]}/{k[1]}={v}" for k, v in sorted(counts.items())))
+    print(f"\nscanned {scanned} Kotlin files")
+    print("summary:", ", ".join(f"{k[0]}/{k[1]}={v}" for k, v in sorted(counts.items())))
     if "--json" in sys.argv:
         json.dump(res, open(sys.argv[sys.argv.index("--json") + 1], "w"), indent=1)
     if "--strict" in sys.argv and any(r["sev"] == "HIGH" for r in res):
-        sys.exit(1)
+        print("[FAIL] static checks (strict): HIGH findings above"); sys.exit(1)
+    print("[PASS] static checks" + (" (strict)" if "--strict" in sys.argv else ""))

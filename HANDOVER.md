@@ -1,5 +1,9 @@
 # Voltcap — handover to a new Claude
 
+> **Update 28 Oct 2026:** after an interruption (Cowork timed out 28 Oct) read **COWORK_HANDOFF.md** first: current branch / commits / release
+> status, the QA overhaul (tools/qa: statuses PASS / FAIL / INFRA / NOT TESTED, self-tests, CI `qa.yml`, `tools/qa/COVERAGE.md`) and the
+> outstanding work. This file is the long-term background and is kept as written.
+
 Written 12 Oct 2026, after update **(145)** (kept up to date to 207). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is

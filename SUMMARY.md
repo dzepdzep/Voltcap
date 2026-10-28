@@ -1,5 +1,26 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (365): QA overhaul (tools only; no app change, no version bump, no release)
+
+**What changed:** the QA system no longer passes on missing evidence. `frames.py` works again on the Thor / emulator recordings
+(ffmpeg 8+/9 removed `-vsync`, so 0 frames decoded → IndexError). New shared `tools/qa/tools/qalib.py` (PASS 0 / FAIL 1 / INFRA 2 /
+NOT TESTED+SKIP 3; missing, empty, truncated, stale, undecodable evidence and empty suites are never a pass). Fixed false passes in
+frames.py, static_checks.py (empty folder), walkcheck.py (empty log; same-label controls were merged), focuscheck.py, framestats.py,
+compare.py, layoutreport.py. Restored counter.py / focuscheck.py / systrace.py (were only in `Claude outputs/`). New: `runcheck.py`
+(validates a pulled sweep via the manifest from `device/guard.sh`; `layouts.sh` now skips the profile picker and black screens),
+`batch_frames.py`, `coverage.py` + `coverage.json` + generated `COVERAGE.md`, `selftest/test_qa.py` (42 tests on broken fixtures),
+`.github/workflows/qa.yml` (push to main, PR to main, manual: self-tests, `static_checks --strict`, coverage check, job summary,
+artifacts; no device needed), `.gitattributes` (LF for QA scripts), R22 FALSE-PASS in RULES.md, README "Trusting a result".
+`device/picker.sh` and `pop.sh` (were untracked) are now tracked, unchanged; picker.sh was run read-only on the Thor: a black
+screen printed HOME, so `guard.sh` adds a black-screen check (UNKNOWN).
+**Copy:** nothing (no Kotlin / project_copy files changed). `git pull`; to use sweeps on a device push `guard.sh` and `picker.sh` next
+to `vqa.sh` in `/data/local/tmp/vqa`.
+**Files:** tools/qa/{README,REPORT,RULES}.md, COVERAGE.md, coverage.json, tools/{qalib,frames,framestats,static_checks,walkcheck,focuscheck,counter,systrace,compare,layoutreport,runcheck,batch_frames,coverage}.py, selftest/*, audit/2026-10-28/layouts_auto.json, device/{guard,layouts,picker,pop}.sh, .github/workflows/qa.yml, .gitattributes, CLAUDE.md, HANDOVER.md, CURRENT_TASK.md, COWORK_HANDOFF.md.
+**Checked:** 42 self-tests OK; strict static checks exit 0 (649 files); 46 of 51 layouts' Thor recordings re-scanned (0 black / white /
+dip frames); all 188 recordings in qa_runs valid; real E6 walk now 374/578 reached (the label-merged tool said 363/551).
+**Not checked:** a real device sweep through the new manifest, portrait / emulator / second screen, 5 layouts never recorded
+(BUBBLES, CAMERA, MAGAZINE, SHOP, TERMINAL), the first CI run (see COWORK_HANDOFF.md). Details: tools/qa/COVERAGE.md.
+
 ## Update — 28 Oct 2026 (364): final QA pass on Cinema / Arctic hub; 0.6.51
 
 **No code changes** — the pass found no confirmed problem. Released as 0.6.51 (the 363 fixes, never released before).

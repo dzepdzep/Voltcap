@@ -21,6 +21,10 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
     reachable through focus, scrolling, expansion or a detail view. Ellipses that are part of the original text (a game's
     title, "Inspect…" style menu labels that open more) stay. Checked by `tools/qa/tools/static_checks.py` TRUNCATE (QA rule R18).
 
+12. **Resuming after an interruption** (a Cowork / session timeout, a new session without the old conversation): read `COWORK_HANDOFF.md`
+    (project root) first, then the top entries of `SUMMARY.md`. QA results: only exit code 0 / PASS counts; see `tools/qa/README.md`
+    "Trusting a result". Run `python3 tools/qa/selftest/test_qa.py` after touching any QA tool.
+
 ## Workflow (always)
 - **Edit `src_copy/` only**, never `app/src/main/java/com/shelf/launcher/` directly. I robocopy `src_copy` into the real source myself. `src_copy/` mirrors `app/src/main/java/com/shelf/launcher/` 1:1.
 - Files outside the Kotlin sources (Gradle files, manifest, `res/`, keep rules) go in **`project_copy/`** at the same path relative to the project root (I run `robocopy project_copy . /E`).

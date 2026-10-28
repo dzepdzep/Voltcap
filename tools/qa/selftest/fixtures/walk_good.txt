@@ -1,0 +1,9 @@
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1000 walk on=true
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1001 walk key=0 win=w1 focus=Back @10,10,100,50
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1002 walk screen aaa win=w1 n=2
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1003 walk node Back @10,10,100,50 f=1 c=1 s=0
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1004 walk node Play @200,10,100,50 f=1 c=1 s=0
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1005 MARK key R
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1006 walk key=22 win=w1 focus=Play @200,10,100,50
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1007 MARK key L
+10-27 12:08:46.851 22831 22831 I VoltcapQA: 1008 walk key=21 win=w1 focus=Back @10,10,100,50

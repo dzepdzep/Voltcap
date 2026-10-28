@@ -49,8 +49,14 @@ def mean(r, parts, key):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 5:
+        sys.exit("usage: compare.py DIR_A NAME_A DIR_B NAME_B [--md out.md]")
     da, na, db, nb = sys.argv[1:5]
     A, B = load(da, na), load(db, nb)
+    # A side with no data would print a table of blanks that reads like "no change": INFRA instead (exit 2).
+    for label, d, n, R in (("A", da, na, A), ("B", db, nb, B)):
+        if not R:
+            print(f"[INFRA] compare: no {n}_* result files in {d} (side {label}): nothing to compare"); sys.exit(2)
     out = [f"| metric | {na} (before) | {nb} (after) | change |", "|---|---|---|---|"]
     for label, parts in (("idle, just after input", ["idleactive"]), ("idle, calm (35 s)", ["idlecalm"]),
                          ("home_nav ×3", ["nav1", "nav2", "nav3"]), ("stress ×2", ["stress1", "stress2"])):

@@ -1,3 +1,12 @@
+# CURRENT_TASK — status 28 Oct 2026 (after 0.6.51 + the QA overhaul)
+
+**Read COWORK_HANDOFF.md first** (the current state, what is done, what is open). The text below is the older history and may be out of date.
+
+- 0.6.51 is released. After it: the QA overhaul (tools only, update 365, SUMMARY.md): QA tools can no longer pass on missing evidence,
+  frames.py repaired, self-tests + GitHub Actions (qa.yml), coverage matrix `tools/qa/COVERAGE.md`.
+- Next (priority): (1) run a real sweep on the Thor with the new manifest (`layouts.sh` then `runcheck.py`); (2) record the 5 never-recorded
+  layouts; (3) stress + controller walk on Cinema / Arctic; (4) second screen and portrait; (5) decide on the open perf findings (D64, STACKS / ARCADE / SHELF janky %).
+
 # CURRENT_TASK — updated 6 Oct 2026 (after update 57)
 
 ## Done

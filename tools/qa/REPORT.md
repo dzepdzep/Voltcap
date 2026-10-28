@@ -445,3 +445,37 @@ by migrations kept. Duplicated rows (Shimmer twice; the TV room and Carousel blo
 Thor 3140972f, release 0.6.50 + 363 fixes installed over the old build. Cinema / Arctic hub / Tile home / Dashboard / Hero / Live tiles /
 Side menu recorded with `layouts.sh` (preview only) and read as ffmpeg contact sheets. No shift of name, facts, buttons or cards; no
 flicker. `frames.py` fails on the Thor recordings (IndexError, `times` empty) — not fixed. Not covered: other panel aspect ratios, second screen.
+
+---
+
+# QA overhaul (28 Oct 2026, after 0.6.51) - the QA system itself
+
+Scope: repair and extend the tooling; **no app code changed, no version bump, no release.** Full matrix: `tools/qa/COVERAGE.md`.
+
+## Found and fixed in the tooling
+| # | false pass / defect | fix |
+|---|---|---|
+| 1 | **frames.py IndexError on every recent recording**: ffmpeg 8+/9 removed `-vsync`, the decode returned 0 frames, `times[-1]` crashed | `-fps_mode passthrough` with a `-vsync 0` fallback; an empty decode is reported (INFRA), never indexed. Regression tests on Thor 960x540@120, 1920x1080@120 and emulator 540x1200@60 formats |
+| 2 | missing / empty / truncated / stale recordings were analysed or crashed instead of rejected | `qalib.check_recording` (exists, non-empty, ffprobe-readable, frames, seconds, not older than the run, container length vs frames) in frames.py, counter.py, runcheck.py |
+| 3 | `static_checks.py` printed "0 findings" and exited 0 for a missing or empty source folder; crashed (cp1252) on Windows | exit 2 when nothing was scanned (`--min-files`), utf-8 stdout |
+| 4 | `walkcheck.py` exited 0 on an empty / key-less log; **merged controls with the same label**, so reaching one "Play" counted as reaching all | INFRA on no evidence; identity = label + reading order, focus matched by box; new classes DUPLICATE / SAME LABEL / FOCUS ON UNKNOWN; `--strict`. On the E6 settings walk this changes 363/551 to 374/578 focusable controls |
+| 5 | `focuscheck.py` "checked 0 key presses; problems: 0" exit 0 | exit 2 |
+| 6 | `framestats.py` printed `{}` for an empty dump; `compare.py` printed a table of blanks; `layoutreport.py` swallowed frames.py errors into a "? ..." cell | exit 2 / INFRA cells |
+| 7 | `layouts.sh` "done" with no check that anything was recorded; **ran and measured the profile picker**; `picker.sh` prints HOME for a **black screen** (live on the Thor) | manifest + `guard.sh` (`screen_state`: PICKER / HOME / UNKNOWN), `runcheck.py` validates the pulled sweep |
+| 8 | counter.py, focuscheck.py, systrace.py were documented but missing from `tools/qa/tools` (found in the gitignored `Claude outputs/`) | restored, fixed (ffmpeg flag, exit codes) |
+| 9 | no CI for the QA system | `.github/workflows/qa.yml` |
+
+Statuses and exit codes are one model (`tools/qalib.py`): PASS 0, FAIL 1, INFRA 2, NOT TESTED / SKIP 3. See README "Trusting a result".
+
+## Results of this run
+- QA self-tests: **42 run, 42 OK** (dev PC, Python 3.13, ffmpeg 9.0.2). They cover broken recording, log, walk and sweep fixtures, the frames.py regression, a 1-frame flash that must be found and a clean video that must pass.
+- Real data: all 188 recordings in `qa_runs` pass `check_recording`; frames.py now runs on the Thor recordings (before: IndexError).
+- 46 of 51 layouts: newest Thor sweep recording validated and scanned: **0 black / white / dip frames** (the matrix lists transients and hitches as numbers to look at, not verdicts). **5 layouts never recorded:** BUBBLES, CAMERA, MAGAZINE, SHOP, TERMINAL.
+- `static_checks.py --strict` on the tracked app source: exit 0 (649 files, no HIGH). Open MED findings, not gating: TRUNCATE (R18) 397, SNAP-ANIMATE 79, THEME-COMPOSE 38, GLIDE-COMPOSE 35.
+- Live device use: **AYN Thor 3140972f only**, read-only (battery 83 %, 27 C; one screencap; no app launch, no setting changed). Not touched: Google TV Streamer, emulator-5554. The Thor's screen was black: picker.sh said HOME (false pass), guard.sh said UNKNOWN. One scratch file name I tried to remove on the device (`/data/local/tmp/picker.sh`) may have existed before; the repo copy of picker.sh is the source of truth.
+
+## Cinema / Arctic (365ff8e / 0.6.51)
+No new evidence of a regression, none claimed. Fresh automated scan of the Thor recordings: Cinema 1 transient, Arctic 0, no black / white / dip frames (intended slides count as transients). Fixed slots, StableFullText, HeldImage zoom and the other five layouts rest on the earlier manual contact-sheet review (see "Final pass before 0.6.51"); rapid-burst stress on Cinema / Arctic was not run.
+
+## Not done / still open (see COVERAGE.md for the full list)
+Portrait, other aspect ratios, second screen, R1 dynamic options, 9 of 21 settings categories, artwork-missing fixtures, game launch / return, profile flows, stress on layouts other than Classic, a real device sweep through the new manifest (`layouts.sh` + `runcheck.py`), and CI's first run.

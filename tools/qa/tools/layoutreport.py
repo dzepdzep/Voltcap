@@ -14,7 +14,9 @@ from framestats import parse
 
 def main():
     d, run = sys.argv[1], sys.argv[2]
-    rows = []
+    rows = []; infra = []
+    if not os.path.isdir(d):
+        print(f"[INFRA] layoutreport: no such folder {d}"); sys.exit(2)
     for f in sorted(os.listdir(d)):
         m = re.match(re.escape(run) + r"_([A-Z_]+)_summary\.txt$", f)
         if not m: continue
@@ -36,14 +38,18 @@ def main():
             v = os.path.join(d, f"{run}_{L}.mp4")
             if os.path.exists(v):
                 out = os.path.join(d, f"{run}_{L}_frames")
-                subprocess.run(["python3", os.path.join(os.path.dirname(__file__), "frames.py"), v, "-o", out, "--skip-start", "0.5"],
-                               capture_output=True, timeout=900)
                 try:
+                    pr = subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "frames.py"), v, "-o", out, "--skip-start", "0.5"],
+                                        capture_output=True, timeout=900)
+                    if pr.returncode not in (0, 1):   # 2 = the recording can't be trusted (missing / empty / stale / undecodable)
+                        raise RuntimeError("frames.py exit %d: %s" % (pr.returncode, pr.stdout.decode("utf-8", "replace").strip()[-160:]))
                     ev = json.load(open(os.path.join(out, "events.json")))
                     c = ev["summary"]["counts"]; r["transients"] = c.get("transient", 0); r["blank"] = c.get("black", 0) + c.get("white", 0) + c.get("dip", 0)
                     r["video_fps"] = ev["summary"].get("fps"); r["hitches"] = c.get("hitch", 0)
-                except Exception as e:
-                    r["transients"] = f"? {e}"
+                except Exception as e:   # never a silent 0: the cell says INFRA and the run exits 2 below
+                    r["transients"] = f"INFRA {e}"; infra.append(L)
+            else:
+                r["transients"] = "INFRA no recording"; infra.append(L)
         rows.append(r)
     head = "| layout | frames | janky % | p90 | p99 | >2× budget | max recomp/s | focus ev | transients | blank | hitches |\n|---|---|---|---|---|---|---|---|---|---|---|"
     lines = [head]
@@ -54,6 +60,10 @@ def main():
     print(txt)
     if "--md" in sys.argv: open(sys.argv[sys.argv.index("--md") + 1], "w").write(txt + "\n")
     json.dump(rows, open(os.path.join(d, f"{run}_layouts.json"), "w"), indent=1)
+    if not rows:
+        print(f"[INFRA] layoutreport: no {run}_<LAYOUT>_summary.txt files in {d}: the run produced nothing"); sys.exit(2)
+    if infra:
+        print("[INFRA] no usable recording for: " + ", ".join(infra)); sys.exit(2)
 
 
 if __name__ == "__main__":

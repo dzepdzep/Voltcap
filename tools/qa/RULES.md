@@ -164,3 +164,13 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
   per-picture animation state per picture (`HeldImage(zoom = true)`), and fade a changing title with `riseOnChange(floor = …)`.
 - **Check:** device: rapid R/L on Cinema / Arctic / Tile home, contact sheet of the recording — the title is drawn in every
   frame, buttons and rows don't move when details arrive.
+
+## R22 FALSE-PASS — the QA system itself said "fine" when it measured nothing (QA overhaul, 28 Oct 2026)
+- **Looks like:** exit 0 / "0 problems" after: an ffmpeg that decoded no frames (frames.py crashed with IndexError), an empty or
+  missing log or recording, a recording from an earlier run, a sweep recorded on the "Who's playing?" picker or a black screen,
+  a walk that pressed no keys, a source folder with no files, a sweep that stopped half-way.
+- **Why:** tools that count problems and print the count: zero evidence also gives zero problems.
+- **Fix:** every tool validates its evidence first (`tools/qalib.py`: exists, non-empty, decodable, fresh, complete, expected screen) and
+  exits 2 (INFRA) when it can't; a pass needs at least one real check; SKIP / NOT TESTED / an empty list are never exit 0.
+- **Check:** `tools/qa/selftest/test_qa.py` feeds every one of these broken inputs (CI: qa.yml). When a new tool is added, add its
+  broken-fixture test in the same change.

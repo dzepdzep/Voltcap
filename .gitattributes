@@ -1,0 +1,4 @@
+# QA device scripts run under Android sh and QA tools under python: LF only, whatever core.autocrlf says.
+tools/qa/**/*.sh text eol=lf
+tools/qa/**/*.py text eol=lf
+.github/workflows/*.yml text eol=lf

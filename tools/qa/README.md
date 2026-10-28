@@ -12,6 +12,10 @@ tools/qa/
   REPORT.md            the latest pass: what was tested, measured, fixed, and what wasn't covered
   device/vqa.sh        on the handheld: real controller input (evdev), recordings, frame stats, Perfetto, memory
   tools/frames.py      frame-by-frame flash / black-frame / hitch detector for a recording (+ contact sheets)
+  tools/qalib.py       shared statuses (PASS / FAIL / INFRA / NOT TESTED / SKIP), exit codes, recording / log / screen validators
+  tools/runcheck.py    validates a pulled device sweep through its manifest (device/guard.sh); tools/batch_frames.py, coverage.py
+  selftest/test_qa.py  the QA tools run on intentionally broken fixtures (CI: .github/workflows/qa.yml)
+  COVERAGE.md          generated coverage matrix (coverage.json + HomeLayout + audit/*/layouts_auto.json); never hand-edited
   tools/framestats.py  gfxinfo framestats → frame-pacing numbers (budget = the panel's real refresh rate)
   tools/static_checks.py  code checks for RULES.md patterns (--strict fails on HIGH)
   tools/settings_inventory.py  every setting: key, default, readers, UI, search index, backup scope → CSV
@@ -62,3 +66,26 @@ the panel's frame time with its breakdown). Nothing is written without the file.
   `stale_soft`, `snap_colors`. Self-test: `vqa.sh selftest NAME "<faults>"`, then counter.py, frames.py and
   focuscheck.py. See REPORT.md pass 2 for what each one is proven to catch.
 - static_checks.py rule THEME-COMPOSE (R10).
+
+## Trusting a result (QA overhaul, 28 Oct 2026)
+Exit codes of every tool: **0 PASS**, **1 FAIL** (a defect / failed assertion), **2 INFRA** (the evidence can't be used: missing,
+empty, truncated, stale, undecodable, or the tool broke), **3 nothing ran** (SKIP / NOT TESTED). Only 0 is a pass; an empty
+suite is NOT TESTED. A tool that only inspects (frames.py without `--fail-on`, walkcheck without `--strict`) prints `[REPORT]`,
+never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sweep manifest's `start`) is STALE = INFRA.
+- **Self-tests** (stdlib `unittest`, ffmpeg + numpy + Pillow): `python3 tools/qa/selftest/test_qa.py` - run it after touching any tool.
+  CI runs it with `QA_REQUIRE_FFMPEG=1` (a missing ffmpeg is then a failure, not a skip).
+- **frames.py** needs `-fps_mode passthrough` (ffmpeg 8+ removed `-vsync`; that was the IndexError on every recent recording).
+  `--fail-on transient,black,white,dip,hitch,repeat` turns events into a FAIL; `black,white,dip` are the unambiguous ones. A slide or
+  crossfade is a transient too, so transients are for human review of the contact sheets.
+- **Device sweeps**: `device/layouts.sh` sources `device/guard.sh` (needs `guard.sh` + `picker.sh` next to `vqa.sh`), writes
+  `out/RUN_manifest.txt`, skips a layout showing "Who's playing?" (SKIP) or a black screen (UNKNOWN). After pulling `out/`:
+  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` alone reads ONE pixel, so a black screen printed HOME
+  (seen on the Thor); guard.sh's `screen_state` also checks that the capture is not black. `pop.sh` still uses the bare picker
+  check (it stops on PICKER, but not on a black screen) - kept as written.
+- **Controller walk**: `walkcheck.py LOG [--strict]` tells controls with the same label apart (label + reading order, focus matched
+  by box); reports TOUCH-ONLY / NOT REACHED / DUPLICATE / SAME LABEL / FOCUS ON UNKNOWN / focus lost. `--strict` fails on those.
+- **Coverage**: edit `coverage.json`, then `python3 tools/qa/tools/coverage.py render`; `coverage.py collect OUT_DIR audit/<date>/layouts_auto.json`
+  re-analyses the newest recording of every layout. Hardware rows (`"hardware": true`) never run in CI.
+- **Hardware safety**: sweeps only use QA scratch (`/data/local/tmp/vqa`), preview mode, the settings snapshot, and put brightness /
+  volume / refresh rate back. Never uninstall, clear data, touch charging or run on a device that is not a known dev target
+  (the Google TV Streamer is not one).
