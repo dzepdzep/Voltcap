@@ -270,10 +270,7 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
                 FullText(titles.console(g.platform).uppercase(), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(6.dp))
-            if (logo != null) {
-                AsyncImage(rememberStyleArtRequest(logo, trim = true), titles.display(g.name), contentScale = ContentScale.Fit, alignment = Alignment.CenterStart,
-                    modifier = Modifier.height(if (compact) 54.dp else 84.dp).fillMaxWidth())
-            } else {
+            LogoOrName(logo, titles.display(g.name), Modifier.height(if (compact) 54.dp else 84.dp).fillMaxWidth()) {
                 FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 26.sp else 36.sp, fontWeight = FontWeight.Black, maxLines = 2,
                     lineHeight = if (compact) 28.sp else 38.sp)
             }

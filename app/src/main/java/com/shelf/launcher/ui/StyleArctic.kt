@@ -260,9 +260,7 @@ private fun ArcticInfo(c: StyleCtx, g: com.shelf.launcher.data.Game, modifier: M
     val meta = c.state.metadata[g.stableKey]
     Column(modifier.riseOnChange(g.stableKey)) {
         val logo = c.logo(g)
-        if (logo != null) AsyncImage(rememberStyleArtRequest(logo, trim = true), titles.display(g.name), contentScale = ContentScale.Fit, alignment = Alignment.CenterStart,
-            modifier = Modifier.height(if (compact) 46.dp else 70.dp).fillMaxWidth())
-        else FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+        LogoOrName(logo, titles.display(g.name), Modifier.height(if (compact) 46.dp else 70.dp).fillMaxWidth()) { FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
         Spacer(Modifier.height(8.dp))
         // Facts wrap onto a second line rather than run off the edge (R18).
         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

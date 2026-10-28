@@ -1,5 +1,21 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (361): 0.6.49 released; Thor checks
+
+**Released:** Voltcap 0.6.49 (56) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.49 (Latest, not a
+prerelease; APK 52.9 MB): the charge-limit fix (360) and the logo fix (359). Installed on the Thor: it starts, the
+"What's new" note reads well, the menus open and close, no crash; the charge limit holds at 88 %.
+
+**Checked on the Thor (1920×1080):** Tile home's Switch style, Cinema, Arctic hub, the Voltcap row — all draw well.
+**Fixed after the release (on main, not released yet):**
+- **Menus opened with nothing selected on the Thor** (Start's game options, L1's shortcuts): the first press only
+  entered the menu, and Down from Start went to the ✕. Its popups open in touch mode, where asking for the focus does
+  nothing. They now leave touch mode and ask again (also when the window takes the controller). Checked: Start opens on
+  Play (Down → Add to favorites), L1 on the first shortcut.
+- **Cinema, Arctic hub and their windows:** a game whose "logo" is a square picture (a cover saved as its logo) showed a
+  tiny box where the name belongs; the name shows instead now. Checked on the Thor (Ace Attorney Investigations).
+- Not looked at this time: the Case stacks / Arcade frame times (D60 / D61).
+
 ## Update — 28 Oct 2026 (360): Thor charged to 100 % — charge limit fixed so it can't give up
 
 **What happened (Thor, 27 Oct, read from its logs and Voltcap's charge log):** plugged in at 1 % at 19:41. At 20:09

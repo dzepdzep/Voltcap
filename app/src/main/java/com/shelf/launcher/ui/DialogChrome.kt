@@ -971,13 +971,28 @@ internal fun EmptyState(text: String) {
 internal fun Modifier.initialFocus(): Modifier {
     val r = remember { FocusRequester() }
     val got = remember { booleanArrayOf(false) }
+    // (Update 361, Thor: its popups can open in touch mode, where a focus request does nothing — the window leaves it
+    // first, as a D-pad press would. The menus are opened with buttons, so the focus ring belongs there anyway.)
+    val view = androidx.compose.ui.platform.LocalView.current
+    fun ask() {
+        if (view.isInTouchMode) runCatching { view.requestFocusFromTouch() }
+        runCatching { r.requestFocus() }
+    }
     LaunchedEffect(Unit) {
         // (The popup's window takes the keys a little after it is drawn; asked before that, nothing happens.)
-        for (d in longArrayOf(80, 120, 200, 300, 400)) {
+        // (Update 361, Thor: its window took the keys after the last try — the menus opened with nothing on, as before
+        // D59. Tried for longer now, and again the moment the window takes the keys.)
+        for (d in longArrayOf(80, 120, 200, 300, 400, 600, 900)) {
             kotlinx.coroutines.delay(d)
             if (got[0]) break
-            runCatching { r.requestFocus() }
+            ask()
         }
+    }
+    val win = androidx.compose.ui.platform.LocalWindowInfo.current
+    LaunchedEffect(win.isWindowFocused) {
+        if (!win.isWindowFocused || got[0]) return@LaunchedEffect
+        kotlinx.coroutines.delay(30)
+        if (!got[0]) ask()
     }
     return this.focusRequester(r).onFocusChanged { if (it.isFocused) got[0] = true }
 }

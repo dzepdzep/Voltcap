@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -128,4 +130,23 @@ internal fun RollingStory(
     Box(modifier.height(height).sceneFadeEdges(scroll, 14.dp).verticalScroll(scroll, enabled = true)) {
         Text(text, color = color, fontSize = fontSize, lineHeight = lineHeight, fontFamily = fontFamily)
     }
+}
+
+/**
+ * Update 361 (Thor): the game's logo, or [name] drawn by [text] when it has none — or when its "logo" turns out to be a
+ * square picture (a cover saved as the logo), which showed as a tiny box where the name belongs.
+ */
+@Composable
+internal fun LogoOrName(logo: String?, name: String, modifier: Modifier, text: @Composable () -> Unit) {
+    var square by androidx.compose.runtime.remember(logo) { androidx.compose.runtime.mutableStateOf(false) }
+    if (logo == null || square) { text(); return }
+    coil.compose.AsyncImage(
+        rememberStyleArtRequest(logo, trim = true), name, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+        alignment = androidx.compose.ui.Alignment.CenterStart, modifier = modifier,
+        onSuccess = { st ->
+            val sz = st.painter.intrinsicSize
+            if (sz.width > 0f && sz.height > 0f && sz.width / sz.height < 1.4f) square = true
+        },
+        onError = { square = true }
+    )
 }
