@@ -387,6 +387,20 @@ internal fun TileHomeRow(
                     constraints = androidx.compose.ui.unit.Constraints(maxWidth = maxNamePx)
                 ).lineCount.coerceIn(1, 2)
             }
+            // (Update 362, Thor: "game names spawn in when moving": the name's auto-sizing text drew nothing for ~5 frames
+            // after each change while it fitted itself. The size that fits two lines is worked out here in one go instead.)
+            val fitSp = remember(shownName, textStyle, maxNamePx) {
+                var fs = 15f
+                while (fs > 11f) {
+                    val r = measurer.measure(
+                        shownName, textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = fs.sp * ts, lineHeight = (fs * 1.2f).sp * ts)),
+                        maxLines = 2, constraints = androidx.compose.ui.unit.Constraints(maxWidth = maxNamePx)
+                    )
+                    if (!r.hasVisualOverflow) break
+                    fs -= 1f
+                }
+                fs
+            }
             if (nameAnchor != null) androidx.compose.runtime.SideEffect { nameAnchor.nameLines = measuredLines }
             val lines = if (nameBelow) 2 else measuredLines
             // Tall enough for the lines at the system's font size too (a bigger font pushed the name up
@@ -400,7 +414,7 @@ internal fun TileHomeRow(
                     // (0.6.17: white with a bar in the theme's colour under it — the name in the theme's colour vanished on
                     // pictures of the same colour.)
                     color = Color.White,
-                    fontSize = 15.sp * ts, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp * ts), maxFontSize = 15.sp * ts),
+                    fontSize = fitSp.sp * ts,
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
@@ -410,7 +424,9 @@ internal fun TileHomeRow(
                     modifier = Modifier
                         .align(if (nameBelow) Alignment.TopStart else Alignment.BottomStart)
                         // The next game's name rises into place (update 108).
-                        .riseOnChange(focusedGame.stableKey)
+                        // (Update 362, Thor: "game names spawn in when moving" — it faded from nothing over 320 ms while the row
+                        // slid, so it looked blank and then popped in. Now it never drops below half and settles in 180 ms.)
+                        .riseOnChange(focusedGame.stableKey, floor = 0.5f, ms = 180)
                         .padding(bottom = if (nameBelow) 0.dp else 6.dp, top = if (nameBelow) 4.dp else 0.dp)
                         .widthIn(max = maxOf(m.tile * 2.4f, 220.dp))
                         .layout { measurable, constraints ->

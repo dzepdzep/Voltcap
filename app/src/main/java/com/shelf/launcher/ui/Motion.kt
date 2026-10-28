@@ -232,7 +232,7 @@ internal fun <S> AnimatedContentTransitionScope<S>.gameSwap(): ContentTransform 
  * buttons for the D-pad, Edit Home's places), which mustn't exist twice.
  */
 @Composable
-internal fun Modifier.riseOnChange(key: Any?): Modifier {
+internal fun Modifier.riseOnChange(key: Any?, floor: Float = 0f, ms: Int = 320): Modifier {
     // Update 116: a part set to stay still (Edit Home › Style) never rises in.
     if (LocalStillPart.current) return this
     val p = remember { Animatable(1f) }
@@ -242,7 +242,7 @@ internal fun Modifier.riseOnChange(key: Any?): Modifier {
         seen[0] = key
         if (MotionPrefs.info() == com.shelf.launcher.data.Features.InfoAnim.NONE) return@LaunchedEffect
         p.snapTo(0f)
-        p.animateTo(1f, tween(320, easing = FastOutSlowInEasing))
+        p.animateTo(1f, tween(ms, easing = FastOutSlowInEasing))
     }
     val rise = MotionPrefs.info() == com.shelf.launcher.data.Features.InfoAnim.RISE
     val animOn = MotionPrefs.info() != com.shelf.launcher.data.Features.InfoAnim.NONE
@@ -254,7 +254,11 @@ internal fun Modifier.riseOnChange(key: Any?): Modifier {
         // the layer and the name stayed invisible until something else recomposed it.
         val pv = p.value
         val v = if (animOn && seen[0] != key && !QaFault.on("rise_old")) 0f else pv
-        alpha = (if (rise) 0.25f else 0f) + (if (rise) 0.75f else 1f) * v
+        // (Update 362: [floor] — the lowest it fades to; the Tile home's name never vanishes on a move, it settles in.)
+        alpha = maxOf(floor, (if (rise) 0.25f else 0f) + (if (rise) 0.75f else 1f) * v)
+        // (Update 362, Thor: drawn see-through through its own buffer, the buffer kept the old name's size for a few frames
+        // and cut the new name short — "999 Nine Hc". With a floor the alpha goes straight onto what's drawn.)
+        if (floor > 0f) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
         translationY = if (rise) (1f - v) * 14f * density else 0f
     }
 }

@@ -1,5 +1,16 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (362): Tile home — the game's name no longer pops in when you move
+
+Your report on the Thor: "game names spawn in when moving". Recorded on the Thor: on each move the old name vanished,
+the row slid with no name for ~5 frames, then the new one popped in. Three causes, all fixed (on main, not released):
+- The name's fade started from nothing and waited for its animation to start; it now starts at half and settles in
+  180 ms, so it's never gone.
+- Its auto-sizing text drew nothing while it fitted the new name; the size that fits two lines is worked out at once now.
+- Drawn half see-through it went through its own buffer, which kept the old name's size for a few frames and cut the new
+  name short ("999 Nine Hc"); the fade now goes straight onto the text.
+Checked on the Thor by recording: the new name shows in full on the next frame, every frame.
+
 ## Update — 28 Oct 2026 (361): 0.6.49 released; Thor checks
 
 **Released:** Voltcap 0.6.49 (56) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.49 (Latest, not a
