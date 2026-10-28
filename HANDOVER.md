@@ -5,6 +5,7 @@
 > outstanding work. This file is the long-term background and is kept as written.
 > Later 28 Oct: update 366 / release 0.6.52 (real Thor sweep of all 51 layouts, picker.sh fixed) - also in COWORK_HANDOFF.md.
 
+> Later 28 Oct: update 367 / release 0.6.53 (CategoryStops: one list for L2 / R2, tabs, category screen, warm-up) - see COWORK_HANDOFF.md section 2b.
 Written 12 Oct 2026, after update **(145)** (kept up to date to 207). Read this whole file before you change anything, then read the top 3–5 entries of `SUMMARY.md`.
 
 ## What this is

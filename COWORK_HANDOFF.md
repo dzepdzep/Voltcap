@@ -1,4 +1,4 @@
-# COWORK_HANDOFF — resume here (updated 28 Oct 2026, after release 0.6.52)
+# COWORK_HANDOFF — resume here (updated 28 Oct 2026, after release 0.6.53)
 
 Read this first after the Cowork timeout (28 Oct 2026; Cowork is available again Sunday 1 Nov). It needs no other conversation context.
 Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md` ("Trusting a result") and `tools/qa/COVERAGE.md`.
@@ -7,16 +7,35 @@ Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md
 | | |
 |---|---|
 | Branch | `main` (working branch; old: `claude/laughing-franklin-xci4p0`, `master`, `qa-pass-1`, `test-stacks-314`, `voltcap-314`) |
-| App version | **0.6.52 (versionCode 59)**; the code is identical to 0.6.51 (only the version lines changed) |
-| Releases | v0.6.49 (28 Oct 07:42 UTC), v0.6.50 (08:23), v0.6.51 (11:05), **v0.6.52 "Latest" (12:22)** https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.52 - normal release (not draft, not prerelease), tag on `3dd851b`; assets Voltcap-0.6.52.apk (sha256 2e9c1ea5...c524, release key "Toni Dzepina"), voltcap-profile-api28.dm, -api31.dm |
-| Commits | `7c1498d` 0.6.51; `4f4375f` + `0242a2a` QA overhaul; **`3dd851b` 0.6.52 (QA reliability, 51-layout sweep, version bump)**; the commit after it only updates this handoff |
-| CI | `qa.yml` success on 4f4375f, 0242a2a and 3dd851b (46 self-tests, strict static checks, coverage check). Hardware tests are not run in CI |
+| App version | **0.6.53 (versionCode 60)**; 0.6.52 was identical to 0.6.51 (version lines only); 0.6.53 changes category handling (section 2b) |
+| Releases | v0.6.49 (28 Oct 07:42 UTC), v0.6.50, v0.6.51, v0.6.52, **v0.6.53 "Latest"** https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.53 - normal release (not draft, not prerelease), tag on `f7d9a13`; assets Voltcap-0.6.53.apk (sha256 673d8ccf...2a6a, release key "Toni Dzepina", verified by apksigner, aapt2 versionCode 60, downloaded copy hash identical), voltcap-profile-api28.dm, -api31.dm |
+| Commits | `7c1498d` 0.6.51; `4f4375f` + `0242a2a` QA overhaul; `3dd851b` 0.6.52; `1782fc7` handoff; **`f7d9a13` 0.6.53 (CategoryStops)**; the commit after it only updates docs |
+| CI | `qa.yml` success on 4f4375f, 0242a2a, 3dd851b and f7d9a13 (46 self-tests, strict static checks, coverage check). Hardware and Gradle unit tests are not run in CI (run locally: 289 unit tests pass) |
 
 ## 2. What happened after Cowork timed out
 1. Claude Code (API credits) released 0.6.50 and 0.6.51 on 28 Oct, then did the QA overhaul (update 365: tools only), then this run (update 366).
 2. This run: picker.sh / pop.sh false passes fixed, first real Thor sweep of all 51 layouts, stress on Cinema / Arctic, release 0.6.52.
+3. Then (0.6.53 run, same day): the category synchronization investigation and fix, a Thor test of the L2 / R2 cycle and all 14 category looks, release 0.6.53 (section 2b).
    **No Kotlin / resource file was changed**; the only app-side change is the version in `app/build.gradle.kts` (and `project_copy/`).
 
+
+## 2b. Category synchronization investigation (update 367, release 0.6.53)
+Task: "categories appear with L2 / R2 but not on the category-selection screen". Full details: top entry of `SUMMARY.md`.
+- Four independent copies built the category list: `LauncherViewModel.categoryStops` (L2 / R2, `jumpCategory`), `styleStops` (tabs), `buildCategoryTiles` + the hidden filter in
+  `LauncherScreen`, `CategoryWarmup`. Now `data/CategoryStops.kt` is the single list (identity "ALL" / special name / "p:<key>"; order, hidden groups, tile order,
+  console order, tiles taken off via Add category). Empty consoles / specials are still tiles; L2 / R2 step past empty ones (update 211); an empty collection is a stop but no tile.
+- **Confirmed and fixed:** (1) tabs kept tiles taken off the screen, `jumpCategory` indexes another list, so a tapped tab could open the wrong category (reproduced with the unit test on the old
+  code); (2) R2 from a category outside the list skipped the first stop (`coerceAtLeast(0)`); (3) start / last / restored category could be a tile taken off (state is built before
+  `CategoryTileOrder.init`); (4) tiles rebuilt only after a 150 ms debounce when the screen opened (stale list). Test: `CategoryStopsTest` (9 tests: tiles == stops == tabs, 7 configurations + `stepFrom`).
+- **Not reproduced:** the user's exact symptom. On the Thor with the real library (2213 games) L2 / R2 = 20 stops = 20 tiles, same order; all 14 category looks show "n / 20"; cold open shows all tiles at once.
+  If it still happens, ask for: which look, which categories, whether "Other apps" / a collection / an empty console is involved, and whether a tile was removed (Add category lists them).
+  Likely remaining suspects: an empty collection (stop but no tile) and a category that gains games while the screen is closed.
+- **Tested on the AYN Thor 3140972f only** (0.6.53 `install -r` over 0.6.52, 28 C, battery 79 -> 77 %): full R2 cycles (20 stops), cold open of the screen, real "Remove from categories" on PlayStation 3 and
+  Add category to restore it (cycle 19 -> 20 stops; the user's earlier removal of "Other apps" untouched), `looks.sh` over the 14 looks. Hooks off, snapshot restored, no recorder running.
+  The Google TV Streamer and emulator-5554 were not touched.
+- **NOT tested (still open):** dual-screen category selection, mixed-category / per-console overrides beyond the cycle, Cinema / Arctic text + artwork pass after this change, the 9 Settings
+  categories, R1 option visibility, second-screen widgets, missing-artwork / metadata fixtures, profile launch / return, other aspect ratios (emulator), Arctic one-frame title question, TERMINAL "..." (rule 11).
+- Seen, not changed: Collector's Drawers and Archive looks clip long console names in fixed labels ("Entertainment S", "itendo Entertainmen"): rule 11 candidate.
 ## 3. The 365ff8e fixes (update 363, in 0.6.51): Cinema / Arctic hub steadied
 - `LogoOrName`: **one slot of fixed size** for the logo or the name (also while the logo loads, also in the two windows), so a game with a
   logo after one without no longer moves facts, buttons and rows.
@@ -68,7 +87,7 @@ SHOP, TERMINAL.** Real E6 settings walk: 374/578 focusable controls reached (the
   `adb install -r` over 0.6.51 on the Thor (data kept), app starts, no crash.
 
 ## 6. Application changes
-**None** in this and the previous QA run. No defect was confirmed with reproducible evidence. Open MED static findings (not gating): TRUNCATE 397,
+Through 0.6.52 none. **0.6.53:** `data/CategoryStops.kt` (new), `LauncherViewModel.kt`, `ui/StyleHomes.kt`, `ui/CategoryWarmup.kt`, `ui/LauncherScreen.kt` (section 2b). Open MED static findings (not gating): TRUNCATE 397,
 SNAP-ANIMATE 79, THEME-COMPOSE 38, GLIDE-COMPOSE 35.
 
 ## 7. Outstanding issues and what needs a physical device
@@ -101,3 +120,11 @@ a stress recording would settle it); (d) BG-01 background video interactions FAI
 5. Human review of the 46 layout looks from `qa_runs/r52a` stills (kept locally, gitignored); decide the TERMINAL "..." question against rule 11.
 6. Update `tools/qa/coverage.json`, run `coverage.py render`, commit.
 API cost of this run: about $1.6 of the $20 budget (tool-reported).
+
+### Recommended for Sunday 1 Nov (after 0.6.53)
+1. `git pull`; unit tests (`./gradlew :app:testDebugUnitTest`), `py tools/qa/selftest/test_qa.py`; Thor battery / temperature first. On Windows use `py` (no `python3`); push scripts to the Thor with CRs stripped
+   (`tr -d '\r'`) from a Windows-visible folder (adb cannot see Git Bash `/tmp`).
+2. Ask the user for the exact category symptom (see 2b) and test a collection / empty console / category that gains games while the screen is closed.
+3. Dual-screen category selection on the Thor; per-console overrides; the 9 Settings categories; R1 options (`walk.sh` + `walkcheck.py`).
+4. Emulator: aspect ratios, missing artwork fixtures; Cinema / Arctic controller walk; rule-11 look at Drawers / Archive labels and TERMINAL.
+API cost of the 0.6.53 run: about $3.1 of the $15 budget (tool-reported).

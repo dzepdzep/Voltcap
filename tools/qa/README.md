@@ -73,6 +73,7 @@ empty, truncated, stale, undecodable, or the tool broke), **3 nothing ran** (SKI
 suite is NOT TESTED. A tool that only inspects (frames.py without `--fail-on`, walkcheck without `--strict`) prints `[REPORT]`,
 never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sweep manifest's `start`) is STALE = INFRA.
 - **Self-tests** (stdlib `unittest`, ffmpeg + numpy + Pillow): `python3 tools/qa/selftest/test_qa.py` - run it after touching any tool.
+- **Category parity** (0.6.53): JVM test `app/src/test/.../data/CategoryStopsTest.kt` (`./gradlew :app:testDebugUnitTest --tests "*CategoryStopsTest"`) compares the category screen tiles, L2 / R2 stops and the style-home tabs; on a device `looks.sh RUN "TILES SLIDES ... DASHBOARD"` shows "n / N" in every look and N must equal the number of R2 stops (20 on the Thor, 28 Oct). On Windows run the device scripts with CRs stripped (`tr -d ""`).
   CI runs it with `QA_REQUIRE_FFMPEG=1` (a missing ffmpeg is then a failure, not a skip).
 - **frames.py** needs `-fps_mode passthrough` (ffmpeg 8+ removed `-vsync`; that was the IndexError on every recent recording).
   `--fail-on transient,black,white,dip,hitch,repeat` turns events into a FAIL; `black,white,dip` are the unambiguous ones. A slide or
