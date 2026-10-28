@@ -2665,6 +2665,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // The hero carousel has no row: forget the last row's place, so lyrics and the music player
         // aren't kept clear of a row that isn't there any more.
         if (heroLayout || gridLayout || tvLayout || styleLayout) SideEffect { if (rowTopPx != 0f || rowBottomPx != 0f) { rowTopPx = 0f; rowBottomPx = 0f } }
+        // Update 359 (D67): the row's top for the parts that keep clear of it (the game logo).
+        val rowTopDpNow = if (rowTopPx > 0f) rowTopPx / androidx.compose.ui.platform.LocalDensity.current.density else 0f
+        SideEffect { if (kotlin.math.abs(DockClear.topDp - rowTopDpNow) > 0.5f) DockClear.topDp = rowTopDpNow }
         // This game's own look (Game settings › Look for this game): its theme plays as the animated
         // background while it's the one you're on, whatever "Behind the dock" is set to.
         val focusedLook = com.shelf.launcher.data.GameLooks.of(focusedGame?.stableKey)
@@ -4448,7 +4451,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                     overlayLayout == com.shelf.launcher.data.HomeLayout.TV) 0f else 1f) to
                                     (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w,
                             // (Update 258, #120: the category name steps out of the way of a part you put on its spot.)
-                            keepClearOf = if (part == HomeWidgets.CATEGORY) partsHere.filter { it != part }.map { HomeWidgets.overlayId(overlayLayout, it) } else emptyList()
+                            keepClearOf = if (part == HomeWidgets.CATEGORY) partsHere.filter { it != part }.map { HomeWidgets.overlayId(overlayLayout, it) } else emptyList(),
+                            // (Update 359, D67: a big logo you placed never covers the row's name line.)
+                            clearOfDock = part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA
                         ) {
                             // Update 204: the category's name on its own (all the categories with "All categories").
                             // (Update 212: the category title — the category or filter you're in, with or without a

@@ -1,5 +1,17 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (359): 0.6.48 released; big logos no longer cover the game's name (D67)
+
+**Released:** Voltcap 0.6.48 (55) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.48 (Latest, not a
+prerelease; APK 52.9 MB): Tile home's Switch style (358) and the Profiles per console text (357). Smoke test on the RP
+Classic: installs as 0.6.48 (55), the home starts, the menus open and close, no crash.
+
+**Fixed after the release (on main, not released yet):** a game logo you placed in Edit Home stays where you put it,
+but when it would reach down over the games row's name line (a shorter screen than the one it was placed on, like the
+RP Classic) it's drawn smaller, its top where it was, so it ends just above the row (down to half its size). In Edit
+Home it shows at its full size so you can still move and size it. Checked on the RP with Pokémon Silver and ActRaiser
+on the Voltcap row (D67).
+
 ## Update — 28 Oct 2026 (358): Tile home › Switch style
 
 Tile home upgraded, not replaced: **Settings › Home › Layout options › Switch style**, on by default. Off is Tile home

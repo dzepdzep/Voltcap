@@ -549,6 +549,12 @@ internal fun BoxScope.MovableWidget(
      * free spot right on top of an achievements card you had put there.
      */
     keepClearOf: List<String> = emptyList(),
+    /**
+     * Update 359 (D67): a part that must not cover the games row's name line (the game logo). Where you put it is kept;
+     * only when its lower edge reaches into the row (a shorter screen than the one it was placed on) it's drawn smaller,
+     * its top where it was, so it ends just above the row (down to half its size). Not in Edit Home: there it shows as it is.
+     */
+    clearOfDock: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val editing = HomeEditState.active
@@ -742,8 +748,18 @@ internal fun BoxScope.MovableWidget(
                 else Modifier
             )
     ) {
+        // (Update 359, D67: drawn smaller when it would reach into the games row — see clearOfDock.)
+        val dockTop = DockClear.topDp
+        val fit = if (!clearOfDock || editing || dockTop <= 0f || size == IntSize.Zero) 1f else {
+            val top = (origin?.y ?: 0f) / density.density + pos.y.value
+            val bottom = top + h.value
+            val room = dockTop - 6f - top
+            if (bottom <= dockTop - 6f || room <= 0f) 1f else (room / h.value).coerceIn(0.5f, 1f)
+        }
         // (Update 116: in its own style — backing, see-through, outline, shape, still.)
-        Box(Modifier.stretched(sx, sy)) {
+        Box(Modifier.stretched(sx, sy).then(if (fit < 1f) Modifier.graphicsLayer {
+            scaleX = fit; scaleY = fit; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+        } else Modifier)) {
             ScaledWidget(scale) { StyledPart(id) { if (fixedWidth != null) Box(Modifier.width(fixedWidth)) { content() } else content() } }
         }
         if (selected && chromeOn) {
@@ -1455,6 +1471,11 @@ internal object HomeNest {
  * Update 258 (#120): where each floating part is drawn in its layer (dp, as a Rect), for the parts that step out of
  * another's way while they haven't been moved (MovableWidget's keepClearOf).
  */
+/** Update 359 (D67): where the games row (with its name line) starts on screen, root dp; 0 = no row (set by the home screen). */
+internal object DockClear {
+    var topDp by mutableStateOf(0f)
+}
+
 internal object PartRects {
     val at = mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>()
 
