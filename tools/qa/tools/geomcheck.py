@@ -2,18 +2,21 @@
 """VoltCap QA — opt-in element geometry check (update 369). Device-free: reads a recorded or synthetic geometry trace.
 
   python3 geomcheck.py TRACE.json [--json OUT.json]
+  python3 geomcheck.py LOGCAT.txt --logcat [--dump TRACE.json]   (VoltcapQA lines from the app's QaGeom, see from_logcat)
 
 TRACE.json: {"screen": [w, h], "frames": [{"t": ms, "key": "R"|null, "focused": "id"|null, "focus": rect|null,
-             "elements": {"id": rect}}], "row": ["id", ...]?, "animating": ["id", ...]?, "limits": {...}?}   rect = [x, y, w, h]
+             "elements": {"id": rect}}], "row": ["id", ...] | "auto" (every element, sorted by x each frame)?, "animating": ["id", ...]?, "limits": {...}?}   rect = [x, y, w, h]
 Checks (each reports its own Result):
   size      an element keeps its width / height (animating ids excepted) within limits.size_px (default 2)
   spacing   the neighbours in "row" are evenly spaced in every frame within limits.gap_px (default 2)
   focus     the focus indicator surrounds the focused element (centre inside it, within limits.focus_px) and stays on screen
+  (logcat traces set limits.skip_key_frames: the frame that carries a key is read by QaGeom before its layout, one tile
+            can read x=0 there although the screen recording shows no flash - size / spacing skip that frame only)
   movement  no element jumps further than limits.jump_px (default 60) between two frames unless a key came in the last
             limits.settle_ms (default 450) — a drift or snap with no key is a defect; the glide after a key is expected
 Exit codes as qalib: 0 PASS, 1 FAIL, 2 INFRA (bad / empty trace: never a pass), 3 NOT TESTED.
 """
-import json, os, sys
+import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import qalib
@@ -44,9 +47,10 @@ def evaluate(trace):
         els = fr.get("elements") or {}
         for k, r in els.items():
             f = first.setdefault(k, r)
-            if k not in animating and (abs(r[2] - f[2]) > lim["size_px"] or abs(r[3] - f[3]) > lim["size_px"]):
+            if not (fr.get("key") and lim.get("skip_key_frames")) and k not in animating and (abs(r[2] - f[2]) > lim["size_px"] or abs(r[3] - f[3]) > lim["size_px"]):
                 size_p.append(f"frame {i}: {k} is {r[2]:g}x{r[3]:g}, was {f[2]:g}x{f[3]:g}")
-        shown = [els[k] for k in row if k in els]
+        unsettled = bool(fr.get("key")) and lim.get("skip_key_frames")  # the producer reads before that frame's layout
+        shown = [] if unsettled else sorted(els.values(), key=lambda r: r[0]) if row == "auto" else [els[k] for k in row if k in els]
         if len(shown) >= 3:
             gaps = [shown[j + 1][0] - (shown[j][0] + shown[j][2]) for j in range(len(shown) - 1)]
             if max(gaps) - min(gaps) > lim["gap_px"]:
@@ -79,12 +83,52 @@ def evaluate(trace):
     return out
 
 
+_LINE = re.compile(r"VoltcapQA\s*:\s*(\d+) (geom|geomkey|geomfocus|geomscreen|geomgone)(?:| )(.*)$")
+
+
+def from_logcat(text):
+    """Build a trace from the app's `VoltcapQA` lines (QaGeom.kt, `--ez voltcap_test_geom true`): `geom id=x,y,w,h …` (only
+    what changed), `geomkey NAME`, `geomfocus id`, `geomscreen W H`. Every geom line is one frame with every element seen so far
+    that is still on the screen; the focus rectangle is the focused tile's own rectangle (the ring is drawn inside the tile,
+    so ring alignment is the tile on screen). A frame that carries a key is marked with it. No geom lines = empty trace."""
+    screen = [0, 0]; frames = []; els = {}; focused = None; key = None; order = {}
+    for ln in text.splitlines():
+        m = _LINE.search(ln)
+        if not m: continue
+        t, kind, rest = int(m.group(1)), m.group(2), m.group(3).strip()
+        if kind == "geomscreen":
+            try: screen = [int(x) for x in rest.split()[:2]]
+            except ValueError: pass
+        elif kind == "geomgone": els.pop(rest, None); order.pop(rest, None)
+        elif kind == "geomkey": key = rest or "key"
+        elif kind == "geomfocus": focused = rest
+        elif rest != "off":
+            for tok in rest.split():
+                k, _, v = tok.partition("=")
+                try: els[k] = [float(x) for x in v.split(",")]
+                except ValueError: continue
+                if len(els[k]) != 4: del els[k]
+            if screen[0]:
+                for k in [k for k, r in els.items() if r[0] + r[2] <= 0 or r[0] >= screen[0] or r[1] + r[3] <= 0 or r[1] >= screen[1]]:
+                    del els[k]
+            for k, r in els.items(): order[k] = r[0]
+            frames.append({"t": t, "key": key, "focused": focused if focused in els else None,
+                           "focus": list(els[focused]) if focused in els else None,
+                           "elements": {k: list(r) for k, r in els.items()}})
+            key = None
+    return {"screen": screen, "frames": frames, "row": "auto", "limits": {"skip_key_frames": True}}
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(2)
     path = sys.argv[1]
     try:
-        trace = json.load(open(path, encoding="utf-8"))
+        if "--logcat" in sys.argv:
+            trace = from_logcat(open(path, encoding="utf-8", errors="replace").read())
+            if "--dump" in sys.argv: json.dump(trace, open(sys.argv[sys.argv.index("--dump") + 1], "w"))
+        else:
+            trace = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError) as e:
         qalib.finish([qalib.Result("geometry trace", qalib.INFRA, f"cannot read {path}: {e}")], "Geometry check")
     jp = sys.argv[sys.argv.index("--json") + 1] if "--json" in sys.argv else None

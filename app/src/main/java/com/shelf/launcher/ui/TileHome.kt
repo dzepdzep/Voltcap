@@ -686,6 +686,7 @@ private fun HomeTile(
     Box(
         modifier
             .size(tile)
+            .qaGeom("tile:${game.stableKey}", focused)
             .livingLibrary(living, focused, { accent }, (look.cornerDp.coerceAtLeast(6) * 1.1f))
             // Soft glow: a real blurred halo outside the ring.
             .then(if (free) Modifier.mediaFloorGlow(focused && !dimmed, accent, pulse) else Modifier)

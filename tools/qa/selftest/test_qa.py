@@ -615,5 +615,55 @@ class TestGeomcheck(Base):
         self.assertEqual(self.status(d)["geometry size"], "PASS")
 
 
+    # --- the trace producer's output (QaGeom.kt log lines) -> trace -> checks ---
+    def log(self, drift=0, no_key=False, shrink=False, offscreen=False):
+        L = ["10-28 16:00:00.000 1 1 E VoltcapQA: 1000 geomscreen 1920 1080", "10-28 16:00:00.000 1 1 E VoltcapQA: 1001 geomfocus tile:b",
+             "10-28 16:00:00.001 1 1 E VoltcapQA: 1002 geom tile:a=100,100,160,160 tile:b=300,100,160,160 tile:c=500,100,160,160"]
+        for i in range(1, 8):
+            if i == 1 and not no_key: L.append(f"10-28 16:00:00.0 1 1 E VoltcapQA: {1002 + i * 16 - 1} geomkey DPAD_RIGHT")
+            x = 100 + i * 4 + (drift if i >= 5 else 0)
+            w = 190 if shrink and i == 4 else 160
+            L.append(f"10-28 16:00:00.0 1 1 E VoltcapQA: {1002 + i * 16} geom tile:a={x},100,160,160 tile:b={x + 200},100,{w},160 tile:c={x + 400},100,160,160")
+        if offscreen: L.append("10-28 16:00:01.0 1 1 E VoltcapQA: 1200 geom tile:z=5000,100,160,160")
+        L.append("10-28 16:00:02.0 1 1 W other: 1300 geom tile:q=1,1,1,1")
+        return chr(10).join(L)
+
+    def logstatus(self, text):
+        import geomcheck
+        return {r.name: r.status for r in geomcheck.evaluate(geomcheck.from_logcat(text))}
+
+    def test_logcat_producer_lines_become_a_clean_trace(self):
+        import geomcheck
+        t = geomcheck.from_logcat(self.log())
+        self.assertEqual(t["screen"], [1920, 1080]); self.assertEqual(len(t["frames"]), 8)
+        self.assertEqual(t["row"], "auto")
+        self.assertEqual(t["frames"][1]["key"], "DPAD_RIGHT"); self.assertEqual(t["frames"][1]["focused"], "tile:b")
+        self.assertEqual(set(self.logstatus(self.log()).values()), {"PASS"})
+
+    def test_logcat_producer_defects_are_caught(self):
+        self.assertEqual(self.logstatus(self.log(shrink=True))["geometry size"], "FAIL")
+        # a jump 200 ms after the last key is inside the settle window; stretch the time so it is outside, with no key
+        txt = self.log(drift=80).replace("geomkey DPAD_RIGHT", "geom")
+        txt = chr(10).join(l.replace(" 10", " 20", 1) if "VoltcapQA: 10" in l and i > 6 else l for i, l in enumerate(txt.splitlines()))
+        self.assertEqual(self.logstatus(self.log(drift=80, no_key=True))["geometry movement"], "FAIL")
+
+    def test_a_tile_that_left_composition_is_removed_and_a_swap_is_not_a_gap_defect(self):
+        import geomcheck
+        L = ["VoltcapQA: 1 geomscreen 1920 1080", "VoltcapQA: 2 geom t:a=100,100,160,160 t:b=300,100,160,160 t:c=500,100,160,160",
+             "VoltcapQA: 3 geomgone t:a", "VoltcapQA: 4 geom t:d=100,100,160,160 t:b=300,100,160,160", "VoltcapQA: 5 geom t:c=500,100,160,160"]
+        t = geomcheck.from_logcat(chr(10).join(L))
+        self.assertNotIn("t:a", t["frames"][-1]["elements"])
+        self.assertEqual(sorted(t["frames"][-1]["elements"]), ["t:b", "t:c", "t:d"])
+        self.assertEqual({r.status for r in geomcheck.evaluate(t)} - {"PASS"}, set())
+
+    def test_logcat_without_producer_lines_is_infra(self):
+        self.assertEqual(self.logstatus("nothing here" + chr(10) + "VoltcapQA: 5 focus 3 x"), {"geometry trace": "INFRA"})
+
+    def test_elements_outside_the_screen_are_dropped(self):
+        import geomcheck
+        t = geomcheck.from_logcat(self.log(offscreen=True))
+        self.assertNotIn("tile:z", t["frames"][-1]["elements"]); self.assertNotIn("tile:q", t["frames"][-1]["elements"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,5 +1,7 @@
 # Voltcap — handover to a new Claude
 
+**Update 370 (28 Oct 2026, Thor session, see SUMMARY.md top):** 369 verified on the Thor for Tile home (PASS: centred at x=960, even, no drift) and one-down-stays on the category screen; NOT TESTED on hardware: second-down hand-over, custom spines, the 13 carousel modes. New: `ui/QaGeom.kt` geometry trace (`--ez voltcap_test_geom true`, `geomcheck.py LOG --logcat`), PerfPage sub line two lines (second-screen 'No game r…' was cut). 0.6.54 still unpublished; no release prepared until B / C / A are verified on the Thor (physical QA budget ~15 min per run). Thor left clean: hooks paused, snapshot restored, no recorder.
+
 > Update 369 (28 Oct 2026, device-free): see COWORK_HANDOFF.md section 2d and SUMMARY.md. Claude Code must not touch the Thor / Google TV Streamer without the user's explicit permission; physical QA must not interrupt normal device use.
 
 > Update 368 (28 Oct 2026, 0.6.54, not yet released): see COWORK_HANDOFF.md section 2c and SUMMARY.md - empty-collection category fix, combination matrix in tools/qa (COMBOS.md).

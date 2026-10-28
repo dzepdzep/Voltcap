@@ -102,7 +102,7 @@ private fun Tile(label: String, value: String, sub: String?, history: List<Float
     Column(modifier.clip(shape).background(ShelfTheme.colors.surfaceRaised).padding(12.dp)) {
         Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         Text(value, color = ShelfTheme.colors.textPrimary, fontSize = 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(22.sp), maxFontSize = 22.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        Text(sub ?: " ", color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        Text(sub ?: " ", color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), minLines = 2, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         // Update 112: every tile keeps the sparkline's room, so all six are the same size.
         Spacer(Modifier.height(6.dp))
         if (history.any { !it.isNaN() }) Sparkline(history, Modifier.fillMaxWidth().height(34.dp))

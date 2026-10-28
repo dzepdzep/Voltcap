@@ -1,5 +1,7 @@
 # COWORK_HANDOFF — resume here (updated 28 Oct 2026, 0.6.54 built and CI-green but NOT yet published)
 
+**Update 370 (28 Oct 2026, Thor session, see SUMMARY.md top):** 369 verified on the Thor for Tile home (PASS: centred at x=960, even, no drift) and one-down-stays on the category screen; NOT TESTED on hardware: second-down hand-over, custom spines, the 13 carousel modes. New: `ui/QaGeom.kt` geometry trace (`--ez voltcap_test_geom true`, `geomcheck.py LOG --logcat`), PerfPage sub line two lines (second-screen 'No game r…' was cut). 0.6.54 still unpublished; no release prepared until B / C / A are verified on the Thor (physical QA budget ~15 min per run). Thor left clean: hooks paused, snapshot restored, no recorder.
+
 Read this first after the Cowork timeout (28 Oct 2026; Cowork is available again Sunday 1 Nov). It needs no other conversation context.
 Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md` ("Trusting a result") and `tools/qa/COVERAGE.md`.
 

@@ -1,5 +1,7 @@
 # CURRENT_TASK - status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)
 
+**Update 370 (28 Oct 2026, Thor session, see SUMMARY.md top):** 369 verified on the Thor for Tile home (PASS: centred at x=960, even, no drift) and one-down-stays on the category screen; NOT TESTED on hardware: second-down hand-over, custom spines, the 13 carousel modes. New: `ui/QaGeom.kt` geometry trace (`--ez voltcap_test_geom true`, `geomcheck.py LOG --logcat`), PerfPage sub line two lines (second-screen 'No game r…' was cut). 0.6.54 still unpublished; no release prepared until B / C / A are verified on the Thor (physical QA budget ~15 min per run). Thor left clean: hooks paused, snapshot restored, no recorder.
+
 **Read COWORK_HANDOFF.md first (section 2d).** Update 369 (SUMMARY.md): category-screen second-screen gate, own-spine flicker, Tile home drift, Case Stacks audit, geomcheck.py. No device touched; hardware verification NOT TESTED and needs the user's separate permission.
 
 # CURRENT_TASK — status 28 Oct 2026, update 368 (0.6.54, release pending)

@@ -281,6 +281,7 @@ class MainActivity : ComponentActivity() {
     // Every key press also tells which face-button layout the system uses (Xbox / Nintendo), so the
     // button legend can follow the handheld's own setting (SystemButtonLayout).
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        com.shelf.launcher.ui.QaGeom.key(event.keyCode, event.action == android.view.KeyEvent.ACTION_DOWN)
         if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
