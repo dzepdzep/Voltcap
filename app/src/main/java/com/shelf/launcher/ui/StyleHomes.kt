@@ -88,6 +88,10 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * bar, the music player, the second screen) works as on the other layouts.
  */
 
+/** Update 381: ◀ on the first game goes into the menu beside the row only when the row doesn't go round (Endless): with
+ *  Endless on the card left of the first game is the last game, and ◀ has to reach it (Dashboard, Side menu). */
+internal fun leftReachesMenu(focus: Int, hasMenu: Boolean, rowLoops: Boolean): Boolean = focus == 0 && hasMenu && !rowLoops
+
 /** Which part of a style home the D-pad is on, and what each part's buttons do (set by the layout as it draws). */
 internal object StyleNav {
     enum class Zone { GAMES, SIDE, BAR, TOP }
@@ -378,7 +382,7 @@ internal fun styleHomeKey(
             Key.DirectionUp -> if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else { if (first) reach(true); take() }
             Key.DirectionDown -> { if (first) reach(false); take() }
             // Update 151: knock first, then the menu (leftToMenu); with Endless on ◀ slides on round to the last game.
-            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty() && !StyleNav.sideLoops) leftToMenu() else false
+            Key.DirectionLeft -> if (leftReachesMenu(focus, StyleNav.side.isNotEmpty(), StyleNav.sideLoops)) leftToMenu() else false
             else -> false
         }
         HomeLayout.SPOT -> {
@@ -433,7 +437,8 @@ internal fun styleHomeKey(
             // ▲: Play in the Now playing card (update 101); ◀ from it (or ◀ on the first game) the menu.
             Key.DirectionUp -> if (StyleNav.top.isNotEmpty()) enter(StyleNav.Zone.TOP) else if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else { if (first) reach(true); take() }
             Key.DirectionDown -> if (StyleNav.bar.isNotEmpty()) enter(StyleNav.Zone.BAR) else { if (first) reach(false); take() }
-            Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) leftToMenu() else false // Update 151: knock first
+            // Update 381: with Endless on the row shows the last game left of the first one, so ◀ goes round to it (▲ is the way into the menu).
+            Key.DirectionLeft -> if (leftReachesMenu(focus, StyleNav.side.isNotEmpty(), StyleNav.sideLoops)) leftToMenu() else false // Update 151: knock first
             else -> false
         }
         // Update 330: Memory card — loose rows of icons: ◀ ▶ along (on round the row ends into the next row), ▲ ▼ a row

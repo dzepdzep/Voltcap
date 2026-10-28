@@ -1,4 +1,10 @@
-# CURRENT_TASK - status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)
+# CURRENT_TASK - 28 Oct 2026
+
+**DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).
+**NEXT PRIORITY: second-screen in-game widget reliability** (see COWORK_HANDOFF.md priority 2).
+**Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
+
+# (history) status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)
 
 **Update 378 (28 Oct 2026, Thor ~12.5 min):** D76 not reproduced in 4 recordings (before and after), hardened in `GameCard.kt` (wide art shows whole while the cover under the Roll-out isn't drawn; `RollReveal76Test`). Only-first-wide PASS on the Thor (set through Settings › Home › Layout options, restored to Wide capsule): normal, rapid, reversals, last-to-first and first-to-last wrap, art / title / focus aligned. R1 picker: choosing a layout (A) now moves the focus to Apply, D-pad Apply PASS on the Thor (2 A presses). v0.6.55 release: see SUMMARY.md top.
 

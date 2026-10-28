@@ -95,7 +95,10 @@ internal fun StyleDashboard(c: StyleCtx, modifier: Modifier) {
         // Now playing), Quick access and then the player's ⏮ ⏯ ⏭ (▼).
         val heroPlay = Features.dashHero.state.value && c.game != null
         val musicHere = music && showRight
+        val loops = loopRowOn(c)
         SideEffect {
+            // Update 381: with Endless on, ◀ on the first game goes round to the last card shown left of it (▲ is the way into the menu).
+            StyleNav.sideLoops = loops
             StyleNav.side = menu.map { it.onClick }
             StyleNav.bar = quick.map { it.onClick } + (if (musicHere) styleMusicActions(c) else emptyList())
             StyleNav.top = if (heroPlay) listOf({ c.game?.let { g -> c.actions.play(g) } ?: Unit }) else emptyList()

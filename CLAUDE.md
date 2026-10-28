@@ -25,6 +25,24 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
     (project root) first, then the top entries of `SUMMARY.md`. QA results: only exit code 0 / PASS counts; see `tools/qa/README.md`
     "Trusting a result". Run `python3 tools/qa/selftest/test_qa.py` after touching any QA tool.
 
+## Standing Thor QA authorization (owner-granted, 28 Oct 2026; current and future tasks until revoked)
+The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHORIZATION for VoltCap development and QA on it. Claude does NOT need separate user permission for ordinary Thor testing.
+- **Allowed:** bounded ADB inspection and QA; installing an updated APK over the existing VoltCap; controller and touch testing; screenshots and short recordings; temporary layout / preference changes if the original values are restored.
+- **Limits:** max 15 minutes physical QA per task. Never clear app data or uninstall VoltCap. No changes to charging limits. Preserve games, saves, profiles and artwork. Restore volume, DND and display settings. Stop all test processes and recorders. Respect required tool / system permissions.
+- **Never access any other physical device**, especially the Google TV Streamer or the Odin 2 Portal (always use `adb -s 3140972f`).
+- **Supersedes:** older `SUMMARY.md` / `COWORK_HANDOFF.md` notes that require separate Thor permission (e.g. update 369 rule, update 379 "no device use without your permission") are HISTORICAL and no longer apply. Their entries stay unedited.
+## Prompt workflow rule
+Large master prompts have been truncated. Work in shorter, complete stages. Read `COWORK_HANDOFF.md` and continue unfinished tasks. Never assume missing prompt sections are done. Avoid repeating successful QA. Task prompts are short; the next task is in `CURRENT_TASK.md`, unfinished priorities in `COWORK_HANDOFF.md`.
+
+## Quality rules (permanent; extend rules 5, 6, 7, 9, 11, 12 and the Thor section, do not repeat them)
+- **Device QA:** only under the Thor authorization above; check on hardware what a change touches, mark the rest NOT TESTED, don't repeat passed QA.
+- **User settings:** never reset, rename or migrate preferences, profiles, layouts, categories or artwork silently; temporary test values are restored; new prefs go into `data/SettingsScopes.kt`.
+- **Music players:** the existing player designs and their toggles stay as they are; improve transitions / reliability inside them, never replace or redesign a player.
+- **No duplicates:** before adding a feature or setting, grep for an existing one and extend it (existing toggles, `Features.kt`, Shared UI); one source of truth per list or state.
+- **Source sync:** `src_copy/` and `project_copy/` are the edit targets; list the files to copy in the `SUMMARY.md` entry, and when told they were copied, keep `app/` identical to them.
+- **Regression:** run the unit tests / static checks / QA self-tests the change touches (rule 9, rule 12); a bug fix gets a test that fails on the old code where practical.
+- **Stable release:** publish only when asked, via `tools/release/PRE_RELEASE_CHECKLIST.md`; never release with an open FAIL or unverified claim; a release needs a green build and tests.
+
 ## Workflow (always)
 - **Edit `src_copy/` only**, never `app/src/main/java/com/shelf/launcher/` directly. I robocopy `src_copy` into the real source myself. `src_copy/` mirrors `app/src/main/java/com/shelf/launcher/` 1:1.
 - Files outside the Kotlin sources (Gradle files, manifest, `res/`, keep rules) go in **`project_copy/`** at the same path relative to the project root (I run `robocopy project_copy . /E`).

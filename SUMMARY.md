@@ -1,5 +1,33 @@
 # Voltcap — what's been done (running summary)
 
+**Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
+
+## Update — 28 Oct 2026 (381): Endless navigation, Dashboard's unreachable last-game card (Thor-verified)
+
+**Copy:** `src_copy/ui/StyleHomes.kt`, `src_copy/ui/StyleDashboard.kt` (already copied to `app/`). Test: `app/src/test/.../ui/EndlessNav381Test.kt` (new, 5 tests).
+- **Cause (seen in the first Thor screenshot):** with Endless on, the Dashboard row draws the **last game left of the first one** (`LoopRow`), but ◀ on the first game was hard-wired to "knock, then go into the menu" (`StyleHomes` DASH branch, `focus == 0 && side.isNotEmpty()`), so that card could not be reached from the start. The Side menu already had the guard (`StyleNav.sideLoops`, update 151); the Dashboard never set it.
+- **Fix:** `leftReachesMenu(focus, hasMenu, rowLoops)` (one rule, used by Side menu and Dashboard); the Dashboard sets `StyleNav.sideLoops = loopRowOn(c)`. Endless on: ◀ on the first game goes round to the last (the VM's wrap, unchanged); the menu stays reachable by ▲ (Play) then ◀, as before. Endless off or a single game: ◀ on the first game still knocks, then enters the menu.
+- **Other layouts checked (code):** only Side menu, Resume and Dashboard send ◀ on the first game to a menu; Side menu already had the guard; Resume draws one game, no row. The other looping rows (Voltcap row, Tile home, Hero, Grid, Cross, Circuit...) have no menu on ◀ and wrap through `moveFocus` (update 125 / 156). Not re-verified on hardware: those layouts.
+- **Thor 3140972f (release 0.6.55 build, `install -r` over the existing app, data kept; ~8 min):** reproduced first (Dashboard, All, 007 selected, Zoo Tycoon shown left of it); with the fix, Game Boy (142 games): ◀ on the first game (Yu-Gi-Oh) wraps to the last (Yoshi's Cookie, Yoshi drawn before it); ▲ then ◀ reaches the menu ("All apps"); touch tap on a card selects it. Walks at the end of a looping row (30-40 rapid ▶), the 7-game row (Smart Continue, no loop: wraps last to first), Endless off to the last card (Zelda, last card fully in view) all fine; Endless switched off for the test and **back on**. The original category (All) was not restored (session state only).
+- **Checked:** `testDebugUnitTest` 353 tests, 0 failures; `static_checks.py --strict` PASS; release build. **Not tested:** second-screen Dashboard card (no separate row exists there), other aspect ratios, categories of 9-12 games (none in this library, loop threshold logic unchanged).
+- The three second-screen fixes of 379 (`CompanionHub`, `WidgetBoard`, `SecondPad`) are untouched and stay uncommitted in the working tree (not hardware-verified yet).
+
+## Update — 28 Oct 2026 (380): standing Thor QA authorization recorded (docs only, no code, no device touched)
+
+**Copy:** nothing (docs at project root: `CLAUDE.md`, `COWORK_HANDOFF.md`, `SUMMARY.md`).
+- Owner granted standing authorization for ordinary QA on the AYN Thor (ADB 3140972f); limits and the never-touch-other-devices rule are in `CLAUDE.md` ("Standing Thor QA authorization"). **Older notes in this file and the handoff that require separate Thor permission (e.g. 369, 379 "no device use without your permission") are historical and superseded; they are left unedited.**
+- Workflow rule recorded: master prompts were truncated; work in short complete stages, continue from the handoff, never assume cut-off sections are done, don't repeat successful QA.
+- Not tested / not built: documentation only.
+
+## Update — 28 Oct 2026 (379): second-screen master polish, part 1: in-game companion reliability + hint toggle (code only, no device touched)
+
+**Copy:** `src_copy/ui/CompanionHub.kt`, `src_copy/ui/WidgetBoard.kt`, `src_copy/ui/SecondPad.kt`.
+- **Now Playing froze in-game:** `CompanionHub` read `vm.uiState.nowPlaying`, but the only thing refreshing it (`NowPlayingUpdates` in `LauncherScreen`) stops with MainActivity once a game runs (the comment there assumed the companion had its own; only the plain `CompanionScreen` did). Hub now calls `NowPlayingUpdates(enabled = true) { vm.refreshNowPlaying() }` (MediaController callbacks, no polling, only while the companion is resumed + screen on). Fixes the Music page, the Now Playing widget and the widgets' transport state in-game.
+- **Third-party widgets froze in-game:** one shared `AppWidgetHost`, but every `WidgetBoardPage` called `startListening` / `stopListening` itself, so the home board disposing as a game starts stopped the host under the companion's board. `AppWidgets.startListening / stopListening` are now reference counted (main thread).
+- **`SecondPadHint`:** the controller line follows the existing button-hints setting (`showLegend`); off = no line. No new toggle.
+- `SecondScreen.kt` hiding of the home Presentation during a game untouched.
+- **Checked:** `static_checks.py src_copy --strict` PASS. **Compiled** (`:app:compileDebugKotlin` OK after copying the three files into `app/src/main/java/...`; `SecondPadGate369Test` and the Companion/Widget/NowPlaying test filter pass); **not run on hardware** (no device use without your permission). Sections 2, 4-9 and the rest of 1 (system stats / mixer loops still use plain `LaunchedEffect`, not verified in-game; Sound-per-screen / mixer fallback review) are NOT done. Section 10 of the brief arrived cut off.
+
 ## Update — 28 Oct 2026 (378): D76 hardened (not reproduced), Only-first-wide + R1 D-pad Apply verified on the Thor, v0.6.55
 
 **Copy:** `src_copy/ui/GameCard.kt`, `src_copy/ui/LayoutPicker.kt` (already copied to `app/src/main/java/...`). Tests: `RollReveal76Test`, `PickerApplyFocus76Test`.
