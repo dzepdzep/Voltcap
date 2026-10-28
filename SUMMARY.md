@@ -1,5 +1,23 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (357): Voltcap 0.6.47 released; Settings walked on the RP Classic
+
+**Released:** Voltcap 0.6.47 (54) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.47 (Latest, not a
+prerelease; APK 52.9 MB). Everything from 356: Cinema and Arctic hub homes with their own windows, hakuX, Pause gameplay
+clips when idle, the duplicate shimmer switch removed. Smoke test on the RP Classic: installs as 0.6.47 (54), the home
+starts, the menus open and close, no crash.
+
+**Settings walked with the D-pad on the RP Classic** (the 7 categories left from 355, every sub-page): Theme (all 6
+pages), Screensaver, Categories, Achievements (4 pages), Music & sound (3 pages), Metadata (6 pages), Performance; plus
+the wrapped chip rows in Overlay and Sync. Every page scrolls to its end, the wrapped rows can be reached, nothing is cut.
+- Fixed: Performance › Profiles per console said "… › All … games", which read like cut text. It now says to pick
+  "All (console name) games" in a game's settings.
+- Seen, left as is: Up from the first button of a page jumps to Close and skips the category tabs (Down from Close
+  reaches them).
+- QA tools: `tools/qa/device/sw.sh` — stills of one Settings page or sub-page, Down only, ends back on the home. The
+  automatic explorer can't walk Settings any more: Settings reopens on its last page and the tab row pages along, so it
+  mistakes page rows for categories.
+
 ## Update — 28 Oct 2026 (356): Voltcap 0.6.46 published; next version started (Cinema, Arctic hub, hakuX)
 
 **Released:** Voltcap 0.6.46 (53) is out as the latest GitHub release (not a prerelease), with the signed APK:

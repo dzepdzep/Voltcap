@@ -115,7 +115,7 @@ fun TunerSettingsContent() {
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.SportsEsports, "Profiles per console",
-        "A console can have its own profile (set it in any of its games' settings › All … games). Its games use it unless they have their own.",
+        "A console can have its own profile: in any of its games' settings, pick \"All (console name) games\". Its games use it unless they have their own.",
         perConsole, onChange = { perConsole = it; store.consoleProfiles = it; Tuner.profileChanged(context, null) }
     )
     Spacer(Modifier.height(8.dp))
