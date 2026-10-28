@@ -10,8 +10,8 @@ Then read the top entries of `SUMMARY.md` (updates 363, 364, 365), `tools/qa/REA
 | App version | **0.6.51 (versionCode 58)** - unchanged by this run |
 | Releases | v0.6.49 (28 Oct 07:42 UTC), v0.6.50 (08:23), **v0.6.51 "Latest" (11:05)**, all normal releases; no prerelease, nothing published in this run |
 | Last app commit | `7c1498d` "Voltcap 0.6.51" (before it: `1e9864f` update 364 notes, `365ff8e` update 363 fixes, `4f85284` 0.6.50, `718d4fc` update 362) |
-| QA overhaul | HASH_QA (see `git log`; "QA overhaul" commit on main, pushed) and HASH_HANDOFF (this file's final state) |
-| CI | `.github/workflows/qa.yml` (new) and `verify-update-310.yml` (existing Gradle source-check). First qa.yml run: CI_RESULT |
+| QA overhaul | `4f4375f` "QA overhaul ..." (pushed to origin/main) and the commit right after it, "QA overhaul: record CI result and hashes" (this file's final state) |
+| CI | `.github/workflows/qa.yml` (new) and `verify-update-310.yml` (existing Gradle source-check). **First qa.yml run (run 40680336896, on 4f4375f): success** - 42 self-tests OK on ffmpeg 6.1 (Linux), strict static checks PASS, coverage check PASS. Hardware tests are not run in CI |
 
 ## 2. What happened after Cowork timed out
 1. The user continued with Claude Code on API credits. 0.6.50 and 0.6.51 were released the same day (28 Oct).

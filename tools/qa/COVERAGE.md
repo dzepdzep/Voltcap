@@ -100,9 +100,9 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | RT-02 | Return from a launched game | none (hardware, not run in CI) | none | manual | **NOT TESTED** | - | launching an emulator can touch saves; excluded by the safety rules unless explicitly authorised |
 | PF-01 | Profile-selection flow | picker detection only (hardware, not run in CI) | AYN Thor | automated | **NOT TESTED** | - | runs now stop on the picker (SKIP) instead of measuring it; the flow itself (choose / create profile) is not exercised because profiles are user data |
 | BG-01 | Background video / animation interactions | idle.sh idle cost (hardware, not run in CI) | AYN Thor | automated | **FAIL** | REPORT.md D64: the home gameplay clip holds the GPU at ~30 fps while idle (29 ms frames, 72-85 % janky) | by design since update 307; open for a product decision, not a regression |
-| CI-01 | GitHub Actions: QA self-tests + strict static checks + coverage check | .github/workflows/qa.yml | ubuntu-latest | automated | **NOT TESTED** | - | updated to PASS only after the first green run after push (see COWORK_HANDOFF.md) |
+| CI-01 | GitHub Actions: QA self-tests + strict static checks + coverage check | .github/workflows/qa.yml | ubuntu-latest (no Android device) | automated | **PASS** | run 40680336896 on 4f4375f: 42 self-tests OK on ffmpeg 6.1, static --strict PASS, coverage check PASS | a deliberately failing push was not made; failure detection is proven by the self-tests and exit codes, not by a red CI run. Hardware rows are not run in CI |
 
-Feature rows: 31 - PASS 18, FAIL 3, SKIP 0, NOT TESTED 10; hardware-only rows: 14.
+Feature rows: 31 - PASS 19, FAIL 3, SKIP 0, NOT TESTED 9; hardware-only rows: 14.
 
 ## Genuinely untested (no claim made)
 
@@ -115,4 +115,3 @@ Feature rows: 31 - PASS 18, FAIL 3, SKIP 0, NOT TESTED 10; hardware-only rows: 1
 - **Game artwork loading and missing artwork** (none automated): stale-picture patterns are covered statically (R1 / R3 static checks) and by the blank / transient scans, but a missing-artwork fixture library does not exist
 - **Return from a launched game** (none): launching an emulator can touch saves; excluded by the safety rules unless explicitly authorised
 - **Profile-selection flow** (picker detection only): runs now stop on the picker (SKIP) instead of measuring it; the flow itself (choose / create profile) is not exercised because profiles are user data
-- **GitHub Actions: QA self-tests + strict static checks + coverage check** (.github/workflows/qa.yml): updated to PASS only after the first green run after push (see COWORK_HANDOFF.md)
