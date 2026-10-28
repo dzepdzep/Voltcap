@@ -6,9 +6,9 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 
 ## Home layouts (from `enum HomeLayout`)
 
-- Layouts in the source: **51**
-- With a validated device recording analysed by frames.py: **51** (blank-frame scan PASS 51, FAIL 0); no usable recording / never recorded: **0**
-- Looked at by a human (contact sheets): **7** layouts; the other **44** have no human visual verdict recorded here
+- Layouts in the source: **53**
+- With a validated device recording analysed by frames.py: **51** (blank-frame scan PASS 51, FAIL 0); no usable recording / never recorded: **2**
+- Looked at by a human (contact sheets): **7** layouts; the other **46** have no human visual verdict recorded here
 
 | layout | name | blank-frame scan | transients / hitches | human review | recording |
 |---|---|---|---|---|---|
@@ -63,6 +63,8 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | TERMINAL | Terminal | PASS | 0 / 2 | NOT TESTED | S1_TERMINAL.mp4 |
 | CINEMA | Cinema | PASS | 2 / 12 | PASS: Thor 28 Oct: contact sheets, no shift of name / logo / facts / buttons / rows, no flicker (no new evidence of a regression) | S4_CINEMA.mp4 |
 | ARCTIC | Arctic hub | PASS | 1 / 6 | PASS: Thor 28 Oct: contact sheets, same checks as Cinema | S4_ARCTIC.mp4 |
+| COVERDETAILS | Coverflow details | NOT TESTED | - | NOT TESTED | - |
+| ARTLIB | Artwork library | NOT TESTED | - | NOT TESTED | - |
 
 `transients / hitches` are counts to look at, not verdicts: a slide, a crossfade or the intended edge-bump shake is a transient too. The blank-frame scan only fails on black / white / brightness-dip frames.
 
