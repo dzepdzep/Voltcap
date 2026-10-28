@@ -1,4 +1,4 @@
-# COWORK_HANDOFF — resume here (updated 28 Oct 2026, after release 0.6.54)
+# COWORK_HANDOFF — resume here (updated 28 Oct 2026, 0.6.54 built and CI-green but NOT yet published)
 
 Read this first after the Cowork timeout (28 Oct 2026; Cowork is available again Sunday 1 Nov). It needs no other conversation context.
 Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md` ("Trusting a result") and `tools/qa/COVERAGE.md`.
@@ -36,7 +36,7 @@ Task: "categories appear with L2 / R2 but not on the category-selection screen".
 - **NOT tested (still open):** dual-screen category selection, mixed-category / per-console overrides beyond the cycle, Cinema / Arctic text + artwork pass after this change, the 9 Settings
   categories, R1 option visibility, second-screen widgets, missing-artwork / metadata fixtures, profile launch / return, other aspect ratios (emulator), Arctic one-frame title question, TERMINAL "..." (rule 11).
 - Seen, not changed: Collector's Drawers and Archive looks clip long console names in fixed labels ("Entertainment S", "itendo Entertainmen"): rule 11 candidate.
-## 2c. Update 368 (release 0.6.54): remaining category mismatch + combination matrix
+## 2c. Update 368 (0.6.54, release pending: run toolseleaseelease.ps1 0.6.54 "notes" after approval; commit eb1083d, CI success): remaining category mismatch + combination matrix
 - **Confirmed bug, fixed:** a collection with no games was an L2 / R2 stop and a tab but not a tile (`CategoryStops.stops` vs `buildCategoryTiles`). Red test `emptyCollectionIsNotAStopOrTab` on the 0.6.53 code, green now (`CategoryStopsTest`, 12 tests, 292 unit tests total 0 failures). Empty consoles / specials remain tiles, stops and tabs (no "hide empty" setting exists). The user's exact on-device symptom is still unreproduced; if it recurs ask for the look, the categories, and whether an empty collection / removed tile is involved.
 - **Matrix:** `tools/qa/combos.json` -> `COVERAGE.md` (35 rows: PASS 19, NOT TESTED 16, FAIL 0), `COMBOS.md` (method, priorities, next), `device/combos.sh`, `tools/combocheck.py`, self-tests 53 (CI). App side: `QaTrace` "category stop" / "category tiles" lines (hooks on only).
 - **Thor 3140972f only (28 Oct, 0.6.54):** 12 runs, all PASS (structural verdict): Voltcap row / Tile home x parity, L2-R2 mash x60, screen open-close x8, selection+category; Cinema + Arctic x parity + mash. 20 tiles = 20 stops. SoC reached 55 C during runs (waited to cool); battery 29 C. Hooks off, snapshot restored. Google TV Streamer untouched; no emulator.

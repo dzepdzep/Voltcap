@@ -1,7 +1,7 @@
 # Voltcap — what's been done (running summary)
 
 
-## Update — 28 Oct 2026 (368): empty collection no longer a stop / tab; combination matrix; release 0.6.54
+## Update — 28 Oct 2026 (368): empty collection no longer a stop / tab; combination matrix; 0.6.54 (release not yet published)
 
 **Task:** "categories show with L2 / R2 but not on the category screen" (again), plus a permanent high-risk combination matrix. Update 367 already unified the lists; this run
 re-checked every source and found the one remaining list difference (the zero-games rule): **a collection with no games was an L2 / R2 stop and a style-home tab, never a tile**
