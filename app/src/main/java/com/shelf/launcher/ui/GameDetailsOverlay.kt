@@ -166,7 +166,7 @@ private fun detailsActionsAll(game: Game, hasMissing: Boolean, hasTips: Boolean,
             DetailsAction.FIX_RA_LINK -> hasFixRaLink
             DetailsAction.STATS -> hasStats
             // (Update 231, #81: only where the tuner works — elsewhere there's nothing to set.)
-            DetailsAction.PERFORMANCE -> com.shelf.launcher.device.tune.Tuner.supported
+            DetailsAction.PERFORMANCE -> com.shelf.launcher.device.tune.Tuner.supportedState.value == true // (update 373: cached, never a root query here; Tuner.start probes at launch)
             DetailsAction.INSPECT -> game.sourceType != com.shelf.launcher.data.SourceType.APP
             DetailsAction.CLOSE, DetailsAction.MORE -> false
             else -> true

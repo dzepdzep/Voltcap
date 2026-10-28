@@ -147,8 +147,15 @@ internal fun GameDock(
         // does: then the row moves like a plain cover row — the next game slides along into the place of the one you
         // were on, which slides off to the left. The fixed place made the next game vanish from the row and pop up at
         // the left ("no animation scrolling through games").
-        val fixedSlot = !carousel && !pinnedFirst && look.focusedWide && !bannerFree &&
-            look.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT
+        // Update 373: only when "Moving between games" asks for a standing place (Fades in / Just appears). The default (Slides in)
+        // keeps the row continuous: the next game is already in the row, so it slides along and widens where it stands, and the
+        // one you leave narrows and slides off to the left; no card vanishes and comes back as the big one (Toni: "it looks like
+        // a card is being replaced instead of moving into focus").
+        val fixedSlot = fixedSlotWanted(
+            carousel, pinnedFirst, look.focusedWide, bannerFree,
+            look.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT,
+            com.shelf.launcher.data.Features.capsuleSwap.state.value
+        )
         // (Update 129: the game you're on grows as much as "stands out" says; 15 % at 100 %.)
         val grow = sizes.bigCover.height / sizes.cover.height
         val bannerWidth = if ((bannerFree || carousel) && look.focusedWide) coverWidth * grow else sizes.focused.width
@@ -1018,3 +1025,14 @@ private fun FocusedLine(
     }
     }
 }
+
+/**
+ * Update 373: whether the Voltcap row keeps a fixed wide place at its left end (the game you're on is swapped into it) instead
+ * of moving the same card along the row. Only with a real wide capsule at the left, and only when the swap setting asks for a
+ * place that stays ([com.shelf.launcher.data.Features.CapsuleSwap.SLIDE], the default, is the continuous row). Pure, unit tested.
+ */
+internal fun fixedSlotWanted(
+    carousel: Boolean, pinnedFirst: Boolean, focusedWide: Boolean, bannerFree: Boolean, atLeftEnd: Boolean,
+    swap: com.shelf.launcher.data.Features.CapsuleSwap
+): Boolean = !carousel && !pinnedFirst && focusedWide && !bannerFree && atLeftEnd &&
+    swap != com.shelf.launcher.data.Features.CapsuleSwap.SLIDE

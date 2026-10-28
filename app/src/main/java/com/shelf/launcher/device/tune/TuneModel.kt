@@ -195,8 +195,15 @@ class TuneStore(context: Context) {
     init { migrateUnderclockOnce() }
 
     companion object {
-        /** Update 213: counts saved changes (any screen), so what shows a profile — the game popup — reads it again. */
-        val edits = androidx.compose.runtime.mutableIntStateOf(0)
+        /**
+         * Update 213: counts saved changes (any screen), so what shows a profile — the game popup — reads it again.
+         * Update 373: a plain StateFlow, not Compose snapshot state: a snapshot state first created on another thread (or inside a
+         * composition) crashed the popup with "Reading a state that was created after the snapshot was taken". Collect it with
+         * collectAsState().
+         */
+        val edits = kotlinx.coroutines.flow.MutableStateFlow(0)
+
+        fun bumpEdits() { edits.value = edits.value + 1 }
     }
 
     /**
@@ -213,7 +220,7 @@ class TuneStore(context: Context) {
     }
 
     fun global(): TuneProfile = runCatching { gson.fromJson(prefs.getString("global", null), TuneProfile::class.java) }.getOrNull()?.sane() ?: TuneProfile()
-    fun setGlobal(p: TuneProfile) { prefs.edit().putString("global", gson.toJson(p)).apply(); edits.intValue++ }
+    fun setGlobal(p: TuneProfile) { prefs.edit().putString("global", gson.toJson(p)).apply(); bumpEdits() }
 
     fun perGame(): Map<String, TuneProfile> =
         runCatching { gson.fromJson<Map<String, TuneProfile>>(prefs.getString("per_game", null), mapType) }.getOrNull()
@@ -225,7 +232,7 @@ class TuneStore(context: Context) {
         val m = perGame().toMutableMap()
         if (p == null) m.remove(key) else m[key] = p
         prefs.edit().putString("per_game", gson.toJson(m)).apply()
-        edits.intValue++
+        bumpEdits()
     }
 
     fun learnedLevel(key: String): Float? =
@@ -294,7 +301,7 @@ class TuneStore(context: Context) {
         val m = perGame().toMutableMap()
         keys.forEach { m[it] = p }
         prefs.edit().putString("per_game", gson.toJson(m)).apply()
-        edits.intValue++
+        bumpEdits()
     }
 
     var applyOnBoot: Boolean

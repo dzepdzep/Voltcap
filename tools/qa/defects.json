@@ -959,6 +959,24 @@
    "status": "open",
    "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home \u203a Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
    "note": "Theme, Screensaver, Categories, Achievements, Music & sound, Metadata, Performance not walked yet."
+  },
+  {
+   "id": "D74",
+   "title": "Game popup crash: snapshot state created after the snapshot (TuneStore.edits) + main-thread root query in rememberGamePerf",
+   "rule": "STALE-SNAPSHOT",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-10-28 Thor crash report 17:16, 0.6.54",
+   "note": "Mechanism reproduced in Tuner373Test; app path and 7 s freeze not reproduced on the Thor. Fixed in update 373 (StateFlow + Tuner.supportedState/probeSupported). Popup A/B x7 on the Thor without FATAL."
+  },
+  {
+   "id": "D75",
+   "title": "Wide selected look: next game removed from the row and replaced by a sliding-in card (fixed slot)",
+   "rule": "MOTION",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-28 user report",
+   "note": "fixedSlotWanted(): continuous row by default (update 373). Hardware / recording NOT TESTED: status stays fixed (code changed), not verified."
   }
  ]
 }

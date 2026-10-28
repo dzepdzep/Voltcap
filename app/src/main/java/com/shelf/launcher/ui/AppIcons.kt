@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
  * the source of truth, so nothing is written to disk.
  */
 /** Update 371: [symbol] the one-colour picture, null when none is fit; [trueMono] it is the app's own monochrome icon; [original] its full-colour icon. */
-internal class IconCandidate(val symbol: ImageBitmap?, val trueMono: Boolean, val original: ImageBitmap)
+internal class IconCandidate(val symbol: ImageBitmap?, val trueMono: Boolean, val original: ImageBitmap, val monogram: ImageBitmap? = null)
 
 internal object AppIconCache {
     private val icons = LruCache<String, ImageBitmap>(96)
@@ -111,8 +111,42 @@ internal object AppIconCache {
                 if (fit(out, isMono)) { symbol = out.asImageBitmap(); trueMono = isMono; break }
             }
         } else if (fit(original.asAndroidBitmap(), false)) symbol = original
-        IconCandidate(symbol, trueMono, original)
+        // Update 373: nothing fit yet (a flat coloured plate with a mark on it): take the mark off its background.
+        if (symbol == null) {
+            val px = IntArray(size * size)
+            original.asAndroidBitmap().getPixels(px, 0, size, 0, 0, size, size)
+            com.shelf.launcher.data.IconQuality.extractSymbol(px, size, size)?.let {
+                val out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+                out.setPixels(it, 0, size, 0, 0, size, size)
+                symbol = out.asImageBitmap()
+            }
+        }
+        // Last automatic fallback: the app's initials in a ring (only built when needed).
+        val mono = if (symbol == null) makeMonogram(runCatching { context.packageManager.getApplicationLabel(context.packageManager.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg), size) else null
+        IconCandidate(symbol, trueMono, original, mono)
     }.getOrNull()?.also { monos.put(pkg, it) }
+
+    /** Update 373: [label]'s initials, white on transparent inside a ring (baked in the accent where it is shown). */
+    private fun makeMonogram(label: String, size: Int): ImageBitmap {
+        val out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        val ring = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.WHITE; style = android.graphics.Paint.Style.STROKE; strokeWidth = size * 0.055f
+        }
+        c.drawCircle(size / 2f, size / 2f, size * 0.38f, ring)
+        val text = com.shelf.launcher.data.IconQuality.monogram(label)
+        val p = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.WHITE; typeface = android.graphics.Typeface.DEFAULT_BOLD; textAlign = android.graphics.Paint.Align.CENTER
+            textSize = size * 0.34f
+        }
+        // Fit inside the ring.
+        val maxW = size * 0.46f
+        val w = p.measureText(text)
+        if (w > maxW) p.textSize = p.textSize * maxW / w
+        val fm = p.fontMetrics
+        c.drawText(text, size / 2f, size / 2f - (fm.ascent + fm.descent) / 2f, p)
+        return out.asImageBitmap()
+    }
 
     fun loadBanner(context: Context, pkg: String): ImageBitmap? {
         val drawable = runCatching { context.packageManager.getApplicationBanner(pkg) }.getOrNull()
@@ -153,12 +187,19 @@ internal fun rememberThemedAppIcon(packageName: String?, surface: IconSurface): 
     val tint = rememberSettledAccent()
     val cand = rememberIconCandidate(packageName) ?: return null
     val look = com.shelf.launcher.data.IconQuality.look(true, effective, cand.symbol != null, cand.trueMono)
-    val symbol = cand.symbol
-    if (look == com.shelf.launcher.data.IconQuality.Look.ORIGINAL || symbol == null) return cand.original
+    var symbol = cand.symbol
+    var bakeLook = look
+    // Update 373: L1 shortcuts are always in the accent: with no fit symbol, the app's initials in a ring (never its full-colour icon).
+    if (symbol == null && surface == IconSurface.SHORTCUTS && cand.monogram != null) {
+        symbol = cand.monogram
+        bakeLook = com.shelf.launcher.data.IconQuality.Look.SOLID
+    }
+    if (bakeLook == com.shelf.launcher.data.IconQuality.Look.ORIGINAL || symbol == null) return cand.original
     val argb = android.graphics.Color.argb((tint.alpha * 255).toInt(), (tint.red * 255).toInt(), (tint.green * 255).toInt(), (tint.blue * 255).toInt())
-    val key = "${surface.name}|${look.name}|$argb|$packageName"
+    val key = "${surface.name}|${bakeLook.name}|$argb|$packageName"
+    val src = symbol
     return androidx.compose.runtime.remember(key, cand) {
-        AppIconCache.tintedOf(key) { tintedIcon(symbol, look, tint, surface == IconSurface.SHORTCUTS) }
+        AppIconCache.tintedOf(key) { tintedIcon(src, bakeLook, tint, surface == IconSurface.SHORTCUTS) }
     }
 }
 

@@ -901,7 +901,7 @@ object Features {
     /** Shortcut ids hidden from the round bar (still in L1). */
     val shortcutHidden = SetPref("shortcut_hidden")
     /** App icons in the round shortcuts drawn in the theme's colours (monochrome, tinted). */
-    val shortcutThemedIcons = BoolPref("shortcut_themed_icons", false)
+    val shortcutThemedIcons = BoolPref("shortcut_themed_icons", true)
     /**
      * Update 319 (Toni: "an icon pack in one colour so it follows the theme's colours", no square plate with a blur behind):
      * the second screen's dock shows each app as its one-colour symbol in the theme's accent — the app's own monochrome

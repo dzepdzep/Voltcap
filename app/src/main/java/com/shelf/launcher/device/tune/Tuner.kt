@@ -85,7 +85,30 @@ object Tuner {
         }
     }
 
-    val supported: Boolean get() = TuneHardware.available && TuneHardware.clusters().isNotEmpty()
+    /** Blocking (root queries): never call it from composition or the main thread; use [supportedState] there. */
+    val supported: Boolean get() = (TuneHardware.available && TuneHardware.clusters().isNotEmpty()).also { _supportedState.value = it }
+
+    private val _supportedState = MutableStateFlow<Boolean?>(null)
+    /** Update 373: null until probed; then whether the handheld can be tuned. Safe to read anywhere. */
+    val supportedState: StateFlow<Boolean?> = _supportedState
+    @Volatile private var probing = false
+    @Volatile private var probedAt = 0L
+
+    /**
+     * Probes [supported] once, off the caller's thread (false is tried again after 30 s, true is kept). It waits for
+     * [RootShell]'s lock like every other call, so a dead or slow root service only delays this answer: the UI shows
+     * "not (yet) supported" meanwhile.
+     */
+    suspend fun probeSupported() {
+        if (_supportedState.value == true) return
+        if (_supportedState.value == false && System.currentTimeMillis() - probedAt < 30_000L) return
+        if (probing) return
+        probing = true
+        try {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { supported }.onFailure { _supportedState.value = false } }
+            probedAt = System.currentTimeMillis()
+        } finally { probing = false }
+    }
 
     /** Once per process: applies the device-wide profile and watches the screen for the sleep profile. */
     fun start(context: Context) {

@@ -30,11 +30,4 @@ class IconCells372Test {
         assertTrue(settled.contains("snapshotFlow") && settled.contains("debounce"))
         assertTrue(settled.contains("ShelfTheme.live"))
     }
-
-    @Test fun tunerEditCounterIsCreatedAtStartOutsideComposition() {
-        val roots = listOf("src/main/java/com/shelf/launcher/", "app/src/main/java/com/shelf/launcher/")
-        val main = roots.map { File(it + "MainActivity.kt") }.first { it.exists() }.readText()
-        val create = main.substring(main.indexOf("override fun onCreate("))
-        assertTrue(create.take(1500).contains("TuneStore.edits.intValue"))
-    }
 }

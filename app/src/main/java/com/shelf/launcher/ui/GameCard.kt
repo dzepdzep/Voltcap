@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawWithContent
@@ -428,10 +429,20 @@ fun GameCard(
                 }
             }
         } else (baseUrl ?: artUrl)?.let { url ->
+            // Update 373: a wide capsule look with only a portrait cover: the whole cover, never stretched or cut, centred over a soft
+            // blurred copy of itself (the corners and sides of the landscape card stay filled).
+            val portraitInWide = cardArtType == CardArtType.CAPSULE && coverUrl != null && url == coverUrl && wideUrl == null && heroUrl == null
+            if (portraitInWide) AsyncImage(
+                model = rememberCardArtRequest(url, kindOf(url), still = true),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = 0.55f,
+                modifier = Modifier.matchParentSize().blur(24.dp)
+            )
             AsyncImage(
                 model = rememberCardArtRequest(url, kindOf(url), still = !focused && com.shelf.launcher.data.Features.animatedFocusOnly.state.value && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)),
                 contentDescription = game.name,
-                contentScale = ContentScale.Crop,
+                contentScale = if (portraitInWide) ContentScale.Fit else ContentScale.Crop,
                 colorFilter = if (greyOut) GreyFilter else null,
                 modifier = Modifier.matchParentSize().pixelArtwork()
                     // Update 202: Art position for the covers (moved and sized in the card, which cuts it off), not the wide capsule.
@@ -1326,6 +1337,8 @@ internal fun cardArtUrl(
     }
     // (Update 229, #31/#24: with no cover yet, a case / disc look no longer prints the wide capsule or hero on the disc label or crops it into the case.)
     if (!banner && type.wantsMedia()) return requested ?: cover
+    // (Update 373: a wide capsule look prefers any landscape art (wide, hero) to a portrait cover.)
+    if (type == CardArtType.CAPSULE) return requested ?: hero ?: cover ?: wide
     return requested ?: if (banner) (wide ?: hero ?: cover) else (cover ?: wide ?: hero)
 }
 

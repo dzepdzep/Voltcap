@@ -510,7 +510,10 @@ internal fun GamePerformanceProfile(
     androidx.compose.runtime.LaunchedEffect(sync) {
         if (sync > 0) { own = store.forKey(gameKey); cons = platKey?.let { store.forKey(it) } }
     }
-    if (!Tuner.supported) return
+    // (Update 373: cached answer, probed off the main thread.)
+    val tunable by Tuner.supportedState.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(Unit) { Tuner.probeSupported() }
+    if (tunable != true) return
     val consoleOn = platKey != null && store.consoleProfiles
     val consoleMode = editConsole && consoleOn
 

@@ -283,8 +283,12 @@ fun QuickSettingsCard(
     // The game's power profile, short ("Own · Balanced"): a prefs read, off the main thread.
     val profileLabel by produceState<String?>(null, home?.gameKey, refresh, sync, showProfile) {
         val key = home?.gameKey
-        value = if (key == null || !com.shelf.launcher.device.tune.Tuner.supported) null
-        else withContext(Dispatchers.IO) { runCatching { r1ProfileLabel(context, key, home.gamePlatform) }.getOrNull() }
+        value = if (key == null) null
+        else withContext(Dispatchers.IO) {
+            // (Update 373: the supported probe is a root query: off the main thread.)
+            if (!com.shelf.launcher.device.tune.Tuner.supported) null
+            else runCatching { r1ProfileLabel(context, key, home.gamePlatform) }.getOrNull()
+        }
     }
     // Media volume, shown at once when you change it.
     var volume by remember(refresh, sync) { mutableStateOf(mediaVolumePercent(context)) }

@@ -85,14 +85,17 @@ internal class GamePerfState(val perf: GamePerf, val put: ((TuneProfile) -> Tune
 
 @Composable
 internal fun rememberGamePerf(g: Game, packageName: String?): GamePerfState? {
-    if (!Tuner.supported) return null
+    // (Update 373: whether the handheld can be tuned is probed off the main thread (root queries) and cached; null / false = nothing yet.)
+    val supported by Tuner.supportedState.collectAsState()
+    LaunchedEffect(Unit) { Tuner.probeSupported() }
+    if (supported != true) return null
     val context = LocalContext.current
     val store = remember { TuneStore(context) }
     val version = remember { mutableIntStateOf(0) }
     val sync by com.shelf.launcher.device.SystemSync.version.collectAsState()
     val v = version.intValue
     // (Changes saved anywhere — Advanced…, the tuner, a tile — count too: TuneStore.edits.)
-    val edits = TuneStore.edits.intValue
+    val edits by TuneStore.edits.collectAsState()
     val perf = remember(g.stableKey, packageName, v, sync, edits) {
         val own = store.forKey(g.stableKey)
         val pkg = packageName?.let { store.forKey("pkg:$it") }

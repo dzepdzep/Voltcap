@@ -813,7 +813,7 @@ private fun HomeContent(
                 }
                 MutedNote("How the games slide along when you move, in the rows and the carousels. Quick was the old one (so fast the next game seemed to just appear).")
                 Spacer(Modifier.height(6.dp))
-                MutedNote("How the next game comes into the wide place at the left of the row (wide capsules, the game you're on at the left).")
+                MutedNote("Wide capsules, the game you're on at the left: Slides in moves the row along and widens the next game where it stands (nothing disappears); Fades in and Just appears keep one fixed wide place that the next game replaces.")
                 val swap = com.shelf.launcher.data.Features.capsuleSwap.state.value
                 ChipFlow {
                     com.shelf.launcher.data.Features.CapsuleSwap.values().forEach { v ->
