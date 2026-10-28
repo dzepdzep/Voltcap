@@ -1295,16 +1295,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (or once, so it is ready the first time it opens). Each category's list
     // comes from the state's memoized visibleGames.
     val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty()
+    val tilesBuiltOpen = remember { BooleanArray(1) }
     LaunchedEffect(
         tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,
         fullNames, categoryImages, state.favorites, state.lastPlayedAt, state.playtime, state.collections,
         com.shelf.launcher.data.PlatformOrder.version.value, com.shelf.launcher.data.CategoryTileOrder.version.value
     ) {
-        if (!tilesWanted) return@LaunchedEffect
-        // Art arrives in bursts while scraping: let a burst settle first.
-        if (categoryTiles.isNotEmpty()) kotlinx.coroutines.delay(150)
+        if (!tilesWanted) { tilesBuiltOpen[0] = false; return@LaunchedEffect }
+        // Art arrives in bursts while scraping: let a burst settle first. (Update 367: not as the screen opens — the tiles
+        // from the last time may lack a console or list added since, so they are worked out again at once.)
+        if (categoryTiles.isNotEmpty() && tilesBuiltOpen[0]) kotlinx.coroutines.delay(150)
         val snapshot = state
         val all = withContext(Dispatchers.Default) { buildCategoryTiles(snapshot, fullNames, categoryImages) }
+        tilesBuiltOpen[0] = categoryScreenOpen
         // (Update 325: the ones taken off stay off the screen; Add category lists them.)
         categoryTiles = all.filterNot { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
         removedCategoryTiles = all.filter { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }

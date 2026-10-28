@@ -31,18 +31,11 @@ internal fun CategoryWarmup(state: LauncherUiState) {
         val sharp = if (small) 4 else 8
         val sideGames = withContext(Dispatchers.Default) {
             runCatching {
-                // The same stops as L2 / R2 (LauncherViewModel.cycleCategory).
-                val stops = state.categoryOrder.flatMap { key ->
-                    when (key) {
-                        CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
-                        CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
-                        CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
-                        else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
-                    }
-                }
+                // The same stops as L2 / R2 (data/CategoryStops.kt).
+                val stops = com.shelf.launcher.data.CategoryStops.stops(state)
                 if (stops.size < 2) return@runCatching emptyList<List<com.shelf.launcher.data.Game>>()
-                val cur = stops.indexOfFirst { (s, p) -> s == state.specialFilter && p == state.platformFilter }.coerceAtLeast(0)
-                listOf(1, -1).map { d -> stops[(cur + d + stops.size) % stops.size] }.distinct().map { (s, p) ->
+                val cur = stops.indexOfFirst { (s, p) -> s == state.specialFilter && p == state.platformFilter }
+                listOf(1, -1).map { d -> stops[com.shelf.launcher.data.CategoryStops.stepFrom(cur, d, stops.size)] }.distinct().map { (s, p) ->
                     // (Worked out once here: the switch itself then finds the list ready.)
                     state.copy(specialFilter = s, platformFilter = p).visibleGames.take(perSide)
                 }

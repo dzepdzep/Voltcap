@@ -881,18 +881,17 @@ internal class StyleCtx(
 internal fun styleStops(state: LauncherUiState, titles: TitleOptions): Pair<List<StyleStop>, Int> {
     // (Update 219, #04: in your own tile order too — CategoryTileOrder — exactly as LauncherViewModel.categoryStops
     // steps; before, a reordered tile list made a tapped tab open a different category.)
-    val stops = com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
-        when (key) {
-            CategorySettings.ALL -> listOf(StyleStop(null, null, "All", null))
-            // (Update 208: in your own console order, as L2 / R2 step.)
-            CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map {
-                // Only the colour logos shipped with the app (your ES-DE set), never downloaded; else the category symbol.
-                StyleStop(null, it, titles.console(it), com.shelf.launcher.data.SystemLogos.bundled(it))
-            }
-            CategorySettings.COLLECTIONS -> state.collections.map { StyleStop(null, it.key, it.name, null) }
-            else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(StyleStop(it, null, it.label, null)) }.orEmpty()
+    // (Update 367: the list itself is data/CategoryStops.kt — the same one L2 / R2 use, with the tiles you took off the category
+    // screen left out; before, this copy kept them, so a tapped tab could open another category than the one it showed.)
+    val stops = com.shelf.launcher.data.CategoryStops.stops(state).map { (special, platform) ->
+        when {
+            special != null -> StyleStop(special, null, special.label, null)
+            platform == null -> StyleStop(null, null, "All", null)
+            state.collections.any { it.key == platform } -> StyleStop(null, platform, state.collections.first { it.key == platform }.name, null)
+            // Only the colour logos shipped with the app (your ES-DE set), never downloaded; else the category symbol.
+            else -> StyleStop(null, platform, titles.console(platform), com.shelf.launcher.data.SystemLogos.bundled(platform))
         }
-    }) { it.special?.name ?: it.platform?.let { p -> "p:$p" } ?: "ALL" }
+    }
     val current = stops.indexOfFirst { it.special == state.specialFilter && it.platform == state.platformFilter }
     return stops to current
 }

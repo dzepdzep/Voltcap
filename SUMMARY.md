@@ -1,5 +1,33 @@
 # Voltcap — what's been done (running summary)
 
+
+## Update — 28 Oct 2026 (367): one category list for L2 / R2, tabs, category screen and warm-up; release 0.6.53
+
+**Investigation (L2 / R2 vs category screen):** four places built "the categories" separately: `LauncherViewModel.categoryStops` (L2 / R2, `jumpCategory`),
+`styleStops` (tabs of the style homes, Cross trophies), `buildCategoryTiles` (+ the hidden filter in `LauncherScreen`) and `CategoryWarmup`.
+**Reproduced before the fix (JVM test, old code):** the tabs (`styleStops`) still listed a tile taken off the category screen ("Remove from categories"),
+which L2 / R2 and the screen skip; `jumpCategory` indexes the VM list while the tabs index their own, so a tapped tab could open another category.
+Also found: `cycleCategory` coerced "not in the list" (-1) to 0, so R2 from a category outside the list (hidden start category) skipped the first stop;
+the start / last / restored category was not checked against tiles taken off (the state is built before `CategoryTileOrder` is initialised); the tile list was
+rebuilt only after a 150 ms debounce when the screen opened, so a console or list added since showed up late.
+**Not reproduced on the Thor:** the exact symptom "category in L2 / R2 but not on the screen" did not occur with the user's real library (20 stops == 20 tiles,
+same order, all 14 looks say "n / 20", cold open shows all 20 tiles at once). Empty consoles / specials stay tiles on the screen and are stepped past by L2 / R2
+(update 211, unchanged); an empty collection is not a tile, still a stop that L2 / R2 skip. Both are existing settings-level behaviour, documented, not changed.
+**Fix:** new `data/CategoryStops.kt` (`stops`, `keys`, `keyOf`, `stepFrom`): the one list (order, hidden groups, tile order, console order, tiles taken off).
+VM `categoryStops`, `styleStops` and `CategoryWarmup` use it; `cycleCategory` / warm-up use `stepFrom` (outside the list: R2 -> first, L2 -> last);
+`startSpecialFilter` / `startPlatformFilter` no longer start in a tile taken off (All instead), `CategoryTileOrder.init` is done there first;
+the category tiles are rebuilt at once when the screen opens (the 150 ms debounce only while it stays open).
+**Files:** `data/CategoryStops.kt` (new), `LauncherViewModel.kt`, `ui/StyleHomes.kt`, `ui/CategoryWarmup.kt`, `ui/LauncherScreen.kt`,
+`app/build.gradle.kts` (+ `project_copy/`): 0.6.52 -> **0.6.53 (versionCode 60)**. Test: `project_copy/app/src/test/.../data/CategoryStopsTest.kt` (9 tests:
+screen tiles == L2 / R2 stops == tabs for default, tile taken off, hidden group, switched-on special, own tile order, console order, only All; `stepFrom`).
+With the old `styleStops` the test fails (tile taken off); with the fix all pass.
+**Checked:** `:app:testDebugUnitTest` 289 tests, 0 failures; `assembleRelease` signed; `static_checks --strict` exit 0 (650 files); QA self-tests 46 OK.
+**Thor 3140972f (0.6.53 installed over 0.6.52 with `install -r`, 28 C, battery 79 -> 77 %):** R2 through every stop (20), cold open of the category screen,
+real "Remove from categories" on PlayStation 3 (the category you are in): R2 cycle skipped it (19 stops), then Add category brought it back (20 again);
+`looks.sh` over all 14 category looks: each shows "11 / 20" (Generations "9 / 20": ordered by year, by design). Test hooks off, settings snapshot restored.
+**Not tested:** the other 8 priority-2/3 areas (dual-screen category selection, mixed-category / per-console override sweeps beyond the cycle, Cinema / Arctic text pass,
+9 Settings categories, R1 option visibility, second-screen widgets, missing-art fixtures, profile launch / return, emulator aspect ratios, Arctic title frame).
+**Seen, not changed:** Collector's Drawers / Archive looks clip long console names in fixed-size labels ("Entertainment S", "itendo Entertainmen"): a rule-11 question for a later pass.
 ## Update — 28 Oct 2026 (366): QA reliability finished, first real 51-layout Thor sweep, release 0.6.52 (no app code change)
 
 **What changed:** `device/picker.sh` itself now prints PICKER / HOME / UNKNOWN (5 pixels + full-frame size check; a black, missing, short or

@@ -1518,23 +1518,32 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun startSpecialFilter(): SpecialFilter? {
-        restoreCtx?.let { c -> return c.specialFilter?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() } }
+        restoreCtx?.let { c -> return c.specialFilter?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }?.takeUnless { tileTakenOff(it.name) } }
         val start = if (resumingRecently()) "LAST" else appearanceStore.load().startCategory
         if (start == "LAST") {
-            return preferencesStore.lastSpecialFilter()?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }
+            return preferencesStore.lastSpecialFilter()?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }?.takeUnless { tileTakenOff(it.name) }
         }
         val filter = runCatching { SpecialFilter.valueOf(start) }.getOrNull() ?: return null
         if (filter == SpecialFilter.RECENT && recentlyPlayedStore.loadVisible().isEmpty()) return null
         // (Update 219, #04: a start category you hid (Choose a category › Options) isn't in the L2 / R2 list or the
         // tabs, so the looks couldn't step out of it properly: start in All instead.)
         if (runCatching { filter.name in categoryStore.load().hidden }.getOrDefault(false)) return null
+        if (tileTakenOff(filter.name)) return null
         return filter
     }
 
+    /** Update 367: a tile taken off the category screen (Add category) is off L2 / R2 and the tabs too, so it isn't a place to start in. */
+    private fun tileTakenOff(key: String): Boolean {
+        // (The screen starts it too, but later than this: the state is built first.)
+        com.shelf.launcher.data.CategoryTileOrder.init(getApplication())
+        return com.shelf.launcher.data.CategoryTileOrder.isHidden(key)
+    }
+
     private fun startPlatformFilter(): String? =
-        if (restoreCtx != null) restoreCtx.platformFilter else if (resumingRecently() || appearanceStore.load().startCategory == "LAST") preferencesStore.lastPlatformFilter()
+        (if (restoreCtx != null) restoreCtx.platformFilter else if (resumingRecently() || appearanceStore.load().startCategory == "LAST") preferencesStore.lastPlatformFilter()
         // Update 125: a console to start in ("P:" and its key, e.g. the Android games).
-        else appearanceStore.load().startCategory.takeIf { it.startsWith("P:") }?.removePrefix("P:")
+        else appearanceStore.load().startCategory.takeIf { it.startsWith("P:") }?.removePrefix("P:"))
+            ?.takeUnless { tileTakenOff("p:$it") }
 
     /**
      * What the details window could fetch for [game] that it doesn't have yet
@@ -3132,18 +3141,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         com.shelf.launcher.ui.PerfDiag.mark(if (forward) "Category switch (R2)" else "Category switch (L2)")
         val stops = categoryStops(state)
         if (stops.isEmpty()) return
+        // (Update 367: -1 when the category you're in isn't in the list — then the first / last stop, not the second.)
         val current = stops.indexOfFirst { (special, platform) ->
             special == state.specialFilter && platform == state.platformFilter
-        }.coerceAtLeast(0)
+        }
         // (Update 211: past categories with nothing in them — on the RP Classic, R2 stopped on "Other apps" with
         // "No games match." Only when every other one is empty does it go there.)
         val step = if (forward) 1 else -1
-        var next = ((current + step) + stops.size) % stops.size
+        var next = com.shelf.launcher.data.CategoryStops.stepFrom(current, step, stops.size)
         for (tries in 1 until stops.size) {
             val (s, p) = stops[next]
             val empty = runCatching { state.copy(specialFilter = s, platformFilter = p).visibleGames.isEmpty() }.getOrDefault(false)
             if (!empty) break
-            next = ((next + step) + stops.size) % stops.size
+            next = com.shelf.launcher.data.CategoryStops.stepFrom(next, step, stops.size)
         }
         val (special, platform) = stops[next]
         when {
@@ -3174,21 +3184,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** The category stops L2 / R2 and the style homes' tabs go through: ALL, each special, each console, each list. */
+    /** The category stops L2 / R2 and the style homes' tabs go through: one list for all of them (data/CategoryStops.kt, update 367). */
     private fun categoryStops(state: LauncherUiState): List<Pair<SpecialFilter?, String?>> =
-        // Flatten the order into stops: ALL, each special, each console.
-        // (Update 214: in your own order of the tiles too — CategoryTileOrder — as the category screen shows them.)
-        com.shelf.launcher.data.CategoryTileOrder.sort(state.categoryOrder.flatMap { key ->
-            when (key) {
-                CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
-                // (Update 208: in your own console order — Choose a category › Reorder — as the category screen shows them.)
-                CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).map { null to it }
-                CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
-                else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
-            }
-        }) { (special, platform) -> special?.name ?: platform?.let { "p:$it" } ?: "ALL" }
-            // (Update 325: not the categories taken off the category screen — CategoryTileOrder.isHidden.)
-            .filterNot { (special, platform) -> com.shelf.launcher.data.CategoryTileOrder.isHidden(special?.name ?: platform?.let { "p:$it" } ?: "ALL") }
+        com.shelf.launcher.data.CategoryStops.stops(state)
 
     // ---- Category order, and where you left off ----
 
