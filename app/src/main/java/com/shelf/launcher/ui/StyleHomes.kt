@@ -201,6 +201,8 @@ internal fun styleHomeKey(
     // Next version: Cinema and Arctic hub take their rows (and Arctic its rail) themselves.
     if (layout == HomeLayout.CINEMA) return cinemaKey(event, reach)
     if (layout == HomeLayout.ARCTIC) return arcticKey(event, reach)
+    // Update 374: Artwork library takes its list, rail and Play button itself.
+    if (layout == HomeLayout.ARTLIB) return artLibKey(event, reach)
     // (Update 325: Twin icons' category page takes the keys while it's open.)
     if (layout == HomeLayout.TWIN_ICONS && TwinNav.cats.value) return twinCatsKey(event, sound)
     val code = event.nativeKeyEvent.keyCode
@@ -659,7 +661,7 @@ internal fun styleHomeKey(
             )
         )
         // Update 146: the newer layouts handle their own keys (in their own files) through [StyleKeyCtx].
-        HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES, HomeLayout.DISCS -> {
+        HomeLayout.LIBRARY, HomeLayout.STACKS, HomeLayout.TIMELINE, HomeLayout.ARCADE, HomeLayout.CONSOLES, HomeLayout.DISCS, HomeLayout.COVERDETAILS -> {
             val ctx = StyleKeyCtx(
                 key = k, first = first, focus = focus, count = count, setFocus = setFocus, sound = sound,
                 category = category, enterZone = { z -> enter(z) }, reach = { up -> if (first) reach(up); take() }, take = { take() }
@@ -670,6 +672,7 @@ internal fun styleHomeKey(
                 HomeLayout.TIMELINE -> timelineKey(ctx)
                 HomeLayout.ARCADE -> arcadeKey(ctx)
                 HomeLayout.DISCS -> discStationKey(ctx)
+                HomeLayout.COVERDETAILS -> coverDetailsKey(ctx)
                 else -> consoleStackKey(ctx)
             }
         }
@@ -1342,6 +1345,8 @@ internal fun StyleHome(
         HomeLayout.TERMINAL -> StyleTerminal(c, modifier)
         HomeLayout.CINEMA -> StyleCinema(c, modifier)
         HomeLayout.ARCTIC -> StyleArctic(c, modifier)
+        HomeLayout.COVERDETAILS -> StyleCoverDetails(c, modifier)
+        HomeLayout.ARTLIB -> StyleArtLibrary(c, modifier)
         else -> Unit
     }
 }
@@ -1427,6 +1432,8 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.TERMINAL -> TerminalBackdrop(Modifier.fillMaxSize())
         HomeLayout.CINEMA -> CinemaBackdrop(Modifier.fillMaxSize())
         HomeLayout.ARCTIC -> ArcticBackdrop(Modifier.fillMaxSize())
+        HomeLayout.COVERDETAILS -> CoverDetailsBackdrop(Modifier.fillMaxSize(), artUrl)
+        HomeLayout.ARTLIB -> ArtLibraryBackdrop(Modifier.fillMaxSize(), artUrl)
         else -> Unit
     }
 }
@@ -1482,6 +1489,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL -> true
     // Next version: their own room (Cinema's dark hall; Arctic draws the fanart itself).
     HomeLayout.CINEMA, HomeLayout.ARCTIC -> true
+    // Update 374: Coverflow details and Artwork library draw the game's art themselves, over their own dark room.
+    HomeLayout.COVERDETAILS, HomeLayout.ARTLIB -> true
     // Update 347: Arcade cabinets' room (Layout options › Room; "Your theme" keeps Voltcap's background).
     HomeLayout.ARCADE -> Features.arRoom.state.value != Features.ArRoom.THEME
     else -> false

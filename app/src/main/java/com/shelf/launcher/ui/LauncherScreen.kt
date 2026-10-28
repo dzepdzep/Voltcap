@@ -1040,6 +1040,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Pass 4: Settings › Categories › Home layout per category acts through the view model.
     SideEffect {
         CategoryLayoutActions.currentKey = { viewModel.currentCategoryKey() }
+        CategoryLayoutActions.keys = { viewModel.categoryLayoutKeys() }
+        CategoryLayoutActions.apply = { k, l -> viewModel.applyCategoryLayout(k, l) }
         CategoryLayoutActions.set = { l -> viewModel.setCategoryLayout(l) }
         CategoryLayoutActions.reset = { k ->
             if (k == viewModel.currentCategoryKey()) viewModel.setCategoryLayout(null)
@@ -2807,6 +2809,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TERMINAL ||
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CINEMA ||
             state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.ARCTIC ||
+            // Update 374: Coverflow details / Artwork library draw the game's art over their own dark room.
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.COVERDETAILS ||
+            state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.ARTLIB ||
             // Update 347: Arcade cabinets' room.
             (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.ARCADE && com.shelf.launcher.data.Features.arRoom.state.value != com.shelf.launcher.data.Features.ArRoom.THEME) ||
             // Update 181: the Pocket layouts always draw their own (paper or the handheld's body).
@@ -4412,6 +4417,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Next version: Cinema names the category's row; Arctic marks it on its rail.
             com.shelf.launcher.data.HomeLayout.CINEMA -> true
             com.shelf.launcher.data.HomeLayout.ARCTIC -> true
+            // Update 374: Artwork library's panel names the category.
+            com.shelf.launcher.data.HomeLayout.ARTLIB -> true
             else -> CategoryTitle.nativeShown()
         }
         val catFallback = overlayLayout != null && catSettled && HomeWidgets.CATEGORY !in overlayParts &&

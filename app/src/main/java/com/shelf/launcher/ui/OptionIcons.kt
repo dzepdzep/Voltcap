@@ -113,6 +113,9 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.TERMINAL -> Pictogram.SIDE_MENU
         com.shelf.launcher.data.HomeLayout.CINEMA -> Pictogram.HERO
         com.shelf.launcher.data.HomeLayout.ARCTIC -> Pictogram.SIDE_MENU
+        // Update 374 (the nearest pictures: a stage over a shelf of spines; a list beside a big picture).
+        com.shelf.launcher.data.HomeLayout.COVERDETAILS -> Pictogram.SPINES
+        com.shelf.launcher.data.HomeLayout.ARTLIB -> Pictogram.SIDE_MENU
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

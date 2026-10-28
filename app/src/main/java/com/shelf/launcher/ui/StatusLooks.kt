@@ -198,11 +198,15 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
             clockSize = 14.sp, clockWeight = FontWeight.Bold, glow = Color(0xFF39FF6A), gap = 11.dp, avatar = AvatarShape.SQUARE, avatarSize = 22.dp, shade = 0.12f
         )
         // Game shelf / Case stacks / Console stack: a spine label — a printed strip, a coloured band at its end.
-        HomeLayout.SHELF, HomeLayout.STACKS -> StatusLook(
-            BarBacking.LABEL, bg = Color(0xEBE9E2D2), ink = Color(0xFF2A241D), accent = Color(0xFF8A2A1F), corner = 2.dp,
-            decor = BarDecor.STRIPE, rim = acc, caps = true, tracking = 0.05f, clockSize = 11.sp, clockWeight = FontWeight.Bold,
-            iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
-        )
+        // Update 374: the collector label keeps its shape, band and capitals, but its paper, ink, band and accent come from the
+        // active theme (it was a fixed cream / brown / red that stood out over every dark theme).
+        HomeLayout.SHELF, HomeLayout.STACKS -> themedLabel(acc, paleBehind).let { t ->
+            StatusLook(
+                BarBacking.LABEL, bg = t.bg, ink = t.ink, accent = t.accent, corner = 2.dp,
+                decor = BarDecor.STRIPE, rim = acc, caps = true, tracking = 0.05f, clockSize = 11.sp, clockWeight = FontWeight.Bold,
+                iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp
+            )
+        }
         // Console stack: a console's front panel — dark plastic, a lit band at its end, small capitals.
         HomeLayout.CONSOLES -> StatusLook(
             BarBacking.LABEL, bg = Color(0xEB25282E), ink = Color(0xFFE3E6EA), accent = acc, corner = 3.dp, decor = BarDecor.STRIPE, rim = acc,
@@ -216,11 +220,13 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
             ghost = true, iconSize = 14.dp, gap = 7.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp, glow = acc
         )
         // Record crate: a record's centre label — cream, a serif face, printed rings.
-        HomeLayout.CRATE -> StatusLook(
-            BarBacking.LABEL, bg = Color(0xF2EFE6D2), ink = Color(0xFF3A2A1E), accent = Color(0xFFB0392B), rim = Color(0xFFB89B6A),
-            corner = 50.dp, font = FontFamily.Serif, clockSize = 13.sp, clockWeight = FontWeight.Bold, decor = BarDecor.GROOVES,
-            avatar = AvatarShape.CIRCLE, avatarSize = 22.dp, iconSize = 15.dp
-        )
+        HomeLayout.CRATE -> themedLabel(acc, paleBehind).let { t ->
+            StatusLook(
+                BarBacking.LABEL, bg = t.bg, ink = t.ink, accent = t.accent, rim = acc.copy(alpha = 0.6f),
+                corner = 50.dp, font = FontFamily.Serif, clockSize = 13.sp, clockWeight = FontWeight.Bold, decor = BarDecor.GROOVES,
+                avatar = AvatarShape.CIRCLE, avatarSize = 22.dp, iconSize = 15.dp
+            )
+        }
         // Card binder: a card's header strip — a metal edge (gold to silver), small capitals.
         HomeLayout.CARDS -> StatusLook(
             BarBacking.LABEL, bg = Color(0xE614161C), accent = Color(0xFFE2C77D), rim = Color(0xFFE2C77D), rim2 = Color(0xFFB9C2CC),
@@ -239,7 +245,9 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         // Storage boxes: small tabs in the box's own wallpaper colours.
         HomeLayout.STORAGE -> (StorageWallTint.color ?: acc).let { w ->
             // (Update 339: pale tabs like the boxes' own white panels, edged in the box's wallpaper colour.)
-            StatusLook(BarBacking.SEGMENTS, bg = Color(0xF2F6F8FB), ink = Color(0xFF263040), accent = mixC(w, Color.Black, 0.25f), rim = mixC(w, Color.Black, 0.1f), rimWidth = 1.5.dp, corner = 7.dp, gap = 5.dp, clockWeight = FontWeight.Bold, iconSize = 15.dp, avatarSize = 22.dp)
+            // (Update 374: tabs tinted by the wallpaper colour instead of near-white ones.)
+            val t = themedLabel(w, paleBehind)
+            StatusLook(BarBacking.SEGMENTS, bg = t.bg, ink = t.ink, accent = t.accent, rim = w.copy(alpha = 0.6f), rimWidth = 1.5.dp, corner = 7.dp, gap = 5.dp, clockWeight = FontWeight.Bold, iconSize = 15.dp, avatarSize = 22.dp)
         }
         // Circuit board: a green chip readout, cut corners, faint traces.
         HomeLayout.CIRCUIT -> when (Features.circuitColors.state.value) {
@@ -339,7 +347,32 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
     }
 }
 
-private fun mixC(a: Color, b: Color, t: Float) = Color(a.red + (b.red - a.red) * t, a.green + (b.green - a.green) * t, a.blue + (b.blue - a.blue) * t, 1f)
+private class LabelColors(val bg: Color, val ink: Color, val accent: Color)
+
+/**
+ * Update 374: a printed label's colours from the active theme: a surface darkened toward the theme's own surface with the
+ * accent worked in (translucent, so the scene shows through), ink from the theme's text colour and kept readable, and the
+ * accent lifted away from the surface where it would sink into it. [paleBehind]: a bright scene under it gets a deeper label.
+ */
+@Composable
+private fun themedLabel(tint: Color, paleBehind: Boolean): LabelColors {
+    val c = ShelfTheme.colors
+    val bg = mixC(mixC(c.surface, Color.Black, if (paleBehind) 0.45f else 0.25f), tint, 0.12f)
+    val ink = readableOn(bg, c.textPrimary)
+    val accent = readableOn(bg, mixC(tint, ink, 0.2f), min = 3f)
+    return LabelColors(bg.copy(alpha = if (paleBehind) 0.92f else 0.84f), ink, accent)
+}
+
+private fun contrast(a: Color, b: Color): Float {
+    val l1 = a.luminance() + 0.05f; val l2 = b.luminance() + 0.05f
+    return if (l1 > l2) l1 / l2 else l2 / l1
+}
+
+/** [pref] when it reads on [bg] (contrast >= [min]), else white or black, whichever reads better. */
+private fun readableOn(bg: Color, pref: Color, min: Float = 4.5f): Color =
+    if (contrast(bg, pref) >= min) pref else if (contrast(bg, Color.White) >= contrast(bg, Color.Black)) Color.White else Color.Black
+
+private fun mixC(a: Color, b: Color, t: Float) =Color(a.red + (b.red - a.red) * t, a.green + (b.green - a.green) * t, a.blue + (b.blue - a.blue) * t, 1f)
 
 /** [look]'s colours, eased when the layout changes. */
 @Composable

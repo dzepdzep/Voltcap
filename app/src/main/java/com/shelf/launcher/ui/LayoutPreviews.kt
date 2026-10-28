@@ -66,6 +66,9 @@ internal fun layoutPreviewRes(l: HomeLayout): Int? = when (l) {
     HomeLayout.ORBIT -> R.drawable.lp_orbit
     HomeLayout.AIRY -> R.drawable.lp_airy
     HomeLayout.NIGHT -> R.drawable.lp_night
+    // Update 375: taken in Voltcap on the emulator (made-up games, no real art), not borrowed from another layout.
+    HomeLayout.COVERDETAILS -> R.drawable.lp_coverdetails
+    HomeLayout.ARTLIB -> R.drawable.lp_artlib
     else -> null
 }
 

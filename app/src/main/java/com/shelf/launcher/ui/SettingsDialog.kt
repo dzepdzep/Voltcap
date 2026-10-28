@@ -5317,45 +5317,54 @@ private fun AwardRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null) {
 // ---- Category order ----
 
 /**
- * Pass 4: Settings › Categories › Home layout per category. The category you're in: its own layout or the default, with
- * "Keep this layout here" (copy the current one), "Follow the default" (reset) and the list of every category that has its
- * own (each with its reset), plus Reset all. To give a category another layout: keep one here, then pick any layout
- * (Settings › Home or R1) while you're in it.
+ * Pass 4 / update 375: Settings › Categories › Home layout per category. Every category (All games, specials, consoles,
+ * collections) with the layout it shows; pressing one opens the confirmable layout picker (picture, description, Apply,
+ * Follow the default, Cancel). Many categories can be edited without leaving Settings; editing one never moves you to it,
+ * and the default layout is only ever changed by picking a layout in a category that has no layout of its own.
  */
 @Composable
 private fun CategoryLayoutsCard(appearance: AppearanceSettings) {
     // (Read as state, so the card follows every change.)
     com.shelf.launcher.data.Features.catLayouts.state.value; com.shelf.launcher.data.Features.catLayoutDefault.state.value
     val all = com.shelf.launcher.data.CategoryLayouts.all()
-    val key = CategoryLayoutActions.currentKey()
-    val own = all[key]
     val def = com.shelf.launcher.data.CategoryLayouts.defaultLayout() ?: appearance.homeLayout
-    val name = com.shelf.launcher.data.categoryKeyLabel(key)
+    val here = CategoryLayoutActions.currentKey()
+    val keys = CategoryLayoutActions.keys()
+    var editing by remember { mutableStateOf<String?>(null) }
     ShelfCard {
-        SectionLabel("This category: $name")
-        MutedNote(
-            if (own != null) "$name always opens in ${own.label}. Pick another layout while you're in it and it keeps that one."
-            else "$name follows the default layout (${def.label})."
-        )
+        SectionLabel("Every category")
+        MutedNote("Press a category to pick its layout. The others follow the default (${def.label}).")
         Spacer(Modifier.height(6.dp))
-        ChipFlow {
-            Chip("Keep ${appearance.homeLayout.label} here", accent = own == appearance.homeLayout) { CategoryLayoutActions.set(appearance.homeLayout) }
-            Chip("Follow the default", accent = own == null) { CategoryLayoutActions.set(null) }
+        keys.forEach { k ->
+            val own = all[k]
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(com.shelf.launcher.data.categoryKeyLabel(k) + if (k == here) " (you're here)" else "",
+                        color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(if (own != null) own.label else "Follows the default · ${def.label}", color = ShelfTheme.textMuted, fontSize = 12.sp)
+                }
+                Chip("Change", accent = own != null) { editing = k }
+            }
         }
         if (all.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            SectionLabel("Categories with their own layout")
-            MutedNote("Default for the others: ${def.label}.")
-            Spacer(Modifier.height(4.dp))
-            all.entries.sortedBy { com.shelf.launcher.data.categoryKeyLabel(it.key) }.forEach { (k, l) ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${com.shelf.launcher.data.categoryKeyLabel(k)} · ${l.label}", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                    Chip("Reset", accent = false) { CategoryLayoutActions.reset(k) }
-                }
-            }
             Spacer(Modifier.height(6.dp))
             Chip("Reset all", accent = false) { CategoryLayoutActions.clear() }
         }
+    }
+    editing?.let { k ->
+        val own = all[k]
+        val name = com.shelf.launcher.data.categoryKeyLabel(k)
+        LayoutPickerDialog(
+            title = "Home layout · $name",
+            note = if (own != null) "$name opens in ${own.label}. Choose another and Apply, or follow the default (${def.label})."
+            else "$name follows the default (${def.label}). Choose a layout and Apply to give it its own.",
+            active = own ?: def,
+            onApply = { l -> CategoryLayoutActions.apply(k, l) },
+            onDismiss = { editing = null },
+            followLabel = "Follow default",
+            followsDefault = own == null,
+            onFollow = { CategoryLayoutActions.apply(k, null) }
+        )
     }
     Spacer(Modifier.height(10.dp))
 }
@@ -5409,6 +5418,8 @@ internal object CategoryGameLookActions {
 /** Pass 4: what Settings › Categories › Home layout per category does (set by the launcher screen, which has the view model). */
 internal object CategoryLayoutActions {
     var currentKey: () -> String = { "ALL" }
+    var keys: () -> List<String> = { listOf("ALL") }
+    var apply: (String, com.shelf.launcher.data.HomeLayout?) -> Unit = { _, _ -> }
     var set: (com.shelf.launcher.data.HomeLayout?) -> Unit = {}
     var reset: (String) -> Unit = {}
     var clear: () -> Unit = {}

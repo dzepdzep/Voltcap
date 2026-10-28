@@ -231,7 +231,13 @@ enum class HomeLayout(val label: String) {
     CINEMA("Cinema"),
     /** Next version: Arctic hub — a media-centre home: a navigation rail that folds open, widgets of your games over
      *  the game's fanart and its info; A opens the Arctic info drawer (StyleArctic.kt). */
-    ARCTIC("Arctic hub");
+    ARCTIC("Arctic hub"),
+    /** Update 374: Coverflow details — the game you're on as a big 3D retail box with its facts and story beside it, a shelf of
+     *  upright spines gliding along the bottom (StyleCoverDetails.kt). */
+    COVERDETAILS("Coverflow details"),
+    /** Update 374: Artwork library — hero art across the screen, a slim navigation rail, a glass game-list panel with a fixed
+     *  highlight, the game's logo, facts and Play (StyleArtLibrary.kt). */
+    ARTLIB("Artwork library");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -249,6 +255,7 @@ enum class HomeLayout(val label: String) {
         this == ORBIT || this == AIRY || this == NIGHT || // Update 330, phase 3
         this == BLADES || this == BUBBLES || this == CAMERA || this == PANELS || this == MAGAZINE || this == SHOP || this == TERMINAL || // Update 344
         this == CINEMA || this == ARCTIC || // Next version
+        this == COVERDETAILS || this == ARTLIB || // Update 374
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -743,7 +750,7 @@ object CategoryBars {
     val MENU = setOf(
         HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,
         HomeLayout.ARCADE, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET, HomeLayout.GREENCORE, HomeLayout.CUBE, HomeLayout.BLADES, HomeLayout.PANELS, HomeLayout.TERMINAL,
-        HomeLayout.CINEMA, HomeLayout.ARCTIC,
+        HomeLayout.CINEMA, HomeLayout.ARCTIC, HomeLayout.ARTLIB,
         HomeLayout.CUSTOM
     )
 

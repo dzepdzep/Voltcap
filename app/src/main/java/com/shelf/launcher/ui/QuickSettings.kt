@@ -1833,41 +1833,17 @@ object QuickControls {
  * Hold the Overlay tile: which overlays show over games and where each one sits. Picking a corner
  * another overlay already has swaps the two. One on its own keeps the corner picked for it.
  */
-/** Hold on the Layout tile: every home layout to pick from. */
+/** Hold on the Layout tile: every home layout to pick from; the pick is only a candidate until Apply (update 375). */
 @Composable
 private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit, undoable: (String, () -> Unit) -> Unit = { _, run -> run() }) {
     val a = home.appearance
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        ImmersiveDialogWindow()
-        ShelfCard {
-            SectionLabel("Home layout")
-            MutedNote("Pick the layout; each keeps its own options (hold the tile for its settings page).")
-            Spacer(Modifier.height(10.dp))
-            // (Update 337: a picture of the layout the cursor is on.)
-            var shown by remember { mutableStateOf(a.homeLayout) }
-            LayoutPreview(shown, Modifier.widthIn(max = 300.dp))
-            Spacer(Modifier.height(10.dp))
-            // Fifteen layouts: scrolls on a short screen, and the D-pad starts on the one in use.
-            val current = remember { FocusRequester() }
-            LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { current.requestFocus() } }
-            androidx.compose.foundation.layout.Column(
-                // (Update 182: as tall as the screen leaves room for — Done was cut off at the bottom on the Thor.)
-                Modifier.heightIn(max = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp - 200).coerceIn(120, 300).dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                ChipFlow {
-                    com.shelf.launcher.data.HomeLayout.pickable.forEach { l ->
-                        Box(if (a.homeLayout == l) Modifier.focusRequester(current) else Modifier) {
-                            Chip((if (a.homeLayout == l) "✓ " else "") + l.label, accent = a.homeLayout == l,
-                                modifier = Modifier.onFocusChanged { if (it.isFocused) shown = l }) { undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) }; onDismiss() }
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Chip("Done", onClick = onDismiss)
-        }
-    }
+    LayoutPickerDialog(
+        title = "Home layout",
+        note = "Move over a layout to see it, press one to choose it, then Apply. Each layout keeps its own options (hold the tile for its settings page).",
+        active = a.homeLayout,
+        onApply = { l -> undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) } },
+        onDismiss = onDismiss
+    )
 }
 
 /** Hold on the Size tile: Small / Medium / Large and a % slider, for the layout in use (update 104 / 105). */

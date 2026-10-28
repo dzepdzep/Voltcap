@@ -126,6 +126,9 @@ internal fun PresetPreview(
             // Next version: the nearest mock screens (a big picture over rows; a menu beside tiles).
             HomeLayout.CINEMA -> p.hero()
             HomeLayout.ARCTIC -> p.dash()
+            // Update 374: the nearest mock screens (a stage over spines; a list beside a picture).
+            HomeLayout.COVERDETAILS -> p.coverDetails()
+            HomeLayout.ARTLIB -> p.artLib()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()
@@ -750,6 +753,36 @@ private class PreviewPainter(
             if (y + ch > 0.98f) continue
             card(gx + c * (cw + 0.015f), y, cw, ch, r * cols + c, on = r == 0 && c == 1)
         }
+    }
+
+    /** Update 376: Coverflow details: the big case left, title / facts / story right, a shelf of spines along the bottom. */
+    fun coverDetails() {
+        card(0.07f, 0.17f, 0.3f, 0.5f, 0, on = true, r0 = 2f)
+        line(0.44f, 0.22f, 0.4f, Color.White, 0.07f)
+        line(0.44f, 0.33f, 0.14f, accent, 0.03f)
+        for (i in 0..2) { line(0.44f + i * 0.17f, 0.45f, 0.08f, Color.White.copy(alpha = 0.4f), 0.02f); line(0.44f + i * 0.17f, 0.5f, 0.12f, Color.White.copy(alpha = 0.85f), 0.03f) }
+        for (r in 0..2) line(0.44f, 0.6f + r * 0.05f, 0.46f - r * 0.1f, Color.White.copy(alpha = 0.5f), 0.025f)
+        for (j in 0..29) {
+            val sh = 0.13f + (j % 4) * 0.015f
+            rect(0.03f + j * 0.031f, 0.97f - sh, 0.024f, sh, cover(j).copy(alpha = if (j == 14) 1f else 0.85f), 1f)
+        }
+        rect(0.02f, 0.97f, 0.96f, 0.02f, Color(0xFF8A5A33).copy(alpha = 0.9f), 1f)
+    }
+
+    /** Update 376: Artwork library: slim rail, glass game list with a rounded highlight, hero art with logo, facts, Play. */
+    fun artLib() {
+        rect(0.03f, 0.18f, 0.06f, 0.7f, Color.Black.copy(alpha = 0.45f), 8f)
+        for (i in 0..4) rect(0.045f, 0.22f + i * 0.12f, 0.03f, 0.06f, Color.White.copy(alpha = if (i == 0) 0.9f else 0.35f), 4f)
+        rect(0.11f, 0.18f, 0.3f, 0.7f, Color.Black.copy(alpha = 0.5f), 8f)
+        line(0.14f, 0.23f, 0.1f, Color.White, 0.035f)
+        rect(0.125f, 0.42f, 0.27f, 0.1f, accent.copy(alpha = 0.9f), 6f)
+        for (r in 0..4) if (r != 2) line(0.145f, 0.34f + r * 0.1f + (if (r > 2) 0.03f else 0f), 0.2f - (r % 2) * 0.04f, Color.White.copy(alpha = 0.6f), 0.03f)
+        line(0.145f, 0.455f, 0.19f, Color.White, 0.03f)
+        line(0.5f, 0.42f, 0.38f, Color.White, 0.09f)
+        for (i in 0..2) rect(0.5f + i * 0.1f, 0.56f, 0.08f, 0.05f, Color.White.copy(alpha = 0.2f), 6f)
+        for (r in 0..1) line(0.5f, 0.67f + r * 0.05f, 0.4f - r * 0.1f, Color.White.copy(alpha = 0.5f), 0.025f)
+        rect(0.5f, 0.8f, 0.14f, 0.08f, accent, 8f)
+        rect(0.66f, 0.8f, 0.12f, 0.08f, Color.White.copy(alpha = 0.2f), 8f)
     }
 
     /** Case stacks: the tool strip, the case in the middle with stacks of spines either side (or the carousel), the panel. */

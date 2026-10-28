@@ -770,12 +770,16 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, content: @Composable (M
  */
 @Composable
 private fun SpineName(name: String, ink: Color, modifier: Modifier) {
-    FullText(
-        // (Update 129: down to 4.5 sp, so a name like "God of War" fits a slim spine whole instead of being cut.)
-        name, color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
-        modifier = modifier
-    )
+    // (Update 376: on a spine too slim for two readable lines (PS1 / GBA width) the name runs as ONE line, so it is not
+    // cut by the neighbouring line; a longer name slides, as FullText does.)
+    androidx.compose.foundation.layout.BoxWithConstraints {
+        FullText(
+            // (Update 129: down to 4.5 sp, so a name like "God of War" fits a slim spine whole instead of being cut.)
+            name, color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = if (maxWidth < 20.dp) 1 else 2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
+            modifier = modifier
+        )
+    }
 }
 
 /** Lays text out turned on its side (reads top to bottom), as printed on a spine. */

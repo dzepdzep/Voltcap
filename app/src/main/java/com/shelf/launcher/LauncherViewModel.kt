@@ -2258,6 +2258,30 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         if (d != null && d != s.appearance.homeLayout) setAppearance(s.appearance.copy(homeLayout = d))
     }
 
+    /**
+     * Update 375: every category Settings › Categories › Home layout per category lists, as CategoryLayouts keys ("ALL", "S:…",
+     * "P:…"): the stops L2 / R2 step through, then every console and collection (also the hidden ones), then any key that
+     * already has its own layout (so an override on a category that has gone away can still be reset).
+     */
+    fun categoryLayoutKeys(): List<String> {
+        val s = _uiState.value
+        val out = LinkedHashSet<String>()
+        com.shelf.launcher.data.CategoryStops.stops(s).forEach { (sp, p) -> out.add(sp?.let { "S:" + it.name } ?: p?.let { "P:$it" } ?: "ALL") }
+        com.shelf.launcher.data.PlatformOrder.sort(s.availablePlatforms).forEach { out.add("P:$it") }
+        s.collections.forEach { out.add("P:" + it.key) }
+        out.addAll(com.shelf.launcher.data.CategoryLayouts.all().keys)
+        return out.toList()
+    }
+
+    /**
+     * Update 375: gives the category [key] [layout] (null: follows the default). The category you're in switches on screen as
+     * usual; any other is only stored — the home category never changes and the default stays as it is.
+     */
+    fun applyCategoryLayout(key: String, layout: com.shelf.launcher.data.HomeLayout?) {
+        if (key == currentCategoryKey()) setCategoryLayout(layout)
+        else com.shelf.launcher.data.CategoryLayouts.set(key, layout, _uiState.value.appearance.homeLayout)
+    }
+
     /** Update 186: a validated internet connection right now. */
     private fun deviceOnline(): Boolean = runCatching {
         val cm = getApplication<Application>().getSystemService(android.net.ConnectivityManager::class.java)
