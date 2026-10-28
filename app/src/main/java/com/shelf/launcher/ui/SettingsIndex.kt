@@ -154,6 +154,11 @@ internal object SettingsIndex {
         E("Case stacks: cases in 3D", "Home", "Layout options", null, null),
         // (Update 249, #119.)
         E("Game window motion: the row opens up / row reveal / shared move", "Home", "Layout options", "lo_window", "Game window"),
+        E("Switch style (Tile home like a console home menu)", "Home", "Layout options", "lo_tile_switch", "Switch style"),
+        E("Plain background (Tile home)", "Home", "Layout options", "lo_tile_switch", "Switch style"),
+        E("Profiles top-left (Tile home)", "Home", "Layout options", "lo_tile_switch", "Switch style"),
+        E("Thin focus frame (Tile home)", "Home", "Layout options", "lo_tile_switch", "Switch style"),
+        E("Hint bar (Tile home)", "Home", "Layout options", "lo_tile_switch", "Switch style"),
         // (Update 246, #89: the rest of Case stacks' own switches — "mirror" found nothing.)
         E("Case stacks: stacks in perspective", "Home", "Layout options", null, null),
         E("Case stacks: tool strip", "Home", "Layout options", null, null),

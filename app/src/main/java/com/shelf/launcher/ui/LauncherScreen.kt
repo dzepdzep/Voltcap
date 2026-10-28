@@ -2376,6 +2376,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     SideEffect { GreenCoreHooks.hotkey = { a -> runHotkey(com.shelf.launcher.data.Hotkey(action = a)) } }
     val tileBarLast = remember { intArrayOf(0) }
     LaunchedEffect(tileLayout) { if (!tileLayout) tileBarFocus = null }
+    val tileProfilesNow = tileLayout && TileSwitch.profiles
+    SideEffect { if (TileSwitch.hideBarAvatar != tileProfilesNow) TileSwitch.hideBarAvatar = tileProfilesNow }
     val tileShortcuts = listOf(
         HomeShortcut("Categories", Icons.Filled.GridView, Color(0xFFFF9F43)) { openCategoryScreen() },
         HomeShortcut("All apps", Icons.Filled.Apps, Color(0xFF4CD964)) { if (drawerAllowed) showAppDrawer = true },
@@ -3175,10 +3177,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val backdropClip = videoUrl?.takeIf {
             allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                 !roomClip && !screensaverOn && !heroLayout && !discCalm &&
-                !(styleLayout && styleOwnsBackground(state.appearance.homeLayout))
+                !(styleLayout && styleOwnsBackground(state.appearance.homeLayout)) &&
+                !(tileLayout && TileSwitch.plain)
         }
         // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
         VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
+        // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
+        if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
 
         // Hero carousel: the focused game's hero fills the screen (under the status bar).
         if (heroLayout) {
@@ -4507,7 +4512,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         Box(Modifier.matchParentSize().zIndex(6.5f)) { TopScreenFolderPreview(hoverShown, Modifier.fillMaxSize()) }
         if (legendShown) {
             // Update 202: moved, resized or taken off in Edit Home like the layout's other parts (each layout its own).
-            Box(Modifier.align(Alignment.BottomCenter).editablePart(LayoutParts.id(state.appearance.homeLayout, "legend"), "Button legend")) { LegendBar() }
+            Box(Modifier.align(Alignment.BottomCenter).editablePart(LayoutParts.id(state.appearance.homeLayout, "legend"), "Button legend")) {
+                // Update 358: Tile home › Switch style › Hint bar: a thin line over the legend, across the screen.
+                if (tileLayout && TileSwitch.hints) Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 24.dp).height(1.dp).background(Color.White.copy(alpha = 0.32f)))
+                LegendBar()
+            }
+        }
+        // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
+        if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active) {
+            Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)) {
+                TileSwitchProfiles(state.raAccounts, com.shelf.launcher.data.SteamAchievements.avatarUrl.value)
+            }
         }
         // The details window. Drawn last so it sits above the dock; real
         // dialogs (achievement list, options) are separate windows and still

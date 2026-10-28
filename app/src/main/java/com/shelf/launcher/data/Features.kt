@@ -1362,6 +1362,12 @@ object Features {
      * input (HomeIdle.calm) and plays on at the first press. Off by default: clips loop continuously as since update 307.
      */
     val clipIdlePause = BoolPref("clip_idle_pause", false)
+    /** Update 358 (Toni): Tile home › Switch style — on by default; off is Tile home as before. Each part its own switch (TileSwitch.kt). */
+    val tileSwitch = BoolPref("tile_switch", true)
+    val tileSwitchPlain = BoolPref("tile_switch_plain", true)
+    val tileSwitchProfiles = BoolPref("tile_switch_profiles", true)
+    val tileSwitchFrame = BoolPref("tile_switch_frame", true)
+    val tileSwitchHints = BoolPref("tile_switch_hints", true)
     /** Update 187: Android's own Battery Saver on counts as low battery too. */
     val saverFollowSystem = BoolPref("saver_follow_system", true)
     /** Update 187: Voltcap rests while a game or another app has the controller (two-screen handhelds). */

@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.CropFree
+import androidx.compose.material.icons.filled.HorizontalRule
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.RestartAlt
@@ -3521,6 +3525,42 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         SectionLabel(appearance.homeLayout.label)
         MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
         Spacer(Modifier.height(8.dp))
+        // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
+        if (tileLayout) {
+            val F = com.shelf.launcher.data.Features
+            FoldGroup(
+                "Switch style", key = "lo_tile_switch", startOpen = true,
+                summary = if (F.tileSwitch.state.value) "On" else "Off: Tile home's own look"
+            ) {
+                SwitchRow(
+                    Icons.Filled.SportsEsports, "Switch style",
+                    "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
+                    F.tileSwitch.state.value, { F.tileSwitch.value = it }
+                )
+                if (F.tileSwitch.state.value) {
+                    SwitchRow(
+                        Icons.Filled.Wallpaper, "Plain background",
+                        "A calm grey behind the tiles. Off: the background you picked shows again (game art, the gameplay clip, your wallpaper or a theme), with the tiles over it.",
+                        F.tileSwitchPlain.state.value, { F.tileSwitchPlain.value = it }
+                    )
+                    SwitchRow(
+                        Icons.Filled.Person, "Profiles top-left",
+                        "Every profile's picture in the top-left corner, the one playing ringed. Tap them to switch who's playing.",
+                        F.tileSwitchProfiles.state.value, { F.tileSwitchProfiles.value = it }
+                    )
+                    SwitchRow(
+                        Icons.Filled.CropFree, "Thin focus frame",
+                        "A thin bright frame that gently pulses round the game you're on, instead of the thick glowing ring.",
+                        F.tileSwitchFrame.state.value, { F.tileSwitchFrame.value = it }
+                    )
+                    SwitchRow(
+                        Icons.Filled.HorizontalRule, "Hint bar",
+                        "A thin line across the bottom over the button hints (while the button legend is shown).",
+                        F.tileSwitchHints.state.value, { F.tileSwitchHints.value = it }
+                    )
+                }
+            }
+        }
         // Update 148: the page in folds (it was one long scroll): the game window, background & names, the carousel.
         FoldGroup(
             "Game window", key = "lo_window",

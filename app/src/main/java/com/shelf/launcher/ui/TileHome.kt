@@ -643,19 +643,21 @@ private fun HomeTile(
         else -> ArtKind.HERO
     }
     val request = remember(url, kind, px) { url?.let { artRequest(context, it, kind, IntSize(px, px)) } }
+    // Update 358: Tile home › Switch style › Thin focus frame — thin, bright, gently pulsing; no glow or bolts.
+    val thin = TileSwitch.frame
     val ringGap = 3.dp
-    val ringWidth = 3.5.dp
+    val ringWidth = if (thin) 2.5.dp else 3.5.dp
     val tap by rememberUpdatedState(onTap)
     // Game row › Effect, as on the classic row: electric bolts around the ring, or a breathing glow.
     // Lite effects: a still glow instead of bolts.
     val lite = LocalLiteEffects.current
     val effect = when {
-        !focused || dimmed -> com.shelf.launcher.data.FocusEffect.NONE
+        !focused || dimmed || thin -> com.shelf.launcher.data.FocusEffect.NONE
         lite && look.focusEffect == com.shelf.launcher.data.FocusEffect.ELECTRIC -> com.shelf.launcher.data.FocusEffect.GLOW
         else -> look.focusEffect
     }
     // ~20 updates a second (not every display frame), and still while the handheld sits idle.
-    val pulse = rememberFocusPulse(animate = effect != com.shelf.launcher.data.FocusEffect.NONE && !lite)
+    val pulse = rememberFocusPulse(animate = (effect != com.shelf.launcher.data.FocusEffect.NONE || (thin && focused && !dimmed)) && !lite)
     val glowBoost = if (effect == com.shelf.launcher.data.FocusEffect.GLOW) 0.6f + 0.8f * pulse else 1f
     // Cartridge / disc / box drawn as the real thing: it stands free in the tile's place (no square behind it, no
     // ring round the square — no empty bands next to the object); a light pool under the one you're on.
@@ -682,7 +684,20 @@ private fun HomeTile(
             }
             .drawBehind {
                 // The accent ring is the coloured frame (Settings › Cards & frames): off = no ring.
-                if (ring > 0f && look.focusBorder && !free) {
+                if (ring > 0f && thin && !free) {
+                    // The Switch's frame: one thin line, between the accent and white as it pulses.
+                    val gap = ringGap.toPx()
+                    val w = ringWidth.toPx()
+                    val out = gap + w / 2f
+                    drawRoundRect(
+                        color = lerp(accent, Color.White, 0.25f + 0.45f * pulse),
+                        topLeft = Offset(-out, -out),
+                        size = Size(size.width + 2 * out, size.height + 2 * out),
+                        cornerRadius = CornerRadius(corner.toPx() + out),
+                        alpha = ring,
+                        style = Stroke(w)
+                    )
+                } else if (ring > 0f && look.focusBorder && !free) {
                     val gap = ringGap.toPx()
                     val w = ringWidth.toPx()
                     val out = gap + w / 2f

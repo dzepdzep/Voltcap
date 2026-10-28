@@ -283,7 +283,9 @@ internal fun StatusBar(
                 val pic = Modifier.size(look.avatarSize)
                     .then(if (look.ring != null) Modifier.border(2.dp, look.ring, look.avatarShape()).padding(3.dp) else Modifier)
                     .clip(look.avatarShape()).tapOnly(onProfileClick)
-                if (avatarUrl != null) {
+                // (Update 358: not while Tile home's Switch style shows the profiles top-left — the same picture twice.)
+                if (TileSwitch.hideBarAvatar) Unit
+                else if (avatarUrl != null) {
                     AsyncImage(model = avatarUrl, contentDescription = raProfile?.User, contentScale = ContentScale.Crop, modifier = pic)
                 } else {
                     Box(pic.background(barAccent), contentAlignment = Alignment.Center) {

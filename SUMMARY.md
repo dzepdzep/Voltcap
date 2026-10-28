@@ -1,5 +1,18 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (358): Tile home › Switch style
+
+Tile home upgraded, not replaced: **Settings › Home › Layout options › Switch style**, on by default. Off is Tile home
+exactly as before. Each part has its own switch:
+- **Plain background:** a calm grey behind the tiles. Off: your background shows again — game art, the gameplay clip,
+  your wallpaper or a theme — with the tiles over it (checked on the RP: nothing overlaps).
+- **Profiles top-left:** every profile's picture in the top-left corner, the one playing ringed; tap to switch who's
+  playing. The status bar leaves its own picture out then, so it isn't shown twice.
+- **Thin focus frame:** a thin bright frame that gently pulses round the game you're on, instead of the thick glow.
+- **Hint bar:** a thin line over the button hints (when the button legend is shown).
+- Round buttons, tile size and everything else in Tile home keep your settings.
+Checked on the RP Classic (release build): all three states draw, moving works, no crash. Not checked on the Thor.
+
 ## Update — 28 Oct 2026 (357): Voltcap 0.6.47 released; Settings walked on the RP Classic
 
 **Released:** Voltcap 0.6.47 (54) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.47 (Latest, not a
