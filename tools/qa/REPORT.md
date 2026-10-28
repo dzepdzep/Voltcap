@@ -440,3 +440,8 @@ by migrations kept. Duplicated rows (Shimmer twice; the TV room and Carousel blo
 - Explorer: "SETTINGS" opens each category by name (on a narrow screen Settings has tabs across the top, not a list);
   explore.sh closes the category screen first (a run that ended on B left it open).
 - Tool note: re-committing the same staged path to the PC can deliver the old content — every commit now uses a fresh copy.
+
+## Final pass before 0.6.51 (28 Oct 2026)
+Thor 3140972f, release 0.6.50 + 363 fixes installed over the old build. Cinema / Arctic hub / Tile home / Dashboard / Hero / Live tiles /
+Side menu recorded with `layouts.sh` (preview only) and read as ffmpeg contact sheets. No shift of name, facts, buttons or cards; no
+flicker. `frames.py` fails on the Thor recordings (IndexError, `times` empty) — not fixed. Not covered: other panel aspect ratios, second screen.

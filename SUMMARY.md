@@ -1,5 +1,23 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (364): final QA pass on Cinema / Arctic hub; 0.6.51
+
+**No code changes** — the pass found no confirmed problem. Released as 0.6.51 (the 363 fixes, never released before).
+**Checked on the AYN Thor** (serial 3140972f, 1920×1080, 120 Hz), the release build installed over 0.6.50 with `adb install -r`
+(same key, data and settings kept; layouts were preview-only, profile picker left with B = "Keep Pockeetz"; test hooks off again):
+- Cinema and Arctic hub, 11 s of navigation each (R×6, L×4, Down/Up, category jumps) recorded and read as contact sheets, plus a
+  rest still: real fanart and logos, round "logo" art, one- and two-line long names ("123 Sesame Street Elmo's A To Zoo
+  Adventure The Videogame", "007 Tomorrow Never Dies (TiJayFLY)"), games with and without facts / stars. Name slot, facts line,
+  buttons and rows stayed at the same place in every frame; the whole name shows when it settles; no flicker or restart.
+  What looks like cut text in a few frames is the name sliding in/out (clipped by its own slot), and the old picture held
+  until the next one loads (by design).
+- Tile home, Dashboard, Hero carousel, Live tiles, Side menu: stills and 11 s runs, no layout shift; jank 3–14 % (Dashboard 13.9 %,
+  in line with its earlier 11–13 %).
+- `static_checks.py --strict` exit 0 (no HIGH). `gradlew assembleRelease` OK.
+**Not checked:** other aspect ratios of the display (only the Thor's 1920×1080 panel; the emulator was not re-run), the second
+screen, tools/qa `frames.py` (still fails on these recordings: IndexError — read with ffmpeg contact sheets instead).
+**Seen, not changed:** Live tiles' tile titles are cut inside a tile ("07 The World Is Not Enc", counted by R18 before).
+
 ## Update — 28 Oct 2026 (363): Cinema / Arctic hub steadied; the Tile home name fix reused elsewhere
 
 **Released earlier:** Voltcap 0.6.50 (57) — the Tile home name fix (362), Thor menu focus and the square-logo fix (361). Nothing
