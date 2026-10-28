@@ -230,7 +230,7 @@ private fun SidePanel(c: StyleCtx, width: androidx.compose.ui.unit.Dp, compact: 
             FitText(
                 LocalTitleOptions.current.display(g.name).let { if (caps) it.uppercase() else it }, color = trim,
                 maxSize = 10.sp, minSize = 7.sp, maxLines = 2, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().height(28.dp).riseOnChange(g.stableKey).padding(horizontal = 10.dp)
+                modifier = Modifier.fillMaxWidth().height(28.dp).riseOnChange(g.stableKey, floor = 0.5f, ms = 180).padding(horizontal = 10.dp)
             )
             FitText(
                 LocalTitleOptions.current.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = trim.copy(alpha = 0.65f),

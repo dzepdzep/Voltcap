@@ -147,3 +147,46 @@ internal fun FullText(
         modifier = modifier
     )
 }
+
+/**
+ * Update 363 (Cinema / Arctic hub, Thor): [FullText] whose size that fits is worked out in the same layout pass as the room it
+ * gets — [FullText]'s own auto-size draws nothing for a few frames after each change while it fits itself, so a name in a
+ * fixed slot popped in late. Same wrapping, same readable minimum ([fitMin]), same slide as the last resort.
+ */
+@Composable
+internal fun StableFullText(
+    text: String,
+    color: Color,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1,
+    fontWeight: FontWeight? = null,
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    letterSpacing: TextUnit = TextUnit.Unspecified
+) {
+    BoxWithConstraints(modifier) {
+        val measurer = rememberTextMeasurer(cacheSize = 8)
+        val base = androidx.compose.material3.LocalTextStyle.current
+        val w = constraints.maxWidth
+        val h = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
+        val top = fontSize.value
+        val bottom = fitMin(fontSize).value
+        val ratio = if (lineHeight.isSp && top > 0f) lineHeight.value / top else 1.2f
+        val fit = remember(text, w, h, top, bottom, maxLines, fontWeight, base, ratio, letterSpacing) {
+            var s = top
+            while (s > bottom && w > 0 && w != Constraints.Infinity) {
+                val r = measurer.measure(
+                    text, base.copy(fontSize = s.sp, lineHeight = (s * ratio).sp, fontWeight = fontWeight ?: base.fontWeight, letterSpacing = letterSpacing),
+                    overflow = TextOverflow.Clip, maxLines = maxLines, constraints = Constraints(maxWidth = w, maxHeight = h)
+                )
+                if (!r.hasVisualOverflow) break
+                s = maxOf(bottom, s - 1f)
+            }
+            s
+        }
+        FullText(
+            text, color = color, fontSize = fit.sp, maxLines = maxLines, fontWeight = fontWeight,
+            lineHeight = (fit * ratio).sp, letterSpacing = letterSpacing, autoFit = false
+        )
+    }
+}

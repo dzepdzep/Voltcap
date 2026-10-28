@@ -93,7 +93,7 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                 Column(Modifier.align(Alignment.BottomStart).padding(start = 28.dp, bottom = 10.dp, end = 28.dp).graphicsLayer {
                     val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx(); alpha = k
                 }) {
-                    LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 44.dp else 66.dp).fillMaxWidth(0.55f)) { FullText(ctx.name, color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Black, maxLines = 2) }
+                    LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 44.dp else 66.dp).fillMaxWidth(0.55f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Black, maxLines = 2) }
                 }
             }
             Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
@@ -217,7 +217,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
             }.background(Brush.horizontalGradient(listOf(Color(0xF2101A26), Color(0xFA0B121B))))
                 .padding(horizontal = 22.dp, vertical = 16.dp)
         ) {
-            LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 36.dp else 52.dp).fillMaxWidth()) { FullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
+            LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 36.dp else 52.dp).fillMaxWidth()) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
             Text(homeWinPageName(ctx.page).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
             if (ctx.page == WinPage.MAIN) {

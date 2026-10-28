@@ -258,12 +258,12 @@ private fun ArcticRail(c: StyleCtx, modifier: Modifier, open: Boolean, accent: C
 private fun ArcticInfo(c: StyleCtx, g: com.shelf.launcher.data.Game, modifier: Modifier, accent: Color, compact: Boolean) {
     val titles = LocalTitleOptions.current
     val meta = c.state.metadata[g.stableKey]
-    Column(modifier.riseOnChange(g.stableKey)) {
+    Column(modifier.riseOnChange(g.stableKey, floor = 0.4f, ms = 240)) {
         val logo = c.logo(g)
-        LogoOrName(logo, titles.display(g.name), Modifier.height(if (compact) 46.dp else 70.dp).fillMaxWidth()) { FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
+        LogoOrName(logo, titles.display(g.name), Modifier.height(if (compact) 46.dp else 70.dp).fillMaxWidth()) { StableFullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
         Spacer(Modifier.height(8.dp))
         // Facts wrap onto a second line rather than run off the edge (R18).
-        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        androidx.compose.foundation.layout.FlowRow(Modifier.heightIn(min = 18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             @Composable fun info(icon: ImageVector, text: String?) {
                 if (text.isNullOrBlank()) return
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -279,9 +279,10 @@ private fun ArcticInfo(c: StyleCtx, g: com.shelf.launcher.data.Game, modifier: M
             info(Icons.Filled.EmojiEvents, c.progress(g)?.let { (e, t) -> "$e / $t" })
         }
         val story = meta?.summary?.takeIf { it.isNotBlank() }
-        if (story != null && !compact) {
+        // (Update 363: the story's room is kept before it arrives — the widgets under the info block don't drop when it does.)
+        if (!compact) {
             Spacer(Modifier.height(8.dp))
-            RollingStory(story, Color.White.copy(alpha = 0.78f), 13.sp, 18.sp, 54.dp)
+            if (story != null) RollingStory(story, Color.White.copy(alpha = 0.78f), 13.sp, 18.sp, 54.dp) else Spacer(Modifier.height(54.dp))
         }
     }
 }
@@ -370,10 +371,14 @@ private fun ArcticRow(c: StyleCtx, r: HomeRow, here: Boolean, tileH: Dp, wide: B
             val k = r.games.indexOf(c.focus).takeIf { it == col } ?: -1
             val game = c.games.getOrNull(c.focus)
             if (k >= 0 && game != null) {
-                val x = (stride * (k - glide)).coerceIn(0.dp, (screenW - 280.dp).coerceAtLeast(0.dp))
+                // (Update 363: as Cinema — the width is the one where the row settles (first[0]), the position is read in layout.)
+                val xMax = (screenW - 280.dp).coerceAtLeast(0.dp)
+                val xRest = (stride * (k - first[0])).coerceIn(0.dp, xMax)
                 Text(
                     titles.display(game.name), color = Color.White, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
-                    modifier = Modifier.offset(x = x, y = tileH + 6.dp).width((screenW - x - 16.dp).coerceAtLeast(120.dp))
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset((stride * (k - glide)).coerceIn(0.dp, xMax).roundToPx(), (tileH + 6.dp).roundToPx()) }
+                        .width((screenW - xRest - 16.dp).coerceAtLeast(120.dp))
                 )
             }
         }

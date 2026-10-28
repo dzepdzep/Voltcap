@@ -1,9 +1,38 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (363): Cinema / Arctic hub steadied; the Tile home name fix reused elsewhere
+
+**Released earlier:** Voltcap 0.6.50 (57) — the Tile home name fix (362), Thor menu focus and the square-logo fix (361). Nothing
+released with this update; it's on main.
+
+Causes found by reading the code (Cinema, Arctic hub), all fixed:
+- The name slot was a logo (fixed height) or the name (its own height): a game with a logo after one without moved the
+  facts, buttons and rows. `LogoOrName` is now one slot of a fixed size (also while the logo loads; also in the two windows).
+- The name, console and facts used `FullText`'s auto-size, which draws nothing for a few frames after each change. New
+  `StableFullText` (ui/FitText.kt) works the size out in the same layout pass; same wrapping, readable minimum and slide.
+- Facts line and story kept no room until the game's details arrived, so the buttons / widgets dropped when they did. Their
+  room is kept now.
+- The info block faded in from nothing through an offscreen buffer (the "999 Nine Hc" cut of 362): it settles from 40 % in 240 ms,
+  alpha applied straight to the text. Same for Live tiles, Side menu and Cube hub titles (50 %, 180 ms).
+- The focused name under a card changed its width every frame of the glide (re-wrapping one/two lines); its width is the one where
+  the row settles and its position is read in layout (no recomposition per frame).
+- The billboard's slow zoom was one state for the old and new picture: the old art snapped smaller while the next loaded.
+  `HeldImage(zoom = true)` gives each picture its own; Cinema, Dashboard and Hero tiles use it.
+
+**To copy:** src_copy → app/src (already done for these 11 files, committed): FitText, HomeCollections, Motion, StyleArctic,
+StyleCinema, StyleDashboard, StyleHeroTiles, StyleLiveTiles, StyleSideMenu, CubeHub, WinScenesHomes.
+**Checked:** `gradlew assembleDebug` OK; static_checks --strict exit 0 (no HIGH; the MEDs were there before); debug build on the
+Android emulator (2400×1080): Cinema and Arctic, 12× Right, 6× Left/Right, Down/Up, hero buttons — title drawn in every frame of
+the recording's contact sheet, nothing moved, no crash. **Not checked:** the Thor / RP Classic (not connected; the only
+other device is a Google TV Streamer holding the release build, left alone), games with real logos / long two-line names
+and artwork (emulator has demo games without art), the other layouts' titles beyond reading the code, tools/qa frames.py
+(fails on the emulator's recording).
+**Left as is:** the card titles in GameCard (static per card), Ellipsis uses already counted by R18.
+
 ## Update — 28 Oct 2026 (362): Tile home — the game's name no longer pops in when you move
 
 Your report on the Thor: "game names spawn in when moving". Recorded on the Thor: on each move the old name vanished,
-the row slid with no name for ~5 frames, then the new one popped in. Three causes, all fixed (on main, not released):
+the row slid with no name for ~5 frames, then the new one popped in. Three causes, all fixed (released in 0.6.50):
 - The name's fade started from nothing and waited for its animation to start; it now starts at half and settles in
   180 ms, so it's never gone.
 - Its auto-sizing text drew nothing while it fitted the new name; the size that fits two lines is worked out at once now.

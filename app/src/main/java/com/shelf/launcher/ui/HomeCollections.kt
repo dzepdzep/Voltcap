@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -139,14 +140,18 @@ internal fun RollingStory(
 @Composable
 internal fun LogoOrName(logo: String?, name: String, modifier: Modifier, text: @Composable () -> Unit) {
     var square by androidx.compose.runtime.remember(logo) { androidx.compose.runtime.mutableStateOf(false) }
-    if (logo == null || square) { text(); return }
-    coil.compose.AsyncImage(
-        rememberStyleArtRequest(logo, trim = true), name, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-        alignment = androidx.compose.ui.Alignment.CenterStart, modifier = modifier,
-        onSuccess = { st ->
-            val sz = st.painter.intrinsicSize
-            if (sz.width > 0f && sz.height > 0f && sz.width / sz.height < 1.4f) square = true
-        },
-        onError = { square = true }
-    )
+    // (Update 363: one slot of a fixed size whichever it is — a logo, the name, or nothing yet while the logo loads — so the
+    // facts and buttons under it never move when a game with a logo follows one without, or its picture arrives.)
+    Box(modifier, contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
+        if (logo == null || square) text()
+        else coil.compose.AsyncImage(
+            rememberStyleArtRequest(logo, trim = true), name, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            alignment = androidx.compose.ui.Alignment.CenterStart, modifier = Modifier.fillMaxSize(),
+            onSuccess = { st ->
+                val sz = st.painter.intrinsicSize
+                if (sz.width > 0f && sz.height > 0f && sz.width / sz.height < 1.4f) square = true
+            },
+            onError = { square = true }
+        )
+    }
 }

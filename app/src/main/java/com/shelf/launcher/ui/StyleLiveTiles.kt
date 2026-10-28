@@ -153,8 +153,8 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
                     }
                     if (!compact) {
                         Spacer(Modifier.height(8.dp))
-                        FullText(
-                            LocalTitleOptions.current.display(g.name), modifier = Modifier.riseOnChange(g.stableKey), color = ink.copy(alpha = 0.85f), fontSize = 20.sp,
+                        StableFullText(
+                            LocalTitleOptions.current.display(g.name), modifier = Modifier.riseOnChange(g.stableKey, floor = 0.5f, ms = 180), color = ink.copy(alpha = 0.85f), fontSize = 20.sp,
                             fontWeight = FontWeight.Light, maxLines = 1
                         )
                         Text(

@@ -153,3 +153,14 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 - **Rule:** read `.value` into a local first, then branch. Same in composition (a body that skips the read never re-runs).
 - **Check:** static_checks LAYER-BRANCH (0 left after the fix). Device: after a move the focused name must be visible in
   the still (stills.sh / walk screenshots).
+
+## R21 SLOT-JUMP — a text/logo slot whose size depends on what's loaded, and an auto-size that draws nothing while it fits
+- **Why (Cinema / Arctic hub, update 363):** the name slot was a logo (fixed height) or a `FullText` (its own height); facts and
+  story appeared only once metadata arrived; the focused name's width followed the gliding tile (re-wrapping every frame);
+  the billboard's slow zoom was one state shared by the old and the new picture (old art snapped to 1× while the next loaded);
+  `TextAutoSize` draws nothing for a few frames after each text change.
+- **Rule:** give every changing text/logo a slot of fixed size (`LogoOrName`), reserve the room of parts that arrive later,
+  fit text with `StableFullText` (measured in the same layout pass), take a text's width from where it settles, keep
+  per-picture animation state per picture (`HeldImage(zoom = true)`), and fade a changing title with `riseOnChange(floor = …)`.
+- **Check:** device: rapid R/L on Cinema / Arctic / Tile home, contact sheet of the recording — the title is drawn in every
+  frame, buttons and rows don't move when details arrive.

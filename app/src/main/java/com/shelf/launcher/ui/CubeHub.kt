@@ -483,7 +483,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                 Text(
                     titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1,
                     overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
-                    modifier = Modifier.fillMaxWidth().riseOnChange(g.stableKey)
+                    modifier = Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
                 )
                 val meta = c.state.metadata[g.stableKey]
                 val line = buildList {

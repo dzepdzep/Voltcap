@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -248,7 +249,7 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
     Box(modifier) {
         // The art, edge to edge, fading into the room at its left and bottom.
         Box(Modifier.fillMaxWidth().height(heroH + 40.dp).clipToBounds()) {
-            HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 380, imageModifier = Modifier.slowZoom(g.stableKey))
+            HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 380, zoom = true)
             if (clip != null) {
                 VideoCrossfade(
                     clip, c.state.appearance.videoSound, Modifier.fillMaxSize(),
@@ -261,17 +262,17 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
         // The text block, rising in for each game.
         Column(
             Modifier.onGloballyPositioned { onTextBottom(with(dens) { it.size.height.toDp() }) }
-                .padding(start = 40.dp, top = if (compact) 40.dp else 56.dp).widthIn(max = w * 0.46f).riseOnChange(g.stableKey)
+                .padding(start = 40.dp, top = if (compact) 40.dp else 56.dp).widthIn(max = w * 0.46f).riseOnChange(g.stableKey, floor = 0.4f, ms = 240)
         ) {
             val logo = if (Features.cnLogo.state.value) c.logo(g) else null
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Movie, null, tint = accent, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(6.dp))
-                FullText(titles.console(g.platform).uppercase(), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                StableFullText(titles.console(g.platform).uppercase(), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(6.dp))
             LogoOrName(logo, titles.display(g.name), Modifier.height(if (compact) 54.dp else 84.dp).fillMaxWidth()) {
-                FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 26.sp else 36.sp, fontWeight = FontWeight.Black, maxLines = 2,
+                StableFullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 26.sp else 36.sp, fontWeight = FontWeight.Black, maxLines = 2,
                     lineHeight = if (compact) 28.sp else 38.sp)
             }
             Spacer(Modifier.height(8.dp))
@@ -281,19 +282,20 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
                 c.playtime(g)?.let { stylePlaytime(it, true) },
                 c.progress(g)?.let { (e, t) -> "★ $e / $t" }
             )
-            if (facts.isNotEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            // (Update 363: both lines keep their room before the game's details have arrived, so the buttons don't move.)
+            Row(Modifier.heightIn(min = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (facts.isNotEmpty()) {
                     if (c.progress(g)?.let { it.first >= it.second } == true) {
                         Text("MASTERED", color = Color(0xFF46D369), fontSize = 12.sp, fontWeight = FontWeight.Black)
                         Spacer(Modifier.width(10.dp))
                     }
-                    FullText(facts.joinToString("   "), color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    StableFullText(facts.joinToString("   "), color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
             val story = meta?.summary?.takeIf { it.isNotBlank() }
-            if (story != null && !compact) {
+            if (!compact) {
                 Spacer(Modifier.height(8.dp))
-                RollingStory(story, Color.White.copy(alpha = 0.82f), 13.sp, 18.sp, 54.dp, roll = Features.cnRoll.state.value)
+                if (story != null) RollingStory(story, Color.White.copy(alpha = 0.82f), 13.sp, 18.sp, 54.dp, roll = Features.cnRoll.state.value) else Spacer(Modifier.height(54.dp))
             }
             Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -374,10 +376,16 @@ private fun CinemaRow(
         if (here) {
             val game = c.games.getOrNull(c.focus)
             if (game != null && r.games.getOrNull(col) == c.focus) {
-                val x = (40.dp + stride * (col - glide)).coerceIn(40.dp, (screenW - 280.dp).coerceAtLeast(40.dp))
+                // (Update 363: the width is the one the name has where the row settles (the tile's end of the glide) and the
+                // position is read in layout, so the name keeps its wrapping for the whole glide instead of re-wrapping — one
+                // line, two, one — as the room beside it changed every frame, and the row doesn't recompose per frame.)
+                val xRest = 40.dp
+                val xMax = (screenW - 280.dp).coerceAtLeast(40.dp)
                 Text(
                     titles(game), color = Color.White, fontSize = 12.sp, lineHeight = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
-                    modifier = Modifier.offset(x = x, y = tileH * 1.04f + 6.dp).width((screenW - x - 24.dp).coerceAtLeast(120.dp))
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset((40.dp + stride * (col - glide)).coerceIn(40.dp, xMax).roundToPx(), (tileH * 1.04f + 6.dp).roundToPx()) }
+                        .width((screenW - xRest - 24.dp).coerceAtLeast(120.dp))
                 )
             }
         }

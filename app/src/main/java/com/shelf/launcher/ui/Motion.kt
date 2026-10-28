@@ -203,13 +203,17 @@ internal fun HeldImage(
     fadeMs: Int = 260,
     contentScale: ContentScale = ContentScale.Crop,
     alignment: Alignment = Alignment.Center,
-    imageModifier: Modifier = Modifier
+    imageModifier: Modifier = Modifier,
+    /** Update 363: the slow zoom ([slowZoom]) belongs to each picture, not to the whole stack — see below. */
+    zoom: Boolean = false
 ) {
     HeldLayers(model, fadeMs, modifier) { m, ready, failed ->
         AsyncImage(
             m, null, contentScale = contentScale, alignment = alignment,
             onSuccess = { ready() }, onError = { failed() },
-            modifier = Modifier.matchParentSize().then(imageModifier)
+            // (Update 363: with the zoom on the stack, one game change snapped the zoom back to 1 under the picture still on
+            // screen while the next loaded — the old art jumped smaller, then the new one faded in. Each picture drifts on its own now.)
+            modifier = Modifier.matchParentSize().then(if (zoom) Modifier.slowZoom(m) else Modifier).then(imageModifier)
         )
     }
 }

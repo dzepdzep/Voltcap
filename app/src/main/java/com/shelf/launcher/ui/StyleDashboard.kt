@@ -261,7 +261,7 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
                 .pointerInput(g.stableKey) { detectTapGestures { open() } }
         ) {
             // Held (update 104): the next game's picture fades in over the last one, no black gap.
-            HeldImage(c.backdrop(g) ?: c.wide(g), Modifier.fillMaxSize().slowZoom(g.stableKey), imageModifier = Modifier.pixelArtwork())
+            HeldImage(c.backdrop(g) ?: c.wide(g), Modifier.fillMaxSize(), imageModifier = Modifier.pixelArtwork(), zoom = true)
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.78f), 0.6f to Color.Transparent)))
             // Update 136: and a shade along the bottom, so the name's end, the button and "Last played" on the right
             // still read over a bright picture.
