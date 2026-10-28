@@ -1,5 +1,7 @@
 # Voltcap — handover to a new Claude
 
+**Update 377 (28 Oct 2026, Thor ~10.5 min):** final QA, NO RELEASE (v0.6.54 latest, v0.6.55 unused), no code changed. R1 hold picker (preview / choose / cancel / apply / tap-cycle) PASS, per-category assignment + Follow default survive an app restart PASS, Wide Capsules Slides in clean except one 3-frame black bar in the capsule (defect D76, suspect, unfixed); Only-first-wide NOT VERIFIED. Thor left clean. Details: SUMMARY.md top.
+
 **Update 376:** see SUMMARY.md top (Thor QA of 374 / 375, no release; open: Wide Capsules, R1 hold, restart persistence on the Thor).
 
 **Update 373 (28 Oct 2026, Thor ~4 min):** Thor crash fixed at the source: `TuneStore.edits` is a StateFlow (no snapshot state), `Tuner.supportedState` + `probeSupported()` keep the blocking root probe off composition (mechanism proven by unit test; exact app path not reproduced). L1 icons: extracted symbol / initials fallback, never full colour; `shortcut_themed_icons` default on and switched on on the Thor (12 L1 icons PASS; ARMSX2 not installed). Wide capsule: the fixed slot now only for Fades in / Just appears, default Slides in = continuous row; portrait-only art shown whole. Wide motion NOT TESTED on hardware. 336 unit tests, debug build, strict static checks OK. See SUMMARY top. 0.6.54 still unpublished.

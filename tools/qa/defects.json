@@ -977,6 +977,15 @@
    "status": "fixed",
    "found": "2026-10-28 user report",
    "note": "fixedSlotWanted(): continuous row by default (update 373). Hardware / recording NOT TESTED: status stays fixed (code changed), not verified."
+  },
+  {
+   "id": "D76",
+   "title": "Wide capsule (default Slides in, Voltcap row): black strip inside the capsule for ~3 frames while the row slides, seen on rapid reversing D-pad",
+   "rule": "MOTION",
+   "severity": "low",
+   "status": "suspect",
+   "found": "2026-10-28 Thor 3140972f, frames.py transient on a 14 s recording (qa_runs/wc1.mp4, sheet ev_00819_transient.png, frames 819-821)",
+   "note": "Capsule art of the card being left stops short of the card edge (hard black bar ~35-50 px at 960 px width) while the next card widens and overlaps it; cover under the ROLL reveal (GameCard.kt ~l.320-345, 500-520) not drawn / not loaded yet is the leading suspect. Not confirmed, not fixed, not re-recorded. Fades in mode: transients seen were crossfades only. Only-first-wide NOT TESTED."
   }
  ]
 }
