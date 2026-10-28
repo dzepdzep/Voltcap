@@ -1,6 +1,17 @@
 # Voltcap — what's been done (running summary)
 
 
+## Update — 28 Oct 2026 (371): smart themed icons, icon contexts separated, no icon flashing (NOT released)
+
+**What changed (behaviour).**
+- **Smart candidate** (`data/IconQuality.kt`, pure, no app named): the themed look now uses the app's real monochrome drawable when it is fit, else its adaptive foreground (transparency and detail kept), else a plain icon; any candidate that is nearly solid (opaque >= 0.90), a filled rounded square (>= 0.84 of a >= 90 % box), fills to the edges (a background plate), is a flat blob (> 0.6 covered, no luminance detail), is almost empty (< 2 % visible) or too dark to read is refused and the app's **original full-colour icon** is shown. A full circle logo (0.785) and ring / glyph logos stay themed.
+- **L1 shortcuts** keep Settings > "Theme colours" and the same shade-of-accent look; only unsuitable icons fall back (the ARMSX2-style red square). A per-app "own colours" choice (IconStyles) still opts an app out; no global style reaches L1.
+- **Second-screen dock** keeps Detail / Solid / Own colours (per app, persisted as before in prefs "icon_styles") plus the same smart fallback.
+- **Main app drawer, lists, notifications, mixer, widgets and every home layout (cards, carousels, cases, carts, discs, category previews, artwork)** are always the original icon: `rememberAppIcon` is now an alias of `rememberOwnAppIcon` (no `secondDockMono` / `IconStyles` read), `AppIconArt` has no one-colour branch any more.
+- **No flashing:** one load per package gives the original AND the candidate together (`IconCandidate`, the original shares the `icons` cache), the tint is baked once per surface / look / accent / package (`AppIconCache.tintedOf`) so no `ColorFilter` is added on top (`themedIconFilter` removed; no double tint). While loading, a themed surface returns null: L1 reserves its 36 dp slot, the dock its slot; never another app's icon (value kept with its package), never a full-colour frame that turns one-colour.
+**Files:** `data/IconQuality.kt` (new), `ui/AppIcons.kt`, `ui/ShortcutsPanel.kt`, `ui/SecondDockShortcuts.kt`; test `app/src/test/.../ui/ThemedIcons371Test.kt` (11 tests: good logo stays, filled square / ARMSX2-like plate / blob / empty / dark fall back, looks, per-app override rule, drawer + layouts original, no colour filter, loading identity). **To copy:** `src_copy` is already mirrored into `app/` here (robocopy not needed on this machine).
+**Checked:** all Gradle unit tests pass, `assembleDebug` OK, `test_qa.py` 62 OK, `static_checks --strict` PASS (new MED THEME-COMPOSE at `rememberThemedAppIcon` = same pattern as the old dock icon code), coverage check PASS. **NOT TESTED on hardware** (no Thor session this run): how real icons look (ARMSX2, an app with a monochrome icon, a legacy icon), the accent glide with themed icons, L1 and dock on the device. The thresholds were chosen on synthetic icons, so tune them after a look at the installed apps.
+
 ## Update — 28 Oct 2026 (370): Thor verification of 369, geometry trace producer (QaGeom), second-screen perf note shown whole (NOT released)
 
 **Physical QA (AYN Thor 3140972f only, one session ~14 of 15 min, 0.6.54 build with 369 `install -r`; Google TV Streamer / emulator not touched).** Hooks were `.paused`: one forced restart so QaTrace was on.

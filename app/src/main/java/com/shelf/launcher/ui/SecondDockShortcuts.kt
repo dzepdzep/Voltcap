@@ -100,7 +100,7 @@ internal object SecondDockShortcuts {
             Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = modifier.padding(4.dp))
         } else if (mono) {
             // (Update 321: rememberAppIcon follows the app's own style — Detail, Solid or its own colours.)
-            val icon = rememberAppIcon(id)
+            val icon = rememberThemedAppIcon(id, IconSurface.SECOND_DOCK)
             if (icon != null) androidx.compose.foundation.Image(icon, null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, modifier = modifier)
             else Box(modifier)
         } else if (BuiltinShortcuts.isBuiltin(id) && id != null) {

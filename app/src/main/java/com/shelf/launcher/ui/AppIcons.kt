@@ -38,12 +38,17 @@ import kotlinx.coroutines.withContext
  * main thread and kept in a small in-memory cache — the package manager is
  * the source of truth, so nothing is written to disk.
  */
+/** Update 371: [symbol] the one-colour picture, null when none is fit; [trueMono] it is the app's own monochrome icon; [original] its full-colour icon. */
+internal class IconCandidate(val symbol: ImageBitmap?, val trueMono: Boolean, val original: ImageBitmap)
+
 internal object AppIconCache {
     private val icons = LruCache<String, ImageBitmap>(96)
     private val banners = LruCache<String, ImageBitmap>(32)
     private val noBanner = HashSet<String>()
     /** Update 319: one-colour icons (picture, and whether it's the app's own monochrome icon) — [loadMono]. */
-    private val monos = LruCache<String, Pair<ImageBitmap, Boolean>>(64)
+    private val monos = LruCache<String, IconCandidate>(64)
+    /** Update 371: baked one-colour icons by look, colour and package, so a tile re-showing keeps the same picture. */
+    private val tinted = LruCache<String, ImageBitmap>(96)
 
     /** Bumped when a package changes, so icons already on screen reload. */
     var version by mutableIntStateOf(0)
@@ -54,6 +59,7 @@ internal object AppIconCache {
         icons.remove(pkg)
         banners.remove(pkg)
         monos.remove(pkg)
+        tinted.evictAll()
         synchronized(noBanner) { noBanner -= pkg }
         version++
     }
@@ -68,20 +74,32 @@ internal object AppIconCache {
         context.packageManager.getApplicationIcon(pkg).toBitmap(192, 192).asImageBitmap()
     }.getOrNull()?.also { icons.put(pkg, it) }
 
-    fun cachedMono(pkg: String): Pair<ImageBitmap, Boolean>? = monos.get(pkg)
+    fun cachedMono(pkg: String): IconCandidate? = monos.get(pkg)
+
+    fun tintedOf(key: String, make: () -> ImageBitmap): ImageBitmap = tinted.get(key) ?: make().also { tinted.put(key, it) }
 
     /**
-     * Update 319: [pkg]'s icon as a symbol for one colour: the app's own monochrome icon (Android 13+, true) where it ships
-     * one, else its adaptive icon's foreground alone (no background plate; false), else its whole icon (false) — the
-     * visible middle of the layer, at 192 px.
+     * Update 319 / 371: [pkg]'s one-colour candidate: the app's own monochrome icon (Android 13+) when it is fit, else its
+     * adaptive foreground alone (no background plate) when that is fit, else a plain icon when it is fit; [IconCandidate.symbol]
+     * is null when none is ([com.shelf.launcher.data.IconQuality]) and the original icon is shown. The original is loaded with
+     * it (and shared with [loadIcon]'s cache), so falling back never waits for a second load. The visible middle of the
+     * layer, at 192 px.
      */
-    fun loadMono(context: Context, pkg: String): Pair<ImageBitmap, Boolean>? = runCatching {
+    fun loadMono(context: Context, pkg: String): IconCandidate? = runCatching {
         val d = context.packageManager.getApplicationIcon(pkg)
         val size = 192
+        val original = icons.get(pkg) ?: d.toBitmap(size, size).asImageBitmap().also { icons.put(pkg, it) }
+        fun fit(bmp: android.graphics.Bitmap, trueMono: Boolean): Boolean {
+            val px = IntArray(size * size)
+            bmp.getPixels(px, 0, size, 0, 0, size, size)
+            return com.shelf.launcher.data.IconQuality.assess(px, size, size, trueMono).usable
+        }
+        var symbol: ImageBitmap? = null
+        var trueMono = false
         if (android.os.Build.VERSION.SDK_INT >= 26 && d is android.graphics.drawable.AdaptiveIconDrawable) {
             val mono = if (android.os.Build.VERSION.SDK_INT >= 33) d.monochrome else null
-            val layer = mono ?: d.foreground
-            if (layer != null) {
+            for ((layer, isMono) in listOf(mono to true, d.foreground to false)) {
+                if (layer == null) continue
                 // An adaptive layer is 108 units across, of which the middle 72 show.
                 val full = size * 3 / 2
                 val out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
@@ -89,10 +107,10 @@ internal object AppIconCache {
                 c.translate(-(full - size) / 2f, -(full - size) / 2f)
                 layer.setBounds(0, 0, full, full)
                 layer.draw(c)
-                return@runCatching out.asImageBitmap() to (mono != null)
+                if (fit(out, isMono)) { symbol = out.asImageBitmap(); trueMono = isMono; break }
             }
-        }
-        d.toBitmap(size, size).asImageBitmap() to false
+        } else if (fit(original.asAndroidBitmap(), false)) symbol = original
+        IconCandidate(symbol, trueMono, original)
     }.getOrNull()?.also { monos.put(pkg, it) }
 
     fun loadBanner(context: Context, pkg: String): ImageBitmap? {
@@ -106,15 +124,62 @@ internal object AppIconCache {
     }
 }
 
+/**
+ * An app's icon in its own colours: the main app drawer, lists, notifications and every home layout. (Update 371: it no longer
+ * follows the second screen dock's icon style or Features.secondDockMono; the themed looks are [rememberThemedAppIcon].)
+ */
 @Composable
 internal fun rememberAppIcon(packageName: String?): ImageBitmap? {
     com.shelf.launcher.Breadcrumbs.mark("rememberAppIcon")
-    // (Update 319, Toni: "the icons always used for everything": with Icons in the theme's colour on, every app icon in
-    // Voltcap is its one-colour symbol in the theme's accent.)
-    val style = com.shelf.launcher.data.IconStyles.of(packageName)
-    if (com.shelf.launcher.data.Features.secondDockMono.state.value && style != com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL)
-        return rememberMonoAppIcon(packageName, com.shelf.launcher.ui.theme.ShelfTheme.accent, solid = style == com.shelf.launcher.data.Features.MonoIconStyle.SOLID)
     return rememberOwnAppIcon(packageName)
+}
+
+/** Update 371: the surfaces that can draw an app's icon in the theme's colour. */
+internal enum class IconSurface { SHORTCUTS, SECOND_DOCK }
+
+/**
+ * Update 371: [packageName]'s icon for a themed [surface], decided once per package, icon version, look and accent before it
+ * shows: the one-colour symbol baked in the accent when the app has a fit one (IconQuality), else the original icon. Null
+ * only while the app's icon is still loading: callers reserve the space and show nothing meanwhile (never another app's
+ * icon, never a full-colour frame that then turns one-colour). Baked, so no colour filter belongs on the Image.
+ */
+@Composable
+internal fun rememberThemedAppIcon(packageName: String?, surface: IconSurface): ImageBitmap? {
+    val f = com.shelf.launcher.data.Features
+    val themed = if (surface == IconSurface.SHORTCUTS) f.shortcutThemedIcons.state.value else f.secondDockMono.state.value
+    val effective = themedStyle(surface == IconSurface.SHORTCUTS, com.shelf.launcher.data.IconStyles.hasOwn(packageName), com.shelf.launcher.data.IconStyles.of(packageName))
+    if (!themed || effective == com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL) return rememberOwnAppIcon(packageName)
+    val tint = com.shelf.launcher.ui.theme.ShelfTheme.accent
+    val cand = rememberIconCandidate(packageName) ?: return null
+    val look = com.shelf.launcher.data.IconQuality.look(true, effective, cand.symbol != null, cand.trueMono)
+    val symbol = cand.symbol
+    if (look == com.shelf.launcher.data.IconQuality.Look.ORIGINAL || symbol == null) return cand.original
+    val argb = android.graphics.Color.argb((tint.alpha * 255).toInt(), (tint.red * 255).toInt(), (tint.green * 255).toInt(), (tint.blue * 255).toInt())
+    val key = "${surface.name}|${look.name}|$argb|$packageName"
+    return androidx.compose.runtime.remember(key, cand) {
+        AppIconCache.tintedOf(key) { tintedIcon(symbol, look, tint, surface == IconSurface.SHORTCUTS) }
+    }
+}
+
+/**
+ * The style a themed surface applies: the dock follows the app's own or the global style; L1 shortcuts have no global style,
+ * only an app's own "own colours" choice opts it out. (Pure, unit tested.)
+ */
+internal fun themedStyle(shortcuts: Boolean, hasOwn: Boolean, style: com.shelf.launcher.data.Features.MonoIconStyle): com.shelf.launcher.data.Features.MonoIconStyle =
+    if (!shortcuts) style
+    else if (hasOwn && style == com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL) style
+    else com.shelf.launcher.data.Features.MonoIconStyle.DETAIL
+
+/** The candidate of [packageName], kept with its package: another app's candidate is never returned for a frame. */
+@Composable
+private fun rememberIconCandidate(packageName: String?): IconCandidate? {
+    val context = LocalContext.current
+    val st = produceState<Pair<String?, IconCandidate?>>(packageName to packageName?.let { AppIconCache.cachedMono(it) }, packageName, AppIconCache.version) {
+        if (packageName == null) { value = null to null; return@produceState }
+        AppIconCache.cachedMono(packageName)?.let { value = packageName to it; return@produceState }
+        value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadMono(context, packageName) }
+    }.value
+    return if (st.first == packageName) st.second else packageName?.let { AppIconCache.cachedMono(it) }
 }
 
 /**
@@ -166,11 +231,9 @@ internal fun AppIconArt(
     modifier: Modifier = Modifier
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppIconArt")
-    val icon = rememberAppIcon(packageName)
-    // (Update 319: with the one-colour icons, the symbol alone — no banner, no blurred copy behind it.)
-    val mono = com.shelf.launcher.data.Features.secondDockMono.state.value &&
-        com.shelf.launcher.data.IconStyles.of(packageName) != com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL
-    val banner = if (wide && !mono) rememberAppBanner(packageName) else null
+    // (Update 371: always the app's own art: the home layouts and second screen cards never take the dock's icon style.)
+    val icon = rememberOwnAppIcon(packageName)
+    val banner = if (wide) rememberAppBanner(packageName) else null
 
     // Plain if / else on purpose: an early `return@Box` inside Box (an inline
     // composable) corrupts Compose's internal bookkeeping on this compiler
@@ -181,7 +244,7 @@ internal fun AppIconArt(
         } else if (icon != null) {
             // Update 130: the enlarged copy is blurred once, in the picture (BakedBlur): the live blur did nothing on
             // Android 11 and older (and was left out in Lite), so a small icon blown up to the card showed its pixels.
-            val soft = if (mono) null else rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
+            val soft = rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
             if (soft != null) Image(
                 soft, null,
                 contentScale = ContentScale.Crop,
@@ -210,74 +273,34 @@ internal fun AppIconArt(
 }
 
 /**
- * Update 319: [packageName]'s icon in one colour, [tint] — the app's own monochrome icon filled with it, or its symbol in
- * the tint's shades (its light and dark kept) — with nothing behind it. Nothing until it's loaded.
+ * Update 319 / 371: [src] baked in [tint] for [look]: the app's own monochrome icon filled with it, its shape alone (Solid),
+ * or its symbol with the light parts solid and the dark ones fainter (Detail). L1 [shortcut] tiles keep the light and dark
+ * of the symbol in shades of the accent (the look chosen there). One colour operation only: the Image gets no filter.
  */
-@Composable
-internal fun MonoAppIcon(packageName: String?, tint: Color, modifier: Modifier = Modifier) {
-    val icon = rememberMonoAppIcon(packageName, tint)
-    if (icon != null) Image(icon, null, contentScale = ContentScale.Fit, modifier = modifier) else Box(modifier)
-}
-
-/**
- * Update 319: [packageName]'s one-colour symbol ([AppIconCache.loadMono]) already in [tint] — the app's own monochrome
- * icon filled with it, else its symbol in the tint's shades (light and dark kept). Made once per icon and colour.
- */
-@Composable
-internal fun rememberMonoAppIcon(packageName: String?, tint: Color, solid: Boolean = false): ImageBitmap? {
-    val context = LocalContext.current
-    val st = produceState<Pair<String?, Pair<ImageBitmap, Boolean>?>>(packageName to packageName?.let { AppIconCache.cachedMono(it) }, packageName, AppIconCache.version) {
-        if (packageName == null) { value = null to null; return@produceState }
-        AppIconCache.cachedMono(packageName)?.let { value = packageName to it; return@produceState }
-        value = packageName to withContext(Dispatchers.IO) { AppIconCache.loadMono(context, packageName) }
-    }.value
-    val icon = (if (st.first == packageName) st.second else null) ?: return null
-    return androidx.compose.runtime.remember(icon, tint, solid) { tintedIcon(icon.first, icon.second || solid, tint) }
-}
-
-private fun tintedIcon(src: ImageBitmap, trueMono: Boolean, tint: Color): ImageBitmap {
+private fun tintedIcon(src: ImageBitmap, look: com.shelf.launcher.data.IconQuality.Look, tint: Color, shortcut: Boolean): ImageBitmap {
     val s = src.asAndroidBitmap()
     val out = android.graphics.Bitmap.createBitmap(s.width, s.height, android.graphics.Bitmap.Config.ARGB_8888)
     val argb = android.graphics.Color.argb((tint.alpha * 255).toInt(), (tint.red * 255).toInt(), (tint.green * 255).toInt(), (tint.blue * 255).toInt())
     val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
-    // (Update 319, Toni: "Home and Chrome are different colours": shades of the accent made a light icon pale and a dark
-    // one deep. Every icon is the accent itself now; an icon without its own monochrome version keeps its drawing as
-    // see-through — its light parts solid, its dark parts fainter.)
-    p.colorFilter = if (trueMono) android.graphics.PorterDuffColorFilter(argb, android.graphics.PorterDuff.Mode.SRC_IN) else {
+    val flat = look == com.shelf.launcher.data.IconQuality.Look.MONO || look == com.shelf.launcher.data.IconQuality.Look.SOLID
+    p.colorFilter = if (flat) android.graphics.PorterDuffColorFilter(argb, android.graphics.PorterDuff.Mode.SRC_IN)
+    else if (shortcut) {
+        // Brightened a little so dark icons don't vanish on the dark tile.
+        val r = 0.35f + 0.9f * tint.red; val g = 0.35f + 0.9f * tint.green; val b = 0.35f + 0.9f * tint.blue
         android.graphics.ColorMatrixColorFilter(floatArrayOf(
-            0f, 0f, 0f, 0f, tint.red * 255f,
-            0f, 0f, 0f, 0f, tint.green * 255f,
-            0f, 0f, 0f, 0f, tint.blue * 255f,
-            0.65f * 0.299f, 0.65f * 0.587f, 0.65f * 0.114f, 0.35f, 0f
+            0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
+            0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
+            0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
         ))
-    }
+    } else android.graphics.ColorMatrixColorFilter(floatArrayOf(
+        0f, 0f, 0f, 0f, tint.red * 255f,
+        0f, 0f, 0f, 0f, tint.green * 255f,
+        0f, 0f, 0f, 0f, tint.blue * 255f,
+        0.65f * 0.299f, 0.65f * 0.587f, 0.65f * 0.114f, 0.35f, 0f
+    ))
     android.graphics.Canvas(out).drawBitmap(s, 0f, 0f, p)
     return out.asImageBitmap()
-}
-
-/**
- * App icons in the theme's colours (Settings › Round shortcuts › App icons in theme colours): each icon's
- * light and dark are kept, its own colours replaced by the accent — like Android's themed icons, for every
- * app (not only the ones that ship a monochrome icon). Null when the option is off.
- */
-@Composable
-internal fun themedIconFilter(): androidx.compose.ui.graphics.ColorFilter? {
-    if (!com.shelf.launcher.data.Features.shortcutThemedIcons.state.value) return null
-    val a = com.shelf.launcher.ui.theme.ShelfTheme.accent
-    return androidx.compose.runtime.remember(a) {
-        // Brightened a little so dark icons don't vanish on the dark tile.
-        val r = 0.35f + 0.9f * a.red; val g = 0.35f + 0.9f * a.green; val b = 0.35f + 0.9f * a.blue
-        androidx.compose.ui.graphics.ColorFilter.colorMatrix(
-            androidx.compose.ui.graphics.ColorMatrix(
-                floatArrayOf(
-                    0.299f * r, 0.587f * r, 0.114f * r, 0f, 0f,
-                    0.299f * g, 0.587f * g, 0.114f * g, 0f, 0f,
-                    0.299f * b, 0.587f * b, 0.114f * b, 0f, 0f,
-                    0f, 0f, 0f, 1f, 0f
-                )
-            )
-        )
-    }
 }
 
 /**

@@ -319,7 +319,7 @@ private fun AppTile(
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppTile")
     val builtin = com.shelf.launcher.data.BuiltinShortcuts.isBuiltin(app.packageName)
-    val icon = if (builtin) null else rememberAppIcon(app.packageName)
+    val icon = if (builtin) null else rememberThemedAppIcon(app.packageName, IconSurface.SHORTCUTS)
     // Styled like Voltcap's own round shortcut buttons: a soft raised card, the icon in an accent-ringed
     // circle, the same focus ring and type as the rest of the app (it used to look like a foreign grid).
     val tileShape = uiRounded(com.shelf.launcher.ui.theme.Ds.rMedium)
@@ -351,7 +351,8 @@ private fun AppTile(
                     .border(1.5.dp, ShelfTheme.accent.copy(alpha = 0.45f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                if (icon != null) Image(icon, app.name, colorFilter = themedIconFilter(), modifier = Modifier.size(36.dp).clip(uiRounded(9.dp)))
+                if (icon != null) Image(icon, app.name, modifier = Modifier.size(36.dp).clip(uiRounded(9.dp)))
+                else if (!builtin) Box(Modifier.size(36.dp)) // still loading: its space, nothing else
                 else if (builtin) Icon(builtinIcon(app.packageName), app.name, tint = ShelfTheme.accent, modifier = Modifier.size(26.dp))
             }
             if (removable) {
