@@ -328,6 +328,9 @@ fun GameCard(
         val flipping = revealStyle == com.shelf.launcher.data.Features.CapsuleReveal.FLIP
         val reveal = remember { androidx.compose.animation.core.Animatable(0f) }
         var wideLoaded by remember(wideLayer) { mutableStateOf(false) }
+        // D76: the roll-out leaves the cover showing to the right of its edge. A cover that isn't drawn yet (a card just
+        // re-focused in a rapid reversal) left the card's near-black placeholder there; until it is, the wide art shows whole.
+        var baseLoaded by remember(baseUrl) { mutableStateOf(false) }
         LaunchedEffect(wideLayer, wideLoaded) {
             if (wideLayer == null) reveal.animateTo(0f, androidx.compose.animation.core.tween(110))
             else if (wideLoaded && revealStyle == com.shelf.launcher.data.Features.CapsuleReveal.NONE) reveal.snapTo(1f)
@@ -442,6 +445,7 @@ fun GameCard(
             AsyncImage(
                 model = rememberCardArtRequest(url, kindOf(url), still = !focused && com.shelf.launcher.data.Features.animatedFocusOnly.state.value && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)),
                 contentDescription = game.name,
+                onSuccess = { baseLoaded = true },
                 contentScale = if (portraitInWide) ContentScale.Fit else ContentScale.Crop,
                 colorFilter = if (greyOut) GreyFilter else null,
                 modifier = Modifier.matchParentSize().pixelArtwork()
@@ -480,8 +484,8 @@ fun GameCard(
                             com.shelf.launcher.data.Features.CapsuleReveal.SWEEP -> alpha = r.coerceIn(0f, 1f)
                             // Roll out: unrolls from the left with a soft edge, drifting a little into place.
                             com.shelf.launcher.data.Features.CapsuleReveal.ROLL -> {
-                                alpha = if (r <= 0f) 0f else 1f
-                                translationX = -size.width * 0.05f * (1f - r)
+                                alpha = if (r <= 0f && baseLoaded) 0f else 1f
+                                translationX = -size.width * rollDrift(r, baseLoaded)
                                 compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
                             }
                             // Slide: in from the right, pushing the cover out.
@@ -517,10 +521,10 @@ fun GameCard(
                             }
                             com.shelf.launcher.data.Features.CapsuleReveal.ROLL -> {
                                 drawContent()
-                                if (r < 1f) {
+                                if (r < 1f && baseLoaded) {
                                     // Keep what's left of the soft edge, fade out what's to its right.
-                                    val feather = size.width * 0.22f
-                                    val edge = r * (size.width + feather)
+                                    val feather = size.width * ROLL_FEATHER
+                                    val edge = rollEdge(r, size.width, baseLoaded)
                                     drawRect(
                                         androidx.compose.ui.graphics.Brush.horizontalGradient(
                                             listOf(Color.Black, Color.Transparent), startX = edge - feather, endX = edge
@@ -1499,3 +1503,13 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMasteredShine(
         blendMode = blend
     )
 }
+
+/** The roll-out's soft edge, as a share of the card's width. */
+internal const val ROLL_FEATHER = 0.22f
+
+/** Where the roll-out's edge is (px): [r] 0 → 1 sweeps it across the card and its feather. A card whose cover isn't drawn yet has nothing under the wide art to show, so it is fully unrolled. */
+internal fun rollEdge(r: Float, width: Float, baseReady: Boolean): Float =
+    if (!baseReady) width * (1f + ROLL_FEATHER) else r.coerceIn(0f, 1f) * width * (1f + ROLL_FEATHER)
+
+/** The wide art's small drift into place (share of the card's width): none while there is no cover behind it to fill the gap it leaves. */
+internal fun rollDrift(r: Float, baseReady: Boolean): Float = if (!baseReady) 0f else 0.05f * (1f - r.coerceIn(0f, 1f))

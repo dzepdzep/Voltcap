@@ -1,5 +1,15 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (378): D76 hardened (not reproduced), Only-first-wide + R1 D-pad Apply verified on the Thor, v0.6.55
+
+**Copy:** `src_copy/ui/GameCard.kt`, `src_copy/ui/LayoutPicker.kt` (already copied to `app/src/main/java/...`). Tests: `RollReveal76Test`, `PickerApplyFocus76Test`.
+- **D76 (black strip in the capsule):** NOT reproduced: 4 Thor recordings (~75 s rapid L/R reversals, 60 and 120 Hz, Wide capsule + Roll out + Left end), full-resolution frames, before and after the change; the black spots the detector flagged were the games' own dark art. The old frames (pixels ~RGB 4,2,0, edge at the card edge) show the card placeholder where the Roll-out leaves the base cover uncovered. Fix: `baseLoaded` (onSuccess of the cover layer); until the cover is drawn the wide art is fully unrolled, no feather mask, no drift gap (`rollEdge` / `rollDrift`). Transition, other reveal styles and animation modes unchanged; no new allocations. Status in defects.json: not-reproduced (not claimed verified).
+- **Only-first-wide (Thor, real art, 2157 games):** set via Settings › Home › Layout options › It shows as (original Wide capsule restored afterwards). Slow, 6-12 rapid steps at 60-100 ms, reversals, first→last (L) and last→first (R) wraps: no disappearing cards, wrong art, size jumps or clipping; title and left-end card matched. Wide capsule only while on the first game (as the setting's note says for a looping row). PASS.
+- **R1 picker, controller:** choosing a layout (A) now moves focus to Apply (`LayoutPicker.kt`, existing FocusRequester, no new button). Thor: R1 › Layout tile hold › D-pad to Grid (preview only) › A (Apply Grid focused) › A: applied, Undo bar shown. PASS. Preview ended afterwards, Dashboard saved layout back.
+- **Thor 3140972f only, ~12.5 min (21:57-22:09).** My own slip: a mis-aimed A press toggled Do not disturb off and a D-pad right raised media volume 13→20 %; both put back (zen_mode 1, volume 2/15). Hooks back to `.paused`, recordings removed, no recorder / sendevent running, panel 120 Hz, no data cleared.
+- **Not done (not blocking):** Fades-in full-res check, Artwork-library missing-art fallback, Settings subtitle "…" (rule 11 candidate, unchanged), Netflix black bar (screenshot still needed).
+- **Checks:** 62 QA selftests OK, strict static checks PASS, full unit tests (debug) pass, assembleDebug installed on the Thor.
+
 ## Update — 28 Oct 2026 (377): final Thor QA, NO RELEASE (v0.6.54 stays latest, v0.6.55 unused), no code changed
 
 **Release decision: NOT published.** Mandatory check left open: Wide Capsules "Only the first game wide" mode was not testable in the budget (needs Settings; the test hook only reaches Features prefs), and the default Slides-in mode showed one visible artefact (defect D76, suspect). Per the brief an incomplete mandatory check blocks the release. Source tree is unchanged since 7e12755 (no Kotlin edits), so nothing needed copying.

@@ -63,6 +63,7 @@ internal fun LayoutPickerDialog(
             var shown by remember { mutableStateOf(active) }
             var candidate by remember { mutableStateOf<HomeLayout?>(null) }
             val current = remember { FocusRequester() }
+            val applyReq = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { current.requestFocus() } }
             val listH = (LocalConfiguration.current.screenHeightDp - 250).coerceIn(120, 330).dp
             Row(verticalAlignment = Alignment.Top) {
@@ -98,10 +99,13 @@ internal fun LayoutPickerDialog(
             }
             Spacer(Modifier.height(12.dp))
             val pick = candidate
+            // Controller: choosing a layout (A) moves the focus on to Apply, so Apply is one more press, not a walk past the whole list.
+            LaunchedEffect(pick) { if (pick != null && pick != active) { kotlinx.coroutines.delay(60); runCatching { applyReq.requestFocus() } } }
             ChipFlow {
                 Chip(
                     if (pick != null && pick != active) "Apply ${pick.label}" else "Apply",
-                    accent = pick != null && pick != active, enabled = pick != null && pick != active
+                    accent = pick != null && pick != active, enabled = pick != null && pick != active,
+                    modifier = Modifier.focusRequester(applyReq)
                 ) { onApply(pick!!); onDismiss() }
                 if (followLabel != null) {
                     Chip(followLabel, accent = false, enabled = !followsDefault) { onFollow(); onDismiss() }
