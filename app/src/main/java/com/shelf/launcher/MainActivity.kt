@@ -103,6 +103,9 @@ class MainActivity : ComponentActivity() {
         // First, before anything that could fail: record crashes and break
         // crash loops (see CrashGuard).
         CrashGuard.install(this)
+        // Update 372: the tuner's global edit counter is created now, on the main thread, outside any snapshot: first created inside
+        // a composition (or on another thread meanwhile) the game window crashed with "Reading a state that was created after the snapshot was taken".
+        runCatching { com.shelf.launcher.device.tune.TuneStore.edits.intValue }
         // Credential stores (Keystore-backed, slow right after a reboot) open in the background now.
         com.shelf.launcher.data.StartupPrewarm.start(this)
         // Update 188: the saved list of games read now, alongside everything else (RomLibraryPrefetch).

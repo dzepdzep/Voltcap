@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withContext
 
 /**
@@ -149,7 +150,7 @@ internal fun rememberThemedAppIcon(packageName: String?, surface: IconSurface): 
     val themed = if (surface == IconSurface.SHORTCUTS) f.shortcutThemedIcons.state.value else f.secondDockMono.state.value
     val effective = themedStyle(surface == IconSurface.SHORTCUTS, com.shelf.launcher.data.IconStyles.hasOwn(packageName), com.shelf.launcher.data.IconStyles.of(packageName))
     if (!themed || effective == com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL) return rememberOwnAppIcon(packageName)
-    val tint = com.shelf.launcher.ui.theme.ShelfTheme.accent
+    val tint = rememberSettledAccent()
     val cand = rememberIconCandidate(packageName) ?: return null
     val look = com.shelf.launcher.data.IconQuality.look(true, effective, cand.symbol != null, cand.trueMono)
     val symbol = cand.symbol
@@ -169,6 +170,25 @@ internal fun themedStyle(shortcuts: Boolean, hasOwn: Boolean, style: com.shelf.l
     if (!shortcuts) style
     else if (hasOwn && style == com.shelf.launcher.data.Features.MonoIconStyle.ORIGINAL) style
     else com.shelf.launcher.data.Features.MonoIconStyle.DETAIL
+
+/**
+ * Update 372: the accent a baked icon is tinted with, once the colours have stopped moving. The accent glides every frame
+ * while the theme follows the game's art; reading it in composition re-composed the icon's caller ~100x/s and baked (and
+ * cached) a new bitmap for every frame of the glide (static check THEME-COMPOSE). Now the live colour is watched outside
+ * composition and the icon is baked again once, [SETTLE_MS] after it stops; until then the last tint stays (no flash).
+ */
+@OptIn(kotlinx.coroutines.FlowPreview::class)
+@Composable
+private fun rememberSettledAccent(): Color {
+    val live = com.shelf.launcher.ui.theme.ShelfTheme.live
+    return produceState(live.value.accent, live) {
+        androidx.compose.runtime.snapshotFlow { live.value.accent }
+            .debounce(SETTLE_MS)
+            .collect { value = it }
+    }.value
+}
+
+private const val SETTLE_MS = 250L
 
 /** The candidate of [packageName], kept with its package: another app's candidate is never returned for a frame. */
 @Composable
@@ -224,6 +244,17 @@ internal fun rememberAppBanner(packageName: String?): ImageBitmap? {
  * ships one, and the icon sits to the right so it doesn't collide with the
  * title text on the left.
  */
+/**
+ * Update 372: an app's own icon alone, at the size it is given: for small icon cells (the second-screen app grid, the
+ * dock's own-colours mode). [AppIconArt] is card art (a blurred copy of the icon, a dark gradient, the icon at 60 %), which
+ * made a small icon a dim square with a halo. Nothing is drawn until the icon is there (the slot keeps its size).
+ */
+@Composable
+internal fun PlainAppIcon(packageName: String?, modifier: Modifier = Modifier) {
+    val icon = rememberOwnAppIcon(packageName)
+    if (icon != null) Image(icon, null, contentScale = ContentScale.Fit, modifier = modifier) else Box(modifier)
+}
+
 @Composable
 internal fun AppIconArt(
     packageName: String?,

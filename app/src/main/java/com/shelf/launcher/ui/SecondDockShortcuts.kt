@@ -107,6 +107,6 @@ internal object SecondDockShortcuts {
             Box(modifier.clip(CircleShape).background(ShelfTheme.accent.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
                 Icon(iconOf(id), names[id], tint = ShelfTheme.accent, modifier = Modifier.fillMaxSize().padding(7.dp))
             }
-        } else AppIconArt(id, wide = false, modifier = modifier)
+        } else PlainAppIcon(id, modifier)
     }
 }

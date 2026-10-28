@@ -1,6 +1,19 @@
 # Voltcap — what's been done (running summary)
 
 
+## Update — 28 Oct 2026 (372): real-icon check of 371 on the Thor, plain icons in small cells, accent glide no longer re-bakes icons (NOT released)
+
+**Thor session (3140972f only, ~11 min; Google TV Streamer / Odin2 Portal not touched; 371 debug build `install -r`, data kept).** Real screenshots in `qa_runs/r372/`.
+- **L1 shortcuts, themed ON (temporary, restored): PASS.** PXPlay, Chrome (ring kept), Asobi, Tailscale, GameNative, Spotify, Obtainium, Discord, Moonlight, Files all keep their logo detail in the accent; no solid square. Minor: Files has a faint plate behind the folder (kept). L1 themed is OFF in the user's prefs (`shortcut_themed_icons=false`), so L1 normally shows original colours (checked, PASS).
+- **Second-screen dock (Detail, user's setting): PASS** (Chrome ring logo, accent).
+- **Drawer on the second screen: FAIL before, PASS after.** It used `AppIconArt` (card art: blurred copy, dark gradient, icon at 60 %) in a 48 dp cell: every icon sat on a dim square with a halo and looked small. Now `PlainAppIcon` (the own icon alone, full size): ARMSX2 (blue crystal, full detail), aPS3e, Beacon, Chrome, Citra, Discord all crisp, no squares. Same fix for the dock's own-colours branch (`SecondDockShortcuts`).
+- **ARMSX2 in L1 / dock themed:** NOT seen (not a shortcut; adding one would change prefs). Its original icon in the drawer is correct. Themed fallback judged only by the other apps and the 371 unit tests.
+- **Theme-colour static warning (THEME-COMPOSE at `rememberThemedAppIcon`): real issue, fixed.** `ShelfTheme.accent` glides every frame while the theme follows the art; the icon's caller re-composed ~100x/s and a new tinted bitmap was baked and cached per frame. `rememberSettledAccent()` watches `ShelfTheme.live` with `snapshotFlow` + `debounce(250)`; the icon is baked once after the glide, the last tint stays meanwhile (no flash). Warning gone. Not measured on the Thor (glide itself NOT TESTED).
+- **Crash seen, one time:** `IllegalStateException: Reading a state that was created after the snapshot was taken` at `rememberGamePerf` (`TuneStore.edits`, GamePopupStatus.kt:95) in `GameWindow`, after an extra A press on Home. Not icon code. `TuneStore.edits` (a companion `mutableIntStateOf`) is first created lazily, so it can be created inside another snapshot. Now touched in `MainActivity.onCreate` on the main thread (defensive; cause inferred, **not reproduced again, not proven**).
+- NOT tested: accent change on the Thor, icon flashing while navigating (no recording), size jumps, legacy / monochrome icons beyond those listed.
+**Files:** `ui/AppIcons.kt` (PlainAppIcon, rememberSettledAccent), `ui/SecondScreenHome.kt`, `ui/SecondDockShortcuts.kt`, `MainActivity.kt`; test `ui/IconCells372Test.kt` (3 source guards). `src_copy` mirrored into `app/` already.
+**Checked:** Gradle unit tests pass, `assembleDebug` OK, `static_checks --strict` PASS, `test_qa.py` OK. **Cleanup:** `shortcut_themed_icons` back to false, backup files removed, no recorder / input process, no hooks used.
+
 ## Update — 28 Oct 2026 (371): smart themed icons, icon contexts separated, no icon flashing (NOT released)
 
 **What changed (behaviour).**

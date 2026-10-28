@@ -1267,7 +1267,7 @@ private fun SecondScreenDrawer(apps: List<Game>, onLaunch: (Game) -> Unit, onClo
                             .padding(4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        AppIconArt(app.packageName, wide = false, modifier = Modifier.size(48.dp).aspectRatio(1f))
+                        PlainAppIcon(app.packageName, Modifier.size(48.dp))
                         Spacer(Modifier.height(4.dp))
                         FullText(
                             app.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp,
