@@ -104,7 +104,9 @@ internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INF
     /** Update 344 (WinScenesConsole.kt). */
     BLADE_GUIDE, BUBBLE_CARD, CAMERA_MENU, PANEL_DETAIL, MAG_PAGE, SHOP_TAG, TERM_RUN,
     /** Update 347: Arcade cabinets' Insert Coin screen (WinScenesArcade.kt). */
-    ARCADE_MENU }
+    ARCADE_MENU,
+    /** Next version: Cinema Premiere and the Arctic info drawer (WinScenesHomes.kt). */
+    CINEMA_PREMIERE, ARCTIC_DRAWER }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -123,6 +125,8 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.SHOP -> WinScene.SHOP_TAG
     HomeLayout.TERMINAL -> WinScene.TERM_RUN
     HomeLayout.ARCADE -> WinScene.ARCADE_MENU
+    HomeLayout.CINEMA -> WinScene.CINEMA_PREMIERE
+    HomeLayout.ARCTIC -> WinScene.ARCTIC_DRAWER
     else -> null
 }
 
@@ -142,6 +146,8 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.TERM_RUN -> termColors(com.shelf.launcher.data.Features.tmTheme.value).let { t -> Brush.verticalGradient(listOf(t.bg.copy(alpha = 0.6f), t.bg.copy(alpha = 0.75f))) }
     WinScene.SHOP_TAG -> Brush.verticalGradient(listOf(Color(0xFF120A1F).copy(alpha = 0.7f), Color.Black.copy(alpha = 0.85f)))
     WinScene.ARCADE_MENU -> Brush.radialGradient(listOf(Color(0xFF0A0420).copy(alpha = 0.55f), Color.Black.copy(alpha = 0.9f)))
+    WinScene.CINEMA_PREMIERE -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Black.copy(alpha = 0.86f)))
+    WinScene.ARCTIC_DRAWER -> Brush.horizontalGradient(listOf(Color(0xFF0D141D).copy(alpha = 0.35f), Color(0xFF0D141D).copy(alpha = 0.8f)))
     WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
@@ -231,6 +237,8 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.SHOP_TAG -> RentalTag(ctx)
         WinScene.TERM_RUN -> TerminalDialog(ctx)
         WinScene.ARCADE_MENU -> ArcadeMenu(ctx)
+        WinScene.CINEMA_PREMIERE -> CinemaPremiere(ctx)
+        WinScene.ARCTIC_DRAWER -> ArcticDrawer(ctx)
     }
 }
 

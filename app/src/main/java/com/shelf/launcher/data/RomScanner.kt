@@ -48,6 +48,7 @@ object RomScanner {
         "ws" to "WonderSwan", "wsc" to "WonderSwan",
         "ngp" to "NeoGeoPocket", "ngc" to "NeoGeoPocket",
         "nsp" to "Switch", "xci" to "Switch",
+        "xiso" to "Xbox", // (hakuX: .iso / .xiso / .xiso.iso / .cso / .cci in an Xbox folder; .xiso on its own is Xbox)
         "wua" to "WiiU", "wux" to "WiiU", "rpx" to "WiiU",
         "gg" to "GameGear", "32x" to "32X",
         "lnx" to "Lynx", "j64" to "Jaguar", "a78" to "Atari7800",
@@ -126,7 +127,19 @@ object RomScanner {
      * Resolves a file to a system: folder name first (the only thing that can
      * disambiguate shared disc formats), then extension, then nothing.
      */
+    /**
+     * Original Xbox: only disc images are games (hakuX's own scanner: .iso, .xiso, .xiso.iso, .cso, .cci). The MCPX boot
+     * ROM, the flash BIOS (.bin) and the hard-disk image (.qcow2 / .img) that sit in the same folder are left out, so
+     * they never show up as games.
+     */
+    private val XBOX_GAME_EXT = setOf("iso", "xiso", "cso", "cci")
+
     private fun platformFor(file: File, rootPath: String, deep: Boolean = false): String? {
+        val p = platformFor0(file, rootPath, deep)
+        return if (p == "Xbox" && file.extension.lowercase() !in XBOX_GAME_EXT) null else p
+    }
+
+    private fun platformFor0(file: File, rootPath: String, deep: Boolean): String? {
         val ext = file.extension.lowercase()
         val root = File(rootPath).absoluteFile
 

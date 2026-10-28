@@ -102,6 +102,8 @@ internal fun styleHomeSummary(layout: HomeLayout): String = when (layout) {
     HomeLayout.MAGAZINE -> "Editorial style, product shot, wooden desk, sounds"
     HomeLayout.SHOP -> "Cases or your look, shelves, walls, neon, sounds"
     HomeLayout.TERMINAL -> "Monitor colours, CRT effects, pixel type, boot screen, sounds"
+    HomeLayout.CINEMA -> "Billboard, tiles, highlight colour, gameplay previews, rows"
+    HomeLayout.ARCTIC -> "Navigation rail, fanart, first widget, clock, widgets"
     else -> ""
 }
 
@@ -167,6 +169,8 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.MAGAZINE -> MagazineSettings()
         HomeLayout.SHOP -> RentalShopSettings()
         HomeLayout.TERMINAL -> TerminalSettings()
+        HomeLayout.CINEMA -> CinemaSettings()
+        HomeLayout.ARCTIC -> ArcticSettings()
         else -> Unit
     }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).

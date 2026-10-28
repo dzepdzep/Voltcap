@@ -89,6 +89,12 @@ internal fun BatterySaverSettings() {
     ) { Features.idleRestMin.value = it }
     MutedNote("After that long without a press or a touch, the background clip stops and the theme's animation holds a still frame, on both screens. The first press brings everything back.")
     SwitchRow(
+        Icons.Filled.BatterySaver, "Pause gameplay clips when idle",
+        "The background clip holds its frame after 30 s without a press and plays on with the next one. Off: clips keep " +
+            "looping (on a smaller handheld such as the RP Classic a looping clip keeps the graphics chip busy).",
+        Features.clipIdlePause.state.value, { Features.clipIdlePause.value = it }
+    )
+    SwitchRow(
         Icons.Filled.SportsEsports, "Rest while you play",
         "On a two-screen handheld a game on one screen leaves Voltcap showing on the other. While a game you started " +
             "from Voltcap has the controller, Voltcap rests as if it were behind it: no animation, moving covers, video " +

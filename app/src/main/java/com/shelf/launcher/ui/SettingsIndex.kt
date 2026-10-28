@@ -583,6 +583,7 @@ internal object SettingsIndex {
         E("Battery saver", "Device", null, "dev_saver", "Battery saver"),
         E("Save battery", "Device", null, "dev_saver", "Battery saver"),
         E("Also with Android's Battery Saver", "Device", null, "dev_saver", "Battery saver"),
+        E("Pause gameplay clips when idle", "Device", null, "dev_saver", "Battery saver"),
         E("Rest while you play", "Device", null, "dev_saver", "Battery saver"),
         E("Sleep mode", "Device", null, "dev_sleep", "Sleep mode"),
         E("Wi-Fi", "Device", null, "dev_sleep", "Sleep mode"),

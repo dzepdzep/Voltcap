@@ -225,7 +225,13 @@ enum class HomeLayout(val label: String) {
     SHOP("Rental shop"),
     /** Update 344: Terminal — an old computer's screen: your games as a directory listing, a dithered preview, a command
      *  line (StyleTerminal.kt). */
-    TERMINAL("Terminal");
+    TERMINAL("Terminal"),
+    /** Next version: Cinema — the game you're on as a big billboard (its art, logo, story and a gameplay preview), rows
+     *  of collections below; A opens Cinema Premiere (StyleCinema.kt). */
+    CINEMA("Cinema"),
+    /** Next version: Arctic hub — a media-centre home: a navigation rail that folds open, widgets of your games over
+     *  the game's fanart and its info; A opens the Arctic info drawer (StyleArctic.kt). */
+    ARCTIC("Arctic hub");
 
     /** One of the style homes drawn by StyleHomes.kt (full-screen layouts with their own menus). */
     val styleHome: Boolean get() = this == DASH || this == LIVE || this == SIDE || this == CROSS || this == SPOT || this == BAR || this == SHELF || this == HUB || this == RESUME || this == CHAN || this == CIRCUIT ||
@@ -242,6 +248,7 @@ enum class HomeLayout(val label: String) {
         this == BOX || this == STORAGE || this == FILESELECT || // Update 330: Cardboard box, Storage boxes, File select
         this == ORBIT || this == AIRY || this == NIGHT || // Update 330, phase 3
         this == BLADES || this == BUBBLES || this == CAMERA || this == PANELS || this == MAGAZINE || this == SHOP || this == TERMINAL || // Update 344
+        this == CINEMA || this == ARCTIC || // Next version
         this == POCKET_CLASSIC || this == POCKET_RIBBON // Update 181
 
     companion object {
@@ -736,6 +743,7 @@ object CategoryBars {
     val MENU = setOf(
         HomeLayout.CROSS, HomeLayout.BAR, HomeLayout.LIBRARY, HomeLayout.LIVE, HomeLayout.SPOT, HomeLayout.CIRCUIT,
         HomeLayout.ARCADE, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET, HomeLayout.GREENCORE, HomeLayout.CUBE, HomeLayout.BLADES, HomeLayout.PANELS, HomeLayout.TERMINAL,
+        HomeLayout.CINEMA, HomeLayout.ARCTIC,
         HomeLayout.CUSTOM
     )
 

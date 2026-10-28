@@ -111,6 +111,8 @@ internal fun pictogramFor(value: Any?): Pictogram? = when (value) {
         com.shelf.launcher.data.HomeLayout.MAGAZINE -> Pictogram.HERO
         com.shelf.launcher.data.HomeLayout.SHOP -> Pictogram.SHELF
         com.shelf.launcher.data.HomeLayout.TERMINAL -> Pictogram.SIDE_MENU
+        com.shelf.launcher.data.HomeLayout.CINEMA -> Pictogram.HERO
+        com.shelf.launcher.data.HomeLayout.ARCTIC -> Pictogram.SIDE_MENU
     }
     is TvRoom.Games -> when (value) {
         TvRoom.Games.SPINES -> Pictogram.SPINES

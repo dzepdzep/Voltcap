@@ -1668,18 +1668,9 @@ private fun AchievementsContent(
     }
     CollapsibleSection("Achievements on cards & pop-ups") {
         FoldGroup("On the cards", summary = "Shimmer, badge & progress bar, trophy count", startOpen = true) {
-        // One switch for all of it.
+        // (Next version, Toni: "remove genuinely duplicate settings". The shimmer switch itself is in Game look › Frames &
+        // mastered games only — the same stored value; its look stays here while it's on.)
         SettingsGrid {
-            item { m ->
-                SwitchRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = "Shimmer on mastered games",
-                    subtitle = "A light sweeps across every mastered / completed game (brighter on the one you're on). Same switch as in Game look › Frames & mastered games.",
-                    checked = appearance.masteredShimmer,
-                    onChange = { onAppearanceChange(appearance.copy(masteredShimmer = it)) },
-                    modifier = m
-                )
-            }
             if (appearance.masteredShimmer) item { m ->
                 ShelfCard {
                     SectionLabel("Shimmer look")

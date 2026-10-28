@@ -1,5 +1,32 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (356): Voltcap 0.6.46 published; next version started (Cinema, Arctic hub, hakuX)
+
+**Released:** Voltcap 0.6.46 (53) is out as the latest GitHub release (not a prerelease), with the signed APK:
+https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.46 — everything from 350–355 (the RP Classic pass), merged into
+`main`. Smoke test on the RP Classic: it installs, the home starts, the menus open and close, no crash.
+
+**Next version (on `main` after the 0.6.46 tag, not released yet; built and checked on the RP Classic only):**
+- **Cinema home** (streaming-app style): the game you're on fills the top (its art drifting closer, its clip after a
+  couple of seconds, logo, facts, the story rolling slowly, Play / More info), with rows under it: Continue playing, the
+  category, your favourites, most played, not played yet. Its own game window, **Cinema Premiere**: the art across the
+  top, Play as the big key, the other actions as round keys in one line that scrolls, the story and achievements beside.
+- **Arctic hub** (media-centre style): a side rail of your consoles that folds open with ◀, the game's fanart behind its
+  logo, facts and story, rows of posters under it. Its own window, **Arctic Info Drawer**: a drawer from the right with
+  the poster beside it, an info list and the actions as a list.
+- Fixed on the RP before committing: rows ran over the billboard's buttons, the game's name under its card was cut and
+  overlapped the next row, the Premiere hid two actions below its edge, the open rail let the text under it show through
+  and cut "Super Nintendo Entertainment System".
+- **hakuX** (Xbox): opens games straight from Voltcap (.iso, .xiso, .cso, .cci); BIOS, flash and hard-disk files are no
+  longer listed as games. hakuX must have its own game folder set up first. Not tested with a game.
+- **Battery Saver › Pause gameplay clips when idle** (off by default): the background clip pauses while the home rests;
+  continuous playback stays as it was.
+- **Settings:** the second "Shimmer on mastered games" switch (Achievements) removed — the one in Game look stays, its
+  setting kept.
+- **Charge limit (RP):** works only while Voltcap's charging control is active (Voltcap running with the limit on).
+- Still to do: Tile home closer to the Switch home (shortcut sizes kept), big Edit Home logos over the name line, the
+  wrapped chips and 7 unwalked Settings categories, Thor checks.
+
 ## Update — 27 Oct 2026 (355, RP Classic pass): Retroid Pocket Classic checked, Tile home names, charge limit, text
 
 Details: `tools\qa\REPORT.md` (RP Classic pass), `defects.json` D59, D63–D72. All on `qa-pass-1`, built and installed on

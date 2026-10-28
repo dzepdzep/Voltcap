@@ -198,6 +198,9 @@ internal fun styleHomeKey(
     if (layout == HomeLayout.MAGAZINE) return magazineKey(event, reach)
     if (layout == HomeLayout.SHOP) return rentalShopKey(event, reach)
     if (layout == HomeLayout.TERMINAL) return terminalKey(event, reach)
+    // Next version: Cinema and Arctic hub take their rows (and Arctic its rail) themselves.
+    if (layout == HomeLayout.CINEMA) return cinemaKey(event, reach)
+    if (layout == HomeLayout.ARCTIC) return arcticKey(event, reach)
     // (Update 325: Twin icons' category page takes the keys while it's open.)
     if (layout == HomeLayout.TWIN_ICONS && TwinNav.cats.value) return twinCatsKey(event, sound)
     val code = event.nativeKeyEvent.keyCode
@@ -1338,6 +1341,8 @@ internal fun StyleHome(
         HomeLayout.MAGAZINE -> StyleMagazine(c, modifier)
         HomeLayout.SHOP -> StyleRentalShop(c, modifier)
         HomeLayout.TERMINAL -> StyleTerminal(c, modifier)
+        HomeLayout.CINEMA -> StyleCinema(c, modifier)
+        HomeLayout.ARCTIC -> StyleArctic(c, modifier)
         else -> Unit
     }
 }
@@ -1421,6 +1426,8 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.SHOP -> RentalShopBackdrop(Modifier.fillMaxSize())
         HomeLayout.ARCADE -> ArcadeBackdrop(Modifier.fillMaxSize())
         HomeLayout.TERMINAL -> TerminalBackdrop(Modifier.fillMaxSize())
+        HomeLayout.CINEMA -> CinemaBackdrop(Modifier.fillMaxSize())
+        HomeLayout.ARCTIC -> ArcticBackdrop(Modifier.fillMaxSize())
         else -> Unit
     }
 }
@@ -1474,6 +1481,8 @@ internal fun styleOwnsBackground(layout: HomeLayout): Boolean = when (layout) {
     // Its wallpaper (the game's art: the art behind, as the other layouts with that option).
     HomeLayout.BUBBLES -> Features.bvWall.state.value != Features.BvWall.GAME
     HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL -> true
+    // Next version: their own room (Cinema's dark hall; Arctic draws the fanart itself).
+    HomeLayout.CINEMA, HomeLayout.ARCTIC -> true
     // Update 347: Arcade cabinets' room (Layout options › Room; "Your theme" keeps Voltcap's background).
     HomeLayout.ARCADE -> Features.arRoom.state.value != Features.ArRoom.THEME
     else -> false

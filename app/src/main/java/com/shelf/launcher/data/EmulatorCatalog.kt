@@ -257,7 +257,7 @@ internal object EmulatorCatalog {
         ),
         "Xbox" to listOf(
             Entry("X1 Box", "com.izzy2lost.x1box", "com.izzy2lost.x1box.LauncherActivity", "android.intent.action.MAIN", null, RomFormat.SHARED_URI, true, mapOf()),
-            Entry("hakuX", "com.rfandango.haku_x", "com.rfandango.haku_x.LauncherActivity", "android.intent.action.MAIN", null, RomFormat.SHARED_URI, true, mapOf()),
+            Entry("hakuX", "com.rfandango.haku_x", "com.rfandango.haku_x.LauncherActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()), // (its manifest: VIEW file / content */*; it reads intent.data, else "rom_path")
             Entry("Xenra (Gold)", "Ali.Xanite", "Ali.Xanite.LauncherActivity", "android.intent.action.MAIN", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("Xenra (Green)", "Ali.Xanite.green", "Ali.Xanite.LauncherActivity", "android.intent.action.MAIN", null, RomFormat.SHARED_URI, true, mapOf()),
         ),

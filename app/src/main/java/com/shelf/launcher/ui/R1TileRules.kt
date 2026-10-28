@@ -210,6 +210,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         "gamesize" -> on(l !in setOf(
             // Update 344: Blades sizes the game to its blade; Bubble home its bubbles to the page.
             HomeLayout.BLADES, HomeLayout.BUBBLES, HomeLayout.CAMERA, HomeLayout.PANELS, HomeLayout.MAGAZINE, HomeLayout.SHOP, HomeLayout.TERMINAL,
+            HomeLayout.CINEMA, HomeLayout.ARCTIC,
             HomeLayout.DISCS, HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.CUSTOM,
             HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.GREENCORE, HomeLayout.POCKET,
             // Update 330: their own Icon size / Case size (Layout options).

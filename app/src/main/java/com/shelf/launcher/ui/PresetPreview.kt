@@ -123,6 +123,9 @@ internal fun PresetPreview(
             HomeLayout.MAGAZINE -> p.magazine()
             HomeLayout.SHOP -> p.shop()
             HomeLayout.TERMINAL -> p.terminal()
+            // Next version: the nearest mock screens (a big picture over rows; a menu beside tiles).
+            HomeLayout.CINEMA -> p.hero()
+            HomeLayout.ARCTIC -> p.dash()
         }
         p.statusBar(layout)
         if (showLegend) p.legend()

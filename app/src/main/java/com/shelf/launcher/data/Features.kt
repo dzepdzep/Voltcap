@@ -1357,6 +1357,11 @@ object Features {
      * (HomeIdle.rest): the background clip stops, the theme's animation holds a still frame, on both screens. 0 = never.
      */
     val idleRestMin = IntPref("idle_rest_min", 10, 0..120)
+    /**
+     * Next version (Toni, after the RP Classic pass, D64): the background gameplay clip holds its frame after 30 s without
+     * input (HomeIdle.calm) and plays on at the first press. Off by default: clips loop continuously as since update 307.
+     */
+    val clipIdlePause = BoolPref("clip_idle_pause", false)
     /** Update 187: Android's own Battery Saver on counts as low battery too. */
     val saverFollowSystem = BoolPref("saver_follow_system", true)
     /** Update 187: Voltcap rests while a game or another app has the controller (two-screen handhelds). */
@@ -1999,6 +2004,38 @@ object Features {
     val mgShot = BoolPref("mg_shot", true)
     val mgDesk = BoolPref("mg_desk", true)
     val mgSounds = BoolPref("mg_sounds", true)
+    // ---- Next version: Cinema (StyleCinema.kt) — a cinematic browsing home: a billboard of the game you're on, rows of
+    // collections below it; A opens Cinema Premiere (WinScenesHomes.kt). ----
+    enum class CnHero(val label: String) { BIG("Big billboard"), COMPACT("Compact") }
+    val cnHero = EnumPref("cn_hero", CnHero.BIG, CnHero.values())
+    enum class CnTiles(val label: String) { WIDE("Wide art"), POSTER("Posters"), MIXED("Wide, posters for the first row") }
+    val cnTiles = EnumPref("cn_tiles", CnTiles.WIDE, CnTiles.values())
+    /** The gameplay clip plays in the billboard after you rest on a game (with Video previews on). */
+    val cnPreview = BoolPref("cn_preview", true)
+    /** The game's logo on the billboard instead of its name (when it has one). */
+    val cnLogo = BoolPref("cn_logo", true)
+    /** The billboard's story rolls up slowly when it's longer than its three lines. */
+    val cnRoll = BoolPref("cn_roll", true)
+    enum class CnAccent(val label: String) { CINEMA("Cinema red"), THEME("Your theme's colour") }
+    val cnAccent = EnumPref("cn_accent", CnAccent.CINEMA, CnAccent.values())
+    val cnRowContinue = BoolPref("cn_row_continue", true)
+    val cnRowFav = BoolPref("cn_row_fav", true)
+    val cnRowMost = BoolPref("cn_row_most", true)
+    val cnRowNew = BoolPref("cn_row_new", true)
+
+    // ---- Next version: Arctic hub (StyleArctic.kt) — a media-centre home: a navigation rail that folds open, widgets of
+    // your games over the game's fanart, the info of the one you're on; A opens the Arctic info drawer. ----
+    enum class ArNav(val label: String) { FOLD("Folds open when you go to it"), OPEN("Always open"), ICONS("Icons only") }
+    val arNav = EnumPref("ar_nav", ArNav.FOLD, ArNav.values())
+    enum class ArArt(val label: String) { FANART("Fanart"), BLURRED("Blurred fanart"), PLAIN("Plain") }
+    val arArt = EnumPref("ar_art", ArArt.FANART, ArArt.values())
+    enum class ArFirst(val label: String) { SPOTLIGHT("Spotlight (wide)"), POSTERS("Posters") }
+    val arFirst = EnumPref("ar_first", ArFirst.SPOTLIGHT, ArFirst.values())
+    val arClock = BoolPref("ar_clock", true)
+    val arRowContinue = BoolPref("ar_row_continue", true)
+    val arRowFav = BoolPref("ar_row_fav", true)
+    val arRowMost = BoolPref("ar_row_most", false)
+    val arRowNew = BoolPref("ar_row_new", true)
 
     // ---- Update 344: Rental shop — shelves of cases in a 90s store (StyleRentalShop.kt) ----
     enum class RsCases(val label: String) { CASES("Store cases (3D)"), LOOK("Your game look") }

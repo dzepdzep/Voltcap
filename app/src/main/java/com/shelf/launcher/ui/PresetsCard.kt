@@ -412,6 +412,8 @@ internal fun layoutBlurb(l: com.shelf.launcher.data.HomeLayout): String = when (
     com.shelf.launcher.data.HomeLayout.MAGAZINE -> "Game magazine: each category an issue lying open on your desk, each game a two-page feature — its art and headline, its story, screenshots, a verdict and its achievements. ◀ ▶ turn the page, ▲ the contents page. Three editorial styles."
     com.shelf.launcher.data.HomeLayout.SHOP -> "Rental shop: a 1990s game rental store under a buzzing neon sign — each console a section of shelves, the games as real cases; the camera glides along the wall, ▲ on the top shelf opens the store map and A picks the case up to turn in your hand."
     com.shelf.launcher.data.HomeLayout.TERMINAL -> "Terminal: VOLTCAP OS on an old monitor — your games as a directory listing, a dithered preview of the one you're on and a command line typing out what A will do. Green, amber, white, a blue shell or four colours; light or full CRT effects."
+    com.shelf.launcher.data.HomeLayout.CINEMA -> "Cinema: the game you're on as a big billboard — its art drifting closer, its logo, its story and a gameplay preview fading in — with rows of your collections below. A opens Cinema Premiere, the game's own page grown out of its tile."
+    com.shelf.launcher.data.HomeLayout.ARCTIC -> "Arctic hub: a media-centre home — a navigation rail of your categories that folds open, the game's fanart behind its clear logo and info, widgets of your games below. A slides out the info drawer."
     com.shelf.launcher.data.HomeLayout.MEMCARD -> "Memory card (2000): your games as small save icons floating on a grey memory-card screen — the category top left, the game you're on top right. PS2 games show their own save's 3D icon from your memory cards."
 }
 
