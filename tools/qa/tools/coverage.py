@@ -26,6 +26,7 @@ from qalib import PASS, FAIL, INFRA, SKIP, NOT_TESTED
 
 STORE = os.path.join(ROOT, "app", "src", "main", "java", "com", "shelf", "launcher", "data", "AppearanceStore.kt")
 DATA = os.path.join(QA, "coverage.json")
+COMBOS = os.path.join(QA, "combos.json")
 AUTO_GLOB = os.path.join(QA, "audit", "*", "layouts_auto.json")
 OUT_MD = os.path.join(QA, "COVERAGE.md")
 STATUSES = (PASS, FAIL, SKIP, NOT_TESTED)
@@ -133,6 +134,47 @@ def problems(data, auto):
     return errs
 
 
+def combo_problems(combos):
+    """combos.json: the high-risk combination matrix. A PASS needs evidence; a unit runner must name a test that exists;
+    a device PASS names the run; an unrun combination is never PASS."""
+    errs, ids = [], set()
+    for e in combos:
+        i = e.get("id", "?")
+        for k in ("id", "group", "name", "initial", "sequence", "expected", "runner", "status", "limits"):
+            if k not in e:
+                errs.append(f"combo {i}: missing '{k}'")
+        if i in ids:
+            errs.append(f"duplicate combo id {i}")
+        ids.add(i)
+        if e.get("status") not in STATUSES:
+            errs.append(f"combo {i}: bad status {e.get('status')!r}")
+        if e.get("status") == PASS and not e.get("evidence"):
+            errs.append(f"combo {i}: PASS without evidence")
+        r = e.get("runner", "")
+        if r.startswith("unit:"):
+            f, _, m = r[5:].partition("#")
+            path = os.path.join(ROOT, "app", "src", "test", "java", "com", "shelf", "launcher", f)
+            if not os.path.exists(path):
+                errs.append(f"combo {i}: unit test file {f} does not exist")
+            elif not re.search(r"fun\s+" + re.escape(m) + r"\b", open(path, encoding="utf-8").read()):
+                errs.append(f"combo {i}: unit test {f}#{m} does not exist")
+        elif r.startswith("device:"):
+            if e.get("status") == PASS and not e.get("device_run"):
+                errs.append(f"combo {i}: a device PASS needs device_run")
+        elif r != "none":
+            errs.append(f"combo {i}: runner must be unit:File#test, device:... or none")
+        if r == "none" and e.get("status") == PASS:
+            errs.append(f"combo {i}: PASS without a runner")
+    return errs
+
+
+def load_combos():
+    if not os.path.exists(COMBOS):
+        return []
+    with open(COMBOS, encoding="utf-8") as f:
+        return json.load(f)["combos"]
+
+
 def layout_row(n, label, data, auto):
     a = auto.get(n, {})
     man = data.get("layout_manual", {}).get(n)
@@ -150,7 +192,7 @@ def layout_row(n, label, data, auto):
 
 def render():
     data, auto = load_data()
-    errs = problems(data, auto)
+    errs = problems(data, auto) + combo_problems(load_combos())
     if errs:
         raise SystemExit("coverage data invalid:\n  " + "\n  ".join(errs))
     lab = labels()
@@ -189,10 +231,30 @@ def render():
     c = {s: sum(1 for e in fs if e["status"] == s) for s in STATUSES}
     L.append(f"\nFeature rows: {len(fs)} - " + ", ".join(f"{s} {c[s]}" for s in STATUSES) +
              f"; hardware-only rows: {sum(1 for e in fs if e.get('hardware'))}.\n")
+    cs = load_combos()
+    if cs:
+        L.append("## High-risk combination matrix (`tools/qa/combos.json`)\n")
+        L.append("Interactions between systems, not single features. `unit:` rows run in Gradle (`testDebugUnitTest`) and their test must exist; "
+                 "`device:` rows are Deep QA (`tools/qa/device/combos.sh`, verdict by `tools/qa/tools/combocheck.py`) and never run in CI. "
+                 "Details, evidence and the next combinations: `tools/qa/COMBOS.md`.\n")
+        L.append("| id | grp | combination | initial state | sequence | expected | runner | status | evidence | limits |")
+        L.append("|---|---|---|---|---|---|---|---|---|---|")
+        for e in cs:
+            L.append("| " + " | ".join(str(x).replace("|", "/") for x in (
+                e["id"], e["group"], e["name"], e["initial"], e["sequence"], e["expected"], e["runner"],
+                "**" + e["status"] + "**", e.get("evidence") or "-", e["limits"])) + " |")
+        cc = {s_: sum(1 for e in cs if e["status"] == s_) for s_ in STATUSES}
+        L.append(f"\nCombination rows: {len(cs)} - " + ", ".join(f"{s_} {cc[s_]}" for s_ in STATUSES) + "\n")
     L.append("## Genuinely untested (no claim made)\n")
     for e in fs:
         if e["status"] in (NOT_TESTED, SKIP):
             L.append(f'- **{e["feature"]}** ({e["test"]}): {e["limits"]}')
+    for e in cs:
+        if e["status"] in (NOT_TESTED, SKIP):
+            L.append(f'- combination **{e["id"]} {e["name"]}**: {e["limits"]}')
+    for e in cs:
+        if e["status"] in (NOT_TESTED, SKIP):
+            L.append(f'- combination **{e["id"]} {e["name"]}**: {e["limits"]}')
     L.append("")
     return "\n".join(L)
 

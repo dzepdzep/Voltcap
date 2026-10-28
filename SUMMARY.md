@@ -1,6 +1,29 @@
 # Voltcap — what's been done (running summary)
 
 
+## Update — 28 Oct 2026 (368): empty collection no longer a stop / tab; combination matrix; release 0.6.54
+
+**Task:** "categories show with L2 / R2 but not on the category screen" (again), plus a permanent high-risk combination matrix. Update 367 already unified the lists; this run
+re-checked every source and found the one remaining list difference (the zero-games rule): **a collection with no games was an L2 / R2 stop and a style-home tab, never a tile**
+(`buildCategoryTiles` skips empty collections; `CategoryStops.stops` did not). L2 / R2 step past empty stops, so only the tab and the stop count were wrong; empty consoles and specials
+are tiles, stops and tabs everywhere (no "hide empty" setting exists; unchanged). **Reproduced first:** new `CategoryStopsTest.emptyCollectionIsNotAStopOrTab` failed on the 0.6.53 code
+(`assertAllAgree`), passes now. The user's exact on-device symptom is still not reproduced (no empty collection in their library).
+**Fix:** `data/CategoryStops.kt`: the COLLECTIONS group lists only collections with games (`hasGames`, search ignored, same as the tiles). Tests 9 -> 12 (empty collection, collection with games, collection taken off).
+**QA events (test hooks only):** `QaTrace.event("category", "stop KEY i/N")` in `cycleCategory`, `"tiles N: keys"` when the category screen's tiles are built.
+**Combination matrix (tools/qa only):** `combos.json` (35 rows, 7 groups) rendered into `COVERAGE.md`; `COMBOS.md` (method, priorities, next); `device/combos.sh RUN LAYOUT SCENARIO`
+(parity / rapidcat / screenmash / navcat); `tools/combocheck.py` (PASS / FAIL / INFRA: process survived, Voltcap in front, every stop is a tile, stop total == tile count, no evidence = INFRA);
+`coverage.py` validates rows (PASS needs evidence, a `unit:` runner must name an existing test, a device PASS needs its run). Self-tests 46 -> 53 (TestCombos), run in CI.
+**Files:** `data/CategoryStops.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`, `app/build.gradle.kts` (+ `project_copy/`): 0.6.53 -> **0.6.54 (versionCode 61)**; `CategoryStopsTest.kt` (app/src/test + project_copy);
+`tools/qa/{combos.json,COMBOS.md,COVERAGE.md,README.md,device/combos.sh,tools/combocheck.py,tools/coverage.py,selftest/test_qa.py}`.
+**Copy:** `robocopy src_copy app\src\main\java\com\shelf\launcher /E` and `robocopy project_copy . /E` (already applied here).
+**Checked:** `:app:testDebugUnitTest` 292 tests, 0 failures; `assembleRelease` OK; `static_checks --strict` exit 0; QA self-tests 53 OK; `coverage.py check` PASS.
+**AYN Thor 3140972f only** (0.6.54 release over 0.6.53, `install -r`; SoC 42-55 C, so runs waited for it to cool below 48 C; battery 29 C, 77 -> 74 %): 12 combination runs all PASS by `combocheck.py` -
+CLASSIC parity / rapidcat / screenmash / navcat, TILES the same four, CINEMA and ARCTIC parity + rapidcat (L2 / R2 mash x60). Parity: 20 tiles = 20 stops, 24 R2 steps visited all 20, same keys.
+Stills reviewed: Cinema category screen. Hooks off afterwards (paused file only), snapshot restored, Voltcap in front. Google TV Streamer not touched; no emulator was running.
+**Not tested (honest):** visual jumps / stale artwork during the mash (verdict is structural; no new recordings), Cinema / Arctic screenmash + navcat, dual-screen, R1 menus, the 9 Settings categories, missing-artwork fixtures,
+profiles / game launch, other aspect ratios, per-console override sweep, Arctic one-frame title, Terminal "..." (rule 11). Listed in `COVERAGE.md` and `COMBOS.md`.
+
+
 ## Update — 28 Oct 2026 (367): one category list for L2 / R2, tabs, category screen and warm-up; release 0.6.53
 
 **Investigation (L2 / R2 vs category screen):** four places built "the categories" separately: `LauncherViewModel.categoryStops` (L2 / R2, `jumpCategory`),

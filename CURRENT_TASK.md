@@ -1,3 +1,7 @@
+# CURRENT_TASK — status 28 Oct 2026, update 368 (0.6.54)
+
+**Read COWORK_HANDOFF.md first.** Update 368 (SUMMARY.md): an empty collection was a stop / tab but no tile -> fixed (`CategoryStopsTest`, 12 tests); combination matrix (`tools/qa/combos.json`, `COMBOS.md`, `device/combos.sh`, `combocheck.py`); 12 Thor runs PASS (Voltcap row, Tile home, Cinema, Arctic); version 0.6.54. Next: see "Recommended for Sunday 1 Nov" in COWORK_HANDOFF.md.
+
 # CURRENT_TASK — status 28 Oct 2026, update 367 (0.6.53)
 
 **Read COWORK_HANDOFF.md first.** Update 367 (SUMMARY.md): one category list (`data/CategoryStops.kt`) for L2 / R2, tabs, category screen and warm-up; 4 confirmed inconsistencies fixed, `CategoryStopsTest` (9 tests); exact user symptom not reproduced on the Thor; released 0.6.53 (tag on f7d9a13). Next: see "Recommended for Sunday 1 Nov" in COWORK_HANDOFF.md.

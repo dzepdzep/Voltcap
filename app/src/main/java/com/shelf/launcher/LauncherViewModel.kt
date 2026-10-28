@@ -3156,6 +3156,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             next = com.shelf.launcher.data.CategoryStops.stepFrom(next, step, stops.size)
         }
         val (special, platform) = stops[next]
+        // (Update 368: test builds only — the stop reached and how many there are; the category screen logs its tile count the same way.)
+        com.shelf.launcher.ui.QaTrace.event("category", "stop ${com.shelf.launcher.data.CategoryStops.keyOf(special, platform)} ${next + 1}/${stops.size}")
         when {
             special != null -> setSpecialFilter(special)
             else -> setPlatformFilter(platform)

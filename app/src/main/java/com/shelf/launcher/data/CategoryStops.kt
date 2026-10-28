@@ -12,8 +12,8 @@ import com.shelf.launcher.SpecialFilter
  * Identity: "ALL", a special filter's name, or "p:<console or collection key>" (the category tiles' keys).
  * Visibility: [LauncherUiState.categoryOrder] (Settings › Categories: order, hidden groups, switches), your tile order
  * ([CategoryTileOrder]) and the tiles taken off the category screen ([CategoryTileOrder.isHidden]).
- * Empty categories are NOT removed here (the category screen shows them with their count, a collection with no games
- * aside); L2 / R2 step past them themselves ([com.shelf.launcher.LauncherViewModel.cycleCategory]).
+ * Empty consoles and specials are NOT removed here (the category screen shows them with their count); a collection with no games
+ * is no stop and no tile. L2 / R2 step past the empty ones themselves ([com.shelf.launcher.LauncherViewModel.cycleCategory]).
  */
 object CategoryStops {
     fun keyOf(special: SpecialFilter?, platform: String?): String = special?.name ?: platform?.let { "p:$it" } ?: "ALL"
@@ -25,11 +25,15 @@ object CategoryStops {
                 CategorySettings.ALL -> listOf<Pair<SpecialFilter?, String?>>(null to null)
                 // (In your own console order — Choose a category › Reorder.)
                 CategorySettings.CONSOLES -> PlatformOrder.sort(state.availablePlatforms).map { null to it }
-                CategorySettings.COLLECTIONS -> state.collections.map { null to it.key }
+                // (Update 368: a collection with no games is no stop, as it is no tile — it used to be a stop and a tab only.)
+                CategorySettings.COLLECTIONS -> state.collections.filter { c -> hasGames(state, c.key) }.map { null to it.key }
                 else -> runCatching { SpecialFilter.valueOf(key) }.getOrNull()?.let { listOf(it to null) }.orEmpty()
             }
         }) { (special, platform) -> keyOf(special, platform) }
             .filterNot { (special, platform) -> CategoryTileOrder.isHidden(keyOf(special, platform)) }
+
+    private fun hasGames(state: LauncherUiState, key: String) =
+        state.copy(platformFilter = key, specialFilter = null, searchQuery = "").visibleGames.isNotEmpty()
 
     /** The category keys of [stops], as the category screen's tiles name them. */
     fun keys(state: LauncherUiState): List<String> = stops(state).map { (s, p) -> keyOf(s, p) }

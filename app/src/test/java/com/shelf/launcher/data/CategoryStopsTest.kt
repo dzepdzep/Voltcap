@@ -96,6 +96,34 @@ class CategoryStopsTest {
         assertAllAgree(s)
     }
 
+    private fun withCollections(vararg c: ShelfCollection) =
+        state(hidden = CategorySettings.DEFAULT_HIDDEN - CategorySettings.COLLECTIONS).copy(collections = c.toList())
+
+    /** Update 368: a collection with no games was an L2 / R2 stop and a tab but never a tile — the lists disagreed. */
+    @Test fun emptyCollectionIsNotAStopOrTab() {
+        val s = withCollections(
+            ShelfCollection("col:Empty", "Empty", ShelfCollection.Kind.USER, emptySet()),
+            ShelfCollection("col:Gone", "Gone", ShelfCollection.Kind.USER, setOf("nothing-in-the-library"))
+        )
+        assertAllAgree(s)
+        assertTrue(CategoryStops.keys(s).none { it.startsWith("p:col:") })
+    }
+
+    @Test fun collectionWithGamesIsEverywhere() {
+        val s = withCollections(ShelfCollection("col:Mine", "Mine", ShelfCollection.Kind.USER, setOf(games[0].stableKey)))
+        assertAllAgree(s)
+        assertTrue("p:col:Mine" in CategoryStops.keys(s))
+    }
+
+    @Test fun collectionTakenOffIsOffEverywhere() {
+        CategoryTileOrder.setHidden("p:col:Mine", true)
+        try {
+            val s = withCollections(ShelfCollection("col:Mine", "Mine", ShelfCollection.Kind.USER, setOf(games[0].stableKey)))
+            assertAllAgree(s)
+            assertFalse("p:col:Mine" in CategoryStops.keys(s))
+        } finally { CategoryTileOrder.setHidden("p:col:Mine", false) }
+    }
+
     @Test fun stepFromHandlesOutsideTheList() {
         assertEquals(0, CategoryStops.stepFrom(-1, 1, 5))   // R2 from a category outside the list: the first, not the second
         assertEquals(4, CategoryStops.stepFrom(-1, -1, 5))  // L2: the last

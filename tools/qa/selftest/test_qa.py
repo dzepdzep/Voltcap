@@ -521,5 +521,55 @@ class TestRepoIntegrity(unittest.TestCase):
             self.assertEqual(p.returncode, 0, f"{f}: {p.stderr.decode(errors='replace')}")
 
 
+class TestCombos(unittest.TestCase):
+    """The combination matrix: combocheck.py must reject bad evidence, coverage.py must reject untrue combination rows."""
+    TILES = "100 category tiles 3: ALL,p:SNES,p:N64\n"
+    GOOD_STOPS = "101 category stop p:SNES 2/3\n102 category stop p:N64 3/3\n103 category stop ALL 1/3\n"
+    TAIL = "COMBO pid_before=1 pid_after=1 crashes=0 focus=com.shelf.launcher\n"
+
+    def run_check(self, text, **kw):
+        import combocheck
+        return combocheck.verdict(text, **kw)[0]
+
+    def test_good_run_passes(self):
+        self.assertEqual(self.run_check(self.TILES + self.GOOD_STOPS + self.TAIL, need_tiles=True, need_stops=3), 0)
+
+    def test_stop_the_screen_does_not_list_fails(self):
+        bad = self.TILES + "101 category stop p:col:Empty 2/3\n" + self.TAIL
+        self.assertEqual(self.run_check(bad, need_tiles=True), 1)
+
+    def test_stop_total_different_from_tiles_fails(self):
+        bad = self.TILES + "101 category stop p:SNES 2/4\n" + self.TAIL
+        self.assertEqual(self.run_check(bad, need_tiles=True), 1)
+
+    def test_crash_restart_or_lost_focus_fails(self):
+        for tail in ("COMBO pid_before=1 pid_after=2 crashes=0 focus=com.shelf.launcher\n",
+                     "COMBO pid_before=1 pid_after=1 crashes=3 focus=com.shelf.launcher\n",
+                     "COMBO pid_before=1 pid_after=1 crashes=0 focus=none\n"):
+            self.assertEqual(self.run_check(self.TILES + self.GOOD_STOPS + tail, need_tiles=True), 1, tail)
+
+    def test_missing_evidence_is_infra_never_pass(self):
+        self.assertEqual(self.run_check(self.TILES + self.GOOD_STOPS, need_tiles=True), 2)             # combos.sh never finished
+        self.assertEqual(self.run_check(self.GOOD_STOPS + self.TAIL, need_tiles=True), 2)              # hooks off: no tiles line
+        self.assertEqual(self.run_check(self.TILES + self.TAIL, need_stops=5), 2)                      # nothing navigated
+        self.assertEqual(self.run_check("100 category tiles 5: ALL,p:SNES\n" + self.TAIL), 2)          # cut / garbled line
+
+    def test_coverage_rejects_untrue_combination_rows(self):
+        import coverage
+        ok = {"id": "X-1", "group": 3, "name": "n", "initial": "i", "sequence": "s", "expected": "e", "limits": "l",
+              "runner": "unit:data/CategoryStopsTest.kt#defaultStateAgrees", "status": "PASS", "evidence": "run"}
+        self.assertEqual(coverage.combo_problems([ok]), [])
+        self.assertTrue(coverage.combo_problems([dict(ok, evidence="")]))                       # PASS without evidence
+        self.assertTrue(coverage.combo_problems([dict(ok, runner="unit:data/CategoryStopsTest.kt#noSuchTest")]))
+        self.assertTrue(coverage.combo_problems([dict(ok, runner="none")]))                     # PASS without a runner
+        self.assertTrue(coverage.combo_problems([dict(ok, runner="device:combos.sh parity")]))  # device PASS needs device_run
+        self.assertTrue(coverage.combo_problems([ok, ok]))                                      # duplicate id
+        self.assertEqual(coverage.combo_problems([dict(ok, runner="none", status=NOT_TESTED, evidence="")]), [])
+
+    def test_real_combos_file_is_valid(self):
+        import coverage
+        self.assertEqual(coverage.combo_problems(coverage.load_combos()), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

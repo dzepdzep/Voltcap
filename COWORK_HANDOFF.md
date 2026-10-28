@@ -1,4 +1,4 @@
-# COWORK_HANDOFF — resume here (updated 28 Oct 2026, after release 0.6.53)
+# COWORK_HANDOFF — resume here (updated 28 Oct 2026, after release 0.6.54)
 
 Read this first after the Cowork timeout (28 Oct 2026; Cowork is available again Sunday 1 Nov). It needs no other conversation context.
 Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md` ("Trusting a result") and `tools/qa/COVERAGE.md`.
@@ -7,7 +7,7 @@ Then read the top entries of `SUMMARY.md` (updates 363-366), `tools/qa/README.md
 | | |
 |---|---|
 | Branch | `main` (working branch; old: `claude/laughing-franklin-xci4p0`, `master`, `qa-pass-1`, `test-stacks-314`, `voltcap-314`) |
-| App version | **0.6.53 (versionCode 60)**; 0.6.52 was identical to 0.6.51 (version lines only); 0.6.53 changes category handling (section 2b) |
+| App version | **0.6.54 (versionCode 61)** (0.6.53 = 60; 0.6.52 was identical to 0.6.51 (version lines only); 0.6.53 changes category handling (section 2b); 0.6.54 fixes the empty-collection stop (section 2c)) |
 | Releases | v0.6.49 (28 Oct 07:42 UTC), v0.6.50, v0.6.51, v0.6.52, **v0.6.53 "Latest"** https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.53 - normal release (not draft, not prerelease), tag on `f7d9a13`; assets Voltcap-0.6.53.apk (sha256 673d8ccf...2a6a, release key "Toni Dzepina", verified by apksigner, aapt2 versionCode 60, downloaded copy hash identical), voltcap-profile-api28.dm, -api31.dm |
 | Commits | `7c1498d` 0.6.51; `4f4375f` + `0242a2a` QA overhaul; `3dd851b` 0.6.52; `1782fc7` handoff; **`f7d9a13` 0.6.53 (CategoryStops)**; the commit after it only updates docs |
 | CI | `qa.yml` success on 4f4375f, 0242a2a, 3dd851b and f7d9a13 (46 self-tests, strict static checks, coverage check). Hardware and Gradle unit tests are not run in CI (run locally: 289 unit tests pass) |
@@ -36,6 +36,14 @@ Task: "categories appear with L2 / R2 but not on the category-selection screen".
 - **NOT tested (still open):** dual-screen category selection, mixed-category / per-console overrides beyond the cycle, Cinema / Arctic text + artwork pass after this change, the 9 Settings
   categories, R1 option visibility, second-screen widgets, missing-artwork / metadata fixtures, profile launch / return, other aspect ratios (emulator), Arctic one-frame title question, TERMINAL "..." (rule 11).
 - Seen, not changed: Collector's Drawers and Archive looks clip long console names in fixed labels ("Entertainment S", "itendo Entertainmen"): rule 11 candidate.
+## 2c. Update 368 (release 0.6.54): remaining category mismatch + combination matrix
+- **Confirmed bug, fixed:** a collection with no games was an L2 / R2 stop and a tab but not a tile (`CategoryStops.stops` vs `buildCategoryTiles`). Red test `emptyCollectionIsNotAStopOrTab` on the 0.6.53 code, green now (`CategoryStopsTest`, 12 tests, 292 unit tests total 0 failures). Empty consoles / specials remain tiles, stops and tabs (no "hide empty" setting exists). The user's exact on-device symptom is still unreproduced; if it recurs ask for the look, the categories, and whether an empty collection / removed tile is involved.
+- **Matrix:** `tools/qa/combos.json` -> `COVERAGE.md` (35 rows: PASS 19, NOT TESTED 16, FAIL 0), `COMBOS.md` (method, priorities, next), `device/combos.sh`, `tools/combocheck.py`, self-tests 53 (CI). App side: `QaTrace` "category stop" / "category tiles" lines (hooks on only).
+- **Thor 3140972f only (28 Oct, 0.6.54):** 12 runs, all PASS (structural verdict): Voltcap row / Tile home x parity, L2-R2 mash x60, screen open-close x8, selection+category; Cinema + Arctic x parity + mash. 20 tiles = 20 stops. SoC reached 55 C during runs (waited to cool); battery 29 C. Hooks off, snapshot restored. Google TV Streamer untouched; no emulator.
+- **Not tested:** visual jumps / stale artwork under the mash (no recordings), Cinema / Arctic screenmash + navcat, dual-screen category selection, R1 option matrix, 9 Settings categories, missing-artwork / metadata fixtures, profiles + game launch / return, other aspect ratios, per-console override sweep, Arctic one-frame title, Terminal "..." (rule 11), Collector's Drawers / Archive clipped console names.
+- **Windows tip:** run device scripts through `MSYS_NO_PATHCONV=1 adb ...` in Git Bash; `py` is Python (`python3` is a Store stub); do not stack background sweeps on the device.
+- **Recommended for Sunday 1 Nov:** (1) fixture library (no cover / no metadata / 300-char title / wide-tall-square covers / collections of 0, 1, 500 games) on a test profile; (2) record + `frames.py` a mash on Cinema / Arctic for the visual verdict; (3) R1 walk per layout family; (4) second-screen `screencap -d`; (5) the 9 Settings categories; (6) emulator aspect ratios (needs a debug build with hooks).
+
 ## 3. The 365ff8e fixes (update 363, in 0.6.51): Cinema / Arctic hub steadied
 - `LogoOrName`: **one slot of fixed size** for the logo or the name (also while the logo loads, also in the two windows), so a game with a
   logo after one without no longer moves facts, buttons and rows.

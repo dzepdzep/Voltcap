@@ -1310,6 +1310,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         tilesBuiltOpen[0] = categoryScreenOpen
         // (Update 325: the ones taken off stay off the screen; Add category lists them.)
         categoryTiles = all.filterNot { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
+        com.shelf.launcher.ui.QaTrace.event("category", "tiles ${categoryTiles.size}: ${categoryTiles.joinToString(",") { it.key }}")
         removedCategoryTiles = all.filter { com.shelf.launcher.data.CategoryTileOrder.isHidden(it.key) }
     }
     // The category showing now, as a category tile's key ("ALL", a special filter's name, "p:<platform or collection>").
