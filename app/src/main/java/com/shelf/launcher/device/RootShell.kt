@@ -29,17 +29,49 @@ object RootShell {
     /** Update 201: the longest command the service runs intact (see above). */
     const val MAX_COMMAND = 250
 
-    private val pserver: IBinder? by lazy {
-        runCatching {
-            val sm = Class.forName("android.os.ServiceManager")
-            sm.getDeclaredMethod("getService", String::class.java).invoke(null, "PServerBinder") as? IBinder
-        }.getOrNull()
-    }
+    /*
+     * Update 360 (Thor, 27 Oct: charged to 100 % with the limit on). It was looked up once per run ("by lazy"): when
+     * Android's backup restarted Voltcap at 20:09 the first look-up came back empty, that empty answer stayed for the whole
+     * run, and the charge limit took the Thor for a handheld without a charge switch. Now an empty or dead answer is looked
+     * up again (at most every 5 s), and a call that hits a dead service looks it up and tries once more.
+     */
+    @Volatile private var cached: IBinder? = null
+    @Volatile private var lastLookup = 0L
+
+    private fun lookup(): IBinder? = runCatching {
+        val sm = Class.forName("android.os.ServiceManager")
+        sm.getDeclaredMethod("getService", String::class.java).invoke(null, "PServerBinder") as? IBinder
+    }.getOrNull()
+
+    private val pserver: IBinder?
+        get() {
+            cached?.let { if (it.isBinderAlive) return it }
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (lastLookup != 0L && now - lastLookup < 5_000L) return cached?.takeIf { it.isBinderAlive }
+            lastLookup = now
+            cached = lookup()
+            return cached
+        }
 
     val available: Boolean get() = pserver != null
 
-    /** Runs [cmd] and returns its trimmed output ("" for none), or null when it couldn't run. */
+    /**
+     * Runs [cmd] and returns its trimmed output ("" for none), or null when it couldn't run.
+     * (Update 360: one call at a time — AYN's service crashed on the Thor, 27 Oct 20:09, inside its request handling,
+     * while Voltcap's charge limit, tuner and stick lights could all be calling it at once.)
+     */
+    @Synchronized
     fun exec(cmd: String): String? {
+        val first = run1(cmd)
+        if (first !== DEAD) return first as String?
+        // (Update 360: the service went away — e.g. restarted — look it up again and try once more.)
+        cached = null; lastLookup = 0L
+        return run1(cmd).let { if (it === DEAD) null else it as String? }
+    }
+
+    private val DEAD = Any()
+
+    private fun run1(cmd: String): Any? {
         val b = pserver ?: return null
         // Update 201: the service would cut it (see the class comment); said in the log so it doesn't go unnoticed again.
         if (cmd.length > MAX_COMMAND) Log.w(TAG, "Command of ${cmd.length} chars is cut by the root service: ${cmd.take(60)}…")
@@ -49,6 +81,9 @@ object RootShell {
             data.writeStringArray(arrayOf(cmd, "1"))
             b.transact(0, data, reply, 0)
             reply.createByteArray()?.toString(Charsets.UTF_8)?.trim()?.takeUnless { it == "null" } ?: ""
+        } catch (e: android.os.DeadObjectException) {
+            Log.w(TAG, "PServer went away; looking it up again")
+            DEAD
         } catch (e: Exception) {
             Log.w(TAG, "PServer command failed", e)
             null

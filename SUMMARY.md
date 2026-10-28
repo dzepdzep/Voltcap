@@ -1,5 +1,22 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 28 Oct 2026 (360): Thor charged to 100 % — charge limit fixed so it can't give up
+
+**What happened (Thor, 27 Oct, read from its logs and Voltcap's charge log):** plugged in at 1 % at 19:41. At 20:09
+Android's own app backup ran on Voltcap and ended it; at 20:09:52 AYN's root service (pservice) crashed too. Voltcap
+came back at 20:10, looked for the root service once, didn't find it, and kept that answer for the whole run: the charge
+limit took the Thor for a handheld with no charge switch and switched itself off. It charged to 100 % by 21:22,
+unplugged at 21:35 and ran down to 88 % overnight. Since 08:24 it's plugged in again and held at 88 %.
+
+**Fixed (on main, not released yet):**
+- The root service is looked up again when it's missing or has gone away (at most every 5 s), and a call that hits a
+  dead service looks it up and tries once more.
+- The charge limit no longer settles on "no switch" on an AYN handheld while its root service is out of reach; it tries
+  again on the next battery change and keeps its service running.
+- Calls to AYN's service go one at a time (its crash was inside its request handling; Voltcap's charge limit, tuner and
+  stick lights could call it at the same time). Not proven to be the cause.
+- Checked on the Thor: after two restarts of Voltcap (installs) the stop stays set and the battery stays at 88 %.
+
 ## Update — 28 Oct 2026 (359): 0.6.48 released; big logos no longer cover the game's name (D67)
 
 **Released:** Voltcap 0.6.48 (55) — https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.48 (Latest, not a

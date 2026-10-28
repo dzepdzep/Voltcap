@@ -274,6 +274,9 @@ object ChargeLimiter {
     private fun check(context: Context, intent: Intent?) {
         if (activeFor(context) == null) {
             _status.value = Status.UNSUPPORTED
+            // (Update 360: not stopped while an AYN handheld's root service is only out of reach for now — the next battery
+            // change tries again; stopping the service let Android end Voltcap and the Thor charged to 100 %.)
+            if (isAyn() && !probed) { lastError = "The handheld's root service isn't reachable yet; trying again."; return }
             ChargeLimitService.stop(context)
             return
         }
@@ -428,6 +431,9 @@ object ChargeLimiter {
         if (!probed) synchronized(this) {
             if (!probed) {
                 switches = runCatching { probe() }.getOrDefault(emptyList())
+                // (Update 360: on an AYN handheld with its root service out of reach right now — Voltcap just restarted —
+                // nothing works without it; look again on the next check instead of settling on "no switch" for the run.)
+                if (switches.isEmpty() && isAyn() && !RootShell.available) return null
                 val p = prefs(context)
                 p.edit().remove(KEY_BAD).apply()
                 val saved = p.getString(KEY_STACK, null).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }
