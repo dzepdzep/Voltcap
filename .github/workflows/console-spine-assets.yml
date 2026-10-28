@@ -1,0 +1,50 @@
+name: Generate real-logo capsule spines
+on:
+  push:
+    branches:
+      - artwork/real-logo-spines-20261028
+    paths:
+      - tools/console_spines/generate.py
+      - .github/workflows/console-spine-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow==11.1.0
+      - name: Generate correct-source PNG pack
+        run: python tools/console_spines/generate.py
+      - name: Verify PNGs, transparency and manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          root=Path('tools/console_spines/output')
+          obj=json.loads((root/'manifest.json').read_text())
+          files=list((root/'png').glob('*.png'))
+          assert obj['count']==len(files)>=65
+          for f in files:
+            with Image.open(f) as im:
+              assert im.mode=='RGBA' and im.size==(240,720)
+              assert im.getpixel((0,0))[3]==0
+          assert (root/'VoltCap_Real_Logo_Spines.zip').stat().st_size>100000
+          print('Verified',len(files),'PNG alpha files')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoltCap-Real-Logo-Console-Spines
+          path: |
+            tools/console_spines/output/VoltCap_Real_Logo_Spines.zip
+            tools/console_spines/output/preview.png
+            tools/console_spines/output/manifest.json
+          if-no-files-found: error
+          retention-days: 30
