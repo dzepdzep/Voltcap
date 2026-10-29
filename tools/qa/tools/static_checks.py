@@ -253,6 +253,13 @@ def check(src):
         for m in re.finditer(r"=\s*if\s*\((?:[^()]|\([^()]*\))*\)\s*-?[\d.]+f\s*else\s*\w+\.value\b", s):
             add("LAYER-BRANCH", "MED", m.start(), "animation read only in the else-branch: while the if-branch is taken nothing is observed and the layer can stay stuck; read `.value` into a local first")
 
+        # ONEPRESS (R23, update 382): ◀ on the first game that "knocks" first and goes into the menu on the next press is a
+        # deliberate double press only on a row that stops. On an Endless row the game left of the first one is drawn, so ◀
+        # must go round to it in ONE press: the branch has to ask leftReachesMenu(.., StyleNav.sideLoops), not just focus == 0.
+        for m in re.finditer(r"Key\.DirectionLeft\s*->[^\n]*\bleftToMenu\(\)", s):
+            if "leftReachesMenu(" not in m.group(0):
+                add("ONEPRESS", "HIGH", m.start(), "left on the first game enters the menu / knocks without asking whether Endless goes round: first press ignored on a looping row (R23)")
+
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

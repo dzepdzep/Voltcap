@@ -986,6 +986,24 @@
    "status": "not-reproduced",
    "found": "2026-10-28 Thor 3140972f, frames.py transient on a 14 s recording (qa_runs/wc1.mp4, sheet ev_00819_transient.png, frames 819-821)",
    "note": "28 Oct run (Thor 3140972f, same Wide capsule + Roll out + Left end setup, 4 recordings ~75 s of rapid L/R reversals at 60 and 120 Hz, full-resolution frames): the bar did NOT recur, before or after the fix; flagged dark regions were the games' own dark art. Pixels of the original frames (qa_runs wc1 f03) show the bar is the card placeholder (RGB ~4,2,0) where the Roll-out leaves the base cover uncovered. Hardened in GameCard.kt (update 378): while the base cover is not drawn the wide art shows whole (rollEdge / rollDrift, onSuccess baseLoaded); unit test RollReveal76Test. Cause inferred from the frame pixels and code, not reproduced, so NOT marked verified."
+  },
+  {
+   "id": "D77",
+   "title": "Dashboard, Endless on: ◀ moves the row but the selection only changes on the second press (user report after update 381)",
+   "rule": "ONE-PRESS (R23)",
+   "severity": "medium",
+   "status": "not-reproduced",
+   "found": "2026-10-29 user report",
+   "note": "Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for ◀ on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
+  },
+  {
+   "id": "D78",
+   "title": "Resume & discover: ◀ on the first game knocks first, the menu only on the second press, also with Endless on",
+   "rule": "ONE-PRESS (R23)",
+   "severity": "info",
+   "status": "deliberate",
+   "found": "2026-10-29 update 382 audit (code)",
+   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and ▼ also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants ◀ to go round to the last game there. NOT tested on hardware."
   }
  ]
 }

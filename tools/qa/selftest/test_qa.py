@@ -287,6 +287,57 @@ class TestFocuscheck(Base):
         self.write("b.txt", bad)
         self.assertEqual(run("focuscheck.py", self.p("b.txt"))[0], 1)
 
+    # R23 ONE-PRESS: one key per MARK, logcat times in front of each line.
+    def one(self, name, lines):
+        self.write(name, "\n".join(lines) + "\n"); return self.p(name)
+
+    def test_onepress_ignored_first_press_fails(self):
+        # the update-381 regression: the first ◀ on game 0 only knocked the row, the focus changed on the second press
+        f = self.one("op1.txt", [
+            "10-29 07:00:00.000 1 1 E VoltcapQA: 10 focus 0 GB X",
+            "10-29 07:00:01.000 1 1 E VoltcapQA: 11 MARK seq L",
+            "10-29 07:00:02.000 1 1 E VoltcapQA: 12 MARK seq L",
+            "10-29 07:00:02.050 1 1 E VoltcapQA: 13 focus 139 GB Y"])
+        code, out = run("focuscheck.py", f, "--size", "140")
+        self.assertEqual(code, 1, out)
+        self.assertIn("no focus change", out)
+
+    def test_onepress_wrap_in_one_press_passes(self):
+        f = self.one("op2.txt", [
+            "10-29 07:00:00.000 1 1 E VoltcapQA: 10 focus 0 GB X",
+            "10-29 07:00:01.000 1 1 E VoltcapQA: 11 MARK seq L",
+            "10-29 07:00:01.060 1 1 E VoltcapQA: 12 focus 139 GB Y",
+            "10-29 07:00:02.000 1 1 E VoltcapQA: 13 MARK seq R",
+            "10-29 07:00:02.060 1 1 E VoltcapQA: 14 focus 0 GB X"])
+        self.assertEqual(run("focuscheck.py", f, "--size", "140")[0], 0)
+
+    def test_onepress_delayed_selection_fails(self):
+        f = self.one("op3.txt", [
+            "10-29 07:00:00.000 1 1 E VoltcapQA: 10 focus 5 GB X",
+            "10-29 07:00:01.000 1 1 E VoltcapQA: 11 MARK seq L",
+            "10-29 07:00:02.200 1 1 E VoltcapQA: 12 focus 4 GB Y"])
+        code, out = run("focuscheck.py", f)
+        self.assertEqual(code, 1, out)
+        self.assertIn("delayed selection", out)
+
+    def test_onepress_edge_knock_is_deliberate_only_with_edge_ok(self):
+        f = self.one("op4.txt", [
+            "10-29 07:00:00.000 1 1 E VoltcapQA: 10 focus 0 GB X",
+            "10-29 07:00:01.000 1 1 E VoltcapQA: 11 MARK seq L"])
+        self.assertEqual(run("focuscheck.py", f, "--size", "140")[0], 1)
+        code, out = run("focuscheck.py", f, "--size", "140", "--edge-ok")
+        self.assertEqual(code, 0, out)
+        self.assertIn("deliberate", out)
+
+    def test_static_onepress_flags_left_to_menu_without_endless_check(self):
+        os.makedirs(self.p("src"))
+        bad = ("package x\nfun k() { when (k) {\n"
+               "    Key.DirectionLeft -> if (focus == 0 && side.isNotEmpty()) leftToMenu() else false\n} }\n")
+        self.write("src/S.kt", bad)
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 1)
+        self.write("src/S.kt", bad.replace("focus == 0 && side.isNotEmpty()", "leftReachesMenu(focus, side.isNotEmpty(), loops)"))
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
+
 
 class TestOtherTools(Base):
     def test_framestats_bad_input(self):

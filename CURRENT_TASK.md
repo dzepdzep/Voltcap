@@ -1,6 +1,7 @@
 # CURRENT_TASK - 28 Oct 2026
 
 **DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).
+**Update 382 (29 Oct):** one-press QA rule R23 + tools; Dashboard 'second press' report not reproduced on the Thor (D77, ask the owner for category / game count / options). Uncommitted second-screen work still preserved.
 **NEXT PRIORITY: second-screen in-game widget reliability** (see COWORK_HANDOFF.md priority 2).
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 

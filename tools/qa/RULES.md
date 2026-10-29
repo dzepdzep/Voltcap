@@ -174,3 +174,21 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
   exits 2 (INFRA) when it can't; a pass needs at least one real check; SKIP / NOT TESTED / an empty list are never exit 0.
 - **Check:** `tools/qa/selftest/test_qa.py` feeds every one of these broken inputs (CI: qa.yml). When a new tool is added, add its
   broken-fixture test in the same change.
+
+## R23 ONE-PRESS — a press that is ignored, late, or needs repeating (SELF-DIRECTED UX QA, update 382; permanent, CLAUDE.md)
+- **Looks like:** the first ◀ on a game only nudges the row and the selection moves on the second press (update 381: Dashboard, Endless on);
+  an unnecessary double press; selection / artwork / focus ring / row animation landing at different moments; a control that can't be
+  reached with the D-pad; the same direction meaning different things on sibling layouts; a setting combination that breaks navigation
+  (Endless x layout x category size, Only-first-wide, second screen).
+- **Why:** an edge rule written for a row that stops (knock, then enter the menu) is kept after the row learns to go round (Endless): two
+  rules for one key. Global navigation flags (`StyleNav.sideLoops`) set by one layout only.
+- **Deliberate vs bug:** a double press is deliberate only when it protects something (knock-then-menu on a row that STOPS, a confirm
+  before a destructive action, a hold-to-open) and the other way is reachable another way (▲ / ▼). Record each deliberate one with
+  `qa-ok: ONEPRESS (reason)` in code or in `defects.json` as "deliberate". Everything else is a defect.
+- **Self-directed:** QA looks for these without being told: every task that touches navigation, focus, a row or a setting walks
+  its one-press behaviour (both directions, first / last item, one game / few / many games, Endless on / off, each affected layout) and
+  logs what it found, not only what it was asked.
+- **Check:** `static_checks.py` ONEPRESS (a ◀ branch calling `leftToMenu()` must ask `leftReachesMenu(..)`, HIGH); hardware:
+  `sh vqa.sh onepress "L L L R R R" 1200` (one press per MARK) then `focuscheck.py LOG --size N [--edge-ok] [--max-latency MS]`: no change on a
+  press = ignored first press, focus later than 500 ms = delayed selection, `--edge-ok` only for a row that stops (a note, "deliberate").
+  Self-tests: `TestFocuscheck` onepress cases, `test_static_onepress_*`.

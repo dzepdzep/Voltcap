@@ -103,8 +103,9 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | PF-01 | Profile-selection flow | picker detection only (hardware, not run in CI) | AYN Thor | automated | **NOT TESTED** | - | runs now stop on the picker (SKIP) instead of measuring it; the flow itself (choose / create profile) is not exercised because profiles are user data |
 | BG-01 | Background video / animation interactions | idle.sh idle cost (hardware, not run in CI) | AYN Thor | automated | **FAIL** | REPORT.md D64: the home gameplay clip holds the GPU at ~30 fps while idle (29 ms frames, 72-85 % janky) | by design since update 307; open for a product decision, not a regression |
 | CI-01 | GitHub Actions: QA self-tests + strict static checks + coverage check | .github/workflows/qa.yml | ubuntu-latest (no Android device) | automated | **PASS** | run 40680336896 on 4f4375f: 42 self-tests OK on ffmpeg 6.1, static --strict PASS, coverage check PASS | a deliberately failing push was not made; failure detection is proven by the self-tests and exit codes, not by a red CI run. Hardware rows are not run in CI |
+| UX-01 | One-press behaviour (no ignored, late or double presses) | vqa.sh onepress + focuscheck.py (R23); static ONEPRESS (hardware, not run in CI) | AYN Thor 3140972f (hardware, not run in CI); static check + self-tests in CI | automated | **NOT TESTED** | Dashboard Endless wrap checked by hand on the Thor (update 382: 140 / 6 / 3 games, both directions, one press each, one-step focus trace); no onepress sweep over all layouts yet | only Dashboard on hardware; other looping layouts, Only-first-wide, second screen, Endless off NOT TESTED |
 
-Feature rows: 31 - PASS 21, FAIL 3, SKIP 0, NOT TESTED 7; hardware-only rows: 14.
+Feature rows: 32 - PASS 21, FAIL 3, SKIP 0, NOT TESTED 8; hardware-only rows: 15.
 
 ## High-risk combination matrix (`tools/qa/combos.json`)
 
@@ -159,6 +160,7 @@ Combination rows: 35 - PASS 19, FAIL 0, SKIP 0, NOT TESTED 16
 - **Game artwork loading and missing artwork** (none automated): stale-picture patterns are covered statically (R1 / R3 static checks) and by the blank / transient scans, but a missing-artwork fixture library does not exist
 - **Return from a launched game** (none): launching an emulator can touch saves; excluded by the safety rules unless explicitly authorised
 - **Profile-selection flow** (picker detection only): runs now stop on the picker (SKIP) instead of measuring it; the flow itself (choose / create profile) is not exercised because profiles are user data
+- **One-press behaviour (no ignored, late or double presses)** (vqa.sh onepress + focuscheck.py (R23); static ONEPRESS): only Dashboard on hardware; other looping layouts, Only-first-wide, second screen, Endless off NOT TESTED
 - combination **CAT-12 Per-console overrides (Mix > Customize consoles) + different category looks**: passed once for GameCube on 27 Oct (REPORT D45); not re-run on 0.6.54 and no multi-console override sweep
 - combination **CAT-13 Adding / removing a category while the screen is open, then back home**: only the JVM lists (CAT-03) and a real removal on 28 Oct; no scripted device run (it edits user tile settings)
 - combination **CAT-14 Dual-screen category selection**: no automation reads the second display yet

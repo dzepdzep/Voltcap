@@ -64,7 +64,7 @@ the panel's frame time with its breakdown). Nothing is written without the file.
 - `vqa.sh memtest NAME` — memory before and after 3 rapid-navigation bursts and 20 s of idle.
 - Test faults (`--es voltcap_test_fault`): `counter`, `flash:N`, `jank:N`, `focus_skip:N`, `slide_old`, `rise_old`,
   `stale_soft`, `snap_colors`. Self-test: `vqa.sh selftest NAME "<faults>"`, then counter.py, frames.py and
-  focuscheck.py. See REPORT.md pass 2 for what each one is proven to catch.
+  focuscheck.py. One-press check (R23, RULES.md): `sh vqa.sh onepress "L L R R" 1200` then `focuscheck.py LOG --size N [--edge-ok] [--max-latency MS]`. See REPORT.md pass 2 for what each one is proven to catch.
 - static_checks.py rule THEME-COMPOSE (R10).
 
 ## Trusting a result (QA overhaul, 28 Oct 2026)
@@ -74,7 +74,8 @@ suite is NOT TESTED. A tool that only inspects (frames.py without `--fail-on`, w
 never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sweep manifest's `start`) is STALE = INFRA.
 - **Self-tests** (stdlib `unittest`, ffmpeg + numpy + Pillow): `python3 tools/qa/selftest/test_qa.py` - run it after touching any tool.
 - **Combination matrix** (0.6.54): `COMBOS.md`, `combos.json`, `device/combos.sh RUN LAYOUT SCENARIO` + `tools/combocheck.py` (see COMBOS.md).
-- **Category parity** (0.6.53): JVM test `app/src/test/.../data/CategoryStopsTest.kt` (`./gradlew :app:testDebugUnitTest --tests "*CategoryStopsTest"`) compares the category screen tiles, L2 / R2 stops and the style-home tabs; on a device `looks.sh RUN "TILES SLIDES ... DASHBOARD"` shows "n / N" in every look and N must equal the number of R2 stops (20 on the Thor, 28 Oct). On Windows run the device scripts with CRs stripped (`tr -d ""`).
+- **Category parity** (0.6.53): JVM test `app/src/test/.../data/CategoryStopsTest.kt` (`./gradlew :app:testDebugUnitTest --tests "*CategoryStopsTest"`) compares the category screen tiles, L2 / R2 stops and the style-home tabs; on a device `looks.sh RUN "TILES SLIDES ... DASHBOARD"` shows "n / N" in every look and N must equal the number of R2 stops (20 on the Thor, 28 Oct). On Windows run the device scripts with CRs stripped (`tr -d "
+"`).
   CI runs it with `QA_REQUIRE_FFMPEG=1` (a missing ffmpeg is then a failure, not a skip).
 - **frames.py** needs `-fps_mode passthrough` (ffmpeg 8+ removed `-vsync`; that was the IndexError on every recent recording).
   `--fail-on transient,black,white,dip,hitch,repeat` turns events into a FAIL; `black,white,dip` are the unambiguous ones. A slide or
@@ -93,5 +94,5 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
   volume / refresh rate back. Never uninstall, clear data, touch charging or run on a device that is not a known dev target
   (the Google TV Streamer is not one).
 
-## Physical QA needs permission (update 369)
-Claude Code / Cowork must not send ADB commands, inject keys, install, force-stop or record on the user's Thor or Google TV Streamer unless the user explicitly allows it in that session; a simulated test is never hardware verification. Mark such rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the opt-in, device-free element geometry check.
+## Physical QA on the Thor (standing authorization, CLAUDE.md)
+The owner's standing authorization in `CLAUDE.md` ("Standing Thor QA authorization") covers routine QA on the AYN Thor, ADB serial **3140972f** (always `adb -s 3140972f`): no per-session permission is needed. Safeguards stay: max 15 minutes physical QA per task; never clear app data or uninstall; no charging-limit changes; preserve games, saves, profiles, artwork; restore volume / DND / display; stop test processes and recorders; never touch any other device (Google TV Streamer, Odin 2 Portal). A simulated test is still not hardware verification: mark untested rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the device-free element geometry check.

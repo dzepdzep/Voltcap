@@ -369,6 +369,17 @@
    "status": "PASS",
    "evidence": "run 40680336896 on 4f4375f: 42 self-tests OK on ffmpeg 6.1, static --strict PASS, coverage check PASS",
    "limits": "a deliberately failing push was not made; failure detection is proven by the self-tests and exit codes, not by a red CI run. Hardware rows are not run in CI"
+  },
+  {
+   "id": "UX-01",
+   "feature": "One-press behaviour (no ignored, late or double presses)",
+   "test": "vqa.sh onepress + focuscheck.py (R23); static ONEPRESS",
+   "device": "AYN Thor 3140972f (hardware, not run in CI); static check + self-tests in CI",
+   "mode": "automated",
+   "hardware": true,
+   "status": "NOT TESTED",
+   "evidence": "Dashboard Endless wrap checked by hand on the Thor (update 382: 140 / 6 / 3 games, both directions, one press each, one-step focus trace); no onepress sweep over all layouts yet",
+   "limits": "only Dashboard on hardware; other looping layouts, Only-first-wide, second screen, Endless off NOT TESTED"
   }
  ]
 }

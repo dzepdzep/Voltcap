@@ -427,6 +427,7 @@ internal fun styleHomeKey(
             else -> false
         }
         HomeLayout.RESUME -> return when (k) {
+            // qa-ok: ONEPRESS (deliberate, update 382 audit: Resume's big spot draws one game, no row shows the last game left of it; ▼ also reaches the menu)
             Key.DirectionLeft -> if (focus == 0 && StyleNav.side.isNotEmpty()) leftToMenu() else false // Update 151: knock first
             // (Update 119: ▼ goes to the shortcuts right under the game; the Discover cards are ▶ from them.)
             Key.DirectionDown -> if (StyleNav.side.isNotEmpty()) enter(StyleNav.Zone.SIDE) else if (StyleNav.bar.isNotEmpty()) enter(StyleNav.Zone.BAR) else { if (first) reach(false); take() }

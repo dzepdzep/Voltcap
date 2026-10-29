@@ -6,6 +6,7 @@
 #   sh vqa.sh dev                       find the gamepad node (cached in $D/pad)
 #   sh vqa.sh seq "R R R L A B" [gap]   press buttons in order (gap ms, default 120)
 #   sh vqa.sh hold R 1500               hold a direction/button
+#   sh vqa.sh onepress "L L R R" [gap]  one press per MARK (R23 one-press check: focuscheck.py LOG --size N [--edge-ok])
 #   sh vqa.sh perf_reset                reset Voltcap's frame stats
 #   sh vqa.sh perf_dump NAME            save gfxinfo framestats + summary to out/NAME_*
 #   sh vqa.sh rec NAME SECONDS          screen recording to out/NAME.mp4 (background, returns at once)
@@ -90,6 +91,10 @@ case $cmd in
     log_mark "seq $1"
     for k in $1; do press $k; sleep_ms $gap; done;;
   hold) log_mark "hold $1 $2"; press $1 ${2:-1000};;
+  onepress)
+    # R23: ONE press per MARK, rested (gap ms, default 1200) so focuscheck.py can tell an ignored first press from a slow one.
+    gap=${2:-1200}
+    for k in $1; do log_mark "seq $k"; press $k; sleep_ms $gap; done;;
   perf_reset) dumpsys gfxinfo $PKG reset > /dev/null; log_mark perf_reset;;
   perf_dump)
     dumpsys gfxinfo $PKG framestats > $OUT/$1_framestats.txt
