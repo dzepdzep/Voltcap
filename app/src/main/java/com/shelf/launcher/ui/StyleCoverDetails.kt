@@ -395,12 +395,16 @@ internal object CoverFlight {
     var shelf: Rect? = null
     /** Game key -> its flight (0 = in its slot, 1 = out in the big place); present only while it moves. */
     val flights = androidx.compose.runtime.mutableStateMapOf<String, androidx.compose.runtime.State<Float>>()
-    const val MS = 340
+    const val MS = 380
+    /** Starts moving at once (no slow-in pause), settles softly. */
+    val EASE = androidx.compose.animation.core.CubicBezierEasing(0.2f, 0.6f, 0.2f, 1f)
     /** How hidden the slot's own spine is (0 = drawn, 1 = empty slot): only while its case is clearly away from it. */
     fun hide(key: String): Float {
         val p = flights[key]?.value ?: return 0f
-        return (p * 6f).coerceIn(0f, 1f) * ((1f - p) * 6f).coerceIn(0f, 1f)
+        return appear(p)
     }
+    /** Update 405: ONE ramp for both the case (alpha) and its slot (1 - alpha): the spine turns into the case in place, the slot stays empty while the case is out. */
+    fun appear(p: Float): Float { val t = (p / 0.3f).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
     /** Pure: the case's scale and centre (as a share 0..1 between slot and big place) for flight [p]. */
     fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
 }
@@ -419,22 +423,26 @@ private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.F
         val back = hold.leaving.firstOrNull { it.game.stableKey == g.stableKey }
         if (back != null) { hold.leaving.remove(back); hold.cur = back }
         else hold.cur = CoverOut(g, if (quick) 1f else 0f)
+        // (405: registered at once, in this very composition, so the slot is never drawn for a frame while its case is out.)
+        CoverFlight.flights[hold.cur!!.game.stableKey] = hold.cur!!.p.asState()
+        if (old != null && quick) CoverFlight.flights.remove(old.game.stableKey)
         if (old != null && !quick) hold.leaving.add(old)
         while (hold.leaving.size > 2) hold.leaving.removeAt(0).also { CoverFlight.flights.remove(it.game.stableKey) }
-        if (quick) { hold.leaving.clear() }
+        if (quick) { hold.leaving.forEach { CoverFlight.flights.remove(it.game.stableKey) }; hold.leaving.clear() }
     }
     val cur = hold.cur!!
+    DisposableEffect(Unit) { onDispose { CoverFlight.flights.clear() } }
     LaunchedEffect(cur) {
         CoverFlight.flights[cur.game.stableKey] = cur.p.asState()
         try {
-            cur.p.animateTo(1f, tween((CoverFlight.MS * (1f - cur.p.value)).toInt().coerceAtLeast(1), easing = FastOutSlowInEasing))
-        } finally { if (cur.p.value >= 1f) CoverFlight.flights.remove(cur.game.stableKey) }
+            cur.p.animateTo(1f, tween((CoverFlight.MS * (1f - cur.p.value)).toInt().coerceAtLeast(1), easing = CoverFlight.EASE))
+        } finally { }
     }
     for (o in hold.leaving.toList()) {
         LaunchedEffect(o) {
             CoverFlight.flights[o.game.stableKey] = o.p.asState()
             try {
-                o.p.animateTo(0f, tween((CoverFlight.MS * o.p.value).toInt().coerceAtLeast(1), easing = FastOutSlowInEasing))
+                o.p.animateTo(0f, tween((CoverFlight.MS * o.p.value).toInt().coerceAtLeast(1), easing = CoverFlight.EASE))
                 hold.leaving.remove(o); tick++
             } finally { if (o.p.value <= 0f) CoverFlight.flights.remove(o.game.stableKey) }
         }
@@ -454,13 +462,13 @@ private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.F
                         val s0 = (sp.height / size.height / 0.85f).coerceIn(0.05f, 1f)
                         val s = CoverFlight.lerp(s0, 1f, p)
                         val cx = CoverFlight.lerp(sp.center.x, st.left + size.width / 2f, p)
-                        val cy = CoverFlight.lerp(sp.center.y, st.top + size.height / 2f, p)
+                        val cy = CoverFlight.lerp(sp.center.y, st.top + size.height / 2f, p) - kotlin.math.sin(Math.PI.toFloat() * p) * sp.height * 0.45f // (405: lifts up out of the slot, then forward)
                         transformOrigin = TransformOrigin(0f, 0f)
                         scaleX = s; scaleY = s
                         translationX = cx - s * size.width / 2f - st.left
                         translationY = cy - s * size.height / 2f - st.top
                     }
-                    alpha = (p * 4f).coerceIn(0f, 1f)
+                    alpha = CoverFlight.appear(p)
                 }
         ) {
             Case3D(

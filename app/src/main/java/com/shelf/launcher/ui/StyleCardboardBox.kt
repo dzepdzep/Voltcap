@@ -531,6 +531,9 @@ internal fun boxSideTone(platform: String?): Pair<Color, Color> =
     if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFFA48B66) to Color(0xFF5E4C34)
     else Color(0xFF8A8D96) to Color(0xFF3C3E45)
 
+/** Share of the case height kept below its top edge for the side face (Update 405: a thin attached rim, never a slab to the floor). */
+internal const val BOX_SIDE_KEEP = 0.7f
+
 internal fun boxSideFaceX(s0: Float, s1: Float): Pair<Float, Boolean> =
     if ((s0 + s1) / 2f > 0f) s0 to true else s1 to false
 
@@ -542,10 +545,13 @@ private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, s
             val s = slots[i]
             if (s.box != shownBox || i == lifted) continue
             val (xb, facesLeft) = boxSideFaceX(s.x0, s.x1)
-            val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, 0f), c.o(xb, s.y0, 0f))
+            // Update 405: only the rim of the wall (the top ~30 % of its fall to the floor), attached to the top face. The whole wall down
+            // to the floor read as an empty slab / detached block beside and under the cases (owner, 405).
+            val zb = s.stand * BOX_SIDE_KEEP
+            val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, zb), c.o(xb, s.y0, zb))
             val tone = boxSideTone(games.getOrNull(i)?.platform)
             val topC = if (facesLeft) tone.first else mix(tone.first, tone.second, 0.45f)
-            drawPath(p, Brush.verticalGradient(listOf(topC, tone.second), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, 0f)))
+            drawPath(p, Brush.verticalGradient(listOf(topC, tone.second), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, zb)))
             // The rim where the top face turns into the side: the plastic edge catching the light.
             drawLine(Color.White.copy(alpha = if (facesLeft) 0.2f else 0.1f), c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), 1f)
         }
