@@ -287,7 +287,7 @@ internal fun Case3D(
             spec != null -> made ?: DerivedArt.of(f, "fill|$shape") { fitFace(f, shape) }
             // (Update 202: the case already takes the cover's own shape within a quarter — [shape] above — so this
             // cuts only past that; Update 200 stretched it up to 13 % here.)
-            else -> made ?: DerivedArt.of(f, "fill|$shape") { fillCrop(f, shape) }
+            else -> made ?: DerivedArt.of(f, "fill|$shape") { fillCropOrFit(f, shape) }
         }
     }
     // Update 205: a case with no back handed in (the carousels, Case stacks, the shelf's 3D cases) gets its own — its
@@ -651,7 +651,7 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
     // (Update 200 stretched a cover up to an eighth off the window's shape to fit it whole.) Update 202: never stretched —
     // cut in the middle to the window's shape, only as much as it's off (object-fit: cover), so it fills the window
     // edge to edge at its own proportions.
-    val cut = fillCrop(art, dst.width() / dst.height().coerceAtLeast(1f))
+    val cut = fillCropOrFit(art, dst.width() / dst.height().coerceAtLeast(1f))
     val p = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
     c.drawBitmap(cut, null, dst, p)
     c.drawBitmap(frame, null, android.graphics.RectF(0f, 0f, w.toFloat(), h.toFloat()), p)
@@ -795,7 +795,7 @@ internal fun isWholeCaseScan(f: android.graphics.Bitmap, caseAspect: Float): Boo
  * Update 191: [src] at [aspect] for a real case's front ([spec]'s shape). Update 202: always [fillCrop] — Update 191 drew
  * art within 6 % as it was (stretched onto the front by that much) and Update 200 stretched it up to an eighth.
  */
-private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap = fillCrop(src, aspect)
+private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap = fillCropOrFit(src, aspect)
 
 /**
  * Update 202: [src] cut in the middle to [aspect] (width / height), only as much as it's off — the bitmap form of
@@ -1532,3 +1532,38 @@ internal fun defaultCaseBack(g: Game, scans: List<Pair<String, String>>?, cover:
 
 /** Update 294: a cardboard box's unprinted side (Case3D's right side). */
 private const val CARDBOARD_SIDE = 0xFFB3A385.toInt()
+
+/**
+ * Update 402 (stretched / zoomed covers): how much of a picture of [srcAspect] survives being cut to a face of [faceAspect]
+ * (width / height) — 1 = all of it, 0.5 = half. A portrait SteamGridDB cover (0.667) on a landscape N64 case (1.43) kept 47 %:
+ * the case showed a zoomed middle slice that looked stretched.
+ */
+internal fun coverKeepFraction(srcAspect: Float, faceAspect: Float): Float {
+    if (srcAspect <= 0f || faceAspect <= 0f) return 1f
+    return minOf(srcAspect, faceAspect) / maxOf(srcAspect, faceAspect)
+}
+
+/** Below this share kept, a cover is shown whole instead of cut (update 402); above it the usual centred crop (update 202). */
+internal const val COVER_MIN_KEEP = 0.6f
+
+/**
+ * Update 402: [fillCrop] while it keeps at least [COVER_MIN_KEEP] of the picture; for a far-off shape (a portrait cover on a
+ * landscape case face, or the reverse) the picture whole at its own proportions, centred, on a plain backdrop of its own
+ * edge colour — never stretched, nothing blurred, nothing cut. The result has exactly [aspect].
+ */
+private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
+    if (aspect <= 0f || coverKeepFraction(cur, aspect) >= COVER_MIN_KEEP) return fillCrop(src, aspect)
+    return runCatching {
+        val w: Int; val h: Int
+        if (cur < aspect) { h = src.height; w = (h * aspect).toInt().coerceAtLeast(1) } else { w = src.width; h = (w / aspect).toInt().coerceAtLeast(1) }
+        val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+        val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(out)
+        c.drawColor(averageColor(soft) or (0xFF shl 24))
+        val k = minOf(w.toFloat() / src.width, h.toFloat() / src.height)
+        val dw = src.width * k; val dh = src.height * k
+        c.drawBitmap(soft, null, android.graphics.RectF((w - dw) / 2f, (h - dh) / 2f, (w + dw) / 2f, (h + dh) / 2f), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        out
+    }.getOrDefault(src)
+}

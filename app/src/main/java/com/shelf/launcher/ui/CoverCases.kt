@@ -337,6 +337,9 @@ internal fun CoverTpl.fitTo(coverAspect: Float): CaseFit? {
 /** SteamGridDB's covers (the "grid" art): 600 × 900. */
 private const val SGDB_COVER = 2f / 3f
 
+/** Update 402: how far (as a fraction) a portrait scan's shape may differ from a case front's and still count as the printed box front. */
+internal const val BOX_FRONT_SLACK = 0.045f // (Update 402: a 0.09 trial was reverted — the PS2 Yu-Gi-Oh doubled band is in the source picture, see SUMMARY 402.)
+
 /**
  * Update 171: whether a cover of shape [artAspect] is already the whole printed front of [cov]'s case — a box scan used
  * as the cover (its own band, logo and seals), so putting it in the template's window printed the console's band twice
@@ -357,7 +360,7 @@ internal fun looksLikeBoxFront(frontAspect: Float, artAspect: Float?): Boolean {
     // box's shape (5–10 %, its border or the scan's crop) counted as a plain cover and was cut into the template's window,
     // zoomed and its edges lost. A landscape box's front is never mistaken for a cover — covers stand upright — so it is
     // let off further.)
-    val slack = if (frontAspect > 1.15f && a > 1.15f) 0.15f else 0.045f
+    val slack = if (frontAspect > 1.15f && a > 1.15f) 0.15f else BOX_FRONT_SLACK
     return kotlin.math.abs(a / frontAspect - 1f) < slack
 }
 
@@ -652,7 +655,7 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
             Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
                 .clipToBounds().then(
                     when {
-                        art != null && artShown && !icon && !moved -> Modifier
+                        art != null && artShown && !icon && !moved && owner != null -> Modifier
                         art != null && owner == null -> Modifier.background(androidx.compose.ui.graphics.lerp(frameColor, Color(0xFF15181D), 0.6f)) // (Update 398: a muted plate until the cover is in, never a bright flash)
                         else -> Modifier.background(placeholder)
                     }
@@ -668,7 +671,7 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
                 // (Update 147: the card's own request — a set size, so a cover already in memory shows in the first frame,
                 // and its small copy while it loads; the case used to go blank for a moment every time it came back on screen.)
                 // (Update 202: an app's icon — not a cover — is cut at most a little, else shown whole: CropLittleOrFit.)
-                cardArtModel(art), null, contentScale = if (icon) CropLittleOrFit else ContentScale.Crop, alignment = Alignment.Center,
+                cardArtModel(art), null, contentScale = if (icon) CropLittleOrFit else CropUnlessMuchCut, alignment = Alignment.Center,
                 // (Update 169: its shape noted, so the case can take it — caseFitFor.)
                 onSuccess = { r -> artShown = true; if (art is String) r.painter.intrinsicSize.let { sz -> CoverAspects.note(art, sz.width, sz.height) } },
                 modifier = Modifier.fillMaxSize().graphicsLayer {
@@ -709,6 +712,20 @@ private object CropLittleOrFit : ContentScale {
         val sx = dstSize.width / srcSize.width; val sy = dstSize.height / srcSize.height
         val fill = maxOf(sx, sy); val fit = minOf(sx, sy)
         val k = if (fit / fill >= 1f - MAX_CUT) fill else fit
+        return androidx.compose.ui.layout.ScaleFactor(k, k)
+    }
+}
+
+/**
+ * Update 402: a cover fills the window like Crop (update 202) while that keeps at least COVER_MIN_KEEP of it; a far-off shape
+ * (a portrait cover in a landscape N64 window kept 47 %: a zoomed slice that looked stretched) is shown whole instead, at its own
+ * proportions, centred, on the window's plain plate colour. The same even scale both ways: never stretched, never blurred.
+ */
+internal object CropUnlessMuchCut : ContentScale {
+    override fun computeScaleFactor(srcSize: androidx.compose.ui.geometry.Size, dstSize: androidx.compose.ui.geometry.Size): androidx.compose.ui.layout.ScaleFactor {
+        if (srcSize.width <= 0f || srcSize.height <= 0f || dstSize.width <= 0f || dstSize.height <= 0f) return androidx.compose.ui.layout.ScaleFactor(1f, 1f)
+        val sx = dstSize.width / srcSize.width; val sy = dstSize.height / srcSize.height
+        val k = if (coverKeepFraction(srcSize.width / srcSize.height, dstSize.width / dstSize.height) >= COVER_MIN_KEEP) maxOf(sx, sy) else minOf(sx, sy)
         return androidx.compose.ui.layout.ScaleFactor(k, k)
     }
 }

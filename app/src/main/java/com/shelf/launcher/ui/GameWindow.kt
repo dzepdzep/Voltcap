@@ -1017,7 +1017,7 @@ internal fun GameWindow(
     motion.limited = false
     // (Update 330: the Cardboard box's case comes out of the box spine first — it turns to face you as it comes forward.)
     motion.fromSpine = scene == WinScene.BOX_SHEET && piece?.kind == InspectKind.BOX && origin != null
-    motion.spineYaw = 90f - BoxNav.OUT_TURN
+    motion.spineYaw = BoxNav.startYaw // (Update 402: where the case really stands when A pulls it — spine-on, or as turned with Y.)
     // (Update 274: Settings › Game look › In the game window: Wobble — it only sways, no turning by hand.)
     motion.handsOff = com.shelf.launcher.data.Features.inspectMode.state.value == com.shelf.launcher.data.Features.InspectMode.WOBBLE
     val inspectScope = rememberCoroutineScope()

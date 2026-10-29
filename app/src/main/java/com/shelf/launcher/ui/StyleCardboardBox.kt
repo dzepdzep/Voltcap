@@ -133,6 +133,8 @@ internal object BoxNav {
     @Volatile var pullAsk: (() -> Unit)? = null
     /** How far the pulled-out case has turned toward its cover (its window's piece starts there): degrees from its spine. */
     const val OUT_TURN = 34f
+    /** Update 402: the yaw (degrees from facing you) the case has at the moment A pulls it: 90 = spine-on in its slot (the flight starts there), less when it was turned to its cover with Y. */
+    @Volatile var startYaw: Float = 90f
     /** A ◀ / ▶ that knocked against the box's wall (Box switching: After a knock). */
     @Volatile var knocked: Int = 0
 }
@@ -562,8 +564,7 @@ private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int) {
             val z = r.maxOf { it.stand }
             val a = c.o(r.first().x0, r.minOf { it.y0 }, z); val b = c.o(r.last().x1, r.maxOf { it.y1 }, z)
             val sz = Size(b.x - a.x, b.y - a.y)
-            // Down inside the box: a little less light than on the rim.
-            drawRect(Color.Black.copy(alpha = 0.12f), a, sz)
+            // (Update 402: the flat dark rectangle over the whole row is gone — it read as a block behind the selection.)
             // A soft diagonal shine, as on the cases' plastic sleeves.
             drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent),
                 start = a, end = Offset(a.x + sz.width * 0.6f, b.y)), a, sz)
@@ -602,15 +603,15 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
     // A / a tap on the case you're on: pull it out, then its window opens (with the case itself as its piece).
     val focusKey by rememberUpdatedState(gKey)
     DisposableEffect(Unit) {
-        BoxNav.pullAsk = { if (GamePopup.game == null && BoxNav.pull == null) { BoxNav.flipped = null; BoxNav.pull = focusKey } }
+        BoxNav.pullAsk = { if (GamePopup.game == null && BoxNav.pull == null) { BoxNav.startYaw = boxPickStartYaw(BoxNav.flipped == focusKey); BoxNav.flipped = null; BoxNav.pull = focusKey } }
         onDispose { BoxNav.pullAsk = null }
     }
     SideEffect { BoxNav.canFlip = true }
     val pull = BoxNav.pull
     LaunchedEffect(pull) {
         val k = pull ?: return@LaunchedEffect
-        // (Out of its slot first, then turning toward its cover: its window opens as it finishes.)
-        if (animate) kotlinx.coroutines.delay((900 / speed).toLong())
+        // (Update 402: no 900 ms wait for an in-box rise: the window opens at once and the shared flight is the one movement.)
+        kotlinx.coroutines.yield()
         if (c.games.none { it.stableKey == k }) { BoxNav.pull = null; return@LaunchedEffect }
         // The window shows the case itself, whatever the look (MediaInspect.force — cleared when the window closes).
         MediaInspect.testShell = null; MediaInspect.testPose = null
@@ -770,11 +771,14 @@ private fun BoxCase(
     val density = LocalDensity.current
     val physical = c.state.physicalMedia[k]
     LaunchedEffect(k) { if (physical == null) needPhysical(g) }
-    val flippedNow = on && BoxNav.flipped == k
     val pulled = on && BoxNav.pull == k
+    // (Update 402: a case pulled from its cover-turned state keeps that turn until the flight takes over.)
+    val flippedNow = on && (BoxNav.flipped == k || (pulled && BoxNav.startYaw < 89f))
     // 0 in its slot … PEEK lit … 1 out of the box and turned.
     val peek = 0.1f
-    val target = when { pulled -> 1f; flippedNow -> 1f; on -> peek; else -> 0f }
+    // Update 402: pulled from its slot it does NOT rise and turn inside the box first (that was a separate cutscene before the
+    // flight): the flight starts at once from the lit case where it stands, spine-on.
+    val target = when { flippedNow -> 1f; on -> peek; else -> 0f }
     val rise = remember { Animatable(0f) }
     LaunchedEffect(target) {
         if (!animate) { rise.snapTo(target); return@LaunchedEffect }
@@ -804,8 +808,7 @@ private fun BoxCase(
         Box(Modifier.fillMaxSize().border(0.6.dp, Color.Black.copy(alpha = 0.55f)))
     }
     else {
-        // The slot it stands in (deep and dark once it's lifted).
-        Box(Modifier.offset(x0, y0).size(wDp, hDp).background(Color.Black.copy(alpha = 0.18f)))
+        // (Update 402: no dark / coloured slot rectangle behind a lifted case — the empty place is just the box floor.)
         val aspect = remember(k) { case3dAspect(g, false) }
         // Lifting: straight up first (toward you — nearer the camera, so bigger), then turning toward its cover.
         val outMm = (cam.wallH - z + 150f) * liftK
@@ -852,9 +855,8 @@ private fun BoxCase(
                 Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
                     yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, realFront = true, back = back, fill = 1f)
             }
-            // Lit: a thin neutral outline round its spine (update 401: nothing coloured).
-            if (on && rise.value < 0.4f) Box(Modifier.align(Alignment.Center).size(wDp + 4.dp, hDp + 4.dp)
-                .border(1.5.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(1.dp)))
+            // (Update 402: no rectangle round the lit case — it sat off the lifted case's own bounds and read as a block.
+            // Focus is shown by the lift itself.)
         }
         if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
     }
@@ -894,3 +896,6 @@ internal fun CardboardBoxSettings() {
     StyleChoice("Cardboard", Features.BoxCardboard.values(), Features.boxCardboard.state.value, { it.label }) { Features.boxCardboard.value = it }
     Toggle(Icons.Filled.ViewWeek, "Wear and tape", "A strip of tape over the back edge and a few scuffs along the rim. Off: a clean new box.", Features.boxWear)
 }
+
+/** Update 402: the yaw (degrees from facing you) a case has when A pulls it: spine-on (90) in its slot, or as turned to its cover with Y. */
+internal fun boxPickStartYaw(turnedToCover: Boolean): Float = if (turnedToCover) 90f - BoxNav.OUT_TURN - 55f else 90f

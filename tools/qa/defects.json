@@ -1078,6 +1078,54 @@
    "note": "Re-opening while the previous case is still flying home: the new flight starts at the lifted case's mid-fall rect, so the piece and the box's own lifted case are both drawn (offset) until the piece lands. No crash, final state consistent. Not fixed. Update 401: MediaInspect.hold hides the card while the piece flies (Hold401Test); a Thor rapid A/B run showed one case per frame but not the original sequence, so keep verifying."
   },
   {
+   "id": "D88",
+   "title": "Cardboard box pickup is two cutscenes: 900 ms in-box rise / turn, a vanish frame, then the shared flight",
+   "rule": "SHARED-PICKUP",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-10-29 Thor 60 fps recording before the change (.shots/402/before_open_sheet.jpg)",
+   "root_cause": "BoxNav.pull made the box's own case rise and turn for 900 ms, StyleCardboardBox waited that long, then open() started the flight from the (small, turned) card rect with MediaInspect.hold hiding the card: a still pause under the dimming veil, one frame with no case, then a jump. The card also came back at 35 % of the flight beside the piece (two copies).",
+   "files": ["ui/StyleCardboardBox.kt", "ui/GameWindow.kt", "ui/MediaInspectView.kt"],
+   "fix": "A opens the window at once; the case stays lit at its slot (spine-on, BoxNav.startYaw, 90 or the Y-turned yaw) and the shared flight starts from there; flight 680 ms with a gentler curve; the card returns only below 6 % of the closing flight.",
+   "check": "Case402Test (state / source checks); Thor frames .shots/402/after_open_fine.jpg, box2_open.jpg, STACKS_open.jpg, SHELF_close.jpg",
+   "note": "Verified on the Thor from 30 fps sample sheets of a 60 fps screenrecord (the recorder delivers ~44 fps): one case in every sampled frame, no vanish frame. The veil still dims the box for ~8 frames before the case starts to move (the window waits for its slot layout and the art): not changed. Closing sheets only inspected for Shelf (one copy per frame); Box closing not re-framed after the last build."
+  },
+  {
+   "id": "D89",
+   "title": "Cardboard box: dark rectangle slot, white rectangle and flat dark row tint around the selected case",
+   "rule": "SELECTION-BLOCK",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 Thor screenshot .shots/402/box_before_s.jpg / crop_before.jpg",
+   "root_cause": "BoxCase drew an 18 % black slot rectangle behind the lifted case, a 1.5 dp white outline sized to the SPINE (wDp + 4 dp) centred on the wider lifted case (it floated off the case's bounds), and BoxSheen laid a flat 12 % black rectangle over each whole row.",
+   "files": ["ui/StyleCardboardBox.kt"],
+   "fix": "All three removed; focus is the lift itself; the case's soft contact shadow and the wall shading stay. Nothing is tinted with the theme accent.",
+   "check": "Case402Test.cardboardBoxSelectedCaseHasNoPlateOrOutline; Thor .shots/402/box_after_s.jpg",
+   "note": "Only the Cardboard box was changed. Other physical-case layouts were not searched for selection plates (only visually seen: Shelf, Stacks, Cover details show none in the sampled frames). Faint darker area under the top row = wall ambient shading, left on purpose."
+  },
+  {
+   "id": "D90",
+   "title": "Portrait cover on a landscape case face (N64) is cut to a zoomed slice that looks stretched",
+   "rule": "ART-FIT",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-10-29 Thor, Cover details, 007 The World Is Not Enough (USA) N64 (.shots/402/cd_final_s.jpg); log: front 320x480 on face 1.425",
+   "root_cause": "Case3D framed / fitFace / fillCrop cut a 0.667 cover to the N64 window / face shape (1.3-1.43), keeping 47-51 % of the picture, top and bottom lost; the 2D CoverFace used ContentScale.Crop likewise.",
+   "files": ["ui/Case3D.kt", "ui/CoverCases.kt"],
+   "fix": "fillCropOrFit / CropUnlessMuchCut: crop while at least 60 % of the picture is kept (every ordinary case: PS2, GameCube, DS ...), else the cover whole at its own proportions, centred, on a plain backdrop of its average edge colour (no blur, no stretch).",
+   "check": "Case402Test.portraitCoverOnLandscapeN64FaceIsShownWholeNotZoomed; Thor .shots/402/cd_fixed_s.jpg (whole cover, title visible, grey side bars)",
+   "note": "Trade-off: bars at the sides (owner update 202 disliked bars for moderate mismatches; they now appear only past a 40 % cut). Only N64 Cover details was checked on the Thor. NES, SNES, DS / 3DS, GBA / GBC, Switch, mixed categories NOT checked for this change; the 2D CoverFace path is built but not seen on a landscape template."
+  },
+  {
+   "id": "D91",
+   "title": "PS2 Yu-Gi-Oh The Duelists of the Roses: console band printed twice on the front (owner photo)",
+   "rule": "ART-FIT",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "2026-10-29 owner photo reference-stretched-ps2.jpg.jpg; reproduced on the Thor in Cover details",
+   "note": "Reproduced the doubled band on the Thor. Instrumented Case3D (temporary log, removed): front picture 343x480 (0.7146) on a 0.7105 face, no template, no band drawn by Voltcap (tpl=null, band=false), so the picture is drawn whole and in proportion; the second band is IN the source picture. Not a rendering stretch. NOT fixed: the picture would need another scan / a cover override, or a band-detection heuristic (not attempted: no reliable signal found). A 9 % widening of the box-front shape test was tried on a wrong theory and reverted."
+  },
+  {
    "id": "D87",
    "title": "Artwork library has no physical case to pick up (its popup grows from a text row / hero art)",
    "rule": "SHARED-PICKUP",

@@ -1073,7 +1073,7 @@ internal class InspectMotion {
                 startSway(scope)
                 return@launch
             }
-            animate(0f, 1f, animationSpec = tween(600, easing = CubicBezierEasing(0.3f, 0f, 0.12f, 1f))) { v, _ ->
+            animate(0f, 1f, animationSpec = tween(680, easing = CubicBezierEasing(0.33f, 0f, 0.2f, 1f))) { v, _ -> // (Update 402: a gentler, longer ease — the old curve did most of the flight in the first 3 frames.)
                 lift.floatValue = v
                 MediaInspect.amount.floatValue = v
             }
@@ -1125,7 +1125,7 @@ internal class InspectMotion {
             animate(lift.floatValue, 0f, animationSpec = tween(520, easing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f))) { v, _ ->
                 lift.floatValue = v
                 MediaInspect.amount.floatValue = v
-                if (v < 0.35f) MediaInspect.hold.value = false
+                if (v < 0.06f) MediaInspect.hold.value = false // (Update 402: the card comes back only as the piece lands on it — 0.35 showed two copies for the last third of the flight.)
             }
         }
         MediaInspect.hold.value = false
