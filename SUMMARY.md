@@ -2,6 +2,15 @@
 
 **Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
 
+## Update — 29 Oct 2026 (388): D77 again: the highlight no longer visits the third slot while the row glides (Dashboard + Side menu)
+
+**Copy (already copied to `app/`, identical):** `src_copy/ui/EndlessRow.kt`, `StyleDashboard.kt`, `StyleSideMenu.kt`. Test (new): `ShownFocus388Test` (9).
+- **Cause (confirmed by a 60 Hz recording on the Thor, frame by frame, not logs):** 383 fixed the scroll target, but the selection changes in the same frame as the press while `animateScrollToItem` takes ~10 frames. The highlighted card therefore stood in the third slot (two games on its left) and slid back to the second (x 906 -> 706). Rapid presses and reversals made it worse (restarted glides).
+- **Fix:** `FollowFocus` now returns the item that wears the highlight (`shownFocusItem`): while the row is still gliding to a new selection it is the card standing in the selection's slot (hand-over half-way through the glide), so the highlight never leaves slot 2 by more than half a slot. Active from the first frame after a press (`settledFor`) and while a glide runs (`gliding`, covers R then L back to the last settled item; first attempt missed that and showed one frame a slot too far left, found in the second recording). Never active during the user's own scroll. Row scrolling, Endless and the preview card are unchanged.
+- **Thor 3140972f (debug 0.6.55 `install -r`, data kept, ~12 min):** Dashboard (All / Continue playing): single presses, bursts at 100-120 ms, reversals, 38 L presses; Side menu (preview layout, nothing saved): single, burst, reversal. Frames inspected as contact sheets: highlight in slot 2 with one game left, at most half a slot off at hand-over; the old third-slot frame is gone. Before the fix: highlight at x=906 for the first frame(s) of every press. Pixel-colour tracking of the ring was too noisy (accent changes) to count as a measurement; the sheets are the evidence.
+- **Not confirmed:** the Endless wrap itself (first -> last game) was not identified in the frames (38 L presses on a category of unknown size); the wrap uses the same virtual index and `followTarget` as any step (`EndlessNav381Test`, `FollowFocus383Test`). Endless off, other layouts, second screen: not tested on hardware (unit-tested with Endless off).
+- **Checked:** `testDebugUnitTest` all green, `assembleDebug`, `static_checks.py src_copy --strict` PASS. Thor left: hooks off, no recorder, preview layout not saved.
+
 ## Update — 29 Oct 2026 (387): D84 fixed, the screensaver timer no longer runs over the profile selector
 
 **Copy (already copied to `app/`, identical):** `src_copy/ui/ScreensaverGate.kt` (new), `src_copy/ui/LauncherScreen.kt`. Test (new): `ScreensaverGate387Test` (5).

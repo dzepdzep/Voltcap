@@ -4,6 +4,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.isActive
 import com.shelf.launcher.data.HomeLayout
 
 /*
@@ -128,16 +129,52 @@ internal const val LAZY_LOOP_MIN = 8
 internal fun followTarget(focusItem: Int, before: Int): Int = (focusItem - before).coerceAtLeast(0)
 
 /**
+ * Update 388 (D77, again): the card that wears the highlight while a followed row glides. The selection changes at once but the
+ * row takes a few frames to move, so the highlight used to stand in the third slot (two games on its left) and slide back to
+ * the second while the row caught up. The lag is how many items the row still has to move ([followTarget] minus where the row
+ * is: [first] + [offsetPx] / [pitchPx], rounded); the highlight stays on the item that stands in the selection's slot, so it keeps
+ * one place and hands over to the next game half-way through the glide. Settled (lag 0) it is [focusItem].
+ */
+internal fun shownFocusItem(focusItem: Int, before: Int, first: Int, offsetPx: Int, pitchPx: Int, count: Int): Int {
+    if (pitchPx <= 0 || count <= 0) return focusItem
+    val lag = followTarget(focusItem, before) - (first + Math.round(offsetPx.toFloat() / pitchPx))
+    return (focusItem - lag).coerceIn(0, count - 1)
+}
+
+/**
+ * Whether the highlight follows the row's slot instead of the selection: from the first frame after a press ([settledFor] is the
+ * selection the row last finished gliding to) and for as long as one of this row's glides runs ([gliding], which also covers a
+ * ◀ right after a ▶ coming back to the last settled selection while the row is still on its way), never while the user scrolls.
+ */
+internal fun highlightFollowsRow(settledFor: Int, focusItem: Int, gliding: Int): Boolean = settledFor != focusItem || gliding > 0
+
+/**
  * Keeps the item you're on at the same place of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
- * [before] is how many items stand before it ([followTarget]).
+ * [before] is how many items stand before it ([followTarget]). Returns the item that wears the highlight ([shownFocusItem]).
  */
 @Composable
-internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1) {
+internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1): Int {
+    val settledFor = remember { androidx.compose.runtime.mutableIntStateOf(row.focusItem) }
+    val gliding = remember { androidx.compose.runtime.mutableIntStateOf(0) }
     LaunchedEffect(row.focusItem, row.count) {
         val target = followTarget(row.focusItem, before)
-        if (kotlin.math.abs(list.firstVisibleItemIndex - target) > 12) runCatching { list.scrollToItem(target) }
-        else runCatching { list.animateScrollToItem(target) }
+        gliding.intValue++
+        try {
+            if (kotlin.math.abs(list.firstVisibleItemIndex - target) > 12) runCatching { list.scrollToItem(target) }
+            else runCatching { list.animateScrollToItem(target) }
+            if (coroutineContext.isActive) settledFor.intValue = row.focusItem // (a newer press cancels this effect: it stays unsettled)
+        } finally { gliding.intValue-- }
     }
+    val shown = remember(row.focusItem, row.count, before) {
+        androidx.compose.runtime.derivedStateOf {
+            if (!highlightFollowsRow(settledFor.intValue, row.focusItem, gliding.intValue)) row.focusItem else {
+                val info = list.layoutInfo
+                val pitch = (info.visibleItemsInfo.firstOrNull()?.size ?: 0) + info.mainAxisItemSpacing
+                shownFocusItem(row.focusItem, before, list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset, pitch, row.count)
+            }
+        }
+    }
+    return shown.value
 }
 
 /**

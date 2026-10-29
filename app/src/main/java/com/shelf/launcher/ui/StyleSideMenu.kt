@@ -328,7 +328,7 @@ private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
     val fits = remember { RowFits() }
     val row = rememberLoopRow(c, fits.value)
     val list = rememberLazyListState(initialFirstVisibleItemIndex = (row.focusItem - 1).coerceAtLeast(0))
-    FollowFocus(list, row)
+    val shown = FollowFocus(list, row)
     val keys = remember(c.games) { gameKeys(c.games) }
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
@@ -345,7 +345,7 @@ private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
             items(row.count, key = { row.key(it, keys) }) { v ->
                 val i = row.game(v)
                 val g = c.games[i]
-                val here = v == row.focusItem
+                val here = v == shown
                 val on = here && StyleNav.zone == StyleNav.Zone.GAMES
                 val lift = styleLift(on)
                 StyleArt(
