@@ -47,7 +47,9 @@ internal fun Case3D(
     /** Update 189: the disc / card inside, for an opening case. */
     inside: CaseItem? = null,
     /** Update 189: whether the disc / card still lies in the case (read while drawing). */
-    showItemOf: (() -> Boolean)? = null
+    showItemOf: (() -> Boolean)? = null,
+    /** Update 400: called once the front picture is in (the inspected case waits for it before it flies). */
+    onFront: (() -> Unit)? = null
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -88,6 +90,7 @@ internal fun Case3D(
     val unfoldedFront = unfoldedSrc?.let { BoxTexture.model(it, BoxPart.FRONT, g.platform) }
     val frontCut = rememberSoftBitmap(unfoldedFront, 480, trim = true)
     val front = frontCut ?: front0
+    if (onFront != null && front != null) androidx.compose.runtime.LaunchedEffect(front) { onFront() }
     // Not looked up yet (far along the Spine wall): ask once it has stayed on screen a moment, as the Spines look does.
     val scansKnown = physical != null || HomeScans.knownHere(g.stableKey)
     if (!scansKnown) {

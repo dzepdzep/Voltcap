@@ -1058,6 +1058,33 @@
    "status": "fixed",
    "found": "owner report, 2026-10-29, recorded in update 386",
    "note": "FIXED update 387. LauncherScreen idle effect ignored whoAsk (selector, PIN pad, edit pages) and the start-up wait for the intro; now ScreensaverGate.mayRun + effect keyed on whoAsk / whoPending, lastInputAt reset on open / pick / skip. ScreensaverGate387Test. Thor: start-up and manual selector idle past the 1 min test timeout stay up; after B / A the full minute restarts. PIN pad not tested on hardware."
+  },
+  {
+   "id": "D85",
+   "title": "Picked case vanishes from its place and the popup appears at once (owner report)",
+   "rule": "SHARED-PICKUP",
+   "severity": "high",
+   "status": "verified",
+   "found": "owner report 2026-10-29; reproduced on the Thor in Cardboard box (frames .shots/400/base_box/sheet.png), Case stacks (blank slab flew, cover popped in on landing) and Game shelf (card gone, window at ~full size in 2 frames)",
+   "note": "FIXED update 400. Cause: the piece flight (GameWindow fullInspect) was tied to Info animation, default 'Just appear' since 393, so the card faded out in one frame and the piece snapped to its final place. Now the flight follows only the system animation setting + Lite; windows without a piece (Game shelf, Console stack, Card binder, Record crate: PICKUP_CARD_LAYOUTS) grow out of the picked case and go back into it (cardFlight); the focused-card marker fades too; the case waits (max 450 ms, card stays in place) for its cover before flying (Case3D onFront). Thor 60 fps frame sheets .shots/400/fix_box, v3_STACKS, v3_SHELF, row3 (3-row box, bottom row): the object is visible the whole way out and back. Pickup400Test."
+  },
+  {
+   "id": "D86",
+   "title": "Cardboard box: A / B pressed rapidly during the flight shows two copies of the case for a few frames",
+   "rule": "SHARED-PICKUP",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-10-29 Thor, seq 'D A B A B A B' at 330 ms (.shots/400/rapid/sheet.png)",
+   "note": "Re-opening while the previous case is still flying home: the new flight starts at the lifted case's mid-fall rect, so the piece and the box's own lifted case are both drawn (offset) until the piece lands. No crash, final state consistent. Not fixed."
+  },
+  {
+   "id": "D87",
+   "title": "Artwork library has no physical case to pick up (its popup grows from a text row / hero art)",
+   "rule": "SHARED-PICKUP",
+   "severity": "info",
+   "status": "wontfix",
+   "found": "2026-10-29 Thor (.shots/400/fix_ARTLIB/open.png)",
+   "note": "Artwork library lists titles over a backdrop; there is no case to lift, so its intended behaviour is kept. Its Endless / 1-3 games / touch / rail checks stay OPEN (not done in update 400)."
   }
  ]
 }

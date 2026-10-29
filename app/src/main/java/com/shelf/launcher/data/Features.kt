@@ -1908,6 +1908,9 @@ object Features {
     /** Update 330: ◀ ▶ past a box's edge: on into the next box at once, or after a knock against its wall. */
     enum class BoxSwitch(val label: String) { EDGE("At once"), KNOCK("After a knock") }
     val boxSwitch = EnumPref("box_switch", BoxSwitch.EDGE, BoxSwitch.values())
+    /** Update 400: how many rows deep the Cardboard box is: Auto picks 3 only for compact cases that fit and read (BoxRows.kt). */
+    enum class BoxRowsPref(val label: String) { AUTO("Auto"), ONE("1 row"), TWO("2 rows"), THREE("3 rows") }
+    val boxRows = EnumPref("box_rows", BoxRowsPref.AUTO, BoxRowsPref.values())
     /** (Update 330 first draft: what stood in the box — no longer read; always the games' cases by their spines.) */
     enum class BoxMedia(val label: String) { LOOK("Your game look"), CASES("Cases and boxes") }
 

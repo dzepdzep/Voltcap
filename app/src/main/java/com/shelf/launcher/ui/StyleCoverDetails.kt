@@ -146,6 +146,22 @@ private fun CoverShelfRequests(c: StyleCtx) {
     }
 }
 
+/**
+ * Update 400 (reference: a boxed game seen from a little to the side and above, its spine and top showing): the big case's
+ * turn and tilt follow Settings > Spine depth (Off: facing you, as before; Subtle: a little; Realistic 3D: the reference's).
+ * Fixed per setting: nothing moves when the game or the category changes.
+ */
+private fun bigCaseYaw(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
+    com.shelf.launcher.data.Features.SpineDepth.OFF -> 0f
+    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 9f
+    com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 15f
+}
+private fun bigCasePitch(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
+    com.shelf.launcher.data.Features.SpineDepth.OFF -> 4f
+    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 8f
+    com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 12f
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
@@ -164,12 +180,13 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
             // Update 392: the case sits at the top of the stage (its reflection runs on into the room under it) instead of floating in
             // the middle of a tall box with an empty band above it.
             Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
+                val depth = com.shelf.launcher.data.Features.spineDepth.state.value
                 // One box, keyed by its game: the facing / turned setting, the console's own case and its real scan.
                 key(g.stableKey) {
                     Box(Modifier.fillMaxWidth().requiredHeight(stageH + shelfH * 0.12f)) { // (Update 393: the case's artwork never fades in — it is in place the frame its game is selected.)
                         Case3D(
-                            g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) 0f else PickedFacing.TURN,
-                            case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current,
+                            g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN,
+                            case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
                             frame = false, frameColor = accent,
                             realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
                             fill = 0.94f

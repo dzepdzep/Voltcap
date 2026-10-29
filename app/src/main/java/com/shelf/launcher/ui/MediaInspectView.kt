@@ -708,6 +708,8 @@ internal class InspectMotion {
     var fromSpine = false
     /** Update 330: how far it's turned from facing you when it starts out from a spine (90: spine-on). */
     var spineYaw = 90f
+    /** Update 400: the case's front picture is drawn-ready (set by its Case3D). */
+    @Volatile var artReady = false
     var started = false
     var closing = false
     /** A 3D model: it turns only as far as its pictures go (±60°). */
@@ -1439,7 +1441,8 @@ private fun InspectCase(
         // (Update 162: Case3D's back face and its angle read while drawing.)
         back = piece.back, yawOf = yawOf, fill = 0.97f,
         // (Update 189: it opens.)
-        openOf = openOf, inside = caseItem, showItemOf = itemInCase
+        openOf = openOf, inside = caseItem, showItemOf = itemInCase,
+        onFront = { motion.artReady = true }
     )
 }
 

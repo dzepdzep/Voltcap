@@ -133,6 +133,9 @@ internal fun bigLogo(g: Game, state: LauncherUiState): String? {
     return state.sgdbLogos[k]?.takeIf { it.isNotEmpty() }
 }
 
+/** Update 400: storage layouts whose picked case opens a plain window (no piece, no scene of their own): it grows out of the case ([GameWindow]'s cardFlight). */
+internal val PICKUP_CARD_LAYOUTS = setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
+
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
 @Composable
 internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
@@ -149,7 +152,8 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // of the game window's Inspect / Wobble: it was the game's own card on the home screen behind the window, still drawn
     // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
     // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
-    return this.graphicsLayer { if (MediaInspect.key == key) alpha = 1f - MediaInspect.amount.floatValue }.onGloballyPositioned { c ->
+    // (Update 400: the focused-card marker (FocusedCard) fades out too: it is the card the piece / window comes out of.)
+    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = 1f - MediaInspect.amount.floatValue }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
@@ -1034,7 +1038,12 @@ internal fun GameWindow(
     val sysAnims = rememberAnimationsEnabled()
     val lite = LocalLiteEffects.current
     // (Update 162: Lite keeps it too with Effects & battery › Full animations on Lite, on by default.)
-    val fullInspect = MotionPrefs.info() != Features.InfoAnim.NONE && sysAnims && (!lite || Features.motionOnLite.state.value)
+    // Update 400 ("selected games disappear from their original position and suddenly appear in the popup"): picking a
+    // case up is a physical movement, not an info entrance. With Info on "Just appear" (the default since 393) the flight was
+    // off: the card vanished at once and the piece popped in at its final place. The flight now follows only the system's
+    // animation setting and Lite; "Just appear" only skips the showcase turn.
+    val fullInspect = sysAnims && (!lite || Features.motionOnLite.state.value)
+    val inspectTurn = fullInspect && MotionPrefs.info() != Features.InfoAnim.NONE
     // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
     // (Update 162: kept out here, so closing can fade the window out while the piece flies back.)
     val grow = remember { Animatable(0f) }
@@ -1042,8 +1051,10 @@ internal fun GameWindow(
     // Update 162: closing turns the piece back and flies it to its place first, then the window goes.
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
+    // Update 400: see [cardFlight] below (declared here: the close path needs it).
+    val cardFlight = piece == null && scene == null && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
     val close: () -> Unit = {
-        if (piece == null && scene != null && MotionPrefs.info() != Features.InfoAnim.NONE && grow.value > 0.05f) {
+        if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
@@ -1157,12 +1168,14 @@ internal fun GameWindow(
             } else runCatching { playFocus.requestFocus() }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
-        val anim = MotionPrefs.info() != Features.InfoAnim.NONE
+        // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)
+        // still grows out of the case that was picked and goes back into its slot, whatever Info is set to: [cardFlight].
+        val anim = MotionPrefs.info() != Features.InfoAnim.NONE || cardFlight
         // (Update 330: Orbit deck's disc leaves the orbit and comes forward on its own, the window opening round it — the
         // scene draws that flight (WinScenes.kt OdFlyingDisc); the window itself isn't scaled out of the disc. Its disc
         // on the orbit fades as the flying one takes over, and back as it lands.)
         val discFlight = scene == WinScene.ORBIT_TERMINAL && piece == null && origin != null && origin.top != Float.MAX_VALUE && anim
-        if (discFlight) {
+        if (discFlight || cardFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
                 androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = it.coerceIn(0f, 1f) }
@@ -1181,8 +1194,13 @@ internal fun GameWindow(
             // (Update 162 (review): keyed on the motion too — another game shown in the open window gets its own.)
             LaunchedEffect(slot != null, motion) {
                 if (slot == null) return@LaunchedEffect
+                // Update 400: the cover is in memory before the case flies (else it flew as a blank slab and the picture popped in).
+                if (fullInspect && piece.kind == InspectKind.BOX && piece.front is String) {
+                    val t0 = android.os.SystemClock.uptimeMillis()
+                    while (!motion.artReady && android.os.SystemClock.uptimeMillis() - t0 < 450L) kotlinx.coroutines.delay(16)
+                }
                 MediaInspect.key = g.stableKey
-                motion.open(inspectScope, fullInspect, spin = fullInspect) // (Update 164: the turn too on Lite, with Full animations on Lite)
+                motion.open(inspectScope, fullInspect, spin = inspectTurn) // (Update 164: the turn too on Lite, with Full animations on Lite)
             }
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalWinStatus provides winStatus) {

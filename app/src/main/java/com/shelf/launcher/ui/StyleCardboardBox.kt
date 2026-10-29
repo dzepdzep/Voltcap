@@ -121,6 +121,8 @@ internal object BoxNav {
     @Volatile var slotRow: IntArray = IntArray(0)
     @Volatile var slotX: FloatArray = FloatArray(0)
     @Volatile var boxes: Int = 1
+    /** Rows deep in the box as drawn (Update 400: 1 / 2 / 3, BoxRows). */
+    @Volatile var rows: Int = 2
     /** The game whose case is turned to its cover, or null. */
     var flipped by mutableStateOf<String?>(null)
     @Volatile var current: String? = null
@@ -143,12 +145,16 @@ private fun boxNearest(box: Int, row: Int, x: Float): Int {
     return best
 }
 
-/** The first / last game of [box]'s [row] (the other row's when this one is empty), or -1. */
+/** The [n]th row by distance from [row] (n = 1: the next one down, 2: the one above it, ...). */
+internal fun boxRowByDistance(row: Int, n: Int): Int { val step = (n + 1) / 2; return if (n % 2 == 1) row + step else row - step }
+
+/** The first / last game of [box]'s [row] (the nearest row with games when this one is empty), or -1. */
 private fun boxEnd(box: Int, row: Int, last: Boolean): Int {
     val b = BoxNav.slotBox; val r = BoxNav.slotRow
     var found = -1
-    for (pass in 0..1) {
-        val want = if (pass == 0) row else 1 - row
+    // (This row, else the nearest row that has games.)
+    for (pass in 0 until BoxNav.rows.coerceAtLeast(2) * 2) {
+        val want = if (pass == 0) row else boxRowByDistance(row, pass)
         for (i in b.indices) if (b[i] == box && r[i] == want) { if (!last) return i; found = i }
         if (found >= 0) return found
     }
@@ -189,8 +195,8 @@ internal fun cardboardBoxKey(ctx: StyleKeyCtx): Boolean {
                 go(boxEnd(next, row, last = dir < 0))
             }
         }
-        Key.DirectionUp -> if (row == 1) { val t = boxNearest(box, 0, BoxNav.slotX[f]); if (t >= 0) go(t) else ctx.reach(true) } else ctx.reach(true)
-        Key.DirectionDown -> if (row == 0) { val t = boxNearest(box, 1, BoxNav.slotX[f]); if (t >= 0) go(t) else ctx.reach(false) } else ctx.reach(false)
+        Key.DirectionUp -> { val r = BoxRows.rowStep(row, -1, BoxNav.rows); val t = if (r != null) boxNearest(box, r, BoxNav.slotX[f]) else -1; if (t >= 0) go(t) else ctx.reach(true) }
+        Key.DirectionDown -> { val r = BoxRows.rowStep(row, 1, BoxNav.rows); val t = if (r != null) boxNearest(box, r, BoxNav.slotX[f]) else -1; if (t >= 0) go(t) else ctx.reach(false) }
         else -> false
     }
 }
@@ -260,7 +266,7 @@ internal fun StyleCardboardBox(c: StyleCtx, modifier: Modifier = Modifier) {
         }
     }
     DisposableEffect(Unit) {
-        onDispose { BoxNav.current = null; BoxNav.flipped = null; BoxNav.canFlip = false; BoxNav.pull = null; BoxNav.pullAsk = null; BoxNav.slotBox = IntArray(0) }
+        onDispose { BoxNav.rows = 2; BoxNav.current = null; BoxNav.flipped = null; BoxNav.canFlip = false; BoxNav.pull = null; BoxNav.pullAsk = null; BoxNav.slotBox = IntArray(0) }
     }
     if (c.games.isEmpty()) StyleEmpty(modifier) else BoxScene(c, modifier)
 }
@@ -276,7 +282,7 @@ internal class BoxSlot(val box: Int, val row: Int, val x0: Float, val thick: Flo
  * [t] thick; the camera [hc] above the floor, over the middle across and [yc] from the back wall, looking straight down.
  * A point (x, y, z) is drawn at ([sx], [sy]) — nearer the camera (higher up), bigger.
  */
-internal class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float, val vh: Float = 0f) {
+internal class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float, val vh: Float = 0f, val rows: Int = 2, val lane: Float = BOX_LEN) {
     fun sx(x: Float, z: Float) = cx + f * x / (hc - z)
     fun sy(y: Float, z: Float) = cy + f * (y - yc) / (hc - z)
     fun o(x: Float, y: Float, z: Float) = Offset(sx(x, z), sy(y, z))
@@ -285,13 +291,14 @@ internal class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: F
 }
 
 /** The longest case the box is made for (a DVD-size case), the gap between the rows, the room at the walls (mm). */
-private const val BOX_LEN = 191f
-private const val BOX_ROW_GAP = 26f
+internal const val BOX_LEN = 191f
+internal const val BOX_ROW_GAP = 26f
 internal const val BOX_MARGIN = 3f
 
-internal fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
-    // A real storage box: two DVD-length rows deep, as wide as the case size asks (smaller cases: a wider box, more to a row).
-    val d = BOX_LEN * 2 + BOX_ROW_GAP + BOX_MARGIN * 2
+internal fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float, rows: Int = 2, lane: Float = BOX_LEN): BoxCam {
+    // A real storage box: two DVD-length rows deep (Update 400: or 1 / 3 lanes of the category's longest case, BoxRows),
+    // as wide as the case size asks (smaller cases: a wider box, more to a row).
+    val d = BoxRows.depthFor(rows, lane)
     val w = 420f / sizeK
     val wallH = 250f; val t = 5f
     // (Close enough above it that the walls' insides and the cases' ends show its depth.)
@@ -303,29 +310,50 @@ internal fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
     val fH = (bottom - top) * (hc - wallH) / (d + 2 * t)
     val fW = wPx * 0.96f * (hc - wallH) / (w + 2 * t)
     val f = minOf(fH, fW)
-    val cy = top - f * (-t - yc) / (hc - wallH)
-    return BoxCam(w, d, wallH, t, hc, yc, f, wPx / 2f, cy, hPx)
+    // (A box shallower than the screen, one row or a narrow screen, sits in the middle of it, not at the top.)
+    val boxH = f * (d + 2 * t) / (hc - wallH)
+    val top2 = top + ((bottom - top) - boxH).coerceAtLeast(0f) / 2f
+    val cy = top2 - f * (-t - yc) / (hc - wallH)
+    return BoxCam(w, d, wallH, t, hc, yc, f, wPx / 2f, cy, hPx, rows, lane)
+}
+
+/** One game's case in the box (mm): its length (along the box's depth), standing height, thickness and Messy offset. */
+internal class CaseMm(val len: Float, val stand: Float, val thick: Float, val extra: Float)
+
+internal fun caseMm(g: Game, messy: Boolean): CaseMm {
+    val mm = realCaseMm(g.platform)
+    val len = (mm?.second ?: 190f).coerceIn(90f, BOX_LEN)
+    val stand = (mm?.first ?: 135f).coerceIn(60f, 200f)
+    // (Update 393: the thickness the selected 3D case has — CaseThickness — not a per-console spine guess.)
+    val thick = (len * CaseThickness.orElse(g, shelfSpineAspect(g.platform)) * (if (messy) 1f + (boxJitter(g.stableKey, 5) + 0.5f) * 0.06f else 1f)).coerceIn(5f, 60f)
+    val extra = if (messy) (boxJitter(g.stableKey, 4) + 0.5f) * 3f else 0f
+    return CaseMm(len, stand, thick, extra)
 }
 
 /** Packs the games into boxes: across the back row as many as physically fit (each its own case's thickness), then the front row, then the next box. */
 internal fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean): List<BoxSlot> {
     val out = ArrayList<BoxSlot>(games.size)
     val usable = cam.wMm - 2 * BOX_MARGIN
+    val rows = cam.rows.coerceAtLeast(1)
+    val gapRows = BoxRows.gapFor(rows)
     var box = 0; var row = 0; var x = 0f
     for (g in games) {
-        val mm = realCaseMm(g.platform)
-        val len = (mm?.second ?: 190f).coerceIn(90f, BOX_LEN)
-        val stand = (mm?.first ?: 135f).coerceIn(60f, 200f)
-        // (Update 393: the thickness the selected 3D case has — CaseThickness — not a per-console spine guess.)
-        val thick = (len * CaseThickness.orElse(g, shelfSpineAspect(g.platform)) * (if (messy) 1f + (boxJitter(g.stableKey, 5) + 0.5f) * 0.06f else 1f)).coerceIn(5f, 60f)
-        val extra = if (messy) (boxJitter(g.stableKey, 4) + 0.5f) * 3f else 0f
+        val m = caseMm(g, messy)
+        // (Never longer than its lane: BoxRows only offers a row count the category's longest case fits.)
+        val len = minOf(m.len, cam.lane)
+        val stand = m.stand; val thick = m.thick; val extra = m.extra
         if (x > 0f && x + extra + thick > usable) {
             row++; x = 0f
-            if (row > 1) { box++; row = 0 }
+            if (row >= rows) { box++; row = 0 }
         }
-        // The back row against the back wall, the front row against the front wall (Messy: not quite).
+        // The back row against the back wall, the front row against the front wall, a middle row in the middle of its lane
+        // (Messy: not quite).
         val push = if (messy) (boxJitter(g.stableKey, 6) + 0.5f) * 6f else 0f
-        val y0 = if (row == 0) BOX_MARGIN + push else cam.dMm - BOX_MARGIN - len - push
+        val y0 = when {
+            row == 0 -> BOX_MARGIN + push
+            row == rows - 1 -> cam.dMm - BOX_MARGIN - len - push
+            else -> BOX_MARGIN + row * (cam.lane + gapRows) + (cam.lane - len) / 2f + (push - 3f)
+        }
         out += BoxSlot(box, row, -cam.wMm / 2f + BOX_MARGIN + x + extra, thick, y0, len, stand)
         x += extra + thick + gapMm
     }
@@ -409,15 +437,23 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
 
         // The rows' feet on the floor: a soft contact shadow along the gap between the rows (the light from the upper left).
         val rowsHere = slots.filter { it.box == shownBox }
-        for (row in 0..1) {
+        for (row in 0 until c.rows) {
             val r = rowsHere.filter { it.row == row }
             if (r.isEmpty()) continue
             val xa = r.first().x0; val xb = r.last().x1
-            val edgeY = if (row == 0) r.maxOf { it.y1 } else r.minOf { it.y0 }
-            val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
-            val depth = (if (row == 0) 22f else 30f) * k0
-            if (row == 0) drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x - 6f, a.y), Size(b.x - a.x + 18f, depth))
-            else drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f)), startY = a.y - depth, endY = a.y), Offset(a.x - 6f, a.y - depth), Size(b.x - a.x + 18f, depth))
+            // (Each row throws a shadow into the gap behind its feet and one in front of them, the lower rows' darker.)
+            if (row < c.rows - 1) {
+                val edgeY = r.maxOf { it.y1 }
+                val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
+                val depth = 22f * k0
+                drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x - 6f, a.y), Size(b.x - a.x + 18f, depth))
+            }
+            if (row > 0) {
+                val edgeY = r.minOf { it.y0 }
+                val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
+                val depth = 30f * k0
+                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f)), startY = a.y - depth, endY = a.y), Offset(a.x - 6f, a.y - depth), Size(b.x - a.x + 18f, depth))
+            }
             // A row that isn't full: the last case's side, and its shadow on the floor beside it.
             val last = r.last()
             if (last.x1 < hw - 20f) {
@@ -476,8 +512,9 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted
             val s = slots[i]
             if (s.box != shownBox || i == lifted) continue
             // The end that faces the gap between the rows (seen from above it: the camera is over the gap).
-            val y = if (s.row == 0) s.y1 else s.y0
-            val seen = if (s.row == 0) y < c.yc else y > c.yc
+            // (Update 400: whichever end faces the camera's axis; a case lying across it shows neither.)
+            val y = if (s.y1 < c.yc) s.y1 else s.y0
+            val seen = s.y1 < c.yc || s.y0 > c.yc
             if (!seen) continue
             val p = quad(c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), c.o(s.x0, y, 0f))
             drawPath(p, Brush.linearGradient(listOf(Color(0xFF3A3C42), Color(0xFF16171A)), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
@@ -519,7 +556,7 @@ private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifte
 private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int) {
     Canvas(Modifier.fillMaxSize()) {
         val c = cam
-        for (row in 0..1) {
+        for (row in 0 until c.rows) {
             val r = slots.filter { it.box == shownBox && it.row == row }
             if (r.isEmpty()) continue
             val z = r.maxOf { it.stand }
@@ -596,8 +633,12 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
-        val cam = remember(wPx, hPx, tilt, sizeK) { boxCam(wPx, hPx, tilt, sizeK) }
         val gapMm = 0.6f * spacing
+        // Update 400: how many rows deep (Auto / 1 / 2 / 3): a physical decision from the category's cases and this screen.
+        val rowsPref = Features.boxRows.state.value
+        val plan = remember(c.games, sizeK, gapMm, messy) { BoxRows.plan(c.games, 420f / sizeK, gapMm, messy) }
+        val decision = remember(rowsPref, plan, wPx, hPx, tilt, sizeK, density.density) { BoxRows.decide(rowsPref, plan, wPx, hPx, tilt, sizeK, density.density) }
+        val cam = remember(wPx, hPx, tilt, sizeK, decision.rows, plan) { boxCam(wPx, hPx, tilt, sizeK, decision.rows, BoxRows.laneFor(decision.rows, plan)) }
         val slots = remember(c.games, cam, gapMm, messy) { packBoxes(c.games, cam, gapMm, messy) }
         val boxes = (slots.lastOrNull()?.box ?: 0) + 1
         SideEffect {
@@ -605,6 +646,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             BoxNav.slotRow = IntArray(slots.size) { slots[it].row }
             BoxNav.slotX = FloatArray(slots.size) { (slots[it].x0 + slots[it].thick / 2f + cam.wMm / 2f) / cam.wMm }
             BoxNav.boxes = boxes
+            BoxNav.rows = cam.rows
         }
         val box = slots.getOrNull(focus)?.box ?: 0
         val firstOf = remember(slots) { IntArray(boxes) { b -> slots.indexOfFirst { it.box == b }.coerceAtLeast(0) } }
@@ -666,6 +708,8 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             if (caption) append(c.categoryLabel.uppercase()).append("\n")
             append("BOX ${box + 1}")
             if (boxes > 1) append(" OF $boxes")
+            // (A forced row count the cases / screen can't take: said, not silently ignored.)
+            BoxRows.limitText(decision)?.let { append("\n").append(it) }
         }
         Column(
             Modifier.align(if (roomy) Alignment.CenterStart else Alignment.TopStart)
@@ -835,6 +879,9 @@ internal fun CardboardBoxSettings() {
     Spacer(Modifier.height(10.dp))
     StyleChoice("Case size", Features.BoxCaseSize.values(), Features.boxCaseSize.state.value, { it.label }) { Features.boxCaseSize.value = it }
     PercentSlider("Spacing", Features.boxSpacing.state.value, { Features.boxSpacing.value = it.coerceIn(70, 150) }, min = 70, max = 150, valueText = { "$it%" })
+    StyleChoice("Rows", Features.BoxRowsPref.values(), Features.boxRows.state.value, { it.label }) { Features.boxRows.value = it }
+    MutedNote("Auto: three rows for compact cases (DS, 3DS, Game Boy Advance boxes) when a category fills more than two and they stay readable on this screen, otherwise two. " +
+        "A forced 3 that the cases or the screen can't take shows two and says so; 1 gives a single long row.")
     StyleChoice("Packing", Features.BoxArrange.values(), Features.boxArrange.state.value, { it.label }) { Features.boxArrange.value = it }
     MutedNote("Neat: straight and evenly packed. Messy: a little crooked and uneven, as after a rummage.")
     PercentSlider("Camera angle", Features.boxTilt.state.value, { Features.boxTilt.value = it.coerceIn(0, 32) }, min = 0, max = 32,
