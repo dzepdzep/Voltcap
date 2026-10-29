@@ -121,7 +121,7 @@ object AppUpdates {
                     if (assets != null) for (i in 0 until assets.length()) {
                         val a = assets.getJSONObject(i)
                         val n = a.optString("name")
-                        if (url == null && n.endsWith(".apk", ignoreCase = true)) {
+                        if (url == null && n.endsWith(".apk", ignoreCase = true) && !n.contains("-notify", ignoreCase = true)) { // 406: never the optional notify build
                             url = a.optString("browser_download_url"); bytes = a.optLong("size")
                         } else if (dmName != null && n.equals(dmName, ignoreCase = true)) {
                             dm = a.optString("browser_download_url")

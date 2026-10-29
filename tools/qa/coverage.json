@@ -494,5 +494,15 @@
    "evidence": "-",
    "limits": "UPDATE 397 (Thor, C6-C9): PASS (no blank / white / dip frame, layout seen in the still) POCKET_RIBBON, GREENCORE, TWIN_DESK (main screen only, no second display), POCKET_CLASSIC and DISCS (need PRE=A); POCKET PASS with an OPEN defect (info panel shows old + new title overlapped for 1 frame at the swap, reproduced 3x, also without the 397 change; shelf thumbnails fade in over ~3 frames). DISCS: disc label blank ~3 frames while the new title is already shown (image load, not an animation). FILESELECT flagged frame classified: it is the swap frame itself (benign). UPDATE 396 runs C4 / C5 (Thor): PASS (no blank / white / dip frame, intended layout seen in the still) HERO, DASH, ARCADE, CRATE, CARDS, STORAGE (needs PRE=A to leave its category screen), FILESELECT (1 transient frame flagged for review, not inspected); rapid reversals are in the NAV sequence; immediate game navigation after L2 / R2 NOT TESTED on hardware (unit test only). Earlier: PASS (no blank / white / dip frame, shell still: contact sheet of BOX read) for CINEMA, COVERDETAILS, BOX, CLASSIC, TILES (CS-02) and, update 395 run C3, ARTLIB, ARCTIC, SHELF, SIDE, STACKS, BOX again (SIDE and BOX transient frames = the swap frame itself); every other layout NOT TESTED until run through catswitch.sh (next batch: HERO, DASH, ARCADE, CRATE, CARDS, STORAGE, FILESELECT, POCKET, DISCS, TWIN_*); rapid-reversal artwork / title sync and the 600 ms guard against game animations were NOT checked frame by frame"
   }
- ]
+ ],
+ "release_install": {
+  "v0.6.59 standard APK": {
+   "status": "PASS (1 device)",
+   "note": "File-manager install on one previously affected handheld passed Play Protect (scan offered, then allowed). Other devices NOT verified."
+  },
+  "v0.6.59 notify APK": {
+   "status": "NOT VERIFIED",
+   "note": "Optional; may be blocked by Play Protect."
+  }
+ }
 }

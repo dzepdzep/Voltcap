@@ -1227,6 +1227,27 @@
    "fix": "One ramp (CoverFlight.appear) drives the case alpha and the slot's hide (the spine turns into the case in place; before: slot gone at p 0.17, case solid at 0.25), the slot stays empty while its case is out (no re-appearing spine at the end), flight registered in the same composition (no one-frame slot), ease with immediate start (CubicBezier 0.2, 0.6, 0.2, 1), 380 ms, a lift arc (sin(pi p) * 0.45 slot height) so it rises out of the slot then moves forward.",
    "check": "Thor 3140972f qa_reference_update405/sheet2.png (15 fps contiguous frames: new case rising from its slot, old case shrinking into its slot, one case per game, no blank frame); Flight405Test",
    "note": "Frame rate of the capture 15 fps sampled from a 960x540 recording; rapid reversal and Lite / touch NOT re-run in 405 (404 evidence covers the previous curve). Game shelf keeps its three-phase pull (NOT changed, NOT re-captured), Cardboard box pickup unchanged."
+  },
+  {
+   "id": "D99",
+   "title": "Play Protect 'App blocked' on sideload: notification-listener service in the standard APK",
+   "rule": "RELEASE",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-29 user report (handheld)",
+   "fix": "Update 406: service moved to optional notify build (src/notify).",
+   "check": "User installed the corrected standard APK through the Android file manager on ONE previously affected device: Play Protect offered a scan, then allowed the install, no hard block. Only that one device; other devices / Android versions NOT verified. The 0.6.59 release APK has the identical manifest (listener lines 0) plus version + updater change; it was shell-installed on Thor 3140972f (not a Play Protect proof).",
+   "note": "notify APK stays unverified against Play Protect and may be blocked."
+  },
+  {
+   "id": "D100",
+   "title": "In-app updater took the first .apk release asset, could have installed the notify build",
+   "rule": "RELEASE",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 release prep 0.6.59",
+   "fix": "AppUpdates asset pick skips names containing '-notify'.",
+   "check": "Compiled + unit tests green; not exercised against the live release yet."
   }
  ]
 }

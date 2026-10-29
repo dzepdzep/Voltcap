@@ -205,5 +205,3 @@ Combination rows: 35 - PASS 19, FAIL 0, SKIP 0, NOT TESTED 16
 - combination **DUAL-01 Second-screen widgets + category switching, game launch / return, suspend / resume**: DV-03; launching a game is excluded by the safety rules
 - combination **ART-01 Missing covers + case formats; 3D cases / cartridges + rapid navigation; selection changed before an image loads; popups**: AR-01: no fixture library; popups are reviewed by stills only
 - combination **SET-01 Settings change + layout switch; restart and restore the selection; background / resume; profile switch + category visibility**: profiles are user data; restart-restore of the category (update 367 fix 3) is only covered by the JVM list test
-
-- 405: PHYSICAL-SIDES (Box, Thor still before / after) PASS-partial; SHARED-PICKUP Cover details slot-to-featured one-curve (Thor 15 fps sheet) PASS; Game shelf / Case stacks sides + one-curve NOT TESTED; rapid reversal / Lite / touch NOT TESTED for the 405 curve.
