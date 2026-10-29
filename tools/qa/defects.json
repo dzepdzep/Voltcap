@@ -1073,9 +1073,9 @@
    "title": "Cardboard box: A / B pressed rapidly during the flight shows two copies of the case for a few frames",
    "rule": "SHARED-PICKUP",
    "severity": "low",
-   "status": "open",
+   "status": "fixed-unverified",
    "found": "2026-10-29 Thor, seq 'D A B A B A B' at 330 ms (.shots/400/rapid/sheet.png)",
-   "note": "Re-opening while the previous case is still flying home: the new flight starts at the lifted case's mid-fall rect, so the piece and the box's own lifted case are both drawn (offset) until the piece lands. No crash, final state consistent. Not fixed."
+   "note": "Re-opening while the previous case is still flying home: the new flight starts at the lifted case's mid-fall rect, so the piece and the box's own lifted case are both drawn (offset) until the piece lands. No crash, final state consistent. Not fixed. Update 401: MediaInspect.hold hides the card while the piece flies (Hold401Test); a Thor rapid A/B run showed one case per frame but not the original sequence, so keep verifying."
   },
   {
    "id": "D87",

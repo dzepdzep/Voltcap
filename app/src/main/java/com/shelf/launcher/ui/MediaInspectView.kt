@@ -1063,6 +1063,7 @@ internal class InspectMotion {
     fun open(scope: CoroutineScope, full: Boolean, spin: Boolean) {
         if (started) return
         started = true
+        MediaInspect.hold.value = true // (Update 401, D86: its card stays hidden while it flies)
         openJob = scope.launch {
             if (!full) {
                 lift.floatValue = 1f
@@ -1109,9 +1110,10 @@ internal class InspectMotion {
             }
             out.floatValue = 0f; lid.floatValue = 0f; opened = false
         }
-        if (!started) { MediaInspect.amount.floatValue = 0f; return }
+        if (!started) { MediaInspect.amount.floatValue = 0f; MediaInspect.hold.value = false; return }
         if (!full) {
             animate(fade.floatValue, 0f, animationSpec = tween(140)) { v, _ -> fade.floatValue = v }
+            MediaInspect.hold.value = false
         } else coroutineScope {
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
@@ -1123,8 +1125,10 @@ internal class InspectMotion {
             animate(lift.floatValue, 0f, animationSpec = tween(520, easing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f))) { v, _ ->
                 lift.floatValue = v
                 MediaInspect.amount.floatValue = v
+                if (v < 0.35f) MediaInspect.hold.value = false
             }
         }
+        MediaInspect.hold.value = false
         MediaInspect.amount.floatValue = 0f
     }
 }

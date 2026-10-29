@@ -924,13 +924,19 @@ private fun spineWhole(src: android.graphics.Bitmap, aspect: Float): android.gra
 /** Update 317: a keep case's spine scan more than this many times as wide (for its height) as the side isn't its spine. */
 private const val SPINE_TOO_WIDE = 1.8f
 
+/** Update 401: the centred crop (x, y, w, h) that gives [srcW] x [srcH] the shape [aspect], only as much as it is off (never a stretch); null = leave it. */
+internal fun coverCropRect(srcW: Int, srcH: Int, aspect: Float, slack: Float = 0.005f): IntArray? {
+    val cur = srcW.toFloat() / srcH.coerceAtLeast(1)
+    if (aspect <= 0f || kotlin.math.abs(cur / aspect - 1f) < slack) return null
+    val w = if (cur > aspect) (srcH * aspect).toInt().coerceIn(1, srcW) else srcW
+    val h = if (cur > aspect) srcH else (srcW / aspect).toInt().coerceIn(1, srcH)
+    return intArrayOf((srcW - w) / 2, (srcH - h) / 2, w, h)
+}
+
 private fun fillCrop(src: android.graphics.Bitmap, aspect: Float, slack: Float = 0.005f): android.graphics.Bitmap {
-    val cur = src.width.toFloat() / src.height.coerceAtLeast(1)
     // (Update 240, #26: [slack] — how far off it may be and be left as it is; a spine scan is let off by a tenth.)
-    if (aspect <= 0f || kotlin.math.abs(cur / aspect - 1f) < slack) return src
-    val w = if (cur > aspect) (src.height * aspect).toInt().coerceIn(1, src.width) else src.width
-    val h = if (cur > aspect) src.height else (src.width / aspect).toInt().coerceIn(1, src.height)
-    return runCatching { android.graphics.Bitmap.createBitmap(src, (src.width - w) / 2, (src.height - h) / 2, w, h) }.getOrDefault(src)
+    val r = coverCropRect(src.width, src.height, aspect, slack) ?: return src
+    return runCatching { android.graphics.Bitmap.createBitmap(src, r[0], r[1], r[2], r[3]) }.getOrDefault(src)
 }
 
 /**

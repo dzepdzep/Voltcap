@@ -153,7 +153,7 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
     // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
     // (Update 400: the focused-card marker (FocusedCard) fades out too: it is the card the piece / window comes out of.)
-    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = 1f - MediaInspect.amount.floatValue }.onGloballyPositioned { c ->
+    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = MediaInspect.cardAlpha(MediaInspect.amount.floatValue, MediaInspect.hold.value) }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
@@ -1078,7 +1078,7 @@ internal fun GameWindow(
     DisposableEffect(g.stableKey) {
         val k = g.stableKey
         onDispose {
-            if (motion.started) MediaInspect.amount.floatValue = 0f
+            if (motion.started) { MediaInspect.amount.floatValue = 0f; MediaInspect.hold.value = false }
             if (MediaInspect.key == k) MediaInspect.key = null
             // (Update 274: the menu's Inspect… is for this opening only — unless a newer one was asked for meanwhile.)
             if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null }

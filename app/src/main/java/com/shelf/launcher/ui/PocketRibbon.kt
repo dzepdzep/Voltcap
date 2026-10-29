@@ -1,6 +1,7 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -189,21 +191,30 @@ private fun RibbonShowcase(c: StyleCtx, g: com.shelf.launcher.data.Game, cover: 
     val cartCtx = remember(c) {
         StyleCtx(c.state, c.games, c.focus, c.art, c.shortcuts, c.actions, com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC, c.mixed, c.stops, c.stop, c.categoryLabel)
     }
-    Box(modifier) {
-        if (cover != null) {
-            HeldImage(cover, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, imageModifier = Modifier.blur(10.dp))
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
-            HeldImage(
-                cover, Modifier.fillMaxHeight().fillMaxWidth(if (cart) 0.5f else 1f).align(if (cart) Alignment.CenterStart else Alignment.Center).padding(6.dp),
-                contentScale = ContentScale.Fit, imageModifier = Modifier.pixelArtwork()
-            )
-        } else Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
-        if (cart) androidx.compose.runtime.key(g.stableKey) {
-            StyleArt(
-                cartCtx, g,
-                Modifier.fillMaxHeight(0.9f).fillMaxWidth(0.5f).align(Alignment.CenterEnd).padding(end = 6.dp).riseOnEnter(),
-                focused = true
-            )
+    // Update 401: ONE clean picture, centred, on a plain background (no second panel, no blurred copy of the cover):
+    // the game's cartridge or disc (Cartridge in front) or, with it off, its cover — each at its own proportions.
+    val dir = remember { intArrayOf(c.focus, 1) }
+    if (dir[0] != c.focus) { dir[1] = if (c.focus > dir[0]) 1 else -1; dir[0] = c.focus }
+    val way = dir[1]
+    androidx.compose.animation.AnimatedContent(
+        targetState = g, label = "ribbonTop", modifier = modifier,
+        transitionSpec = spec@{
+            categoryQuiet()?.let { return@spec it }
+            if (pocketMs(200) == 0) return@spec androidx.compose.animation.ContentTransform(androidx.compose.animation.EnterTransition.None, androidx.compose.animation.ExitTransition.None)
+            (androidx.compose.animation.slideInHorizontally(tween(pocketMs(220), easing = FastOutSlowInEasing)) { w -> w / 3 * way } + androidx.compose.animation.fadeIn(tween(pocketMs(160)))) togetherWith
+                (androidx.compose.animation.slideOutHorizontally(tween(pocketMs(220), easing = FastOutSlowInEasing)) { w -> -w / 3 * way } + androidx.compose.animation.fadeOut(tween(pocketMs(140))))
+        }
+    ) { shown ->
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+            if (cart) {
+                val aspect = styleAspect(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC).coerceIn(0.5f, 1.9f)
+                val w = minOf(maxWidth, maxHeight * 0.92f * aspect)
+                StyleArt(cartCtx, shown, Modifier.size(w, w / aspect), focused = true)
+            } else {
+                val m: Any? = c.cover(shown) ?: c.backdrop(shown) ?: c.wide(shown)
+                if (m != null) HeldImage(m, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, imageModifier = Modifier.pixelArtwork())
+                else Box(Modifier.fillMaxSize().background(placeholderBrush(shown.hue)))
+            }
         }
     }
 }

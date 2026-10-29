@@ -99,7 +99,7 @@ class R1Compat326Test {
                                 }
                                 // Endless: everywhere but Hero tiles and Twin showcase (update 329: its grid stops at the ends).
                                 if (t == "endless") assertEquals("endless on $l",
-                                    if (l == HomeLayout.HERO_TILES || l == HomeLayout.TWIN_SHOWCASE) R1Fit.Hide else R1Fit.Show, f)
+                                    if (l == HomeLayout.HERO_TILES || l == HomeLayout.TWIN_SHOWCASE || l == HomeLayout.POCKET_RIBBON) R1Fit.Hide else R1Fit.Show, f) // (update 401: ribbon stops at its ends)
                                 // (Update 329) The achievement chip isn't drawn by the carousel view.
                                 if (t == "progressbar" && carousel && l in setOf(HomeLayout.CLASSIC, HomeLayout.GRID, HomeLayout.SIDE, HomeLayout.STACKS))
                                     assertEquals("progressbar on $l with the carousel", R1Fit.Hide, f)

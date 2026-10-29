@@ -30,7 +30,8 @@ internal fun loopRowOn(c: StyleCtx): Boolean = c.state.appearance.loopRow && c.g
 // (Update 329, found by the R1 tile walk: Twin showcase's grid stops at its ends too — StyleTwinShowcase keeps Endless off —
 // so the R1 tile switched nothing there.)
 internal fun endlessApplies(layout: com.shelf.launcher.data.HomeLayout): Boolean =
-    layout != com.shelf.launcher.data.HomeLayout.HERO_TILES && layout != com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE
+    layout != com.shelf.launcher.data.HomeLayout.HERO_TILES && layout != com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE &&
+        layout != com.shelf.launcher.data.HomeLayout.POCKET_RIBBON // Update 401: the Pocket ribbon stops at its ends
 
 /**
  * The virtual place of [focus] on an endless row of [n] games: it moves by the D-pad's step ([tick] / [step] from the

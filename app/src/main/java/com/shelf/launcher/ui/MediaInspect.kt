@@ -14,6 +14,16 @@ internal object MediaInspect {
     /** 0 = the carousel as usual, 1 = the piece fully out in front (animated by the game window, read while drawing). */
     val amount = mutableFloatStateOf(0f)
 
+    /**
+     * Update 401 (D86, two offset copies when a case is picked again while it still flies home): true from the moment a piece
+     * starts to fly out until, closing, it is back over its place — the card it came from stays hidden in that time, whatever the
+     * flight amount (which restarts at 0 and left the still-falling card drawn beside the new flight).
+     */
+    val hold = mutableStateOf(false)
+
+    /** The alpha of the card the piece comes out of: hidden while [hold], else it returns as the piece ([amount]) goes home. */
+    fun cardAlpha(amount: Float, hold: Boolean): Float = if (hold) 0f else (1f - amount).coerceIn(0f, 1f)
+
     /** The game being inspected (its stableKey), or null. */
     var key by mutableStateOf<String?>(null)
 

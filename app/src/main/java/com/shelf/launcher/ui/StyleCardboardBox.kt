@@ -426,14 +426,14 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
         val floor = quad(c.o(-hw, 0f, 0f), c.o(hw, 0f, 0f), c.o(hw, d, 0f), c.o(-hw, d, 0f))
         texturedPath(floor, mat.face, mat.tint, k0, 260f, 90f, 0.22f, c.o(0f, 0f, 0f))
         // The fold down the middle of the floor (where its flaps meet), and the floor's shade at the walls.
-        drawLine(Color.Black.copy(alpha = 0.35f), c.o(-hw, d / 2f, 0f), c.o(hw, d / 2f, 0f), k0 * 1.6f)
+        drawLine(Color.Black.copy(alpha = 0.14f), c.o(-hw, d / 2f, 0f), c.o(hw, d / 2f, 0f), k0 * 1.6f)
         drawLine(Color.White.copy(alpha = 0.08f), c.o(-hw, d / 2f + 2f, 0f), c.o(hw, d / 2f + 2f, 0f), k0 * 1.2f)
         val fl0 = c.o(-hw, 0f, 0f); val fr1 = c.o(hw, d, 0f)
         val ao = 34f * k0
-        drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), startX = fl0.x, endX = fl0.x + ao * 3f), fl0, Size(ao * 3f, fr1.y - fl0.y))
-        drawRect(Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f)), startX = fr1.x - ao, endX = fr1.x), Offset(fr1.x - ao, fl0.y), Size(ao, fr1.y - fl0.y))
-        drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.4f), Color.Transparent), startY = fl0.y, endY = fl0.y + ao), fl0, Size(fr1.x - fl0.x, ao))
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.45f)), startY = fr1.y - ao * 1.5f, endY = fr1.y), Offset(fl0.x, fr1.y - ao * 1.5f), Size(fr1.x - fl0.x, ao * 1.5f))
+        drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.22f), Color.Transparent), startX = fl0.x, endX = fl0.x + ao * 3f), fl0, Size(ao * 3f, fr1.y - fl0.y))
+        drawRect(Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.12f)), startX = fr1.x - ao, endX = fr1.x), Offset(fr1.x - ao, fl0.y), Size(ao, fr1.y - fl0.y))
+        drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.16f), Color.Transparent), startY = fl0.y, endY = fl0.y + ao), fl0, Size(fr1.x - fl0.x, ao))
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)), startY = fr1.y - ao * 1.5f, endY = fr1.y), Offset(fl0.x, fr1.y - ao * 1.5f), Size(fr1.x - fl0.x, ao * 1.5f))
 
         // The rows' feet on the floor: a soft contact shadow along the gap between the rows (the light from the upper left).
         val rowsHere = slots.filter { it.box == shownBox }
@@ -446,19 +446,19 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
                 val edgeY = r.maxOf { it.y1 }
                 val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
                 val depth = 22f * k0
-                drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x - 6f, a.y), Size(b.x - a.x + 18f, depth))
+                drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.22f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x - 6f, a.y), Size(b.x - a.x + 18f, depth))
             }
             if (row > 0) {
                 val edgeY = r.minOf { it.y0 }
                 val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
                 val depth = 30f * k0
-                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f)), startY = a.y - depth, endY = a.y), Offset(a.x - 6f, a.y - depth), Size(b.x - a.x + 18f, depth))
+                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.26f)), startY = a.y - depth, endY = a.y), Offset(a.x - 6f, a.y - depth), Size(b.x - a.x + 18f, depth))
             }
             // A row that isn't full: the last case's side, and its shadow on the floor beside it.
             val last = r.last()
             if (last.x1 < hw - 20f) {
                 val sa = c.o(last.x1, last.y0, 0f); val sb = c.o(last.x1, last.y1, 0f)
-                drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent), startX = sa.x, endX = sa.x + 26f * k0), Offset(sa.x, sa.y), Size(26f * k0, sb.y - sa.y))
+                drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.2f), Color.Transparent), startX = sa.x, endX = sa.x + 26f * k0), Offset(sa.x, sa.y), Size(26f * k0, sb.y - sa.y))
             }
         }
 
@@ -805,7 +805,7 @@ private fun BoxCase(
     }
     else {
         // The slot it stands in (deep and dark once it's lifted).
-        Box(Modifier.offset(x0, y0).size(wDp, hDp).background(Color(0xFF0B0B0C)))
+        Box(Modifier.offset(x0, y0).size(wDp, hDp).background(Color.Black.copy(alpha = 0.18f)))
         val aspect = remember(k) { case3dAspect(g, false) }
         // Lifting: straight up first (toward you — nearer the camera, so bigger), then turning toward its cover.
         val outMm = (cam.wallH - z + 150f) * liftK
@@ -843,7 +843,7 @@ private fun BoxCase(
             Canvas(Modifier.fillMaxSize()) {
                 val r = smoothUp(rise.value)
                 val sw = (right - left) * (1f + 0.6f * r)
-                drawRoundRect(Color.Black.copy(alpha = 0.45f * (1f - r * 0.5f)), Offset(size.width / 2f - sw / 2f + 30f * r, 22f * r),
+                drawRoundRect(Color.Black.copy(alpha = 0.2f * (1f - r * 0.5f)), Offset(size.width / 2f - sw / 2f + 30f * r, 22f * r),
                     Size(sw, size.height), androidx.compose.ui.geometry.CornerRadius(8f))
             }
             val cover = c.cover(g)
@@ -852,9 +852,9 @@ private fun BoxCase(
                 Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
                     yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, realFront = true, back = back, fill = 1f)
             }
-            // Lit: a warm line round its spine.
+            // Lit: a thin neutral outline round its spine (update 401: nothing coloured).
             if (on && rise.value < 0.4f) Box(Modifier.align(Alignment.Center).size(wDp + 4.dp, hDp + 4.dp)
-                .border(2.dp, Color(0xFFFFF0B8), RoundedCornerShape(2.dp)))
+                .border(1.5.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(1.dp)))
         }
         if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
     }
