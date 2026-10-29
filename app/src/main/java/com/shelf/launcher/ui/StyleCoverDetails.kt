@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import coil.imageLoader
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
@@ -78,7 +81,7 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
     Box(modifier.background(Brush.verticalGradient(listOf(themeDark(Color(0xFF121722), 0.6f), base))).clipToBounds()) {
         val portrait = (CoverAspects.rawOf(art) ?: 2f) < 1f
         HeldImage(
-            art, Modifier.fillMaxSize(), fadeMs = 450,
+            art, Modifier.fillMaxSize(), fadeMs = 450, shared = true,
             contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop,
             imageModifier = if (!LocalLiteEffects.current) Modifier.blur(if (portrait) 24.dp else 6.dp) else Modifier
         )
@@ -87,7 +90,7 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
     }
 }
 
-private const val SHELF_GAP_DP = 2f
+private const val SHELF_GAP_DP = 0.5f
 private const val SHELF_MAX_SIDE = 46
 
 @Composable
@@ -104,6 +107,27 @@ private fun CoverShelfRequests(c: StyleCtx) {
         StyleNav.side = emptyList(); StyleNav.top = emptyList(); StyleNav.bar = emptyList()
     }
     val games = c.games
+    // Update 398: the background and the big case's cover of the games either side are decoded in the exact shape the scene
+    // draws them in, so moving on shows both the frame the game is picked (no solid case face, no late background).
+    val warmCtx = androidx.compose.ui.platform.LocalContext.current
+    val coverPx = cardArtPx(ArtKind.COVER)
+    LaunchedEffect(c.focus, games.size, coverPx) {
+        kotlinx.coroutines.delay(60)
+        val loader = warmCtx.imageLoader
+        val handles = ArrayList<coil.request.Disposable>()
+        val loop = loopRowOn(c)
+        val order = listOf(1, -1, 2, -2, 3, -3)
+        val near = order.mapNotNull { d -> games.getOrNull(if (loop) (c.focus + d).mod(games.size.coerceAtLeast(1)) else c.focus + d) }
+        handles += warmHeld(warmCtx, near.mapNotNull { c.backdrop(it) })
+        // The big case's own front / back / spine pictures, decoded as Case3D reads them (Case3D showed the game's colour plate meanwhile).
+        val realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL
+        warmCase3d(warmCtx, near.map { gg -> case3dModels(gg, c.cover(gg), c.state.physicalMedia[gg.stableKey], realFront) })
+        near.mapNotNull { c.cover(it) }.distinct().forEach { handles += loader.enqueue(artRequest(warmCtx, it, ArtKind.COVER, coverPx, fadeMillis = 0)) }
+        try { kotlinx.coroutines.awaitCancellation() } finally {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { kotlinx.coroutines.delay(1500) }
+            handles.forEach { it.dispose() }
+        }
+    }
     val needSpine by rememberUpdatedState(c.actions.needSpine)
     LaunchedEffect(c.focus, games.size) {
         kotlinx.coroutines.delay(150)
@@ -130,19 +154,19 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
         val w = maxWidth; val h = maxHeight
         val compact = h < 380.dp
-        val shelfH = (h * (if (compact) 0.30f else 0.27f)).coerceIn(84.dp, 190.dp)
+        val shelfH = (h * (if (compact) 0.32f else 0.33f)).coerceIn(84.dp, 210.dp)
         val shelfPad = if (compact) 6.dp else 12.dp
         val stageH = (h - shelfH - shelfPad).coerceAtLeast(120.dp)
 
         // The stage: the big box, then the facts.
-        Row(Modifier.fillMaxWidth().height(stageH).padding(start = 28.dp, end = 28.dp, top = if (compact) 4.dp else 8.dp)) {
-            val boxW = (w * 0.42f).coerceAtMost(470.dp)
+        Row(Modifier.fillMaxWidth().height(stageH).padding(start = 28.dp, end = 28.dp, top = if (compact) 4.dp else 26.dp)) {
+            val boxW = (w * 0.48f).coerceAtMost(600.dp)
             // Update 392: the case sits at the top of the stage (its reflection runs on into the room under it) instead of floating in
             // the middle of a tall box with an empty band above it.
             Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
                 // One box, keyed by its game: the facing / turned setting, the console's own case and its real scan.
                 key(g.stableKey) {
-                    Box(Modifier.fillMaxWidth().fillMaxHeight(0.84f)) { // (Update 393: the case's artwork never fades in — it is in place the frame its game is selected.)
+                    Box(Modifier.fillMaxWidth().requiredHeight(stageH + shelfH * 0.12f)) { // (Update 393: the case's artwork never fades in — it is in place the frame its game is selected.)
                         Case3D(
                             g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) 0f else PickedFacing.TURN,
                             case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current,
@@ -158,7 +182,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         }
 
         // The shelf of spines along the bottom.
-        CoverShelf(c, shelfH, accent, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(shelfH))
+        CoverShelf(c, shelfH, accent, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(shelfH * 1.16f))
     }
 }
 
@@ -226,10 +250,10 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
     val posFn: () -> Float = remember(pos) { { pos.value } }
     BoxWithConstraints(modifier.clipToBounds()) {
         val wPx = with(density) { maxWidth.toPx() }
-        val spineHmax = with(density) { (shelfH * 0.82f).toPx() }
+        val spineHmax = with(density) { (shelfH * 0.80f).toPx() }
         val gap = with(density) { SHELF_GAP_DP.dp.toPx() }
         val minW = with(density) { 12.dp.toPx() }
-        val maxW = with(density) { 48.dp.toPx() }
+        val maxW = with(density) { 56.dp.toPx() }
         // A spine's size from its console: the real width / height of the case it came in.
         fun sizeOf(real: Int): ShelfSpine {
             val gm = c.games.getOrNull(real) ?: return ShelfSpine(minW, spineHmax)
@@ -304,6 +328,10 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
                                 // The ends of the shelf fade out instead of stopping hard.
                                 val fromMid = abs(translationX + sp.w / 2f - c0)
                                 alpha = ((wPx / 2f - fromMid) / (wPx * 0.08f)).coerceIn(0f, 1f)
+                            }
+                            .drawBehind {
+                                val cam = (posFn() - lo) * (rel[(side + 2).coerceAtMost(rel.lastIndex)] - rel[side + 1])
+                                drawCaseTop(com.shelf.launcher.data.Features.spineDepth.state.value, c0 - (c0 + rel[j.coerceIn(0, rel.lastIndex)] - cam - sp.w / 2f))
                             }
                             .pointerInput(real) { detectTapGestures { if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave(); if (real == latestFocus) open() else select(real) } }
                     ) {

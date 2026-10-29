@@ -255,7 +255,7 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
     Box(modifier) {
         // The art, edge to edge, fading into the room at its left and bottom.
         Box(Modifier.fillMaxWidth().height(heroH + 40.dp).clipToBounds()) {
-            HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 380, zoom = true)
+            HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 380, zoom = true, shared = true)
             if (clip != null) {
                 VideoCrossfade(
                     clip, c.state.appearance.videoSound, Modifier.fillMaxSize(),

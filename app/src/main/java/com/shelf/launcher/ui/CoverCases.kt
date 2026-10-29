@@ -653,7 +653,7 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
                 .clipToBounds().then(
                     when {
                         art != null && artShown && !icon && !moved -> Modifier
-                        art != null && owner == null -> Modifier.background(frameColor)
+                        art != null && owner == null -> Modifier.background(androidx.compose.ui.graphics.lerp(frameColor, Color(0xFF15181D), 0.6f)) // (Update 398: a muted plate until the cover is in, never a bright flash)
                         else -> Modifier.background(placeholder)
                     }
                 )

@@ -75,13 +75,13 @@ internal object CategorySlide {
 
 /** For a hand-written transitionSpec (`spec@{ categoryQuiet()?.let { return@spec it }; ... }`): None while a category change swaps the games. */
 internal fun <S> androidx.compose.animation.AnimatedContentTransitionScope<S>.categoryQuiet(): androidx.compose.animation.ContentTransform? =
-    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None else null
+    if (CategorySlide.justChanged()) quietSwap() else null
 
 /** A game-info transition that is None while a category change is swapping the games in, [spec] otherwise (update 394). */
 internal fun <S> androidx.compose.animation.AnimatedContentTransitionScope<S>.unlessCategoryChange(
     spec: androidx.compose.animation.AnimatedContentTransitionScope<S>.() -> androidx.compose.animation.ContentTransform
 ): androidx.compose.animation.ContentTransform =
-    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None else spec()
+    if (CategorySlide.justChanged()) quietSwap() else spec()
 
 /**
  * The games slide in from the side the category change came from (Appearance › Game row › Slide between
@@ -266,3 +266,11 @@ internal fun SoftBandBlur(band: androidx.compose.ui.geometry.Rect, radius: andro
 internal fun androidx.compose.ui.graphics.GraphicsLayerScope.flatTextFor3d() {
     if (rotationX != 0f || rotationY != 0f) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
 }
+
+/**
+ * Update 398: the transition of a swap that must be instant (a category change). A plain None / None keeps the OLD content on
+ * screen, fully opaque, for the first frame next to the new one (the Pocket Quest info showed two titles overlapped for a frame);
+ * a snap fade drops the old content and shows the new one in that same frame.
+ */
+internal fun quietSwap(): androidx.compose.animation.ContentTransform =
+    androidx.compose.animation.fadeIn(androidx.compose.animation.core.snap()) togetherWith androidx.compose.animation.fadeOut(androidx.compose.animation.core.snap())

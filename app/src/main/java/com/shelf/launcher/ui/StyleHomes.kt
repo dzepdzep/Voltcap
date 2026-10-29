@@ -1290,7 +1290,7 @@ internal fun StyleHome(
                 // Update 158: Card binder's cards show the cover whatever the game look is: that too.
                 if (layout == HomeLayout.CARDS) cover?.let { near1 += it; nearCovers += it }
                 c.wide(g)?.let { near1 += it }
-                if (i in (focus - 1)..(focus + 1)) c.backdrop(g)?.let { backdrops += it }
+                if (i in (focus - 3)..(focus + 3)) c.backdrop(g)?.let { backdrops += it }
             }
         }
         val handles = ArrayList<coil.request.Disposable>()

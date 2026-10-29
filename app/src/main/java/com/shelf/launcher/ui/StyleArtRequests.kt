@@ -29,7 +29,7 @@ internal fun styleArtPx(context: Context): Int {
  * off once at decode (TrimMargins.kt), under its own memory key. Off for anything else drawn this way (labels, discs,
  * wide art, screenshots) — a card and its warm-up must pass the same value to share the decode.
  */
-internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context), trim: Boolean = false, still: Boolean = false): ImageRequest =
+internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx(context), trim: Boolean = false, still: Boolean = false, fadeMs: Int = 100): ImageRequest =
     ImageRequest.Builder(context)
         .data(url)
         .size(px, px)
@@ -45,7 +45,7 @@ internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx
         // The small thumbnail (ArtRequests.kt) stands in while the sharp picture is read.
         .placeholderMemoryCacheKey(thumbKey(url))
         .memoryCachePolicy(CachePolicy.ENABLED)
-        .crossfade(100)
+        .crossfade(fadeMs)
         .build()
 
 /** [styleArtRequest] for a card, remembered per picture ([trim]: it's the game's cover, Update 202). */
@@ -53,7 +53,7 @@ internal fun styleArtRequest(context: Context, url: String, px: Int = styleArtPx
 internal fun rememberStyleArtRequest(url: String, trim: Boolean = false, still: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val px = styleArtPx(context)
-    return remember(url, px, context, trim, still) { styleArtRequest(context, url, px, trim, still) }
+    return remember(url, px, context, trim, still) { styleArtRequest(context, url, px, trim, still, fadeMs = if (CategorySlide.justChanged()) 0 else 100) }
 }
 
 /**

@@ -180,7 +180,7 @@ internal fun StyleArctic(c: StyleCtx, modifier: Modifier = Modifier) {
         val art = Features.arArt.state.value
         if (g != null && art != Features.ArArt.PLAIN) {
             Box(Modifier.fillMaxSize().clipToBounds()) {
-                HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 450,
+                HeldImage(c.backdrop(g), Modifier.fillMaxSize(), fadeMs = 450, shared = true,
                     imageModifier = if (art == Features.ArArt.BLURRED && !LocalLiteEffects.current) Modifier.blur(18.dp) else Modifier)
             }
         }

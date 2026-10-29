@@ -174,9 +174,9 @@ internal fun ArtLibraryBackdrop(modifier: Modifier, art: String? = null) {
     val back = themeDark(Color(0xFF070A10), 0.6f)
     Box(modifier.background(Brush.linearGradient(listOf(themeDark(Color(0xFF141B27), 0.6f), themeDark(Color(0xFF080B11), 0.6f)))).clipToBounds()) {
         val portrait = (CoverAspects.rawOf(art) ?: 2f) < 1f
-        if (portrait && !LocalLiteEffects.current) HeldImage(art, Modifier.fillMaxSize(), fadeMs = 450, imageModifier = Modifier.blur(28.dp))
+        if (portrait && !LocalLiteEffects.current) HeldImage(art, Modifier.fillMaxSize(), fadeMs = 450, imageModifier = Modifier.blur(28.dp), shared = true)
         HeldImage(
-            art, Modifier.fillMaxSize(), fadeMs = 450,
+            art, Modifier.fillMaxSize(), fadeMs = 450, shared = true,
             contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop,
             alignment = if (portrait) Alignment.CenterEnd else Alignment.Center
         )
@@ -201,13 +201,15 @@ internal fun StyleArtLibrary(c: StyleCtx, modifier: Modifier = Modifier) {
     val ctxA = LocalContext.current
     LaunchedEffect(c.focus, c.games.size) {
         kotlinx.coroutines.delay(120)
-        val loader = coil.Coil.imageLoader(ctxA)
-        for (d in listOf(1, -1, 2, -2, 3)) {
-            val n = c.games.size
-            if (n == 0) break
-            val at = if (loopRowOn(c)) (c.focus + d).mod(n) else c.focus + d
-            val url = c.games.getOrNull(at)?.let { c.backdrop(it) } ?: continue
-            loader.enqueue(coil.request.ImageRequest.Builder(ctxA).data(url).build())
+        // (Update 398: the request the backdrop itself makes — [warmHeld] — the unsized one filled a different cache entry.)
+        val n = c.games.size
+        val urls = listOf(1, -1, 2, -2, 3, -3).mapNotNull { d ->
+            if (n == 0) null else c.games.getOrNull(if (loopRowOn(c)) (c.focus + d).mod(n) else c.focus + d)?.let { c.backdrop(it) }
+        }
+        val handles = warmHeld(ctxA, urls)
+        try { kotlinx.coroutines.awaitCancellation() } finally {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { kotlinx.coroutines.delay(1500) }
+            handles.forEach { it.dispose() }
         }
     }
     BoxWithConstraints(modifier.fillMaxSize()) {

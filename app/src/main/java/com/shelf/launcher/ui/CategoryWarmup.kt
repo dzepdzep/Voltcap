@@ -64,6 +64,9 @@ internal fun CategoryWarmup(state: LauncherUiState) {
         prefetchThumbs(context, sides.flatten())
         val loader = coil.Coil.imageLoader(context)
         val cache = loader.memoryCache
+        // Update 398: the first games' picture also in the shared style shape, which the discs' labels, cartridges and style
+        // cards read (Disc station showed a blank label for ~3 frames after a category change).
+        warmStyleArt(context, sides.flatMap { it.take(3) }.distinct())
         sides.flatMap { it.take(sharp) }.distinct().forEach { url ->
             val req = artRequest(context, url, ArtKind.COVER, coverPx)
             if (req.memoryCacheKey?.let { cache?.get(it) } == null) loader.enqueue(req)

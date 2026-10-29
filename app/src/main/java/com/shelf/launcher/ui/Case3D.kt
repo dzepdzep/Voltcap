@@ -1042,8 +1042,8 @@ private fun hueFront(hue: Int): android.graphics.Bitmap {
     val c = android.graphics.Canvas(b)
     val h = ((hue % 360) + 360f) % 360f
     val p = android.graphics.Paint().apply {
-        shader = android.graphics.LinearGradient(0f, 0f, 0f, 50f, android.graphics.Color.HSVToColor(floatArrayOf(h, 0.42f, 0.5f)),
-            android.graphics.Color.HSVToColor(floatArrayOf(h, 0.5f, 0.3f)), android.graphics.Shader.TileMode.CLAMP)
+        shader = android.graphics.LinearGradient(0f, 0f, 0f, 50f, android.graphics.Color.HSVToColor(floatArrayOf(h, 0.26f, 0.34f)),
+            android.graphics.Color.HSVToColor(floatArrayOf(h, 0.3f, 0.22f)), android.graphics.Shader.TileMode.CLAMP)
     }
     c.drawRect(0f, 0f, 36f, 50f, p)
     return b

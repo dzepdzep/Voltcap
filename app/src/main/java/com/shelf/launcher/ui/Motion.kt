@@ -108,7 +108,7 @@ internal fun MediaFocus(on: Boolean, content: @Composable () -> Unit) =
 /** A page of games turning: the new page slides in from the side it lies on (right for the next one), the old one out. */
 internal fun AnimatedContentTransitionScope<Int>.pageSlide(): ContentTransform {
     // Off (Home › Animations): the page just changes; Fade: it fades over (update 112, per layout too).
-    if (CategorySlide.justChanged()) return androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+    if (CategorySlide.justChanged()) return quietSwap()
     when (MotionPrefs.page()) {
         com.shelf.launcher.data.Features.PageAnim.NONE -> return androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
         com.shelf.launcher.data.Features.PageAnim.FADE -> return fadeIn(tween(260)) togetherWith fadeOut(tween(200))
@@ -119,7 +119,7 @@ internal fun AnimatedContentTransitionScope<Int>.pageSlide(): ContentTransform {
         (slideOutHorizontally(tween(360, easing = FastOutSlowInEasing)) { -it * dir } + fadeOut(tween(240)))
 }
 
-private class Held<T : Any>(val item: T, shown: Boolean = false) {
+private class Held<T : Any>(val item: T, shown: Boolean = false, val quick: Boolean = false) {
     val alpha = Animatable(if (shown) 1f else 0f)
     var ready by mutableStateOf(false)
     var failed by mutableStateOf(false)
@@ -136,17 +136,22 @@ internal fun <T : Any> HeldLayers(
     target: T?,
     fadeMs: Int,
     modifier: Modifier = Modifier,
+    /** Update 398: true when [item] is already in memory — it replaces the picture before it at once, never a fade. */
+    instant: (T) -> Boolean = { false },
     content: @Composable BoxScope.(item: T, ready: () -> Unit, failed: () -> Unit) -> Unit
 ) {
     // The first picture is there from the first frame (no fade in from black coming back to the home screen); only a
     // change of picture fades.
     val layers = remember { mutableStateListOf<Held<T>>().apply { if (target != null) add(Held(target, shown = true)) } }
+    // Update 398: a picture already in memory goes on top in THIS composition (the old one stays under it until it has drawn), so
+    // the background changes in the very frame the game's title and case do, not a few frames after them.
+    if (target != null && layers.isNotEmpty() && layers.lastOrNull()?.item != target && instant(target)) layers.add(Held(target, shown = true, quick = true))
     LaunchedEffect(target) {
         if (target == null) { layers.clear(); return@LaunchedEffect }
         if (layers.lastOrNull()?.item == target) return@LaunchedEffect
         // Moving fast: the pictures still loading in between are dropped (the one on screen and the newest stay).
         if (layers.size >= 3) { val onScreen = layers.first(); layers.removeAll { it !== onScreen && !it.ready } }
-        layers.add(Held(target, shown = layers.isEmpty()))
+        layers.add(Held(target, shown = layers.isEmpty(), quick = instant(target)))
     }
     Box(modifier) {
         for (l in layers) key(l) {
@@ -156,7 +161,7 @@ internal fun <T : Any> HeldLayers(
             LaunchedEffect(l.ready) {
                 if (!l.ready) return@LaunchedEffect
                 // Off (Home › Animations): the next picture replaces the last one at once (still never a black gap).
-                if (com.shelf.launcher.data.Features.animHeldPictures.value && !CategorySlide.justChanged()) l.alpha.animateTo(1f, androidx.compose.animation.core.tween(fadeMs))
+                if (com.shelf.launcher.data.Features.animHeldPictures.value && !l.quick && !CategorySlide.justChanged()) l.alpha.animateTo(1f, androidx.compose.animation.core.tween(fadeMs))
                 else l.alpha.snapTo(1f)
                 // Everything under it is covered now.
                 val i = layers.indexOf(l)
@@ -197,6 +202,35 @@ internal fun Modifier.slowZoom(key: Any?): Modifier {
     return if (!on) this else this.graphicsLayer { scaleX = z.value; scaleY = z.value }
 }
 
+/** Update 398: the decode size (px) of a shared backdrop: the screen, capped (smaller on low-memory devices). */
+private fun heldPx(context: android.content.Context): android.util.Size {
+    val m = context.resources.displayMetrics
+    val maxW = if (com.shelf.launcher.device.MemoryBudget.small(context)) 1280 else 1920
+    val w = maxOf(m.widthPixels, m.heightPixels).coerceIn(640, maxW)
+    return android.util.Size(w, (w * 9 / 16).coerceAtLeast(360))
+}
+
+/** The one request a shared backdrop ([HeldImage] with `shared`) and its warm-up make; no crossfade (HeldLayers does the changing). */
+internal fun heldRequest(context: android.content.Context, url: String): coil.request.ImageRequest {
+    val px = heldPx(context)
+    return coil.request.ImageRequest.Builder(context)
+        .data(url).size(px.width, px.height)
+        .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
+        .memoryCacheKey("held|$url|${px.width}")
+        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+        .crossfade(false)
+        .build()
+}
+
+internal fun heldCached(context: android.content.Context, url: String): Boolean =
+    coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key("held|$url|${heldPx(context).width}")) != null
+
+/** Update 398: decodes [urls] as shared backdrops ahead (skips the ones in memory). Returns the handles to dispose. */
+internal fun warmHeld(context: android.content.Context, urls: List<String>): List<coil.request.Disposable> {
+    val loader = coil.Coil.imageLoader(context)
+    return urls.distinct().filter { !heldCached(context, it) }.map { loader.enqueue(heldRequest(context, it)) }
+}
+
 @Composable
 internal fun HeldImage(
     model: Any?,
@@ -206,11 +240,14 @@ internal fun HeldImage(
     alignment: Alignment = Alignment.Center,
     imageModifier: Modifier = Modifier,
     /** Update 363: the slow zoom ([slowZoom]) belongs to each picture, not to the whole stack — see below. */
-    zoom: Boolean = false
+    zoom: Boolean = false,
+    /** Update 398: a full-screen backdrop: one decode size / memory key ([heldRequest]) that [warmHeld] fills ahead, so a warmed picture is there the frame its game is picked. */
+    shared: Boolean = false
 ) {
-    HeldLayers(model, fadeMs, modifier) { m, ready, failed ->
+    val context = androidx.compose.ui.platform.LocalContext.current
+    HeldLayers(model, fadeMs, modifier, instant = { m -> shared && m is String && heldCached(context, m) }) { m, ready, failed ->
         AsyncImage(
-            m, null, contentScale = contentScale, alignment = alignment,
+            if (shared && m is String) remember(m) { heldRequest(context, m) } else m, null, contentScale = contentScale, alignment = alignment,
             onSuccess = { ready() }, onError = { failed() },
             // (Update 363: with the zoom on the stack, one game change snapped the zoom back to 1 under the picture still on
             // screen while the next loaded — the old art jumped smaller, then the new one faded in. Each picture drifts on its own now.)
@@ -224,7 +261,7 @@ internal fun HeldImage(
  * the one before fades away quicker — instead of just appearing.
  */
 internal fun <S> AnimatedContentTransitionScope<S>.gameSwap(): ContentTransform =
-    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+    if (CategorySlide.justChanged()) quietSwap()
     else when (MotionPrefs.info()) {
         com.shelf.launcher.data.Features.InfoAnim.NONE -> androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
         com.shelf.launcher.data.Features.InfoAnim.FADE -> fadeIn(tween(260)) togetherWith fadeOut(tween(160)) using SizeTransform(clip = false)

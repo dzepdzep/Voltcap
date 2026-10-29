@@ -94,7 +94,7 @@ private fun artPlaceholder(context: Context, url: String, kind: ArtKind, px: Int
 internal fun rememberCardArtRequest(url: String, kind: ArtKind, still: Boolean = false): ImageRequest {
     val context = LocalContext.current
     val px = cardArtPx(kind)
-    return remember(url, kind, px, context, still) { artRequest(context, url, kind, px, still = still) }
+    return remember(url, kind, px, context, still) { artRequest(context, url, kind, px, fadeMillis = if (CategorySlide.justChanged()) 0 else ArtFadeMillis, still = still) }
 }
 
 /** Memory-cache key of [url]'s small thumbnail (see [thumbRequest]). */
