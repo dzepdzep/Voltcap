@@ -6,7 +6,7 @@
 
 **UNFINISHED PRIORITIES (in order; set 28 Oct 2026; rules in CLAUDE.md; next task in CURRENT_TASK.md):**
 1. ~~**Endless navigation**~~ DONE in update 381 (SUMMARY.md): Dashboard's ◀ on the first game went into the menu instead of round to the last card the row draws left of it; fixed, Thor-verified. Not re-verified: other looping layouts on hardware, 9-12 game categories.
-2b. **OPEN, UNRESOLVED (owner report, D84): the screensaver / idle timer on the profile selector ("Who's playing?") misbehaves.** No details beyond that, not investigated. Next: reproduce on the Thor by leaving the picker idle (it shows after an app restart; never clear data), read `HomeIdle` (`ui/PowerSaver.kt`) / `ProfilePicker`, log the timer. Do not forget it.
+2b. **FIXED (update 387, D84):** the screensaver timer ignored the profile selector (`whoAsk` was not in the idle guard); `ScreensaverGate` + full restart on open / pick / skip, Thor-verified (start-up and manual selector). PIN pad not tested on hardware. See SUMMARY.md top.
 2. **Second-screen in-game widget reliability** (UPDATE 386: third-party widgets at home / in-game / after returning home VERIFIED on the Thor, Hub controller A / B and Widget Board reach FIXED; still open: Side menu FollowFocus on hardware with Endless on / off, code test only). Older text: (SUMMARY 379 covered Now Playing + third-party widget host in code only; hardware NOT verified; sections 2, 4-9 and part of 1 of the master polish still open).
 3. **Quick page switcher and controller navigation.**
 4. **Showcase, companion, widgets, Games page and dock polish.**

@@ -2,6 +2,15 @@
 
 **Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
 
+## Update — 29 Oct 2026 (387): D84 fixed, the screensaver timer no longer runs over the profile selector
+
+**Copy (already copied to `app/`, identical):** `src_copy/ui/ScreensaverGate.kt` (new), `src_copy/ui/LauncherScreen.kt`. Test (new): `ScreensaverGate387Test` (5).
+- **Cause:** the idle effect in `LauncherScreen.AmbientEffects` (keys `lastInputAt`, `aDialogIsOpen`, ...) only stopped for `aDialogIsOpen`, the search bar, Edit Home and the saver itself. `whoAsk` (the "Who's playing?" selector, its PIN pad and edit pages, all inside `ProfileSelectScreen`) is not part of `aDialogIsOpen`, and input on the selector never reaches the root's `lastInputAt`. So the delay ran from the last home press and the screensaver could start over the selector (and, at start-up, in the gap while the selector waits for the intro, `StartupGate.awaitIntro`). After a pick / skip the old delay could also be almost used up.
+- **Fix:** `ScreensaverGate.mayRun(...)` is the one guard (the old conditions + `whoAsk` + new `whoPending` for the intro wait); the effect is keyed on `whoAsk` / `whoPending`, so the delay restarts in full when the selector closes. `lastInputAt` is also reset when the selector opens (start-up, R1 / Settings / tile / hotkey / intent), on pick and on skip.
+- **Thor (3140972f, ~9 min, 0.6.55 debug installed over the existing app):** `screensaver.xml` temporarily set to idle 1 min and restored to its original empty map afterwards; profile never changed (picked the already active one). Start-up selector left idle ~3 min: stays, no screensaver. B (keep) -> home, no screensaver at 46 s, screensaver at ~60 s (72 s shot). Manually opened selector (`--ez voltcap_who_is_playing true`) idle 75 s: stays. A (pick the active profile) -> home, screensaver at ~79 s, never before the full minute. Thor left clean (original prefs, no recorder).
+- **Not tested on hardware:** the PIN pad (would need a PIN set on a profile; same `whoAsk` flag, covered by the unit test of the guard), profile Edit pages, rotation / process death with the selector open. Related guards checked in code: first-run setup (`showFirstRun`) is already in `aDialogIsOpen`; HomeIdle (power saver dimming) is driven by every activity input, so it was not affected. Update prompts / pack questions were not reviewed.
+- Queued as before: Side menu FollowFocus on hardware, D83 more "…".
+
 ## Update — 29 Oct 2026 (386): third-party widgets in the Hub verified, Hub controller fixes (A / B dead, widgets unreachable), D80 fixed
 
 **Copy (already copied to `app/`, identical):** `src_copy/ui/WidgetBoard.kt`, `SecondPad.kt`, `CategoryScreen.kt`, `LauncherScreen.kt`. Tests (new, `app/src/test/.../ui/`): `BoardPadStep386Test` (5), `SecondPadAB386Test` (2), `CategoryTilesStale386Test` (4), `SideRowFollow386Test` (5).

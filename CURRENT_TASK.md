@@ -6,7 +6,8 @@
 **DONE (update 385): D79** Now Playing title / artist wrap-shrink-slide, no "…", Thor-verified.
 **DONE (update 386):** third-party widgets in the Hub verified on the Thor (home, in-game, after returning home); Hub controller routing found (keys on display 0) and two controller defects fixed (D82 A / B dead, D81 Widget Board unreachable); D80 reproduced and fixed (Wall "0 Games").
 **Update 384 (29 Oct):** second-screen in-game fixes (379) verified on the Thor for Now Playing / Music and committed.
-**NEXT PRIORITY: (1) D84, the profile-selector screensaver timer bug (unresolved, owner report, `COWORK_HANDOFF.md` 2b); (2) Side menu FollowFocus on hardware, Endless on / off; (3) D83 more "…"; then priority 3 (quick page switcher and controller navigation).**
+**DONE (update 387): D84** profile-selector screensaver timer fixed, Thor-verified.
+**NEXT PRIORITY: (1) Side menu FollowFocus on hardware, Endless on / off; (2) D83 more "…"; then priority 3 (quick page switcher and controller navigation).**
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 
 # (history) status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)

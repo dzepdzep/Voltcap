@@ -1055,9 +1055,9 @@
    "title": "Profile selector ('Who's playing?'): screensaver timer misbehaves (owner report)",
    "rule": "suspect",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "owner report, 2026-10-29, recorded in update 386",
-   "note": "UNRESOLVED and NOT investigated yet (no details beyond the report: the idle / screensaver timer on the profile selector screen). Next: reproduce on the Thor (3140972f) by leaving the profile picker idle, read HomeIdle / ProfilePicker, log the timer; do not clear data (the picker shows after a restart)."
+   "note": "FIXED update 387. LauncherScreen idle effect ignored whoAsk (selector, PIN pad, edit pages) and the start-up wait for the intro; now ScreensaverGate.mayRun + effect keyed on whoAsk / whoPending, lastInputAt reset on open / pick / skip. ScreensaverGate387Test. Thor: start-up and manual selector idle past the 1 min test timeout stay up; after B / A the full minute restarts. PIN pad not tested on hardware."
   }
  ]
 }

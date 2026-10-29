@@ -804,6 +804,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // update 1xx's two-account "Who is playing?" (still asked with Categories when that switch is on and two profiles exist).
     var whoAsk by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var whoAtStart by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    // Update 387 (D84): the start-up selector is decided but waiting for the intro: the idle timer must not run in that gap either.
+    var whoPending by remember { mutableStateOf(false) }
     val profileCtx = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(Unit) {
         com.shelf.launcher.data.Profiles.ensure(profileCtx)
@@ -813,12 +815,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // (Update 336: not over the first-start setup — its Who's playing step sets the players up.)
         if (!WhoPlaying.asked && asks && !showFirstRun && viewModel.takeStartupSlot()) {
             WhoPlaying.asked = true
-            StartupGate.awaitIntro()
+            whoPending = true
+            try { StartupGate.awaitIntro() } finally { whoPending = false }
             whoAtStart = true
             whoAsk = true
+            lastInputAt = System.currentTimeMillis()
         }
     }
-    LaunchedEffect(ProfilePicker.request) { if (ProfilePicker.request) { ProfilePicker.request = false; whoAtStart = false; whoAsk = true } }
+    LaunchedEffect(ProfilePicker.request) { if (ProfilePicker.request) { ProfilePicker.request = false; whoAtStart = false; whoAsk = true; lastInputAt = System.currentTimeMillis() } }
     if (whoAsk) {
         ProfileSelectScreen(
             profiles = com.shelf.launcher.data.Profiles.list.value,
@@ -828,6 +832,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             atStart = whoAtStart,
             onPick = { id ->
                 whoAsk = false
+                lastInputAt = System.currentTimeMillis() // (D84: the full idle time starts again after a pick)
                 viewModel.switchProfile(id)
                 if (whoAtStart) {
                     when (com.shelf.launcher.data.Features.startupMode.value) {
@@ -839,6 +844,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             },
             onSkip = {
                 whoAsk = false
+                lastInputAt = System.currentTimeMillis()
                 if (whoAtStart && com.shelf.launcher.data.Features.startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) {
                     categoryScreenOpen = false; Rollout.start()
                 }
@@ -1550,10 +1556,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     BatterySaverDriver() // (Update 187)
     // Only while on screen: no screensaver during a game or with the display off.
     val screensaverActive = rememberIsActive()
-    LaunchedEffect(lastInputAt, aDialogIsOpen, showSearchBar, state.screensaver, screensaverOn, screensaverActive, HomeEditState.active) {
+    // (Update 387, D84: never over the profile selector, its PIN pad or the hand-over after it; the delay restarts when it closes.)
+    LaunchedEffect(lastInputAt, aDialogIsOpen, showSearchBar, state.screensaver, screensaverOn, screensaverActive, HomeEditState.active, whoAsk, whoPending) {
         val settings = state.screensaver
         // (Update 125: never while Edit Home is open.)
-        if (!screensaverActive || !settings.enabled || aDialogIsOpen || showSearchBar || screensaverOn || HomeEditState.active) return@LaunchedEffect
+        if (!ScreensaverGate.mayRun(screensaverActive, settings.enabled, aDialogIsOpen, showSearchBar, screensaverOn, HomeEditState.active, whoAsk, whoPending)) return@LaunchedEffect
         kotlinx.coroutines.delay(settings.idleMinutes * 60_000L)
         screensaverOn = true
     }
