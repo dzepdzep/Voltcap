@@ -94,6 +94,9 @@ case $cmd in
   onepress)
     # R23: ONE press per MARK, rested (gap ms, default 1200) so focuscheck.py can tell an ignored first press from a slow one.
     gap=${2:-1200}
+    # D101 (update 407): zero focus lines was NOT a layout gap. It was the paused hook file or the "Who's playing?" picker in front.
+    # `ready` checks both (hooks on + B past the picker) and fails loudly (INFRA) instead of letting focuscheck.py judge an empty log.
+    [ "$NOREADY" = 1 ] || sh $0 ready > /dev/null || { echo "INFRA: onepress not run (hooks off or home screen not in front; run: sh vqa.sh hooks on)"; exit 2; }
     for k in $1; do log_mark "seq $k"; press $k; sleep_ms $gap; done;;
   perf_reset) dumpsys gfxinfo $PKG reset > /dev/null; log_mark perf_reset;;
   perf_dump)
@@ -149,7 +152,7 @@ EOF
     # A cold start can open "Who's playing?" first — B keeps the current profile. Fails loudly instead of measuring the
     # wrong screen (pass 2: a whole suite ran on the profile picker).
     for i in 1 2 3 4; do
-      logcat -c; sh $0 seq "R L" 250 > /dev/null
+      logcat -c; sh $0 seq "${READYKEYS:-R L}" 250 > /dev/null
       if logcat -d -s VoltcapQA | grep -q " focus "; then echo ready; exit 0; fi
       press B; sleep 2
     done

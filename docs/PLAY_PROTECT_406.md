@@ -30,3 +30,22 @@ Thor (Android 13): a shell install of the new standard APK succeeded and the app
 ## Appeal (only if the standard APK is still blocked)
 Play Protect appeal form (Google Play Console help, "Play Protect appeals"): package `com.shelf.launcher`, SHA-256 of the exact APK,
 GitHub release URL, merged manifest (no SMS / accessibility / listener), `PRIVACY.md`, source link, device and dialog screenshot.
+
+## Update 407: notification features, feature comparison and decision
+
+| Feature | Standard APK (0.6.59) | Optional notify APK | Why |
+|---|---|---|---|
+| VoltCap's own notifications (save sync, achievements, recap) | kept | kept | `POST_NOTIFICATIONS`, normal API |
+| VoltCap's own music player, background music, UI sounds | kept | kept | own audio |
+| Spotify now-playing / control | kept where logged in via `spotify/` (Web API) | kept | no listener needed |
+| Background music waits while another app plays | kept | kept | `BackgroundMusic.otherMusicActive()` (AudioManager) + quiet window; the listener check only adds precision |
+| Notifications list from OTHER apps (R1) | LOST | kept | only `NotificationListenerService` can read them |
+| Now-playing title / art / progress / controls of OTHER players | LOST | kept | `MediaSessionManager.getActiveSessions` requires an enabled listener (or a signature permission) |
+| Lyrics / second-screen / over-game mini player for other apps' songs | LOST (own / Spotify-API songs stay) | kept | same reason |
+| Lid pause for music apps | partial (no per-app session) | kept | `LidPause` uses the sessions |
+
+Normal-API alternatives checked: `AudioManager.isMusicActive()` / playback callbacks only say that audio plays (no title, art or controls), legacy `metachanged` broadcasts are not sent by modern players, `MEDIA_CONTENT_CONTROL` is signature-only. So there is no supported way to restore the lost rows without the listener.
+
+Companion app: NOT built. A separate listener APK is the same capability class (Play Protect's fraud protection treats it the same way, so the companion itself is likely blocked where the setting is on), needs its own install, a signature-protected IPC to hand other apps' notification text to Voltcap (a larger privacy surface), and gives nothing the existing optional `notify` build type does not (same package and key, installs over the standard one). Decision: keep the `notify` build as the opt-in route, standard APK unchanged. Play Protect acceptance of the notify APK is NOT verified.
+
+UI (update 407): every screen that said "Needs notification access" (Music player toggle, Music over games, Lyrics status line) now says, in the standard build, that other apps' music needs the optional notifications build (`ShelfNotificationListener.requirementNote`); the notifications panel already explained it. Test: `PlayProtect406Test` (bare sentence banned, `anyBusy` stays behind the access check).

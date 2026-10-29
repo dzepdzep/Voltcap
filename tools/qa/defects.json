@@ -1251,12 +1251,33 @@
   },
   {
    "id": "D101",
-   "title": "Box layout emits no QaTrace focus events, so R23 ONE-PRESS (focuscheck.py) cannot run on it",
+   "title": "R23 ONE-PRESS looked blocked on Box: zero focus lines (INFRA, not a layout gap)",
+   "rule": "ONEPRESS",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-10-29 QA batch 0 (Thor)",
+   "note": "Update 407: Box emits focus events like every layout (LauncherScreen QaTrace.focus). The empty log came from the paused hook file and the 'Who's playing?' picker in front. Fix: vqa.sh onepress now runs `ready` first and exits 2 (INFRA) instead of handing focuscheck an empty log; READYKEYS for vertical layouts; tools/qa/device/onepress_all.sh. Box + Cover details one-press PASS on the Thor.",
+   "fix": "vqa.sh onepress guard, onepress_all.sh",
+   "check": "Thor: 54 layouts swept, Box 6 presses, focuscheck exit 0."
+  },
+  {
+   "id": "D102",
+   "title": "CROSS layout: L/R behaviour asymmetric / unclear (R first press ignored at game 0, L wraps, R at last does nothing)",
    "rule": "ONEPRESS",
    "severity": "low",
    "status": "open",
-   "found": "2026-10-29 QA batch 0 (Thor)",
-   "note": "INFRA gap, not a user-visible bug. Check Cover details and the other newer layouts too."
+   "found": "2026-10-29 update 407 sweep (Thor)",
+   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED."
+  },
+  {
+   "id": "D103",
+   "title": "UI said 'Needs notification access' where the standard build cannot grant it (Music player, Music over games, Lyrics status)",
+   "rule": "UX",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-10-29 update 407",
+   "fix": "ShelfNotificationListener.requirementNote + LyricsStage branch",
+   "check": "PlayProtect406Test (compiled + unit tests green); not seen on the Thor screen."
   }
  ]
 }

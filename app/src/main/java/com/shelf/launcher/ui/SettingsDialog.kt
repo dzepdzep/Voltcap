@@ -5676,7 +5676,7 @@ private fun MusicPlayerAppearance(appearance: AppearanceSettings, onChange: (App
                     icon = Icons.Filled.MusicNote,
                     title = "Music player",
                     subtitle = "A small player in the top-left corner while Spotify or another music app plays. " +
-                        "Needs notification access.",
+                        com.shelf.launcher.data.ShelfNotificationListener.requirementNote(androidx.compose.ui.platform.LocalContext.current),
                     checked = appearance.miniPlayer,
                     onChange = { onChange(appearance.copy(miniPlayer = it)) },
                     modifier = m

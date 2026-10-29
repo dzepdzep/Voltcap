@@ -186,6 +186,15 @@ class ShelfNotificationListener : NotificationListenerService() {
             true
         }.getOrDefault(false)
 
+        /**
+         * Update 407: one sentence for every screen that used to say "Needs notification access". In the standard build
+         * the person cannot grant it (there is no listener to grant), so the text says what is missing and where it
+         * comes from instead of pointing at a Settings screen that does not list Voltcap.
+         */
+        fun requirementNote(context: Context): String =
+            if (isBuiltIn(context)) "Needs notification access."
+            else "Not in this standard build: other apps' music needs the optional notifications build (see the notifications panel)."
+
         fun hasAccess(context: Context): Boolean = runCatching {
             if (!isBuiltIn(context)) return@runCatching false
             val component = ComponentName(context, ShelfNotificationListener::class.java)

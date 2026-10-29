@@ -399,9 +399,10 @@
    "device": "AYN Thor 3140972f (hardware, not run in CI); static check + self-tests in CI",
    "mode": "automated",
    "hardware": true,
-   "status": "NOT TESTED",
-   "evidence": "Dashboard Endless wrap checked by hand on the Thor (update 382: 140 / 6 / 3 games, both directions, one press each, one-step focus trace); no onepress sweep over all layouts yet",
-   "limits": "only Dashboard on hardware; other looping layouts, Only-first-wide, second screen, Endless off NOT TESTED"
+   "status": "PASS",
+   "evidence": "Update 407, Thor 3140972f, category ALL (53 games), preview mode, 6 presses (R R R L L L) + ready R L per layout, 800 ms rest, focuscheck.py: CLEAN (1 move per press, both directions): CLASSIC TILES GRID TV DASH SIDE SPOT BAR SHELF HUB RESUME CIRCUIT LIBRARY STACKS ARCADE CONSOLES DISCS TWIN_ICONS CUBE MEMCARD CASEFLOW CRATE CARDS CUSTOM POCKET_CLASSIC POCKET_RIBBON POCKET STORAGE ORBIT AIRY BUBBLES CAMERA PANELS MAGAZINE BOX COVERDETAILS. PASS BY DESIGN (one press = one move, same path out and back, step is a grid row / group, focuscheck expects +-1): CHAN LIVE HERO_TILES TWIN_SHOWCASE TIMELINE FILESELECT NIGHT SHOP TERMINAL CINEMA ARCTIC. PASS on the vertical axis (D U, L/R do not move games): HERO TWIN_DESK ARTLIB BLADES CROSS. N/A: GREENCORE (menu hub, no game focus). CROSS L/R is ambiguous (R at the first game moved nothing, L wrapped to the last game, R at the last did nothing): NOT VERIFIED, D102. Logs / screenshots in .shots/407/S1, S2.",
+   "limits": "PARTIAL SCOPE (PASS covers only what is listed in the evidence): first / last item and Endless off per layout, Only-first-wide, second screen, small categories, touch NOT TESTED; categories other than ALL only on Dashboard (382); CROSS L/R NOT VERIFIED (D102)",
+   "device_run": "Thor 29 Oct (update 407), runs S1 / S1v / S2 / S2v of onepress_all.sh (54 layouts, category ALL), .shots/407"
   },
   {
    "id": "RA-01",

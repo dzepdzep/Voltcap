@@ -223,7 +223,9 @@ fun PerfSettingsCard() {
     ShelfCard {
         SwitchRow(
             Icons.Filled.MusicNote, "Music player over games",
-            "While music plays, a small player (album art, song, and the current lyric line) sits in a corner on top of the game. Needs notification access and \"Display over other apps\".",
+            "While music plays, a small player (album art, song, and the current lyric line) sits in a corner on top of the game. " +
+                if (com.shelf.launcher.data.ShelfNotificationListener.isBuiltIn(context)) "Needs notification access and \"Display over other apps\"."
+                else com.shelf.launcher.data.ShelfNotificationListener.requirementNote(context),
             cfg.musicDuringGames,
             onChange = { v -> PerfSettings.update(context) { it.copy(musicDuringGames = v) } }
         )

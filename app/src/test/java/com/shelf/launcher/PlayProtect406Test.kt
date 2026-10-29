@@ -24,4 +24,23 @@ class PlayProtect406Test {
         assertTrue(notify.contains("BIND_NOTIFICATION_LISTENER_SERVICE"))
         assertTrue(notify.contains("com.shelf.launcher.data.ShelfNotificationListener"))
     }
+    /** Update 407: in the standard build nobody can grant notification access, so no screen may just say "Needs notification access". */
+    @Test fun screensDoNotAskForAnAccessTheStandardBuildCannotGive() {
+        val ui = File("src/main/java/com/shelf/launcher/ui")
+        val bad = ui.walkTopDown().filter { it.extension == "kt" }.flatMap { f ->
+            f.readLines().withIndex().filter { (_, l) ->
+                l.contains("Needs notification access") && !l.trimStart().startsWith("//") && !l.trimStart().startsWith("*")
+            }.map { "${f.name}:${it.index + 1}" }
+        }.toList()
+        // PerfSettingsCard keeps the sentence only on the isBuiltIn branch (same line as the check); anything else must use requirementNote()
+        val allowed = bad.filter { it.startsWith("PerfSettingsCard") }
+        assertTrue("bare 'Needs notification access' in $bad", (bad - allowed.toSet()).isEmpty())
+    }
+
+    @Test fun mediaSessionReadsStayBehindTheListenerCheck() {
+        val src = File("src/main/java/com/shelf/launcher/data/ShelfNotificationListener.kt").readText()
+        assertTrue(src.contains("fun requirementNote"))
+        val body = src.substringAfter("fun anyBusy(context: Context): Boolean {").substringBefore("return runCatching")
+        assertTrue("anyBusy must return early without access", body.contains("if (!hasAccess(context)) return false"))
+    }
 }

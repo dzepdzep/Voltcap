@@ -1009,7 +1009,10 @@ internal fun LyricsStage(
             }
             if (statusMode != Features.StageStatus.NEVER) {
                 val problems = buildList {
-                    if (!notifAccess) add("Music needs Notification access (Settings › Permissions).")
+                    if (!notifAccess) add(
+                        if (ShelfNotificationListener.isBuiltIn(context)) "Music needs Notification access (Settings › Permissions)."
+                        else "Other apps' music isn't available in this standard build (optional notifications build)."
+                    )
                     if (react && !hasMic) add("Music reaction needs the Microphone permission: the beat is simulated for now.")
                     else if (react && noShare) add("This device doesn't share its sound: the beat is simulated.")
                     else if (react && deaf) add("No sound reaches Voltcap (the player may send it straight to the hardware): the beat is simulated.")
