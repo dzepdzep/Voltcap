@@ -41,6 +41,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -185,20 +195,9 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
             val boxW = (w * 0.48f).coerceAtMost(600.dp)
             // Update 392: the case sits at the top of the stage (its reflection runs on into the room under it) instead of floating in
             // the middle of a tall box with an empty band above it.
-            Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
+            Box(Modifier.width(boxW).fillMaxHeight().onGloballyPositioned { CoverFlight.stage = it.boundsInWindow() }, contentAlignment = Alignment.TopCenter) {
                 val depth = com.shelf.launcher.data.Features.spineDepth.state.value
-                // One box, keyed by its game: the facing / turned setting, the console's own case and its real scan.
-                key(g.stableKey) {
-                    Box(Modifier.fillMaxWidth().requiredHeight(stageH + shelfH * 0.12f)) { // (Update 393: the case's artwork never fades in — it is in place the frame its game is selected.)
-                        Case3D(
-                            g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN,
-                            case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
-                            frame = false, frameColor = accent,
-                            realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
-                            fill = bigCaseFill(depth)
-                        )
-                    }
-                }
+                CoverBigCases(c, g, depth, stageH, shelfH, accent)
             }
             Spacer(Modifier.width(if (compact) 18.dp else 32.dp))
             CoverDetailsInfo(c, g, compact, accent, Modifier.weight(1f).fillMaxHeight().riseOnChange(g.stableKey, floor = 0.4f, ms = 240))
@@ -271,7 +270,7 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
     val density = LocalDensity.current
     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
     val posFn: () -> Float = remember(pos) { { pos.value } }
-    BoxWithConstraints(modifier.clipToBounds()) {
+    BoxWithConstraints(modifier.clipToBounds().onGloballyPositioned { CoverFlight.shelf = it.boundsInWindow() }) {
         val wPx = with(density) { maxWidth.toPx() }
         val spineHmax = with(density) { (shelfH * 0.80f).toPx() }
         val gap = with(density) { SHELF_GAP_DP.dp.toPx() }
@@ -348,9 +347,11 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
                                 val s = 1f + 0.05f * sel
                                 scaleX = s; scaleY = s
                                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                                // (404: this slot's place in the window, for the case flying out of / back into it.)
+                                CoverFlight.shelf?.let { sh -> CoverFlight.spines[gm.stableKey] = Rect(sh.left + translationX, sh.bottom + translationY - sp.h, sh.left + translationX + sp.w, sh.bottom + translationY) }
                                 // The ends of the shelf fade out instead of stopping hard.
                                 val fromMid = abs(translationX + sp.w / 2f - c0)
-                                alpha = ((wPx / 2f - fromMid) / (wPx * 0.08f)).coerceIn(0f, 1f)
+                                alpha = ((wPx / 2f - fromMid) / (wPx * 0.08f)).coerceIn(0f, 1f) * (1f - CoverFlight.hide(gm.stableKey)) // (404: the slot is empty while its case is out on the way)
                             }
                             .drawBehind {
                                 val cam = (posFn() - lo) * (rel[(side + 2).coerceAtMost(rel.lastIndex)] - rel[side + 1])
@@ -379,4 +380,96 @@ internal fun CoverDetailsSettings() {
             "story beside it, and a shelf of upright spines along the bottom that glides as one row. ◀ ▶ move along the shelf, A or a tap opens the game, " +
             "swipe the shelf to move. The box faces you or stands turned like the others (Game look › The one you're on)."
     )
+}
+
+/**
+ * Update 404 (D95): the big case comes OUT of the shelf slot of the game you're on and the case that was out goes back into its
+ * own slot, both at the same time (before, the new case simply stood there: a spawn). One object per game, a slot's spine is
+ * hidden only while its case is away; the flight reads the slot's real window bounds each frame.
+ */
+internal object CoverFlight {
+    /** The spines' last bounds in the window (written by the shelf, read by the flying case). */
+    val spines = HashMap<String, Rect>()
+    /** The big case's stage (window bounds). */
+    var stage: Rect? = null
+    var shelf: Rect? = null
+    /** Game key -> its flight (0 = in its slot, 1 = out in the big place); present only while it moves. */
+    val flights = androidx.compose.runtime.mutableStateMapOf<String, androidx.compose.runtime.State<Float>>()
+    const val MS = 340
+    /** How hidden the slot's own spine is (0 = drawn, 1 = empty slot): only while its case is clearly away from it. */
+    fun hide(key: String): Float {
+        val p = flights[key]?.value ?: return 0f
+        return (p * 6f).coerceIn(0f, 1f) * ((1f - p) * 6f).coerceIn(0f, 1f)
+    }
+    /** Pure: the case's scale and centre (as a share 0..1 between slot and big place) for flight [p]. */
+    fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
+}
+
+private class CoverOut(val game: Game, from: Float) { val p = Animatable(from) }
+private class CoverHold { var cur: CoverOut? = null; val leaving = ArrayList<CoverOut>() }
+
+@Composable
+private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.Features.SpineDepth, stageH: Dp, shelfH: Dp, accent: Color) {
+    val animate = rememberAnimationsEnabled() && !LocalLiteEffects.current
+    val hold = remember { CoverHold() }
+    var tick by remember { mutableStateOf(0) }
+    if (hold.cur?.game?.stableKey != g.stableKey) {
+        val old = hold.cur
+        val quick = !animate || old == null || CategorySlide.justChanged()
+        val back = hold.leaving.firstOrNull { it.game.stableKey == g.stableKey }
+        if (back != null) { hold.leaving.remove(back); hold.cur = back }
+        else hold.cur = CoverOut(g, if (quick) 1f else 0f)
+        if (old != null && !quick) hold.leaving.add(old)
+        while (hold.leaving.size > 2) hold.leaving.removeAt(0).also { CoverFlight.flights.remove(it.game.stableKey) }
+        if (quick) { hold.leaving.clear() }
+    }
+    val cur = hold.cur!!
+    LaunchedEffect(cur) {
+        CoverFlight.flights[cur.game.stableKey] = cur.p.asState()
+        try {
+            cur.p.animateTo(1f, tween((CoverFlight.MS * (1f - cur.p.value)).toInt().coerceAtLeast(1), easing = FastOutSlowInEasing))
+        } finally { if (cur.p.value >= 1f) CoverFlight.flights.remove(cur.game.stableKey) }
+    }
+    for (o in hold.leaving.toList()) {
+        LaunchedEffect(o) {
+            CoverFlight.flights[o.game.stableKey] = o.p.asState()
+            try {
+                o.p.animateTo(0f, tween((CoverFlight.MS * o.p.value).toInt().coerceAtLeast(1), easing = FastOutSlowInEasing))
+                hold.leaving.remove(o); tick++
+            } finally { if (o.p.value <= 0f) CoverFlight.flights.remove(o.game.stableKey) }
+        }
+    }
+    val density = LocalDensity.current
+    val all = hold.leaving.toList() + cur
+    @Suppress("UNUSED_EXPRESSION") tick
+    for (o in all) key(o.game.stableKey) {
+        val gm = o.game
+        Box(
+            Modifier.fillMaxWidth().requiredHeight(stageH + shelfH * 0.12f).zIndex(if (o === cur) 1f else 0f)
+                .graphicsLayer {
+                    val p = o.p.value
+                    val st = CoverFlight.stage
+                    val sp = CoverFlight.spines[gm.stableKey]
+                    if (p < 1f && st != null && sp != null && size.width > 0f) {
+                        val s0 = (sp.height / size.height / 0.85f).coerceIn(0.05f, 1f)
+                        val s = CoverFlight.lerp(s0, 1f, p)
+                        val cx = CoverFlight.lerp(sp.center.x, st.left + size.width / 2f, p)
+                        val cy = CoverFlight.lerp(sp.center.y, st.top + size.height / 2f, p)
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        scaleX = s; scaleY = s
+                        translationX = cx - s * size.width / 2f - st.left
+                        translationY = cy - s * size.height / 2f - st.top
+                    }
+                    alpha = (p * 4f).coerceIn(0f, 1f)
+                }
+        ) {
+            Case3D(
+                gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN,
+                case3dAspect(gm, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
+                frame = false, frameColor = accent,
+                realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
+                fill = bigCaseFill(depth)
+            )
+        }
+    }
 }

@@ -1,5 +1,5 @@
 {
- "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete \u2014 mark it.",
+ "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete — mark it.",
  "defects": [
   {
    "id": "D1",
@@ -13,13 +13,13 @@
     "qa_runs/r1/nav120_frames/ev_00698_transient.png",
     "qa_runs/r1/base_nav_frames/ev_00702_transient.png"
    ],
-   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) \u2014 those frames drew the new row at rest, full strength.",
+   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) — those frames drew the new row at rest, full strength.",
    "files": [
     "ui/HomeExtras.kt"
    ],
    "fix": "graphicsLayer draws the slide's start position while the effect hasn't caught up with the tick (as StyleCrossMenu update 166).",
    "check": "home_nav scenario: no transient at the R2/L2 frames; static rule SNAP-ANIMATE",
-   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 \u2014 no full-strength row; one empty frame (D17), then the slide"
+   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 — no full-strength row; one empty frame (D17), then the slide"
   },
   {
    "id": "D2",
@@ -73,7 +73,7 @@
   },
   {
    "id": "D6",
-   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals\u2026)",
+   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals…)",
    "rule": "STALE-PRODUCE",
    "severity": "medium",
    "status": "fixed",
@@ -82,11 +82,11 @@
     "ui/ProduceKeyed.kt (new)",
     "26 call sites"
    ],
-   "fix": "produceKeyed(initial, identity, keys\u2026)"
+   "fix": "produceKeyed(initial, identity, keys…)"
   },
   {
    "id": "D7",
-   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) \u2026 })",
+   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) … })",
    "rule": "STALE-FOREVER",
    "severity": "medium",
    "status": "fixed",
@@ -96,7 +96,7 @@
   },
   {
    "id": "D8",
-   "title": "Focus pulse rebuilt the whole focused card ~20\u00d7/s while idle on Home",
+   "title": "Focus pulse rebuilt the whole focused card ~20×/s while idle on Home",
    "rule": "PULSE-COMPOSE",
    "severity": "medium",
    "status": "fixed",
@@ -111,7 +111,7 @@
   },
   {
    "id": "D9",
-   "title": "Sliders: \u25c0 \u25b6 step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
+   "title": "Sliders: ◀ ▶ step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "fixed",
@@ -132,7 +132,7 @@
   },
   {
    "id": "D11",
-   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) \u2014 cause found: the theme colour glide (D22)",
+   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) — cause found: the theme colour glide (D22)",
    "rule": "PERF",
    "severity": "medium",
    "status": "verified",
@@ -141,7 +141,7 @@
   },
   {
    "id": "D12",
-   "title": "Render-thread spikes 36\u201348 ms (CommandIssue) right after focus moves \u2014 likely software bitmaps uploaded at draw",
+   "title": "Render-thread spikes 36–48 ms (CommandIssue) right after focus moves — likely software bitmaps uploaded at draw",
    "rule": "PERF",
    "severity": "medium",
    "status": "suspect",
@@ -151,13 +151,13 @@
   },
   {
    "id": "D13",
-   "title": "Composition spikes 25\u201354 ms (ANIMATION phase) during navigation / category switch",
+   "title": "Composition spikes 25–54 ms (ANIMATION phase) during navigation / category switch",
    "rule": "PERF",
    "severity": "medium",
    "status": "suspect",
    "found": "QaTrace slow-frame log",
    "next": "trace with vcTrace sections; perf agent P2/P7",
-   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) \u2192 D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
+   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) → D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
   },
   {
    "id": "D14",
@@ -177,18 +177,18 @@
    "rule": "LAYOUT-POP",
    "severity": "medium",
    "status": "verified",
-   "found": "qa_runs/r2/B_nav 720\u2192730\u2192745",
+   "found": "qa_runs/r2/B_nav 720→730→745",
    "files": [
     "ui/GameCard.kt",
     "ui/GameDock.kt"
    ],
-   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos \u00b12 prefetched"
+   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos ±2 prefetched"
   },
   {
    "id": "D16",
-   "title": "(not a defect) repeated header/cover shake when pressing \u25b6 on the last game",
+   "title": "(not a defect) repeated header/cover shake when pressing ▶ on the last game",
    "status": "wontfix",
-   "note": "EdgeBump \u2014 intended; scenarios now start from All, first game"
+   "note": "EdgeBump — intended; scenarios now start from All, first game"
   },
   {
    "id": "D17",
@@ -200,19 +200,19 @@
    "files": [
     "ui/GameDock.kt"
    ],
-   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 \u2014 no empty frame"
+   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 — no empty frame"
   },
   {
    "id": "D18",
-   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames \u2014 explained",
+   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames — explained",
    "severity": "medium",
    "status": "wontfix",
    "found": "suite A/B idlecalm",
-   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings \u203a Device \u203a Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
+   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings › Device › Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
   },
   {
    "id": "D19",
-   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts \u2715 badge, Edit Home hint",
+   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts ✕ badge, Edit Home hint",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "fixed",
@@ -231,7 +231,7 @@
     "ui/ShortcutsPanel.kt",
     "ui/SettingsDialog.kt"
    ],
-   "check": "not yet run on device \u2014 key sequences in audit/2026-10-27/controller.md"
+   "check": "not yet run on device — key sequences in audit/2026-10-27/controller.md"
   },
   {
    "id": "D20",
@@ -264,7 +264,7 @@
   },
   {
    "id": "D22",
-   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110\u00d7/s and every game card (~1000 card rebuilds/s) while navigating",
+   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110×/s and every game card (~1000 card rebuilds/s) while navigating",
    "rule": "THEME-COMPOSE",
    "severity": "high",
    "status": "verified",
@@ -281,7 +281,7 @@
     "ui/FocusEffects.kt (softGlowLive, pulseBorderLive, electricFrameLive)"
    ],
    "fix": "colours read while drawing through one stable State (ShelfTheme.live) in the hot paths: root background, dim wash, EdgeBump glow, status bar (only layouts that use the accent), card shadow (graphicsLayer), glow, frames, Living Library bars, unlock pill, progress bars, accent icons in their own scope; the no-op mediaFloorGlow argument removed. The glide itself is unchanged.",
-   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 \u2192 8, GameCard 1000 \u2192 48 (+ focused 6), GameDock unchanged 6",
+   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 → 8, GameCard 1000 → 48 (+ focused 6), GameDock unchanged 6",
    "remaining": "static rule THEME-COMPOSE lists 37 more sites (other layouts, dialogs)"
   },
   {
@@ -301,7 +301,7 @@
    ],
    "fix": "cachedImageResource(): one decode per app run, LRU-bounded at 64 MB; traced as VC:resDecode",
    "check": "atrace of a category switch: VC:resDecode only on the first appearance of each template",
-   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) \u2014 fix kept, effect unproven"
+   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) — fix kept, effect unproven"
   },
   {
    "id": "D25",
@@ -311,17 +311,17 @@
    "status": "fixed",
    "found": "T3/T4/T5; not imageResource / painterResource (ResImages), PlatformLogos or PackSpines (instrumented: VC:resDecode / VC:logoDecode / VC:spineDecode never fire)",
    "next": "sampling profile (am profile) around the first 3DS category switch",
-   "root_cause": "second screen: MediaInspectView.secondCasePiece \u2192 CustomPieceTones.of \u2192 CartShells.packColour \u2192 CustomPieceTones.toneOfFile \u2192 BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
+   "root_cause": "second screen: MediaInspectView.secondCasePiece → CustomPieceTones.of → CartShells.packColour → CustomPieceTones.toneOfFile → BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
    "files": [
     "ui/SolidPiece.kt (CustomPieceTones.attach / keepTone)",
     "MainActivity.kt"
    ],
-   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date \u2192 colour); restored on a background thread at start",
+   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date → colour); restored on a background thread at start",
    "verified": "coldsample CS2 / CS3 (cold starts, same category switches): 0 main-thread decodes (CS1: 1, 47-58 ms)"
   },
   {
    "id": "D26",
-   "title": "R1 panel: a notification's \u2715 (Dismiss) could not be reached with the D-pad \u2014 it sits inside the notification's own button, \u25b6 went to 'Clear all' instead",
+   "title": "R1 panel: a notification's ✕ (Dismiss) could not be reached with the D-pad — it sits inside the notification's own button, ▶ went to 'Clear all' instead",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "verified",
@@ -329,12 +329,12 @@
    "files": [
     "ui/NotificationsPanel.kt"
    ],
-   "fix": "\u25b6 on a notification moves to its \u2715, \u25c0 back (focus requesters on the row and the \u2715)",
-   "verified": "walk W5 on the Thor: \u25b6 \u2192 'Dismiss', \u25c0 \u2192 the notification"
+   "fix": "▶ on a notification moves to its ✕, ◀ back (focus requesters on the row and the ✕)",
+   "verified": "walk W5 on the Thor: ▶ → 'Dismiss', ◀ → the notification"
   },
   {
    "id": "D27",
-   "title": "The \u2715 close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
+   "title": "The ✕ close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
    "rule": "CONTROLLER",
    "severity": "low",
    "status": "fixed",
@@ -352,7 +352,7 @@
    "files": [
     "data/RomHacks.kt"
    ],
-   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < \u2026 LauncherViewModel.recombineGames"
+   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < … LauncherViewModel.recombineGames"
   },
   {
    "id": "D29",
@@ -371,7 +371,7 @@
    "rule": "SNAP-LATE-LAYOUT",
    "severity": "medium",
    "status": "verified",
-   "found": "layout sweep LA_TILES frames 224\u2192226 (frames.py transient ev_00225)",
+   "found": "layout sweep LA_TILES frames 224→226 (frames.py transient ev_00225)",
    "files": [
     "ui/TileHome.kt (TilesMidLine)",
     "ui/LauncherScreen.kt"
@@ -385,15 +385,15 @@
    "rule": "THEME-COMPOSE",
    "severity": "high",
    "status": "verified",
-   "found": "layout sweep (recomp Screen=\u2026), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
+   "found": "layout sweep (recomp Screen=…), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
    "files": [
     "ui/LauncherScreen.kt (ProvideNameColors)"
    ],
-   "verified": "layout sweep LE vs LA\u2013LD: Grid Screen 91 \u2192 9/s, janky 15.8 \u2192 7.5 %"
+   "verified": "layout sweep LE vs LA–LD: Grid Screen 91 → 9/s, janky 15.8 → 7.5 %"
   },
   {
    "id": "D32",
-   "title": "Resume & discover: on every \u25c0 \u25b6 the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
+   "title": "Resume & discover: on every ◀ ▶ the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
    "rule": "SNAP-ANIMATE",
    "severity": "high",
    "status": "verified",
@@ -416,7 +416,7 @@
     "ui/LauncherScreen.kt"
    ],
    "fix": "the look is made inside StatusBar (its own recompose scope)",
-   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s \u2192 9-14/s in every one; janky % e.g. Cross 12.2 \u2192 3.4, Live 4.8 \u2192 1.3, Cards 9.7 \u2192 3.7, Green Core 17.3 \u2192 5.7, Crate 8.1 \u2192 2.9, Side 8.4 \u2192 3.4 (full table: REPORT.md pass 3)"
+   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s → 9-14/s in every one; janky % e.g. Cross 12.2 → 3.4, Live 4.8 → 1.3, Cards 9.7 → 3.7, Green Core 17.3 → 5.7, Crate 8.1 → 2.9, Side 8.4 → 3.4 (full table: REPORT.md pass 3)"
   },
   {
    "id": "D33",
@@ -443,17 +443,17 @@
   },
   {
    "id": "D36",
-   "title": "Settings \u203a Categories: after \u25b2/\u25bc the focus stayed on the row slot, so the next press moved the neighbouring category",
+   "title": "Settings › Categories: after ▲/▼ the focus stayed on the row slot, so the next press moved the neighbouring category",
    "rule": "FOCUS-FOLLOWS",
    "severity": "medium",
    "status": "verified",
-   "found": "2026-10-27 walk ST3 (Thor): A on \u25bc of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
+   "found": "2026-10-27 walk ST3 (Thor): A on ▼ of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
    "root_cause": "CategoryOrderCard drew the rows with forEachIndexed and no key(): the chip nodes belong to the slot, not the category, so focus stays put while the categories swap under it.",
    "files": [
     "ui/SettingsDialog.kt"
    ],
    "fix": "Rows keyed by category; after a move, focus is requested on the same arrow of the moved category (the other arrow when it reaches the top/bottom and the pressed one turns off).",
-   "check": "walk D36: \u25b2 \u25b2 \u25bc \u25bc on one category \u2014 focus y 945\u2192822\u2192699 then 699\u2192822\u2192945 (one row per press, following the category)",
+   "check": "walk D36: ▲ ▲ ▼ ▼ on one category — focus y 945→822→699 then 699→822→945 (one row per press, following the category)",
    "verified": "walk D36 (14:10 build) on the Thor; category order back exactly as saved (snapshot file compared)"
   },
   {
@@ -462,7 +462,7 @@
    "rule": "WALK-SAFETY",
    "severity": "medium",
    "status": "verified",
-   "found": "walk ST3 pressed A on a \u25bc in Settings \u203a Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
+   "found": "walk ST3 pressed A on a ▼ in Settings › Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
    "root_cause": "voltcap_test_snapshot only saves Features prefs; CategoryStore lives in its own SharedPreferences.",
    "files": [
     "ui/TestHooks.kt"
@@ -473,16 +473,16 @@
   },
   {
    "id": "D38",
-   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; \u25b6 off a row's end jumps rows; settings opened on the last-used category",
+   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; ▶ off a row's end jumps rows; settings opened on the last-used category",
    "rule": "TOOL",
    "severity": "low",
    "status": "fixed-compiles",
-   "found": "E4: Theme \u203a Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with \u25c0 (no app defect)",
-   "root_cause": "explorePage swept \u25b6 only, and came back with the same number of \u25c0; QaExplore took the first focused category as the list's start.",
+   "found": "E4: Theme › Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with ◀ (no app defect)",
+   "root_cause": "explorePage swept ▶ only, and came back with the same number of ◀; QaExplore took the first focused category as the list's start.",
    "files": [
     "ui/QaExplore.kt"
    ],
-   "fix": "Row walk \u25c0 and \u25b6 while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
+   "fix": "Row walk ◀ and ▶ while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
    "check": "next explorer run E6: Size & text chips reached; categories list starts at Home"
   },
   {
@@ -493,7 +493,7 @@
    "status": "fixed-on-device (data); design note open",
    "found": "Toni 2026-10-27 ('would it break when I added the rounded shortcuts under the tiles'); preview TILES with shortcuts ROW: bar drawn over the tiles at y=0.42",
    "root_cause": "A bar moved in Edit Home floats at a saved screen fraction (widget_positions shortcuts=0.5,0.42); it doesn't follow the tiles, so Update 350 / D30 moving the tiles up left it over them.",
-   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) \u2014 the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
+   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) — the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
    "check": "tilemid log: group=721 (bar included), screenshot tiles_sc2",
    "verified": "screens/tiles_sc2.png (Thor, preview TILES)"
   },
@@ -509,7 +509,7 @@
     "ui/TileHome.kt"
    ],
    "fix": "TilesTopLine alignment line; Middle uses (tiles top + group bottom without padding)/2 when the buttons are by the row under the tiles.",
-   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 \u2192 tiles 282\u2013652 + buttons to ~780 (group centre \u2248 531 vs screen 540 minus bottom padding)",
+   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 → tiles 282–652 + buttons to ~780 (group centre ≈ 531 vs screen 540 minus bottom padding)",
    "verified": "Thor preview TILES, 14:25 build"
   },
   {
@@ -518,13 +518,13 @@
    "rule": "PER-FRAME-COMPOSITION",
    "severity": "high",
    "status": "verified",
-   "found": "atrace TS (STACKS): 35\u201346 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) \u2248 1,000/s with no input changed",
-   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this \u2014 checked, CH4 \u2014 so it is specific to this derived state, not derivedStateOf in general).",
+   "found": "atrace TS (STACKS): 35–46 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) ≈ 1,000/s with no input changed",
+   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this — checked, CH4 — so it is specific to this derived state, not derivedStateOf in general).",
    "files": [
     "ui/Carousel.kt"
    ],
    "fix": "turnedFar is a plain mutableState set from snapshotFlow only when the answer changes (initial value computed synchronously).",
-   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% \u2192 22.7%, p90 42 \u2192 32 ms, p99 85 \u2192 77 ms",
+   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% → 22.7%, p90 42 → 32 ms, p99 85 → 77 ms",
    "verified": "Thor, runs SB (before) / SA (after), 14:35 build"
   },
   {
@@ -533,8 +533,8 @@
    "rule": "TOOL",
    "severity": "low",
    "status": "fixed-compiles",
-   "found": "E6: 9 'row lost at Search settings' \u2014 each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
-   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every \u25c0 along a row counted as leaving the page.",
+   "found": "E6: 9 'row lost at Search settings' — each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
+   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every ◀ along a row counted as leaving the page.",
    "files": [
     "ui/QaExplore.kt"
    ],
@@ -555,8 +555,8 @@
     "data/Features.kt",
     "data/LayoutOnly.kt"
    ],
-   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings \u203a Categories \u203a Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
-   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 \u2192 Voltcap row, GameCube \u2192 Case stacks, back \u2192 Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
+   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings › Categories › Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
+   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 → Voltcap row, GameCube → Case stacks, back → Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
    "verified": "Thor, preview session (nothing saved), qa_runs/r7/CL"
   },
   {
@@ -579,7 +579,7 @@
   },
   {
    "id": "D45",
-   "title": "Mix \u203a Customize consoles (feature): each console its own medium",
+   "title": "Mix › Customize consoles (feature): each console its own medium",
    "rule": "FEATURE",
    "severity": "request",
    "status": "verified (CASE, COVER, AUTO, MEDIUM)",
@@ -596,7 +596,7 @@
     "ui/MediaInspectView.kt",
     "ui/StyleDiscStation.kt"
    ],
-   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing \u2014 fixed.",
+   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing — fixed.",
    "check": "mixcon.sh MY (GameCube): AUTO / MEDIUM discs, CASE retail boxes, COVER covers",
    "verified": "Thor, preview session, qa_runs/r7/MY"
   },
@@ -606,7 +606,7 @@
    "rule": "art-fit",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -618,7 +618,7 @@
    "rule": "STEP-READ (R12)",
    "severity": "high",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -630,7 +630,7 @@
    "rule": "WINDOW-BY-GLIDE (R13), WRAP-AFTER-PARALLAX (R14)",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -642,11 +642,11 @@
    "rule": "PERF",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
-   "fix": "Face only for |i-sel|<=1, window \u00b13, shadow only on the blade coming forward \u2192 1.14 % (L7)."
+   "fix": "Face only for |i-sel|<=1, window ±3, shadow only on the blade coming forward → 1.14 % (L7)."
   },
   {
    "id": "D51",
@@ -654,7 +654,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -669,7 +669,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -684,7 +684,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -695,7 +695,7 @@
   },
   {
    "id": "D54",
-   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1\u20136 %)",
+   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1–6 %)",
    "rule": "GLIDE-COMPOSE (R17)",
    "severity": "med",
    "status": "verified",
@@ -721,7 +721,7 @@
    ],
    "fix": "Scrolls by whole rows only when the system you're on leaves the view.",
    "evidence": [
-    "qa_runs/r8/T.tar: tap 1 \u2192 PlayStation focused, tap 2 \u2192 PlayStation opened"
+    "qa_runs/r8/T.tar: tap 1 → PlayStation focused, tap 2 → PlayStation opened"
    ]
   },
   {
@@ -756,7 +756,7 @@
    ],
    "fix": "Visible windows / z-orders as derivedStateOf; positions read in offset {} / graphicsLayer.",
    "evidence": [
-    "layouts.sh B5/B6 \u2192 A5: AIRY 12.80 \u2192 1.82 % (p99 48 \u2192 21 ms), CIRCUIT 13.55 \u2192 11.84 %, ORBIT 8.33 \u2192 7.85 %, PANELS 6.56 \u2192 5.81 %; NIGHT 6.27 \u2192 7.77 % and BLADES 2.26 \u2192 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
+    "layouts.sh B5/B6 → A5: AIRY 12.80 → 1.82 % (p99 48 → 21 ms), CIRCUIT 13.55 → 11.84 %, ORBIT 8.33 → 7.85 %, PANELS 6.56 → 5.81 %; NIGHT 6.27 → 7.77 % and BLADES 2.26 → 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
    ]
   },
   {
@@ -795,7 +795,7 @@
     "ui/TileHome.kt"
    ],
    "root_cause": "The game's own disc photo (realScanOf) won before the case template was consulted.",
-   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles \u203a Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
+   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles › Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
    "evidence": [
     "qa_runs/r8/MX.tar MX_GameCube_CASE_MEDIA (cases with their own discs), _MEDIUM (discs), _CASE (boxes)"
    ]
@@ -806,7 +806,7 @@
    "rule": "CONTROLLER (R6)",
    "severity": "low",
    "status": "verified-rp",
-   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first \u25b6 lands on the first control)",
+   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first ▶ lands on the first control)",
    "files": [
     "ui/DialogChrome.kt",
     "ui/ShortcutsPanel.kt",
@@ -824,11 +824,11 @@
    "status": "open (finding)",
    "found": "2026-10-27 pass 5 atrace TR1 (Case stacks, 8 s): checkForSemanticsChanges 399 ms + sendAccessibilitySemanticsStructureChangeEvents 313 ms + getAllUncoveredSemanticsNodes 220 ms on the main thread",
    "root_cause": "com.odin.gameassistant (ForegroundAppMonitorV4Service, the handheld's own game assistant) is enabled as an accessibility service, so Compose keeps its accessibility tree up to date for every app.",
-   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off \u2014 a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
+   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off — a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
   },
   {
    "id": "D61",
-   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) \u2014 mirror, 3D cases and building the new list over several frames made no difference",
+   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) — mirror, 3D cases and building the new list over several frames made no difference",
    "rule": "PERF",
    "severity": "med",
    "status": "open",
@@ -837,11 +837,11 @@
   },
   {
    "id": "D62",
-   "title": "Voltcap force-stopped during a QA trace \u2014 by the QA tools themselves",
+   "title": "Voltcap force-stopped during a QA trace — by the QA tools themselves",
    "rule": "ENV",
    "severity": "info",
    "status": "tool artefact (closed)",
-   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 \u2014 not one of the QA scripts",
+   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 — not one of the QA scripts",
    "note": "`vqa.sh hooks on|off` restarts Voltcap (force-stop + start). ltrace2.sh switched the hooks off while atrace was still recording. Each restart also brings up 'Who's playing?' on the next start."
   },
   {
@@ -851,7 +851,7 @@
    "severity": "medium",
    "status": "open",
    "found": "traces T3-T5; pass 5 am start -W: 889-963 ms",
-   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) \u2014 both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms \u2192 C1 877-1034 ms, no measurable change) \u2014 reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
+   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) — both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms → C1 877-1034 ms, no measurable change) — reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
    "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)"
   },
   {
@@ -877,7 +877,7 @@
   },
   {
    "id": "D65",
-   "title": "RP Classic: system_server aborts in a loop ('Got MOVE, but no touching pointers for device 8') \u2014 the vendor's 'Retro Station Virtual Mouse'",
+   "title": "RP Classic: system_server aborts in a loop ('Got MOVE, but no touching pointers for device 8') — the vendor's 'Retro Station Virtual Mouse'",
    "rule": "DEVICE",
    "severity": "high",
    "status": "third-party",
@@ -900,7 +900,7 @@
    "rule": "OVERLAP",
    "severity": "low",
    "status": "open",
-   "found": "crash3d runs E3T / E3W (carousel, 3D cartridges): logo over 'Game Boy Color \u00b7 Pokemon Silver Version'",
+   "found": "crash3d runs E3T / E3W (carousel, 3D cartridges): logo over 'Game Boy Color · Pokemon Silver Version'",
    "note": "User-placed part (fractions of the screen); the Thor's taller dp height leaves room. Option: keep the logo clear of the dock like the category part's keepClearOf."
   },
   {
@@ -909,7 +909,7 @@
    "rule": "LAYER-BRANCH",
    "severity": "high",
    "status": "verified-rp",
-   "found": "RP Classic 21:52 screenshot: no name after \u25b6; with QaFault rise_old the name shows -> Motion.riseOnChange",
+   "found": "RP Classic 21:52 screenshot: no name after ▶; with QaFault rise_old the name shows -> Motion.riseOnChange",
    "fix": "riseOnChange read p.value only in the else-branch of its layer; the frame drawn at 0 observed nothing, so the rise never redrew. Read first. Same pattern fixed in StyleConsoleHomes, StyleCustom, StyleMagazine (new static rule LAYER-BRANCH).",
    "verified": "t3/t4 21:56: ActRaiser and Contra Advance names shown after moves"
   },
@@ -925,7 +925,7 @@
   },
   {
    "id": "D70",
-   "title": "Home layouts: 176 names / labels cut with '...' (R18) \u2014 Airy, Bubbles, Camera, Cards, File select, Green core, Hero, Magazine, Night, Orbit, Pocket, Spotlight, Storage, Timeline \u2026",
+   "title": "Home layouts: 176 names / labels cut with '...' (R18) — Airy, Bubbles, Camera, Cards, File select, Green core, Hero, Magazine, Night, Orbit, Pocket, Spotlight, Storage, Timeline …",
    "rule": "TRUNCATE",
    "severity": "medium",
    "status": "verified-rp",
@@ -957,7 +957,7 @@
    "rule": "FOCUS",
    "severity": "low",
    "status": "open",
-   "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home \u203a Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
+   "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home › Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
    "note": "Theme, Screensaver, Categories, Achievements, Music & sound, Metadata, Performance not walked yet."
   },
   {
@@ -989,21 +989,21 @@
   },
   {
    "id": "D77",
-   "title": "Dashboard, Endless on: \u25c0 moves the row but the selection only changes on the second press (user report after update 381)",
+   "title": "Dashboard, Endless on: ◀ moves the row but the selection only changes on the second press (user report after update 381)",
    "rule": "ONE-PRESS (R23)",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-10-29 user report",
-   "note": "UPDATE 389 (owner: still wrong after 388, Endless on AND off): 388 only moved the problem. A per-frame trace on the Thor (QaGeom, card x + which card wore the frame) showed that after every press the frame rode the OLD card ~90 px left and then JUMPED ~197 px right onto the new card (hand-over half-way) before gliding back: highlight and row out of sync, the highlighted card was not the selected one. Cause: the highlight belonged to whichever card the discrete selection / a rounded slot pointed at, not to the row's position. Fix: the highlight is a crossfade by the row's actual position (EndlessRow.kt highlightStrength / FocusFollow; StyleArt focusAlpha / styleFocus alpha): the strengths of the cards always add up to 1 and their centre stays in the selection's slot; settled = the selected card alone; a row that cannot move further (no Endless, last game) is not followed. Settled slot verified Endless on and off (Dashboard x=706, Side menu x=800 after every press). Highlight389Test. Other layouts: see SUMMARY 389. UPDATE 388 (owner recording: highlight in the third slot, two games left of it, before the row caught up): 383 fixed only the scroll TARGET; the selection still changed at once while the row glided (~10 frames), so the highlight sat in slot 3 and slid back. Reproduced on the Thor in a 60 Hz screen recording (highlight x 906 -> 706). Fix: FollowFocus now returns the item that wears the highlight (shownFocusItem: the item standing in the selection slot while the row glides, hand-over half-way), also for a reversal back to the last settled selection; Dashboard and Side menu rows use it. Re-recorded frame by frame: highlight stays in slot 2 (max half a slot off at hand-over). ShownFocus388Test. UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one \u25b6 from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, \u25b6 \u25b6 \u25b6 and \u25c0 via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for \u25c0 on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
+   "note": "UPDATE 389 (owner: still wrong after 388, Endless on AND off): 388 only moved the problem. A per-frame trace on the Thor (QaGeom, card x + which card wore the frame) showed that after every press the frame rode the OLD card ~90 px left and then JUMPED ~197 px right onto the new card (hand-over half-way) before gliding back: highlight and row out of sync, the highlighted card was not the selected one. Cause: the highlight belonged to whichever card the discrete selection / a rounded slot pointed at, not to the row's position. Fix: the highlight is a crossfade by the row's actual position (EndlessRow.kt highlightStrength / FocusFollow; StyleArt focusAlpha / styleFocus alpha): the strengths of the cards always add up to 1 and their centre stays in the selection's slot; settled = the selected card alone; a row that cannot move further (no Endless, last game) is not followed. Settled slot verified Endless on and off (Dashboard x=706, Side menu x=800 after every press). Highlight389Test. Other layouts: see SUMMARY 389. UPDATE 388 (owner recording: highlight in the third slot, two games left of it, before the row caught up): 383 fixed only the scroll TARGET; the selection still changed at once while the row glided (~10 frames), so the highlight sat in slot 3 and slid back. Reproduced on the Thor in a 60 Hz screen recording (highlight x 906 -> 706). Fix: FollowFocus now returns the item that wears the highlight (shownFocusItem: the item standing in the selection slot while the row glides, hand-over half-way), also for a reversal back to the last settled selection; Dashboard and Side menu rows use it. Re-recorded frame by frame: highlight stays in slot 2 (max half a slot off at hand-over). ShownFocus388Test. UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one ▶ from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, ▶ ▶ ▶ and ◀ via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for ◀ on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
   },
   {
    "id": "D78",
-   "title": "Resume & discover: \u25c0 on the first game knocks first, the menu only on the second press, also with Endless on",
+   "title": "Resume & discover: ◀ on the first game knocks first, the menu only on the second press, also with Endless on",
    "rule": "ONE-PRESS (R23)",
    "severity": "info",
    "status": "deliberate",
    "found": "2026-10-29 update 382 audit (code)",
-   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and \u25bc also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants \u25c0 to go round to the last game there. NOT tested on hardware."
+   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and ▼ also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants ◀ to go round to the last game there. NOT tested on hardware."
   },
   {
    "id": "D79",
@@ -1085,7 +1085,11 @@
    "status": "fixed",
    "found": "2026-10-29 Thor 60 fps recording before the change (.shots/402/before_open_sheet.jpg)",
    "root_cause": "BoxNav.pull made the box's own case rise and turn for 900 ms, StyleCardboardBox waited that long, then open() started the flight from the (small, turned) card rect with MediaInspect.hold hiding the card: a still pause under the dimming veil, one frame with no case, then a jump. The card also came back at 35 % of the flight beside the piece (two copies).",
-   "files": ["ui/StyleCardboardBox.kt", "ui/GameWindow.kt", "ui/MediaInspectView.kt"],
+   "files": [
+    "ui/StyleCardboardBox.kt",
+    "ui/GameWindow.kt",
+    "ui/MediaInspectView.kt"
+   ],
    "fix": "A opens the window at once; the case stays lit at its slot (spine-on, BoxNav.startYaw, 90 or the Y-turned yaw) and the shared flight starts from there; flight 680 ms with a gentler curve; the card returns only below 6 % of the closing flight.",
    "check": "Case402Test (state / source checks); Thor frames .shots/402/after_open_fine.jpg, box2_open.jpg, STACKS_open.jpg, SHELF_close.jpg",
    "note": "Verified on the Thor from 30 fps sample sheets of a 60 fps screenrecord (the recorder delivers ~44 fps): one case in every sampled frame, no vanish frame. The veil still dims the box for ~8 frames before the case starts to move (the window waits for its slot layout and the art): not changed. Closing sheets only inspected for Shelf (one copy per frame); Box closing not re-framed after the last build."
@@ -1098,7 +1102,9 @@
    "status": "fixed",
    "found": "2026-10-29 Thor screenshot .shots/402/box_before_s.jpg / crop_before.jpg",
    "root_cause": "BoxCase drew an 18 % black slot rectangle behind the lifted case, a 1.5 dp white outline sized to the SPINE (wDp + 4 dp) centred on the wider lifted case (it floated off the case's bounds), and BoxSheen laid a flat 12 % black rectangle over each whole row.",
-   "files": ["ui/StyleCardboardBox.kt"],
+   "files": [
+    "ui/StyleCardboardBox.kt"
+   ],
    "fix": "All three removed; focus is the lift itself; the case's soft contact shadow and the wall shading stay. Nothing is tinted with the theme accent.",
    "check": "Case402Test.cardboardBoxSelectedCaseHasNoPlateOrOutline; Thor .shots/402/box_after_s.jpg",
    "note": "Only the Cardboard box was changed. Other physical-case layouts were not searched for selection plates (only visually seen: Shelf, Stacks, Cover details show none in the sampled frames). Faint darker area under the top row = wall ambient shading, left on purpose."
@@ -1111,7 +1117,10 @@
    "status": "fixed",
    "found": "2026-10-29 Thor, Cover details, 007 The World Is Not Enough (USA) N64 (.shots/402/cd_final_s.jpg); log: front 320x480 on face 1.425",
    "root_cause": "Case3D framed / fitFace / fillCrop cut a 0.667 cover to the N64 window / face shape (1.3-1.43), keeping 47-51 % of the picture, top and bottom lost; the 2D CoverFace used ContentScale.Crop likewise.",
-   "files": ["ui/Case3D.kt", "ui/CoverCases.kt"],
+   "files": [
+    "ui/Case3D.kt",
+    "ui/CoverCases.kt"
+   ],
    "fix": "fillCropOrFit / CropUnlessMuchCut: crop while at least 60 % of the picture is kept (every ordinary case: PS2, GameCube, DS ...), else the cover whole at its own proportions, centred, on a plain backdrop of its average edge colour (no blur, no stretch).",
    "check": "Case402Test.portraitCoverOnLandscapeN64FaceIsShownWholeNotZoomed; Thor .shots/402/cd_fixed_s.jpg (whole cover, title visible, grey side bars)",
    "note": "Trade-off: bars at the sides (owner update 202 disliked bars for moderate mismatches; they now appear only past a 40 % cut). Only N64 Cover details was checked on the Thor. NES, SNES, DS / 3DS, GBA / GBC, Switch, mixed categories NOT checked for this change; the 2D CoverFace path is built but not seen on a landscape template."
@@ -1142,7 +1151,9 @@
    "status": "verified",
    "found": "2026-10-29 owner photos qa_reference_update403/02-04, reproduced on the Thor (.shots/403/box_before.png)",
    "root_cause": "(1) BoxSheen drew one rectangle per ROW sized to the row's bounding box (empty floor included) with a 45 % black bar at the row's left end and a white diagonal shine; (2) BoxBody's contact shadows were row-wide bands sized by the row's longest case plus a last-case side rectangle; (3) BoxCaseSides / BoxCaseEnds filled every case's side and end with a fixed 0xFF55575F..0xFF0C0C0E near-black gradient.",
-   "files": ["ui/StyleCardboardBox.kt"],
+   "files": [
+    "ui/StyleCardboardBox.kt"
+   ],
    "fix": "BoxSheen per case inside its own top face (wall shade only on the case itself); contact shadow per case foot (14 mm-scaled soft fall-off, 16 %); sides / ends toned by material via boxSideTone (cardboard tan for CaseCatalog cardboard shells, mid grey plastic otherwise). Geometry (attached faces from the same x / y / stand values as the spine) unchanged.",
    "check": "Physical403Test (sheen per case, no row-wide bands, no hard-coded black faces, tones never black, one keyed BoxCase per slot, no accent fill); Thor .shots/403/box_after2.png",
    "note": "Checked on the Thor: ALL category, 2 rows, DS / GBA / N64 / PS2 / PSP mix. NOT re-checked: 1 / 3 rows, 1-3 games, empty, Messy, per-platform categories. Record crate, Card binder, Console stack, Game shelf, Case stacks stills show no such plates (.shots/403/aud_montage.jpg)."
@@ -1155,7 +1166,9 @@
    "status": "fixed",
    "found": "2026-10-29 owner report (~8-frame veil / idle pause); Thor 60 Hz capture box_open.mp4: floor region brightness 119 -> 39 in ~7 frames while the case was still near its slot",
    "root_cause": "The window's veil alpha was the window's own grow clock (starts at the first layout), the piece flight (InspectMotion.open) starts later (slot known + cover in memory, up to 450 ms).",
-   "files": ["ui/GameWindow.kt"],
+   "files": [
+    "ui/GameWindow.kt"
+   ],
    "fix": "veil alpha = grow * flightVeil(motion.lift) (the flight's own progress) whenever the window has a flying piece.",
    "check": "Physical403Test.veilIsInvisibleUntilThePieceMoves / veilIsMonotonicAndEqualsTheFlight / windowVeilIsGatedByTheFlight",
    "note": "Re-captured on the Thor after the change (.shots/403/rapid_sheet.jpg: dimming and case movement together, one case in every sampled frame). Measured with the veil at flight progress only on the Cardboard box; Case stacks / Shelf / Cover details use the same window code but were not re-captured. Layouts with cardFlight (Game shelf, Console stack, Card binder, Record crate: no piece) are unchanged."
@@ -1168,7 +1181,9 @@
    "status": "fixed",
    "found": "2026-10-29 owner reference 07 vs Thor .shots/403/cd_before.png (yaw 9 / pitch 8 left almost no spine)",
    "root_cause": "Update 402 raised yaw / pitch and the case was cut and zoomed because the canvas gave the turned case no room (fill 0.94 whatever the turn).",
-   "files": ["ui/StyleCoverDetails.kt"],
+   "files": [
+    "ui/StyleCoverDetails.kt"
+   ],
    "fix": "yaw / pitch Subtle 14 / 9, Realistic 3D 24 / 12 with fill 0.86 / 0.78 (bigCaseFill) so the nearer edge never leaves the canvas.",
    "check": "CoverDetails403Test; Thor .shots/403/cd_subtle.png, cd_real.png, cd_n64_real.png (spine with the real spine art, top face, no clipping)",
    "note": "Renderer geometry (Case3D: front / spine / top / back quads) was already true 3D; the change is the presentation angle and room, not a renderer rewrite. Spine / back art per console (N64, Switch) NOT audited. N64 front grey fields: the log shows the real ScreenScraper box-2D(us) scan 480x352 on a 1.425 face (no bars drawn by the fit rule); whether the grey is in the raw file is NOT verified (D90 bars were for portrait covers only)."
@@ -1178,9 +1193,18 @@
    "title": "Window / popup flights from the Game shelf: featured case 'spawns' above the shelf (owner photo 01)",
    "rule": "SHARED-PICKUP",
    "severity": "medium",
-   "status": "suspect",
+   "status": "fixed-verified-cover-details",
    "found": "2026-10-29 owner photo qa_reference_update403/01",
-   "note": "Traced in ShelfHome.kt: the pulled-out case is a three-phase move from the raised spine's own row rect (slide up, turn, front, spine alpha swaps to the pulled overlay at p 0.45-0.6) and the previous featured case returns to its slot (ShelfBack). A 48 fps Thor capture of a selection change (.shots/403/shelf_before_sheet.jpg) shows the old case going back and the new one rising from the left slot with no teleport; the owner's exact case was not reproduced. One continuous position / scale / rotation curve for Shelf / Stacks / Cover details was NOT built (three eased phases remain)."
+   "note": "Traced in ShelfHome.kt: the pulled-out case is a three-phase move from the raised spine's own row rect (slide up, turn, front, spine alpha swaps to the pulled overlay at p 0.45-0.6) and the previous featured case returns to its slot (ShelfBack). A 48 fps Thor capture of a selection change (.shots/403/shelf_before_sheet.jpg) shows the old case going back and the new one rising from the left slot with no teleport; the owner's exact case was not reproduced. One continuous position / scale / rotation curve for Shelf / Stacks / Cover details was NOT built (three eased phases remain). UPDATE 404: Cover details built: the new big case flies out of its own shelf slot (real slot bounds each frame) while the old case flies back into its slot, one object per game, slot spine hidden only while its case is away, category change / animations off / Lite = immediate (CoverFlight, StyleCoverDetails.kt). Thor 3140972f release 0.6.58, 960x540 ~50 fps delivered, contiguous frames .shots/404/sheet3.jpg (debug) and sheet4.jpg (final release APK, incl. rapid R/L/R reversals): one case per frame, no spawn, no blank frame. Shelf keeps its existing three-phase pull-out from the slot (ShelfHome), Case stacks has no separate featured case (selection is the carousel). Cardboard box / Crate / Binder / Console stack: A-pickup flight from 402 unchanged, NOT re-captured. Lite / animations-off and touch drag NOT verified on hardware."
+  },
+  {
+   "id": "D96",
+   "title": "Cover details: long title (007 Tomorrow Never Dies (TiJayFLY)) read cut at the right edge in frames of a rapid change",
+   "rule": "TRUNCATE",
+   "severity": "low",
+   "status": "suspect",
+   "found": "2026-10-29 update 404 sheet4.jpg",
+   "note": "StableFullText / FullText last-resort slide may have been mid-slide in the frames; the settled state was not inspected. Needs a still with the game settled."
   }
  ]
 }

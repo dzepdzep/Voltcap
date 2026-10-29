@@ -3,13 +3,13 @@
  "layout_manual": {
   "BOX": {
    "status": "PASS",
-   "note": "Thor 29 Oct (update 403): no row-wide dark / light plates, case sides and ends in cardboard / plastic tones (no near-black slabs), contact shadow per case; ALL category 2 rows only; 1 / 3 rows, 1-3 games, empty, mixed row-count categories NOT re-checked this update",
+   "note": "Thor 29 Oct (update 403): no row-wide dark / light plates, case sides and ends in cardboard / plastic tones (no near-black slabs), contact shadow per case; ALL category 2 rows only; 1 / 3 rows, 1-3 games, empty, mixed row-count categories NOT re-checked this update | UPDATE 404 (Thor): Rows 1 / Auto(2) / 3 checked: ALL 1 row PASS, ALL 3 rows = honest note + 2 rows PASS, GBC 1 row (8 games) and GBC 3 rows (3 rows of cases) PASS (.shots/404/boxgrid.jpg); 1-3 game and empty categories NOT VERIFIED.",
    "evidence": ".shots/403/box_before.png vs box_after2.png, final_BOX.png (local, not committed); Physical403Test"
   },
   "COVERDETAILS": {
    "status": "PASS",
-   "note": "Thor 29 Oct (update 403): big case shows its spine and top without clipping in Subtle and Realistic 3D (GBA Dr. Mario, N64 007); the N64 front's grey fields are in the ScreenScraper scan (480x352 on a 1.425 face: no fit bars) - NOT verified against the raw file; full reference-07 parity NOT claimed",
-   "evidence": ".shots/403/cd_subtle.png, cd_real.png, cd_n64_real.png (local, not committed); CoverDetails403Test"
+   "note": "Thor 29 Oct (update 403): big case shows its spine and top without clipping in Subtle and Realistic 3D (GBA Dr. Mario, N64 007); the N64 front's grey fields are in the ScreenScraper scan (480x352 on a 1.425 face: no fit bars) - NOT verified against the raw file; full reference-07 parity NOT claimed | UPDATE 404 (Thor, release 0.6.58): the big case now comes out of its shelf slot and the previous one goes back (D95), contiguous frames incl. rapid reversals: one case per frame, no blank frame. Lite / animations off / touch NOT verified.",
+   "evidence": ".shots/403/cd_subtle.png, cd_real.png, cd_n64_real.png (local, not committed); CoverDetails403Test; .shots/404/sheet3.jpg, sheet4.jpg, cd404r.mp4 (local); CoverFlight404Test"
   },
   "CINEMA": {
    "status": "PASS",

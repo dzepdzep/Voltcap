@@ -48,7 +48,7 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | CUBE | Cube menu | PASS | 2 / 0 | NOT TESTED | S4_CUBE.mp4 |
 | MEMCARD | Memory card (2000) | PASS | 0 / 1 | NOT TESTED | S4_MEMCARD.mp4 |
 | CASEFLOW | Case flow | PASS | 5 / 36 | NOT TESTED | S4_CASEFLOW.mp4 |
-| BOX | Cardboard box | PASS | 0 / 1 | PASS: Thor 29 Oct (update 403): no row-wide dark / light plates, case sides and ends in cardboard / plastic tones (no near-black slabs), contact shadow per case; ALL category 2 rows only; 1 / 3 rows, 1-3 games, empty, mixed row-count categories NOT re-checked this update | S4_BOX.mp4 |
+| BOX | Cardboard box | PASS | 0 / 1 | PASS: Thor 29 Oct (update 403): no row-wide dark / light plates, case sides and ends in cardboard / plastic tones (no near-black slabs), contact shadow per case; ALL category 2 rows only; 1 / 3 rows, 1-3 games, empty, mixed row-count categories NOT re-checked this update / UPDATE 404 (Thor): Rows 1 / Auto(2) / 3 checked: ALL 1 row PASS, ALL 3 rows = honest note + 2 rows PASS, GBC 1 row (8 games) and GBC 3 rows (3 rows of cases) PASS (.shots/404/boxgrid.jpg); 1-3 game and empty categories NOT VERIFIED. | S4_BOX.mp4 |
 | STORAGE | Storage boxes | PASS | 2 / 0 | NOT TESTED | S4_STORAGE.mp4 |
 | FILESELECT | File select (1996) | PASS | 2 / 0 | NOT TESTED | S4_FILESELECT.mp4 |
 | ORBIT | Orbit deck (1995) | PASS | 2 / 1 | NOT TESTED | S4_ORBIT.mp4 |
@@ -63,7 +63,7 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | TERMINAL | Terminal | PASS | 0 / 2 | NOT TESTED | S1_TERMINAL.mp4 |
 | CINEMA | Cinema | PASS | 2 / 12 | PASS: Thor 28 Oct: contact sheets, no shift of name / logo / facts / buttons / rows, no flicker (no new evidence of a regression) | S4_CINEMA.mp4 |
 | ARCTIC | Arctic hub | PASS | 1 / 6 | PASS: Thor 28 Oct: contact sheets, same checks as Cinema | S4_ARCTIC.mp4 |
-| COVERDETAILS | Coverflow details | NOT TESTED | - | PASS: Thor 29 Oct (update 403): big case shows its spine and top without clipping in Subtle and Realistic 3D (GBA Dr. Mario, N64 007); the N64 front's grey fields are in the ScreenScraper scan (480x352 on a 1.425 face: no fit bars) - NOT verified against the raw file; full reference-07 parity NOT claimed | - |
+| COVERDETAILS | Coverflow details | NOT TESTED | - | PASS: Thor 29 Oct (update 403): big case shows its spine and top without clipping in Subtle and Realistic 3D (GBA Dr. Mario, N64 007); the N64 front's grey fields are in the ScreenScraper scan (480x352 on a 1.425 face: no fit bars) - NOT verified against the raw file; full reference-07 parity NOT claimed / UPDATE 404 (Thor, release 0.6.58): the big case now comes out of its shelf slot and the previous one goes back (D95), contiguous frames incl. rapid reversals: one case per frame, no blank frame. Lite / animations off / touch NOT verified. | - |
 | ARTLIB | Artwork library | NOT TESTED | - | NOT TESTED | - |
 
 `transients / hitches` are counts to look at, not verdicts: a slide, a crossfade or the intended edge-bump shake is a transient too. The blank-frame scan only fails on black / white / brightness-dip frames.
