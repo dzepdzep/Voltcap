@@ -9,6 +9,7 @@
 **DONE (update 387): D84** profile-selector screensaver timer fixed, Thor-verified.
 **DONE (update 388): D77 again** highlight stayed in slot 3 while the row glided; fixed in FollowFocus (highlight follows the slot), Dashboard + Side menu Thor-verified frame by frame.
 **DONE (update 389): D77 third time** the highlight is a crossfade by the row position (388 handed it over half-way and the frame swung a slot, found by a per-frame geometry trace); Dashboard + Side menu settled slot verified Endless on / off; other layouts see SUMMARY 389 (untested list).
+**DONE (update 390):** Dashboard + Side menu row: "Game you're on" Left / Middle / Right (default As designed = second card), Thor-verified; row audit now has a selection check for every layout (13 layouts PASS, Channel grid / Live tiles by design). **Open: Thor sessions S2-S4 (37 layouts untested, list in SUMMARY 390 / COVERAGE RA-03), Hero carousel needs a trace.**
 **NEXT PRIORITY: (1) Side menu FollowFocus on hardware, Endless on / off; (2) D83 more "…"; then priority 3 (quick page switcher and controller navigation).**
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 

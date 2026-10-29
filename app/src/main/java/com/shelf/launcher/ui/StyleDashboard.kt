@@ -319,8 +319,9 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
     // Update 125: the row goes round with Endless on (EndlessRow.kt).
     val fits = remember { RowFits() }
     val row = rememberLoopRow(c, fits.value)
-    val list = rememberLazyListState(initialFirstVisibleItemIndex = (row.focusItem - 1).coerceAtLeast(0))
-    val follow = FollowFocus(list, row)
+    val before = rowBefore(Features.rowFocus.state.value, fits.visible)
+    val list = rememberLazyListState(initialFirstVisibleItemIndex = followTarget(row.focusItem, before))
+    val follow = FollowFocus(list, row, before)
     if (QaGeom.on) SideEffect { QaTrace.event("dashring", "sel=${row.focusItem}") } // (QA 389: the selection; the cards report their own x and highlight)
     val keys = remember(c.games) { gameKeys(c.games) }
     val select by rememberUpdatedState(c.actions.select)
@@ -336,7 +337,7 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
             // The R1 Size tile (update 104): smaller cards in the same panel (larger with the hero panel, which gives room).
             val h = ((maxHeight - 16.dp) * GameSize.scale(com.shelf.launcher.data.HomeLayout.DASH).coerceAtMost(1f)).coerceAtLeast(24.dp)
             val w = h * styleAspect(c.type)
-            SideEffect { fits.report(maxWidth, w, 12.dp) } // (Update 226, #105)
+            SideEffect { fits.report(maxWidth, w, 12.dp, 12.dp) } // (Update 226, #105)
             val corner = LocalCardLook.current.cornerDp.dp
             LazyRow(
                 state = list, horizontalArrangement = Arrangement.spacedBy(12.dp),

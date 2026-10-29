@@ -298,6 +298,7 @@ private fun DashSettings() {
     ShelfTextField(Features.dashSubtitle.state.value, { Features.dashSubtitle.value = it.take(60) }, "Line under the title", leadingIcon = Icons.Filled.ShortText)
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.PlayArrow, "Now playing card", "The game you're on big, with Play / Continue. Off: the row gets the room.", Features.dashHero)
+    StyleChoice("Game you're on in the row", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
     ShelfTextField(Features.dashRowTitle.state.value, { Features.dashRowTitle.value = it.take(40) }, "Row title (empty = the category's name)", leadingIcon = Icons.Filled.TextFields)
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.AccountCircle, "Player card", "Your RetroAchievements picture and name, battery and library bars (wide screens).", Features.dashProfile)
@@ -345,6 +346,7 @@ private fun SideSettings() {
     Spacer(Modifier.height(10.dp))
     StyleChoice("At the top of the menu", Features.SideEmblem.values(), Features.sideEmblem.state.value, { it.label }) { Features.sideEmblem.value = it }
     Slider("Menu width", Features.sideWidth, 140, 280) { "$it dp" }
+    StyleChoice("Game you're on in the row", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
     Toggle(Icons.Filled.BatteryChargingFull, "Power capsule", "Voltcap's glass capsule charging up, with the game you're on under it (taller screens).", Features.sideOrb)
     Toggle(Icons.Filled.Style, "Gold trim", "Off: the theme's colour.", Features.sideGold)
     Toggle(Icons.Filled.TextFields, "Capitals", "Menu names in capitals.", Features.sideCaps)

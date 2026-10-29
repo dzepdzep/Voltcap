@@ -110,8 +110,14 @@ internal fun rememberLoopRow(c: StyleCtx, fits: Int = LAZY_LOOP_MIN): LoopRow {
 internal class RowFits {
     private val n = androidx.compose.runtime.mutableIntStateOf(LAZY_LOOP_MIN)
     val value: Int get() = n.intValue
-    fun report(width: androidx.compose.ui.unit.Dp, item: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp) {
+    private val whole = androidx.compose.runtime.mutableIntStateOf(LAZY_LOOP_MIN - 2)
+    /** Update 390: how many whole cards fit between the row's paddings (what [rowBefore] places the selection by). */
+    val visible: Int get() = whole.intValue
+    fun report(width: androidx.compose.ui.unit.Dp, item: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp,
+               pad: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp(0f)) {
         if (item <= androidx.compose.ui.unit.Dp(0f)) return
+        val w = ((width - pad * 2 + gap) / (item + gap)).toInt().coerceAtLeast(1)
+        if (w != whole.intValue) whole.intValue = w
         val k = ((width + gap) / (item + gap)).toInt() + 2
         if (k != n.intValue) n.intValue = k
     }
@@ -119,6 +125,17 @@ internal class RowFits {
 
 /** Update 174: the fewest games a lazy row / list needs to go round (fewer fit on screen, so copies would show). */
 internal const val LAZY_LOOP_MIN = 8
+
+/**
+ * Update 390: how many cards stand before the one you're on in a followed row ([FollowFocus]'s `before`) for the chosen
+ * [com.shelf.launcher.data.Features.RowFocus], with [visible] whole cards fitting the row (the selection always stays on screen).
+ */
+internal fun rowBefore(pos: com.shelf.launcher.data.Features.RowFocus, visible: Int): Int = when (pos) {
+    com.shelf.launcher.data.Features.RowFocus.DESIGN -> 1
+    com.shelf.launcher.data.Features.RowFocus.LEFT -> 0
+    com.shelf.launcher.data.Features.RowFocus.CENTER -> ((visible - 1) / 2).coerceAtLeast(0)
+    com.shelf.launcher.data.Features.RowFocus.RIGHT -> (visible - 1).coerceAtLeast(0)
+}
 
 /**
  * Update 383 (D77): the item a followed row scrolls to so that the item you're on always stands [before] items from the left

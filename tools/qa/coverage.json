@@ -392,6 +392,64 @@
    "status": "NOT TESTED",
    "evidence": "Dashboard Endless wrap checked by hand on the Thor (update 382: 140 / 6 / 3 games, both directions, one press each, one-step focus trace); no onepress sweep over all layouts yet",
    "limits": "only Dashboard on hardware; other looping layouts, Only-first-wide, second screen, Endless off NOT TESTED"
-  }
+  },
+ {
+  "id": "RA-01",
+  "feature": "Row audit: the selected card settles at ONE slot after every press (fixed-slot rows), Endless on",
+  "test": "rowaudit.sh + rowaudit.py (15 presses: slow, burst, reversal)",
+  "device": "AYN Thor 3140972f (hardware, not run in CI)",
+  "mode": "automated",
+  "hardware": true,
+  "status": "PASS",
+  "device_run": "update 390 session 1, 29 Oct 2026, rowaudit.sh (qa_runs/390/*_geom.txt, not committed), ~13 min on the Thor",
+  "evidence": "Settled x identical after every rest: Dashboard 509 / 706 / 1100 (Left / Middle / Right), Side menu 554 / 1046 / 1538, Voltcap row 15, Tile home 804, Circuit board 529 (drift 0..1 px).",
+  "limits": "Only these 5 layouts are fixed-slot rows; Dashboard / Side menu measured with every Left / Middle / Right value, the other three only with their defaults. Motion between rests is judged by the geometry trace, not by eye."
+ },
+ {
+  "id": "RA-02",
+  "feature": "Row audit: one press = one game step in the right direction, no ignored / doubled presses (selection, any layout)",
+  "test": "rowaudit.py selection check on the app's own focus events (QaTrace), 15 presses",
+  "device": "AYN Thor 3140972f (hardware, not run in CI)",
+  "mode": "automated",
+  "hardware": true,
+  "status": "PASS",
+  "device_run": "update 390 session 1, 29 Oct 2026, rowaudit.sh (qa_runs/390/*_geom.txt, not committed), ~13 min on the Thor",
+  "evidence": "One step per press, correct direction, reversals and rapid presses: CLASSIC TILES TV SPOT BAR HUB RESUME CROSS GRID SHELF CIRCUIT DASH SIDE (Endless on); CHAN (3 games per press, 3-row columns, --step=3); LIVE (2-D mosaic, steps by tile geometry, symmetric back: 47-50-51 / 55-52-51; judged by design, not a one-step layout). Dashboard + Side menu also with Endless OFF and Right.",
+  "limits": "Category tested: 'All', ~2150 games, preview started mid-list: the FIRST / LAST game with Endless off and the wrap with Endless on were not reached by this sequence on hardware (unit tests only). HERO logs no focus events (no data). Title / art / highlight agreement is not part of this check (RA-04)."
+ },
+ {
+  "id": "RA-03",
+  "feature": "Row audit on the remaining layouts (selection + settle) and on Endless off / small categories",
+  "test": "rowaudit.sh LAYOUT ... (see the limits for the list)",
+  "device": "AYN Thor 3140972f (hardware, not run in CI)",
+  "mode": "automated",
+  "hardware": true,
+  "status": "NOT TESTED",
+  "evidence": "-",
+  "limits": "NOT run on hardware: LIBRARY, STACKS, TIMELINE, ARCADE, CONSOLES, DISCS, HERO_TILES, TWIN_DESK, TWIN_ICONS, TWIN_SHOWCASE, CRATE, CARDS, CUSTOM, POCKET_CLASSIC, POCKET_RIBBON, GREENCORE, POCKET, CUBE, MEMCARD, CASEFLOW, BOX, STORAGE, FILESELECT, ORBIT, AIRY, NIGHT, BLADES, BUBBLES, CAMERA, PANELS, MAGAZINE, SHOP, TERMINAL, CINEMA, ARCTIC, COVERDETAILS, ARTLIB. Hero carousel has no trace (no geometry, no focus events: needs instrumentation or a recording). Endless OFF only run for Dashboard + Side menu (Right); categories with fewer games than fit; second screen."
+ },
+ {
+  "id": "RA-04",
+  "feature": "Title, art and highlight agree with the selected game after navigation (per layout)",
+  "test": "screenshot after the audit sequence compared with the last focus event",
+  "device": "AYN Thor 3140972f (hardware, not run in CI)",
+  "mode": "manual",
+  "hardware": true,
+  "status": "NOT TESTED",
+  "evidence": "-",
+  "limits": "Looked at once, settled, after the 15-press sequence: Dashboard (Right), Side menu (Right), Hero carousel, Icon bar: all showed the selected game's name, art and frame together (Icon bar puts the small name beside the big tile by design). Not looked at mid-glide and not looked at for the other layouts; no automatic per-frame title / art check exists yet."
+ },
+ {
+  "id": "RA-05",
+  "feature": "Game you're on: Left / Middle / Right for the Dashboard and Side menu rows (Features.rowFocus, default 'As designed' = second card)",
+  "test": "RowFocus390Test (unit) + rowaudit.sh on the Thor",
+  "device": "AYN Thor 3140972f (hardware, not run in CI)",
+  "mode": "automated",
+  "hardware": true,
+  "status": "PASS",
+  "device_run": "update 390 session 1, 29 Oct 2026, rowaudit.sh (qa_runs/390/*_geom.txt, not committed), ~13 min on the Thor",
+  "evidence": "RowFocus390Test; Thor: each value settles at its own fixed x, Endless on and off (Right), screenshots show the highlighted card, the Now playing card / background art and the row aligned.",
+  "limits": "Classic row (Left / Middle) and Tile home (Edges / Left / Middle / Right) keep their own existing settings and were not changed; other scrolling layouts are not compatible with FollowFocus and keep their designed positions. Settings screen entry checked by build only, not looked at on the Thor; very narrow rows (1-2 visible cards) not tested."
+ }
  ]
 }

@@ -803,6 +803,14 @@ object Features {
     enum class DockOtherGames(val label: String) { ALL("All"), FOCUSED("Only the game you're on"), NONE("None") }
     val dockOtherGames = EnumPref("dock_other_games", DockOtherGames.ALL, DockOtherGames.values())
 
+    /**
+     * Update 390: where the game you're on stands in the Dashboard's and the Side menu's games row (the rows that glide to follow
+     * the selection, FollowFocus). DESIGN = the layouts' own place (second card, the one before it peeks in), the others are the
+     * row's first card, the middle, the last card that fits. Classic row / Tile home keep their own "Game you're on" choices.
+     */
+    enum class RowFocus(val label: String) { DESIGN("As designed (second)"), LEFT("Left"), CENTER("Middle"), RIGHT("Right") }
+    val rowFocus = EnumPref("style_row_focus", RowFocus.DESIGN, RowFocus.values())
+
     // ---- Save Vault ----
     enum class SaveVaultStyle(val label: String) {
         CLASSIC("Classic squares"),

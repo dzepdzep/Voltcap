@@ -715,6 +715,22 @@ class TestGeomcheck(Base):
         t = geomcheck.from_logcat(self.log(offscreen=True))
         self.assertNotIn("tile:z", t["frames"][-1]["elements"]); self.assertNotIn("tile:q", t["frames"][-1]["elements"])
 
+    def test_rowaudit_selection_check_catches_a_skipped_or_wrong_step(self):
+        import io, contextlib, rowaudit
+        def verdict(idx, seq="R R R L", step=1):
+            L = ["VoltcapQA: 1 MARK seq " + seq] + [f"VoltcapQA: {i+2} focus {n} x" for i, n in enumerate(idx)]
+            f = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False); f.write(chr(10).join(L)); f.close()
+            b = io.StringIO()
+            with contextlib.redirect_stdout(b): code = rowaudit.selection(f.name, step)
+            os.unlink(f.name); return code
+        self.assertEqual(verdict([10, 11, 12, 11]), 0)                # one step per press (press 1's own start is unknown), ◀ goes back
+        self.assertEqual(verdict([10, 11, 13, 12]), 1)                # a press that skipped a game
+        self.assertEqual(verdict([10, 11, 12, 13]), 1)                # ◀ moved forward
+        self.assertEqual(verdict([10, 11, 12]), 1)                    # a press without any focus change
+        self.assertEqual(verdict([10, 13, 16, 13], step=3), 0)        # Channel grid: three games per column
+        self.assertEqual(verdict([5, 6, 7, 0, 7], seq="R R R R L"), 0)  # Endless: the last game to the first is one step
+        self.assertEqual(verdict([0, 1], seq=""), 2)                         # no MARK seq: NO DATA, never a pass
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
