@@ -120,17 +120,21 @@ internal class RowFits {
 internal const val LAZY_LOOP_MIN = 8
 
 /**
- * Keeps the item you're on in view of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
- * [before] is how many items stay visible before it.
+ * Update 383 (D77): the item a followed row scrolls to so that the item you're on always stands [before] items from the left
+ * edge. (Until 382 a card already in view was left where it was, so ▶ from the second slot left two games to its left and the
+ * row only moved later, when the focus reached an edge: "two games left of the selected one", and a row that moved a press
+ * after the selection.) One press = one step of the row, the selected card keeps its place.
+ */
+internal fun followTarget(focusItem: Int, before: Int): Int = (focusItem - before).coerceAtLeast(0)
+
+/**
+ * Keeps the item you're on at the same place of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
+ * [before] is how many items stand before it ([followTarget]).
  */
 @Composable
 internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1) {
     LaunchedEffect(row.focusItem, row.count) {
-        val target = (row.focusItem - before).coerceAtLeast(0)
-        val visible = list.layoutInfo.visibleItemsInfo
-        val inView = visible.any { it.index == row.focusItem } && visible.firstOrNull()?.index != row.focusItem &&
-            visible.lastOrNull()?.index != row.focusItem
-        if (inView && visible.size > 2) return@LaunchedEffect
+        val target = followTarget(row.focusItem, before)
         if (kotlin.math.abs(list.firstVisibleItemIndex - target) > 12) runCatching { list.scrollToItem(target) }
         else runCatching { list.animateScrollToItem(target) }
     }

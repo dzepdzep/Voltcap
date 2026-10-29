@@ -2,6 +2,15 @@
 
 **Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
 
+## Update — 29 Oct 2026 (383): Dashboard Endless, row alignment (D77) fixed in FollowFocus, one-press + alignment test, CLAUDE.md start-of-task rule
+
+**Copy:** `src_copy/ui/EndlessRow.kt` (already copied to `app/`, identical). Test: `app/src/test/.../ui/FollowFocus383Test.kt` (new, 4 tests). Uncommitted second-screen files (`CompanionHub.kt`, `SecondPad.kt`, `WidgetBoard.kt`) untouched and NOT part of this commit.
+- **Cause (D77, found in code):** `FollowFocus` returned early whenever the focused card was already in view and not the first / last visible one. The row therefore moved only when the focus reached an edge: after one ▶ from the second slot **two games stood left of the selection**, and later presses moved the row at a different moment than the selection ("row moves before / after the selection changes"). Used by the Dashboard row and the Side menu row.
+- **Fix:** `followTarget(focusItem, before)` = the one place the selected card always has (`before` = 1 game on its left); `FollowFocus` always glides (or jumps when far) to it. One press = one row step, both directions; the number of games left of the selection never changes. Endless off keeps the first games at the edge (`coerceAtLeast(0)`).
+- **Thor 3140972f (debug 0.6.55 `install -r`, data kept, ~6 min):** Dashboard preview, All: start, ▶ ▶ ▶, ◀ via `vqa.sh onepress`, screenshots: the selected card stayed in the second slot (x≈786) with exactly one game on its left each time. The OLD behaviour was **not** captured on the Thor (fix installed first), so the cause is from code, not a recording. Not tested: Side menu row, second screen, other categories / game counts. Thor left clean (hooks paused, preview off, no recorder). A restart showed the "Who's playing?" profile picker; I only moved focus and left it with B (profile kept).
+- **Checked:** `testDebugUnitTest` 357 tests, 0 failures; `static_checks.py --strict` PASS; `assembleDebug`. `vqa.sh` must be pushed LF-only (`tr -d '\r'`), a CRLF copy fails on the device. D77 -> fixed in `tools/qa/defects.json`.
+- **Docs:** `CLAUDE.md` rule 13 (read CLAUDE.md, CURRENT_TASK.md, handoff priorities, newest relevant SUMMARY entries at the start of every task, no history).
+
 ## Update — 29 Oct 2026 (382): one-press QA (R23), Thor README rule, Dashboard "second press" report NOT reproduced
 
 **Copy:** nothing new to copy for behaviour. `src_copy/ui/StyleHomes.kt` + `app/.../StyleHomes.kt` got one comment line (`qa-ok: ONEPRESS`, Resume); both are identical. Uncommitted second-screen work (`CompanionHub.kt`, `SecondPad.kt`, `WidgetBoard.kt`) untouched and left uncommitted. (A stray `git stash` of it was undone at once with `git stash pop`: the three files are back, unchanged.)

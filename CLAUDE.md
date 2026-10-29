@@ -25,6 +25,11 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
     (project root) first, then the top entries of `SUMMARY.md`. QA results: only exit code 0 / PASS counts; see `tools/qa/README.md`
     "Trusting a result". Run `python3 tools/qa/selftest/test_qa.py` after touching any QA tool.
 
+13. **Start of EVERY VoltCap task (automatic; prompts never need to repeat it):** read this file, `CURRENT_TASK.md`, the current
+    priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES" and the newest update entry) and the newest relevant `SUMMARY.md`
+    entries (the top ones for the system the task touches). Do not read historical sections (older update notes, "(history)" blocks)
+    unless the task needs them. Rules 2-3 still apply: grep, then read ranges.
+
 ## Standing Thor QA authorization (owner-granted, 28 Oct 2026; current and future tasks until revoked)
 The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHORIZATION for VoltCap development and QA on it. Claude does NOT need separate user permission for ordinary Thor testing.
 - **Allowed:** bounded ADB inspection and QA; installing an updated APK over the existing VoltCap; controller and touch testing; screenshots and short recordings; temporary layout / preference changes if the original values are restored.
