@@ -1019,9 +1019,45 @@
    "title": "Second-screen Wall page showed 'All games / 0 Games' right after a game closed",
    "rule": "suspect",
    "severity": "low",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-10-29 update 384, Thor home second screen (qa_runs/384/bot_p.png, bot_w0.png)",
-   "note": "Library has 2157 games; seen once, a few seconds after returning from a game. Not reproduced or traced yet; may be a loading state of the Platforms tile count."
+   "note": "REPRODUCED update 386 (twice, on a fresh process, no game involved) and FIXED: LauncherScreen builds the category tiles only while the category screen is open or once when empty; that first build can run before the library has loaded, so the Wall (platformTiles = categoryTiles) kept 'All games / 0 Games' with placeholder slices. Now rebuilt when the ALL tile's count differs from the library (categoryTilesStale). Thor after the fix: '2213 Games' with art slices. CategoryTilesStale386Test. The 'right after a game closed' trigger itself was not re-run after the fix."
+  },
+  {
+   "id": "D81",
+   "title": "Hub Widget Board: widgets below the fold unreachable with the controller (another app's widget never lit or scrolled to)",
+   "rule": "R23 / controller reach",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 update 386, Thor, SecondPad after routing keys through the main screen (display 0)",
+   "note": "Board tiles were no pad targets and the board had no scroller, so down from the Play button went to the dock's Home button. FIXED: non-edit tiles are padTargets (wb-card-*) with up / down stepping tile to tile (boardPadStep) via the new SecondPad.focus; the board scrolls to the next tile. Thor: the real Analog clock tile lit with the ring. BoardPadStep386Test. A press on another app's widget does nothing (RemoteViews can't take a pad press), touch only."
+  },
+  {
+   "id": "D82",
+   "title": "SecondPad: A never pressed the lit control and B never left the second screen",
+   "rule": "R23 / controller",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-10-29 update 386, Thor: ring stayed on the dock after B, A on the lit dock button did nothing",
+   "note": "SecondPad.key records the key-down of A and B in keysDown, and the check at the top of key() swallows the key-up of every code in keysDown, so their 'if (up)' branches never ran (code since update 177, 13 Oct). FIXED: A and B no longer register in keysDown. Thor: B clears the ring, A on the dock Home button switched the Hub to its Games page. SecondPadAB386Test (source-level, the handler needs android.view.KeyEvent)."
+  },
+  {
+   "id": "D83",
+   "title": "More '...' truncation seen on the Thor: R1 panel Now Playing artist, Settings header subtitle, Widget Board editor name",
+   "rule": "R18 TRUNCATE (CLAUDE.md rule 11)",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-10-29 update 386 (R1 quick panel player 'Future & Young...', Settings Screens header 'what goes on each screen w...', WidgetBoard.kt editor name TextOverflow.Ellipsis)",
+   "note": "Seen while testing, NOT fixed (outside the scope of this task). 371 static TRUNCATE findings remain app-wide."
+  },
+  {
+   "id": "D84",
+   "title": "Profile selector ('Who's playing?'): screensaver timer misbehaves (owner report)",
+   "rule": "suspect",
+   "severity": "medium",
+   "status": "open",
+   "found": "owner report, 2026-10-29, recorded in update 386",
+   "note": "UNRESOLVED and NOT investigated yet (no details beyond the report: the idle / screensaver timer on the profile selector screen). Next: reproduce on the Thor (3140972f) by leaving the profile picker idle, read HomeIdle / ProfilePicker, log the timer; do not clear data (the picker shows after a restart)."
   }
  ]
 }

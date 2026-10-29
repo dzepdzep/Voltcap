@@ -1296,7 +1296,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Worked out off the main thread, and only while the category screen is open
     // (or once, so it is ready the first time it opens). Each category's list
     // comes from the state's memoized visibleGames.
-    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty()
+    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty() || categoryTilesStale(categoryTiles, state.games.size)
     val tilesBuiltOpen = remember { BooleanArray(1) }
     LaunchedEffect(
         tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,

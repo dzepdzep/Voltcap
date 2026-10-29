@@ -148,6 +148,9 @@ internal object SecondPad {
         return true
     }
 
+    /** Lights control [id] (a control that moved the controller inside its own list, see Target.move); nothing while the controller is elsewhere. */
+    fun focus(id: String) { if (active) focused = id }
+
     fun leave() {
         active = false
         ringHold = false // (Update 200)
@@ -186,8 +189,9 @@ internal object SecondPad {
             return true
         }
         return when (event.key) {
+            // (A and B act on the key-up, so their key-down is not put in keysDown: the check at the top swallows the up of
+            // everything in it, and A / B then did nothing at all — no press, B never left the second screen.)
             Key.ButtonA, Key.Enter, Key.DirectionCenter -> {
-                if (down) keysDown += code
                 if (up) {
                     val t = synchronized(targets) { targets[focused] }
                     if (t != null) { sound(UiSound.OPEN); runCatching { t.press() } }
@@ -195,7 +199,6 @@ internal object SecondPad {
                 true
             }
             Key.ButtonB, Key.Back -> {
-                if (down) keysDown += code
                 if (up) { leave(); sound(UiSound.BACK) }
                 true
             }

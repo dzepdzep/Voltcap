@@ -462,6 +462,14 @@ private fun Tile(
 }
 
 /**
+ * D80 (update 386): the tiles are only worked out while the category screen is open, or once when there are none. That
+ * first run can come before the library has loaded, and the second screen's Wall kept showing "All games · 0 Games" (and no
+ * consoles) until the category screen was opened. True when the "All games" tile's count no longer matches the library.
+ */
+fun categoryTilesStale(tiles: List<CategoryTile>, gamesCount: Int): Boolean =
+    tiles.firstOrNull { it.key == "ALL" }?.let { it.count != gamesCount } == true
+
+/**
  * Works out every category tile. Meant for a background thread (Dispatchers.Default):
  * it runs each category's filter, which the state memoizes (see LauncherUiState),
  * so repeat calls with unchanged inputs are cheap.

@@ -3,9 +3,10 @@
 **DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).
 **Update 382 (29 Oct):** one-press QA rule R23 + tools; Dashboard 'second press' report not reproduced on the Thor (D77, ask the owner for category / game count / options). Uncommitted second-screen work still preserved.
 **Update 383 (29 Oct):** D77 fixed: `FollowFocus` (`ui/EndlessRow.kt`) left an in-view card where it was, so the row showed two games left of the selection and moved a press late; now one fixed place (`followTarget`), `FollowFocus383Test`, Thor-checked on the Dashboard. CLAUDE.md rule 13 (start-of-task reading) added.
-**Update 385 (29 Oct):** D79 fixed and Thor-verified (Now Playing text slides, no "…"). Next: third-party widget host, Hub controller focus, Side menu FollowFocus on hardware; priority 3.
-**Update 384 (29 Oct):** second-screen in-game fixes (379) verified on the Thor for Now Playing / Music and committed; open: D79 (Hub Music ellipsis), D80, third-party widgets + controller focus in-game not verified.
-**NEXT PRIORITY: finish priority 2 (D79 marquee, widget host + Hub controller check in-game), then priority 3.**
+**DONE (update 385): D79** Now Playing title / artist wrap-shrink-slide, no "…", Thor-verified.
+**DONE (update 386):** third-party widgets in the Hub verified on the Thor (home, in-game, after returning home); Hub controller routing found (keys on display 0) and two controller defects fixed (D82 A / B dead, D81 Widget Board unreachable); D80 reproduced and fixed (Wall "0 Games").
+**Update 384 (29 Oct):** second-screen in-game fixes (379) verified on the Thor for Now Playing / Music and committed.
+**NEXT PRIORITY: (1) D84, the profile-selector screensaver timer bug (unresolved, owner report, `COWORK_HANDOFF.md` 2b); (2) Side menu FollowFocus on hardware, Endless on / off; (3) D83 more "…"; then priority 3 (quick page switcher and controller navigation).**
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 
 # (history) status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)

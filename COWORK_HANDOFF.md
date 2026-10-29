@@ -6,12 +6,15 @@
 
 **UNFINISHED PRIORITIES (in order; set 28 Oct 2026; rules in CLAUDE.md; next task in CURRENT_TASK.md):**
 1. ~~**Endless navigation**~~ DONE in update 381 (SUMMARY.md): Dashboard's ◀ on the first game went into the menu instead of round to the last card the row draws left of it; fixed, Thor-verified. Not re-verified: other looping layouts on hardware, 9-12 game categories.
-2. **Second-screen in-game widget reliability** (SUMMARY 379 covered Now Playing + third-party widget host in code only; hardware NOT verified; sections 2, 4-9 and part of 1 of the master polish still open).
+2b. **OPEN, UNRESOLVED (owner report, D84): the screensaver / idle timer on the profile selector ("Who's playing?") misbehaves.** No details beyond that, not investigated. Next: reproduce on the Thor by leaving the picker idle (it shows after an app restart; never clear data), read `HomeIdle` (`ui/PowerSaver.kt`) / `ProfilePicker`, log the timer. Do not forget it.
+2. **Second-screen in-game widget reliability** (UPDATE 386: third-party widgets at home / in-game / after returning home VERIFIED on the Thor, Hub controller A / B and Widget Board reach FIXED; still open: Side menu FollowFocus on hardware with Endless on / off, code test only). Older text: (SUMMARY 379 covered Now Playing + third-party widget host in code only; hardware NOT verified; sections 2, 4-9 and part of 1 of the master polish still open).
 3. **Quick page switcher and controller navigation.**
 4. **Showcase, companion, widgets, Games page and dock polish.**
 5. **Music transitions** without redesigning the players or touching their toggles.
 6. **Dual-screen integration and final Thor QA** (then release only per the checklist).
 Second-screen work of 379 is committed (update 384).
+
+**Update 386 (29 Oct 2026, Thor ~17 min):** real third-party widget (Clock › Analog clock) updates on the Hub at home, in-game and after returning home (PASS, removed again). Hub controller: the right routing is keys on display 0 (the main screen), ▼ past the bottom enters the Hub. Fixed: D82 (A never pressed, B never left the Hub: `keysDown` swallowed their key-up), D81 (Widget Board tiles / widgets below the fold unreachable: tile pad targets + `SecondPad.focus`), D80 (reproduced: Wall "0 Games", category tiles built before the library loaded; `categoryTilesStale`). Tests: 4 new classes, 375 pass. NOT done: Side menu FollowFocus on hardware (`SideRowFollow386Test` only), D83 more "…" (R1 panel artist, Settings header subtitle, widget editor name), **D84 profile-selector screensaver timer (unresolved, see 2b)**.
 
 **Update 385 (29 Oct 2026, Thor ~10 min):** D79 fixed (Now Playing title / artist: FullText wrap-shrink-slide in NowPlayingPanel, LyricsStage = the Hub Music page, MusicPlayer, BigMusicPlayer, FullMusicScreen, ScreenSaver, WidgetBoard; marquee in MusicOverlayView), Thor-verified on the Hub (home + in-game). Open: third-party widgets, Hub controller focus, Side menu FollowFocus, D80 (not reproduced), game popup description "…".
 

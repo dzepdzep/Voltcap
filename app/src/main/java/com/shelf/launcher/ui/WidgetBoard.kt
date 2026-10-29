@@ -191,6 +191,17 @@ object AppWidgets {
     }
 }
 
+/** The tile the controller moves to from tile [i] with ▲ (dir 2) or ▼ (dir 3) on a board of [size] tiles in [cols] columns; null at the edge. */
+internal fun boardPadStep(i: Int, size: Int, cols: Int, dir: Int): Int? {
+    if (i !in 0 until size) return null
+    val c = cols.coerceAtLeast(1)
+    return when (dir) {
+        3 -> (i + c).takeIf { it < size } ?: (size - 1).takeIf { it / c > i / c }
+        2 -> (i - c).takeIf { it >= 0 }
+        else -> null
+    }
+}
+
 /** Update 299: the sizes [item] may take (built-ins: all three). */
 internal fun allowedSizesOf(context: Context, item: String): List<WidgetSize> =
     if (item.startsWith("app:")) item.removePrefix("app:").toIntOrNull()?.let { AppWidgets.allowedSizes(context, it) } ?: listOf(WidgetSize.NORMAL)
@@ -221,6 +232,18 @@ internal fun WidgetBoardPage(
     LaunchedEffect(items) { if (dragId == null) order = items }
     LaunchedEffect(editing) { if (!editing) { selected = null; dragId = null } }
     val gridState = rememberLazyGridState()
+    val padScope = androidx.compose.runtime.rememberCoroutineScope()
+    // The controller (SecondPad) steps tile to tile with ▲ ▼, scrolling the board to the next one: a widget below the
+    // fold (another app's, which can't take focus itself) used to be unreachable, the dock being the nearest thing below.
+    fun cardMove(id: String, dir: Int): Boolean {
+        val i = order.indexOf(id)
+        val cols = gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == i }
+            ?.let { cur -> gridState.layoutInfo.visibleItemsInfo.count { it.row == cur.row } } ?: 1
+        val to = boardPadStep(i, order.size, cols, dir) ?: return false
+        padScope.launch { gridState.animateScrollToItem(to) }
+        SecondPad.focus("wb-card-${order[to]}")
+        return true
+    }
     val inputMode = androidx.compose.ui.platform.LocalInputModeManager.current
     // Widgets from other apps only update while the host listens.
     DisposableEffect(Unit) {
@@ -303,6 +326,7 @@ internal fun WidgetBoardPage(
                             .fillMaxWidth()
                             .height(if (size == WidgetSize.EXPANDED) minOf(size.heightDp.dp, viewH) else size.heightDp.dp)
                             .clip(shape)
+                            .then(if (editing) Modifier else Modifier.padTarget("wb-card-$id", onMove = { d -> cardMove(id, d) }) { })
                             .background(ShelfTheme.colors.surface.copy(alpha = 0.78f))
                             .then(
                                 if (editing) Modifier.border(if (isSel) 3.dp else 1.5.dp, if (isSel) ShelfTheme.accent else Color.White.copy(alpha = 0.35f), shape)
