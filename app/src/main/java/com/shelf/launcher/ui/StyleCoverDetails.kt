@@ -142,7 +142,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
             Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
                 // One box, keyed by its game: the facing / turned setting, the console's own case and its real scan.
                 key(g.stableKey) {
-                    Box(Modifier.fillMaxWidth().fillMaxHeight(0.84f).riseOnChange(g.stableKey, floor = 0.35f, ms = 260)) {
+                    Box(Modifier.fillMaxWidth().fillMaxHeight(0.84f)) { // (Update 393: the case's artwork never fades in — it is in place the frame its game is selected.)
                         Case3D(
                             g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) 0f else PickedFacing.TURN,
                             case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current,
@@ -234,7 +234,7 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
         fun sizeOf(real: Int): ShelfSpine {
             val gm = c.games.getOrNull(real) ?: return ShelfSpine(minW, spineHmax)
             val hh = spineHmax * (((realCaseMm(gm.platform)?.second ?: 190f) / 190f).coerceIn(0.55f, 1f))
-            return ShelfSpine((hh * shelfSpineAspect(gm.platform)).coerceIn(minW, maxW), hh)
+            return ShelfSpine((hh * CaseThickness.orElse(gm, shelfSpineAspect(gm.platform))).coerceIn(with(density) { CaseThickness.MIN_SPINE_DP.dp.toPx() }, maxW), hh)
         }
         val side = ((wPx / 2f) / (minW + gap)).toInt().plus(2).coerceIn(4, SHELF_MAX_SIDE)
         // Where each place's middle stands against the middle of the one at [lo] (px), worked out when [lo] changes only.

@@ -1,4 +1,5 @@
 # CURRENT_TASK - 28 Oct 2026
+**DONE (update 393):** spine / case thickness from one source (`ui/CaseThickness.kt`: shelf, Cardboard box, Cover details, as Case3D), entrance animations default to Just appear / Just change (saved prefs kept; the Thor still has FADE / SLIDE saved). Open: TV room / Case stacks thickness, depth Off / Realistic side by side.
 **DONE (update 392):** top space cut in Cinema, Arctic hub and Cover details (per layout via `LocalStyleTopInset`, not global), Artwork library 391 change verified; Thor before / after in SUMMARY 392.
 
 **DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).

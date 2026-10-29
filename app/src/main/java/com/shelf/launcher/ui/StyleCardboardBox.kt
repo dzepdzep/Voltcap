@@ -316,7 +316,8 @@ private fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boole
         val mm = realCaseMm(g.platform)
         val len = (mm?.second ?: 190f).coerceIn(90f, BOX_LEN)
         val stand = (mm?.first ?: 135f).coerceIn(60f, 200f)
-        val thick = (len * shelfSpineAspect(g.platform) * (if (messy) 1f + (boxJitter(g.stableKey, 5) + 0.5f) * 0.06f else 1f)).coerceIn(5f, 60f)
+        // (Update 393: the thickness the selected 3D case has — CaseThickness — not a per-console spine guess.)
+        val thick = (len * CaseThickness.orElse(g, shelfSpineAspect(g.platform)) * (if (messy) 1f + (boxJitter(g.stableKey, 5) + 0.5f) * 0.06f else 1f)).coerceIn(5f, 60f)
         val extra = if (messy) (boxJitter(g.stableKey, 4) + 0.5f) * 3f else 0f
         if (x > 0f && x + extra + thick > usable) {
             row++; x = 0f

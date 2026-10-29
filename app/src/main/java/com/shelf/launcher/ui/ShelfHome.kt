@@ -137,7 +137,8 @@ private fun planShelves(games: List<Game>, width: Dp, height: Dp, real: Boolean,
         for (g in games) {
             val h = if (real) spineH * ((realCaseMm(g.platform)?.second ?: 190f) / maxMm).coerceIn(0.45f, 1f) else spineH
             // (Update 126: a console spine of your own gets a slot of its own shape — it was cut at the sides to fit.)
-            val spineW = if (real) (h * spineAspect(g.platform)).coerceIn(12.dp, 48.dp)
+            // (Update 393: real sizes take the thickness the 3D case has — CaseThickness — so a case keeps its width when pulled out.)
+            val spineW = if (real) (h * CaseThickness.orElse(g, spineAspect(g.platform))).coerceIn(CaseThickness.MIN_SPINE_DP.dp, 48.dp) // (393: the old 12 dp floor made a short case's slot 2-3 times its spine)
                 else customSpineAspect(g.platform)?.let { (spineH * it).coerceIn(10.dp, 48.dp) } ?: (spineH * 0.09f).coerceIn(14.dp, 26.dp)
             val frontW = h * pulledAspect(g.platform, false)
             val w = when (stand) {
@@ -759,7 +760,9 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
 @Composable
 private fun SpineSlot(aspect: Float, modifier: Modifier, seed: Int, content: @Composable (Modifier) -> Unit) {
     androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val w = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) maxWidth else minOf(maxWidth, maxHeight * aspect)
+        // (Update 393: a scan close to the slot's shape fills it, so neighbours touch; a very different one keeps its own shape.)
+        val w = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity || maxWidth == androidx.compose.ui.unit.Dp.Infinity || maxHeight <= 0.dp) maxWidth
+            else maxHeight * CaseThickness.spineFill(maxWidth / maxHeight, aspect)
         content(Modifier.width(w).fillMaxHeight().spineDepth(seed))
     }
 }

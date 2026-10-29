@@ -258,8 +258,9 @@ object Features {
      */
     enum class InfoAnim(val label: String) { RISE("Rise in"), FADE("Fade in"), NONE("Just appear") }
     enum class PageAnim(val label: String) { SLIDE("Slide"), FADE("Fade"), NONE("Just change") }
-    val infoAnim = EnumPref("anim_info", InfoAnim.RISE, InfoAnim.values())
-    val pageAnim = EnumPref("anim_page", PageAnim.SLIDE, PageAnim.values())
+    // (Update 393: text / panels / rows appear in place by default — no rise, fade or slide-in. A value already saved is kept.)
+    val infoAnim = EnumPref("anim_info", InfoAnim.NONE, InfoAnim.values())
+    val pageAnim = EnumPref("anim_page", PageAnim.NONE, PageAnim.values())
     val focusPop = IntPref("focus_pop", 100, 0..400)
     val motionFocusedOnly = BoolPref("motion_focused_only", false)
     /** Update 112: Resume & discover — how the next game comes into the big spot. */
