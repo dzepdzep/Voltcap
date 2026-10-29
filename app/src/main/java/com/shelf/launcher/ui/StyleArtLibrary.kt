@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -251,10 +252,18 @@ private fun artLibRail(c: StyleCtx): List<RailAction> {
     }
 }
 
+internal const val ART_RAIL_OPEN_DP = 196f
+internal const val ART_RAIL_CLOSED_DP = 52f
+/** Open rail 196 - column padding 2 x 6 - row padding 2 x 8 - icon 22 - gap 10. */
+internal const val ART_RAIL_LABEL_DP = 136f
+
+/** Labels are invisible while the rail is still narrow and fully there once it has room (a fade, no movement). */
+internal fun artLibRailLabelAlpha(widthDp: Float): Float = ((widthDp - 110f) / 60f).coerceIn(0f, 1f)
+
 @Composable
 private fun ArtLibRail(c: StyleCtx, items: List<RailAction>, accent: Color, modifier: Modifier) {
     val on = ArtLibNav.zone == ArtLibNav.Zone.RAIL
-    val width by animateDpAsState(if (on) 196.dp else 52.dp, tween(220, easing = FastOutSlowInEasing), label = "alRail")
+    val width by animateDpAsState(if (on) ART_RAIL_OPEN_DP.dp else ART_RAIL_CLOSED_DP.dp, tween(220, easing = FastOutSlowInEasing), label = "alRail")
     val ink = if (accent.luminance() > 0.5f) Color.Black else Color.White
     Column(
         modifier.width(width).clip(RoundedCornerShape(26.dp)).background(themeDark(Color(0xFF080B11), 0.5f).copy(alpha = if (on) 0.94f else 0.55f))
@@ -275,12 +284,14 @@ private fun ArtLibRail(c: StyleCtx, items: List<RailAction>, accent: Color, modi
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(item.icon, null, tint = if (sel) ink else Color.White.copy(alpha = if (inCat) 1f else 0.78f), modifier = Modifier.size(22.dp))
-                if (on) {
-                    Spacer(Modifier.width(10.dp))
-                    // (R18: a label wraps rather than being cut.)
-                    Text(item.label, color = if (sel) ink else Color.White.copy(alpha = 0.9f), fontSize = 14.sp, lineHeight = 17.sp,
-                        fontWeight = if (sel || inCat) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f).padding(vertical = 4.dp))
-                }
+                // Update 396: the label is always laid out at the OPEN width (never measured at the in-between widths of the
+                // animation, which wrapped it letter by letter and made the rows jump) and the rail's clip + a fade by the
+                // animated width reveal it: no wrap, no move, no spawn. (R18: a label wraps rather than being cut.)
+                Spacer(Modifier.width(10.dp))
+                Text(item.label, color = if (sel) ink else Color.White.copy(alpha = 0.9f), fontSize = 14.sp, lineHeight = 17.sp,
+                    fontWeight = if (sel || inCat) FontWeight.Bold else FontWeight.Medium,
+                    modifier = Modifier.wrapContentWidth(Alignment.Start, unbounded = true).width(ART_RAIL_LABEL_DP.dp).padding(vertical = 4.dp)
+                        .graphicsLayer { alpha = artLibRailLabelAlpha(width.value) })
             }
         }
     }

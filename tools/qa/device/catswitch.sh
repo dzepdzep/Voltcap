@@ -3,7 +3,7 @@
 # screen recorded at half size / full rate for tools/catswitch.py (frames.py: black / white / dip frames, transient flashes).
 #   sh catswitch.sh RUN "CLASSIC TILES …"   → out/RUN_<LAYOUT>.mp4 / _qa.txt / .png + out/RUN_manifest.txt
 # Pull out/ to qa_runs/<run>/out, then:  python3 tools/qa/tools/catswitch.py qa_runs/<run>/out RUN
-run=$1; list=$2
+run=$1; list=$2; PRE=$3   # PRE (update 396): keys pressed once per layout before the recording, e.g. "A" opens a category on Storage boxes / File select (they start on the category screen)
 . ./guard.sh
 NAV="R2 W900 R2 W900 R2 W900 L2 W900 L2 W900 L2 W900 R2 W150 L2 W150 R2 W150 L2 W600 R2 W100 R2 W800 L2 W800"
 man_start $run; for L in $list; do man_expect $run $L; done
@@ -22,6 +22,7 @@ for L in $list; do
   for try in 1 2 3; do [ "$(screen_state)" = PICKER ] || break; sh vqa.sh seq "B" 300 > /dev/null; sleep 3; done
   man_screen $run $L
   [ "$(screen_state)" = HOME ] || { man_skip $run $L "not on the home screen ($(screen_state))"; echo "$L SKIPPED: not home"; continue; }
+  [ -n "$PRE" ] && { sh vqa.sh seq "$PRE" 300 > /dev/null; sleep 3; }
   screencap -p out/${run}_${L}.png
   logcat -c
   (nohup screenrecord --size 960x540 --time-limit 17 out/${run}_$L.mp4 > /dev/null 2>&1 &)

@@ -64,6 +64,11 @@ internal object CategorySlide {
      */
     @Volatile var changedAt = Long.MIN_VALUE / 2
     fun markChange() { changedAt = System.nanoTime() / 1_000_000L }
+    /**
+     * Update 396: the category swap is over as soon as YOU move to another game (`LauncherViewModel.moveFocus`). Before, the
+     * 600 ms window below also swallowed the animation of the first presses after L2 / R2; it is now only the upper bound for a slow load.
+     */
+    fun endChange() { changedAt = Long.MIN_VALUE / 2 }
     /** True for the frames in which the games on screen are the new category's (a swap here is a category swap, never an entrance). */
     fun justChanged(): Boolean = System.nanoTime() / 1_000_000L - changedAt < 600L
 }

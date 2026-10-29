@@ -756,5 +756,18 @@ class TestGeomcheck(Base):
         self.assertEqual(verdict([0, 1], seq=""), 2)                         # no MARK seq: NO DATA, never a pass
 
 
+class TestLineEndings(unittest.TestCase):
+    """Update 396: device shell scripts (and the QA python) must be LF in the working tree: Android sh fails on a CR."""
+    def test_no_cr_in_qa_scripts(self):
+        qa = os.path.dirname(HERE)
+        bad = []
+        for sub, ext in (("device", ".sh"), ("tools", ".py"), ("tools", ".sh")):
+            d = os.path.join(qa, sub)
+            for n in sorted(os.listdir(d)):
+                if n.endswith(ext) and b"\r" in open(os.path.join(d, n), "rb").read():
+                    bad.append(sub + "/" + n)
+        self.assertEqual(bad, [], "CRLF in %s: run  sh tools/qa/tools/pushqa.sh  (strips them and pushes LF copies)" % bad)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

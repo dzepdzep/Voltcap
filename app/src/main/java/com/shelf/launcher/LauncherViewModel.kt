@@ -2087,6 +2087,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * latest state, so fast key repeats never skip or repeat a step. */
     fun moveFocus(requested: Int) {
         // (QA self-test: TestHooks voltcap_test_fault focus_skip — a deliberate wrong step; nothing otherwise.)
+        com.shelf.launcher.ui.CategorySlide.endChange()
         val delta = com.shelf.launcher.ui.QaFault.focusDelta(requested)
         val s = _uiState.value
         val size = s.visibleGames.size

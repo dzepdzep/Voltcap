@@ -17,6 +17,22 @@ class CategoryStable394Test {
         assertFalse(CategorySlide.justChanged())
     }
 
+    /** Update 396: moving to another game ends the category window at once (it never swallows the first presses after L2 / R2). */
+    @Test
+    fun movingToAnotherGameEndsTheCategoryWindow() {
+        CategorySlide.markChange()
+        assertTrue(CategorySlide.justChanged())
+        CategorySlide.endChange()
+        assertFalse(CategorySlide.justChanged())
+    }
+
+    @Test
+    fun moveFocusEndsTheCategoryWindow() {
+        val vm = sources().firstOrNull { it.name == "LauncherViewModel.kt" }?.readText() ?: return
+        val body = vm.substringAfter("fun moveFocus(requested: Int) {").substringBefore("val s = _uiState.value")
+        assertTrue("moveFocus must call CategorySlide.endChange()", body.contains("CategorySlide.endChange()"))
+    }
+
     private fun sources(): List<File> {
         val roots = listOf("src_copy", "../src_copy", "../../src_copy", "app/src/main/java/com/shelf/launcher", "src/main/java/com/shelf/launcher")
         val root = roots.map { File(it) }.firstOrNull { File(it, "ui/Motion.kt").exists() } ?: return emptyList()
