@@ -176,14 +176,20 @@ internal fun StyleCinema(c: StyleCtx, modifier: Modifier = Modifier) {
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val w = maxWidth; val h = maxHeight
+        val w = maxWidth
+        // Update 392: the art runs to the top of the screen (the status bar floats over it); everything below is measured from
+        // the status inset, so the billboard words start right under the bar and the rows rise to just under them.
+        val inset = LocalStyleTopInset.current
+        val h = maxHeight - inset
         val compact = Features.cnHero.state.value == Features.CnHero.COMPACT || h < 420.dp
-        val heroH = h * (if (compact) 0.50f else 0.60f)
+        val textTop = inset + if (compact) 6.dp else 14.dp
         // Where the billboard's words end (a two-line name or a long fact line can run past the art): the rows start
-        // below them, never over the buttons.
-        var textBottom by remember { mutableStateOf(0.dp) }
-        CinemaBillboard(c, g, Modifier.fillMaxWidth().height(heroH + 40.dp), heroH, w, accent, compact, onTextBottom = { textBottom = it })
-        val rowsTop = maxOf(heroH - 12.dp, textBottom + 14.dp)
+        // below them, never over the buttons. Until measured: the block's own fixed heights.
+        var textBottom by remember(compact, inset) { mutableStateOf(textTop + if (compact) 150.dp else 242.dp) }
+        // The billboard is as tall as its words need (never under 38 % of the room, never over 60 %): no reserved empty band.
+        val heroH = (textBottom - inset + 22.dp).coerceIn(h * 0.38f, h * (if (compact) 0.50f else 0.60f))
+        CinemaBillboard(c, g, Modifier.fillMaxWidth().height(inset + heroH + 40.dp), inset + heroH, w, accent, compact, textTop, onTextBottom = { textBottom = it })
+        val rowsTop = maxOf(inset + heroH - 12.dp, textBottom + 14.dp)
         // The rows: the one you're in rises to just under the billboard; the ones before it slide away above.
         @Suppress("UNUSED_VARIABLE") val t = CinemaNav.tick
         CinemaNav.cursor.follow(rows, c.focus)
@@ -193,8 +199,8 @@ internal fun StyleCinema(c: StyleCtx, modifier: Modifier = Modifier) {
         val titleH = if (compact) 26.dp else 30.dp
         val nameH = 38.dp
         fun tileH(r: Int): Dp = when {
-            tiles == Features.CnTiles.POSTER || (tiles == Features.CnTiles.MIXED && r == 0) -> (h * 0.26f).coerceIn(96.dp, 200.dp)
-            else -> (h * 0.19f).coerceIn(70.dp, 150.dp)
+            tiles == Features.CnTiles.POSTER || (tiles == Features.CnTiles.MIXED && r == 0) -> (h * 0.28f).coerceIn(96.dp, 210.dp)
+            else -> (h * 0.21f).coerceIn(70.dp, 160.dp)
         }
         val shift by animateFloatAsState(rowNow.toFloat(), if (rememberAnimationsEnabled()) tween(420, easing = FastOutSlowInEasing) else tween(0), label = "cnRows")
         // Each row's top, from the first one's (poster rows are taller); the glide runs between them.
@@ -228,7 +234,7 @@ internal fun StyleCinema(c: StyleCtx, modifier: Modifier = Modifier) {
 
 /** The billboard: the game's art (and clip), its logo or name, facts, story and the two buttons. */
 @Composable
-private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifier: Modifier, heroH: Dp, w: Dp, accent: Color, compact: Boolean, onTextBottom: (Dp) -> Unit = {}) {
+private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifier: Modifier, heroH: Dp, w: Dp, accent: Color, compact: Boolean, textTop: Dp, onTextBottom: (Dp) -> Unit = {}) {
     val dens = androidx.compose.ui.platform.LocalDensity.current
     val titles = LocalTitleOptions.current
     val meta = c.state.metadata[g.stableKey]
@@ -262,7 +268,7 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
         // The text block, rising in for each game.
         Column(
             Modifier.onGloballyPositioned { onTextBottom(with(dens) { it.size.height.toDp() }) }
-                .padding(start = 40.dp, top = if (compact) 40.dp else 56.dp).widthIn(max = w * 0.46f).riseOnChange(g.stableKey, floor = 0.4f, ms = 240)
+                .padding(start = 40.dp, top = textTop).widthIn(max = w * 0.46f).riseOnChange(g.stableKey, floor = 0.4f, ms = 240)
         ) {
             val logo = if (Features.cnLogo.state.value) c.logo(g) else null
             Row(verticalAlignment = Alignment.CenterVertically) {

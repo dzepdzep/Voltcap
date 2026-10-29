@@ -135,12 +135,14 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         val stageH = (h - shelfH - shelfPad).coerceAtLeast(120.dp)
 
         // The stage: the big box, then the facts.
-        Row(Modifier.fillMaxWidth().height(stageH).padding(start = 28.dp, end = 28.dp, top = if (compact) 8.dp else 16.dp)) {
-            val boxW = (w * 0.38f).coerceAtMost(420.dp)
-            Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.Center) {
+        Row(Modifier.fillMaxWidth().height(stageH).padding(start = 28.dp, end = 28.dp, top = if (compact) 4.dp else 8.dp)) {
+            val boxW = (w * 0.42f).coerceAtMost(470.dp)
+            // Update 392: the case sits at the top of the stage (its reflection runs on into the room under it) instead of floating in
+            // the middle of a tall box with an empty band above it.
+            Box(Modifier.width(boxW).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
                 // One box, keyed by its game: the facing / turned setting, the console's own case and its real scan.
                 key(g.stableKey) {
-                    Box(Modifier.fillMaxSize().riseOnChange(g.stableKey, floor = 0.35f, ms = 260)) {
+                    Box(Modifier.fillMaxWidth().fillMaxHeight(0.84f).riseOnChange(g.stableKey, floor = 0.35f, ms = 260)) {
                         Case3D(
                             g, c.cover(g), c.state.physicalMedia[g.stableKey], if (PickedFacing.faces) 0f else PickedFacing.TURN,
                             case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current,

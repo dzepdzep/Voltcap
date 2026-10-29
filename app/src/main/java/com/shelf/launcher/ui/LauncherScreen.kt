@@ -3864,9 +3864,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                 },
+                statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp) else 0.dp,
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                     .padding(
-                        top = if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 28.dp else 8.dp,
+                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 28.dp else 8.dp,
                         // The Side menu's panel runs against the left edge.
                         start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE) 0.dp else 12.dp, end = 12.dp
                     )

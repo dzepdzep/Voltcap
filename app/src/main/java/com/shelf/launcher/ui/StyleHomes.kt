@@ -1196,7 +1196,8 @@ internal fun StyleHome(
     art: Map<String, GameArt>,
     shortcuts: List<HomeShortcut>,
     actions: StyleActions,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    statusInset: Dp = 0.dp
 ) {
     val titles = LocalTitleOptions.current
     val games = state.visibleGames
@@ -1308,6 +1309,7 @@ internal fun StyleHome(
     }
     // Tap handlers read this (a tap on the game you're on opens it), whatever zone the D-pad is in.
     SideEffect { GridHome.focus = focus }
+    androidx.compose.runtime.CompositionLocalProvider(LocalStyleTopInset provides statusInset) {
     when (layout) {
         HomeLayout.DASH -> StyleDashboard(c, modifier)
         HomeLayout.LIVE -> StyleLiveTiles(c, modifier)
@@ -1376,7 +1378,18 @@ internal fun StyleHome(
         HomeLayout.ARTLIB -> StyleArtLibrary(c, modifier)
         else -> Unit
     }
+    }
 }
+
+/**
+ * Update 392: the height the host keeps under the status bar, given to the layouts that draw their own art / panels up to the
+ * screen's top edge ([drawsUnderStatusBar]); they start their words and panels below it themselves. 0 for every other layout
+ * (the host already pads them).
+ */
+internal val LocalStyleTopInset = androidx.compose.runtime.compositionLocalOf { 0.dp }
+
+/** Cinema and Arctic hub: the art / rail run to the top of the screen, the status bar floats over them (no reserved band). */
+internal fun HomeLayout.drawsUnderStatusBar(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
 
 /**
  * What a style home draws across the WHOLE screen, behind the status bar and the games (the home screen puts it

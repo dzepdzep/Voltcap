@@ -1,4 +1,5 @@
 # CURRENT_TASK - 28 Oct 2026
+**DONE (update 392):** top space cut in Cinema, Arctic hub and Cover details (per layout via `LocalStyleTopInset`, not global), Artwork library 391 change verified; Thor before / after in SUMMARY 392.
 
 **DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).
 **Update 382 (29 Oct):** one-press QA rule R23 + tools; Dashboard 'second press' report not reproduced on the Thor (D77, ask the owner for category / game count / options). Uncommitted second-screen work still preserved.

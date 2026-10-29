@@ -171,7 +171,11 @@ internal fun StyleArctic(c: StyleCtx, modifier: Modifier = Modifier) {
     val railOpen = navMode == Features.ArNav.OPEN || (navMode == Features.ArNav.FOLD && ArcticNav.nav)
     val railW by animateDpAsState(if (railOpen) 230.dp else 68.dp, tween(260, easing = FastOutSlowInEasing), label = "arRail")
     BoxWithConstraints(modifier.fillMaxSize()) {
-        val w = maxWidth; val h = maxHeight
+        val w = maxWidth
+        // Update 392: the fanart and the rail run to the top of the screen (the status bar floats over them); the words and
+        // the widgets are measured from the status inset, and the widgets start right under the info block.
+        val inset = LocalStyleTopInset.current
+        val h = maxHeight - inset
         // The fanart behind everything, washed to the left and bottom so the text reads.
         val art = Features.arArt.state.value
         if (g != null && art != Features.ArArt.PLAIN) {
@@ -182,28 +186,31 @@ internal fun StyleArctic(c: StyleCtx, modifier: Modifier = Modifier) {
         }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to ArcticSlate, 0.35f to ArcticSlate.copy(alpha = 0.78f), 0.7f to ArcticSlate.copy(alpha = 0.25f), 1f to Color.Transparent)))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.45f to ArcticSlate.copy(alpha = 0.35f), 1f to ArcticSlate.copy(alpha = 0.96f))))
+        // (The status bar now floats over the art: a soft shade at the very top keeps its clock and icons readable.)
+        Box(Modifier.fillMaxWidth().height(inset + 24.dp).background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.55f), 1f to Color.Transparent)))
         val contentStart = 68.dp + 22.dp
         if (g == null || rows.isEmpty()) StyleEmpty(Modifier.fillMaxSize().padding(start = contentStart))
         else {
             // The widgets start under the info block's last line (a two-line name or wrapped facts push them down).
-            var infoBottom by remember { mutableStateOf(0.dp) }
+            val compactInfo = h < 420.dp
+            var infoBottom by remember(compactInfo, inset) { mutableStateOf(inset + 10.dp + if (compactInfo) 72.dp else 158.dp) }
             val dens = androidx.compose.ui.platform.LocalDensity.current
             ArcticInfo(c, g, Modifier.onGloballyPositioned { infoBottom = with(dens) { (it.positionInParent().y + it.size.height).toDp() } }
-                .padding(start = contentStart, top = 44.dp, end = 24.dp).widthIn(max = (w - contentStart) * 0.62f), accent, compact = h < 420.dp)
-            ArcticWidgets(c, rows, Modifier.fillMaxSize().padding(start = contentStart), h, w - contentStart, accent, top = maxOf(h * 0.42f, infoBottom + 12.dp))
+                .padding(start = contentStart, top = inset + 10.dp, end = 24.dp).widthIn(max = (w - contentStart) * 0.62f), accent, compact = h < 420.dp)
+            ArcticWidgets(c, rows, Modifier.fillMaxSize().padding(start = contentStart), h, w - contentStart, accent, top = infoBottom + 14.dp)
         }
         // The rail, over the widgets when it folds open (a soft shadow at its edge).
-        ArcticRail(c, Modifier.zIndex(5f).width(railW).fillMaxHeight(), railOpen, accent)
+        ArcticRail(c, Modifier.zIndex(5f).width(railW).fillMaxHeight(), railOpen, accent, inset)
     }
 }
 
 @Composable
-private fun ArcticRail(c: StyleCtx, modifier: Modifier, open: Boolean, accent: Color) {
+private fun ArcticRail(c: StyleCtx, modifier: Modifier, open: Boolean, accent: Color, inset: Dp = 0.dp) {
     val titles = LocalTitleOptions.current
     Column(
         // Open, the rail is solid: the game's info under it must not show through its labels.
         modifier.background(if (open) Brush.horizontalGradient(listOf(Color(0xFF0A1018), Color(0xFF0C141E))) else Brush.horizontalGradient(listOf(Color(0xF20A1018), Color(0xE60A1018), Color(0x990A1018))))
-            .padding(top = 40.dp, bottom = 14.dp, start = 10.dp, end = 10.dp),
+            .padding(top = inset + 8.dp, bottom = 14.dp, start = 10.dp, end = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         val n = arcticNavCount(c)
@@ -294,8 +301,8 @@ private fun ArcticWidgets(c: StyleCtx, rows: List<HomeRow>, modifier: Modifier, 
     ArcticNav.cursor.follow(rows, c.focus)
     val rowNow = ArcticNav.cursor.row
     val spotlight = Features.arFirst.state.value == Features.ArFirst.SPOTLIGHT
-    val posterH = (h * 0.30f).coerceIn(100.dp, 230.dp)
-    val wideH = (h * 0.24f).coerceIn(80.dp, 180.dp)
+    val posterH = (h * 0.34f).coerceIn(100.dp, 250.dp)
+    val wideH = (h * 0.27f).coerceIn(80.dp, 190.dp)
     fun rowH(i: Int) = 24.dp + (if (spotlight && i == 0) wideH else posterH) + ArcticNameH + 16.dp
     val tops = remember(rows.size, spotlight, h) { FloatArray(rows.size + 1).also { a -> for (i in rows.indices) a[i + 1] = a[i] + rowH(i).value } }
     fun topAt(x: Float): Float { val i = x.toInt().coerceIn(0, rows.lastIndex); val f = x - i; return tops[i] + (tops[(i + 1).coerceAtMost(rows.size)] - tops[i]) * f }
