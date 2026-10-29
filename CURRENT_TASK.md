@@ -3,7 +3,8 @@
 **DONE (update 381): Endless navigation.** Dashboard's unreachable last-game card = ◀ on the first game entered the menu instead of wrapping (fixed, Thor-verified, `EndlessNav381Test`).
 **Update 382 (29 Oct):** one-press QA rule R23 + tools; Dashboard 'second press' report not reproduced on the Thor (D77, ask the owner for category / game count / options). Uncommitted second-screen work still preserved.
 **Update 383 (29 Oct):** D77 fixed: `FollowFocus` (`ui/EndlessRow.kt`) left an in-view card where it was, so the row showed two games left of the selection and moved a press late; now one fixed place (`followTarget`), `FollowFocus383Test`, Thor-checked on the Dashboard. CLAUDE.md rule 13 (start-of-task reading) added.
-**NEXT PRIORITY: second-screen in-game widget reliability** (see COWORK_HANDOFF.md priority 2).
+**Update 384 (29 Oct):** second-screen in-game fixes (379) verified on the Thor for Now Playing / Music and committed; open: D79 (Hub Music ellipsis), D80, third-party widgets + controller focus in-game not verified.
+**NEXT PRIORITY: finish priority 2 (D79 marquee, widget host + Hub controller check in-game), then priority 3.**
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 
 # (history) status 28 Oct 2026, update 369 (device-free, 0.6.54 release still pending)

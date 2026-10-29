@@ -2,6 +2,14 @@
 
 **Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
 
+## Update — 29 Oct 2026 (384): second-screen in-game reliability (379 fixes) verified on the Thor, committed; FollowFocus checked in Side menu (code)
+
+**Copy:** nothing new. `src_copy/ui/CompanionHub.kt`, `WidgetBoard.kt`, `SecondPad.kt` (update 379) were already identical to `app/`; the three `app/` files are committed now. QA data only: `tools/qa/defects.json` (D79, D80), `tools/qa/coverage.json` (DV-04) + `COVERAGE.md`.
+- **Thor 3140972f (debug 0.6.55 `install -r`, data kept, ~15 min):** game launched from the Dashboard (PPSSPP), second screen = the in-game Hub. Music page and the Now Playing widget followed a Spotify track skip within 2.5 s (before 379 they kept the song from the game start); transport label switched to Pause. PASS. Restored: Spotify paused, game force-stopped, second-screen home page back on Performance (I had swiped it to Widgets), no recorder.
+- **Not verified on hardware:** third-party app widgets in the host (none placed; the reference-counted start / stop is build + code only), Hub controller focus, system stats loops, Sound per screen, Side menu row after FollowFocus (383). Side menu: `SideRow` seeds the list at `focusItem - 1` and calls the same `FollowFocus(list, row)` (`before = 1`), so the target equals the seed; no hardware walk (15-minute budget used by the in-game test).
+- **New findings (logged, NOT fixed):** D79 the Hub Music page cuts title / artist with an ellipsis (`NowPlayingPanel.kt`, rule 11; shared with the home player, needs a marquee and a check of both); D80 second-screen Wall page showed "All games / 0 Games" once right after a game closed (not reproduced). Two earlier launches (melonDS, PPSSPP) closed within seconds on their own; swipes on the Hub did not change pages while the game was starting, the arrows did (not investigated). MixerHelper spawns every ~1.8 s for ~10 s around a game launch and every ~32 s otherwise (existing keeper design, left).
+- **Checked:** `assembleDebug` + `testDebugUnitTest` green, `static_checks.py src_copy --strict` PASS, `test_qa.py` OK.
+
 ## Update — 29 Oct 2026 (383): Dashboard Endless, row alignment (D77) fixed in FollowFocus, one-press + alignment test, CLAUDE.md start-of-task rule
 
 **Copy:** `src_copy/ui/EndlessRow.kt` (already copied to `app/`, identical). Test: `app/src/test/.../ui/FollowFocus383Test.kt` (new, 4 tests). Uncommitted second-screen files (`CompanionHub.kt`, `SecondPad.kt`, `WidgetBoard.kt`) untouched and NOT part of this commit.

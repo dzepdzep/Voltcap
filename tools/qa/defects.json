@@ -989,21 +989,39 @@
   },
   {
    "id": "D77",
-   "title": "Dashboard, Endless on: ◀ moves the row but the selection only changes on the second press (user report after update 381)",
+   "title": "Dashboard, Endless on: \u25c0 moves the row but the selection only changes on the second press (user report after update 381)",
    "rule": "ONE-PRESS (R23)",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-10-29 user report",
-   "note": "UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one ▶ from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, ▶ ▶ ▶ and ◀ via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for ◀ on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
+   "note": "UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one \u25b6 from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, \u25b6 \u25b6 \u25b6 and \u25c0 via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for \u25c0 on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
   },
   {
    "id": "D78",
-   "title": "Resume & discover: ◀ on the first game knocks first, the menu only on the second press, also with Endless on",
+   "title": "Resume & discover: \u25c0 on the first game knocks first, the menu only on the second press, also with Endless on",
    "rule": "ONE-PRESS (R23)",
    "severity": "info",
    "status": "deliberate",
    "found": "2026-10-29 update 382 audit (code)",
-   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and ▼ also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants ◀ to go round to the last game there. NOT tested on hardware."
+   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and \u25bc also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants \u25c0 to go round to the last game there. NOT tested on hardware."
+  },
+  {
+   "id": "D79",
+   "title": "In-game Music page: title / artist cut with an ellipsis (NowPlayingPanel one-line row)",
+   "rule": "R18 TRUNCATE (CLAUDE.md rule 11)",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-10-29 update 384, Thor in-game Hub, Music page (qa_runs/384/hub_t4.png, hub_next.png)",
+   "note": "'Why Did You Tell ...' and 'Poppy, Amy Lee, Courtne...' at the fitMin floor; ui/NowPlayingPanel.kt keeps overflow=Ellipsis in the one-line (showButtons) and the 2-line rows. Fix = marquee / scroll on the existing row, not a redesign; shared with the home player, so not changed without a hardware check of both."
+  },
+  {
+   "id": "D80",
+   "title": "Second-screen Wall page showed 'All games / 0 Games' right after a game closed",
+   "rule": "suspect",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-10-29 update 384, Thor home second screen (qa_runs/384/bot_p.png, bot_w0.png)",
+   "note": "Library has 2157 games; seen once, a few seconds after returning from a game. Not reproduced or traced yet; may be a loading state of the Platforms tile count."
   }
  ]
 }

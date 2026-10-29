@@ -145,6 +145,21 @@ object AppWidgets {
     fun host(context: Context): AppWidgetHost =
         host ?: AppWidgetHost(context.applicationContext, HOST_ID).also { host = it }
 
+    /**
+     * The host is shared by every board (the home second screen and the in-game companion). Each board used to start
+     * and stop it on its own, so the home board leaving as a game started switched the companion's widgets off.
+     * Listening now lasts while at least one board wants it (main thread only).
+     */
+    private var listeners = 0
+
+    fun startListening(context: Context) {
+        if (listeners++ == 0) runCatching { host(context).startListening() }
+    }
+
+    fun stopListening(context: Context) {
+        if (listeners > 0 && --listeners == 0) runCatching { host(context).stopListening() }
+    }
+
     fun manager(context: Context): AppWidgetManager = AppWidgetManager.getInstance(context.applicationContext)
 
     /** Every widget the installed apps offer, by app name. */
@@ -209,9 +224,8 @@ internal fun WidgetBoardPage(
     val inputMode = androidx.compose.ui.platform.LocalInputModeManager.current
     // Widgets from other apps only update while the host listens.
     DisposableEffect(Unit) {
-        val host = AppWidgets.host(context)
-        runCatching { host.startListening() }
-        onDispose { runCatching { host.stopListening() } }
+        AppWidgets.startListening(context)
+        onDispose { AppWidgets.stopListening(context) }
     }
     Column(modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -294,7 +294,13 @@ internal fun rememberPadId(prefix: String): String = remember { prefix + "-" + (
 /** A short hint over the second screen while the controller is on it. */
 @Composable
 internal fun SecondPadHint() {
-    if (SecondPad.active) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+    // The existing button-hints setting (R3 / Settings › legend) also decides this line: off = no controller legend.
+    // Read when the controller arrives on this screen, not on every frame.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val hintsOn = remember(SecondPad.active) {
+        SecondPad.active && runCatching { com.shelf.launcher.data.AppearanceStore(context).load().showLegend }.getOrDefault(true)
+    }
+    if (hintsOn) androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         androidx.compose.material3.Text(
             // QA: (C7) "X: menu" while the lit control has one.
             if (SecondPad.hasMenu(SecondPad.focused)) "Controller here · X: menu · B or ▲ at the top: back up"

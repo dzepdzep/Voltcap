@@ -296,6 +296,18 @@
    "limits": "REPORT.md lists the second screen for the new looks as untested"
   },
   {
+   "id": "DV-04",
+   "feature": "In-game second screen (Hub): Now Playing and widget host stay live while a game runs",
+   "test": "launch a game with the second screen on Widgets / Music, change the track from outside, read display 4",
+   "device": "AYN Thor 3140972f bottom screen (hardware, not run in CI)",
+   "mode": "manual",
+   "hardware": true,
+   "status": "PASS",
+   "evidence": "update 384: Music page and Now Playing widget followed a track skip within 2.5 s while PPSSPP ran (qa_runs/384/hub_next.png, hub_widgets.png); unit tests + build green",
+   "limits": "third-party app widgets (host start/stop count), system stats loops, controller focus on the hub, Sound per screen NOT checked in-game; D79 (title/artist ellipsis) open",
+   "device_run": "Thor 29 Oct (update 384): PPSSPP game running, Hub Music + Widgets pages, Spotify track skip"
+  },
+  {
    "id": "AR-01",
    "feature": "Game artwork loading and missing artwork",
    "test": "none automated",

@@ -94,6 +94,9 @@ internal fun CompanionHub(vm: LauncherViewModel, info: CompanionInfo, onBack: ()
     LaunchedWhileActive {
         while (true) { now = System.currentTimeMillis(); delay(1000) }
     }
+    // The home screen's own media updates stop with MainActivity while the game runs, so the Music page and the
+    // Now Playing widget would keep the song from when the game started. MediaController callbacks, no polling.
+    NowPlayingUpdates(enabled = true) { vm.refreshNowPlaying() }
 
     // Update 112: the Widgets and Magnifier pages work here too, while a game runs (they showed "Not available yet."):
     // this screen is real, and Android's capture prompt is asked for from here (Voltcap's home is in the background then,
