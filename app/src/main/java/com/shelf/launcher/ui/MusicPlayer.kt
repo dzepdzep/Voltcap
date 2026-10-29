@@ -97,30 +97,24 @@ internal fun MusicPlayer(
             AlbumArt(nowPlaying.art, 128.dp)
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
-                Text(
+                FullText(
                     "PLAYING FROM ${appLabel.uppercase()}",
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
+                FullText(
                     nowPlaying.title ?: "Unknown track",
                     color = Color.White,
-                    fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp),
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 2
                 )
-                Text(
+                FullText(
                     listOfNotNull(nowPlaying.artist, nowPlaying.album).joinToString(" • ").ifEmpty { appLabel },
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    fontSize = 13.sp, maxLines = 2
                 )
                 Spacer(Modifier.height(12.dp))
                 SeekBar(position, nowPlaying.durationMs, nowPlaying.canSeek, onSeek)
@@ -409,24 +403,20 @@ private fun MiniPlayerBody(
             AlbumArt(nowPlaying.art, 22.dp)
             Spacer(Modifier.width(6.dp))
             Column(Modifier.weight(1f)) {
-                Text(
+                FullText(
                     nowPlaying.title ?: "Unknown track",
                     color = ink,
                     fontFamily = if (skin.mono) androidx.compose.ui.text.font.FontFamily.Monospace else null,
-                    fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(9.sp), maxFontSize = 9.sp),
-                    lineHeight = androidx.compose.ui.unit.TextUnit(1.111f, androidx.compose.ui.unit.TextUnitType.Em),
+                    fontSize = 9.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.111f, androidx.compose.ui.unit.TextUnitType.Em),
                     fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 2
                 )
-                Text(
+                FullText(
                     nowPlaying.artist ?: appLabel,
                     color = ink.copy(alpha = 0.7f),
                     fontFamily = if (skin.mono) androidx.compose.ui.text.font.FontFamily.Monospace else null,
-                    fontSize = 8.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(8.sp), maxFontSize = 8.sp),
-                    lineHeight = androidx.compose.ui.unit.TextUnit(1.125f, androidx.compose.ui.unit.TextUnitType.Em),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    fontSize = 8.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.125f, androidx.compose.ui.unit.TextUnitType.Em),
+                    maxLines = 2
                 )
             }
             Spacer(Modifier.width(3.dp))

@@ -13,6 +13,8 @@
 6. **Dual-screen integration and final Thor QA** (then release only per the checklist).
 Second-screen work of 379 is committed (update 384).
 
+**Update 385 (29 Oct 2026, Thor ~10 min):** D79 fixed (Now Playing title / artist: FullText wrap-shrink-slide in NowPlayingPanel, LyricsStage = the Hub Music page, MusicPlayer, BigMusicPlayer, FullMusicScreen, ScreenSaver, WidgetBoard; marquee in MusicOverlayView), Thor-verified on the Hub (home + in-game). Open: third-party widgets, Hub controller focus, Side menu FollowFocus, D80 (not reproduced), game popup description "…".
+
 **Update 384 (29 Oct 2026, Thor ~15 min):** in-game Hub verified: Music page + Now Playing widget follow a track skip while a game runs (379 fix PASS), second-screen files committed. Open: D79 Hub Music title / artist ellipsis (NowPlayingPanel, needs marquee), D80 Wall page "0 Games" once; NOT verified: third-party widgets in the host, Hub controller focus, Side menu after FollowFocus.
 
 **Update 383 (29 Oct 2026, Thor ~6 min):** D77 (Dashboard Endless: two games left of the selection, row moving out of step) fixed at the source: `FollowFocus` skipped the scroll for any card already in view; now `followTarget` keeps the selected card in one place (Dashboard + Side menu rows). `FollowFocus383Test` (357 unit tests pass), Dashboard checked on the Thor (▶▶▶◀: one game left each time). Old behaviour not recorded on hardware; Side menu row / second screen NOT tested. New CLAUDE.md rule 13: read CLAUDE.md, CURRENT_TASK.md, these priorities and the newest SUMMARY entries at the start of every task. Second-screen files still uncommitted.

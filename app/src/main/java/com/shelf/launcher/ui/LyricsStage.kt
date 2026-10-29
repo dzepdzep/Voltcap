@@ -1096,13 +1096,13 @@ private fun StageCard(
         val textShadow = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.5f), Offset(0f, 1f), 12f))
         Crossfade(np.title to np.artist, animationSpec = tween(400), label = "stageTitle") { (title, artist) ->
             Column(Modifier.fillMaxWidth()) {
-                Text(
+                FullText(
                     title ?: "Unknown track", color = Color.White, fontSize = sz.title, fontWeight = FontWeight.SemiBold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, style = textShadow
+                    maxLines = 1, style = textShadow
                 )
-                Text(
+                FullText(
                     artist?.takeIf { it.isNotBlank() } ?: rememberAppLabel(np.packageName), color = Color.White.copy(alpha = 0.58f),
-                    fontSize = sz.artist, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, style = textShadow
+                    fontSize = sz.artist, fontWeight = FontWeight.Medium, maxLines = 1, style = textShadow
                 )
             }
         }

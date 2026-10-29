@@ -119,14 +119,13 @@ internal fun FullMusicScreen(
                     // Update 144: below the chips in the top-right corner (as the tall layout does), so a long
                     // title isn't drawn under Spotify / Lyrics / Close on narrow screens.
                     Column(Modifier.align(Alignment.TopStart).fillMaxWidth(0.6f).padding(top = if (compact) 46.dp else 50.dp)) {
-                        Text(
-                            nowPlaying.title ?: "Unknown track", color = Color.White, fontSize = if (compact) 13.sp else 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 13.sp else 15.sp), maxFontSize = if (compact) 13.sp else 15.sp),
-                            fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        FullText(
+                            nowPlaying.title ?: "Unknown track", color = Color.White, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Bold, maxLines = 1,
                             style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 6f))
                         )
-                        Text(
+                        FullText(
                             listOfNotNull(nowPlaying.artist, nowPlaying.album).joinToString(" • ").ifEmpty { appLabel },
-                            color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 10.sp else 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 10.sp else 12.sp), maxFontSize = if (compact) 10.sp else 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 10.sp else 12.sp, maxLines = 1,
                             style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 6f))
                         )
                     }
@@ -225,26 +224,22 @@ private fun PlayerInfoColumn(
 ) {
     com.shelf.launcher.Breadcrumbs.mark("PlayerInfoColumn")
     Column(modifier) {
-        Text(
+        FullText(
             "PLAYING FROM ${appLabel.uppercase()}",
             color = Color.White.copy(alpha = 0.7f),
-            fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
-            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp, fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            maxLines = 2
         )
         Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
         FitText(
             nowPlaying.title ?: "Unknown track", Color.White,
             maxSize = if (compact) 19.sp else 24.sp, minSize = 14.sp, maxLines = 2, fontWeight = FontWeight.Bold
         )
-        Text(
+        FullText(
             listOfNotNull(nowPlaying.artist, nowPlaying.album).joinToString(" • ").ifEmpty { appLabel },
             color = Color.White.copy(alpha = 0.75f),
-            fontSize = if (compact) 12.sp else 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 12.sp else 14.sp), maxFontSize = if (compact) 12.sp else 14.sp),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            fontSize = if (compact) 12.sp else 14.sp, maxLines = 2
         )
         Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
         SeekBar(position, nowPlaying.durationMs, nowPlaying.canSeek, onSeek)

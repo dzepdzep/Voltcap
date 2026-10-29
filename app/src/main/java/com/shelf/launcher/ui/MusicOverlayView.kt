@@ -479,8 +479,11 @@ internal class MusicOverlayView(
         this.alpha = alpha
         setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
         if (bold) typeface = Typeface.DEFAULT_BOLD
-        maxLines = 1
-        ellipsize = android.text.TextUtils.TruncateAt.END
+        // D79: a long title / artist scrolls (marquee) instead of ending in "…"; the full text stays reachable.
+        isSingleLine = true
+        ellipsize = android.text.TextUtils.TruncateAt.MARQUEE
+        marqueeRepeatLimit = -1
+        isSelected = true
     }
 
     override fun onDetachedFromWindow() {

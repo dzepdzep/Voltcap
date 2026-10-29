@@ -202,9 +202,8 @@ private fun BigInfo(
     modifier: Modifier
 ) {
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text(
-            "PLAYING FROM ${appLabel.uppercase()}", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+        FullText(
+            "PLAYING FROM ${appLabel.uppercase()}", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1
         )
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         // (Update 120: with the lyrics on, the title and artist keep to one line each, so the lyrics always have room —
@@ -213,10 +212,9 @@ private fun BigInfo(
             nowPlaying.title ?: "Unknown track", Color.White,
             maxSize = if (compact) 24.sp else 36.sp, minSize = 16.sp, maxLines = if (showLyrics) 1 else 2, fontWeight = FontWeight.Bold
         )
-        Text(
+        FullText(
             listOfNotNull(nowPlaying.artist, nowPlaying.album).joinToString(" • ").ifEmpty { appLabel },
-            color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 14.sp else 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 14.sp else 18.sp), maxFontSize = if (compact) 14.sp else 18.sp),
-            maxLines = if (showLyrics) 1 else 2, overflow = TextOverflow.Ellipsis
+            color = Color.White.copy(alpha = 0.78f), fontSize = if (compact) 14.sp else 18.sp, maxLines = if (showLyrics) 1 else 2
         )
         Spacer(Modifier.height(if (compact || showLyrics) 10.dp else 20.dp))
         SeekBar(position, nowPlaying.durationMs, nowPlaying.canSeek, onSeek)

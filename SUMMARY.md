@@ -2,6 +2,15 @@
 
 **Current status (28 Oct 2026):** rules consolidated in `CLAUDE.md` (Quality rules); priorities in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"); next task Endless navigation (`CURRENT_TASK.md`), second-screen work afterwards. Docs only; entries below are unchanged history.
 
+## Update — 29 Oct 2026 (385): D79 fixed, Now Playing title / artist never cut with "…"
+
+**Copy:** `src_copy/ui/` NowPlayingPanel, MusicPlayer, BigMusicPlayer, FullMusicScreen, ScreenSaver, LyricsStage, WidgetBoard, MusicOverlayView (all already copied to `app/`, identical). Test: `app/src/test/.../ui/NowPlayingTruncate79Test.kt` (new; no `TextOverflow.Ellipsis` in the Now Playing files).
+- **Cause:** the Hub Music page is `LyricsStage.kt` (not only `NowPlayingPanel`); both, plus the home players, the full-screen player, screensaver, Now Playing widget kept `overflow = Ellipsis`.
+- **Fix:** `FullText` (wrap, shrink to `fitMin`, then slow marquee) replaces the Text blocks; the in-game overlay TextView (`MusicOverlayView`) uses MARQUEE. Designs and toggles unchanged.
+- **Thor 3140972f (debug 0.6.55 `install -r`, ~10 min):** second-screen Music page before: "Way 2 Sexy (with F…"; after: the title slides (frames "Sexy (with Future & Y", "& Young Thug)"); same in-game with RetroArch running (force-stopped afterwards, Spotify paused). PASS. Not verified: Dashboard home player widget with a long title (different widget, none cut seen), MusicOverlayView in-game overlay marquee, BigMusicPlayer / FullMusicScreen / ScreenSaver on hardware (code + build only).
+- **Not verified:** third-party widget updates (none placed), Hub controller focus (adb key events on display 4 did not move anything visible, inconclusive), Side menu FollowFocus (383). D80 not reproduced (not investigated). Seen, not fixed: game popup description ends in "…" (GameDetailsOverlay), 371 static TRUNCATE findings remain app-wide.
+- **Checked:** `assembleDebug`, `testDebugUnitTest` green, `static_checks.py --strict` PASS.
+
 ## Update — 29 Oct 2026 (384): second-screen in-game reliability (379 fixes) verified on the Thor, committed; FollowFocus checked in Side menu (code)
 
 **Copy:** nothing new. `src_copy/ui/CompanionHub.kt`, `WidgetBoard.kt`, `SecondPad.kt` (update 379) were already identical to `app/`; the three `app/` files are committed now. QA data only: `tools/qa/defects.json` (D79, D80), `tools/qa/coverage.json` (DV-04) + `COVERAGE.md`.

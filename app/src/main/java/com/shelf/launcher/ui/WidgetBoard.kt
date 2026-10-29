@@ -434,11 +434,10 @@ private fun NowPlayingWidget(nowPlaying: NowPlaying?, onPlayPause: () -> Unit, o
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text("NOW PLAYING", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            Text(
-                nowPlaying?.title ?: "Nothing playing", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp),
-                fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
+            FullText(
+                nowPlaying?.title ?: "Nothing playing", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2
             )
-            if (size != WidgetSize.COMPACT) nowPlaying?.artist?.let { Text(it, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            if (size != WidgetSize.COMPACT) nowPlaying?.artist?.let { FullText(it, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1) }
             Spacer(Modifier.height(if (size == WidgetSize.COMPACT) 4.dp else 8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Chip("◀◀", accent = false, modifier = Modifier.padTarget("wb-np-prev", onPress = onPrevious), onClick = onPrevious)

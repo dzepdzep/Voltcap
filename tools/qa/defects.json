@@ -1010,9 +1010,9 @@
    "title": "In-game Music page: title / artist cut with an ellipsis (NowPlayingPanel one-line row)",
    "rule": "R18 TRUNCATE (CLAUDE.md rule 11)",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-10-29 update 384, Thor in-game Hub, Music page (qa_runs/384/hub_t4.png, hub_next.png)",
-   "note": "'Why Did You Tell ...' and 'Poppy, Amy Lee, Courtne...' at the fitMin floor; ui/NowPlayingPanel.kt keeps overflow=Ellipsis in the one-line (showButtons) and the 2-line rows. Fix = marquee / scroll on the existing row, not a redesign; shared with the home player, so not changed without a hardware check of both."
+   "note": "FIXED update 385: NowPlayingPanel, MusicPlayer, BigMusicPlayer, FullMusicScreen, ScreenSaver, LyricsStage (the real Hub Music page), WidgetBoard Now Playing widget: FullText (wrap, shrink, slide), MusicOverlayView marquee; NowPlayingTruncate79Test; Thor-checked home Hub + in-game Hub. Was: 'Why Did You Tell ...' and 'Poppy, Amy Lee, Courtne...' at the fitMin floor; ui/NowPlayingPanel.kt keeps overflow=Ellipsis in the one-line (showButtons) and the 2-line rows. Fix = marquee / scroll on the existing row, not a redesign; shared with the home player, so not changed without a hardware check of both."
   },
   {
    "id": "D80",

@@ -483,27 +483,29 @@ internal fun NowPlayingPanel(
             if (showTitle) {
                 if (parts == 1) {
                     // Alone: the title big, the artist under it; long names wrap instead of being cut.
-                    Text(
-                        playing.title ?: "Unknown track", color = colors.textPrimary, fontSize = 24.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(24.sp), maxFontSize = 24.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.125f, androidx.compose.ui.unit.TextUnitType.Em),
-                        fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    // (D79: wrap, shrink to the readable minimum, then slide; never "…".)
+                    FullText(
+                        playing.title ?: "Unknown track", color = colors.textPrimary, fontSize = 24.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.125f, androidx.compose.ui.unit.TextUnitType.Em),
+                        fontWeight = FontWeight.ExtraBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         style = uiFontStyle().merge(TextStyle(shadow = shadow))
                     )
                     playing.artist?.let {
-                        Text(it, color = colors.textPrimary.copy(alpha = 0.75f), fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.188f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        FullText(it, color = colors.textPrimary.copy(alpha = 0.75f), fontSize = 16.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.188f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = 2,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center, style = uiFontStyle().merge(TextStyle(shadow = shadow)))
                     }
                 } else Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
+                    FullText(
                         // One line with the buttons and timeline: the space kept for the player (82 dp) has room
-                        // for one; two lines pushed the timeline down onto the row / lyric under it.
-                        playing.title ?: "Unknown track", color = colors.textPrimary, fontSize = (14 * grow).sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin((14 * grow).sp), maxFontSize = (14 * grow).sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
-                        fontWeight = FontWeight.Bold, maxLines = if (showButtons) 1 else 2, overflow = TextOverflow.Ellipsis, style = uiFontStyle().merge(TextStyle(shadow = shadow)),
+                        // for one; two lines pushed the timeline down onto the row / lyric under it. Too long for
+                        // its half: shrinks to the readable minimum, then slides (D79).
+                        playing.title ?: "Unknown track", color = colors.textPrimary, fontSize = (14 * grow).sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
+                        fontWeight = FontWeight.Bold, maxLines = if (showButtons) 1 else 2, style = uiFontStyle().merge(TextStyle(shadow = shadow)),
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     playing.artist?.let {
-                        Text(
-                            "  ·  $it", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = (12 * grow).sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin((12 * grow).sp), maxFontSize = (12 * grow).sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
-                            maxLines = if (showButtons) 1 else 2, overflow = TextOverflow.Ellipsis, style = uiFontStyle().merge(TextStyle(shadow = shadow)),
+                        FullText(
+                            "  ·  $it", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = (12 * grow).sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
+                            maxLines = if (showButtons) 1 else 2, style = uiFontStyle().merge(TextStyle(shadow = shadow)),
                             modifier = Modifier.weight(1f, fill = false)
                         )
                     }

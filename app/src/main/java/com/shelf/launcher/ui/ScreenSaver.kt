@@ -553,19 +553,17 @@ private fun MusicScene(
                 AlbumArt(nowPlaying.art, artSize)
                 Spacer(Modifier.width(28.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(
+                    FullText(
                         nowPlaying.title ?: "Unknown track",
                         color = Color.White.copy(alpha = 0.92f),
-                        fontSize = 28.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(28.sp), maxFontSize = 28.sp),
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                        maxLines = 2
                     )
                     nowPlaying.artist?.let {
-                        Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        FullText(it, color = Color.White.copy(alpha = 0.72f), fontSize = 18.sp, maxLines = 2)
                     }
                     nowPlaying.album?.let {
-                        Text(it, color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        FullText(it, color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp, maxLines = 2)
                     }
                     if (nowPlaying.durationMs > 0) {
                         Spacer(Modifier.height(18.dp))
@@ -717,8 +715,8 @@ private fun BigClockScene(dx: Dp, dy: Dp) {
     val dateFormat = remember { SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()) }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(Modifier.offset(dx, dy), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(timeFormat.format(now), color = Color.White.copy(alpha = 0.85f), fontSize = 88.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(88.sp), maxFontSize = 88.sp), fontWeight = FontWeight.Light, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(dateFormat.format(now), color = Color.White.copy(alpha = 0.55f), fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(timeFormat.format(now), color = Color.White.copy(alpha = 0.85f), fontSize = 88.sp, fontWeight = FontWeight.Light, maxLines = 1)
+            FullText(dateFormat.format(now), color = Color.White.copy(alpha = 0.55f), fontSize = 20.sp, maxLines = 1)
         }
     }
 }
@@ -738,8 +736,8 @@ private fun ThemeMusicSaver(theme: com.shelf.launcher.ui.theme.AppTheme, nowPlay
             Modifier.align(Alignment.BottomCenter).offset(dx, dy).padding(bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(nowPlaying.title ?: "", color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            nowPlaying.artist?.let { Text(it, color = Color.White.copy(alpha = 0.7f), fontSize = 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+            FullText(nowPlaying.title ?: "", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            nowPlaying.artist?.let { FullText(it, color = Color.White.copy(alpha = 0.7f), fontSize = 17.sp, maxLines = 1) }
             // Lyric cloud scatters them over the scene itself.
             if (showLyrics && !theme.motif.lyrics) ScreensaverLyrics(nowPlaying, position)
         }
