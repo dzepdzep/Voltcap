@@ -16,6 +16,8 @@
 6. **Dual-screen integration and final Thor QA** (then release only per the checklist).
 Second-screen work of 379 is committed (update 384).
 
+**Update 395 (29 Oct 2026, Thor ~9 min):** Artwork library Endless-off list starts at the top (`artLibRowTop`, `BoxArtLib395Test`), contrast scrim; Cardboard box side faces; catswitch C3 PASS for ARTLIB, ARCTIC, SHELF, SIDE, STACKS, BOX (43 layouts still NOT TESTED; justChanged-guard and rapid-reversal sync not checked frame by frame). Not committed as a release; no release. Details: SUMMARY.md top.
+
 **Update 391 (29 Oct 2026, Thor ~14 min):** `Features.spineDepth` (Off / Subtle default / Realistic 3D, drawn over every spine picture via `GameSpine`), custom spine names fitted without sliding or "…" (`SpineName`, `SpineTitleFit`), Artwork library top gap 210 -> 138 px, "Game you're on" labels unified (Left = first card, Dashboard + Side menu Thor-verified). Static check SPINE-SLIDE. Untested: see SUMMARY 391.
 
 **Update 390 (29 Oct 2026, Thor ~13 min, session 1 of the row audit):** `Features.rowFocus` (Dashboard + Side menu: As designed / Left / Middle / Right), settled x per value measured Endless on / off; `rowaudit.py` selection check (any layout): 13 layouts PASS, Channel grid (3 per press) and Live tiles (2-D mosaic) by design; no defect found. Untested: 37 layouts + Hero carousel (no trace), Endless off elsewhere, first / last game, few-game categories, second screen. Plan S2-S4 in SUMMARY 390. COVERAGE RA-01..05.

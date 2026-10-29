@@ -286,6 +286,17 @@ private fun ArtLibRail(c: StyleCtx, items: List<RailAction>, accent: Color, modi
     }
 }
 
+/**
+ * Top of the highlighted row inside the list for glide position [pos] (the rows follow at [rowH] each). Endless: always the
+ * anchor. Otherwise the list's scroll is clamped to its own ends, so the highlight starts at the top, reaches the anchor and
+ * runs on to the bottom for the last games; short lists stay at the top. Continuous in [pos], so no jump.
+ */
+internal fun artLibRowTop(pos: Float, rowH: Float, anchor: Float, pad: Float, total: Float, listH: Float, loop: Boolean): Float {
+    if (loop) return anchor - rowH / 2f
+    val scroll = (pad + pos * rowH + rowH / 2f - anchor).coerceIn(0f, maxOf(0f, total - listH))
+    return pad + pos * rowH - scroll
+}
+
 /** The tall glass panel: the category's name and logo, and the games as a list gliding under a highlight that stays put. */
 @Composable
 private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: Modifier) {
@@ -305,7 +316,7 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
     val shape = RoundedCornerShape(24.dp)
     val glass = themeDark(Color(0xFF0A0E15), 0.5f)
     val onAccent = if (accent.luminance() > 0.5f) Color.Black else Color.White
-    Column(modifier.clip(shape).background(glass.copy(alpha = 0.66f)).border(1.dp, accent.copy(alpha = 0.18f), shape)) {
+    Column(modifier.clip(shape).background(glass.copy(alpha = 0.78f)).border(1.dp, accent.copy(alpha = 0.18f), shape)) {
         // The category: its logo or symbol, its name, how many games; ◀ ▶ step through the categories like L2 / R2.
         val stopNow = c.stops.getOrNull(c.stop)
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = if (compact) 8.dp else 14.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -333,14 +344,19 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
             val rowH = if (c.mixed) (if (compact) 52.dp else 64.dp) else if (compact) 40.dp else 50.dp
             val rowHPx = with(density) { rowH.toPx() }
             val listHPx = with(density) { maxHeight.toPx() }
-            // The highlight stays at one place (a little above the middle); the list moves under it.
+            // Update 395: with Endless on the highlight stays at one place (a little above the middle) and the list loops under it.
+            // With Endless off the list never scrolls past its own ends (no empty space above the first or under the last game):
+            // the highlight starts at the top, glides down to that place, and runs on to the bottom for the last games.
             val anchorPx = listHPx * 0.42f
-            val above = (anchorPx / rowHPx).toInt() + 2
-            val below = ((listHPx - anchorPx) / rowHPx).toInt() + 3
+            val padPx = with(density) { 4.dp.toPx() }
+            val rowsFit = (listHPx / rowHPx).toInt() + 2
+            val above = if (loop) (anchorPx / rowHPx).toInt() + 2 else rowsFit
+            val below = if (loop) ((listHPx - anchorPx) / rowHPx).toInt() + 3 else rowsFit
+            val total = count * rowHPx + 2 * padPx
             val focused = ArtLibNav.zone == ArtLibNav.Zone.LIST
             Box(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp).height(rowH)
-                    .graphicsLayer { translationY = anchorPx - rowHPx / 2f }
+                    .graphicsLayer { translationY = artLibRowTop(posFn(), rowHPx, anchorPx, padPx, total, listHPx, loop) }
                     .clip(RoundedCornerShape(16.dp))
                     .background(accent.copy(alpha = if (focused) 0.92f else 0.5f))
             )
@@ -370,10 +386,11 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
                         Box(
                             Modifier.fillMaxWidth().height(rowH).padding(horizontal = 8.dp)
                                 .graphicsLayer {
-                                    translationY = anchorPx + (i - posFn()) * rowHPx - rowHPx / 2f
-                                    // The ends of the list fade out softly.
-                                    val d = abs(translationY + rowHPx / 2f - anchorPx)
-                                    alpha = (1.15f - d / (listHPx * 0.62f)).coerceIn(0f, 1f)
+                                    val p = posFn()
+                                    translationY = artLibRowTop(p, rowHPx, anchorPx, padPx, total, listHPx, loop) + (i - p) * rowHPx
+                                    // The ends of the list fade out softly (Endless off: only a row cut by an edge that has more beyond it).
+                                    alpha = if (loop) (1.15f - abs(translationY + rowHPx / 2f - anchorPx) / (listHPx * 0.62f)).coerceIn(0f, 1f)
+                                    else (minOf(translationY + rowHPx, listHPx - translationY) / (rowHPx * 1.2f)).coerceIn(0f, 1f)
                                 }
                                 .pointerInput(real) { detectTapGestures { ArtLibNav.zone = ArtLibNav.Zone.LIST; if (real == latestFocus) open() else select(real) } }
                                 .padding(horizontal = 12.dp),
@@ -383,7 +400,7 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
                             // Selected: the whole name, fitted (R18), on the highlight; the others stay readable.
                             Column(verticalArrangement = Arrangement.Center) {
                                 FitText(
-                                    titles.display(gm.name), if (sel) onAccent else Color.White.copy(alpha = 0.86f), maxSize = if (compact) 14.sp else 16.sp,
+                                    titles.display(gm.name), if (sel) onAccent else Color.White.copy(alpha = 0.94f), maxSize = if (compact) 14.sp else 16.sp,
                                     minSize = 11.sp, maxLines = 2, fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium
                                 )
                                 if (c.mixed) Text(titles.console(gm.platform), color = (if (sel) onAccent else Color.White).copy(alpha = 0.6f), fontSize = 10.sp, lineHeight = 12.sp)
@@ -403,7 +420,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
     val titles = LocalTitleOptions.current
     val meta = c.state.metadata[g.stableKey]
     val onAccent = if (accent.luminance() > 0.5f) Color.Black else Color.White
-    Column(modifier.riseOnChange(g.stableKey, floor = 0.4f, ms = 240)) {
+    Column(modifier.riseOnChange(g.stableKey, floor = 0.4f, ms = 240).clip(RoundedCornerShape(20.dp)).background(Color.Black.copy(alpha = 0.34f)).padding(14.dp)) {
         // One slot for the logo or the name, so what is under it never moves when a game has a logo and the next one hasn't.
         LogoOrName(c.logo(g), titles.display(g.name), Modifier.height(if (compact) 54.dp else 92.dp).fillMaxWidth()) {
             StableFullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 26.sp else 40.sp, fontWeight = FontWeight.Bold, maxLines = 2, modifier = Modifier.fillMaxWidth())
@@ -419,7 +436,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (f in facts) Text(
                 f, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp)
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.42f)).padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
         c.progress(g)?.let { (e, t) ->
@@ -437,7 +454,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
         val story = meta?.summary?.takeIf { it.isNotBlank() }
         if (story != null) {
             Spacer(Modifier.height(10.dp))
-            RollingStory(story, Color.White.copy(alpha = 0.82f), if (compact) 12.sp else 13.sp, if (compact) 17.sp else 19.sp, if (compact) 36.dp else 58.dp)
+            RollingStory(story, Color.White.copy(alpha = 0.94f), if (compact) 12.sp else 13.sp, if (compact) 17.sp else 19.sp, if (compact) 36.dp else 58.dp)
         }
         Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {

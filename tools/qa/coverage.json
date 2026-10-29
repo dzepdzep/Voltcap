@@ -482,7 +482,7 @@
    "hardware": true,
    "status": "NOT TESTED",
    "evidence": "-",
-   "limits": "PASS only for CINEMA, COVERDETAILS, BOX, CLASSIC, TILES (CS-02); every other layout NOT TESTED until run through catswitch.sh"
+   "limits": "PASS (no blank / white / dip frame, shell still: contact sheet of BOX read) for CINEMA, COVERDETAILS, BOX, CLASSIC, TILES (CS-02) and, update 395 run C3, ARTLIB, ARCTIC, SHELF, SIDE, STACKS, BOX again (SIDE and BOX transient frames = the swap frame itself); every other layout NOT TESTED until run through catswitch.sh (next batch: HERO, DASH, ARCADE, CRATE, CARDS, STORAGE, FILESELECT, POCKET, DISCS, TWIN_*); rapid-reversal artwork / title sync and the 600 ms guard against game animations were NOT checked frame by frame"
   }
  ]
 }

@@ -266,7 +266,7 @@ internal fun StyleCardboardBox(c: StyleCtx, modifier: Modifier = Modifier) {
 }
 
 /** One case's place in a box (mm, the box's inside: x across from its middle, y from its back wall): row, left edge, thickness, length, standing height. */
-private class BoxSlot(val box: Int, val row: Int, val x0: Float, val thick: Float, val y0: Float, val len: Float, val stand: Float) {
+internal class BoxSlot(val box: Int, val row: Int, val x0: Float, val thick: Float, val y0: Float, val len: Float, val stand: Float) {
     val x1 get() = x0 + thick
     val y1 get() = y0 + len
 }
@@ -276,7 +276,7 @@ private class BoxSlot(val box: Int, val row: Int, val x0: Float, val thick: Floa
  * [t] thick; the camera [hc] above the floor, over the middle across and [yc] from the back wall, looking straight down.
  * A point (x, y, z) is drawn at ([sx], [sy]) — nearer the camera (higher up), bigger.
  */
-private class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float, val vh: Float = 0f) {
+internal class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Float, val hc: Float, val yc: Float, val f: Float, val cx: Float, val cy: Float, val vh: Float = 0f) {
     fun sx(x: Float, z: Float) = cx + f * x / (hc - z)
     fun sy(y: Float, z: Float) = cy + f * (y - yc) / (hc - z)
     fun o(x: Float, y: Float, z: Float) = Offset(sx(x, z), sy(y, z))
@@ -287,9 +287,9 @@ private class BoxCam(val wMm: Float, val dMm: Float, val wallH: Float, val t: Fl
 /** The longest case the box is made for (a DVD-size case), the gap between the rows, the room at the walls (mm). */
 private const val BOX_LEN = 191f
 private const val BOX_ROW_GAP = 26f
-private const val BOX_MARGIN = 3f
+internal const val BOX_MARGIN = 3f
 
-private fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
+internal fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
     // A real storage box: two DVD-length rows deep, as wide as the case size asks (smaller cases: a wider box, more to a row).
     val d = BOX_LEN * 2 + BOX_ROW_GAP + BOX_MARGIN * 2
     val w = 420f / sizeK
@@ -308,7 +308,7 @@ private fun boxCam(wPx: Float, hPx: Float, tilt: Float, sizeK: Float): BoxCam {
 }
 
 /** Packs the games into boxes: across the back row as many as physically fit (each its own case's thickness), then the front row, then the next box. */
-private fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean): List<BoxSlot> {
+internal fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean): List<BoxSlot> {
     val out = ArrayList<BoxSlot>(games.size)
     val usable = cam.wMm - 2 * BOX_MARGIN
     var box = 0; var row = 0; var x = 0f
@@ -488,6 +488,32 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted
     }
 }
 
+/**
+ * The side face of each case toward the middle of the box (Update 395): the camera is over the middle, so a case left of it
+ * shows its right side and one right of it its left side wherever a lower neighbour doesn't hide it. Drawn from the same
+ * geometry (x, y, standing height) as the spine, so a tall case beside a short one stands as a solid body, not a floating
+ * edge over the dark floor. Lit from the upper left: faces turned left are lighter; dark where they meet the floor.
+ */
+internal fun boxSideFaceX(s0: Float, s1: Float): Pair<Float, Boolean> =
+    if ((s0 + s1) / 2f > 0f) s0 to true else s1 to false
+
+@Composable
+private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted: Int) {
+    Canvas(Modifier.fillMaxSize()) {
+        val c = cam
+        for (i in slots.indices) {
+            val s = slots[i]
+            if (s.box != shownBox || i == lifted) continue
+            val (xb, facesLeft) = boxSideFaceX(s.x0, s.x1)
+            val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, 0f), c.o(xb, s.y0, 0f))
+            val topC = if (facesLeft) Color(0xFF55575F) else Color(0xFF2C2D32)
+            drawPath(p, Brush.verticalGradient(listOf(topC, Color(0xFF0C0C0E)), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, 0f)))
+            // The rim where the top face turns into the side: the plastic edge catching the light.
+            drawLine(Color.White.copy(alpha = if (facesLeft) 0.2f else 0.1f), c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), 1f)
+        }
+    }
+}
+
 /** The plastic's sheen over each row's spines, and the shade toward the walls. */
 @Composable
 private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int) {
@@ -611,6 +637,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         ) { (_, shownBox) ->
             Box(Modifier.fillMaxSize()) {
                 BoxBody(cam, mat, slots, shownBox)
+                BoxCaseSides(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1)
                 BoxCaseEnds(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1, mat)
                 // The spines (the case you're on, and one coming out, drawn by itself over them).
                 for (i in slots.indices) {
