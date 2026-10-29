@@ -123,18 +123,9 @@
         </provider>
 
 
-        <!-- Reads active notifications for the in-launcher notifications and
-             music panel. Requires the user to grant "Notification access" in
-             Settings; Android offers no runtime-dialog path for this. -->
-        <service
-            android:name=".data.ShelfNotificationListener"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
+        <!-- Update 406: the notification-listener service (ShelfNotificationListener) is NOT declared here. Google Play Protect blocks
+             installing sideloaded apps that declare BIND_NOTIFICATION_LISTENER_SERVICE. It lives in src/notify/AndroidManifest.xml,
+             merged only into the optional "notify" build type. -->
 
         <!-- The on-game performance readout; never takes focus or touches. -->
         <service

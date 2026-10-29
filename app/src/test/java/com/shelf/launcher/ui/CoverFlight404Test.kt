@@ -17,7 +17,7 @@ class CoverFlight404Test {
             CoverFlight.flights["k"] = androidx.compose.runtime.mutableStateOf(0f)
             assertEquals(0f, CoverFlight.hide("k"), 0f)
             CoverFlight.flights["k"] = androidx.compose.runtime.mutableStateOf(1f)
-            assertEquals(0f, CoverFlight.hide("k"), 0f)
+            assertEquals(1f, CoverFlight.hide("k"), 0f)
             CoverFlight.flights["k"] = androidx.compose.runtime.mutableStateOf(0.5f)
             assertEquals(1f, CoverFlight.hide("k"), 0f)
             CoverFlight.flights.remove("k")

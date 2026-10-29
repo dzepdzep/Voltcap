@@ -202,7 +202,18 @@ fun NotificationsPanel(
             Spacer(Modifier.height(12.dp))
         }
 
-        if (!hasAccess) {
+        if (!hasAccess && !com.shelf.launcher.data.ShelfNotificationListener.isBuiltIn(context)) {
+            ShelfCard {
+                SectionLabel("Not part of this Voltcap build")
+                MutedNote(
+                    "To keep Voltcap installable on phones and handhelds where Google Play Protect blocks apps " +
+                        "that can read notifications, the standard Voltcap does not include notification access. " +
+                        "Showing notifications and controlling other apps' playback needs the optional " +
+                        "\"notifications\" build (Voltcap-<version>-notify.apk) from the GitHub releases page; " +
+                        "it installs over this one and keeps your games and settings."
+                )
+            }
+        } else if (!hasAccess) {
             ShelfCard {
                 SectionLabel("Notification access needed")
                 MutedNote(

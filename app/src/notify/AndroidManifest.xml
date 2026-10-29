@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Update 406: ONLY the optional "notify" build type (assembleNotify). Adds the notification-listener service that the
+     standard APK leaves out because Google Play Protect blocks sideloaded installs that declare it. Needs the user's explicit
+     grant in Android Settings > Notification access. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <service
+            android:name="com.shelf.launcher.data.ShelfNotificationListener"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

@@ -176,7 +176,18 @@ class ShelfNotificationListener : NotificationListenerService() {
          * Notification access really switched on for THIS listener (not just "some component of the
          * package"), read from Android each time. Android 8.1+ answers per component.
          */
+        /**
+         * Update 406: the standard APK declares no notification-listener service (Google Play Protect blocks the
+         * install of sideloaded apps that do); only the optional "notify" build type ships it. False = every
+         * notification / now-playing feature simply stays off, nothing to ask the person for.
+         */
+        fun isBuiltIn(context: Context): Boolean = runCatching {
+            context.packageManager.getServiceInfo(ComponentName(context, ShelfNotificationListener::class.java), 0)
+            true
+        }.getOrDefault(false)
+
         fun hasAccess(context: Context): Boolean = runCatching {
+            if (!isBuiltIn(context)) return@runCatching false
             val component = ComponentName(context, ShelfNotificationListener::class.java)
             if (android.os.Build.VERSION.SDK_INT >= 27) {
                 val nm = context.getSystemService(android.app.NotificationManager::class.java)

@@ -98,6 +98,11 @@ android {
             )
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+        // Update 406: optional build with the notification-listener service (src/notify). Same key / id as release.
+        create("notify") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
