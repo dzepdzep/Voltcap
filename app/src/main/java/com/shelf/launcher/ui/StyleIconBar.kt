@@ -79,8 +79,8 @@ internal fun StyleIconBar(c: StyleCtx, modifier: Modifier) {
         StyleNav.top = if (currentOnly) listOf({ stepCategory(1) }) else icons.map { it.onClick }
     }
     BoxWithConstraints(modifier.padding(horizontal = 12.dp)) {
-        val compact = maxHeight < 380.dp
-        val roomy = maxHeight >= 430.dp
+        val compact = maxHeight < 380.dp || maxWidth < 720.dp
+        val roomy = maxHeight >= 430.dp && !compact
         Column(Modifier.fillMaxSize()) {
             if (currentOnly) {
                 BarCategoryTab(c, compact)
@@ -131,7 +131,7 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
         // (Update 212: the layout's own category title, CategoryTitle.kt.)
         CategoryTitle.Native()
         FullText(
-            c.categoryLabel, color = Color.White.copy(alpha = if (on) 1f else 0.92f), fontSize = if (compact) 15.sp else 19.sp,
+            c.categoryLabel, color = Color.White.copy(alpha = if (on) 1f else 0.92f), fontSize = if (compact) 14.sp else 16.sp,
             fontWeight = FontWeight.SemiBold, maxLines = 1,
             style = nameTextStyle(NameBackdrop.SHADOW),
             modifier = Modifier.weight(1f, fill = false).pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, 0); step(1) } }
@@ -148,7 +148,7 @@ private fun BarTabs(icons: List<HomeShortcut>, compact: Boolean) {
     val lit = if (StyleNav.zone == StyleNav.Zone.TOP) StyleNav.index else -1
     WholeChipRow(
         icons.size, lit, Modifier.fillMaxWidth(), spacing = if (compact) 12.dp else 18.dp, startPadding = 2.dp,
-        hintSize = if (compact) 13.sp else 15.sp
+        hintSize = if (compact) 12.sp else 13.sp
     ) { i ->
             val s = icons[i]
             val on = StyleNav.on(StyleNav.Zone.TOP, i)
@@ -158,7 +158,7 @@ private fun BarTabs(icons: List<HomeShortcut>, compact: Boolean) {
                 modifier = Modifier.pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, i); click() } }
             ) {
                 Text(
-                    s.label, color = Color.White.copy(alpha = if (on) 1f else 0.6f), fontSize = if (compact) 15.sp else 19.sp,
+                    s.label, color = Color.White.copy(alpha = if (on) 1f else 0.6f), fontSize = if (compact) 13.sp else 16.sp,
                     fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, softWrap = false,
                     textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null,
                     style = nameTextStyle(NameBackdrop.SHADOW)
@@ -246,16 +246,16 @@ private fun BarTitle(c: StyleCtx, g: com.shelf.launcher.data.Game, compact: Bool
                 coil.compose.AsyncImage(
                     logo, titles.display(g.name), contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     alignment = Alignment.CenterStart,
-                    modifier = Modifier.height(if (compact) 52.dp else 76.dp).fillMaxWidth()
+                    modifier = Modifier.height(if (compact) 48.dp else 68.dp).fillMaxWidth()
                 )
                 Spacer(Modifier.height(4.dp))
                 FitText(
-                    titles.display(g.name), color = Color.White, maxSize = if (compact) 14.sp else 18.sp, minSize = 10.sp,
+                    titles.display(g.name), color = Color.White, maxSize = if (compact) 13.sp else 16.sp, minSize = 10.sp,
                     maxLines = 1, fontWeight = FontWeight.Medium, style = nameTextStyle(NameBackdrop.SHADOW)
                 )
             } else {
                 FitText(
-                    titles.display(g.name).uppercase(), color = Color.White, maxSize = if (compact) 22.sp else 32.sp, minSize = 13.sp,
+                    titles.display(g.name).uppercase(), color = Color.White, maxSize = if (compact) 20.sp else 28.sp, minSize = 12.sp,
                     maxLines = 2, fontWeight = FontWeight.Light, style = nameTextStyle(NameBackdrop.SHADOW)
                 )
             }
