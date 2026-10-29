@@ -1133,6 +1133,54 @@
    "status": "wontfix",
    "found": "2026-10-29 Thor (.shots/400/fix_ARTLIB/open.png)",
    "note": "Artwork library lists titles over a backdrop; there is no case to lift, so its intended behaviour is kept. Its Endless / 1-3 games / touch / rail checks stay OPEN (not done in update 400)."
+  },
+  {
+   "id": "D92",
+   "title": "Cardboard box: dark / light rectangular plates on the floor and near-black chunky case sides and ends (owner photos 02-04)",
+   "rule": "PHYS-FAKE",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-10-29 owner photos qa_reference_update403/02-04, reproduced on the Thor (.shots/403/box_before.png)",
+   "root_cause": "(1) BoxSheen drew one rectangle per ROW sized to the row's bounding box (empty floor included) with a 45 % black bar at the row's left end and a white diagonal shine; (2) BoxBody's contact shadows were row-wide bands sized by the row's longest case plus a last-case side rectangle; (3) BoxCaseSides / BoxCaseEnds filled every case's side and end with a fixed 0xFF55575F..0xFF0C0C0E near-black gradient.",
+   "files": ["ui/StyleCardboardBox.kt"],
+   "fix": "BoxSheen per case inside its own top face (wall shade only on the case itself); contact shadow per case foot (14 mm-scaled soft fall-off, 16 %); sides / ends toned by material via boxSideTone (cardboard tan for CaseCatalog cardboard shells, mid grey plastic otherwise). Geometry (attached faces from the same x / y / stand values as the spine) unchanged.",
+   "check": "Physical403Test (sheen per case, no row-wide bands, no hard-coded black faces, tones never black, one keyed BoxCase per slot, no accent fill); Thor .shots/403/box_after2.png",
+   "note": "Checked on the Thor: ALL category, 2 rows, DS / GBA / N64 / PS2 / PSP mix. NOT re-checked: 1 / 3 rows, 1-3 games, empty, Messy, per-platform categories. Record crate, Card binder, Console stack, Game shelf, Case stacks stills show no such plates (.shots/403/aud_montage.jpg)."
+  },
+  {
+   "id": "D93",
+   "title": "Game window veil dims the home screen for several frames before the picked case starts to fly",
+   "rule": "SHARED-PICKUP",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 owner report (~8-frame veil / idle pause); Thor 60 Hz capture box_open.mp4: floor region brightness 119 -> 39 in ~7 frames while the case was still near its slot",
+   "root_cause": "The window's veil alpha was the window's own grow clock (starts at the first layout), the piece flight (InspectMotion.open) starts later (slot known + cover in memory, up to 450 ms).",
+   "files": ["ui/GameWindow.kt"],
+   "fix": "veil alpha = grow * flightVeil(motion.lift) (the flight's own progress) whenever the window has a flying piece.",
+   "check": "Physical403Test.veilIsInvisibleUntilThePieceMoves / veilIsMonotonicAndEqualsTheFlight / windowVeilIsGatedByTheFlight",
+   "note": "Re-captured on the Thor after the change (.shots/403/rapid_sheet.jpg: dimming and case movement together, one case in every sampled frame). Measured with the veil at flight progress only on the Cardboard box; Case stacks / Shelf / Cover details use the same window code but were not re-captured. Layouts with cardFlight (Game shelf, Console stack, Card binder, Record crate: no piece) are unchanged."
+  },
+  {
+   "id": "D94",
+   "title": "Cover details: the big case looked flat (no visible spine or top) next to reference 07",
+   "rule": "PHYS-3D",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 owner reference 07 vs Thor .shots/403/cd_before.png (yaw 9 / pitch 8 left almost no spine)",
+   "root_cause": "Update 402 raised yaw / pitch and the case was cut and zoomed because the canvas gave the turned case no room (fill 0.94 whatever the turn).",
+   "files": ["ui/StyleCoverDetails.kt"],
+   "fix": "yaw / pitch Subtle 14 / 9, Realistic 3D 24 / 12 with fill 0.86 / 0.78 (bigCaseFill) so the nearer edge never leaves the canvas.",
+   "check": "CoverDetails403Test; Thor .shots/403/cd_subtle.png, cd_real.png, cd_n64_real.png (spine with the real spine art, top face, no clipping)",
+   "note": "Renderer geometry (Case3D: front / spine / top / back quads) was already true 3D; the change is the presentation angle and room, not a renderer rewrite. Spine / back art per console (N64, Switch) NOT audited. N64 front grey fields: the log shows the real ScreenScraper box-2D(us) scan 480x352 on a 1.425 face (no bars drawn by the fit rule); whether the grey is in the raw file is NOT verified (D90 bars were for portrait covers only)."
+  },
+  {
+   "id": "D95",
+   "title": "Window / popup flights from the Game shelf: featured case 'spawns' above the shelf (owner photo 01)",
+   "rule": "SHARED-PICKUP",
+   "severity": "medium",
+   "status": "suspect",
+   "found": "2026-10-29 owner photo qa_reference_update403/01",
+   "note": "Traced in ShelfHome.kt: the pulled-out case is a three-phase move from the raised spine's own row rect (slide up, turn, front, spine alpha swaps to the pulled overlay at p 0.45-0.6) and the previous featured case returns to its slot (ShelfBack). A 48 fps Thor capture of a selection change (.shots/403/shelf_before_sheet.jpg) shows the old case going back and the new one rising from the left slot with no teleport; the owner's exact case was not reproduced. One continuous position / scale / rotation curve for Shelf / Stacks / Cover details was NOT built (three eased phases remain)."
   }
  ]
 }

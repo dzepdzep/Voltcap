@@ -151,15 +151,21 @@ private fun CoverShelfRequests(c: StyleCtx) {
  * turn and tilt follow Settings > Spine depth (Off: facing you, as before; Subtle: a little; Realistic 3D: the reference's).
  * Fixed per setting: nothing moves when the game or the category changes.
  */
-private fun bigCaseYaw(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
+internal fun bigCaseYaw(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
     com.shelf.launcher.data.Features.SpineDepth.OFF -> 0f
-    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 9f
-    com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 15f
+    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 14f
+    com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 24f
 }
-private fun bigCasePitch(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
+internal fun bigCasePitch(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
     com.shelf.launcher.data.Features.SpineDepth.OFF -> 4f
-    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 8f
+    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 9f
     com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 12f
+}
+/** Update 403: a bigger turn needs more room round the case (the nearer edge grows with perspective): the same case, less of the canvas, so it is never cut or zoomed (update 402's try at a bigger yaw was). */
+internal fun bigCaseFill(d: com.shelf.launcher.data.Features.SpineDepth) = when (d) {
+    com.shelf.launcher.data.Features.SpineDepth.OFF -> 0.94f
+    com.shelf.launcher.data.Features.SpineDepth.SUBTLE -> 0.86f
+    com.shelf.launcher.data.Features.SpineDepth.REALISTIC -> 0.78f
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -189,7 +195,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
                             case3dAspect(g, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
                             frame = false, frameColor = accent,
                             realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
-                            fill = 0.94f
+                            fill = bigCaseFill(depth)
                         )
                     }
                 }

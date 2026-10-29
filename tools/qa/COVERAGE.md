@@ -8,7 +8,7 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 
 - Layouts in the source: **53**
 - With a validated device recording analysed by frames.py: **51** (blank-frame scan PASS 51, FAIL 0); no usable recording / never recorded: **2**
-- Looked at by a human (contact sheets): **7** layouts; the other **46** have no human visual verdict recorded here
+- Looked at by a human (contact sheets): **9** layouts; the other **44** have no human visual verdict recorded here
 
 | layout | name | blank-frame scan | transients / hitches | human review | recording |
 |---|---|---|---|---|---|
@@ -48,7 +48,7 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | CUBE | Cube menu | PASS | 2 / 0 | NOT TESTED | S4_CUBE.mp4 |
 | MEMCARD | Memory card (2000) | PASS | 0 / 1 | NOT TESTED | S4_MEMCARD.mp4 |
 | CASEFLOW | Case flow | PASS | 5 / 36 | NOT TESTED | S4_CASEFLOW.mp4 |
-| BOX | Cardboard box | PASS | 0 / 1 | NOT TESTED | S4_BOX.mp4 |
+| BOX | Cardboard box | PASS | 0 / 1 | PASS: Thor 29 Oct (update 403): no row-wide dark / light plates, case sides and ends in cardboard / plastic tones (no near-black slabs), contact shadow per case; ALL category 2 rows only; 1 / 3 rows, 1-3 games, empty, mixed row-count categories NOT re-checked this update | S4_BOX.mp4 |
 | STORAGE | Storage boxes | PASS | 2 / 0 | NOT TESTED | S4_STORAGE.mp4 |
 | FILESELECT | File select (1996) | PASS | 2 / 0 | NOT TESTED | S4_FILESELECT.mp4 |
 | ORBIT | Orbit deck (1995) | PASS | 2 / 1 | NOT TESTED | S4_ORBIT.mp4 |
@@ -63,7 +63,7 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | TERMINAL | Terminal | PASS | 0 / 2 | NOT TESTED | S1_TERMINAL.mp4 |
 | CINEMA | Cinema | PASS | 2 / 12 | PASS: Thor 28 Oct: contact sheets, no shift of name / logo / facts / buttons / rows, no flicker (no new evidence of a regression) | S4_CINEMA.mp4 |
 | ARCTIC | Arctic hub | PASS | 1 / 6 | PASS: Thor 28 Oct: contact sheets, same checks as Cinema | S4_ARCTIC.mp4 |
-| COVERDETAILS | Coverflow details | NOT TESTED | - | NOT TESTED | - |
+| COVERDETAILS | Coverflow details | NOT TESTED | - | PASS: Thor 29 Oct (update 403): big case shows its spine and top without clipping in Subtle and Realistic 3D (GBA Dr. Mario, N64 007); the N64 front's grey fields are in the ScreenScraper scan (480x352 on a 1.425 face: no fit bars) - NOT verified against the raw file; full reference-07 parity NOT claimed | - |
 | ARTLIB | Artwork library | NOT TESTED | - | NOT TESTED | - |
 
 `transients / hitches` are counts to look at, not verdicts: a slide, a crossfade or the intended edge-bump shake is a transient too. The blank-frame scan only fails on black / white / brightness-dip frames.
@@ -113,7 +113,6 @@ Statuses: **PASS** ran with valid evidence and found nothing; **FAIL** ran and f
 | CS-01 | Category change never visually reloads an unchanged layout: static + unit guards (R24 CATSHELL, CategoryStable394Test) | static_checks.py CATSHELL (categorySlide() on a BoxWithConstraints shell; category-keyed AnimatedContent that fades) + CategoryStable394Test (3, scans the real source) + test_qa.py test_static_checks_catshell_* | none (CI + dev PC) | automated | **PASS** | static strict PASS, 70 QA self-tests OK, CategoryStable394Test 3/3 OK; the old patterns fail the new checks (fixtures) | guards the known patterns (shell slide, category-keyed fade, gameSwap / riseOnChange / pageSlide / bespoke specs through CategorySlide.justChanged); a new kind of remount needs a new rule |
 | CS-02 | Category-switch visual test (device/catswitch.sh + tools/catswitch.py): repeated L2 / R2, 150 ms reversals, double step; blank / white / dip frames = FAIL | catswitch.sh C2 on the Thor (CINEMA COVERDETAILS BOX CLASSIC TILES, ~3 min), catswitch.py verdict + contact sheets of BOX and COVERDETAILS at 10 fps (hardware, not run in CI) | AYN Thor 3140972f (hardware, not run in CI) | automated | **PASS** | 5 layouts: no blank frame or whole-screen dip; Cardboard box and Cover details contact sheets show the shell (box, label, title, case, shelf) standing still across the steps | 5 of 53 layouts; only blank / dip frames are judged by the tool (new games swapping in are expected), the rest is by contact sheet; empty categories, mixed systems, missing artwork, per-category overrides and dual screen NOT TESTED on hardware; the other 48 layouts NOT TESTED |
 | CS-03 | Category switch: per-layout status (49 layouts) | catswitch.sh per layout (hardware, not run in CI) | AYN Thor 3140972f (hardware) | automated | **NOT TESTED** | - | UPDATE 397 (Thor, C6-C9): PASS (no blank / white / dip frame, layout seen in the still) POCKET_RIBBON, GREENCORE, TWIN_DESK (main screen only, no second display), POCKET_CLASSIC and DISCS (need PRE=A); POCKET PASS with an OPEN defect (info panel shows old + new title overlapped for 1 frame at the swap, reproduced 3x, also without the 397 change; shelf thumbnails fade in over ~3 frames). DISCS: disc label blank ~3 frames while the new title is already shown (image load, not an animation). FILESELECT flagged frame classified: it is the swap frame itself (benign). UPDATE 396 runs C4 / C5 (Thor): PASS (no blank / white / dip frame, intended layout seen in the still) HERO, DASH, ARCADE, CRATE, CARDS, STORAGE (needs PRE=A to leave its category screen), FILESELECT (1 transient frame flagged for review, not inspected); rapid reversals are in the NAV sequence; immediate game navigation after L2 / R2 NOT TESTED on hardware (unit test only). Earlier: PASS (no blank / white / dip frame, shell still: contact sheet of BOX read) for CINEMA, COVERDETAILS, BOX, CLASSIC, TILES (CS-02) and, update 395 run C3, ARTLIB, ARCTIC, SHELF, SIDE, STACKS, BOX again (SIDE and BOX transient frames = the swap frame itself); every other layout NOT TESTED until run through catswitch.sh (next batch: HERO, DASH, ARCADE, CRATE, CARDS, STORAGE, FILESELECT, POCKET, DISCS, TWIN_*); rapid-reversal artwork / title sync and the 600 ms guard against game animations were NOT checked frame by frame |
-| PK-402 | Physical-media pickup continuity + selection block + cover fit (update 402) | Case402Test (state / source / geometry) + Thor screenrecord sample sheets (.shots/402) | AYN Thor 3140972f (hardware) | partly automated | **PARTIAL** | - | Box open: one continuous flight, one case per sampled frame, no slot / outline / row tint (PASS). Stacks open and Shelf close: one case per frame (PASS). N64 Cover details: portrait cover shown whole (PASS). NOT TESTED: Cover details and Box closing after the final build, Box 1 / 2 / 3 rows, NES SNES DS GBA GBC Switch mixed for the fit rule, true 3D geometry (not implemented), D86 original sequence, PS2 Yu-Gi-Oh doubled band (source picture, open D91) |
 
 Feature rows: 41 - PASS 27, FAIL 3, SKIP 0, NOT TESTED 11; hardware-only rows: 23.
 

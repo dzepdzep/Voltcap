@@ -438,30 +438,18 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
         drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)), startY = fr1.y - ao * 1.5f, endY = fr1.y), Offset(fl0.x, fr1.y - ao * 1.5f), Size(fr1.x - fl0.x, ao * 1.5f))
 
         // The rows' feet on the floor: a soft contact shadow along the gap between the rows (the light from the upper left).
-        val rowsHere = slots.filter { it.box == shownBox }
-        for (row in 0 until c.rows) {
-            val r = rowsHere.filter { it.row == row }
-            if (r.isEmpty()) continue
-            val xa = r.first().x0; val xb = r.last().x1
-            // (Each row throws a shadow into the gap behind its feet and one in front of them, the lower rows' darker.)
-            if (row < c.rows - 1) {
-                val edgeY = r.maxOf { it.y1 }
-                val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
-                val depth = 22f * k0
-                drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.22f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x - 6f, a.y), Size(b.x - a.x + 18f, depth))
-            }
-            if (row > 0) {
-                val edgeY = r.minOf { it.y0 }
-                val a = c.o(xa, edgeY, 0f); val b = c.o(xb, edgeY, 0f)
-                val depth = 30f * k0
-                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.26f)), startY = a.y - depth, endY = a.y), Offset(a.x - 6f, a.y - depth), Size(b.x - a.x + 18f, depth))
-            }
-            // A row that isn't full: the last case's side, and its shadow on the floor beside it.
-            val last = r.last()
-            if (last.x1 < hw - 20f) {
-                val sa = c.o(last.x1, last.y0, 0f); val sb = c.o(last.x1, last.y1, 0f)
-                drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.2f), Color.Transparent), startX = sa.x, endX = sa.x + 26f * k0), Offset(sa.x, sa.y), Size(26f * k0, sb.y - sa.y))
-            }
+        // Update 403: contact shadow PER CASE, at its own foot only (width = the case's thickness, a short soft fall-off into the
+        // gap). The earlier row-wide bands were sized by the row's longest case (and the last case's side), so they drew hard-edged
+        // dark rectangles on the floor that belonged to no case (reference photos 02-04).
+        for (s in slots) {
+            if (s.box != shownBox) continue
+            val toGap = s.y1 < c.yc
+            if (!toGap && s.y0 <= c.yc) continue
+            val edgeY = if (toGap) s.y1 else s.y0
+            val a = c.o(s.x0, edgeY, 0f); val b = c.o(s.x1 + 6f, edgeY, 0f)
+            val depth = 14f * k0
+            if (toGap) drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.16f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x, a.y), Size(b.x - a.x, depth))
+            else drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.16f)), startY = a.y - depth, endY = a.y), Offset(a.x, a.y - depth), Size(b.x - a.x, depth))
         }
 
         // The walls' insides: back (lit), right (facing the light), left (in its own shade), front (in shade).
@@ -507,7 +495,7 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
 
 /** The cases' ends toward the camera (between the rows) and the sheen and shade over the spines, drawn round the spines. */
 @Composable
-private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted: Int, mat: BoxMaterials) {
+private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, shownBox: Int, lifted: Int, mat: BoxMaterials) {
     Canvas(Modifier.fillMaxSize()) {
         val c = cam
         for (i in slots.indices) {
@@ -519,7 +507,8 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted
             val seen = s.y1 < c.yc || s.y0 > c.yc
             if (!seen) continue
             val p = quad(c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), c.o(s.x0, y, 0f))
-            drawPath(p, Brush.linearGradient(listOf(Color(0xFF3A3C42), Color(0xFF16171A)), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
+            val tone = boxSideTone(games.getOrNull(i)?.platform)
+            drawPath(p, Brush.linearGradient(listOf(tone.first, tone.second), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
             drawLine(Color.Black.copy(alpha = 0.6f), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), 1f)
             // Its top edge catching the light.
             drawLine(Color.White.copy(alpha = 0.16f), c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), 1f)
@@ -533,11 +522,20 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted
  * geometry (x, y, standing height) as the spine, so a tall case beside a short one stands as a solid body, not a floating
  * edge over the dark floor. Lit from the upper left: faces turned left are lighter; dark where they meet the floor.
  */
+/**
+ * Update 403: the colour of a case's side / end by what it is made of (lit edge, then the shade toward the floor). Cardboard boxes
+ * (N64, GBA, SNES...) show cardboard, plastic cases a mid grey: the earlier near-black gradient on every case read as hollow
+ * black slabs between the spines (reference photos 02-04). Shading stays restrained (no black).
+ */
+internal fun boxSideTone(platform: String?): Pair<Color, Color> =
+    if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFFA48B66) to Color(0xFF5E4C34)
+    else Color(0xFF8A8D96) to Color(0xFF3C3E45)
+
 internal fun boxSideFaceX(s0: Float, s1: Float): Pair<Float, Boolean> =
     if ((s0 + s1) / 2f > 0f) s0 to true else s1 to false
 
 @Composable
-private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted: Int) {
+private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, shownBox: Int, lifted: Int) {
     Canvas(Modifier.fillMaxSize()) {
         val c = cam
         for (i in slots.indices) {
@@ -545,34 +543,37 @@ private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifte
             if (s.box != shownBox || i == lifted) continue
             val (xb, facesLeft) = boxSideFaceX(s.x0, s.x1)
             val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, 0f), c.o(xb, s.y0, 0f))
-            val topC = if (facesLeft) Color(0xFF55575F) else Color(0xFF2C2D32)
-            drawPath(p, Brush.verticalGradient(listOf(topC, Color(0xFF0C0C0E)), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, 0f)))
+            val tone = boxSideTone(games.getOrNull(i)?.platform)
+            val topC = if (facesLeft) tone.first else mix(tone.first, tone.second, 0.45f)
+            drawPath(p, Brush.verticalGradient(listOf(topC, tone.second), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, 0f)))
             // The rim where the top face turns into the side: the plastic edge catching the light.
             drawLine(Color.White.copy(alpha = if (facesLeft) 0.2f else 0.1f), c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), 1f)
         }
     }
 }
 
-/** The plastic's sheen over each row's spines, and the shade toward the walls. */
+/**
+ * The plastic's sheen over each case's own top face, and a little shade on the cases nearest the walls.
+ * Update 403: drawn PER CASE inside that case's own rectangle. It used to be one rectangle over each whole row (its bounding
+ * box, empty floor included) with a 45 % black bar at the row's left end: that was the flat dark plate / lighter block seen on
+ * the floor beside and below the cases (reference photos 02-04).
+ */
 @Composable
-private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int) {
+private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted: Int) {
     Canvas(Modifier.fillMaxSize()) {
         val c = cam
-        for (row in 0 until c.rows) {
-            val r = slots.filter { it.box == shownBox && it.row == row }
-            if (r.isEmpty()) continue
-            val z = r.maxOf { it.stand }
-            val a = c.o(r.first().x0, r.minOf { it.y0 }, z); val b = c.o(r.last().x1, r.maxOf { it.y1 }, z)
+        val w = c.wMm / 2f
+        for (i in slots.indices) {
+            val s = slots[i]
+            if (s.box != shownBox || i == lifted) continue
+            val a = c.o(s.x0, s.y0, s.stand); val b = c.o(s.x1, s.y1, s.stand)
             val sz = Size(b.x - a.x, b.y - a.y)
-            // (Update 402: the flat dark rectangle over the whole row is gone — it read as a block behind the selection.)
-            // A soft diagonal shine, as on the cases' plastic sleeves.
-            drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent),
+            if (sz.width <= 0f || sz.height <= 0f) continue
+            drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.White.copy(alpha = 0.04f), Color.Transparent),
                 start = a, end = Offset(a.x + sz.width * 0.6f, b.y)), a, sz)
-            // Darker toward the walls (less light reaches in there).
-            val w = c.wMm / 2f
-            val l = c.sx(-w, z); val rr = c.sx(w, z); val band = 50f * c.k(z)
-            drawRect(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), startX = l, endX = l + band * 1.6f), Offset(l, a.y), Size(band * 1.6f, sz.height))
-            drawRect(Brush.horizontalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.2f)), startX = rr - band, endX = rr), Offset(rr - band, a.y), Size(band, sz.height))
+            // Darker toward the walls (less light reaches in there): only the case's own face, never the floor.
+            val edge = (1f - ((w - kotlin.math.abs((s.x0 + s.x1) / 2f)) / 90f)).coerceIn(0f, 1f)
+            if (edge > 0f) drawRect(Color.Black.copy(alpha = 0.22f * edge), a, sz)
         }
     }
 }
@@ -680,8 +681,8 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         ) { (_, shownBox) ->
             Box(Modifier.fillMaxSize()) {
                 BoxBody(cam, mat, slots, shownBox)
-                BoxCaseSides(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1)
-                BoxCaseEnds(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1, mat)
+                BoxCaseSides(cam, slots, c.games, shownBox, if (shownBox == box) liftedIdx else -1)
+                BoxCaseEnds(cam, slots, c.games, shownBox, if (shownBox == box) liftedIdx else -1, mat)
                 // The spines (the case you're on, and one coming out, drawn by itself over them).
                 for (i in slots.indices) {
                     val sl = slots[i]
@@ -695,7 +696,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
                         )
                     }
                 }
-                BoxSheen(cam, slots, shownBox)
+                BoxSheen(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1)
             }
         }
 

@@ -134,7 +134,10 @@ internal fun bigLogo(g: Game, state: LauncherUiState): String? {
 }
 
 /** Update 400: storage layouts whose picked case opens a plain window (no piece, no scene of their own): it grows out of the case ([GameWindow]'s cardFlight). */
-internal val PICKUP_CARD_LAYOUTS = setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
+/** Update 403: how visible the window's veil is for a given flight progress: exactly the flight's own progress (0 = piece still in its slot, 1 = landed), so the screen never dims ahead of the movement. */
+internal fun flightVeil(lift: Float): Float = lift.coerceIn(0f, 1f)
+
+internal val PICKUP_CARD_LAYOUTS =setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
 
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
 @Composable
@@ -1252,7 +1255,10 @@ internal fun GameWindow(
         }) {
           Box(
             Modifier.fillMaxSize()
-                .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
+                // Update 403: with a flying piece the veil (and the window) fade in WITH the flight (lift), not on their own clock:
+                // `grow` starts at the first layout, the flight only after the piece's slot is known and its cover is in memory
+                // (up to 450 ms), so the screen dimmed for ~8 frames before anything moved.
+                .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
                 .background(scene?.let { sceneVeil(it) } ?: look.veil)
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
