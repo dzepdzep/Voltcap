@@ -503,6 +503,10 @@
   "v0.6.59 notify APK": {
    "status": "NOT VERIFIED",
    "note": "Optional; may be blocked by Play Protect."
+  },
+  "QA batch 0 (0.6.59)": {
+   "status": "PARTIAL",
+   "note": "host checks PASS; Thor smoke PASS; BOX ONE-PRESS NOT DONE (no QaTrace focus events in the Box layout)."
   }
  }
 }

@@ -1248,6 +1248,15 @@
    "found": "2026-10-29 release prep 0.6.59",
    "fix": "AppUpdates asset pick skips names containing '-notify'.",
    "check": "Compiled + unit tests green; not exercised against the live release yet."
+  },
+  {
+   "id": "D101",
+   "title": "Box layout emits no QaTrace focus events, so R23 ONE-PRESS (focuscheck.py) cannot run on it",
+   "rule": "ONEPRESS",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-10-29 QA batch 0 (Thor)",
+   "note": "INFRA gap, not a user-visible bug. Check Cover details and the other newer layouts too."
   }
  ]
 }
