@@ -129,31 +129,42 @@ internal const val LAZY_LOOP_MIN = 8
 internal fun followTarget(focusItem: Int, before: Int): Int = (focusItem - before).coerceAtLeast(0)
 
 /**
- * Update 388 (D77, again): the card that wears the highlight while a followed row glides. The selection changes at once but the
- * row takes a few frames to move, so the highlight used to stand in the third slot (two games on its left) and slide back to
- * the second while the row caught up. The lag is how many items the row still has to move ([followTarget] minus where the row
- * is: [first] + [offsetPx] / [pitchPx], rounded); the highlight stays on the item that stands in the selection's slot, so it keeps
- * one place and hands over to the next game half-way through the glide. Settled (lag 0) it is [focusItem].
+ * Update 389 (D77, third time): the highlight is a function of where the row IS, never of a second clock. 388 handed the frame
+ * from one card to the next half-way through the glide (the frame rode the old card 90 px to the left, then jumped a whole slot
+ * to the right: measured per frame on the Thor), 383 jumped it to the new card at once. Now the card that is gliding into the
+ * selection's slot fades its highlight in while the card leaving it fades its out, both as the row moves (a continuous crossfade,
+ * nothing jumps); settled it is exactly the selected card. [slotPos] is the (fractional) item standing in the selection's slot:
+ * the selection minus how far the row still has to move ([followTarget] - first - offset / pitch); NaN = not following the row (settled, the user's own scroll, a row that can't move further).
  */
-internal fun shownFocusItem(focusItem: Int, before: Int, first: Int, offsetPx: Int, pitchPx: Int, count: Int): Int {
-    if (pitchPx <= 0 || count <= 0) return focusItem
-    val lag = followTarget(focusItem, before) - (first + Math.round(offsetPx.toFloat() / pitchPx))
-    return (focusItem - lag).coerceIn(0, count - 1)
+internal fun slotPosition(focusItem: Int, before: Int, first: Int, offsetPx: Int, pitchPx: Int): Float =
+    if (pitchPx <= 0) Float.NaN else focusItem - (followTarget(focusItem, before) - (first + offsetPx.toFloat() / pitchPx))
+
+/** 0..1: how much [item] wears the highlight — the selected item alone when [slotPos] is NaN, else its closeness to the slot. */
+internal fun highlightStrength(item: Int, focusItem: Int, slotPos: Float): Float =
+    if (slotPos.isNaN()) (if (item == focusItem) 1f else 0f) else (1f - kotlin.math.abs(item - slotPos)).coerceIn(0f, 1f)
+
+/**
+ * Whether the highlight follows the row's slot instead of sitting on the selection: from the first frame after a press ([settledFor]
+ * is the selection the row last finished gliding to) and for as long as one of this row's glides runs ([gliding], which also covers
+ * a ◀ right after a ▶), never while the user scrolls — and not when the row can't move any further towards the selection
+ * ([stuck]: a row without Endless at its last game; there the selected card is simply where it is).
+ */
+internal fun highlightFollowsRow(settledFor: Int, focusItem: Int, gliding: Int, stuck: Boolean = false): Boolean =
+    !stuck && (settledFor != focusItem || gliding > 0)
+
+/** What [FollowFocus] hands back: the selected item and how strongly each item wears the highlight right now. */
+@androidx.compose.runtime.Stable
+internal class FocusFollow(val selected: Int, private val slot: androidx.compose.runtime.State<Float>) {
+    /** Read while drawing or inside a derivedStateOf (it follows the scroll position frame by frame). */
+    fun strength(item: Int): Float = highlightStrength(item, selected, slot.value)
 }
 
 /**
- * Whether the highlight follows the row's slot instead of the selection: from the first frame after a press ([settledFor] is the
- * selection the row last finished gliding to) and for as long as one of this row's glides runs ([gliding], which also covers a
- * ◀ right after a ▶ coming back to the last settled selection while the row is still on its way), never while the user scrolls.
- */
-internal fun highlightFollowsRow(settledFor: Int, focusItem: Int, gliding: Int): Boolean = settledFor != focusItem || gliding > 0
-
-/**
  * Keeps the item you're on at the same place of a lazy row: one step glides, a long way (a new list, Endless switched on) jumps.
- * [before] is how many items stand before it ([followTarget]). Returns the item that wears the highlight ([shownFocusItem]).
+ * [before] is how many items stand before it ([followTarget]). Returns the [FocusFollow] that says which items wear the highlight.
  */
 @Composable
-internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1): Int {
+internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1): FocusFollow {
     val settledFor = remember { androidx.compose.runtime.mutableIntStateOf(row.focusItem) }
     val gliding = remember { androidx.compose.runtime.mutableIntStateOf(0) }
     LaunchedEffect(row.focusItem, row.count) {
@@ -165,16 +176,18 @@ internal fun FollowFocus(list: LazyListState, row: LoopRow, before: Int = 1): In
             if (coroutineContext.isActive) settledFor.intValue = row.focusItem // (a newer press cancels this effect: it stays unsettled)
         } finally { gliding.intValue-- }
     }
-    val shown = remember(row.focusItem, row.count, before) {
+    val slot = remember(row.focusItem, row.count, before) {
         androidx.compose.runtime.derivedStateOf {
-            if (!highlightFollowsRow(settledFor.intValue, row.focusItem, gliding.intValue)) row.focusItem else {
+            val target = followTarget(row.focusItem, before)
+            val stuck = list.firstVisibleItemIndex < target && !list.canScrollForward
+            if (!highlightFollowsRow(settledFor.intValue, row.focusItem, gliding.intValue, stuck)) Float.NaN else {
                 val info = list.layoutInfo
                 val pitch = (info.visibleItemsInfo.firstOrNull()?.size ?: 0) + info.mainAxisItemSpacing
-                shownFocusItem(row.focusItem, before, list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset, pitch, row.count)
+                slotPosition(row.focusItem, before, list.firstVisibleItemIndex, list.firstVisibleItemScrollOffset, pitch)
             }
         }
     }
-    return shown.value
+    return remember(row.focusItem, slot) { FocusFollow(row.focusItem, slot) }
 }
 
 /**

@@ -320,7 +320,8 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
     val fits = remember { RowFits() }
     val row = rememberLoopRow(c, fits.value)
     val list = rememberLazyListState(initialFirstVisibleItemIndex = (row.focusItem - 1).coerceAtLeast(0))
-    val shown = FollowFocus(list, row)
+    val follow = FollowFocus(list, row)
+    if (QaGeom.on) SideEffect { QaTrace.event("dashring", "sel=${row.focusItem}") } // (QA 389: the selection; the cards report their own x and highlight)
     val keys = remember(c.games) { gameKeys(c.games) }
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
@@ -345,20 +346,24 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
                 items(row.count, key = { row.key(it, keys) }) { v ->
                     val i = row.game(v)
                     val g = c.games[i]
-                    val on = v == shown
+                    val on = v == follow.selected
+                    // Update 389: the highlight (frame, glow, lift) of the cards gliding through the selection's slot fades with the row.
+                    val near by remember(v, follow) { androidx.compose.runtime.derivedStateOf { follow.strength(v) > 0f } }
                     // While a menu has the D-pad, the game keeps its place but loses the highlight.
-                    val sel = on && StyleNav.zone == StyleNav.Zone.GAMES
-                    val lift = styleLift(sel)
+                    val games = StyleNav.zone == StyleNav.Zone.GAMES
+                    val sel = near && games
+                    val lift = styleLift(games)
                     // (Update 221: only the highlighted card pulses, so only it is redrawn by the pulse.)
-                    val pulse = if (sel) rememberFocusPulse(animate = pulseOn) else 0.75f
+                    val pulse = if (on && games) rememberFocusPulse(animate = pulseOn) else 0.75f
                     StyleArt(
                         c, g,
                         Modifier
                             .width(w).height(h)
-                            .graphicsLayer { val k = 0.94f + 0.06f * lift; scaleX = k; scaleY = k }
+                            .qaGeom("dc$v")
+                            .graphicsLayer { val k = 0.94f + 0.06f * lift * (if (games) follow.strength(v) else 1f); scaleX = k; scaleY = k }
                             .then(if (on) Modifier.focusedCard() else Modifier)
                             .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } },
-                        corner = corner, focused = sel, fx = pulse, outline = 3.dp
+                        corner = corner, focused = sel, fx = pulse, outline = 3.dp, focusAlpha = { follow.strength(v) }
                     )
                 }
             }

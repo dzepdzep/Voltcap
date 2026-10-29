@@ -32,7 +32,7 @@ internal fun Modifier.focusedCard(): Modifier {
     DisposableEffect(token) {
         onDispose { if (FocusedCardRect.owner === token) { FocusedCardRect.owner = null; FocusedCardRect.rect = null } }
     }
-    val origin = this.gameOrigin(GameOrigin.FOCUSED, true)
+    val origin = this.gameOrigin(GameOrigin.FOCUSED, true).qaGeom("fc${System.identityHashCode(token)}") // (QA 389: the selected card's rectangle, per frame, every layout)
     return if (!Features.coverLight.state.value) origin else origin.onGloballyPositioned { c ->
         val r = c.boundsInRoot()
         FocusedCardRect.owner = token

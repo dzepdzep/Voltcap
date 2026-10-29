@@ -51,6 +51,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -949,21 +951,38 @@ internal fun Modifier.stylePanel(look: Features.PanelLook, opacity: Float, shape
 
 /** The focus look on a style home's card: the layout's own effect (soft glow / electric) and an outline. */
 @Composable
-internal fun Modifier.styleFocus(on: Boolean, corner: Dp, pulse: Float, color: Color = ShelfTheme.accent, outline: Dp = 2.dp): Modifier {
+internal fun Modifier.styleFocus(on: Boolean, corner: Dp, pulse: Float, color: Color = ShelfTheme.accent, outline: Dp = 2.dp, alpha: (() -> Float)? = null): Modifier {
     if (!on) return this
     val look = LocalCardLook.current
     val lite = LocalLiteEffects.current
     val effect = if (lite && look.focusEffect == FocusEffect.ELECTRIC) FocusEffect.GLOW else look.focusEffect
     val shape = uiRounded(corner)
+    // Update 389: [alpha] (read while drawing) fades the whole look — a followed row's highlight moves with the row (EndlessRow.kt).
+    val fade: () -> Float = alpha ?: { 1f }
     return this
         .then(
             when (effect) {
-                FocusEffect.GLOW -> Modifier.softGlow(color, corner, 0.55f + 0.6f * pulse)
-                FocusEffect.ELECTRIC -> Modifier.softGlow(color, corner, 0.3f + 0.2f * pulse).electricFrame(color, corner, pulse = pulse)
+                FocusEffect.GLOW -> Modifier.softGlow(color, corner, { (0.55f + 0.6f * pulse) * fade() })
+                FocusEffect.ELECTRIC -> Modifier.softGlow(color, corner, { (0.3f + 0.2f * pulse) * fade() }).electricFrame(color, corner, pulse = pulse)
                 else -> Modifier
             }
         )
-        .border(outline, color, shape)
+        .then(if (alpha == null) Modifier.border(outline, color, shape) else Modifier.fadeBorder(outline, color, shape, alpha))
+}
+
+/** Update 389: [Modifier.border] with an alpha read while drawing (inside the bounds, like the border). */
+internal fun Modifier.fadeBorder(width: Dp, color: Color, shape: Shape, alpha: () -> Float): Modifier = drawWithContent {
+    drawContent()
+    val a = alpha().coerceIn(0f, 1f)
+    if (a > 0f) {
+        val sw = width.toPx()
+        translate(sw / 2f, sw / 2f) {
+            drawOutline(
+                shape.createOutline(androidx.compose.ui.geometry.Size(size.width - sw, size.height - sw), layoutDirection, this),
+                color, a, androidx.compose.ui.graphics.drawscope.Stroke(sw)
+            )
+        }
+    }
 }
 
 /**
@@ -983,7 +1002,9 @@ internal fun StyleArt(
      *  cartridge / disc / box, the glow / electric frame and an outline round a card). Null: no effect. */
     fx: Float? = null,
     ring: Color = ShelfTheme.accent,
-    outline: Dp = 2.dp
+    outline: Dp = 2.dp,
+    /** Update 389: the highlight's strength 0..1, read while drawing (a followed row: it fades with the row's glide). Null: full. */
+    focusAlpha: (() -> Float)? = null
 ) {
     // (Update 332: the games rolling in after "Who's playing?" — Rollout; nothing while it isn't running.)
     @Suppress("NAME_SHADOWING") val modifier = modifier.rolloutItem()
@@ -998,7 +1019,7 @@ internal fun StyleArt(
     if (square || wide) {
         val url = if (wide) c.wide(g) else cover ?: c.wide(g)
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
-        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
+        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
             when {
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                 url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
@@ -1014,7 +1035,7 @@ internal fun StyleArt(
     }
     // Update 113, Spines look: the game as its spine.
     if (spinesOn(c.type)) {
-        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline) else Modifier)) {
+        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier)) {
             GameSpine(g, c.state.physicalMedia[k], Modifier.fillMaxSize(), fit = true)
         }
         return
@@ -1033,14 +1054,14 @@ internal fun StyleArt(
         rememberOwnAppIcon(g.packageName)?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
     } else null
     // Free-standing media get the pool of light under them, never a frame round their slot.
-    val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline)
+    val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
     Box(if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))) {
         when {
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
                 g.platform, cover ?: appIcon, typed, Modifier.fillMaxSize().padding(2.dp).awardShine(k, focused), title = gameDisplayName(g.name),
-                caseModifier = if (focused) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier,
+                caseModifier = if (!focused) Modifier else if (focusAlpha == null) Modifier.border(2.dp, ring, RoundedCornerShape(2.dp)) else Modifier.fadeBorder(2.dp, ring, RoundedCornerShape(2.dp), focusAlpha),
                 // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
                 spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
             ) }

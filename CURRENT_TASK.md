@@ -8,6 +8,7 @@
 **Update 384 (29 Oct):** second-screen in-game fixes (379) verified on the Thor for Now Playing / Music and committed.
 **DONE (update 387): D84** profile-selector screensaver timer fixed, Thor-verified.
 **DONE (update 388): D77 again** highlight stayed in slot 3 while the row glided; fixed in FollowFocus (highlight follows the slot), Dashboard + Side menu Thor-verified frame by frame.
+**DONE (update 389): D77 third time** the highlight is a crossfade by the row position (388 handed it over half-way and the frame swung a slot, found by a per-frame geometry trace); Dashboard + Side menu settled slot verified Endless on / off; other layouts see SUMMARY 389 (untested list).
 **NEXT PRIORITY: (1) Side menu FollowFocus on hardware, Endless on / off; (2) D83 more "…"; then priority 3 (quick page switcher and controller navigation).**
 **Afterwards:** second-screen work continues (in-game widget reliability first), then the rest of the priority list in `COWORK_HANDOFF.md` ("UNFINISHED PRIORITIES"). Everything below is history.
 

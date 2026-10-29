@@ -328,7 +328,7 @@ private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
     val fits = remember { RowFits() }
     val row = rememberLoopRow(c, fits.value)
     val list = rememberLazyListState(initialFirstVisibleItemIndex = (row.focusItem - 1).coerceAtLeast(0))
-    val shown = FollowFocus(list, row)
+    val follow = FollowFocus(list, row)
     val keys = remember(c.games) { gameKeys(c.games) }
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
@@ -345,17 +345,20 @@ private fun SideRow(c: StyleCtx, pulse: Float, modifier: Modifier) {
             items(row.count, key = { row.key(it, keys) }) { v ->
                 val i = row.game(v)
                 val g = c.games[i]
-                val here = v == shown
-                val on = here && StyleNav.zone == StyleNav.Zone.GAMES
-                val lift = styleLift(on)
+                val here = v == follow.selected
+                // Update 389: the highlight of the cards gliding through the selection's slot fades with the row (EndlessRow.kt).
+                val near by remember(v, follow) { androidx.compose.runtime.derivedStateOf { follow.strength(v) > 0f } }
+                val games = StyleNav.zone == StyleNav.Zone.GAMES
+                val on = near && games
+                val lift = styleLift(games)
                 StyleArt(
                     c, g,
                     Modifier
                         .width(w).height(h)
-                        .graphicsLayer { val k = 0.92f + 0.08f * lift; scaleX = k; scaleY = k; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f) }
+                        .graphicsLayer { val k = 0.92f + 0.08f * lift * (if (games) follow.strength(v) else 1f); scaleX = k; scaleY = k; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f) }
                         .then(if (here) Modifier.focusedCard() else Modifier)
                         .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } },
-                    corner = corner, focused = on, fx = pulse, ring = trim, outline = 3.dp
+                    corner = corner, focused = on, fx = pulse, ring = trim, outline = 3.dp, focusAlpha = { follow.strength(v) }
                 )
             }
         }
