@@ -127,7 +127,7 @@ private fun CoverShelfRequests(c: StyleCtx) {
 private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
     val accent = ShelfTheme.accent
     LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(250); c.actions.needMetadata(g) }
-    BoxWithConstraints(modifier.fillMaxSize().categorySlide()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
         val w = maxWidth; val h = maxHeight
         val compact = h < 380.dp
         val shelfH = (h * (if (compact) 0.30f else 0.27f)).coerceIn(84.dp, 190.dp)

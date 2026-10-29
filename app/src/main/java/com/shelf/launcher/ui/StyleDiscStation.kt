@@ -232,7 +232,7 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
         // Update 151: the game's logo (else its name in big letters) above the disc.
         AnimatedContent(
             targetState = g, contentKey = { it.stableKey }, label = "discLogo",
-            transitionSpec = { fadeIn(tween(260, delayMillis = 120)) togetherWith fadeOut(tween(180)) }
+            transitionSpec = { unlessCategoryChange { fadeIn(tween(260, delayMillis = 120)) togetherWith fadeOut(tween(180)) } }
         ) { shown ->
             DiscTitleArt(c, shown, compact, Modifier.fillMaxWidth(0.86f).height(if (compact) 40.dp else 60.dp))
         }
@@ -253,7 +253,8 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
             AnimatedContent(
                 targetState = g,
                 contentKey = { it.stableKey },
-                transitionSpec = {
+                transitionSpec = spec@{
+                    categoryQuiet()?.let { return@spec it }
                     // (Update 156: with Endless on, the way the move went, see [turn].)
                     val dir = if (loopOn && turn[2] == 1) turn[1]
                     else if (c.games.indexOfFirst { it.stableKey == targetState.stableKey } >= c.games.indexOfFirst { it.stableKey == initialState.stableKey }) 1 else -1

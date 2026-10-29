@@ -204,7 +204,7 @@ internal fun TimelineHistory(c: StyleCtx, data: TimelineData, mode: Features.Tim
     // (Update 329, seen on the AYN Thor: the period above the one you're on runs up under the header and was cut off hard —
     // a year's "2026" showed as its lower half under the console's name. The list's top edge fades out now, so it reads
     // as the history carrying on up there.)
-    BoxWithConstraints(modifier.categorySlide()
+    BoxWithConstraints(modifier
         .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
         .drawWithContent {
             drawContent()

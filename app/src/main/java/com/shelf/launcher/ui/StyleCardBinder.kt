@@ -395,7 +395,7 @@ private fun CardHand(c: StyleCtx, g: Game, modifier: Modifier) {
         { i: Int -> if (i == GridHome.focus) CardBinder.flip() else select(i) }
     }
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.fillMaxSize().clipToBounds().categorySlide()) {
+    BoxWithConstraints(modifier.fillMaxSize().clipToBounds()) {
         val w = maxWidth
         val h = maxHeight
         val compact = h < 380.dp

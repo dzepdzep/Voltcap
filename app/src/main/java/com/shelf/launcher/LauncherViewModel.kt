@@ -2199,6 +2199,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // (Not remembered as your category: that stays the one you were in.)
         restoreActive = false
         rememberCategoryFocus()
+        com.shelf.launcher.ui.CategorySlide.markChange()
         _uiState.update { it.copy(platformFilter = null, specialFilter = null, focusedIndex = 0) }
         searchFrom = from
         _uiState.update {
@@ -2212,6 +2213,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         preferencesStore.setLastPlatformFilter(platform)
         preferencesStore.setLastSpecialFilter(null)
         rememberCategoryFocus()
+        com.shelf.launcher.ui.CategorySlide.markChange()
         val next = _uiState.value.copy(platformFilter = platform, specialFilter = null)
         val look = withCategoryArt(next, categoryLayoutFor(next) ?: savedOf(_uiState.value.appearance))
         _uiState.update { it.copy(platformFilter = platform, specialFilter = null, focusedIndex = 0, appearance = look).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }
@@ -2222,6 +2224,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         preferencesStore.setLastSpecialFilter(filter?.name)
         preferencesStore.setLastPlatformFilter(null)
         rememberCategoryFocus()
+        com.shelf.launcher.ui.CategorySlide.markChange()
         val next = _uiState.value.copy(specialFilter = filter, platformFilter = null)
         val look = withCategoryArt(next, categoryLayoutFor(next) ?: savedOf(_uiState.value.appearance))
         _uiState.update { it.copy(specialFilter = filter, platformFilter = null, focusedIndex = 0, appearance = look).let { n -> n.copy(focusedIndex = rememberedFocus(n)) } }

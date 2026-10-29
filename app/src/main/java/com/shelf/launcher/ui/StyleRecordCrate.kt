@@ -313,7 +313,7 @@ private fun CrateStage(c: StyleCtx, wood: CrateColours, modifier: Modifier) {
         }
     }
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.clipToBounds().categorySlide()) {
+    BoxWithConstraints(modifier.clipToBounds()) {
         val w = maxWidth
         val h = maxHeight
         val k = GameSize.scale(HomeLayout.CRATE).coerceIn(0.5f, 1f)

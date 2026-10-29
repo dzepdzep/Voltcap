@@ -488,7 +488,8 @@ internal fun GameDock(
                         .align(androidx.compose.ui.Alignment.CenterStart)
                         .zIndex(1f)
                         .offset { IntOffset(focusX.roundToPx(), 0) },
-                    transitionSpec = {
+                    transitionSpec = spec@{
+                        categoryQuiet()?.let { return@spec it }
                         val dir = if (targetState >= initialState) 1 else -1
                         when (swap) {
                             com.shelf.launcher.data.Features.CapsuleSwap.NONE ->

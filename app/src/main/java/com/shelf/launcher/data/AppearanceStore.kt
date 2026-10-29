@@ -1004,7 +1004,7 @@ data class AppearanceSettings(
     val nameCapsule: Boolean = false,
     val nameBackdrop: NameBackdrop = NameBackdrop.NONE,
     /** How the category name changes (L2 / R2). */
-    val categoryAnim: CategoryAnim = CategoryAnim.FADE,
+    val categoryAnim: CategoryAnim = CategoryAnim.NONE,
     /** Console logos (RetroAchievements' system icons) next to the category names. */
     val categoryLogos: Boolean = true,
     /** Game info / news next to the row. */
@@ -1439,7 +1439,7 @@ class AppearanceStore(context: Context) {
             "name_backdrop",
             if (prefs.getBoolean("name_capsule", false)) NameBackdrop.DARK else NameBackdrop.NONE
         ),
-        categoryAnim = enumPref("category_anim", CategoryAnim.FADE),
+        categoryAnim = enumPref("category_anim", CategoryAnim.NONE),
         categoryLogos = prefs.getBoolean("category_logos", true),
         hideAllBrackets = prefs.getBoolean("hide_all_brackets", false),
         raLogos = prefs.getBoolean("ra_logos", true),

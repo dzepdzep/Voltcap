@@ -30,6 +30,17 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
     entries (the top ones for the system the task touches). Do not read historical sections (older update notes, "(history)" blocks)
     unless the task needs them. Rules 2-3 still apply: grep, then read ranges.
 
+14. **PERMANENT: a category change never visually reloads an unchanged layout (L2 / R2, tabs, category screen, touch; every layout, every future one).**
+    Changing the category updates the games, titles, artwork, selection and category name INSIDE the existing layout. The shell (status bar,
+    menus, shelves / boxes / stacks, rails, panels, widgets, signs) never fades, slides, blanks, rebuilds or replays an entrance; no text, art or
+    control spawns / rises / scales in because the category changed; name, list, selection, title and art agree in the same frame (no stale
+    content). Game-to-game motion, carousel scrolling and deliberate physical case pull-outs stay. A category with its own assigned layout still
+    switches layouts, without extra blank frames or entrance effects. How: `categorySlide()` moves the GAMES only (never a `BoxWithConstraints` / shell);
+    every game-info transition goes through `gameSwap()` / `riseOnChange()` / `pageSlide()` / `unlessCategoryChange` / `categoryQuiet()`
+    (`CategorySlide.justChanged()`, set by the view model in `setPlatformFilter` / `setSpecialFilter`) so a category swap is immediate whatever the
+    animation prefs say; an `AnimatedContent` keyed by the category swaps at once (`tween(0)` / None). Checked by `static_checks.py` CATSHELL (R24),
+    `CategoryStable394Test` and the visual test `device/catswitch.sh` + `tools/catswitch.py`; a new layout is not done until it passes them.
+
 ## Standing Thor QA authorization (owner-granted, 28 Oct 2026; current and future tasks until revoked)
 The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHORIZATION for VoltCap development and QA on it. Claude does NOT need separate user permission for ordinary Thor testing.
 - **Allowed:** bounded ADB inspection and QA; installing an updated APK over the existing VoltCap; controller and touch testing; screenshots and short recordings; temporary layout / preference changes if the original values are restored.

@@ -270,6 +270,17 @@ def check(src):
                 k = body.find(bad)
                 if k >= 0:
                     add("SPINE-SLIDE", "HIGH", m.start() + k, "custom spine name must not slide (no FullText / marquee): fit it with the measured shrink-and-wrap (update 391)")
+        # CATSHELL (R24, update 394; permanent, CLAUDE.md): a category change never visually reloads an unchanged layout.
+        # (1) the category slide / fade (`categorySlide()`) moves the GAMES only: never a BoxWithConstraints, i.e. a layout shell.
+        for m in re.finditer(r"BoxWithConstraints\([^\n]*\.categorySlide\(\)", s):
+            add("CATSHELL", "HIGH", m.start(), "categorySlide() on a layout shell: the shell (shelves, rail, panels) must stay still when the category changes; slide the games only (R24)")
+        # (2) an AnimatedContent keyed by the category must swap at once (tween(0) / None), not fade the whole content.
+        for m in re.finditer(r"AnimatedContent\(", s):
+            head = s[m.start(): m.start() + 260]
+            if re.search(r"targetState\s*=[^\n]*\b(categoryLabel|platformFilter|specialFilter|sortCategoryKey)\b", head):
+                body = s[m.start(): m.start() + 1100]
+                if "tween(0)" not in body and "None togetherWith" not in body and "categoryQuiet()" not in body:
+                    add("CATSHELL", "HIGH", m.start(), "AnimatedContent keyed by the category fades / slides its whole content on a category change: swap at once (tween(0) / None) (R24)")
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

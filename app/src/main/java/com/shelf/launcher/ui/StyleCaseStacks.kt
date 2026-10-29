@@ -355,7 +355,7 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
         }
     }
     val density = LocalDensity.current
-    BoxWithConstraints(modifier.clipToBounds().categorySlide()) {
+    BoxWithConstraints(modifier.clipToBounds()) {
         val w = maxWidth
         val h = maxHeight
         val k = GameSize.scale(HomeLayout.STACKS)

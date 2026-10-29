@@ -108,6 +108,7 @@ internal fun MediaFocus(on: Boolean, content: @Composable () -> Unit) =
 /** A page of games turning: the new page slides in from the side it lies on (right for the next one), the old one out. */
 internal fun AnimatedContentTransitionScope<Int>.pageSlide(): ContentTransform {
     // Off (Home › Animations): the page just changes; Fade: it fades over (update 112, per layout too).
+    if (CategorySlide.justChanged()) return androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
     when (MotionPrefs.page()) {
         com.shelf.launcher.data.Features.PageAnim.NONE -> return androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
         com.shelf.launcher.data.Features.PageAnim.FADE -> return fadeIn(tween(260)) togetherWith fadeOut(tween(200))
@@ -155,7 +156,7 @@ internal fun <T : Any> HeldLayers(
             LaunchedEffect(l.ready) {
                 if (!l.ready) return@LaunchedEffect
                 // Off (Home › Animations): the next picture replaces the last one at once (still never a black gap).
-                if (com.shelf.launcher.data.Features.animHeldPictures.value) l.alpha.animateTo(1f, androidx.compose.animation.core.tween(fadeMs))
+                if (com.shelf.launcher.data.Features.animHeldPictures.value && !CategorySlide.justChanged()) l.alpha.animateTo(1f, androidx.compose.animation.core.tween(fadeMs))
                 else l.alpha.snapTo(1f)
                 // Everything under it is covered now.
                 val i = layers.indexOf(l)
@@ -223,7 +224,8 @@ internal fun HeldImage(
  * the one before fades away quicker — instead of just appearing.
  */
 internal fun <S> AnimatedContentTransitionScope<S>.gameSwap(): ContentTransform =
-    when (MotionPrefs.info()) {
+    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+    else when (MotionPrefs.info()) {
         com.shelf.launcher.data.Features.InfoAnim.NONE -> androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
         com.shelf.launcher.data.Features.InfoAnim.FADE -> fadeIn(tween(260)) togetherWith fadeOut(tween(160)) using SizeTransform(clip = false)
         else -> (fadeIn(tween(240, delayMillis = 50)) + slideInVertically(tween(320, easing = FastOutSlowInEasing)) { it / 6 }) togetherWith
@@ -241,6 +243,8 @@ internal fun Modifier.riseOnChange(key: Any?, floor: Float = 0f, ms: Int = 320):
     if (LocalStillPart.current) return this
     val p = remember { Animatable(1f) }
     val seen = remember { arrayOf<Any?>(key) }
+    // Update 394: the game changed because the category did: the new info is simply there (no rise, no fade, no frame at 0).
+    if (seen[0] != key && CategorySlide.justChanged()) seen[0] = key
     LaunchedEffect(key) {
         if (seen[0] == key) return@LaunchedEffect
         seen[0] = key

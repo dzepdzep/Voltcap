@@ -588,7 +588,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             targetState = c.categoryLabel to box, label = "boxSwitch",
             transitionSpec = {
                 if (!animate) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
-                else if (targetState.first != initialState.first) fadeIn(tween(260)) togetherWith fadeOut(tween(200))
+                else if (targetState.first != initialState.first) fadeIn(tween(0)) togetherWith fadeOut(tween(0)) // (394: a new category swaps at once)
                 else {
                     // The next box slides in from the side you went (the boxes stand side by side on the floor).
                     val dir = if (targetState.second >= initialState.second) 1 else -1

@@ -208,7 +208,7 @@ private fun FileSelectScreen(c: StyleCtx, modifier: Modifier) {
             targetState = c.categoryLabel to page, label = "fsPage",
             transitionSpec = {
                 if (!animate) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
-                else if (targetState.first != initialState.first) fadeIn(tween(260)) togetherWith fadeOut(tween(200))
+                else if (targetState.first != initialState.first) fadeIn(tween(0)) togetherWith fadeOut(tween(0)) // (394: a new category swaps at once)
                 else {
                     val dir = if (targetState.second >= initialState.second) 1 else -1
                     (slideInHorizontally(tween(340)) { it * dir } + fadeIn(tween(220))) togetherWith (slideOutHorizontally(tween(340)) { -it * dir } + fadeOut(tween(220)))

@@ -209,7 +209,7 @@ internal fun StyleArtLibrary(c: StyleCtx, modifier: Modifier = Modifier) {
             loader.enqueue(coil.request.ImageRequest.Builder(ctxA).data(url).build())
         }
     }
-    BoxWithConstraints(modifier.fillMaxSize().categorySlide()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
         val w = maxWidth; val h = maxHeight
         val compact = h < 380.dp
 

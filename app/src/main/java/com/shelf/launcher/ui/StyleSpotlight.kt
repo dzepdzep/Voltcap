@@ -435,7 +435,7 @@ private fun SpotRowMenu(c: StyleCtx, modifier: Modifier) {
                     Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
                     androidx.compose.animation.AnimatedContent(
                         targetState = tab to g.stableKey, label = "spotTab",
-                        transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }
+                        transitionSpec = { unlessCategoryChange { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) } }
                     ) { (t, _) ->
                         Box(Modifier.padding(start = 14.dp)) {
                             when (t) {

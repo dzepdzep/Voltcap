@@ -265,7 +265,8 @@ private fun ShowStage(c: StyleCtx, modifier: Modifier, framed: Boolean) {
         AnimatedContent(
             targetState = shown,
             contentKey = { it.game?.stableKey },
-            transitionSpec = {
+            transitionSpec = spec@{
+                    categoryQuiet()?.let { return@spec it }
                 val p = targetState
                 val sideways = p.dx != 0 || p.dy == 0
                 val s = if (sideways) (if (p.dx < 0) -1 else 1) else (if (p.dy < 0) -1 else 1)

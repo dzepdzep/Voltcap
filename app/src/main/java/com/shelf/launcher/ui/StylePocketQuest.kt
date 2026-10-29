@@ -527,7 +527,8 @@ private fun PqStage(c: StyleCtx, g: Game, pal: PqPalette, modifier: Modifier) {
         }
         AnimatedContent(
             targetState = g, label = "pqStage",
-            transitionSpec = {
+            transitionSpec = spec@{
+                    categoryQuiet()?.let { return@spec it }
                 if (reduced) fadeIn(tween(110)) togetherWith fadeOut(tween(80))
                 else (slideInHorizontally(tween(pqMs(240), easing = FastOutSlowInEasing)) { w -> w / 5 * way } + fadeIn(tween(pqMs(200)))) togetherWith
                     (slideOutHorizontally(tween(pqMs(200))) { w -> -w / 6 * way } + fadeOut(tween(pqMs(150))))
@@ -608,7 +609,7 @@ private fun PqInfoPanel(c: StyleCtx, g: Game, pal: PqPalette, compact: Boolean, 
                 Column(Modifier.weight(1f).fillMaxHeight()) {
                     AnimatedContent(
                         targetState = g, label = "pqInfo",
-                        transitionSpec = { fadeIn(tween(fade)) togetherWith fadeOut(tween(fade * 2 / 3)) },
+                        transitionSpec = { unlessCategoryChange { fadeIn(tween(fade)) togetherWith fadeOut(tween(fade * 2 / 3)) } },
                         modifier = Modifier.weight(1f).fillMaxWidth()
                     ) { shown -> PqInfoText(c, shown, pal, compact, descOn) }
                     Spacer(Modifier.height(if (compact) 4.dp else 8.dp))

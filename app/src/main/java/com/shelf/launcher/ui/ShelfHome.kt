@@ -317,7 +317,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // the header now too.)
         Box(Modifier.fillMaxSize().clipToBounds().drawWithContent {
             clipRect(top = headerH.toPx().coerceAtMost(size.height), bottom = (size.height - footerH.toPx()).coerceAtLeast(0f)) { this@drawWithContent.drawContent() }
-        }.categorySlide()) { // (update 112: a new category slides / fades in)
+        }) { // (update 394: the shelf structure never slides / fades with a category change)
             // Shelves (boards) and their spines.
             // Update 130 (lag going over many games): the scroll is read where things are placed, not while composing, so
             // a scroll no longer rebuilds every shelf and spine on every frame; only a new shelf coming into view does.

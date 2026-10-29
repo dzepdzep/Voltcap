@@ -252,7 +252,7 @@ private fun StorageScreen(c: StyleCtx, modifier: Modifier) {
                     if (!animate) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
                     else {
                         val dir = if (targetState.first != initialState.first) 0 else if (targetState.second >= initialState.second) 1 else -1
-                        if (dir == 0) fadeIn(tween(260)) togetherWith fadeOut(tween(200))
+                        if (dir == 0) fadeIn(tween(0)) togetherWith fadeOut(tween(0)) // (394: a new category swaps at once)
                         else (slideInHorizontally(tween(320)) { it * dir } + fadeIn(tween(200))) togetherWith
                             (slideOutHorizontally(tween(320)) { -it * dir } + fadeOut(tween(200)))
                     }
@@ -425,7 +425,7 @@ private fun StoragePreview(c: StyleCtx, modifier: Modifier) {
                 .background(Brush.verticalGradient(listOf(Color(0xFFCFE6FA), Color(0xFF8FB8DE)))),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedContent(targetState = g, label = "stPreview", transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }) { shown ->
+            AnimatedContent(targetState = g, label = "stPreview", transitionSpec = { unlessCategoryChange { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) } }) { shown ->
                 val cover = c.cover(shown)
                 val appIcon = if (cover == null && shown.sourceType == com.shelf.launcher.data.SourceType.APP) rememberOwnAppIcon(shown.packageName) else null
                 if (cover != null) AsyncImage(rememberStyleArtRequest(cover, trim = true), shown.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)

@@ -670,7 +670,7 @@ private fun ArcadeHallMode(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
         // The section's sign, hanging over the machines (the layout's own category title — Home › Category name).
         if (signOn) CategoryTitle.Native(null)
         // (Update 348: an LED section sign hung from the ceiling on two rods.)
-        if (signOn) Column(Modifier.align(Alignment.TopCenter).categorySlide().zIndex(50f), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (signOn) Column(Modifier.align(Alignment.TopCenter).zIndex(50f), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.width(if (compact) 120.dp else 180.dp).height(6.dp).drawBehind {
                 drawLine(Color(0xFF3A3C42), Offset(size.width * 0.12f, 0f), Offset(size.width * 0.12f, size.height), 2f)
                 drawLine(Color(0xFF3A3C42), Offset(size.width * 0.88f, 0f), Offset(size.width * 0.88f, size.height), 2f)

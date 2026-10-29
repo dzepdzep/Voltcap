@@ -252,7 +252,7 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
         }
         if (showTitle && g0 != null) {
             Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(titleH).graphicsLayer { alpha = 1f - expand }, contentAlignment = Alignment.TopCenter) {
-                AnimatedContent(targetState = g0, label = "cfTitle", transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) }) { g ->
+                AnimatedContent(targetState = g0, label = "cfTitle", transitionSpec = { unlessCategoryChange { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) } }) { g ->
                     CaseFlowTitle(c, g)
                 }
             }

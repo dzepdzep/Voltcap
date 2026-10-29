@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.unit.dp
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.ui.theme.ShelfTheme
@@ -54,7 +55,28 @@ internal object CategorySlide {
      * change — the slide round them ([categorySlide]) then stays still, so the two never move at once.
      */
     var pathOwners = 0
+
+    /**
+     * Update 394 (PERMANENT: a category change never visually reloads an unchanged layout): when the filter last changed
+     * (monotonic ms). Written by the view model in the same call that changes the category, i.e. before the frame that shows
+     * the new games, so everything that animates a change of GAME (gameSwap, riseOnChange, the per-layout info fades)
+     * can tell "the game changed because the category did" and swap at once. Moving between games is unaffected.
+     */
+    @Volatile var changedAt = Long.MIN_VALUE / 2
+    fun markChange() { changedAt = System.nanoTime() / 1_000_000L }
+    /** True for the frames in which the games on screen are the new category's (a swap here is a category swap, never an entrance). */
+    fun justChanged(): Boolean = System.nanoTime() / 1_000_000L - changedAt < 600L
 }
+
+/** For a hand-written transitionSpec (`spec@{ categoryQuiet()?.let { return@spec it }; ... }`): None while a category change swaps the games. */
+internal fun <S> androidx.compose.animation.AnimatedContentTransitionScope<S>.categoryQuiet(): androidx.compose.animation.ContentTransform? =
+    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None else null
+
+/** A game-info transition that is None while a category change is swapping the games in, [spec] otherwise (update 394). */
+internal fun <S> androidx.compose.animation.AnimatedContentTransitionScope<S>.unlessCategoryChange(
+    spec: androidx.compose.animation.AnimatedContentTransitionScope<S>.() -> androidx.compose.animation.ContentTransform
+): androidx.compose.animation.ContentTransform =
+    if (CategorySlide.justChanged()) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None else spec()
 
 /**
  * The games slide in from the side the category change came from (Appearance › Game row › Slide between

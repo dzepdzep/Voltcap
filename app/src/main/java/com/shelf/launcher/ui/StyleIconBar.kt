@@ -218,7 +218,7 @@ private fun BarTiles(c: StyleCtx, small: androidx.compose.ui.unit.Dp, pop: Float
             val bigW = big * aspect
             androidx.compose.animation.AnimatedContent(
                 targetState = g.name, label = "barName",
-                transitionSpec = { androidx.compose.animation.ContentTransform(androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(160)), androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(90))) },
+                transitionSpec = spec@{ categoryQuiet()?.let { return@spec it }; androidx.compose.animation.ContentTransform(androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(160)), androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(90))) },
                 // Update 144: on its own line the name goes under the big tile, not under the small ones (it was drawn over the art).
                 modifier = Modifier.padding(start = if (nameRoom > 0.dp) 4.dp else 2.dp + bigW + 10.dp, top = (if (nameRoom > 0.dp) big else small) + 6.dp)
             ) { name ->

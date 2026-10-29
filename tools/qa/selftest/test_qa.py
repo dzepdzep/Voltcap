@@ -381,6 +381,21 @@ class TestOtherTools(Base):
         self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
 
 
+    def test_static_checks_catshell_flags_a_shell_slide_and_a_category_fade(self):
+        os.makedirs(self.p("src"))
+        shell = "package x\n@Composable fun A() {\n    BoxWithConstraints(modifier.fillMaxSize().categorySlide()) { }\n}\n"
+        self.write("src/A.kt", shell)
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 1)
+        self.write("src/A.kt", shell.replace(".categorySlide()", ""))
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
+        fade = ("package x\n@Composable fun B() {\n    AnimatedContent(\n        targetState = c.categoryLabel to box, label = 'b',\n"
+                "        transitionSpec = { fadeIn(tween(260)) togetherWith fadeOut(tween(200)) }\n    ) { }\n}\n")
+        self.write("src/A.kt", fade)
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 1)
+        self.write("src/A.kt", fade.replace("tween(260)", "tween(0)"))
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
+
+
 class TestRuncheck(Base):
     """A fake pulled sweep: every way it can be broken must be caught; only a complete one passes."""
     RUN = "T"

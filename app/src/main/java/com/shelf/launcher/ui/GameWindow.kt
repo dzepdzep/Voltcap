@@ -1796,7 +1796,7 @@ private fun WindowBody(
         ) {
             AnimatedContent(
                 targetState = page, label = "gameWindowPage",
-                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) }
+                transitionSpec = { unlessCategoryChange { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) } }
             ) { pg ->
                 when (pg) {
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {

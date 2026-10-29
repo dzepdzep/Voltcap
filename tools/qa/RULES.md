@@ -192,3 +192,9 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
   `sh vqa.sh onepress "L L L R R R" 1200` (one press per MARK) then `focuscheck.py LOG --size N [--edge-ok] [--max-latency MS]`: no change on a
   press = ignored first press, focus later than 500 ms = delayed selection, `--edge-ok` only for a row that stops (a note, "deliberate").
   Self-tests: `TestFocuscheck` onepress cases, `test_static_onepress_*`.
+
+## R24 CATEGORY-STABLE: a category change never visually reloads an unchanged layout (update 394; permanent, CLAUDE.md rule 14)
+- **Bug class:** the category change is animated as if the layout were new: `categorySlide()` on a shell (`BoxWithConstraints`, fillMaxSize layout root), an `AnimatedContent` keyed by `categoryLabel` / filter that fades its whole content, `gameSwap` / `riseOnChange` / bespoke info fades replaying for every game of the new category, the held backdrop crossfading. Looks like "the whole home reloads".
+- **Why:** the animation prefs (Fade / Slide) were treated as the only cause; the structure (shell inside the animated container, category as an animation key) made the layout rebuild whatever they said.
+- **Check:** `static_checks.py` CATSHELL (HIGH); `CategoryStable394Test` (scans the source); hardware `sh catswitch.sh RUN "LAYOUTS"` then `python3 tools/qa/tools/catswitch.py out RUN` (blank / white / dip frames across repeated L2 / R2, 150 ms reversals = FAIL; two layouts with equal stills = INFRA: the preview did not apply). Each tested layout is its own `cat_layout_default` for the session (snapshot restored).
+- **Not covered by the tool (check by contact sheet / mark NOT TESTED):** empty categories, mixed systems, missing artwork, per-category overrides, second screen.
