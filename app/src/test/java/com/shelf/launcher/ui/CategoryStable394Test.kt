@@ -33,6 +33,13 @@ class CategoryStable394Test {
         assertTrue("moveFocus must call CategorySlide.endChange()", body.contains("CategorySlide.endChange()"))
     }
 
+    @Test
+    fun setFocusToAnotherGameEndsTheCategoryWindow() {
+        val vm = sources().firstOrNull { it.name == "LauncherViewModel.kt" }?.readText() ?: return
+        val body = vm.substringAfter("fun setFocus(index: Int, loopStep: Int? = null) {").substringBefore("pendingFocusKey = null")
+        assertTrue("setFocus (touch, jump, pick) must end the window on a real move", body.contains("CategorySlide.endChange()") && body.contains("clamped != _uiState.value.focusedIndex"))
+    }
+
     private fun sources(): List<File> {
         val roots = listOf("src_copy", "../src_copy", "../../src_copy", "app/src/main/java/com/shelf/launcher", "src/main/java/com/shelf/launcher")
         val root = roots.map { File(it) }.firstOrNull { File(it, "ui/Motion.kt").exists() } ?: return emptyList()

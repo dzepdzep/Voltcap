@@ -2126,6 +2126,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun setFocus(index: Int, loopStep: Int? = null) {
         val visible = _uiState.value.visibleGames
         val clamped = index.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
+        // Update 397: touch taps, quick jump, Random pick... reach here without moveFocus; a real move to another game ends the
+        // category-swap window too, so its animation is not swallowed (the category swap itself stays immediate).
+        if (clamped != _uiState.value.focusedIndex) com.shelf.launcher.ui.CategorySlide.endChange()
         _uiState.update {
             if (loopStep != null) it.copy(focusedIndex = clamped, loopTick = it.loopTick + 1, loopStep = loopStep)
             else it.copy(focusedIndex = clamped)
