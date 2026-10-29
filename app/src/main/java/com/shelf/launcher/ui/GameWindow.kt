@@ -1007,7 +1007,7 @@ internal fun GameWindow(
     val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO ||
         scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS ||
         scene == WinScene.BLADE_GUIDE || scene == WinScene.BUBBLE_CARD || scene == WinScene.CAMERA_MENU || scene == WinScene.PANEL_DETAIL ||
-        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU) && !askedInspect && MediaInspect.force != g.stableKey
+        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU || scene == WinScene.WII_PREVIEW) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)

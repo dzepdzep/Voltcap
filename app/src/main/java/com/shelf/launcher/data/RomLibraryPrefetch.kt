@@ -48,6 +48,8 @@ object RomLibraryPrefetch {
             com.google.gson.Gson().fromJson<List<Game>>(file.readText(), type)
                 // Gson can leave fields null in a damaged file.
                 ?.filter { it.name != null && it.platform != null && it.sourceType != null }
+                // Update 408: Android .trashed-* placeholders indexed by an older scan are invalid records (files untouched).
+                ?.filterNot { RomScanner.isTrashedPath(it.romPath) }
         }.getOrNull().orEmpty()
         runCatching { android.util.Log.i("Voltcap library", "${list.size} games read in ${android.os.SystemClock.elapsedRealtime() - t0} ms (${file.length() / 1024} KB)") }
         return list

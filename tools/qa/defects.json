@@ -1211,11 +1211,11 @@
    "title": "Cardboard box: case side faces read as empty slabs / detached blocks beside and under the cases (owner, update 405)",
    "rule": "PHYSICAL-SIDES",
    "severity": "medium",
-   "status": "fixed-verified-box",
+   "status": "reopened-partial-408",
    "found": "2026-10-29 owner report; Thor .shots/405/now.png",
    "fix": "BoxCaseSides draws only the top 30 % of each wall (BOX_SIDE_KEEP = 0.7), attached to the case's top edge, material tone kept; the full wall to the floor is no longer drawn.",
    "check": "Thor 3140972f qa_reference_update405/now.png (before) vs box_after.png (after); Flight405Test",
-   "note": "Cover details (Case3D faces + drawCaseTop) was inspected on the Thor: faces are attached to the case, nothing changed there. Game shelf, Case stacks, other spine layouts NOT audited for side slabs. Box rows 1 / 3 and other categories NOT re-captured."
+   "note": "UPDATE 408: the printed-box ends matched the tan floor and read as empty ledges; now a darker box tone with both edges drawn (.shots/408/box_crop.png before, box_crop2.png after); a thin outline rectangle round a neighbour of the lifted N64 case remains, owner to confirm. Cover details (Case3D faces + drawCaseTop) was inspected on the Thor: faces are attached to the case, nothing changed there. Game shelf, Case stacks, other spine layouts NOT audited for side slabs. Box rows 1 / 3 and other categories NOT re-captured."
   },
   {
    "id": "D98",
@@ -1278,6 +1278,25 @@
    "found": "2026-10-29 update 407",
    "fix": "ShelfNotificationListener.requirementNote + LyricsStage branch",
    "check": "PlayProtect406Test (compiled + unit tests green); not seen on the Thor screen."
+  },
+  {
+   "id": "D104",
+   "title": "Android .trashed-<epoch>-Name files listed as games (red placeholder art) next to the real game",
+   "rule": "LIBRARY",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-29 owner report, fixed update 408",
+   "fix": "RomScanner.isTrashedOrHiddenName skips dot-files while scanning; RomLibraryPrefetch.read drops stale indexed records (isTrashedPath). Files are never touched.",
+   "check": "TrashedRoms408Test (real temp-folder scan: trashed file skipped, real sibling kept, files unchanged; stale cache record dropped). NOT reproduced on the Thor: no .trashed file / record exists there now. The app does not use MediaStore or SAF for ROM discovery (file system only), so IS_TRASHED does not apply."
+  },
+  {
+   "id": "D105",
+   "title": "Popup style choice is global although R1 shows it per layout (Banner / Row opens / Reveal / Shared set on one layout apply to every layout)",
+   "rule": "UX",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-10-29 update 408 audit (code read: PopupStyle.current reads Features.winBanner / winMotion, both global; only CLASSIC is per layout)",
+   "note": "Needs per-layout storage plus a no-silent-migration rule; not implemented. OWN stays the default (winBanner false, winMotion NONE)."
   }
  ]
 }

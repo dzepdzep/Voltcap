@@ -510,6 +510,7 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, sh
             val tone = boxSideTone(games.getOrNull(i)?.platform)
             drawPath(p, Brush.linearGradient(listOf(tone.first, tone.second), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
             drawLine(Color.Black.copy(alpha = 0.6f), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), 1f)
+            drawLine(Color.Black.copy(alpha = 0.35f), c.o(s.x0, y, s.stand), c.o(s.x0, y, 0f), 1f)
             // Its top edge catching the light.
             drawLine(Color.White.copy(alpha = 0.16f), c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), 1f)
         }
@@ -528,7 +529,8 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, sh
  * black slabs between the spines (reference photos 02-04). Shading stays restrained (no black).
  */
 internal fun boxSideTone(platform: String?): Pair<Color, Color> =
-    if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFFA48B66) to Color(0xFF5E4C34)
+    // (Update 408, D97: a printed box end is clearly darker than the tan floor, else it reads as an empty ledge of the floor.)
+    if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFF7D6B55) to Color(0xFF3B3022)
     else Color(0xFF8A8D96) to Color(0xFF3C3E45)
 
 /** Share of the case height kept below its top edge for the side face (Update 405: a thin attached rim, never a slab to the floor). */

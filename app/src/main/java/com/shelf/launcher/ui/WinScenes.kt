@@ -106,7 +106,9 @@ internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INF
     /** Update 347: Arcade cabinets' Insert Coin screen (WinScenesArcade.kt). */
     ARCADE_MENU,
     /** Next version: Cinema Premiere and the Arctic info drawer (WinScenesHomes.kt). */
-    CINEMA_PREMIERE, ARCTIC_DRAWER }
+    CINEMA_PREMIERE, ARCTIC_DRAWER,
+    /** Update 408: the Channel grid window, a Wii Channel preview (WinScenesWii.kt). */
+    WII_PREVIEW }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -127,6 +129,7 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.ARCADE -> WinScene.ARCADE_MENU
     HomeLayout.CINEMA -> WinScene.CINEMA_PREMIERE
     HomeLayout.ARCTIC -> WinScene.ARCTIC_DRAWER
+    HomeLayout.CHAN -> WinScene.WII_PREVIEW
     else -> null
 }
 
@@ -148,6 +151,9 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.ARCADE_MENU -> Brush.radialGradient(listOf(Color(0xFF0A0420).copy(alpha = 0.55f), Color.Black.copy(alpha = 0.9f)))
     WinScene.CINEMA_PREMIERE -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Black.copy(alpha = 0.86f)))
     WinScene.ARCTIC_DRAWER -> Brush.horizontalGradient(listOf(Color(0xFF0D141D).copy(alpha = 0.35f), Color(0xFF0D141D).copy(alpha = 0.8f)))
+    WinScene.WII_PREVIEW -> if (com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanDark.state.value)
+        Brush.verticalGradient(listOf(Color(0xFFF6F8FB).copy(alpha = 0.82f), Color(0xFFE4E9F0).copy(alpha = 0.9f)))
+    else Brush.verticalGradient(listOf(Color(0xFF0E1116).copy(alpha = 0.86f), Color(0xFF0A0D12).copy(alpha = 0.92f)))
     WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
@@ -239,6 +245,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.ARCADE_MENU -> ArcadeMenu(ctx)
         WinScene.CINEMA_PREMIERE -> CinemaPremiere(ctx)
         WinScene.ARCTIC_DRAWER -> ArcticDrawer(ctx)
+        WinScene.WII_PREVIEW -> WiiChannelPreview(ctx)
     }
 }
 

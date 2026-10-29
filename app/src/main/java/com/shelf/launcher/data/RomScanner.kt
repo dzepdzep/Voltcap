@@ -323,6 +323,17 @@ object RomScanner {
         return prettifyName(raw.ifBlank { dir.name })
     }
 
+    /**
+     * Update 408: Android's trash / pending placeholders (`.trashed-<epoch>-Name.gb`, `.pending-<epoch>-Name.gb`) and other
+     * hidden dot-files (`._Name.gb`, `.DS_Store`) are never games. Only the name is judged; no file is touched.
+     */
+    fun isTrashedOrHiddenName(name: String): Boolean = name.startsWith(".")
+
+    /** Update 408: an indexed game whose file (or a folder above it) is a trash / hidden placeholder is an invalid record. */
+    fun isTrashedPath(path: String?): Boolean =
+        path != null && path.replace('\\', '/').split('/').any { it.startsWith(".trashed-") || it.startsWith(".pending-") } ||
+            path != null && isTrashedOrHiddenName(path.replace('\\', '/').substringAfterLast('/'))
+
     /** Folders never worth walking: hidden ones and Android's app-data trees. */
     private fun skipFolder(dir: File, root: File): Boolean {
         if (dir.absolutePath == root.absolutePath) return false
@@ -357,6 +368,7 @@ object RomScanner {
             .forEach { file ->
                 val ext = file.extension.lowercase()
                 when {
+                    isTrashedOrHiddenName(file.name) -> {}
                     ext == "m3u" -> m3uFiles += file
                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
                     // used to count as one of its games.)
