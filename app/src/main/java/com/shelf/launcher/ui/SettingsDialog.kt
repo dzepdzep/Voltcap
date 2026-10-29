@@ -3899,6 +3899,12 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             checked = com.shelf.launcher.data.Features.spinesOwn.state.value,
             onChange = { com.shelf.launcher.data.Features.spinesOwn.value = it }
         )
+        // Update 391: how physical every upright spine looks (one pref, also in Game shelf's settings).
+        Spacer(Modifier.height(10.dp))
+        RowChoice("Spine depth", com.shelf.launcher.data.Features.SpineDepth.values(), com.shelf.launcher.data.Features.spineDepth.state.value, { it.label }) {
+            com.shelf.launcher.data.Features.spineDepth.value = it
+        }
+        MutedNote("Bevelled edges, a rounded back and a shadow where the spine stands on the shelf, over the spine's own picture. Off: flat.")
         // Update 169: the cases take the cover's shape.
         Spacer(Modifier.height(10.dp))
         SwitchRow(

@@ -811,6 +811,15 @@ object Features {
     enum class RowFocus(val label: String) { DESIGN("As designed (second)"), LEFT("Left"), CENTER("Middle"), RIGHT("Right") }
     val rowFocus = EnumPref("style_row_focus", RowFocus.DESIGN, RowFocus.values())
 
+    /**
+     * Update 391: how physical the upright spines look wherever a game stands as its spine (Game shelf, TV room, Cover details,
+     * Case stacks, Cardboard box, the carousels' spines, the Spines look): OFF = flat as before, SUBTLE = edge bevel + a contact
+     * shadow at the foot and a faint tone difference per game, REALISTIC = adds the case's rounded back and lit front edge,
+     * deeper shading between neighbours and a shelf-level contact shadow. Drawn over the existing spine pictures (real scans first).
+     */
+    enum class SpineDepth(val label: String) { OFF("Off"), SUBTLE("Subtle"), REALISTIC("Realistic 3D") }
+    val spineDepth = EnumPref("spine_depth", SpineDepth.SUBTLE, SpineDepth.values())
+
     // ---- Save Vault ----
     enum class SaveVaultStyle(val label: String) {
         CLASSIC("Classic squares"),

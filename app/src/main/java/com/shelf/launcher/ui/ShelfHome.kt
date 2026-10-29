@@ -693,7 +693,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         // Update 147: the scan's own shape (width / height standing up), so a slot wider than the spine no longer
         // stretches it sideways; until it has loaded, the usual spine shape.
         var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SPINE_ASPECT) }
-        SpineSlot(shape, modifier) { inner ->
+        SpineSlot(shape, modifier, g.stableKey.hashCode()) { inner ->
             Box(inner.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
                 AsyncImage(
                     own, g.name, contentScale = ContentScale.FillBounds,
@@ -720,7 +720,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     if (tpl != null && OwnSpines.isOwn(tpl.res)) {
         // (Update 305: Voltcap's own Steam / Android spine drawn for this game — its title, its cover's accent — as the 3D
         // cases show it.)
-        SpineSlot(tpl.aspect, modifier) { inner ->
+        SpineSlot(tpl.aspect, modifier, g.stableKey.hashCode()) { inner ->
             OwnSpine(tpl.res, name, HomeScans.cover?.invoke(g.stableKey), inner.clip(RoundedCornerShape(2.dp)))
         }
         return
@@ -729,7 +729,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         // (Update 147: at the console spine's own shape, not stretched to a wider slot.)
         // (Update 338, Toni: "PS1 custom spines are way wider than the normal ones" — as slim as the console's real spines
         // on the shelf beside it, once a few of those have loaded.)
-        SpineSlot(RealSpineShape.of(g.platform) ?: tpl.aspect, modifier) { inner ->
+        SpineSlot(RealSpineShape.of(g.platform) ?: tpl.aspect, modifier, g.stableKey.hashCode()) { inner ->
             SpinePicture(tpl, inner.clip(RoundedCornerShape(2.dp))) { ink ->
                 Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
                     SpineName(name, ink, Modifier.spineText())
@@ -741,7 +741,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     // Update 119: no real spine (no scan of its own, none for its console in the pack): no drawn stand-in any more —
     // a strip of the game's own cover, with its name up it, until a real spine is there.
     val cover = HomeScans.cover?.invoke(g.stableKey)
-    Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
+    Box(modifier.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue)).spineDepth(g.stableKey.hashCode())) {
         if (cover != null) AsyncImage(cover, g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         Box(
             Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.45f)))),
@@ -757,10 +757,10 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
  * shape makes it (never wider than the slot), in the middle — a wider slot no longer stretches the picture.
  */
 @Composable
-private fun SpineSlot(aspect: Float, modifier: Modifier, content: @Composable (Modifier) -> Unit) {
+private fun SpineSlot(aspect: Float, modifier: Modifier, seed: Int, content: @Composable (Modifier) -> Unit) {
     androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity) maxWidth else minOf(maxWidth, maxHeight * aspect)
-        content(Modifier.width(w).fillMaxHeight())
+        content(Modifier.width(w).fillMaxHeight().spineDepth(seed))
     }
 }
 
@@ -769,14 +769,38 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, content: @Composable (M
  * names no longer end in "…" after a few letters.
  */
 @Composable
-private fun SpineName(name: String, ink: Color, modifier: Modifier) {
+internal fun SpineName(name: String, ink: Color, modifier: Modifier, shadow: androidx.compose.ui.graphics.Shadow? = null) {
     // (Update 376: on a spine too slim for two readable lines (PS1 / GBA width) the name runs as ONE line, so it is not
     // cut by the neighbouring line; a longer name slides, as FullText does.)
+    // (Update 391: NO sliding on a spine — the name is measured in the strip it gets (length x thickness) and fitted: the
+    // size steps down from 11 sp to 3.5 sp and as soon as another line fits across the spine the name wraps onto it, a
+    // word wider than the strip is broken where it must be. Stable: the same name always gets the same size and lines.)
     androidx.compose.foundation.layout.BoxWithConstraints {
-        FullText(
-            // (Update 129: down to 4.5 sp, so a name like "God of War" fits a slim spine whole instead of being cut.)
-            name, color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = if (maxWidth < 20.dp) 1 else 2,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val along = constraints.maxHeight
+        val across = constraints.maxWidth
+        val fit = remember(name, along, across, density) {
+            var s = 11f
+            var rows = 1
+            if (along > 0 && along != Constraints.Infinity && across > 0 && across != Constraints.Infinity) {
+                while (true) {
+                    rows = (across / (s * 1.05f * density.fontScale * density.density)).toInt().coerceAtLeast(1)
+                    val r = measurer.measure(
+                        name, androidx.compose.ui.text.TextStyle(fontSize = s.sp, fontWeight = FontWeight.Bold, lineHeight = (s * 1.05f).sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                        overflow = TextOverflow.Clip, maxLines = rows, constraints = Constraints(maxWidth = along, maxHeight = across)
+                    )
+                    if (!r.hasVisualOverflow || s <= 3.5f) break
+                    s = maxOf(3.5f, s - 0.5f)
+                }
+            }
+            s to rows
+        }
+        Text(
+            name, color = ink, fontSize = fit.first.sp, fontWeight = FontWeight.Bold, maxLines = fit.second, overflow = TextOverflow.Clip,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = (fit.first * 1.05f).sp,
+            style = if (shadow != null) androidx.compose.ui.text.TextStyle(shadow = shadow) else androidx.compose.material3.LocalTextStyle.current,
             modifier = modifier
         )
     }

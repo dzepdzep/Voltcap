@@ -726,12 +726,10 @@ private fun SpineShelf(
                         // Your own console spine (or Steam's / Android's), the game's name in the box left for it.
                         SpinePicture(spineTpl, Modifier.fillMaxSize()) { ink ->
                             Box(Modifier.fillMaxSize().padding(horizontal = 1.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
-                                // (Update 124: as big as fits, down to 6 sp, over two lines when it has to.)
-                                FullText(
-                                    gameDisplayName(g.name), color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 1.05.em,
-                                    style = androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(if (ink == Color.White) Color.Black else Color.White, blurRadius = 4f)),
-                                    modifier = Modifier.sideways()
+                                // (Update 391: fitted, never sliding — SpineName.)
+                                SpineName(
+                                    gameDisplayName(g.name), ink, Modifier.sideways(),
+                                    shadow = androidx.compose.ui.graphics.Shadow(if (ink == Color.White) Color.Black else Color.White, blurRadius = 4f)
                                 )
                             }
                         }

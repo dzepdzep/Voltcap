@@ -216,7 +216,8 @@ internal fun StyleArtLibrary(c: StyleCtx, modifier: Modifier = Modifier) {
         val railW = 60.dp
         val panelX = railW + 20.dp
         val panelW = (w * 0.31f).coerceIn(240.dp, 380.dp)
-        val topPad = if (compact) 30.dp else 40.dp
+        // (Update 391: the host already keeps the status bar clear; 40 dp more left ~100 px of empty space above the rail and panel.)
+        val topPad = if (compact) 6.dp else 10.dp
         if (g == null) StyleEmpty(Modifier.fillMaxSize().padding(start = panelX))
         else {
             ArtLibPanel(c, accent, compact, Modifier.padding(start = panelX, top = topPad, bottom = 16.dp).width(panelW).fillMaxHeight())

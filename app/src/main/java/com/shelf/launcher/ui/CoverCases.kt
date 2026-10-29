@@ -1029,26 +1029,18 @@ internal fun spineWithTitle(src: android.graphics.Bitmap, tpl: SpineTpl, title: 
         isFakeBoldText = true
         textSize = across * 0.62f
     }
+    // (Update 391: never "…" and never moving: smaller, then a second line across the spine — SpineTitleFit.)
     val room = along * 0.94f
-    val smallest = across * 0.26f
-    while (p.measureText(title) > room && p.textSize > smallest) p.textSize -= 1f
-    var t = title
-    if (p.measureText(t) > room) {
-        while (t.length > 2 && p.measureText("$t…") > room) t = t.dropLast(1)
-        t = t.trimEnd() + "…"
-    }
-    val fm = p.fontMetrics
+    val lines = SpineTitleFit.fit(p, title, room, across, across * 0.62f, across * 0.26f)
     val c = android.graphics.Canvas(out)
     c.save()
-    if (lying) {
-        c.translate(left + (bw - p.measureText(t)) / 2f, top + bh / 2f - (fm.ascent + fm.descent) / 2f)
-    } else {
+    if (lying) c.translate(left + (along - room) / 2f, top + bh / 2f)
+    else {
         // Standing: turned a quarter clockwise, centred in the box.
-        c.translate(left + bw / 2f, top + (bh - p.measureText(t)) / 2f)
+        c.translate(left + bw / 2f, top + (along - room) / 2f)
         c.rotate(90f)
-        c.translate(0f, -(fm.ascent + fm.descent) / 2f)
     }
-    c.drawText(t, 0f, 0f, p)
+    SpineTitleFit.draw(c, p, lines, room)
     c.restore()
     return out
 }

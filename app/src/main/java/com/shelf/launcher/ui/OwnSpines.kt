@@ -109,20 +109,13 @@ internal object OwnSpines {
                 setShadowLayer(w * 0.03f, 0f, w * 0.01f, 0xAA000000.toInt())
                 textSize = across * 0.66f
             }
-            val smallest = across * 0.3f
-            while (tp.measureText(t) > along && tp.textSize > smallest) tp.textSize -= 1f
-            var s: String = t
-            if (tp.measureText(s) > along) {
-                while (s.length > 2 && tp.measureText("$s…") > along) s = s.dropLast(1)
-                s = s.trimEnd() + "…"
-            }
-            val fm = tp.fontMetrics
+            // (Update 391: smaller, then a second line across the spine; never "…".)
+            val lines = SpineTitleFit.fit(tp, t, along, w * 0.8f, tp.textSize, across * 0.3f)
             c.save()
             // (Centred in the room between the brand block and the foot, a little towards the hinge side of the stripe.)
-            c.translate(w * 0.45f, y + w * 0.45f + (along - tp.measureText(s)) / 2f)
+            c.translate(w * 0.45f, y + w * 0.45f)
             c.rotate(90f)
-            c.translate(0f, -(fm.ascent + fm.descent) / 2f)
-            c.drawText(s, 0f, 0f, tp)
+            SpineTitleFit.draw(c, tp, lines, along)
             c.restore()
         }
         // The edges' fine bevel.

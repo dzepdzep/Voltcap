@@ -298,7 +298,7 @@ private fun DashSettings() {
     ShelfTextField(Features.dashSubtitle.state.value, { Features.dashSubtitle.value = it.take(60) }, "Line under the title", leadingIcon = Icons.Filled.ShortText)
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.PlayArrow, "Now playing card", "The game you're on big, with Play / Continue. Off: the row gets the room.", Features.dashHero)
-    StyleChoice("Game you're on in the row", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
+    StyleChoice("Game you're on", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
     ShelfTextField(Features.dashRowTitle.state.value, { Features.dashRowTitle.value = it.take(40) }, "Row title (empty = the category's name)", leadingIcon = Icons.Filled.TextFields)
     Spacer(Modifier.height(10.dp))
     Toggle(Icons.Filled.AccountCircle, "Player card", "Your RetroAchievements picture and name, battery and library bars (wide screens).", Features.dashProfile)
@@ -346,7 +346,7 @@ private fun SideSettings() {
     Spacer(Modifier.height(10.dp))
     StyleChoice("At the top of the menu", Features.SideEmblem.values(), Features.sideEmblem.state.value, { it.label }) { Features.sideEmblem.value = it }
     Slider("Menu width", Features.sideWidth, 140, 280) { "$it dp" }
-    StyleChoice("Game you're on in the row", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
+    StyleChoice("Game you're on", Features.RowFocus.values(), Features.rowFocus.state.value, { it.label }) { Features.rowFocus.value = it }
     Toggle(Icons.Filled.BatteryChargingFull, "Power capsule", "Voltcap's glass capsule charging up, with the game you're on under it (taller screens).", Features.sideOrb)
     Toggle(Icons.Filled.Style, "Gold trim", "Off: the theme's colour.", Features.sideGold)
     Toggle(Icons.Filled.TextFields, "Capitals", "Menu names in capitals.", Features.sideCaps)
@@ -457,6 +457,7 @@ private fun ShelfSettings() {
     Toggle(Icons.Filled.ViewModule, "Real sizes", "Every case at its console's real size (a DS case shorter than a PS2 one). Off: all the same size.", Features.shelfRealSizes)
     StyleChoice("Pulled out, it shows", Features.ShelfPulled.values(), Features.shelfPulled.state.value, { it.label }) { Features.shelfPulled.value = it }
     Toggle(Icons.Filled.ViewModule, "Bob and turn", "The game you pulled out floats a little and turns gently left and right.", Features.shelfBob)
+    StyleChoice("Spine depth", Features.SpineDepth.values(), Features.spineDepth.state.value, { it.label }) { Features.spineDepth.value = it }
     StyleChoice("Shelves", Features.ShelfLook.values(), Features.shelfLook.state.value, { it.label }) { Features.shelfLook.value = it }
     Toggle(Icons.Filled.ViewModule, "Bookcase background", "The whole screen behind the shelves is the bookcase: a back panel, the side uprights and a top crown. Off: your wallpaper shows between the shelves.", Features.shelfBackdrop)
     Toggle(Icons.Filled.Style, "Original spines and cases", "Each game's own spine scan and case front from ScreenScraper. A game without a spine scan gets its console's spine with its name. Off: the console's spine and Voltcap's case template. Same switch as Game look › Original cases.", Features.originalCases)

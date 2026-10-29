@@ -1027,15 +1027,10 @@ private fun consoleSpineNow(context: android.content.Context, platform: String?,
     }
     val room = h - 2f * pad - (if (logoLen > 0f) logoLen + pad else 0f)
     val min = (w * 0.26f).coerceAtLeast(12f)
-    while (p.measureText(title) > room && p.textSize > min) p.textSize -= 1f
-    var t = title
-    if (p.measureText(t) > room) {
-        while (t.length > 2 && p.measureText("$t…") > room) t = t.dropLast(1)
-        t = t.trimEnd() + "…"
-    }
-    val tw = p.measureText(t)
-    c.save(); c.translate(w / 2f, pad + ((room - tw) / 2f).coerceAtLeast(0f)); c.rotate(90f)
-    c.drawText(t, 0f, -(p.ascent() + p.descent()) / 2f, p)
+    // (Update 391: smaller, then a second line across the spine, never "…" or a slide — SpineTitleFit.)
+    val lines = SpineTitleFit.fit(p, title, room, w - 2f * pad, p.textSize, min)
+    c.save(); c.translate(w / 2f, pad); c.rotate(90f)
+    SpineTitleFit.draw(c, p, lines, room)
     c.restore()
     return b
 }

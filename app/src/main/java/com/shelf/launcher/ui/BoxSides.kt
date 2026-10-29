@@ -164,17 +164,11 @@ internal object BoxSides {
         val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = ink; typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD); textSize = across * 0.8f
         }
-        while (tp.measureText(t) > along && tp.textSize > across * 0.26f) tp.textSize -= 1f
-        var s = t
-        if (tp.measureText(s) > along) {
-            while (s.length > 2 && tp.measureText("$s…") > along) s = s.dropLast(1)
-            s = s.trimEnd() + "…"
-        }
-        val fm = tp.fontMetrics
+        // (Update 391: smaller, then a second line; never "…" — SpineTitleFit. [place] gets the full run, the text centres in it.)
+        val lines = SpineTitleFit.fit(tp, t, along, across, tp.textSize, across * 0.26f)
         c.save()
-        place(tp.measureText(s))
-        c.translate(0f, -(fm.ascent + fm.descent) / 2f)
-        c.drawText(s, 0f, 0f, tp)
+        place(along)
+        SpineTitleFit.draw(c, tp, lines, along)
         c.restore()
     }
 

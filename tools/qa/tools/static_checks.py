@@ -260,6 +260,16 @@ def check(src):
             if "leftReachesMenu(" not in m.group(0):
                 add("ONEPRESS", "HIGH", m.start(), "left on the first game enters the menu / knocks without asking whether Endless goes round: first press ignored on a looping row (R23)")
 
+
+        # SPINE-SLIDE (update 391): a custom spine's name never moves: SpineName (and every spine picture's title) fits by
+        # shrinking / wrapping (SpineTitleFit), it must not call FullText / a marquee, which slides a long name.
+        for m in re.finditer(r"fun SpineName\(", s):
+            end = s.find("\n}\n", m.start())
+            body = s[m.start(): end if end > 0 else len(s)]
+            for bad in ("FullText(", "basicMarquee", "StableFullText("):
+                k = body.find(bad)
+                if k >= 0:
+                    add("SPINE-SLIDE", "HIGH", m.start() + k, "custom spine name must not slide (no FullText / marquee): fit it with the measured shrink-and-wrap (update 391)")
         # SLIDER-COARSE: D-pad stepping fixed at 5 for small ranges.
         for m in re.finditer(r"\(drag / 5f\)\.roundToInt\(\) \+ dir\) \* 5", s):
             if "step == 1" not in s[max(0, m.start() - 400): m.start()]:

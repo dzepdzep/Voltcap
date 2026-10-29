@@ -358,7 +358,7 @@ enum class ButtonLayoutMode(val label: String) {
 
 /** Where the game you're on sits in the row. */
 enum class FocusPosition(val label: String) {
-    LEFT("Left end"),
+    LEFT("Left"),
     CENTER("Middle")
 }
 

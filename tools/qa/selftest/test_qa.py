@@ -338,6 +338,15 @@ class TestFocuscheck(Base):
         self.write("src/S.kt", bad.replace("focus == 0 && side.isNotEmpty()", "leftReachesMenu(focus, side.isNotEmpty(), loops)"))
         self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
 
+    def test_static_spine_slide_flags_a_sliding_spine_name(self):
+        os.makedirs(self.p("src"))
+        bad = ("package x\ninternal fun SpineName(name: String, ink: Color, modifier: Modifier) {\n"
+               "    FullText(name, color = ink, fontSize = 11.sp)\n}\n")
+        self.write("src/S.kt", bad)
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 1)
+        self.write("src/S.kt", bad.replace("FullText(", "Text("))
+        self.assertEqual(run("static_checks.py", self.p("src"), "--strict")[0], 0)
+
 
 class TestOtherTools(Base):
     def test_framestats_bad_input(self):
