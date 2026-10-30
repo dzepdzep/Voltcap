@@ -5217,7 +5217,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     GamePopup.reopenGame?.let { again ->
         LaunchedEffect(again) {
             androidx.compose.runtime.withFrameNanos { }
-            if (GamePopup.game == null) GamePopup.game = again
+            // (Update 414: the Cardboard box opens it the way A does — the case flies out again — not as a bare window.)
+            if (GamePopup.game == null && BoxNav.pullAsk != null) {
+                // (after the box has put the case back down: its own 60 ms reset must not undo this pick)
+                kotlinx.coroutines.delay(120)
+                BoxNav.pull = null
+                androidx.compose.runtime.withFrameNanos { }
+                if (GamePopup.game == null) BoxNav.pullAsk?.invoke()
+            } else if (GamePopup.game == null) GamePopup.game = again
             GamePopup.reopenGame = null
         }
     }
