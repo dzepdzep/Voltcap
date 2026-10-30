@@ -139,7 +139,10 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
     val focus = c.focus.coerceIn(0, count - 1)
     val animate = rememberAnimationsEnabled()
     // (With Endless and fewer games than places round the orbit, the orbit holds just those — no game twice.)
-    val ringN = Features.odRing.state.value.n.let { n -> if (loop && count <= n + 1) count.coerceAtLeast(2) else n }
+    // Update 418: the orbit builds ringN + 3 places; with Endless and ringN + 2 games the first and last place were the SAME game
+    // (duplicate key: the disc flashed / swapped state). Up to ringN + 2 games the orbit now holds just those.
+    val smallRing = loop && count <= Features.odRing.state.value.n + 2
+    val ringN = Features.odRing.state.value.n.let { n -> if (smallRing) count.coerceAtLeast(2) else n }
     val tiltDeg = Features.odTilt.state.value.toFloat()
     val spin = Features.odSpin.state.value && animate && rememberIsActive() && !HomeIdle.calm
     val col = Features.odColor.state.value
@@ -210,8 +213,26 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
         // (Pass 5, D57: the ring's place as a derived whole number — read raw, every disc was re-composed on every frame
         // of a turn; it changes once per place now.)
         val base by remember { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
-        val lo = if (loop && count <= ringN + 1) -((count - 1) / 2) else -half - 1
-        val hi = if (loop && count <= ringN + 1) count / 2 else half + 1
+        val lo = if (smallRing) -((count - 1) / 2) else -half - 1
+        val hi = if (smallRing) count / 2 else half + 1
+        // Update 418: pictures of the places just beyond the ring decode ahead (cache/local; the very request the disc makes),
+        // so a disc entering the ring has its art the frame it appears.
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        LaunchedEffect(base, count, ringN, loop, c.games) {
+            val urls = ArrayList<Pair<String, Boolean>>()
+            for (off in -(half + 4)..(half + 4)) {
+                val slot = base + off
+                val i = if (loop) ((slot % count) + count) % count else slot
+                if (i !in 0 until count) continue
+                val wg = c.games[i]
+                val real = orbitMedia(wg, c.state.physicalMedia[wg.stableKey])
+                if (real != null) urls.add(real.first to (real.second != OdMedia.LABEL))
+                else c.cover(wg)?.let { urls.add(it to true) }
+            }
+            val trims = urls.toMap()
+            val handles = warmStyleArt(ctx, urls.map { it.first }) { trims[it] == true }
+            try { kotlinx.coroutines.awaitCancellation() } finally { handles.forEach { it.dispose() } }
+        }
         for (off in lo..hi) {
             val slot = base + off
             val i = if (loop) ((slot % count) + count) % count else slot
@@ -247,7 +268,7 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                             cameraDistance = 14f * density.density
                             // (Past the last place at the back it fades — it never pops in or out.)
                             val edge = (half + 0.5f - abs(d)).coerceIn(0f, 1f)
-                            alpha = (if (loop && count <= ringN + 1) 1f else edge) *
+                            alpha = (if (smallRing) 1f else edge) *
                                 // (Its window's disc takes over as it flies out — and hands back as it lands.)
                                 (if (on && MediaInspect.key == g.stableKey) 1f - MediaInspect.amount.floatValue else 1f)
                         }

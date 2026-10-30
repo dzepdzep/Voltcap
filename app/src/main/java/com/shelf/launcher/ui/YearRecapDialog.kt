@@ -138,6 +138,16 @@ internal fun YearRecapDialog(
         byKey[k]?.name?.let { gameDisplayName(it) } ?: others[k]?.name?.takeIf { it.isNotBlank() }?.let { gameDisplayName(it) }
             ?: k.substringAfterLast('/').substringBeforeLast('.')
     } ?: "—"
+    // Update 418: the period's podium / hero covers and its badges are queued into Coil's cache as soon as the recap is known
+    // (non-blocking enqueue; covers of other devices' / removed games arrive through onNeedForeignCovers and re-run this), so
+    // the podium, rows and backdrop don't show a blank frame while their picture loads. Disposed with the dialog.
+    val artCtx = androidx.compose.ui.platform.LocalContext.current
+    val warmUrls = (recap?.topGames.orEmpty().flatMap { listOfNotNull(coverFor(it.key), heroFor(it.key)) } + ach?.badges.orEmpty()).distinct().take(40)
+    LaunchedEffect(warmUrls) {
+        val loader = coil.Coil.imageLoader(artCtx)
+        val hs = warmUrls.filter { it.startsWith("http") }.map { loader.enqueue(coil.request.ImageRequest.Builder(artCtx).data(it).build()) }
+        try { kotlinx.coroutines.awaitCancellation() } finally { hs.forEach { h -> h.dispose() } }
+    }
     fun switchTo(p: YearRecap.Period) { if (p.id != current.id) { current = p; sounds?.play(UiSound.MOVE) } }
     fun step(delta: Int) {
         val next = (current.offset + delta).coerceAtMost(0)
@@ -148,6 +158,10 @@ internal fun YearRecapDialog(
         switchTo(YearRecap.period(all[(current.kind.ordinal + delta + all.size) % all.size]))
     }
 
+    // Update 418: which control the D-pad is on: 0..2 = Week / Month / Year, 3 = prev, 4 = next, -1 = the page below (scrolls).
+    // Starts on the period shown, so left / right move between the buttons and A picks one; the selected period (filled) and
+    // the controller-focused button (white ring) are drawn differently.
+    var bar by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(current.kind.ordinal) }
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
@@ -175,15 +189,29 @@ internal fun YearRecapDialog(
                 .onKeyEvent { e ->
                     if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
                     when (e.key) {
-                        Key.DirectionDown -> { scope.launch { scroll.animateScrollTo(scroll.value + 220) }; true }
-                        Key.DirectionUp -> { scope.launch { scroll.animateScrollTo((scroll.value - 220).coerceAtLeast(0)) }; true }
-                        Key.DirectionLeft -> { step(-1); true }
-                        Key.DirectionRight -> { step(1); true }
+                        Key.DirectionDown -> { if (bar >= 0) bar = -1 else scope.launch { scroll.animateScrollTo(scroll.value + 220) }; true }
+                        Key.DirectionUp -> {
+                            if (bar < 0 && scroll.value <= 0) bar = current.kind.ordinal
+                            else if (bar < 0) scope.launch { scroll.animateScrollTo((scroll.value - 220).coerceAtLeast(0)) }
+                            true
+                        }
+                        Key.DirectionLeft -> { if (bar >= 0) bar = (bar - 1).coerceAtLeast(0) else step(-1); true }
+                        Key.DirectionRight -> { if (bar >= 0) bar = (bar + 1).coerceAtMost(4) else step(1); true }
+                        Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
+                            val kinds = YearRecap.Kind.values()
+                            when {
+                                bar < 0 -> onDismiss()
+                                bar < kinds.size -> switchTo(YearRecap.period(kinds[bar]))
+                                bar == kinds.size -> step(-1)
+                                current.offset < 0 || current.id.startsWith("anniv") -> step(1)
+                            }
+                            true
+                        }
                         // L2 / R2 (and L1 / R1, as before): week → month → year.
                         Key.ButtonL2, Key.ButtonL1, Key.PageUp -> { cycleKind(-1); true }
                         Key.ButtonR2, Key.ButtonR1, Key.PageDown -> { cycleKind(1); true }
                         Key.ButtonX -> { pickApps = true; true }
-                        Key.ButtonB, Key.Back, Key.ButtonA, Key.Escape -> { onDismiss(); true }
+                        Key.ButtonB, Key.Back, Key.Escape -> { onDismiss(); true }
                         else -> false
                     }
                 }
@@ -202,11 +230,11 @@ internal fun YearRecapDialog(
                 // Week / Month / Year, and ◀ ▶ through earlier ones.
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Ds.s2)) {
                     YearRecap.Kind.values().forEach { k ->
-                        RecapPill(k.label, selected = current.kind == k && !current.id.startsWith("anniv")) { switchTo(YearRecap.period(k)) }
+                        RecapPill(k.label, selected = current.kind == k && !current.id.startsWith("anniv"), focused = bar == k.ordinal) { bar = k.ordinal; switchTo(YearRecap.period(k)) }
                     }
                     Spacer(Modifier.weight(1f))
-                    RecapPill("◀", selected = false) { step(-1) }
-                    RecapPill("▶", selected = false, enabled = current.offset < 0 || current.id.startsWith("anniv")) { step(1) }
+                    RecapPill("◀", selected = false, focused = bar == 3) { bar = 3; step(-1) }
+                    RecapPill("▶", selected = false, focused = bar == 4, enabled = current.offset < 0 || current.id.startsWith("anniv")) { step(1) }
                 }
                 Text(current.title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black)
                 if (r == null) {
@@ -432,11 +460,13 @@ private fun RecapPodium(top: List<YearRecap.GameTime>, coverFor: (String) -> Str
 }
 
 @Composable
-private fun RecapPill(label: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
+private fun RecapPill(label: String, selected: Boolean, enabled: Boolean = true, focused: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
+            .then(if (focused) Modifier.graphicsLayer { scaleX = 1.08f; scaleY = 1.08f } else Modifier)
             .clip(RoundedCornerShape(50))
             .background(if (selected) ShelfTheme.accent else Color.White.copy(alpha = if (enabled) 0.1f else 0.04f))
+            .then(if (focused) Modifier.border(2.dp, Color.White, RoundedCornerShape(50)) else Modifier)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 5.dp)
     ) {

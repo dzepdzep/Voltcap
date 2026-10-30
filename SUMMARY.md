@@ -1,3 +1,28 @@
+# COWORK CONTINUATION GUIDE (Update 418, 30 Oct 2026) — READ THIS FIRST
+
+Low-budget update. Compiled (`:app:compileDebugKotlin`) and unit-tested (`:app:testDebugUnitTest`, all green incl. new `Hub418Test`); **NOT run on any device** and **NOT released** (v0.6.62 stays the latest public release; version bumped to 0.6.63 / code 70 in `app/build.gradle.kts` + `project_copy`, unreleased). Reason: the visual claims below (no flashing Orbit discs, recap button states) need frame-by-frame hardware QA that was not done; the release rule forbids shipping unverified claims.
+
+## Done in 418
+1. **Orbit Deck** (`src_copy/ui/StyleOrbitDeck.kt`): found a real cause of discs flashing / swapping with Endless: the orbit builds ringN + 3 places but only treated `count <= ringN + 1` as "small", so with `count == ringN + 2` the first and last place were the same game (duplicate `key`, state shared / swapped). New `smallRing = loop && count <= ringN + 2` (used for ringN, lo/hi and the edge fade). Art: covers / own-media pictures of places up to half + 4 each side are warmed with `warmStyleArt` (same request as the disc, cache/local only, disposed on change), so a disc entering the ring already has its picture. Continuous animation / spin / physics untouched. Other suspected causes (slot reuse via `key(g.stableKey)`, `base` rounding, alpha edge fade) were read and look correct; NOT proven on hardware.
+2. **AchievementsHub** (`ui/HubScreens.kt`, `LauncherScreen.kt`): the list now comes from the WHOLE account (`raCompletionById`), not only local ROMs. Local game = its own Game; otherwise `raStandIn(id, entry)` (`romPath = "ra:<id>"`, no ROM, never launchable; opens the remote achievement list with "show missing", as the Profile screen already did). Progress / near-completion use the account entry (`NumAwarded` / `MaxPossible`). Timeline rows for remote games open too. Test: `Hub418Test`.
+3. **Achievement art cache**: the hub enqueues the account's game icons (max 120, 96 px, distinct URLs, yielding between) into Coil's memory + disk cache when the list is known; Coil dedups in-flight/identical requests; disk cache keeps them usable offline. Not done: preloading achievement badges per game list (they load with their own dialog), stable fallback art for failed icons, scroll-ahead of only nearby items (all-up-to-120 used instead). NOT measured.
+4. **Recap controls** (`ui/YearRecapDialog.kt`): D-pad focus state `bar` (0-2 Week/Month/Year, 3 prev, 4 next, -1 page). Starts on the shown period; ◀ ▶ move between buttons, A / Enter / centre activates, ▼ leaves the bar (then ▲ at scroll 0 returns), ◀ ▶ on the page still step periods. **A no longer closes the dialog** (B / Back / Esc do); L1/L2/R1/R2 kind cycling, X apps, touch unchanged. Selected = filled accent; focused = white 2 dp ring + 1.08 scale (distinct, both can show). NOT tested on hardware.
+5. **Recap art**: podium / hero covers and badges are queued into Coil's cache non-blockingly when the recap is known (re-runs when foreign covers from `onNeedForeignCovers` arrive). Existing foreign / gone-game cover lookup unchanged. Remaining: stale-art audit of the achievement rows and backdrop; no blank-frame proof.
+6. **ES-DE media reuse: NOT implemented.** Plan: (a) user picks the ES-DE `downloaded_media` folder via `ACTION_OPEN_DOCUMENT_TREE`, persist the URI with `takePersistableUriPermission(READ only)`; (b) index `<tree>/<system>/<covers|backcovers|3dboxes|physicalmedia|screenshots|marquees|videos>/<rom basename>.<ext>` through DocumentsContract queries (no copying of the sources; thumbnails to an own cache dir); (c) map Voltcap platform -> ES-DE system folder name (table from `EmulatorCatalog`), match on ROM file name without extension (case-insensitive, ignoring tags only as a second pass); (d) `3dboxes` are flat 3D-rendered images: show as "3D box (rendered)", never feed `Case3D` / multi-face logic; (e) read-only everywhere, add the pref to `SettingsScopes`.
+
+## Files to copy (src_copy is gitignored; app/ already holds the same files)
+`ui/StyleOrbitDeck.kt`, `ui/HubScreens.kt`, `ui/YearRecapDialog.kt`, `ui/LauncherScreen.kt`; `project_copy/app/build.gradle.kts`; test `app/src/test/.../ui/Hub418Test.kt`.
+
+## NEXT COWORK QA (required before releasing 0.6.63)
+Frame-by-frame 60 fps capture on the Thor (3140972f) / other authorized devices: Orbit Deck with Endless ON and counts 8-12 (ring 7/9/11) plus rapid ◀ ▶, cache-miss (fresh artwork), Lite mode; Achievements hub with an account that has games not installed (check counts, remote-only open, no launch), scrolling icons, offline; Recap Week/Month/Year with D-pad + A, L1/R1, B, touch; category switching on a few layouts (CLAUDE rule 14). If green: release v0.6.63 full + compat via `tools/release/release.ps1` and PRE_RELEASE_CHECKLIST.
+
+## Unfinished priorities carried on
+Achievement badge preloading / fallback art, nearby-only cache window, recap row / backdrop blank-frame proof, ES-DE SAF reuse (plan above), everything in the 417 list below.
+
+Final commit / release status: see `git log -1` on main (pushed, no tag v0.6.63).
+
+---
+
 # COWORK CONTINUATION GUIDE (Update 417, 30 Oct 2026) — READ THIS FIRST
 
 This is the ONE handoff document (no separate handoff file; COWORK_HANDOFF.md was NOT touched for 417 and is older). History below is Update 416 and older: grep it, don't re-read it.

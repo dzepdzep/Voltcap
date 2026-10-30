@@ -5494,7 +5494,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         HubScreen.ACHIEVEMENTS -> AchievementsHub(
             games = state.games, completion = state.raCompletionById, recent = state.raRecentAchievements,
             connected = state.raState == com.shelf.launcher.RaConnectionState.ON,
-            onOpenGame = { g -> hubScreen = null; viewingAchievementsForGame = g },
+            onOpenGame = { g -> hubScreen = null; if (g.romPath?.startsWith("ra:") == true) achievementsShowMissing = true; viewingAchievementsForGame = g },
             onRefresh = { viewModel.refreshRaCompletion(); viewModel.loadRecentAchievements(minutesBack = 43_200) },
             onDismiss = { hubScreen = null }
         )

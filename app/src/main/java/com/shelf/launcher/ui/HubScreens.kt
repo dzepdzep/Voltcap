@@ -72,10 +72,23 @@ internal fun AchievementsHub(
     var replay by remember { mutableStateOf<List<StageBadge>?>(null) }
     val seen by AchievementSeen.all.collectAsState()
     val linked = remember(games, completion) {
-        games.filter { it.raGameId != null }.distinctBy { it.raGameId }.mapNotNull { g ->
-            val c = completion[g.raGameId] ?: return@mapNotNull null
+        // Update 418: the WHOLE connected account, not only the ROMs on this device: a game on another device shows with its
+        // real progress as a remote-only stand-in (raStandIn: no ROM, never launchable), a local game with its own entry.
+        val local = games.filter { it.raGameId != null }.distinctBy { it.raGameId }.associateBy { it.raGameId }
+        completion.entries.mapNotNull { (id, c) ->
             val total = c.MaxPossible ?: 0
-            if (total <= 0) null else Triple(g, c, total)
+            if (total <= 0) null else Triple(local[id] ?: raStandIn(id, c), c, total)
+        }
+    }
+    // Update 418: the account's game icons (incl. games absent from this device) are fetched ahead into Coil's disk + memory
+    // cache, a few at a time, so rows / cells don't pop in blank while scrolling and cached icons work offline. Coil de-duplicates
+    // identical in-flight / cached requests; the list is capped and the icons are small.
+    val hubCtx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(linked) {
+        val loader = coil.Coil.imageLoader(hubCtx)
+        linked.asSequence().mapNotNull { RaBadges.mediaUrl(it.second.ImageIcon) }.distinct().take(120).forEach { u ->
+            loader.enqueue(coil.request.ImageRequest.Builder(hubCtx).data(u).size(96, 96).build())
+            kotlinx.coroutines.yield()
         }
     }
     ShelfDialog(
@@ -175,7 +188,7 @@ internal fun AchievementsHub(
                                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
                             )
                         }
-                        val g = games.firstOrNull { it.raGameId == a.GameID }
+                        val g = games.firstOrNull { it.raGameId == a.GameID } ?: a.GameID?.let { gid -> raStandIn(gid, completion[gid]) }
                         TimelineRow(a, onClick = g?.let { { onOpenGame(it) } })
                     }
                 }
@@ -183,6 +196,12 @@ internal fun AchievementsHub(
         }
     }
 }
+
+/** Update 418: a game that is not on this device (RetroAchievements account only). The `ra:` path = no ROM: it can be looked at, never launched. */
+internal fun raStandIn(id: Int, e: RaCompletionEntry?): Game = Game(
+    name = e?.Title ?: "RetroAchievements game $id", platform = e?.ConsoleName ?: "", hue = 0,
+    sourceType = com.shelf.launcher.data.SourceType.ROM, romPath = "ra:$id", raGameId = id
+)
 
 private fun friendlyDay(iso: String): String = runCatching {
     val d = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(iso) ?: return iso
