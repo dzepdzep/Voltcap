@@ -327,7 +327,11 @@ object RomScanner {
      * Update 408: Android's trash / pending placeholders (`.trashed-<epoch>-Name.gb`, `.pending-<epoch>-Name.gb`) and other
      * hidden dot-files (`._Name.gb`, `.DS_Store`) are never games. Only the name is judged; no file is touched.
      */
-    fun isTrashedOrHiddenName(name: String): Boolean = name.startsWith(".")
+    fun isTrashedOrHiddenName(name: String): Boolean =
+        // Update 409: only the known placeholders — Android's `.trashed-<epoch>-` / `.pending-<epoch>-` files, macOS AppleDouble
+        // `._Name` shadows, `.DS_Store`. NOT every dot-name: real games start with a dot (".hack//Infection.iso", ".hack//G.U.").
+        TRASH_NAME.containsMatchIn(name) || name.startsWith("._") || name == ".DS_Store"
+    private val TRASH_NAME = Regex("^[.](trashed|pending)-")
 
     /** Update 408: an indexed game whose file (or a folder above it) is a trash / hidden placeholder is an invalid record. */
     fun isTrashedPath(path: String?): Boolean =

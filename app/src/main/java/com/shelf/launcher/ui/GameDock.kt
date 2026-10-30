@@ -382,7 +382,7 @@ internal fun GameDock(
         val lineShown = nameOnLine || look.playtimeOnHome
         // Right on top of the capsule — or under the row (Game names › Side).
         val lineAbove = !look.nameBelow
-        val rowMotionOn = com.shelf.launcher.data.Features.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE
+        val rowMotionOn = ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE
         val captionLine: @Composable () -> Unit = {
             val focusedKey = games[focus].stableKey
             // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)

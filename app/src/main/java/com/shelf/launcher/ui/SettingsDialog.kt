@@ -3578,8 +3578,10 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             val F = com.shelf.launcher.data.Features
             val classic = appearance.homeLayout.name in F.classicWindowLayouts.state.value
             RowChoice("In ${appearance.homeLayout.label}, A opens", arrayOf(false, true), classic, { if (it) "The classic details window" else "This layout's own window" }) {
-                if (it != classic) F.classicWindowLayouts.toggle(appearance.homeLayout.name)
+                // (Update 409, D105: only this layout; off = back to the global default below.)
+                if (it != classic) { if (it) PopupStyle.set(appearance.homeLayout.name, PopupStyle.CLASSIC) else PopupStyle.useDefault(appearance.homeLayout.name) }
             }
+            MutedNote("This layout's popup style: ${PopupStyle.current(appearance.homeLayout.name).label}" + (if (PopupStyle.isOwnChoice(appearance.homeLayout.name)) " (chosen for this layout, R1 › Popup)" else " (the default for every layout below)") + ".")
             // Update 330: the layouts with a window of their own (WinScenes.kt) — it, or the standard window in their colours.
             if (winSceneFor(appearance.homeLayout) != null) {
                 RowChoice("${appearance.homeLayout.label}'s window", arrayOf(true, false), F.winScenes.state.value, { if (it) "Built into the layout" else "Standard window" }) { F.winScenes.value = it }
@@ -3590,14 +3592,14 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                     F.winBanner.state.value -> "\"Its style: Banner page\""
                     else -> null
                 }
-                if (overriding != null && F.winScenes.state.value) MutedNote("Opens instead: $overriding, set for every layout below. Set it to Off / The layout's own to see ${appearance.homeLayout.label}'s window.")
+                if (overriding != null && F.winScenes.state.value && !PopupStyle.isOwnChoice(appearance.homeLayout.name)) MutedNote("Opens instead: $overriding, the default for all layouts below. Pick Own for ${appearance.homeLayout.label} in R1 › Popup, or set the default to Off / The layout's own.")
             }
             // Update 146: the banner page — one look for every layout (art banner, Play strip, tabs).
-            RowChoice("Its style (every layout)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
+            RowChoice("Its style (default for all layouts)", arrayOf(false, true), F.winBanner.state.value, { if (it) "Banner page" else "The layout's own" }) { F.winBanner.value = it }
             // Update 249 (#119): the window as a move of the home screen itself (RowRevealWindow.kt).
-            RowChoice("Its motion (every layout)", com.shelf.launcher.data.Features.WinMotion.values(), F.winMotion.state.value, { it.label }) { F.winMotion.value = it }
+            RowChoice("Its motion (default for all layouts)", com.shelf.launcher.data.Features.WinMotion.values(), F.winMotion.state.value, { it.label }) { F.winMotion.value = it }
             MutedNote("The row opens up: the row with the game you're on rises into its page, the cover growing to its left. Row reveal: the art and the game stay where they are; the other games fade, the name rises, Play / Continue and the buttons slide down and the details appear. Shared move: the art stays, the row drops away, the category, the name and its play time travel to their places on the page and the rest fades in. Off: the style above.")
-            RowChoice("Its colours (every layout)", com.shelf.launcher.data.Features.WinColors.values(), F.gameWindowColors.state.value, { it.label }) { F.gameWindowColors.value = it }
+            RowChoice("Its colours (all layouts)", com.shelf.launcher.data.Features.WinColors.values(), F.gameWindowColors.state.value, { it.label }) { F.gameWindowColors.value = it }
             MutedNote("The game's colours come from its cover; the layout's own keeps each layout's look as it was.")
             // Update 125: what the window shows and where, for this layout on its own.
             SectionLabel("What it shows and where (${appearance.homeLayout.label})")

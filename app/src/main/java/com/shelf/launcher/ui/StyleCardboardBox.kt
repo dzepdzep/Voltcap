@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -810,11 +811,20 @@ private fun BoxCase(
     if (!lit) Box(
         Modifier.offset(x0, y0).size(wDp, hDp)
             .graphicsLayer { rotationZ = jr }
+            // Update 409 (D97): the case is a solid body — where its spine picture is narrower than its slot (SpineSlot keeps the
+            // picture's own shape) the margin is the case's own side material, not a see-through gap whose shading / hairlines
+            // read as a thin rectangle round the case.
+            .background(boxSideTone(g.platform).let { mix(it.first, it.second, 0.35f) })
             .pointerInput(index) { detectTapGestures { onTap() } }
     ) {
         GameSpine(g, physical, Modifier.fillMaxSize())
         // The hairline gap to the next case.
-        Box(Modifier.fillMaxSize().border(0.6.dp, Color.Black.copy(alpha = 0.55f)))
+        // (Update 409, D97: only the two vertical separators — the full rectangle read as an outline round the case.)
+        Box(Modifier.fillMaxSize().drawBehind {
+            val lw = 0.6.dp.toPx(); val col = Color.Black.copy(alpha = 0.55f)
+            drawLine(col, Offset(0f, 0f), Offset(0f, size.height), lw)
+            drawLine(col, Offset(size.width, 0f), Offset(size.width, size.height), lw)
+        })
     }
     else {
         // (Update 402: no dark / coloured slot rectangle behind a lifted case — the empty place is just the box floor.)
@@ -855,8 +865,17 @@ private fun BoxCase(
             Canvas(Modifier.fillMaxSize()) {
                 val r = smoothUp(rise.value)
                 val sw = (right - left) * (1f + 0.6f * r)
-                drawRoundRect(Color.Black.copy(alpha = 0.2f * (1f - r * 0.5f)), Offset(size.width / 2f - sw / 2f + 30f * r, 22f * r),
-                    Size(sw, size.height), androidx.compose.ui.geometry.CornerRadius(8f))
+                // Update 409 (D97): a feathered shadow (layers growing out, each faint) — the hard rounded rectangle, wider than the
+                // 3D case, showed as a thin dark rectangle round the lifted case's neighbours.
+                val base = 0.2f * (1f - r * 0.5f)
+                val layers = 6
+                val step = 2.5f + 5f * r
+                for (li in 0 until layers) {
+                    val grow = (layers - 1 - li) * step
+                    drawRoundRect(Color.Black.copy(alpha = base / layers),
+                        Offset(size.width / 2f - sw / 2f + 30f * r - grow, 22f * r - grow),
+                        Size(sw + 2f * grow, size.height + 2f * grow), androidx.compose.ui.geometry.CornerRadius(8f + grow))
+                }
             }
             val cover = c.cover(g)
             val back = remember(k, physical) { defaultCaseBack(g, physical, cover, aspect) }

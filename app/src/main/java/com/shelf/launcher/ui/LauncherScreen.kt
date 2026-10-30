@@ -368,6 +368,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // What to draw: apps set to use their own icon have their scraped art
     // hidden here, so every screen falls back to the app-icon look.
     val state = remember(uiState) { uiState.forDisplay() }
+    // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
+    run { val m = PopupStyle.motion(state.appearance.homeLayout.name); androidx.compose.runtime.SideEffect { if (ActiveWinMotion.value != m) ActiveWinMotion.value = m } }
     // Update 177: the consoles there are, for Settings › Second screen Games page (FolderArt).
     androidx.compose.runtime.SideEffect {
         if (com.shelf.launcher.data.FolderArt.platforms != state.availablePlatforms) com.shelf.launcher.data.FolderArt.platforms = state.availablePlatforms
@@ -3707,7 +3709,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             Modifier
                                 .fillMaxWidth()
                                 // (Update 249, #119: it fades as the row turns into the game window — RowReveal.)
-                                .then(if (com.shelf.launcher.data.Features.winMotion.state.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                                .then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
                                     Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier)
                                 .then(
                                     // Tile home: exactly on the name's line — it follows the selected tile
@@ -4355,7 +4357,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             )
         } else Box(Modifier.matchParentSize().edgeBump()) {
             // (Update 249, #119: Row reveal's shade over the art, under the rows — RowRevealWindow.kt.)
-            if (com.shelf.launcher.data.Features.winMotion.state.value == com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL)
+            if (ActiveWinMotion.value == com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL)
                 RowRevealShade(Modifier.matchParentSize())
             GameRows()
         }

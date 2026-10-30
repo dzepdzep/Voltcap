@@ -937,7 +937,7 @@ internal fun GameWindow(
     val hasFan = if (perfState != null) rememberHasFan() else null
     // Update 249 (#119): the game window as a move of the home screen itself (Game window › Its motion, R1 › Popup) —
     // where the game you're on has a place on this screen; else the usual window below.
-    val rowMotion = Features.winMotion.state.value
+    val rowMotion = PopupStyle.motion(layout.name)
     // Update 285 (Toni: "every popup an option to inspect the media"): the Inspect button beside the window's icons — the
     // game's piece comes out in a column of the window, whatever the look draws (the menu's Inspect…, MediaInspect.force).
     // From the banner page and Game Glance it opens this window with the piece out.
@@ -955,7 +955,7 @@ internal fun GameWindow(
     if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
         RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
-    if (Features.winBanner.state.value && !askedInspect) {
+    if (PopupStyle.banner(layout.name) && !askedInspect) {
         BannerGameWindow(
             layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments,
             perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp,

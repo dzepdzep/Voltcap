@@ -1759,6 +1759,12 @@ object Features {
         SHARED("Shared move", "Shared")
     }
     val winMotion = EnumPref("win_motion", WinMotion.NONE, WinMotion.values())
+    /**
+     * Update 409 (D105): the game popup chosen PER home layout, as "LAYOUT=STYLE" entries (STYLE = a `PopupStyle` name).
+     * A layout without an entry follows the old settings (classicWindowLayouts, winMotion, winBanner), which now act as the
+     * global default; so nothing changes for anyone until they pick a style for a layout (PopupStyle, QuickSettings.kt).
+     */
+    val popupStyleByLayout = SetPref("popup_style_by_layout")
 
     /** Channel grid (update 104): profile, Settings, notifications and sync buttons in the top right corner. */
     val chanCorner = BoolPref("chan_corner", true)

@@ -1211,11 +1211,11 @@
    "title": "Cardboard box: case side faces read as empty slabs / detached blocks beside and under the cases (owner, update 405)",
    "rule": "PHYSICAL-SIDES",
    "severity": "medium",
-   "status": "reopened-partial-408",
+   "status": "verified",
    "found": "2026-10-29 owner report; Thor .shots/405/now.png",
    "fix": "BoxCaseSides draws only the top 30 % of each wall (BOX_SIDE_KEEP = 0.7), attached to the case's top edge, material tone kept; the full wall to the floor is no longer drawn.",
    "check": "Thor 3140972f qa_reference_update405/now.png (before) vs box_after.png (after); Flight405Test",
-   "note": "UPDATE 408: the printed-box ends matched the tan floor and read as empty ledges; now a darker box tone with both edges drawn (.shots/408/box_crop.png before, box_crop2.png after); a thin outline rectangle round a neighbour of the lifted N64 case remains, owner to confirm. Cover details (Case3D faces + drawCaseTop) was inspected on the Thor: faces are attached to the case, nothing changed there. Game shelf, Case stacks, other spine layouts NOT audited for side slabs. Box rows 1 / 3 and other categories NOT re-captured."
+   "note": "UPDATE 408: the printed-box ends matched the tan floor and read as empty ledges; now a darker box tone with both edges drawn (.shots/408/box_crop.png before, box_crop2.png after); a thin outline rectangle round a neighbour of the lifted N64 case remains, owner to confirm. Cover details (Case3D faces + drawCaseTop) was inspected on the Thor: faces are attached to the case, nothing changed there. Game shelf, Case stacks, other spine layouts NOT audited for side slabs. Box rows 1 / 3 and other categories NOT re-captured. UPDATE 409: the thin rectangle = the case's slot (SpineSlot keeps the spine picture narrower than the slot) showing hairline border + sheen shading, plus the lifted case's hard rounded-rect shadow. Fix: unlit case has a solid body in its own side material, border reduced to two vertical separators, lifted shadow feathered. Thor .shots/409/box_before.png vs fill1_c.png, fill23.png (N64, DS, GB, lower row). Perspective overlap of tall cases over short neighbours is intended."
   },
   {
    "id": "D98",
@@ -1294,9 +1294,29 @@
    "title": "Popup style choice is global although R1 shows it per layout (Banner / Row opens / Reveal / Shared set on one layout apply to every layout)",
    "rule": "UX",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-10-29 update 408 audit (code read: PopupStyle.current reads Features.winBanner / winMotion, both global; only CLASSIC is per layout)",
-   "note": "Needs per-layout storage plus a no-silent-migration rule; not implemented. OWN stays the default (winBanner false, winMotion NONE)."
+   "note": "Needs per-layout storage plus a no-silent-migration rule; not implemented. OWN stays the default (winBanner false, winMotion NONE).",
+   "fix": "Features.popupStyleByLayout ('LAYOUT=STYLE'); PopupStyle.current/motion/banner resolve own entry > old per-layout Classic > global default (old winBanner/winMotion). GameWindow dispatcher + row fades (ActiveWinMotion) use it. No entry = old behaviour (no migration needed).",
+   "check": "PopupPerLayout409Test (4 tests). Thor 3140972f: CHAN=Banner set per layout, survives app restart, ARCTIC still opens its own drawer."
+  },
+  {
+   "id": "D106",
+   "title": "Dot-prefixed games (e.g. .hack//) hidden by the blanket dot-file filter of update 408",
+   "rule": "LIBRARY",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-30 update 409 scanner review",
+   "fix": "isTrashedOrHiddenName now only matches .trashed- / .pending- / ._ / .DS_Store",
+   "check": "TrashedRoms408Test.legitimateDotNamesAndVariantsAreKept"
+  },
+  {
+   "id": "D107",
+   "title": "Popup audit notes: Cinema story column fade-scroll not controller-reachable; Arctic drawer last row clipped; shared window story ends with ... (full text in Details)",
+   "rule": "UX",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-10-30 update 409 Thor batch (docs/POPUP_AUDIT_409.md)"
   }
  ]
 }

@@ -1,3 +1,5 @@
+**UPDATE 409 (30 Oct 2026, newest):** per-layout popup style done (D105), scanner dot-name fix (D106), D97 verified, popup audit doc; release 0.6.60 prepared (see SUMMARY 409 for what was and was not verified; Thor carries the debug build, so the signed APK was checked on emulator-5554 only). OPEN: everything in the 409 "NOT run" list, D98, D107.
+
 **UPDATE 407 (29 Oct 2026, newest, NOT released):** see SUMMARY.md top. Notifications: decision + feature table in docs/PLAY_PROTECT_406.md (no companion app; notify build stays the opt-in; Play Protect for notify NOT verified). QA: before ANY onepress run use `vqa.sh hooks on` then `ready` (the profile picker / paused hooks gave the fake "Box has no focus events" D101); `onepress_all.sh RUN "LAYOUTS" [SEQ]` + `READYKEYS="D U"` for vertical layouts; results .shots/407. OPEN: D102 (CROSS L/R), everything under "NOT done" in SUMMARY 407 (P2 beyond one-press, P3, P4, P5), plus all earlier 400-406 items.
 
 # COWORK_HANDOFF — resume here (updated 28 Oct 2026, 0.6.54 built and CI-green but NOT yet published)

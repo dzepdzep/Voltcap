@@ -482,7 +482,14 @@ fun QuickSettingsCard(
                 val now = PopupStyle.current(lname)
                 add(R1Tile("popupstyle", Icons.Filled.OpenInNew, "Popup\n" + now.short, false,
                     longAction = {
-                        choiceSheet = "Game popup · ${a.homeLayout.label}" to styles.map { st -> R1Choice(st.label, PopupStyle.current(lname) == st) { PopupStyle.set(lname, st) } }
+                        // (Update 409, D105: each layout keeps its own choice; "default" = what the layouts without one use.)
+                        val dflt = PopupStyle.globalDefault()
+                        choiceSheet = "Game popup · ${a.homeLayout.label}" to (
+                            listOf(R1Choice("Use the default (${dflt.short})", !PopupStyle.isOwnChoice(lname)) { PopupStyle.useDefault(lname) }) +
+                            styles.map { st -> R1Choice(st.label, PopupStyle.isOwnChoice(lname) && PopupStyle.current(lname) == st) { PopupStyle.set(lname, st) } } +
+                            (if (PopupStyle.current(lname) != PopupStyle.CLASSIC)
+                                listOf(R1Choice("Make ${PopupStyle.current(lname).short} the default for all layouts", false) { PopupStyle.setGlobalDefault(PopupStyle.current(lname)) })
+                            else emptyList()))
                     }) {
                     if (F.gameWindow.value) PopupStyle.set(lname, styles[(PopupStyle.current(lname).ordinal + 1) % styles.size])
                 })
@@ -2036,34 +2043,77 @@ internal enum class PopupStyle(val label: String, val short: String) {
     CLASSIC("Classic details window", "Classic");
 
     companion object {
-        fun current(layout: String): PopupStyle {
+        private fun entry(layout: String): PopupStyle? =
+            com.shelf.launcher.data.Features.popupStyleByLayout.state.value
+                .firstOrNull { it.substringBefore('=') == layout }
+                ?.substringAfter('=')?.let { n -> values().firstOrNull { it.name == n } }
+
+        /** True when this layout has a style of its own (else it follows the global default, [globalDefault]). */
+        fun isOwnChoice(layout: String) = entry(layout) != null
+
+        /** The old "every layout" settings: Settings › Game window › Its style / Its motion (update 409: the global default). */
+        fun globalDefault(): PopupStyle {
             val F = com.shelf.launcher.data.Features
-            return when {
-                layout in F.classicWindowLayouts.value -> CLASSIC
-                F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.ROW_OPENS -> ROW_OPENS
-                F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL -> ROW_REVEAL
-                F.winMotion.value == com.shelf.launcher.data.Features.WinMotion.SHARED -> SHARED
-                F.winBanner.value -> BANNER
-                else -> OWN
+            return when (F.winMotion.state.value) {
+                com.shelf.launcher.data.Features.WinMotion.ROW_OPENS -> ROW_OPENS
+                com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL -> ROW_REVEAL
+                com.shelf.launcher.data.Features.WinMotion.SHARED -> SHARED
+                else -> if (F.winBanner.state.value) BANNER else OWN
             }
         }
 
+        /** What A opens in [layout]: its own choice, else the old per-layout classic switch, else the global default. */
+        fun current(layout: String): PopupStyle {
+            val F = com.shelf.launcher.data.Features
+            return entry(layout) ?: if (layout in F.classicWindowLayouts.state.value) CLASSIC else globalDefault()
+        }
+
+        /** The row motion [layout] uses (NONE for the other styles). Read by the dispatcher and the row fades. */
+        fun motion(layout: String): com.shelf.launcher.data.Features.WinMotion = when (current(layout)) {
+            ROW_OPENS -> com.shelf.launcher.data.Features.WinMotion.ROW_OPENS
+            ROW_REVEAL -> com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL
+            SHARED -> com.shelf.launcher.data.Features.WinMotion.SHARED
+            else -> com.shelf.launcher.data.Features.WinMotion.NONE
+        }
+
+        /** The banner page is the window for [layout]; also where a row motion has no row to open (unless the layout chose a style itself). */
+        fun banner(layout: String): Boolean {
+            val c = current(layout)
+            return c == BANNER || (c != OWN && c != CLASSIC && !isOwnChoice(layout) && com.shelf.launcher.data.Features.winBanner.state.value)
+        }
+
+        private fun write(layout: String, style: PopupStyle?) {
+            val F = com.shelf.launcher.data.Features
+            val rest = F.popupStyleByLayout.value.filter { it.substringBefore('=') != layout }.toSet()
+            F.popupStyleByLayout.value = if (style == null) rest else rest + "$layout=${style.name}"
+        }
+
+        /** Only this layout changes; the other layouts' styles and the global default stay as they were. */
         fun set(layout: String, style: PopupStyle) {
             val F = com.shelf.launcher.data.Features
+            write(layout, style)
+            // (The old per-layout classic switch is kept in step: Settings › Game window shows the same answer.)
             val classicNow = layout in F.classicWindowLayouts.value
-            when (style) {
-                CLASSIC -> if (!classicNow) F.classicWindowLayouts.toggle(layout)
-                OWN, BANNER, ROW_OPENS, ROW_REVEAL, SHARED -> {
-                    if (classicNow) F.classicWindowLayouts.toggle(layout)
-                    // (The banner page stays as it was under a motion style: it's what shows where the motion can't.)
-                    if (style == OWN || style == BANNER) F.winBanner.value = style == BANNER
-                    F.winMotion.value = when (style) {
-                        ROW_OPENS -> com.shelf.launcher.data.Features.WinMotion.ROW_OPENS
-                        ROW_REVEAL -> com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL
-                        SHARED -> com.shelf.launcher.data.Features.WinMotion.SHARED
-                        else -> com.shelf.launcher.data.Features.WinMotion.NONE
-                    }
-                }
+            if ((style == CLASSIC) != classicNow) F.classicWindowLayouts.toggle(layout)
+        }
+
+        /** Back to the global default for this layout. */
+        fun useDefault(layout: String) {
+            val F = com.shelf.launcher.data.Features
+            write(layout, null)
+            if (layout in F.classicWindowLayouts.value) F.classicWindowLayouts.toggle(layout)
+        }
+
+        /** Makes [style] the global default (every layout without a choice of its own); not for CLASSIC (a per-layout window). */
+        fun setGlobalDefault(style: PopupStyle) {
+            val F = com.shelf.launcher.data.Features
+            if (style == CLASSIC) return
+            F.winBanner.value = style == BANNER
+            F.winMotion.value = when (style) {
+                ROW_OPENS -> com.shelf.launcher.data.Features.WinMotion.ROW_OPENS
+                ROW_REVEAL -> com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL
+                SHARED -> com.shelf.launcher.data.Features.WinMotion.SHARED
+                else -> com.shelf.launcher.data.Features.WinMotion.NONE
             }
         }
     }

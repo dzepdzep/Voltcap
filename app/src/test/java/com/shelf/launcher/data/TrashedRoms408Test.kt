@@ -46,4 +46,22 @@ class TrashedRoms408Test {
         val out = RomLibraryPrefetch.read(f)
         assertEquals(listOf("Pokemon Silver"), out.map { it.name })
     }
+
+    /** Update 409 (P5): a dot-name that is a real game, or a lookalike, is kept; only the known placeholders go. */
+    @Test fun legitimateDotNamesAndVariantsAreKept() {
+        assertFalse(RomScanner.isTrashedOrHiddenName(".hack//Infection.iso"))
+        assertFalse(RomScanner.isTrashedOrHiddenName(".hack GU Vol 1.iso"))
+        assertFalse(RomScanner.isTrashedOrHiddenName("Game (trashed edition).gbc"))
+        assertFalse(RomScanner.isTrashedOrHiddenName("pending-ok.gbc"))
+        assertFalse(RomScanner.isTrashedOrHiddenName(".trashedgame.gbc"))   // no "-": not Android's pattern
+        assertTrue(RomScanner.isTrashedOrHiddenName(".DS_Store"))
+        assertFalse(RomScanner.isTrashedPath("/roms/ps2/.hack GU Vol 1.iso"))
+        assertFalse(RomScanner.isTrashedPath("/roms/gbc/Pokemon Silver (Rev 1).gbc"))
+        val dir = File(tmp.root, "ps2").apply { mkdirs() }
+        File(dir, ".hack GU Vol 1.iso").writeText("x")
+        File(dir, "Pokemon (Rev A).iso").writeText("y")
+        File(dir, ".pending-1-Pokemon (Rev A).iso").writeText("z")
+        val names = RomScanner.scan(tmp.root.path).games.map { File(it.romPath!!).name }.sorted()
+        assertEquals(listOf(".hack GU Vol 1.iso", "Pokemon (Rev A).iso"), names)
+    }
 }

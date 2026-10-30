@@ -76,9 +76,13 @@ class Case402Test {
         assertTrue(from > 0 && to > from)
         val body = s.substring(from, to).lines().filterNot { it.trim().startsWith("//") }.joinToString("\n")
         // the only .background( left is none; the only border is the closed spine's hairline gap
-        assertFalse("a background fill in BoxCase", body.contains(".background("))
+        // (Update 409, D97: the one background left is the closed spine's solid case body in the case's own side material.)
+        assertEquals("only the solid case body", 1, Regex("[.]background[(]").findAll(body).count())
+        assertTrue(body.contains(".background(boxSideTone(g.platform)"))
         assertFalse("a selection outline", body.contains("Color.White.copy(alpha = 0.85f)"))
-        assertEquals("only the hairline gap border", 1, Regex("[.]border[(]").findAll(body).count())
+        // (Update 409: the hairline gap is two vertical separators, not a rectangle round the case.)
+        assertEquals("no rectangle border round a case", 0, Regex("[.]border[(]").findAll(body).count())
+        assertTrue(body.contains("drawBehind"))
         // no flat dark row tint in the sheen
         val sheen = s.substring(s.indexOf("private fun BoxSheen("), s.indexOf("private fun BoxScene(")).lines().filterNot { it.trim().startsWith("//") }.joinToString("\n")
         assertFalse(sheen.contains("drawRect(Color.Black.copy(alpha = 0.12f), a, sz)"))

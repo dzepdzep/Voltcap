@@ -112,7 +112,9 @@ class Physical403Test {
         val box = between(s, "private fun BoxCase(", "private fun smoothUp")
         assertFalse(box.contains("accent"))
         assertFalse(box.contains("focusRing"))
-        assertFalse(box.contains(".background("))
+        // (Update 409: the only fill is the unlit case's solid body in its side material, never the theme accent.)
+        assertEquals(1, Regex("[.]background[(]").findAll(box).count())
+        assertTrue(box.contains(".background(boxSideTone("))
     }
 }
 

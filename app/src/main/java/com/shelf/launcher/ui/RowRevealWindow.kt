@@ -518,5 +518,13 @@ internal fun RowRevealShade(modifier: Modifier) {
  */
 @Composable
 internal fun Modifier.rowRevealFade(): Modifier =
-    if (Features.winMotion.state.value == Features.WinMotion.NONE) this
+    if (ActiveWinMotion.value == Features.WinMotion.NONE) this
     else this.graphicsLayer { alpha = RowReveal.textAlpha() }
+
+/**
+ * Update 409 (D105): the row motion the home layout on screen uses (its own popup style, else the global default). Set by the
+ * home screen from `PopupStyle.motion(layout)`; the row fades read it, so a layout set to another style never fades its parts.
+ */
+internal object ActiveWinMotion {
+    var value by androidx.compose.runtime.mutableStateOf(Features.WinMotion.NONE)
+}
