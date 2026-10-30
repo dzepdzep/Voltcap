@@ -1,3 +1,38 @@
+## Wii Channel palettes + settings — NOT IMPLEMENTED
+
+User confirmed v0.6.64 contains no new Wii colors.
+
+Implement in Home > Layout options > Channel Grid:
+- Background source: Channel colors / Theme / Game art
+- Channel palettes: Original Pale, OLED Black,
+  Light Blue, Light Yellow, Custom
+- Reuse ColorFineTune: HEX, saturation, brightness
+- Remove duplicate/conflicting Dark (OLED) toggle
+- Preserve old chanLight, chanDark, chanArt choices
+- Use a shared palette for background, game tiles,
+  clock, curved bar, buttons, popup and scene veil
+- Automatically ensure readable text and focus rings
+- Show contextual options only; avoid settings clutter
+- Test small screens, controller and light/dark modes
+
+Files to inspect: Features.kt, StyleHomeSettings.kt,
+WinScenesWii.kt, WinScenes.kt and ChannelBackdrop.
+Do not simply recolor the popup alone.
+
+VIDEO QA:
+- Orbit Deck still flickers during navigation.
+- Wii Channel popup uses existing light styling;
+  preserve its proportions and improve art fill.
+- Verify the Artwork Library narrow-screen fix
+  on hardware after v0.6.64.
+
+For next release:
+Commit all actual source changes and SUMMARY.md
+BEFORE creating the release tag. The release script
+alone commits only app/build.gradle.kts.
+Publish full + compat stable APKs only after checks.
+Preserve all prior layout suggestions and ES-DE plan.
+
 # Update 420 (30 Oct 2026) — v0.6.64 RELEASE (very low budget: only P1 done)
 
 ## Done
