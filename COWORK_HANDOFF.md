@@ -1,3 +1,5 @@
+> Update 415 (30 Oct 2026): see SUMMARY top entry. Box Order / dividers done + unit-tested, prewarm unmeasured (P1 open), P2 / P3 mostly not reached, no release.
+
 > Update 412 (30 Oct 2026): see SUMMARY top entry. D108 fixed-partly, D97 / D98 still open (evidence in SUMMARY 412), release 0.6.61 = both APKs.
 
 > Update 410 (30 Oct 2026): see SUMMARY top entry. D97 only improved in the Box; full / compat variants + updater implemented; no release.

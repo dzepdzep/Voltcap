@@ -122,6 +122,9 @@ internal object BoxNav {
     @Volatile var slotBox: IntArray = IntArray(0)
     @Volatile var slotRow: IntArray = IntArray(0)
     @Volatile var slotX: FloatArray = FloatArray(0)
+    /** Update 415: the games left to right as laid out (position -> game index) and back (game index -> position); identity in Original order. */
+    @Volatile var order: IntArray = IntArray(0)
+    @Volatile var pos: IntArray = IntArray(0)
     @Volatile var boxes: Int = 1
     /** Rows deep in the box as drawn (Update 400: 1 / 2 / 3, BoxRows). */
     @Volatile var rows: Int = 2
@@ -159,7 +162,9 @@ private fun boxEnd(box: Int, row: Int, last: Boolean): Int {
     // (This row, else the nearest row that has games.)
     for (pass in 0 until BoxNav.rows.coerceAtLeast(2) * 2) {
         val want = if (pass == 0) row else boxRowByDistance(row, pass)
-        for (i in b.indices) if (b[i] == box && r[i] == want) { if (!last) return i; found = i }
+        // (Update 415: the leftmost / rightmost by position across the row, whatever order the cases were laid out in.)
+        var bx = if (last) -1f else 2f
+        for (i in b.indices) if (b[i] == box && r[i] == want) { val xx = BoxNav.slotX[i]; if (if (last) xx > bx else xx < bx) { bx = xx; found = i } }
         if (found >= 0) return found
     }
     return found
@@ -177,10 +182,12 @@ internal fun cardboardBoxKey(ctx: StyleKeyCtx): Boolean {
         return ctx.take()
     }
     fun sameRow(i: Int) = i in b.indices && b[i] == box && BoxNav.slotRow[i] == row
+    // (Update 415: the neighbour along the row is the next case as laid out, which is the next game only in Original order.)
+    val neighbour = { dir: Int -> BoxNav.pos.getOrNull(f)?.let { BoxNav.order.getOrNull(it + dir) } ?: (f + dir) }
     return when (ctx.key) {
         Key.DirectionLeft, Key.DirectionRight -> {
             val dir = if (ctx.key == Key.DirectionRight) 1 else -1
-            if (sameRow(f + dir)) { BoxNav.knocked = 0; go(f + dir) }
+            if (sameRow(neighbour(dir))) { BoxNav.knocked = 0; go(neighbour(dir)) }
             else {
                 val next = box + dir
                 // The first box's left side: the home screen's own (its menu beside it).
@@ -334,34 +341,78 @@ internal fun caseMm(g: Game, messy: Boolean): CaseMm {
     return CaseMm(len, stand, thick, extra)
 }
 
+/** Update 415: a cardboard divider standing between two size groups (mm, the box's inside, same frame as [BoxSlot]). */
+internal class BoxDivider(val box: Int, val row: Int, val x0: Float, val y0: Float, val len: Float, val stand: Float) {
+    val x1 get() = x0 + BOX_DIVIDER_MM
+    val y1 get() = y0 + len
+}
+
+/** The result of packing: [slots] per game (the game's own index), [dividers], and [order] = the games left to right as laid out (position -> game index). */
+internal class BoxPack(val slots: List<BoxSlot>, val dividers: List<BoxDivider>, val order: IntArray)
+
+internal const val BOX_DIVIDER_MM = 3f
+/** Cases whose lengths fall in the same 20 mm step are one size group (a few mm of difference is not a different size). */
+private const val SIZE_STEP_MM = 20f
+
+internal fun sizeGroup(g: Game): Int = (caseMm(g, false).len / SIZE_STEP_MM).roundToInt()
+
+/** The games' left-to-right order: the category's own ([bySize] false), or grouped by case size, groups in order of first appearance and each group in the category's order. */
+internal fun boxOrder(games: List<Game>, bySize: Boolean): IntArray {
+    if (!bySize) return IntArray(games.size) { it }
+    val groups = games.map { sizeGroup(it) }
+    val first = LinkedHashMap<Int, Int>()
+    for (gr in groups) first.getOrPut(gr) { first.size }
+    return games.indices.sortedWith(compareBy({ first.getValue(groups[it]) }, { it })).toIntArray()
+}
+
 /** Packs the games into boxes: across the back row as many as physically fit (each its own case's thickness), then the front row, then the next box. */
-internal fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean): List<BoxSlot> {
-    val out = ArrayList<BoxSlot>(games.size)
+internal fun packBoxes(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean): List<BoxSlot> =
+    packBoxesFull(games, cam, gapMm, messy, bySize = false, dividers = false).slots
+
+/**
+ * Update 415: the same packing with an order. [bySize] lays the cases out grouped by size (real dimensions untouched: only the order
+ * changes), [dividers] stands a thin cardboard card between two groups that share a row (never where the row wraps).
+ */
+internal fun packBoxesFull(games: List<Game>, cam: BoxCam, gapMm: Float, messy: Boolean, bySize: Boolean, dividers: Boolean): BoxPack {
+    val slots = arrayOfNulls<BoxSlot>(games.size)
+    val divs = ArrayList<BoxDivider>()
+    val order = boxOrder(games, bySize)
     val usable = cam.wMm - 2 * BOX_MARGIN
     val rows = cam.rows.coerceAtLeast(1)
     val gapRows = BoxRows.gapFor(rows)
     var box = 0; var row = 0; var x = 0f
-    for (g in games) {
+    // The back row against the back wall, the front row against the front wall, a middle row in the middle of its lane (Messy: not quite).
+    fun yFor(len: Float, push: Float) = when {
+        row == 0 -> if (rows == 1) minOf(BOX_MARGIN + push, cam.dMm - BOX_MARGIN - len) else BOX_MARGIN + push
+        row == rows - 1 -> cam.dMm - BOX_MARGIN - len - push
+        else -> BOX_MARGIN + row * (cam.lane + gapRows) + (cam.lane - len) / 2f + (push - 3f)
+    }
+    var prev: Game? = null; var prevSlot: BoxSlot? = null
+    for (idx in order) {
+        val g = games[idx]
         val m = caseMm(g, messy)
         // (Never longer than its lane: BoxRows only offers a row count the category's longest case fits.)
         val len = minOf(m.len, cam.lane)
         val stand = m.stand; val thick = m.thick; val extra = m.extra
-        if (x > 0f && x + extra + thick > usable) {
+        val div = dividers && bySize && prev != null && x > 0f && sizeGroup(prev) != sizeGroup(g)
+        val need = extra + thick + (if (div) BOX_DIVIDER_MM + gapMm else 0f)
+        if (x > 0f && x + need > usable) {
             row++; x = 0f
             if (row >= rows) { box++; row = 0 }
+        } else if (div) {
+            val ps = prevSlot!!
+            val dl = maxOf(ps.len, len)
+            // (A divider is a card a little lower than the cases it stands between.)
+            divs += BoxDivider(box, row, -cam.wMm / 2f + BOX_MARGIN + x, yFor(dl, 0f), dl, minOf(ps.stand, stand) * 0.85f)
+            x += BOX_DIVIDER_MM + gapMm
         }
-        // The back row against the back wall, the front row against the front wall, a middle row in the middle of its lane
-        // (Messy: not quite).
         val push = if (messy) (boxJitter(g.stableKey, 6) + 0.5f) * 6f else 0f
-        val y0 = when {
-            row == 0 -> BOX_MARGIN + push
-            row == rows - 1 -> cam.dMm - BOX_MARGIN - len - push
-            else -> BOX_MARGIN + row * (cam.lane + gapRows) + (cam.lane - len) / 2f + (push - 3f)
-        }
-        out += BoxSlot(box, row, -cam.wMm / 2f + BOX_MARGIN + x + extra, thick, y0, len, stand)
+        val sl = BoxSlot(box, row, -cam.wMm / 2f + BOX_MARGIN + x + extra, thick, yFor(len, push), len, stand)
+        slots[idx] = sl
         x += extra + thick + gapMm
+        prev = g; prevSlot = sl
     }
-    return out
+    return BoxPack(slots.map { it!! }, divs, order)
 }
 
 /** The cardboard's own surfaces (generated, tools/box/gen_cardboard.py): its face, its fluted walls, its cut edge. */
@@ -401,7 +452,7 @@ private fun quad(a: Offset, b: Offset, c: Offset, d: Offset) = Path().apply { mo
  * the cut, fluted top edge of its walls, and the floor's shade along the rows' feet (contact shadows).
  */
 @Composable
-private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownBox: Int) {
+private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, dividers: List<BoxDivider>, shownBox: Int) {
     Canvas(Modifier.fillMaxSize()) {
         val c = cam
         val hw = c.wMm / 2f; val d = c.dMm; val H = c.wallH; val t = c.t
@@ -452,6 +503,18 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
             val depth = 14f * k0
             if (toGap) drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.16f), Color.Transparent), startY = a.y, endY = a.y + depth), Offset(a.x, a.y), Size(b.x - a.x, depth))
             else drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.16f)), startY = a.y - depth, endY = a.y), Offset(a.x, a.y - depth), Size(b.x - a.x, depth))
+        }
+
+        // Update 415: cardboard dividers between size groups: the top edge and the face turned toward the middle of the box.
+        for (dv in dividers) {
+            if (dv.box != shownBox) continue
+            val z = dv.stand
+            val top = quad(c.o(dv.x0, dv.y0, z), c.o(dv.x1, dv.y0, z), c.o(dv.x1, dv.y1, z), c.o(dv.x0, dv.y1, z))
+            val faceX = if (dv.x1 <= 0f) dv.x1 else dv.x0
+            val face = quad(c.o(faceX, dv.y0, 0f), c.o(faceX, dv.y1, 0f), c.o(faceX, dv.y1, z), c.o(faceX, dv.y0, z))
+            drawPath(face, Color(0xFF9C7440))
+            drawPath(top, Color(0xFFD2AC74))
+            drawPath(top, Color.Black.copy(alpha = 0.35f), style = androidx.compose.ui.graphics.drawscope.Stroke(1f))
         }
 
         // The walls' insides: back (lit), right (facing the light), left (in its own shade), front (in shade).
@@ -590,17 +653,29 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         val plan = remember(c.games, sizeK, gapMm, messy) { BoxRows.plan(c.games, 420f / sizeK, gapMm, messy) }
         val decision = remember(rowsPref, plan, wPx, hPx, tilt, sizeK, density.density) { BoxRows.decide(rowsPref, plan, wPx, hPx, tilt, sizeK, density.density) }
         val cam = remember(wPx, hPx, tilt, sizeK, decision.rows, plan) { boxCam(wPx, hPx, tilt, sizeK, decision.rows, BoxRows.laneFor(decision.rows, plan)) }
-        val slots = remember(c.games, cam, gapMm, messy) { packBoxes(c.games, cam, gapMm, messy) }
+        val bySize = Features.boxOrder.state.value == Features.BoxOrder.BY_SIZE
+        val dividerOn = Features.boxDividers.state.value
+        val pack = remember(c.games, cam, gapMm, messy, bySize, dividerOn) { packBoxesFull(c.games, cam, gapMm, messy, bySize, dividerOn) }
+        val slots = pack.slots
         val boxes = (slots.lastOrNull()?.box ?: 0) + 1
+        // Update 415: once this category has been still for a moment, the spine pictures of the categories L2 / R2 go to next are decoded
+        // ahead (low priority, off the UI thread, only scans already known), so a cold category's box finds them in memory.
+        val warmCtx = androidx.compose.ui.platform.LocalContext.current
+        LaunchedEffect(c.categoryLabel) {
+            kotlinx.coroutines.delay(BOX_PREWARM_IDLE_MS)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { warmNeighbourSpines(warmCtx, c.state) }
+        }
         SideEffect {
             BoxNav.slotBox = IntArray(slots.size) { slots[it].box }
             BoxNav.slotRow = IntArray(slots.size) { slots[it].row }
             BoxNav.slotX = FloatArray(slots.size) { (slots[it].x0 + slots[it].thick / 2f + cam.wMm / 2f) / cam.wMm }
+            BoxNav.order = pack.order
+            BoxNav.pos = IntArray(pack.order.size).also { p -> pack.order.forEachIndexed { n, g -> p[g] = n } }
             BoxNav.boxes = boxes
             BoxNav.rows = cam.rows
         }
         val box = slots.getOrNull(focus)?.box ?: 0
-        val firstOf = remember(slots) { IntArray(boxes) { b -> slots.indexOfFirst { it.box == b }.coerceAtLeast(0) } }
+        val firstOf = remember(slots, pack) { IntArray(boxes) { b -> pack.order.firstOrNull { slots[it].box == b } ?: 0 } }
         val liftedIdx = if (BoxNav.pull == gKey || BoxNav.flipped == gKey) focus else -1
 
         AnimatedContent(
@@ -629,7 +704,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             }
         ) { (_, shownBox) ->
             Box(Modifier.fillMaxSize()) {
-                BoxBody(cam, mat, slots, shownBox)
+                BoxBody(cam, mat, slots, pack.dividers, shownBox)
                 // Update 414: the cases of this box appear TOGETHER, once each has its picture and spine (BoxReveal): no dark waiting
                 // strips, no cases spawning one by one. Cases seen before are warm (shown at once); a missing / slow picture waits at most BOX_REVEAL_MAX_MS.
                 val inBox = remember(slots, shownBox) { slots.indices.filter { slots[it].box == shownBox }.map { c.games[it].stableKey } }
@@ -707,6 +782,23 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             Spacer(Modifier.height(4.dp))
             Text("A  pull it out\nY  look at its cover", color = Color(0xFF8A7D69), fontSize = 10.sp, lineHeight = 13.sp, fontFamily = FontFamily.Monospace)
         }
+    }
+}
+
+internal const val BOX_PREWARM_IDLE_MS = 600L
+internal const val BOX_PREWARM_MAX = 60
+
+/** Update 415: decodes the real spine scans (already looked up) of the categories next to the current one, nearest first, at most [BOX_PREWARM_MAX]. */
+private fun warmNeighbourSpines(context: android.content.Context, state: com.shelf.launcher.LauncherUiState) {
+    if (LookStyles.spineForAll() || Features.spinesOwn.state.value) return
+    val stops = com.shelf.launcher.data.CategoryStops.stops(state)
+    if (stops.size < 2) return
+    val cur = stops.indexOfFirst { (sp, pl) -> sp == state.specialFilter && pl == state.platformFilter }
+    for (step in intArrayOf(1, -1)) {
+        val (sp, pl) = stops[com.shelf.launcher.data.CategoryStops.stepFrom(cur, step, stops.size)]
+        val games = runCatching { state.copy(specialFilter = sp, platformFilter = pl).visibleGames }.getOrDefault(emptyList())
+        val urls = games.take(BOX_PREWARM_MAX).mapNotNull { g -> HomeScans.of(g.stableKey)?.firstOrNull { it.first == "Spine" }?.second as? String }
+        if (urls.isNotEmpty()) warmSoft(context, urls, 600)
     }
 }
 
@@ -876,6 +968,9 @@ internal fun CardboardBoxSettings() {
     StyleChoice("Rows", Features.BoxRowsPref.values(), Features.boxRows.state.value, { it.label }) { Features.boxRows.value = it }
     MutedNote("Auto: three rows for compact cases (DS, 3DS, Game Boy Advance boxes) when a category fills more than two and they stay readable on this screen, otherwise two. " +
         "A forced 3 that the cases or the screen can't take shows two and says so; 1 gives a single long row.")
+    StyleChoice("Order", Features.BoxOrder.values(), Features.boxOrder.state.value, { it.label }) { Features.boxOrder.value = it }
+    MutedNote("Original order: the cases follow the category's sort order. Grouped by size: cases of the same real size stand together (each group keeps the sort order), so rows pack without gaps; the selection still moves along what you see.")
+    if (Features.boxOrder.state.value == Features.BoxOrder.BY_SIZE) Toggle(Icons.Filled.ViewWeek, "Cardboard dividers", "A thin cardboard card between size groups that share a row.", Features.boxDividers)
     StyleChoice("Packing", Features.BoxArrange.values(), Features.boxArrange.state.value, { it.label }) { Features.boxArrange.value = it }
     MutedNote("Neat: straight and evenly packed. Messy: a little crooked and uneven, as after a rummage.")
     PercentSlider("Camera angle", Features.boxTilt.state.value, { Features.boxTilt.value = it.coerceIn(0, 32) }, min = 0, max = 32,

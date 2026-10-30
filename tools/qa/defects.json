@@ -1328,6 +1328,15 @@
    "status": "fixed-partly",
    "found": "2026-10-30 update 412 Thor frame captures",
    "test": "PlayWhileClosing412Test"
+  },
+  {
+   "id": "D109",
+   "title": "Cardboard Box cold category can still show an empty box for 1-2 s; neighbour-category spine prewarm added in 415 but not measured, composition cost (~19 ms / case, debug) unchanged",
+   "rule": "UX",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-10-30 update 415 (follow-up of 414)",
+   "test": "BoxPack415Test (packing only)"
   }
  ]
 }

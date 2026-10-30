@@ -1911,6 +1911,11 @@ object Features {
     val boxLabel = EnumPref("box_label", BoxLabel.STICKER, BoxLabel.values())
     /** Update 330: a strip of tape and a few scuffs on the box (off: a clean new box). */
     val boxWear = BoolPref("box_wear", false)
+    /** Update 415: Cardboard box order: the category's own, or the cases grouped by real size (same dimensions, only the order differs). */
+    enum class BoxOrder(val label: String) { ORIGINAL("Original order"), BY_SIZE("Grouped by size") }
+    val boxOrder = EnumPref("box_order", BoxOrder.ORIGINAL, BoxOrder.values())
+    /** Update 415: a thin cardboard divider between size groups that share a row (Grouped by size only). */
+    val boxDividers = BoolPref("box_dividers", true)
     /** Update 330: ◀ ▶ past a box's edge: on into the next box at once, or after a knock against its wall. */
     enum class BoxSwitch(val label: String) { EDGE("At once"), KNOCK("After a knock") }
     val boxSwitch = EnumPref("box_switch", BoxSwitch.EDGE, BoxSwitch.values())

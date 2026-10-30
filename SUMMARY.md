@@ -1,5 +1,13 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 30 Oct 2026 (415): Cardboard Box mixed-size packing (order + dividers), neighbour-category spine prewarm. NOT released (v0.6.61 latest)
+
+**P0 done (code + unit tests + Pocket Classic MC94516AQF091001112):** new Layout option `Order` (`Features.boxOrder`, default **Original order** = byte-identical to update 414 packing, test `originalOrderIsTheOldPackingExactly`) or **Grouped by size** (`BY_SIZE`: cases of the same real size, 20 mm length steps via `CaseCatalog` / `caseMm`, stand together; groups in order of first appearance, each group keeps the category's sort order). Optional `Cardboard dividers` (`Features.boxDividers`, default on, shown only in Grouped mode): a thin card between two groups that share a row, never where a row wraps, 85 % of the lower neighbour's height. Real case sizes / depths / artwork untouched (test compares thick / len / stand with the plain packing). D-pad: ◀ ▶ follows the laid-out order (`BoxNav.order` / `pos`), first / last of a box by x position, ▲ ▼ nearest x, box swipe / arrows go to the leftmost case of the box (`firstOf`). `packBoxes` kept as a wrapper over `packBoxesFull`. Also fixed an old 1-row Messy overflow (a case's front end could pass the box wall by up to 6 mm; clamped).
+**Checked:** `BoxPack415Test` (4: original = old, grouped is a permutation with contiguous groups and per-group order, no overlap / inside the box / real sizes for 1-3 rows Neat + Messy, dividers only between groups and never touching a case), BoxArtLib395 / BoxRows400 / BoxReveal414 / Physical403 / Case402 / CategoryStable394 and the whole `testDebugUnitTest` green, assembleDebug OK. Classic: Grouped on the ALL category, 8 boxes: GB / GBC / GBA group in boxes 1-3, SNES group in boxes 5-7 (`.shots/415/`), 45-press D-pad sweeps cross boxes in order and wrap (Endless). Classic restored (snapshot restore, `box_order` back to ORIGINAL, hooks paused, preview ended).
+**P1 partly:** `warmNeighbourSpines` (StyleCardboardBox.kt): 600 ms after a category has been on screen, the already-known real spine scans of the next / previous category (max 60 each, nearest first) are decoded at low priority off the UI thread with the same Coil key `rememberSoftLoad` reads. NOT measured: whether it removes the empty-box wait (a keycode 105 R2 press on the Classic did not change category, and the QA category hook is not the L2 / R2 path), release-build timing, console-spine (`SpineCache.titled`) prewarm, composition prewarm (the ~19 ms / case Case3D cost stays). So P1 stays OPEN.
+**NOT done / NOT verified:** no divider frame seen on hardware (the ALL boxes had no group boundary inside a row; unit-tested only), Lite mode and rapid A/B on the grouped box, pickup / return with a case whose slot is not its game index order (pickup is keyed by game, code unchanged), Settings page screenshot of the new rows, mixed N64 / NES / DS / Switch / PS collection run, P2 other consoles, P3 (D108 on other layouts, Wii dark, D97, D98, D107, D102, D86, D96), static_checks / test_qa (no Python on this machine), Thor. **No release:** release validation (open P1, unverified hardware items, no Python QA tools) cannot pass; no tag, no APKs.
+**To copy (done, `src_copy/` = `app/`):** ui/StyleCardboardBox.kt, data/Features.kt; test `app/src/test/.../ui/BoxPack415Test.kt`.
+
 ## Update — 30 Oct 2026 (414): Cardboard Box opens without the dark-slab / cascading cases (Pocket Classic MC94516AQF091001112)
 
 **Reproduced (60 fps screenrecord, `.shots/414/sheet2.png`):** on a category change in the Cardboard box the new category's cases first showed as big dark rectangles (every SNES spine was the dark `SpineCache.WAITING` strip, 22 side by side = one slab), then popped in over ~15 frames, rows one after the other. Cause measured with temporary logs: `Case3D` composes + recomposes ~9x per case (≈19 ms main-thread per case on the Classic: 54 cases ≈ 1 s) and every case also decoded its front + back although a resting case stands edge-on.
@@ -15043,3 +15051,25 @@ Short index of what those two files describe. They have the full details.
 - **Device**: performance tiers, AutoTDP, CPU tuner, fan curve, per-game profiles, 80 % charge limit, controller RGB lights, FPS overlay.
 - **Other**: quick resume (RetroArch), manuals, BIOS check, weekly recap, stats, Discord status, phone web remote, crash guard / safe mode, diagnostics report, backup and restore.
 - **Still open in the checklist**: delete `SwitchHome.kt` from the project sources (it's still in `app/src`), raise `versionCode`, release signing, the real-device test list, release notes.
+
+## NEXT UPDATE — PLANNED: Smart Physical Packing (NOT IMPLEMENTED)
+
+Improve Cardboard Box for mixed-console collections:
+- Reuse existing Case3D models and CaseCatalog dimensions.
+- Preserve genuine case sizes and physical proportions.
+- Group similarly sized cases naturally.
+- Adapt row depths, spacing and box capacity.
+- Optional cardboard dividers between very different sizes.
+- Keep original game sorting as an alternative.
+- Prevent overlapping, floating and stretched cases.
+- Preserve the existing pickup/return animations.
+- Test NES, SNES, N64, Game Boy, GBA, DS, Switch
+  and PlayStation cases together on Pocket Classic.
+
+Also improve cold-category loading:
+- Avoid showing an empty box for 1–2 seconds.
+- Investigate safe prewarming of upcoming categories.
+- Eliminate the remaining two-step case appearance.
+- Keep rendering responsive on weaker handhelds.
+
+This work is requested for the NEXT update, not Update 414.
