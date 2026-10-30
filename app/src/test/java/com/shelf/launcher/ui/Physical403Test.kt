@@ -72,28 +72,16 @@ class Physical403Test {
         for (x0 in listOf(10f, 120f, 300f)) { val (x, left) = boxSideFaceX(x0, x0 + 20f); assertEquals(x0, x, 0f); assertTrue(left) }
     }
 
-    @Test fun sidesAndEndsAreToneByMaterialNotFixedBlack() {
+    @Test fun noDuplicateFaceGeometryAroundTheCases() {
         val s = source("StyleCardboardBox.kt")
-        val faces = between(s, "private fun BoxCaseEnds(", "private fun BoxSheen")
-        assertFalse(faces.contains("0xFF0C0C0E"))
-        assertFalse(faces.contains("0xFF16171A"))
-        assertTrue(faces.contains("boxSideTone("))
-    }
-
-    // ---- no synthetic row-wide plates -----------------------------------------------------------------------------------
-
-    @Test fun sheenIsPerCaseInsideItsOwnFace() {
-        val s = source("StyleCardboardBox.kt")
-        val sheen = between(s, "private fun BoxSheen(", "private fun BoxScene(")
-        assertFalse("no row bounding rectangle", sheen.contains("r.maxOf") || sheen.contains("r.first().x0"))
-        assertFalse("no 45 % black wall bar", sheen.contains("0.45f"))
-        assertTrue(sheen.contains("for (i in slots.indices)"))
-        assertTrue(sheen.contains("s.x0, s.y0, s.stand"))
+        assertFalse(s.contains("fun BoxCaseEnds("))
+        assertFalse(s.contains("fun BoxCaseSides("))
+        assertFalse(s.contains("fun BoxSheen("))
     }
 
     @Test fun contactShadowsAreAtEachCaseFootNotRowWide() {
         val s = source("StyleCardboardBox.kt")
-        val body = between(s, "private fun BoxBody(", "private fun BoxCaseEnds(")
+        val body = between(s, "private fun BoxBody(", "internal fun boxSideTone(")
         assertFalse("row-wide shadow bands are gone", body.contains("rowsHere"))
         assertFalse(body.contains("r.maxOf { it.y1 }"))
         assertFalse(body.contains("A row that isn't full"))
@@ -102,9 +90,9 @@ class Physical403Test {
 
     @Test fun oneCasePerSlotKeyedByGame() {
         val s = source("StyleCardboardBox.kt")
-        assertTrue(s.contains("key(g.stableKey) {\n                        BoxCase("))
-        // only the lifted case is drawn above the row, and only once
-        assertEquals(1, Regex("Modifier\\.zIndex\\(5f\\)").findAll(between(s, "private fun BoxCase(", "private fun smoothUp")).count())
+        assertTrue(Regex("key\\(g\\.stableKey\\) \\{\\s*BoxCase\\(").containsMatchIn(s))
+        // (Update 411: the case in the box is one object; only the focused / lifted one is raised above the row.)
+        assertEquals(1, Regex("[.]zIndex\\(").findAll(between(s, "private fun BoxCase(", "private fun smoothUp")).count())
     }
 
     @Test fun focusHasNoThemeAccentFillInCardboardBox() {
@@ -112,9 +100,7 @@ class Physical403Test {
         val box = between(s, "private fun BoxCase(", "private fun smoothUp")
         assertFalse(box.contains("accent"))
         assertFalse(box.contains("focusRing"))
-        // (Update 409: the only fill is the unlit case's solid body in its side material, never the theme accent.)
-        assertEquals(1, Regex("[.]background[(]").findAll(box).count())
-        assertTrue(box.contains(".background(boxSideTone("))
+        assertEquals(0, Regex("[.]background[(]").findAll(box).count())
     }
 }
 

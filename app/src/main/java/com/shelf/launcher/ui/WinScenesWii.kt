@@ -55,10 +55,11 @@ private val WiiBlue = Color(0xFF3AA6E8)
 @Composable
 internal fun WiiChannelPreview(ctx: WinSceneCtx) {
     val pal = wiiPalette(Features.chanLight.state.value && !Features.chanDark.state.value)
-    val w = minOf(ctx.maxW, 860.dp)
-    val h = minOf(ctx.maxH, 540.dp)
-    val compact = h < 380.dp
-    val shape = RoundedCornerShape(26.dp)
+    // Update 411: the real Wii Channel Preview is a compact, nearly 4:3 white card, not a full-screen dashboard.
+    val w = minOf(ctx.maxW, 440.dp)
+    val h = minOf(ctx.maxH * 0.74f, 330.dp)
+    val compact = h < 300.dp
+    val shape = RoundedCornerShape(22.dp)
     val play = ctx.buttons.firstOrNull { it.primary }
     val back = ctx.buttons.firstOrNull { it.back }
     val small = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
@@ -73,17 +74,17 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
             alpha = (k * 2.4f).coerceIn(0f, 1f)
             this.shape = shape; clip = true
             shadowElevation = 20.dp.toPx() * e
-        }.background(pal.surface).border(1.dp, pal.edge, shape).padding(horizontal = 22.dp, vertical = if (compact) 10.dp else 16.dp)
+        }.background(pal.surface).border(1.dp, pal.edge, shape).padding(horizontal = 14.dp, vertical = if (compact) 8.dp else 12.dp)
     ) {
         // The big preview: the channel's banner whole, in a rounded well with a blue rim.
         Box(
-            Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(pal.well)
-                .border(3.dp, WiiBlue.copy(alpha = 0.55f), RoundedCornerShape(22.dp))
+            Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(pal.well)
+                .border(2.dp, WiiBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
         ) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.wide ?: ctx.backdrop ?: ctx.cover
                 if (art != null) AsyncImage(
-                    rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize().padding(6.dp), contentScale = ContentScale.Fit
+                    rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit
                 )
             } else {
                 ctx.pageBody(Modifier.fillMaxSize())
@@ -91,33 +92,33 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         if (ctx.page == WinPage.MAIN) {
-            // The channel's name under the picture (never over it), with its facts on one line.
-            StableFullText(ctx.name, color = pal.ink, fontSize = if (compact) 15.sp else 19.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-            FullText(listOfNotNull(ctx.console, ctx.year, ctx.genres?.substringBefore(","), "Played " + ctx.played).joinToString("  ·  "),
-                color = pal.muted, fontSize = 12.sp)
-            Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+            // The banner carries the title like the real preview; without banner art the name is the one line under the picture.
+            if ((ctx.wide ?: ctx.backdrop ?: ctx.cover) == null) {
+                StableFullText(ctx.name, color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                Spacer(Modifier.height(4.dp))
+            }
             // The compact secondary keys: one line that scrolls sideways, each key as wide as its whole name.
             if (small.isNotEmpty()) {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     small.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(
                                 Modifier.clip(RoundedCornerShape(50)).background(if (on) pal.keyOn else pal.key)
                                     .border(if (on) 2.dp else 1.dp, if (on) WiiBlue else if (a.urgent) WiiBlue.copy(alpha = 0.7f) else pal.edge, RoundedCornerShape(50))
-                                    .padding(horizontal = 12.dp, vertical = 5.dp),
+                                    .padding(horizontal = 9.dp, vertical = 3.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(a.icon, null, tint = pal.ink, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(a.label, color = pal.ink, fontSize = 12.sp, softWrap = false)
+                                Icon(a.icon, null, tint = pal.ink, modifier = Modifier.size(13.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(wiiSmallLabel(a.label), color = pal.ink, fontSize = 11.sp, softWrap = false)
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+                Spacer(Modifier.height(6.dp))
             }
             // Two prominent keys along the bottom: Wii Menu (back to the tile) and Start.
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (back != null) WiiBigKey(back, "Wii Menu", pal, Modifier.weight(1f), compact)
                 if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact)
             }
@@ -137,10 +138,13 @@ private fun WiiBigKey(a: WinAction, label: String, pal: WiiPalette, modifier: Mo
             Modifier.fillMaxWidth().clip(s)
                 .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
                 .border(if (on) 3.dp else 1.5.dp, if (on) WiiBlue else pal.edge, s)
-                .padding(vertical = if (compact) 8.dp else 13.dp),
+                .padding(vertical = if (compact) 6.dp else 9.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(label, color = pal.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.Bold, softWrap = false)
+            Text(label, color = pal.ink, fontSize = if (compact) 14.sp else 16.sp, fontWeight = FontWeight.Bold, softWrap = false)
         }
     }
 }
+
+/** Update 411: the compact VoltCap keys under the Wii preview use the short names (Config, Saves); the handlers are the existing ones. */
+private fun wiiSmallLabel(l: String) = when (l) { "Options" -> "Config"; "Save sync" -> "Saves"; else -> l }

@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -494,44 +495,7 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, shownB
     }
 }
 
-/** The cases' ends toward the camera (between the rows) and the sheen and shade over the spines, drawn round the spines. */
-@Composable
-private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, shownBox: Int, lifted: Int, mat: BoxMaterials) {
-    Canvas(Modifier.fillMaxSize()) {
-        val c = cam
-        for (i in slots.indices) {
-            val s = slots[i]
-            if (s.box != shownBox || i == lifted) continue
-            // The end that faces the gap between the rows (seen from above it: the camera is over the gap).
-            // (Update 400: whichever end faces the camera's axis; a case lying across it shows neither.)
-            val y = if (s.y1 < c.yc) s.y1 else s.y0
-            val seen = s.y1 < c.yc || s.y0 > c.yc
-            if (!seen) continue
-            val p = quad(c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), c.o(s.x0, y, 0f))
-            val tone = boxSideTone(games.getOrNull(i)?.platform, games.getOrNull(i)?.stableKey?.let { BoxTones.map[it] })
-            drawPath(p, Brush.linearGradient(listOf(tone.first, tone.second), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
-            // Update 410 (D97): the end is a closed face of the shell, not a blank wedge: the lip a little in from the top and the
-            // seam where the shell meets the base, as thin shaded lines across it.
-            for ((t, a) in listOf(0.12f to 0.28f, 0.88f to 0.35f)) {
-                val z = s.stand * (1f - t)
-                drawLine(Color.Black.copy(alpha = a), c.o(s.x0, y, z), c.o(s.x1, y, z), 1f)
-            }
-            val zl = s.stand * 0.86f
-            drawLine(Color.White.copy(alpha = 0.1f), c.o(s.x0, y, zl), c.o(s.x1, y, zl), 1f)
-            drawLine(Color.Black.copy(alpha = 0.6f), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), 1f)
-            drawLine(Color.Black.copy(alpha = 0.35f), c.o(s.x0, y, s.stand), c.o(s.x0, y, 0f), 1f)
-            // Its top edge catching the light.
-            drawLine(Color.White.copy(alpha = 0.16f), c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), 1f)
-        }
-    }
-}
 
-/**
- * The side face of each case toward the middle of the box (Update 395): the camera is over the middle, so a case left of it
- * shows its right side and one right of it its left side wherever a lower neighbour doesn't hide it. Drawn from the same
- * geometry (x, y, standing height) as the spine, so a tall case beside a short one stands as a solid body, not a floating
- * edge over the dark floor. Lit from the upper left: faces turned left are lighter; dark where they meet the floor.
- */
 /**
  * Update 403: the colour of a case's side / end by what it is made of (lit edge, then the shade toward the floor). Cardboard boxes
  * (N64, GBA, SNES...) show cardboard, plastic cases a mid grey: the earlier near-black gradient on every case read as hollow
@@ -561,52 +525,7 @@ internal const val BOX_SIDE_KEEP = 0.7f
 internal fun boxSideFaceX(s0: Float, s1: Float): Pair<Float, Boolean> =
     if ((s0 + s1) / 2f > 0f) s0 to true else s1 to false
 
-@Composable
-private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, shownBox: Int, lifted: Int) {
-    Canvas(Modifier.fillMaxSize()) {
-        val c = cam
-        for (i in slots.indices) {
-            val s = slots[i]
-            if (s.box != shownBox || i == lifted) continue
-            val (xb, facesLeft) = boxSideFaceX(s.x0, s.x1)
-            // Update 405: only the rim of the wall (the top ~30 % of its fall to the floor), attached to the top face. The whole wall down
-            // to the floor read as an empty slab / detached block beside and under the cases (owner, 405).
-            val zb = s.stand * BOX_SIDE_KEEP
-            val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, zb), c.o(xb, s.y0, zb))
-            val tone = boxSideTone(games.getOrNull(i)?.platform, games.getOrNull(i)?.stableKey?.let { BoxTones.map[it] })
-            val topC = if (facesLeft) tone.first else mix(tone.first, tone.second, 0.45f)
-            drawPath(p, Brush.verticalGradient(listOf(topC, tone.second), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, zb)))
-            // The rim where the top face turns into the side: the plastic edge catching the light.
-            drawLine(Color.White.copy(alpha = if (facesLeft) 0.2f else 0.1f), c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), 1f)
-        }
-    }
-}
 
-/**
- * The plastic's sheen over each case's own top face, and a little shade on the cases nearest the walls.
- * Update 403: drawn PER CASE inside that case's own rectangle. It used to be one rectangle over each whole row (its bounding
- * box, empty floor included) with a 45 % black bar at the row's left end: that was the flat dark plate / lighter block seen on
- * the floor beside and below the cases (reference photos 02-04).
- */
-@Composable
-private fun BoxSheen(cam: BoxCam, slots: List<BoxSlot>, shownBox: Int, lifted: Int) {
-    Canvas(Modifier.fillMaxSize()) {
-        val c = cam
-        val w = c.wMm / 2f
-        for (i in slots.indices) {
-            val s = slots[i]
-            if (s.box != shownBox || i == lifted) continue
-            val a = c.o(s.x0, s.y0, s.stand); val b = c.o(s.x1, s.y1, s.stand)
-            val sz = Size(b.x - a.x, b.y - a.y)
-            if (sz.width <= 0f || sz.height <= 0f) continue
-            drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.White.copy(alpha = 0.04f), Color.Transparent),
-                start = a, end = Offset(a.x + sz.width * 0.6f, b.y)), a, sz)
-            // Darker toward the walls (less light reaches in there): only the case's own face, never the floor.
-            val edge = (1f - ((w - kotlin.math.abs((s.x0 + s.x1) / 2f)) / 90f)).coerceIn(0f, 1f)
-            if (edge > 0f) drawRect(Color.Black.copy(alpha = 0.22f * edge), a, sz)
-        }
-    }
-}
 
 @Composable
 private fun BoxScene(c: StyleCtx, modifier: Modifier) {
@@ -711,8 +630,6 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         ) { (_, shownBox) ->
             Box(Modifier.fillMaxSize()) {
                 BoxBody(cam, mat, slots, shownBox)
-                BoxCaseSides(cam, slots, c.games, shownBox, if (shownBox == box) liftedIdx else -1)
-                BoxCaseEnds(cam, slots, c.games, shownBox, if (shownBox == box) liftedIdx else -1, mat)
                 // The spines (the case you're on, and one coming out, drawn by itself over them).
                 for (i in slots.indices) {
                     val sl = slots[i]
@@ -726,7 +643,6 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
                         )
                     }
                 }
-                BoxSheen(cam, slots, shownBox, if (shownBox == box) liftedIdx else -1)
             }
         }
 
@@ -806,18 +722,17 @@ private fun BoxCase(
     // (Update 402: a case pulled from its cover-turned state keeps that turn until the flight takes over.)
     val flippedNow = on && (BoxNav.flipped == k || (pulled && BoxNav.startYaw < 89f))
     // 0 in its slot … PEEK lit … 1 out of the box and turned.
-    val peek = 0.1f
-    // Update 402: pulled from its slot it does NOT rise and turn inside the box first (that was a separate cutscene before the
-    // flight): the flight starts at once from the lit case where it stands, spine-on.
-    val target = when { flippedNow -> 1f; on -> peek; else -> 0f }
+    // Update 411: no automatic "peek" — the focused case is only highlighted (the others dim a little) and stays in its slot until
+    // A / Y moves it. The case is ONE Case3D object resting and lifted, so nothing is swapped or spawned part-way up.
+    val target = if (flippedNow) 1f else 0f
     val rise = remember { Animatable(0f) }
     LaunchedEffect(target) {
         if (!animate) { rise.snapTo(target); return@LaunchedEffect }
-        // The case before goes back down first, then this one comes up.
-        if (target in 0.01f..peek && rise.value < 0.01f) kotlinx.coroutines.delay((160 / speed).toLong())
-        val ms = ((if (target > peek || rise.value > peek) 900 else 360) / speed).toInt()
+        // Time proportional to the way left, so a reversal mid-way retraces the same path without a jump.
+        val ms = (900 * kotlin.math.abs(target - rise.value) / speed).toInt().coerceAtLeast(1)
         rise.animateTo(target, tween(ms, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
     }
+    val dim by animateFloatAsState(if (on) 0f else 0.14f, if (animate) tween((220 / speed).toInt()) else tween(0), label = "boxDim")
     val flip by animateFloatAsState(if (flippedNow) 1f else 0f, if (animate) tween((520 / speed).toInt(), delayMillis = (500 / speed).toInt()) else tween(0), label = "boxFlip")
     var warm by remember(k) { mutableStateOf(false) }
     LaunchedEffect(on) { if (on) { kotlinx.coroutines.delay(220); warm = true } else warm = false }
@@ -826,89 +741,63 @@ private fun BoxCase(
     val z = sl.stand
     val left = cam.sx(sl.x0, z); val right = cam.sx(sl.x1, z)
     val top = cam.sy(sl.y0, z); val bottom = cam.sy(sl.y1, z)
-    val lit = on || rise.value > 0.001f
     val x0 = with(density) { left.toDp() }; val y0 = with(density) { top.toDp() }
     val wDp = with(density) { (right - left).toDp() }; val hDp = with(density) { (bottom - top).toDp() }
-    if (!lit) Box(
+    // Update 411: ONE real Case3D (the catalog's thickness / console geometry, spine on the spine face, solid top / bottom / back)
+    // resting and lifted alike; the slot-sized outer box takes the taps and carries the lift, the case itself is as wide as its front.
+    val aspect = remember(k) { case3dAspect(g, false) }
+    val outMm = (cam.wallH - z + 150f) * liftK
+    val caseLenPx = bottom - top
+    val caseW = caseLenPx * aspect
+    val cxPx = (left + right) / 2f; val cyPx = (top + bottom) / 2f
+    Box(
         Modifier.offset(x0, y0).size(wDp, hDp)
-            .graphicsLayer { rotationZ = jr }
-            // Update 409 (D97): the case is a solid body — where its spine picture is narrower than its slot (SpineSlot keeps the
-            // picture's own shape) the margin is the case's own side material, not a see-through gap whose shading / hairlines
-            // read as a thin rectangle round the case.
-            .background(boxSideTone(g.platform, BoxTones.map[k]).let { mix(it.first, it.second, 0.35f) })
-            .pointerInput(index) { detectTapGestures { onTap() } }
+            .zIndex(if (rise.value > 0.001f) 5f else 0f)
+            .graphicsLayer {
+                val r = rise.value
+                val up = smoothUp(r) * outMm
+                // Where its middle is drawn at that height (perspective: away from the camera's axis as it nears it).
+                val kz = cam.k(z + up) / cam.k(z)
+                scaleX = kz; scaleY = kz
+                val axX = cam.cx; val axY = cam.sy(cam.yc, 0f)
+                // (Only part of the drift away from the camera's axis, and never off the screen.)
+                val m = 10.dp.toPx()
+                fun keepIn(t: Float, mid: Float, half: Float, room: Float): Float {
+                    if (room <= 0f) return t
+                    val lo = half + m - mid; val hi = room - m - half - mid
+                    return if (lo > hi) (lo + hi) / 2f else t.coerceIn(lo, hi)
+                }
+                translationX = keepIn((cxPx - axX) * (kz - 1f) * 0.3f, cxPx, caseW * kz / 2f, cam.cx * 2f)
+                translationY = keepIn((cyPx - axY) * (kz - 1f) * 0.3f, cyPx, caseLenPx * kz / 2f, cam.vh)
+                rotationZ = jr * (1f - r)
+            }
+            .pointerInput(index) { detectTapGestures { if (flip > 0.5f) BoxNav.flipped = null else onTap() } },
+        contentAlignment = Alignment.Center
     ) {
-        GameSpine(g, physical, Modifier.fillMaxSize(), onTone = { BoxTones.map[k] = it })
-        // The hairline gap to the next case.
-        // (Update 409, D97: only the two vertical separators — the full rectangle read as an outline round the case.)
-        Box(Modifier.fillMaxSize().drawBehind {
-            val lw = 0.6.dp.toPx(); val col = Color.Black.copy(alpha = 0.55f)
-            drawLine(col, Offset(0f, 0f), Offset(0f, size.height), lw)
-            drawLine(col, Offset(size.width, 0f), Offset(size.width, size.height), lw)
-        })
-    }
-    else {
-        // (Update 402: no dark / coloured slot rectangle behind a lifted case — the empty place is just the box floor.)
-        val aspect = remember(k) { case3dAspect(g, false) }
-        // Lifting: straight up first (toward you — nearer the camera, so bigger), then turning toward its cover.
-        val outMm = (cam.wallH - z + 150f) * liftK
-        val caseLenPx = bottom - top
-        val caseW = caseLenPx * aspect
-        val cxPx = (left + right) / 2f; val cyPx = (top + bottom) / 2f
-        Box(
-            Modifier.zIndex(5f)
-                .offset(with(density) { (cxPx - caseW / 2f).toDp() }, y0)
-                .size(with(density) { caseW.toDp() }, hDp)
-                .graphicsLayer {
-                    val r = rise.value
-                    val up = smoothUp(r) * outMm
-                    // Where its middle is drawn at that height (perspective: away from the camera's axis as it nears it).
-                    val kz = cam.k(z + up) / cam.k(z)
-                    scaleX = kz; scaleY = kz
-                    val axX = cam.cx; val axY = cam.sy(cam.yc, 0f)
-                    // (Only part of the drift away from the camera's axis: lifted straight up, it should stay over its slot
-                    // to the eye — the full drift sent a case at the box's corner flying off over the flap.)
-                    // Update 341: …but never off the screen (a case from the front row, lifted and turned to its cover,
-                    // was cut off at the bottom edge).
-                    val m = 10.dp.toPx()
-                    fun keepIn(t: Float, mid: Float, half: Float, room: Float): Float {
-                        if (room <= 0f) return t
-                        val lo = half + m - mid; val hi = room - m - half - mid
-                        return if (lo > hi) (lo + hi) / 2f else t.coerceIn(lo, hi)
-                    }
-                    translationX = keepIn((cxPx - axX) * (kz - 1f) * 0.3f, cxPx, caseW * kz / 2f, cam.cx * 2f)
-                    translationY = keepIn((cyPx - axY) * (kz - 1f) * 0.3f, cyPx, caseLenPx * kz / 2f, cam.vh)
-                    rotationZ = jr * (1f - r)
-                }
-                .pointerInput(index) { detectTapGestures { if (flip > 0.5f) BoxNav.flipped = null else onTap() } }
-        ) {
-            // Its shadow on the cases below, further off and softer the higher it is.
-            Canvas(Modifier.fillMaxSize()) {
-                val r = smoothUp(rise.value)
-                val sw = (right - left) * (1f + 0.6f * r)
-                // Update 409 (D97): a feathered shadow (layers growing out, each faint) — the hard rounded rectangle, wider than the
-                // 3D case, showed as a thin dark rectangle round the lifted case's neighbours.
-                val base = 0.2f * (1f - r * 0.5f)
-                val layers = 6
-                val step = 2.5f + 5f * r
-                for (li in 0 until layers) {
-                    val grow = (layers - 1 - li) * step
-                    drawRoundRect(Color.Black.copy(alpha = base / layers),
-                        Offset(size.width / 2f - sw / 2f + 30f * r - grow, 22f * r - grow),
-                        Size(sw + 2f * grow, size.height + 2f * grow), androidx.compose.ui.geometry.CornerRadius(8f + grow))
-                }
+        // Its shadow on the cases below (only while it is up: nothing is drawn for a resting case).
+        Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)) {
+            val r = smoothUp(rise.value)
+            if (r < 0.001f) return@Canvas
+            val sw = (right - left) * (1f + 0.6f * r)
+            val base = 0.2f * (1f - r * 0.5f)
+            val layers = 6
+            val step = 2.5f + 5f * r
+            for (li in 0 until layers) {
+                val grow = (layers - 1 - li) * step
+                drawRoundRect(Color.Black.copy(alpha = base / layers),
+                    Offset(size.width / 2f - sw / 2f + 30f * r - grow, 22f * r - grow),
+                    Size(sw + 2f * grow, size.height + 2f * grow), androidx.compose.ui.geometry.CornerRadius(8f + grow))
             }
-            val cover = c.cover(g)
-            val back = remember(k, physical) { defaultCaseBack(g, physical, cover, aspect) }
-            Box(Modifier.fillMaxSize().gameOrigin(k, on)) {
-                Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
-                    yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, realFront = true, back = back, fill = 1f)
-            }
-            // (Update 402: no rectangle round the lit case — it sat off the lifted case's own bounds and read as a block.
-            // Focus is shown by the lift itself.)
         }
-        if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
+        val cover = c.cover(g)
+        val back = remember(k, physical) { defaultCaseBack(g, physical, cover, aspect) }
+        Box(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp).gameOrigin(k, on)) {
+            Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
+                yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, shadeOf = { dim },
+                realFront = true, back = back, fill = 1f)
+        }
     }
+    if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
 }
 
 /** Lifting: up over the first 60 % of the way (the peek is the start of it). */

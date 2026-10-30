@@ -68,29 +68,25 @@ class Case402Test {
         return roots.map { File(it + name) }.first { it.exists() }.readText()
     }
 
-    /** The regression for "a coloured block behind the selected game": the lit case draws no fill / outline of its own. */
+    /** The regression for "a coloured block behind the selected game": the case draws no fill / outline of its own. */
     @Test fun cardboardBoxSelectedCaseHasNoPlateOrOutline() {
         val s = source("StyleCardboardBox.kt")
         val from = s.indexOf("private fun BoxCase(")
         val to = s.indexOf("private fun smoothUp")
         assertTrue(from > 0 && to > from)
         val body = s.substring(from, to).lines().filterNot { it.trim().startsWith("//") }.joinToString("\n")
-        // the only .background( left is none; the only border is the closed spine's hairline gap
-        // (Update 409, D97: the one background left is the closed spine's solid case body in the case's own side material.)
-        assertEquals("only the solid case body", 1, Regex("[.]background[(]").findAll(body).count())
-        assertTrue(body.contains(".background(boxSideTone(g.platform, BoxTones.map[k])"))
+        // (Update 411: a resting case is the same Case3D as a lifted one; no fill, border or flat spine of its own.)
+        assertEquals("no fill", 0, Regex("[.]background[(]").findAll(body).count())
+        assertEquals("no border", 0, Regex("[.]border[(]").findAll(body).count())
         assertFalse("a selection outline", body.contains("Color.White.copy(alpha = 0.85f)"))
-        // (Update 409: the hairline gap is two vertical separators, not a rectangle round the case.)
-        assertEquals("no rectangle border round a case", 0, Regex("[.]border[(]").findAll(body).count())
-        assertTrue(body.contains("drawBehind"))
-        // no flat dark row tint in the sheen
-        val sheen = s.substring(s.indexOf("private fun BoxSheen("), s.indexOf("private fun BoxScene(")).lines().filterNot { it.trim().startsWith("//") }.joinToString("\n")
-        assertFalse(sheen.contains("drawRect(Color.Black.copy(alpha = 0.12f), a, sz)"))
+        assertFalse("a flat spine stand-in", body.contains("GameSpine("))
+        assertEquals("one Case3D for rest and lift", 1, Regex("Case3D[(]").findAll(body).count())
     }
 
-    @Test fun cardboardBoxPickDoesNotWaitForAnInBoxRise() {
+    @Test fun cardboardBoxFocusDoesNotMoveTheCaseAndPickDoesNotWait() {
         val s = source("StyleCardboardBox.kt")
         assertFalse("the 900 ms in-box wait is back", s.contains("kotlinx.coroutines.delay((900 / speed).toLong())"))
-        assertTrue(s.contains("val target = when { flippedNow -> 1f; on -> peek; else -> 0f }"))
+        assertTrue("only Y raises the case, focus does not peek", s.contains("val target = if (flippedNow) 1f else 0f"))
+        assertFalse(s.contains("on -> peek"))
     }
 }
