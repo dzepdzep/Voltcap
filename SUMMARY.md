@@ -1,3 +1,48 @@
+# COWORK CONTINUATION GUIDE (Update 417, 30 Oct 2026) — READ THIS FIRST
+
+This is the ONE handoff document (no separate handoff file; COWORK_HANDOFF.md was NOT touched for 417 and is older). History below is Update 416 and older: grep it, don't re-read it.
+
+## 1. State
+- Repo `dzepdzep/Voltcap`, branch `main`. Final commit of Update 417 = the commit the tag `v0.6.62` points at (`git log -1 v0.6.62`); the previous one was `cbf7903` (Update 416).
+- Latest public release: **v0.6.62** (normal stable, not prerelease/draft) — assets `Voltcap-0.6.62.apk` (FULL, has the notification listener), `Voltcap-0.6.62-compat.apk` (no listener), `voltcap-profile-api31.dm`, `voltcap-profile-api28.dm`. Previous: v0.6.61.
+- Both APKs: package `com.shelf.launcher`, versionName 0.6.62, versionCode 69, signed by the same key (CN=Toni Dzepina, SHA-256 88ce4b67…4197; checked with apksigner verify). Manifest diff full vs compat: only the NotificationListener service (full 1 / compat 0). Updater (`UpdateVariant`, `requestSwitch`) untouched.
+
+## 2. Update 417 (this task)
+- **P0 selected case clearer (Cardboard Box):** `BoxCase` in `src_copy/ui/StyleCardboardBox.kt` draws a thin cream lit edge with a dark keyline on the case you are on (follows the case outline, widens as it turns out when pulled, 35 % softer while lifted, fades 180 ms, snaps with animations off / Lite), and the selected case is drawn above its neighbours (`zIndex 1`) so a neighbour's overhanging spine can't hide it. No fill, no glow, real Case3D untouched, no auto peek/lift, pickup/return code untouched, neighbours not highlighted. Works for Original/Grouped (it only depends on `on`).
+- **P1 title card:** the right-hand paper card now only lives in the free strip beside the box (`sideRoom`, box is centred so both sides are equal): full card > 190 dp; **compact title-only card** 84–190 dp (`BOX_TAG_MIN_DP`, 13 sp, up to 5 lines, console/playtime/hint hidden); **no card** below 84 dp (the old TopEnd card at up to 40 % of the width that sat over cases is gone). Case size is never reduced. The popup / pulled-out window carry the full details. On the Pocket Classic (1080x1240, 320 dpi) the strip is ~50 dp → no card (only the box label at top-left remains); the title is then only visible in the popup. If you want a visible title there, add a non-overlapping treatment (e.g. in the status bar area): NOT done.
+- Version 0.6.61 → 0.6.62 (code 68 → 69), `app/build.gradle.kts` (+ `project_copy` copy if present).
+- Files: `src_copy/ui/StyleCardboardBox.kt` (copied 1:1 to `app/src/main/java/com/shelf/launcher/ui/`), `app/build.gradle.kts`.
+
+## 3. Verified on hardware (Pocket Classic MC94516AQF091001112, release 0.6.62 installed over 0.6.61, data kept)
+Box (Original, All category, 8 boxes): selected black SNES spine (Spider-Man) and a black lower-row spine (Chrono Trigger) show a clear cream outline; selection moves between rows (D-pad down) and right; A opens the popup (pull-out), B returns to the box on the launcher. Screens: `.shots/417_c..f.png`.
+**NOT tested on hardware (do these next):** Grouped by size, Lite / animations off, dark-blue/light spines specifically, far-right/last case, long titles with the compact card (needs a wider screen: Thor 3140972f or emulator-5554 in landscape), touch, second screen, outline during the mid-flight of the pickup (the popup opened, the flight frames were not captured), selected case wider than its slot (the outline marks the slot, which is narrower than the overhanging art of oversize cases such as that SNES spine: cosmetic, could size the edge to the drawn case).
+
+## 4. Earlier work (details in the entries below)
+411 Box resting case = real Case3D, no peek, Wii popup compact; 412 rapid A/B/A fixed (D108), both APK variants, v0.6.61 release; 413 D108 re-open on return flight; 414 Box opens without dark slabs (BoxReveal gate); 415 Box Order Original / Grouped by size + dividers + neighbour spine prewarm; 416 mixed-size packing tests, D110 warm-revisit slab fixed, D109 measured, D108 closed on the Classic.
+
+## 5. Open defects / priorities (`tools/qa/defects.json`, status open)
+D109 (cold category shows an EMPTY box first: release cold 0.5–1.4 s [GB 0.5, GBC 0.7, GBA 1.0, SNES 1.4], warm ~0.2 s, debug ~2x slower, measured on the Classic with 60 fps screenrecord + `tools/qa/tools/boxload.py`; the neighbour-spine prewarm benefit is NOT proven; Thor not measured; seen again right after the 417 install: empty box for a few seconds on the first cold start), D97/D98 (case faces / flight on Shelf, Stacks, Cover details: partly verified), D107 (popup scroll not controller-reachable in Cinema, Arctic drawer last row clipped, popup text ends with "…" e.g. the Spider-Man title and description in the Box popup, seen again in 417 — also violates rule 11), D102 (CROSS L/R asymmetric), D86, D96, D61, D24, D64, D67, D73, D83 (more "…" truncation), plus pending QA: physical case faces (N64 / Switch), categories, popup variants, dual-screen (TWIN_*, HERO_TILES), Artwork Library Endless, updater / Play Protect check of 0.6.62 through the in-app updater on a real install.
+
+## 6. Project map, tools, commands
+- Edit `src_copy/` (mirror of `app/src/main/java/com/shelf/launcher/`; `src_copy` is not tracked by git here, `app/` is — keep both identical). Non-Kotlin files go to `project_copy/`. Read CLAUDE.md rules first. Key files: `ui/StyleCardboardBox.kt` (Box, `BoxCase`, `BoxCam`, tag card), `ui/Case3D.kt`, `ui/CaseThickness.kt`, `BoxRows.kt`, `data/Features.kt`, `LauncherViewModel.kt` (grep only).
+- Build (PowerShell, from the project root): `.\gradlew.bat assembleRelease assembleCompat` (APKs in `app\build\outputs\apk\release|compat`), tests `.\gradlew.bat testDebugUnitTest --console=plain`. Release helper `tools\release\release.ps1 <ver> "<notes>"` (bumps version, builds both APKs, pushes, `gh release create`). The bash tool can't run `gradlew.bat` directly (use PowerShell). Python is NOT installed on this PC: `tools/qa/*.py`, `static_checks.py`, `selftest/test_qa.py`, `catswitch.py`, `boxload.py` could not be run in 417 (run them where Python exists).
+- ADB (a hook requires a LITERAL serial in every command): Retroid Pocket Classic `MC94516AQF091001112`, Thor `3140972f`, `emulator-5554`. NEVER touch the Google TV streamer box, the Odin 2 Portal or any other device. Never clear data / uninstall, no reset of profiles, ROMs, saves; restore any temp settings; max 15 min physical QA per task. Screenshots: `adb -s <serial> exec-out screencap -p > file.png` (KEYCODE_WAKEUP first; a black capture = screen asleep).
+- Signing: release is signed with the key from `keystore.properties` (same cert across 0.6.59–0.6.62). Full vs compat share package + key; the updater picks the asset by variant (compat installs stay on compat); do not rename assets.
+
+## 7. Tests actually run in 417
+- `gradlew assembleRelease assembleCompat testDebugUnitTest`: BUILD SUCCESSFUL, **507 unit tests, 0 failures, 0 errors** (run on the P1 + highlight code before the zIndex tweak; after the zIndex line `assembleRelease assembleCompat` was rebuilt successfully, the unit suite was NOT re-run). No new unit test was added (visual change only).
+- apksigner verify + `aapt2 dump badging` on both release APKs: PASS. Device install over the existing app: Success, versionName 0.6.62.
+- NOT run: QA self-test, static_checks (no Python), catswitch / onepress, Thor, emulator.
+
+## 8. Recommended next actions for Cowork
+1. Open Box on the Thor (wide screen) with Original and Grouped, a long title near the right, Lite on: check the compact/full tag card never overlaps cases, edge visible on dark-blue and light spines, pull-out/return frames.
+2. Run `python tools/qa/tools/static_checks.py` + `python3 tools/qa/selftest/test_qa.py` + `.\gradlew.bat testDebugUnitTest` and the catswitch run for BOX (rule 14 must still hold: the edge fades with selection only; verify no flash on L2/R2).
+3. Decide the no-card case on small screens (Pocket Classic): a title treatment outside the box.
+4. Fix D107 / rule-11 ellipses in the Box popup, then D109 loading, D102, D86, D96.
+5. Install v0.6.62 through the in-app updater on a device with 0.6.61 (full) and one on compat; confirm the variant is kept.
+
+---
+
 # Voltcap — what's been done (running summary)
 
 ## Update — 30 Oct 2026 (416): mixed-size box packing verified, warm-revisit dark slab fixed (D110), loading measured (D109), D108 closed on the Classic. NOT released (v0.6.61 latest, no v0.6.62)

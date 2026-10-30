@@ -767,24 +767,30 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
             }
         }
         val g = c.games[focus]
-        Column(
-            Modifier.align(if (roomy) Alignment.CenterEnd else Alignment.TopEnd)
-                .then(if (roomy) Modifier.width(sideRoom).padding(horizontal = 12.dp) else Modifier.padding(end = 10.dp, top = 6.dp).widthIn(max = maxWidth * 0.4f))
-                .graphicsLayer { alpha = if (windowOn || BoxNav.pull != null) 0f else 1f; rotationZ = 2f }
+        // Update 417: the tag only sits in the free strip beside the box (never over cases): full card when roomy, a compact title
+        // card in a narrower strip, none when there is no strip (the popup / the pulled-out case's window carry the details).
+        if (sideRoom > BOX_TAG_MIN_DP.dp) Column(
+            Modifier.align(Alignment.CenterEnd)
+                .width(sideRoom).padding(horizontal = if (roomy) 12.dp else 5.dp)
+                .graphicsLayer { alpha = if (windowOn || BoxNav.pull != null) 0f else 1f; rotationZ = if (roomy) 2f else 0f }
                 .clip(RoundedCornerShape(3.dp)).background(Color(0xFFF7F1E2))
                 .border(1.dp, Color(0xFF8E7F63), RoundedCornerShape(3.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .padding(horizontal = if (roomy) 10.dp else 6.dp, vertical = 6.dp)
         ) {
-            FullText(titles.display(g.name), color = Color(0xFF2B2620), fontSize = 16.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold, maxLines = 3)
-            Spacer(Modifier.height(3.dp))
-            listOfNotNull(titles.console(g.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { FullText(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1) }
-            Spacer(Modifier.height(4.dp))
-            Text("A  pull it out\nY  look at its cover", color = Color(0xFF8A7D69), fontSize = 10.sp, lineHeight = 13.sp, fontFamily = FontFamily.Monospace)
+            FullText(titles.display(g.name), color = Color(0xFF2B2620), fontSize = if (roomy) 16.sp else 13.sp, lineHeight = if (roomy) 18.sp else 15.sp, fontWeight = FontWeight.Bold, maxLines = if (roomy) 3 else 5)
+            if (roomy) {
+                Spacer(Modifier.height(3.dp))
+                listOfNotNull(titles.console(g.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
+                    c.progress(g)?.let { (e, t) -> "$e / $t ★" }).forEach { FullText(it, color = Color(0xFF5B5246), fontSize = 12.sp, maxLines = 1) }
+                Spacer(Modifier.height(4.dp))
+                Text("A  pull it out\nY  look at its cover", color = Color(0xFF8A7D69), fontSize = 10.sp, lineHeight = 13.sp, fontFamily = FontFamily.Monospace)
+            }
         }
     }
 }
 
+/** Update 417: the narrowest free strip (dp) beside the box that still takes the compact title card. */
+internal const val BOX_TAG_MIN_DP = 84
 internal const val BOX_PREWARM_IDLE_MS = 600L
 internal const val BOX_PREWARM_MAX = 60
 
@@ -900,7 +906,7 @@ private fun BoxCase(
     val cxPx = (left + right) / 2f; val cyPx = (top + bottom) / 2f
     Box(
         Modifier.offset(x0, y0).size(wDp, hDp)
-            .zIndex(if (rise.value > 0.001f) 5f else 0f)
+            .zIndex(if (rise.value > 0.001f) 5f else if (on) 1f else 0f)
             .graphicsLayer { alpha = if (whole || rise.value > 0.001f) 1f else 0f }
             .graphicsLayer {
                 val r = rise.value
@@ -944,6 +950,20 @@ private fun BoxCase(
             Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
                 yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, shadeOf = { dim },
                 realFront = true, back = back, fill = 1f, onReady = { whole = true; onReady() }, readyNeedsFront = false, faces = faces)
+        }
+        // Update 417: a thin lit edge on the case you are on (cream, dark keyline outside): visible on black / dark-blue spines and
+        // light ones. Follows the case outline (slot while resting, its width as it turns out); no fill, no glow, nothing on neighbours.
+        val edge by animateFloatAsState(if (on) 1f else 0f, if (animate) tween((180 / speed).toInt()) else tween(0), label = "boxEdge")
+        if (edge > 0.01f) Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)) {
+            val w = (right - left) + (caseW - (right - left)) * smoothTurn(rise.value)
+            val a = edge * (1f - 0.35f * smoothUp(rise.value))
+            val px = 1.dp.toPx()
+            val tl = Offset((size.width - w) / 2f, 0f)
+            val cr = androidx.compose.ui.geometry.CornerRadius(2.5f * px)
+            drawRoundRect(Color.Black.copy(alpha = 0.55f * a), tl - Offset(px, px), Size(w + 2 * px, size.height + 2 * px), cr,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(px))
+            drawRoundRect(Color(0xFFFFF3D2).copy(alpha = 0.95f * a), tl + Offset(0.75f * px, 0.75f * px), Size(w - 1.5f * px, size.height - 1.5f * px), cr,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f * px))
         }
     }
     if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
