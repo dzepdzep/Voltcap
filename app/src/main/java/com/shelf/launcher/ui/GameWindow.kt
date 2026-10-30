@@ -930,7 +930,10 @@ internal fun GameWindow(
     val openedAt = remember(g.stableKey) { android.os.SystemClock.uptimeMillis() }
     val playNow by rememberUpdatedState(onPlay)
     @Suppress("NAME_SHADOWING")
-    val onPlay: () -> Unit = { if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
+    // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
+    // reached the Play button of the closing window and launched the game instead of opening the case again.
+    val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
+    val onPlay: () -> Unit = { if (!closingFlag[0] && playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
     val syncView = rememberGameSyncView(g, syncOn)
@@ -1057,6 +1060,7 @@ internal fun GameWindow(
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
     val cardFlight = piece == null && scene == null && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
     val close: () -> Unit = {
+        closingFlag[0] = true
         if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
             if (!shrinking) {
                 shrinking = true

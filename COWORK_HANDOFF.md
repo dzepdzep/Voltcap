@@ -1,3 +1,5 @@
+> Update 412 (30 Oct 2026): see SUMMARY top entry. D108 fixed-partly, D97 / D98 still open (evidence in SUMMARY 412), release 0.6.61 = both APKs.
+
 > Update 410 (30 Oct 2026): see SUMMARY top entry. D97 only improved in the Box; full / compat variants + updater implemented; no release.
 
 **UPDATE 409 (30 Oct 2026, newest):** per-layout popup style done (D105), scanner dot-name fix (D106), D97 verified, popup audit doc; release 0.6.60 prepared (see SUMMARY 409 for what was and was not verified; Thor carries the debug build, so the signed APK was checked on emulator-5554 only). OPEN: everything in the 409 "NOT run" list, D98, D107.
