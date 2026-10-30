@@ -107,7 +107,7 @@ object Permissions {
 
     fun granted(context: Context, p: VoltPermission): Boolean = runCatching {
         if (!applies(p)) return@runCatching true
-        // Update 406: the standard build has no notification listener, so there is nothing to grant.
+        // Update 410: the compatibility build has no notification listener, so there is nothing to grant.
         if (p == VoltPermission.NOTIFICATION_ACCESS && !ShelfNotificationListener.isBuiltIn(context)) return@runCatching true
         when (p) {
             VoltPermission.FILES ->

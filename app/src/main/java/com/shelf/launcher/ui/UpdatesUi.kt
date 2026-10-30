@@ -76,6 +76,19 @@ private fun VersionCard() {
                 Chip("Check for updates", accent = st !is AppUpdates.State.Available) { AppUpdates.check(context) }
             }
         }
+        // Update 410: the two variants (same package and signing key). Updates keep the installed one; only this switch changes it.
+        val variant = remember(st) { AppUpdates.installedVariant(context) }
+        val full = variant == com.shelf.launcher.data.AppVariant.FULL
+        Spacer(Modifier.height(6.dp))
+        MutedNote(
+            if (full) "Installed: full version (notifications, other players' now-playing and controls). Updates keep it."
+            else "Installed: compatibility version (no notification access; for devices where the full one is blocked). Updates keep it."
+        )
+        ChipFlow {
+            Chip(if (full) "Switch to the compatibility version" else "Switch to the full version", accent = false) {
+                AppUpdates.requestSwitch(context, if (full) com.shelf.launcher.data.AppVariant.COMPAT else com.shelf.launcher.data.AppVariant.FULL)
+            }
+        }
         Spacer(Modifier.height(6.dp))
         // Update 202: the automatic check (UpdatePrompt.kt), asking on the home screen. Update 204: at start, on coming back to
         // Voltcap and every hour.

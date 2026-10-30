@@ -22,8 +22,39 @@ object AppUpdates {
     class Release(
         val tag: String, val name: String, val notes: String, val apkUrl: String?, val apkBytes: Long, val published: String,
         /** 0.6.15: the release's dex metadata (the baseline profile) for this Android version, when the release has one. */
-        val dmUrl: String? = null
+        val dmUrl: String? = null,
+        /** Update 410: which variant [apkUrl] is (full / compatibility). */
+        val variant: AppVariant = AppVariant.FULL
     )
+
+    /** Update 410: the variant installed now (listener service in the manifest = full). */
+    fun installedVariant(c: Context): AppVariant = UpdateVariant.detect(ShelfNotificationListener.isBuiltIn(c.applicationContext))
+
+    /**
+     * Update 410: the variant an update fetches: the installed one, unless the person picked a switch in Settings (pending).
+     * A pending switch that is already installed is forgotten.
+     */
+    fun wantedVariant(c: Context): AppVariant {
+        val det = installedVariant(c)
+        val p = AppVariant.parse(prefs(c).getString("variant_pending", null))
+        if (p != null && p == det) { prefs(c).edit().remove("variant_pending").apply(); return det }
+        return UpdateVariant.wanted(det, p)
+    }
+
+    /** Update 410: the person explicitly chooses a variant (null = stay as installed). Offers it even at the same version. */
+    fun requestSwitch(c: Context, to: AppVariant?) {
+        val app = c.applicationContext
+        prefs(app).edit().apply { if (to == null || to == installedVariant(app)) remove("variant_pending") else putString("variant_pending", to.key) }.apply()
+        lastRelease = null; etag = null
+        state.value = State.Idle
+        check(app)
+    }
+
+    /** Update 410: a release is offered when newer, or — for an explicit switch — when the same version in the other variant. */
+    private fun offered(app: Context, tag: String): Boolean {
+        val have = installed(app).first
+        return newer(tag, have) || (wantedVariant(app) != installedVariant(app) && !newer(have, tag))
+    }
 
     /**
      * 0.6.15: the release's profile files (made by the build next to the APK, uploaded by tools\release\release.ps1).
@@ -99,7 +130,7 @@ object AppUpdates {
                 if (known != null && tag != null) b.header("If-None-Match", tag)
                 client.newCall(b.build()).execute().use { res ->
                     if (res.code == 304 && known != null) {
-                        return@use if (newer(known.tag, installed(app).first)) State.Available(known) else State.UpToDate(known.tag)
+                        return@use if (offered(app, known.tag)) (if (known.apkUrl == null) noVariant(known.tag, known.variant) else State.Available(known)) else State.UpToDate(known.tag)
                     }
                     if (res.code == 404) return@use State.Failed("No release on GitHub yet ($REPO › Releases).")
                     // (Update 280, Toni: "GitHub answered 403" on the Thor — GitHub's API allows 60 asks an hour per
@@ -112,6 +143,11 @@ object AppUpdates {
                     val j = org.json.JSONObject(res.body?.string().orEmpty())
                     val assets = j.optJSONArray("assets")
                     var url: String? = null; var bytes = 0L
+                    val want = wantedVariant(app)
+                    val tagName = j.optString("tag_name")
+                    val names = ArrayList<String>()
+                    if (assets != null) for (i in 0 until assets.length()) names += assets.getJSONObject(i).optString("name")
+                    val chosen = UpdateVariant.pick(tagName, names, want)
                     val dmName = when {
                         android.os.Build.VERSION.SDK_INT >= 31 -> DM_API31
                         android.os.Build.VERSION.SDK_INT >= 28 -> DM_API28
@@ -121,7 +157,7 @@ object AppUpdates {
                     if (assets != null) for (i in 0 until assets.length()) {
                         val a = assets.getJSONObject(i)
                         val n = a.optString("name")
-                        if (url == null && n.endsWith(".apk", ignoreCase = true) && !n.contains("-notify", ignoreCase = true)) { // 406: never the optional notify build
+                        if (url == null && chosen != null && n.equals(chosen, ignoreCase = true)) { // 410: the installed variant's APK, never the other one
                             url = a.optString("browser_download_url"); bytes = a.optLong("size")
                         } else if (dmName != null && n.equals(dmName, ignoreCase = true)) {
                             dm = a.optString("browser_download_url")
@@ -129,11 +165,11 @@ object AppUpdates {
                     }
                     val r = Release(
                         j.optString("tag_name"), j.optString("name").ifBlank { j.optString("tag_name") },
-                        j.optString("body"), url, bytes, j.optString("published_at").take(10), dm
+                        j.optString("body"), url, bytes, j.optString("published_at").take(10), dm, want
                     )
                     // Update 204: kept with its ETag for the next (conditional) ask.
                     if (r.tag.isNotBlank()) { lastRelease = r; etag = res.header("ETag") }
-                    if (newer(r.tag, installed(app).first)) State.Available(r) else State.UpToDate(r.tag)
+                    if (offered(app, r.tag)) (if (r.apkUrl == null) noVariant(r.tag, want) else State.Available(r)) else State.UpToDate(r.tag)
                 }
             }.getOrElse { State.Failed("Couldn't reach GitHub (${it.javaClass.simpleName}). Check the connection.") }
             val now = System.currentTimeMillis()
@@ -172,11 +208,15 @@ object AppUpdates {
                 android.os.Build.VERSION.SDK_INT >= 28 -> DM_API28
                 else -> null
             }
-            val r = Release(tag, "Voltcap $ver", "", base + "Voltcap-$ver.apk", 0L, "", dmName?.let { base + it })
+            val want = wantedVariant(app)
+            val r = Release(tag, "Voltcap $ver", "", base + UpdateVariant.fallbackName(tag, want), 0L, "", dmName?.let { base + it }, want)
             lastRelease = r; etag = null
-            if (newer(r.tag, installed(app).first)) State.Available(r) else State.UpToDate(r.tag)
+            if (offered(app, r.tag)) State.Available(r) else State.UpToDate(r.tag)
         }
     }.getOrNull()
+
+    private fun noVariant(tag: String, v: AppVariant): State =
+        State.Failed("Release $tag has no " + (if (v == AppVariant.FULL) "full" else "compatibility") + " APK attached, so Voltcap does not switch you to the other one.")
 
     /** Update 204: the newest release seen and its ETag (this run only), for the conditional ask. */
     @Volatile private var lastRelease: Release? = null
@@ -191,7 +231,7 @@ object AppUpdates {
         worker.execute {
             val dir = File(app.externalCacheDir ?: app.cacheDir, "updates").apply { mkdirs() }
             dir.listFiles()?.forEach { it.delete() }
-            val out = File(dir, "voltcap-${r.tag.removePrefix("v")}.apk")
+            val out = File(dir, "voltcap-${r.tag.removePrefix("v")}" + (if (r.variant == AppVariant.COMPAT) "-compat" else "") + ".apk")
             state.value = runCatching {
                 client.newCall(okhttp3.Request.Builder().url(url).build()).execute().use { res ->
                     if (!res.isSuccessful) return@use State.Failed("Download failed (${res.code}).")
@@ -213,7 +253,7 @@ object AppUpdates {
                         runCatching {
                             client.newCall(okhttp3.Request.Builder().url(du).build()).execute().use { dres ->
                                 if (dres.isSuccessful) dres.body?.byteStream()?.use { input ->
-                                    File(dir, "voltcap-${r.tag.removePrefix("v")}.dm").outputStream().use { input.copyTo(it) }
+                                    File(out.parentFile, out.name.removeSuffix(".apk") + ".dm").outputStream().use { input.copyTo(it) }
                                 }
                             }
                         }

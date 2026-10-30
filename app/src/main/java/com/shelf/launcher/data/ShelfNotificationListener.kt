@@ -193,7 +193,7 @@ class ShelfNotificationListener : NotificationListenerService() {
          */
         fun requirementNote(context: Context): String =
             if (isBuiltIn(context)) "Needs notification access."
-            else "Not in this standard build: other apps' music needs the optional notifications build (see the notifications panel)."
+            else "Not in the compatibility version: other apps' music needs the full version (Settings > Updates)."
 
         fun hasAccess(context: Context): Boolean = runCatching {
             if (!isBuiltIn(context)) return@runCatching false

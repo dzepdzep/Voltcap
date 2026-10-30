@@ -123,9 +123,17 @@
         </provider>
 
 
-        <!-- Update 406: the notification-listener service (ShelfNotificationListener) is NOT declared here. Google Play Protect blocks
-             installing sideloaded apps that declare BIND_NOTIFICATION_LISTENER_SERVICE. It lives in src/notify/AndroidManifest.xml,
-             merged only into the optional "notify" build type. -->
+        <!-- Update 410: the FULL build (the main release) declares the notification listener. The optional compatibility build
+             (src/compat/AndroidManifest.xml) removes it again for devices where Google Play Protect blocks the install. -->
+        <service
+            android:name=".data.ShelfNotificationListener"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- The on-game performance readout; never takes focus or touches. -->
         <service

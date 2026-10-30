@@ -5,34 +5,43 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Update 406: the standard manifest must never carry what Play Protect's sideload fraud protection blocks. */
+/**
+ * Update 406 / 410: the FULL build (the main release) declares the notification listener; the optional compat build removes it
+ * and must not carry anything else Play Protect's sideload protection blocks. Both keep the same package id and signing config.
+ */
 class PlayProtect406Test {
-    private val main = File("src/main/AndroidManifest.xml").readText()
-    private val notify = File("src/notify/AndroidManifest.xml").readText()
-    private val banned = listOf(
-        "BIND_NOTIFICATION_LISTENER_SERVICE", "BIND_ACCESSIBILITY_SERVICE",
-        "android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "AccessibilityService"
-    )
+    private val main = File("src/main/AndroidManifest.xml").readText().replace(Regex("(?s)<!--.*?-->"), "")
+    private val compat = File("src/compat/AndroidManifest.xml").readText().replace(Regex("(?s)<!--.*?-->"), "")
+    private val gradle = File("build.gradle.kts").readText()
+    private val banned = listOf("BIND_ACCESSIBILITY_SERVICE", "android.permission.READ_SMS", "android.permission.RECEIVE_SMS", "AccessibilityService")
 
-    @Test fun standardManifestHasNoBlockedCapability() {
-        // comments may mention the names; strip them before checking
-        val code = main.replace(Regex("(?s)<!--.*?-->"), "")
-        banned.forEach { assertFalse("main manifest declares $it", code.contains(it)) }
+    @Test fun fullManifestDeclaresTheListenerAndNothingElseBlocked() {
+        assertTrue(main.contains("BIND_NOTIFICATION_LISTENER_SERVICE"))
+        assertTrue(main.contains(".data.ShelfNotificationListener"))
+        banned.forEach { assertFalse("main manifest declares $it", main.contains(it)) }
     }
 
-    @Test fun listenerOnlyInTheOptionalNotifyManifest() {
-        assertTrue(notify.contains("BIND_NOTIFICATION_LISTENER_SERVICE"))
-        assertTrue(notify.contains("com.shelf.launcher.data.ShelfNotificationListener"))
+    @Test fun compatManifestRemovesTheListener() {
+        assertTrue(compat.contains(".data.ShelfNotificationListener"))
+        assertTrue(compat.contains("tools:node=\"remove\""))
+        assertFalse(compat.contains("BIND_NOTIFICATION_LISTENER_SERVICE"))
     }
-    /** Update 407: in the standard build nobody can grant notification access, so no screen may just say "Needs notification access". */
-    @Test fun screensDoNotAskForAnAccessTheStandardBuildCannotGive() {
+
+    @Test fun compatBuildTypeSharesTheReleaseIdentity() {
+        val block = gradle.substringAfter("create(\"compat\")").substringBefore("}")
+        assertTrue("compat starts from release (same signing config)", block.contains("initWith(getByName(\"release\"))"))
+        assertFalse("no applicationIdSuffix: same package id", gradle.contains("applicationIdSuffix"))
+        assertFalse("the old notify build type is gone", gradle.contains("create(\"notify\")"))
+    }
+
+    /** Update 407: in the compat build nobody can grant notification access, so no screen may just say "Needs notification access". */
+    @Test fun screensDoNotAskForAnAccessTheCompatBuildCannotGive() {
         val ui = File("src/main/java/com/shelf/launcher/ui")
         val bad = ui.walkTopDown().filter { it.extension == "kt" }.flatMap { f ->
             f.readLines().withIndex().filter { (_, l) ->
                 l.contains("Needs notification access") && !l.trimStart().startsWith("//") && !l.trimStart().startsWith("*")
             }.map { "${f.name}:${it.index + 1}" }
         }.toList()
-        // PerfSettingsCard keeps the sentence only on the isBuiltIn branch (same line as the check); anything else must use requirementNote()
         val allowed = bad.filter { it.startsWith("PerfSettingsCard") }
         assertTrue("bare 'Needs notification access' in $bad", (bad - allowed.toSet()).isEmpty())
     }

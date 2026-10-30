@@ -78,7 +78,7 @@ class Case402Test {
         // the only .background( left is none; the only border is the closed spine's hairline gap
         // (Update 409, D97: the one background left is the closed spine's solid case body in the case's own side material.)
         assertEquals("only the solid case body", 1, Regex("[.]background[(]").findAll(body).count())
-        assertTrue(body.contains(".background(boxSideTone(g.platform)"))
+        assertTrue(body.contains(".background(boxSideTone(g.platform, BoxTones.map[k])"))
         assertFalse("a selection outline", body.contains("Color.White.copy(alpha = 0.85f)"))
         // (Update 409: the hairline gap is two vertical separators, not a rectangle round the case.)
         assertEquals("no rectangle border round a case", 0, Regex("[.]border[(]").findAll(body).count())

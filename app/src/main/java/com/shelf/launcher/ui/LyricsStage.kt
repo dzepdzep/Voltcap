@@ -1011,7 +1011,7 @@ internal fun LyricsStage(
                 val problems = buildList {
                     if (!notifAccess) add(
                         if (ShelfNotificationListener.isBuiltIn(context)) "Music needs Notification access (Settings › Permissions)."
-                        else "Other apps' music isn't available in this standard build (optional notifications build)."
+                        else "Other apps' music isn't in the compatibility version (Settings › Updates: full version)."
                     )
                     if (react && !hasMic) add("Music reaction needs the Microphone permission: the beat is simulated for now.")
                     else if (react && noShare) add("This device doesn't share its sound: the beat is simulated.")

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Update 410: ONLY the optional "compat" build type (assembleCompat): the standard build WITHOUT the notification-listener
+     service, for devices where Google Play Protect blocks sideloaded installs that declare it. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <service
+            android:name=".data.ShelfNotificationListener"
+            tools:node="remove" />
+    </application>
+</manifest>

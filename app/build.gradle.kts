@@ -98,8 +98,9 @@ android {
             )
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
-        // Update 406: optional build with the notification-listener service (src/notify). Same key / id as release.
-        create("notify") {
+        // Update 410: the FULL build is "release" (listener in the main manifest). "compat" = the optional build WITHOUT the
+        // notification-listener service (src/compat removes it): Voltcap-<version>-compat.apk. Same package id and signing key.
+        create("compat") {
             initWith(getByName("release"))
             matchingFallbacks += "release"
         }

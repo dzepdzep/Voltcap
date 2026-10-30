@@ -650,18 +650,18 @@ private fun Spine(c: StyleCtx, g: Game, modifier: Modifier) = GameSpine(g, c.sta
  * the ones the home screen has, [HomeScans]).
  */
 @Composable
-internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false, realFirst: Boolean = false) {
+internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false, realFirst: Boolean = false, onTone: ((Int) -> Unit)? = null) {
     // [fit]: kept at a spine's shape in the middle of a box of another shape (a cover-shaped slot).
     // [realFirst] (Update 348, Game shelf): the game's real spine wins over a spine picked for all / Matching spines.
     if (fit) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            SpineBody(g, physical, Modifier.fillMaxHeight().aspectRatio(SPINE_ASPECT, matchHeightConstraintsFirst = true), realFirst)
+            SpineBody(g, physical, Modifier.fillMaxHeight().aspectRatio(SPINE_ASPECT, matchHeightConstraintsFirst = true), realFirst, onTone)
         }
-    } else SpineBody(g, physical, modifier, realFirst)
+    } else SpineBody(g, physical, modifier, realFirst, onTone)
 }
 
 @Composable
-private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, realFirst: Boolean = false) {
+private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, realFirst: Boolean = false, onTone: ((Int) -> Unit)? = null) {
     val scans = physical ?: HomeScans.map[g.stableKey]
     // Not looked up yet (the Spines look on a layout that doesn't ask for scans): ask once it has stayed on screen a moment.
     // (Update 122: always — a game's real spine is used whatever the Original cases switch says.)
@@ -696,10 +696,17 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
         var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SPINE_ASPECT) }
         SpineSlot(shape, modifier, g.stableKey.hashCode()) { inner ->
             Box(inner.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
+                // (Update 410, D97: [onTone] reports the scan's own colour — the Cardboard box paints a case's body in it — so the
+                // image is decoded in software only for that caller.)
+                val ctx = androidx.compose.ui.platform.LocalContext.current
                 AsyncImage(
-                    own, g.name, contentScale = ContentScale.FillBounds,
+                    if (onTone == null) own else coil.request.ImageRequest.Builder(ctx).data(own).allowHardware(false).build(),
+                    g.name, contentScale = ContentScale.FillBounds,
                     onSuccess = { s ->
                         val d = s.result.drawable
+                        if (onTone != null) (d as? android.graphics.drawable.BitmapDrawable)?.bitmap?.let { b -> runCatching {
+                            onTone(averageColor(android.graphics.Bitmap.createScaledBitmap(b, 12, 24, true)))
+                        } }
                         lying = d.intrinsicWidth > d.intrinsicHeight
                         if (d.intrinsicWidth > 0 && d.intrinsicHeight > 0) {
                             val a = if (lying) d.intrinsicHeight.toFloat() / d.intrinsicWidth else d.intrinsicWidth.toFloat() / d.intrinsicHeight

@@ -46,7 +46,10 @@ $gc = Join-Path $root "project_copy\app\build.gradle.kts"
 if (Test-Path $gc) { Set-Content -Path $gc -Value $t -NoNewline }
 Write-Host "Version $Version (build $code)"
 
-& "$root\gradlew.bat" assembleRelease
+# (Update 410: TWO APKs, same package id and signing key. Voltcap-<version>.apk = the FULL main build (notification listener);
+# Voltcap-<version>-compat.apk = the optional build without it. The compat file is attached FIRST: an older in-app updater
+# (0.6.60 and before) takes the first plain-looking .apk and must keep a compat install on compat.)
+& "$root\gradlew.bat" assembleRelease assembleCompat
 if ($LASTEXITCODE -ne 0) { throw "The build failed - nothing was published." }
 $apk = Get-ChildItem "$root\app\build\outputs\apk\release\*.apk" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 # (Update 209: attached as "Voltcap-<version>.apk".)
@@ -56,7 +59,10 @@ Copy-Item $apk.FullName $out -Force
 # (0.6.15: the build's profile files go along — the in-app updater installs the APK with the one for its Android
 # version, so Android compiles Voltcap during the install instead of overnight. Named voltcap-profile-api31.dm /
 # voltcap-profile-api28.dm; missing ones are just left out.)
-$assets = @($out)
+$compatApk = Get-ChildItem "$root\app\build\outputs\apk\compat\*.apk" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$outCompat = Join-Path $env:TEMP "Voltcap-$Version-compat.apk"
+Copy-Item $compatApk.FullName $outCompat -Force
+$assets = @($outCompat, $out)
 $meta = Join-Path $root "app\build\outputs\apk\release\output-metadata.json"
 if (Test-Path $meta) {
     $m = Get-Content $meta -Raw | ConvertFrom-Json

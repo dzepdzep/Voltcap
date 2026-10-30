@@ -508,8 +508,16 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, sh
             val seen = s.y1 < c.yc || s.y0 > c.yc
             if (!seen) continue
             val p = quad(c.o(s.x0, y, s.stand), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), c.o(s.x0, y, 0f))
-            val tone = boxSideTone(games.getOrNull(i)?.platform)
+            val tone = boxSideTone(games.getOrNull(i)?.platform, games.getOrNull(i)?.stableKey?.let { BoxTones.map[it] })
             drawPath(p, Brush.linearGradient(listOf(tone.first, tone.second), start = c.o(0f, y, s.stand), end = c.o(0f, y, 0f)))
+            // Update 410 (D97): the end is a closed face of the shell, not a blank wedge: the lip a little in from the top and the
+            // seam where the shell meets the base, as thin shaded lines across it.
+            for ((t, a) in listOf(0.12f to 0.28f, 0.88f to 0.35f)) {
+                val z = s.stand * (1f - t)
+                drawLine(Color.Black.copy(alpha = a), c.o(s.x0, y, z), c.o(s.x1, y, z), 1f)
+            }
+            val zl = s.stand * 0.86f
+            drawLine(Color.White.copy(alpha = 0.1f), c.o(s.x0, y, zl), c.o(s.x1, y, zl), 1f)
             drawLine(Color.Black.copy(alpha = 0.6f), c.o(s.x1, y, s.stand), c.o(s.x1, y, 0f), 1f)
             drawLine(Color.Black.copy(alpha = 0.35f), c.o(s.x0, y, s.stand), c.o(s.x0, y, 0f), 1f)
             // Its top edge catching the light.
@@ -529,10 +537,23 @@ private fun BoxCaseEnds(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, sh
  * (N64, GBA, SNES...) show cardboard, plastic cases a mid grey: the earlier near-black gradient on every case read as hollow
  * black slabs between the spines (reference photos 02-04). Shading stays restrained (no black).
  */
-internal fun boxSideTone(platform: String?): Pair<Color, Color> =
+internal fun boxSideTone(platform: String?, spine: Int? = null): Pair<Color, Color> {
     // (Update 408, D97: a printed box end is clearly darker than the tan floor, else it reads as an empty ledge of the floor.)
-    if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFF7D6B55) to Color(0xFF3B3022)
+    val base = if (CaseCatalog.of(platform, CaseRegion.US)?.cardboard == true) Color(0xFF7D6B55) to Color(0xFF3B3022)
     else Color(0xFF8A8D96) to Color(0xFF3C3E45)
+    if (spine == null) return base
+    // Update 410 (D97): the case's own body / ends / sides are made of what its spine is printed on (a white DS case has white
+    // ends, a black PS2 case black ones, a red box red): the generic grey / cardboard ends beside a printed spine read as hollow
+    // empty faces. A quarter of the material tone keeps a black case from collapsing into a black hole.
+    val s = Color(spine or 0xFF000000.toInt())
+    val lit = mix(mix(s, Color.Black, 0.12f), base.first, 0.2f)
+    return lit to mix(mix(s, Color.Black, 0.55f), base.second, 0.25f)
+}
+
+/** Update 410 (D97): each game's spine colour once its picture has loaded (observable: the end / side faces repaint). */
+internal object BoxTones {
+    val map = androidx.compose.runtime.mutableStateMapOf<String, Int>()
+}
 
 /** Share of the case height kept below its top edge for the side face (Update 405: a thin attached rim, never a slab to the floor). */
 internal const val BOX_SIDE_KEEP = 0.7f
@@ -552,7 +573,7 @@ private fun BoxCaseSides(cam: BoxCam, slots: List<BoxSlot>, games: List<Game>, s
             // to the floor read as an empty slab / detached block beside and under the cases (owner, 405).
             val zb = s.stand * BOX_SIDE_KEEP
             val p = quad(c.o(xb, s.y0, s.stand), c.o(xb, s.y1, s.stand), c.o(xb, s.y1, zb), c.o(xb, s.y0, zb))
-            val tone = boxSideTone(games.getOrNull(i)?.platform)
+            val tone = boxSideTone(games.getOrNull(i)?.platform, games.getOrNull(i)?.stableKey?.let { BoxTones.map[it] })
             val topC = if (facesLeft) tone.first else mix(tone.first, tone.second, 0.45f)
             drawPath(p, Brush.verticalGradient(listOf(topC, tone.second), startY = c.sy(s.y0, s.stand), endY = c.sy(s.y1, zb)))
             // The rim where the top face turns into the side: the plastic edge catching the light.
@@ -814,10 +835,10 @@ private fun BoxCase(
             // Update 409 (D97): the case is a solid body — where its spine picture is narrower than its slot (SpineSlot keeps the
             // picture's own shape) the margin is the case's own side material, not a see-through gap whose shading / hairlines
             // read as a thin rectangle round the case.
-            .background(boxSideTone(g.platform).let { mix(it.first, it.second, 0.35f) })
+            .background(boxSideTone(g.platform, BoxTones.map[k]).let { mix(it.first, it.second, 0.35f) })
             .pointerInput(index) { detectTapGestures { onTap() } }
     ) {
-        GameSpine(g, physical, Modifier.fillMaxSize())
+        GameSpine(g, physical, Modifier.fillMaxSize(), onTone = { BoxTones.map[k] = it })
         // The hairline gap to the next case.
         // (Update 409, D97: only the two vertical separators — the full rectangle read as an outline round the case.)
         Box(Modifier.fillMaxSize().drawBehind {
