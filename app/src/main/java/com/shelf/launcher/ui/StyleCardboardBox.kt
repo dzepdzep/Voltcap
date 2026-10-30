@@ -630,17 +630,32 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         ) { (_, shownBox) ->
             Box(Modifier.fillMaxSize()) {
                 BoxBody(cam, mat, slots, shownBox)
-                // The spines (the case you're on, and one coming out, drawn by itself over them).
-                for (i in slots.indices) {
-                    val sl = slots[i]
-                    if (sl.box != shownBox) continue
-                    val g = c.games[i]
-                    key(g.stableKey) {
-                        BoxCase(
-                            c, g, i, sl, cam, on = i == focus, liftK = liftK, messy = messy, speed = speed, tilt = tilt, animate = animate,
-                            onTap = { if (latestFocus == i) BoxNav.pullAsk?.invoke() else if (BoxNav.pull == null) select(i) },
-                            needPhysical = needPhysical
-                        )
+                // Update 414: the cases of this box appear TOGETHER, once each has its picture and spine (BoxReveal): no dark waiting
+                // strips, no cases spawning one by one. Cases seen before are warm (shown at once); a missing / slow picture waits at most BOX_REVEAL_MAX_MS.
+                val inBox = remember(slots, shownBox) { slots.indices.filter { slots[it].box == shownBox }.map { c.games[it].stableKey } }
+                // Composed a few per frame (nearest the case you are on first), so a crowded box never freezes one frame; drawn in slot order.
+                val rank = remember(slots, shownBox) {
+                    val idx = slots.indices.filter { slots[it].box == shownBox }.sortedBy { kotlin.math.abs(it - latestFocus) }
+                    IntArray(slots.size) { Int.MAX_VALUE }.also { r -> idx.forEachIndexed { n, i -> r[i] = n } }
+                }
+                val allWarm = remember(slots, shownBox) { inBox.all { it in BoxReady.warm } }
+                var upto by remember(slots, shownBox) { androidx.compose.runtime.mutableIntStateOf(if (allWarm) inBox.size else BOX_COMPOSE_FIRST) }
+                if (upto < inBox.size) LaunchedEffect(slots, shownBox) {
+                    while (upto < inBox.size) { androidx.compose.runtime.withFrameNanos { }; upto = minOf(inBox.size, upto + BOX_COMPOSE_PER_FRAME) }
+                }
+                BoxReveal(inBox, animate) { ready ->
+                    // The spines (the case you are on, and one coming out, drawn by itself over them).
+                    for (i in slots.indices) {
+                        val sl = slots[i]
+                        if (sl.box != shownBox || rank[i] >= upto) continue
+                        val g = c.games[i]
+                        key(g.stableKey) {
+                            BoxCase(
+                                c, g, i, sl, cam, on = i == focus, liftK = liftK, messy = messy, speed = speed, tilt = tilt, animate = animate,
+                                onTap = { if (latestFocus == i) BoxNav.pullAsk?.invoke() else if (BoxNav.pull == null) select(i) },
+                                needPhysical = needPhysical, onReady = { ready(g.stableKey) }
+                            )
+                        }
                     }
                 }
             }
@@ -695,6 +710,38 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
     }
 }
 
+/** Update 414: cases whose picture + spine were ready once (main thread only): they are drawn at once next time, no hold. */
+internal object BoxReady {
+    val warm = HashSet<String>()
+    val faces = HashSet<String>()
+    fun note(k: String) { if (warm.size > 4000) warm.clear(); warm.add(k) }
+}
+internal const val BOX_REVEAL_MAX_MS = 900L
+internal const val BOX_COMPOSE_FIRST = 6
+internal const val BOX_COMPOSE_PER_FRAME = 4
+internal const val BOX_REVEAL_FADE_MS = 120
+
+/**
+ * Update 414: holds the cases of one box (composed, so their art decodes) invisible until all are whole, then shows them together
+ * (a short fade, none in Lite). All warm already: shown from the very first frame. Bounded: after [BOX_REVEAL_MAX_MS] whatever is there shows.
+ */
+@Composable
+private fun BoxReveal(keys: List<String>, animate: Boolean, content: @Composable (ready: (String) -> Unit) -> Unit) {
+    val warmStart = remember { keys.all { it in BoxReady.warm } }
+    var revealed by remember { mutableStateOf(warmStart) }
+    val pending = remember { HashSet<String>().apply { if (!warmStart) addAll(keys) } }
+    val alpha by androidx.compose.animation.core.animateFloatAsState(
+        if (revealed) 1f else 0f, if (animate && !warmStart) tween(BOX_REVEAL_FADE_MS) else tween(0), label = "boxReveal"
+    )
+    if (!warmStart) LaunchedEffect(Unit) { kotlinx.coroutines.delay(BOX_REVEAL_MAX_MS); revealed = true }
+    Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }) {
+        content { k ->
+            BoxReady.note(k)
+            if (pending.remove(k) && pending.isEmpty()) revealed = true
+        }
+    }
+}
+
 @Composable
 private fun BoxArrow(t: String, enabled: Boolean, onTap: () -> Unit) {
     Box(
@@ -712,7 +759,7 @@ private fun BoxArrow(t: String, enabled: Boolean, onTap: () -> Unit) {
 @Composable
 private fun BoxCase(
     c: StyleCtx, g: Game, index: Int, sl: BoxSlot, cam: BoxCam, on: Boolean, liftK: Float, messy: Boolean, speed: Float, tilt: Float,
-    animate: Boolean, onTap: () -> Unit, needPhysical: (Game) -> Unit
+    animate: Boolean, onTap: () -> Unit, needPhysical: (Game) -> Unit, onReady: () -> Unit = {}
 ) {
     val k = g.stableKey
     val density = LocalDensity.current
@@ -732,6 +779,12 @@ private fun BoxCase(
         val ms = (900 * kotlin.math.abs(target - rise.value) / speed).toInt().coerceAtLeast(1)
         rise.animateTo(target, tween(ms, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
     }
+    // Update 414: a case whose spine is not made yet draws nothing (never the dark waiting strip / a slab); it shows the frame it is whole.
+    var whole by remember(k) { mutableStateOf(k in BoxReady.warm) }
+    // (Its front / back pictures only matter once it can be picked up: the case you are on and its neighbours, then any seen before.)
+    var wanted by remember(k) { mutableStateOf(k in BoxReady.faces) }
+    val faces = wanted || on || pulled || kotlin.math.abs(index - c.focus) <= 2
+    LaunchedEffect(faces) { if (faces) { wanted = true; BoxReady.faces.add(k) } }
     val dim by animateFloatAsState(if (on) 0f else 0.14f, if (animate) tween((220 / speed).toInt()) else tween(0), label = "boxDim")
     val flip by animateFloatAsState(if (flippedNow) 1f else 0f, if (animate) tween((520 / speed).toInt(), delayMillis = (500 / speed).toInt()) else tween(0), label = "boxFlip")
     var warm by remember(k) { mutableStateOf(false) }
@@ -753,6 +806,7 @@ private fun BoxCase(
     Box(
         Modifier.offset(x0, y0).size(wDp, hDp)
             .zIndex(if (rise.value > 0.001f) 5f else 0f)
+            .graphicsLayer { alpha = if (whole || rise.value > 0.001f) 1f else 0f }
             .graphicsLayer {
                 val r = rise.value
                 val up = smoothUp(r) * outMm
@@ -794,7 +848,7 @@ private fun BoxCase(
         Box(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp).gameOrigin(k, on)) {
             Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
                 yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, shadeOf = { dim },
-                realFront = true, back = back, fill = 1f)
+                realFront = true, back = back, fill = 1f, onReady = { whole = true; onReady() }, readyNeedsFront = false, faces = faces)
         }
     }
     if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))

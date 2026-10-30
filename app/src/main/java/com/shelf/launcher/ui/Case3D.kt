@@ -49,7 +49,13 @@ internal fun Case3D(
     /** Update 189: whether the disc / card still lies in the case (read while drawing). */
     showItemOf: (() -> Boolean)? = null,
     /** Update 400: called once the front picture is in (the inspected case waits for it before it flies). */
-    onFront: (() -> Unit)? = null
+    onFront: (() -> Unit)? = null,
+    /** Update 414: called once the case can be drawn whole (its front picture decoded or none wanted, its spine made: no dark waiting strip). */
+    onReady: (() -> Unit)? = null,
+    /** Update 414: [onReady] waits for the front picture too (false: the spine alone, for a case standing edge-on in the Cardboard box). */
+    readyNeedsFront: Boolean = true,
+    /** Update 414: false = the front and back pictures are not decoded yet (a case standing edge-on in a crowded box shows its spine only); true once it is wanted. */
+    faces: Boolean = true
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -71,12 +77,12 @@ internal fun Case3D(
     // as the Cases look shows it.)
     val coverCut = !realFront && spec != null && (cover as? String)?.let { CoverAspects.rawOf(it) }
         ?.let { a -> a > 0f && kotlin.math.abs(a / spec.aspect - 1f) > 0.08f } == true
-    val ownFront = if (((realFront && Features.originalCases.state.value) || coverCut) && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
+    val ownFront = if (faces && ((realFront && Features.originalCases.state.value) || coverCut) && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
         remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
     } else null
     // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
     // carousel's warmSoft for 3D cases asks the same way.)
-    val front0 = rememberSoftBitmap(ownFront ?: cover, 480, trim = true)
+    val front0 = rememberSoftBitmap(if (faces) ownFront ?: cover else null, 480, trim = true)
     // (Update 240, #27/#58: a "Box" scan that is really the whole unfolded box — back | spine | front side by side, far wider
     // than the real case's front (CaseCatalog) — has its front cut out of it (BoxTexture), not its middle cut to the case's
     // shape: that showed the spine and the back's edge as the front. The case's shape stays the catalog's whatever the scan.)
@@ -222,6 +228,10 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING
             else madeConsoleSpine ?: SpineCache.WAITING
     }
+    if (onReady != null) {
+        val wholeNow = spine !== SpineCache.WAITING && (!readyNeedsFront || (cover == null && ownFront == null) || front != null)
+        androidx.compose.runtime.LaunchedEffect(wholeNow) { if (wholeNow) onReady() }
+    }
     // Update 166: a Steam / Android game's case front is Voltcap's own: the game's art in its window, the band on top.
     // Update 169: and with Settings › Cover templates on, every console's case front is its template too (the band, the
     // printed border) with the cover in its window — as the flat case shows it; the 3D cases had the bare cover. Not on
@@ -298,7 +308,7 @@ internal fun Case3D(
     val backAtOnce = !com.shelf.launcher.device.MemoryBudget.small(androidx.compose.ui.platform.LocalContext.current)
     var backAsked by remember(g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
     // (Update 208: a back handed in that turned out a flat-colour stand-in is replaced by the next one in line.)
-    val given = back?.takeUnless { FlatArt.isKnown(it) }
+    val given = back?.takeIf { faces }?.takeUnless { FlatArt.isKnown(it) }
     // (Update 298: flatVersion too — a back cut from the full box scan that turns out a flat stand-in passes on to the
     // printed back; it stayed plain plastic: the Ben 10 PSP case.)
     // (Update 305: what its printed back is made of, from the screen's state — read so that it's only made again when
@@ -320,7 +330,7 @@ internal fun Case3D(
         com.shelf.launcher.data.PackagingFactsStore.request(g)
     }
     // (A scanned back at once; a printed one — drawn from its parts — only once it's turned.)
-    val backModel: Any? = given ?: autoBack?.takeIf { back != null || backAsked || (backAtOnce && it !is PrintedBack) }
+    val backModel: Any? = given ?: autoBack?.takeIf { faces && (back != null || backAsked || (backAtOnce && it !is PrintedBack)) }
     // (Update 170: a printed back is made from its parts; a scanned one is a picture.)
     val printedBmp = rememberPrintedBack(backModel as? PrintedBack)
     val scannedBmp = rememberSoftBitmap(backModel.takeIf { it !is PrintedBack }, 480)
@@ -1567,3 +1577,4 @@ private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.
         out
     }.getOrDefault(src)
 }
+
