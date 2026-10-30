@@ -5213,11 +5213,20 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         )
     }
 
+    // Update 413 (D108): an A pressed while the window flew back opens the same game again, one frame after it is gone.
+    GamePopup.reopenGame?.let { again ->
+        LaunchedEffect(again) {
+            androidx.compose.runtime.withFrameNanos { }
+            if (GamePopup.game == null) GamePopup.game = again
+            GamePopup.reopenGame = null
+        }
+    }
+
     // Update 113: the game window (A or a tap on the game you're on), in the layout's own look, over the main screen.
     GamePopup.game?.let { g ->
         GameWindow(
             layout = state.appearance.homeLayout, g = g, state = state, art = displayArt,
-            onClose = { GamePopup.game = null },
+            onClose = { GamePopup.closed(g) },
             onPlay = { GamePopup.game = null; startGame(g) },
             onFullDetails = { GamePopup.game = null; openDetails() },
             onNeedMedia = { gg -> viewModel.loadMedia(gg); viewModel.loadVideoUrl(gg); viewModel.loadMetadata(gg); viewModel.loadPhysicalMedia(gg); viewModel.loadAchievementDetails(gg) },

@@ -16,7 +16,11 @@ class PlayWhileClosing412Test {
 
     @Test fun playIsIgnoredOnceTheWindowIsClosing() {
         val s = src()
-        assertTrue(s.contains("val onPlay: () -> Unit = { if (!closingFlag[0] && playAllowed("))
+        assertTrue(s.contains("val onPlay: () -> Unit = { if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed("))
+        // Update 413: the home screen routes the window's close through GamePopup.closed so a pending A reopens it
+        val ls = java.io.File(listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + "LauncherScreen.kt") }.first { it.exists() }.path).readText()
+        assertTrue(ls.contains("onClose = { GamePopup.closed(g) }"))
+        assertTrue(ls.contains("GamePopup.reopenGame?.let"))
         assertTrue(s.contains("val close: () -> Unit = {\n        closingFlag[0] = true"))
     }
 }

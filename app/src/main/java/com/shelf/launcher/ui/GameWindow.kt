@@ -103,6 +103,18 @@ import kotlinx.coroutines.launch
 /** The game window, open while [game] is set. */
 internal object GamePopup {
     var game by mutableStateOf<Game?>(null)
+    /** Update 413 (D108): A pressed while the window flies back asks for it to open again once it is gone. */
+    var reopenRequested = false
+    /** The game to open again (set when the closing window finishes with [reopenRequested]). */
+    var reopenGame by mutableStateOf<Game?>(null)
+
+    /** The window finished closing: with a pending A, hand the same game back to be opened again. */
+    fun closed(g: Game) {
+        val again = reopenRequested
+        reopenRequested = false
+        game = null
+        if (again) reopenGame = g
+    }
 }
 
 /**
@@ -933,7 +945,7 @@ internal fun GameWindow(
     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
     // reached the Play button of the closing window and launched the game instead of opening the case again.
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
-    val onPlay: () -> Unit = { if (!closingFlag[0] && playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
+    val onPlay: () -> Unit = { if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
     val syncView = rememberGameSyncView(g, syncOn)

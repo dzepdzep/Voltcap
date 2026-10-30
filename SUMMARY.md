@@ -1,5 +1,12 @@
 # Voltcap — what's been done (running summary)
 
+## Update — 30 Oct 2026 (413): A during the return flight re-opens the window (D108 completed in code); Thor NOT connected, hardware priorities blocked
+
+**P0 D108 (code done, device NOT verified):** `GamePopup.reopenRequested` / `reopenGame` / `closed(g)` (`ui/GameWindow.kt`): an A (Play press) on a window that is already closing (`closingFlag`) no longer vanishes, it sets `reopenRequested`; when the window finishes closing, `onClose = { GamePopup.closed(g) }` (`ui/LauncherScreen.kt`) hands the same game back and a `LaunchedEffect` re-opens it one frame later (fresh window, fresh `playAllowed` guard, so it can never start the game). B / outside tap still close; Play never fires while closing (412 fix kept). Test `PlayWhileClosing412Test` updated to the new contract, `:app:testDebugUnitTest --tests *PlayWhileClosing412Test*` PASS (main compiled with it). Not run on hardware: rapid A B A on Box / Shelf / Stacks / Cover details.
+**BLOCKER:** AYN Thor `3140972f` is not in the connected-devices list (only emulator-5554 plus two other devices that are NOT allowed). P1 (3D case faces / Lite), P2 (Wii popup on Thor), P3 (D107, D102, D86, D96 reproduction), P4 (category / Endless / Artwork Library / Pocket Quest / Disc Station / dual screen) all need the handheld and were NOT started; no result claimed. Python is still not installed on this PC (static_checks / test_qa not run).
+**To copy (already mirrored into app/):** ui/GameWindow.kt, ui/LauncherScreen.kt; test PlayWhileClosing412Test.kt. No release (nothing device-verified).
+**Next (when Thor is connected):** verify A B A / A during return on SHELF / BOX / STACKS / COVERDETAILS (60 fps capture, `flash412.py`), then P1-P4 in order.
+
 ## Update — 30 Oct 2026 (412): accidental launch on rapid A B A fixed, Box / Shelf / Stacks / Cover details checked on Thor, release 0.6.61 (full + compat)
 
 **Fix (D108):** `ui/GameWindow.kt`: a window that is already closing (B pressed, case flying back) ignores Play (`closingFlag`, set first in `close`). Found by 60 fps recordings on the Thor: `A B A B` at 250 ms gaps reached the Play button of the closing window and started RetroArch (Big Burger), on the Box and the Game shelf. After the fix the same sequences (250 / 150 / 90 ms, PS2 box) stay on the launcher. Still open: an A pressed during the return flight is dropped (not turned into a re-open); one 90 ms stress run on the Game shelf still launched once (not traced; below human speed). Test `PlayWhileClosing412Test`.
