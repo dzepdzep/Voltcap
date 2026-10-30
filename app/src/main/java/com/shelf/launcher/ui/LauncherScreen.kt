@@ -2403,9 +2403,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         },
         HomeShortcut("Music", Icons.Filled.MusicNote, Color(0xFFB57BFF)) { showSpotify = true },
         HomeShortcut("Achievements", Icons.Filled.EmojiEvents, Color(0xFFFFC83D)) {
-            val game = focusedGame
-            if (game?.raGameId != null) viewingAchievementsForGame = game
-            else hubScreen = HubScreen.ACHIEVEMENTS
+            // Update 419: the round shortcut ALWAYS opens the full Achievements Hub (never the focused game).
+            StyleNav.reset(); hubScreen = HubScreen.ACHIEVEMENTS
         },
         // Update 274 (Toni): Play stats as a round shortcut too (hours, weeks, streaks — the Stats page).
         HomeShortcut("Stats", Icons.Filled.BarChart, Color(0xFF4FD1A5)) { hubScreen = HubScreen.STATS },
@@ -5666,10 +5665,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (com.shelf.launcher.data.BuiltinShortcuts.isBuiltin(id)) {
                     // Voltcap's own screens pinned to L1.
                     when (id) {
-                        "voltcap:achievements" -> {
-                            val g = focusedGame
-                            if (g?.raGameId != null) viewingAchievementsForGame = g else hubScreen = HubScreen.ACHIEVEMENTS
-                        }
+                        "voltcap:achievements" -> hubScreen = HubScreen.ACHIEVEMENTS // Update 419: always the full hub
                         "voltcap:stats" -> hubScreen = HubScreen.STATS
                         "voltcap:profile" -> hubScreen = HubScreen.PROFILE
                         "voltcap:spotify" -> MusicApps.playPause(shortcutsContext, state.nowPlaying?.isPlaying == true)

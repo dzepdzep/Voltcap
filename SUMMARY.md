@@ -1,3 +1,38 @@
+# Update 419 (30 Oct 2026) — v0.6.63 RELEASE (low budget)
+
+## Done
+- **Round Achievements shortcut** (`ui/LauncherScreen.kt`): the HomeShortcut "Achievements" and the `voltcap:achievements` shortcut id now ALWAYS open the full Achievements Hub (`HubScreen.ACHIEVEMENTS`), never the focused game's list. Per-game achievement buttons (game window, hero page, return-trophy toast) are unchanged.
+- **Release v0.6.63** (versionCode 70) via `tools/release/release.ps1`: `Voltcap-0.6.63-compat.apk` + `Voltcap-0.6.63.apk`, normal stable release, tag `v0.6.63`. Includes the unreleased Update 418 work (Orbit Deck duplicate-place fix + art warm, account-wide Achievements Hub, recap D-pad buttons, art caching).
+
+## Checked (actual)
+- `:app:testDebugUnitTest` EXIT 0 (incl. `Hub418Test`), `assembleRelease assembleCompat` EXIT 0.
+- `py -3 tools/qa/tools/static_checks.py src_copy` → `[PASS]` (only pre-existing MED/LOW items).
+- apksigner: both APKs signer SHA-256 `88ce4b67…f344197` = same as v0.6.62 (updater compatible). aapt2: package `com.shelf.launcher`, code 70 / 0.6.63 on both; NotificationListenerService present in full, absent in compat.
+
+## NOT TESTED (no device QA this update, budget)
+- Account-wide Achievements on hardware (remote-only games listed, correct progress, not launchable) — code + `Hub418Test` only.
+- Round shortcut on device; Orbit Deck anti-flicker (Endless, counts 8-12); recap D-pad controls; artwork caching / offline.
+
+## Files to copy
+`src_copy/ui/LauncherScreen.kt` (already copied to `app/`).
+
+## Cowork tasks (open)
+1. Recap media modes: Auto, loose Disc only, Cartridge only, real Case Front, Case 3D Angle (authentic proportions) — not implemented.
+2. Achievement badge pre-caching per game list + stable fallback art for failed icons; nearby-only cache window.
+3. Recap artwork + anti-flicker QA (rows, backdrop, blank-frame proof); Orbit Deck 60 fps capture on Thor 3140972f.
+4. ES-DE read-only media reuse (SAF plan in Update 418 entry below) + initial-setup step.
+5. Hardware QA of everything in "NOT TESTED"; all remaining bugs in `tools/qa/defects.json` and the 417/418 lists below.
+
+---
+
+## Update 419 requested — Cowork continuation
+- Account-wide Achievements still appears local-only:
+  verify live account data, UI filtering and refresh.
+- Round Achievements shortcut must ALWAYS open All Achievements.
+- Recap media modes: Auto, loose Disc, Cartridge,
+  real 3D Case Front and Case Angled/front+side.
+- Preserve authentic physical media and proportions.
+- Verify 418 fixes and v0.6.63 before release.
 # COWORK CONTINUATION GUIDE (Update 418, 30 Oct 2026) — READ THIS FIRST
 
 Low-budget update. Compiled (`:app:compileDebugKotlin`) and unit-tested (`:app:testDebugUnitTest`, all green incl. new `Hub418Test`); **NOT run on any device** and **NOT released** (v0.6.62 stays the latest public release; version bumped to 0.6.63 / code 70 in `app/build.gradle.kts` + `project_copy`, unreleased). Reason: the visual claims below (no flashing Orbit discs, recap button states) need frame-by-frame hardware QA that was not done; the release rule forbids shipping unverified claims.
