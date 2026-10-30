@@ -218,15 +218,19 @@ internal fun StyleArtLibrary(c: StyleCtx, modifier: Modifier = Modifier) {
 
         val railW = 60.dp
         val panelX = railW + 20.dp
-        val panelW = (w * 0.31f).coerceIn(240.dp, 380.dp)
+        // Update 420: compact / near-square screens (e.g. 600-750 dp wide) get a slimmer list and smaller gaps so the
+        // showcase keeps enough width for its logo, facts and the Play / Details buttons (which wrap, never squeeze).
+        val narrow = w < 760.dp
+        val panelW = if (narrow) (w * 0.36f).coerceIn(190.dp, 280.dp) else (w * 0.31f).coerceIn(240.dp, 380.dp)
+        val gap = if (narrow) 16.dp else 32.dp
         // (Update 391: the host already keeps the status bar clear; 40 dp more left ~100 px of empty space above the rail and panel.)
         val topPad = if (compact) 6.dp else 10.dp
         if (g == null) StyleEmpty(Modifier.fillMaxSize().padding(start = panelX))
         else {
             ArtLibPanel(c, accent, compact, Modifier.padding(start = panelX, top = topPad, bottom = 16.dp).width(panelW).fillMaxHeight())
             ArtLibShowcase(
-                c, g, accent, compact,
-                Modifier.align(Alignment.BottomStart).padding(start = panelX + panelW + 32.dp, end = 32.dp, bottom = if (compact) 18.dp else 30.dp)
+                c, g, accent, compact || narrow,
+                Modifier.align(Alignment.BottomStart).padding(start = panelX + panelW + gap, end = gap, bottom = if (compact) 18.dp else 30.dp)
                     .widthIn(max = 600.dp)
             )
         }
@@ -459,7 +463,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
                 Spacer(Modifier.width(6.dp))
                 Text("$e / $t", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(10.dp))
-                Box(Modifier.width(140.dp).height(5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))) {
+                Box(Modifier.weight(1f, fill = false).width(140.dp).height(5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))) {
                     Box(Modifier.fillMaxHeight().fillMaxWidth(if (t > 0) (e.toFloat() / t).coerceIn(0f, 1f) else 0f).background(accent))
                 }
             }
@@ -470,7 +474,9 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
             RollingStory(story, Color.White.copy(alpha = 0.94f), if (compact) 12.sp else 13.sp, if (compact) 17.sp else 19.sp, if (compact) 36.dp else 58.dp)
         }
         Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Update 420: FlowRow so on a narrow / near-square screen Details wraps under Play instead of being squeezed
+        // into a one-letter-wide column; button labels never soft-wrap.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val playFocus = ArtLibNav.zone == ArtLibNav.Zone.PLAY
             Row(
                 Modifier.clip(RoundedCornerShape(50)).background(accent)
@@ -481,7 +487,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
             ) {
                 Icon(Icons.Filled.PlayArrow, null, tint = onAccent, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Play", color = onAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Play", color = onAccent, fontSize = 15.sp, fontWeight = FontWeight.Bold, softWrap = false)
             }
             Row(
                 Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.14f))
@@ -491,7 +497,7 @@ private fun ArtLibShowcase(c: StyleCtx, g: Game, accent: Color, compact: Boolean
             ) {
                 Icon(Icons.Filled.Info, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Details", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text("Details", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, softWrap = false)
             }
         }
     }

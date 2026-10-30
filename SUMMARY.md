@@ -1,3 +1,41 @@
+# Update 420 (30 Oct 2026) — v0.6.64 RELEASE (very low budget: only P1 done)
+
+## Done
+- **Artwork Library small-screen fix** (`ui/StyleArtLibrary.kt`): width-based `narrow` mode (`maxWidth < 760 dp`): list panel `36%` of width
+  (190-280 dp) instead of min 240 dp, gaps 16 dp instead of 32 dp, showcase uses its compact sizes. Play / Details now sit in a `FlowRow`
+  (Details wraps under Play when there is no room) and their labels never soft-wrap, so Details is never squeezed into vertical letters.
+  Achievement progress bar can shrink (`weight(1f, fill = false)`) instead of pushing the row. Wide layout unchanged. D-pad / touch /
+  Endless / animations untouched (no nav code changed).
+- **Release v0.6.64** (versionCode 71, bumped once by `release.ps1`): `Voltcap-0.6.64.apk` + `Voltcap-0.6.64-compat.apk`, tag `v0.6.64`.
+
+## Checked (actual)
+- `:app:compileDebugKotlin` EXIT 0, `:app:testDebugUnitTest` EXIT 0, `py -3 tools/qa/tools/static_checks.py src_copy` → `[PASS]`.
+- Release build via `release.ps1` EXIT 0. apksigner: both APKs signer SHA-256 `88ce4b67…f344197` = v0.6.63 (in-place update OK);
+  aapt2: `com.shelf.launcher` 71 / 0.6.64 on both.
+
+## NOT TESTED
+- Artwork Library on a compact / near-square handheld or Thor (no device QA this update, budget): code + compile only. Check 600-750 dp
+  widths, first/last game, Endless on/off, Details tap + D-pad PLAY zone.
+
+## Files to copy
+`src_copy/ui/StyleArtLibrary.kt`, `project_copy/app/build.gradle.kts` (both already copied to `app/`).
+
+## NOT DONE in Update 420 (carry over — Cowork handoff, keep in SUMMARY only)
+1. **P0 ES-DE media reuse — NOT STARTED.** No UI shipped (no placeholder). Plan: SAF `OpenDocumentTree` picker in Settings (+ setup step),
+   `takePersistableUriPermission(READ)` only, rescan / change / disconnect; index `<media>/<system>/<type>/<romBaseName>.*` by exact
+   platform folder + exact ROM base name (no fuzzy / region fallback); manual overrides win; read files via content URIs (no copy).
+   Supported types so far: none. Order: covers, screenshots, then marquees, miximages, backcovers, 3dboxes (flat images), physicalmedia, videos.
+   Existing FrontendImport (favourites / collections / history) must stay untouched.
+2. **P2 Wii** — WiiChannelPreview fill (wide = crop-fill; portrait = blurred filled backdrop + full cover in front) and Channel Grid palettes
+   (Original Pale, OLED Black, Light Blue, Light Yellow, Custom via ColorFineTune HEX; grid + popup) — not checked / not implemented this update.
+3. Orbit Deck flickering still unresolved (60 fps capture on Thor 3140972f needed).
+4. Recap media modes: real disc, cartridge, Case Front, Case 3D Angle — not implemented.
+5. All previously proposed layout improvements (417/418/419 lists), Cinema / Arctic, category looks, theme refinements — open.
+6. Remaining QA: game popup, R1 panel, dual-screen (MC94516AQF091001112 / emulator-5554 allowed), recap D-pad, Achievements Hub on device.
+7. **60 fps global anti-flicker regression plan:** per layout record `device/catswitch.sh` + a game-to-game scroll clip at 60 fps,
+   run `tools/catswitch.py` + a blank-frame / luminance-drop detector over every frame, gate releases on zero blank frames; add the
+   layouts to `CategoryStable394Test`.
+
 # Update 419 (30 Oct 2026) — v0.6.63 RELEASE (low budget)
 
 ## Done
