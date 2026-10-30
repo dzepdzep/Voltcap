@@ -713,12 +713,12 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
                     val idx = slots.indices.filter { slots[it].box == shownBox }.sortedBy { kotlin.math.abs(it - latestFocus) }
                     IntArray(slots.size) { Int.MAX_VALUE }.also { r -> idx.forEachIndexed { n, i -> r[i] = n } }
                 }
-                val allWarm = remember(slots, shownBox) { inBox.all { it in BoxReady.warm } }
-                var upto by remember(slots, shownBox) { androidx.compose.runtime.mutableIntStateOf(if (allWarm) inBox.size else BOX_COMPOSE_FIRST) }
+                // (Update 416: sliced even when every case was seen before; the warm box was composed in ONE frame, a ~0.5 s freeze on the Pocket Classic. Hidden until all are composed.)
+                var upto by remember(slots, shownBox) { androidx.compose.runtime.mutableIntStateOf(BOX_COMPOSE_FIRST) }
                 if (upto < inBox.size) LaunchedEffect(slots, shownBox) {
                     while (upto < inBox.size) { androidx.compose.runtime.withFrameNanos { }; upto = minOf(inBox.size, upto + BOX_COMPOSE_PER_FRAME) }
                 }
-                BoxReveal(inBox, animate) { ready ->
+                BoxReveal(inBox, animate, composed = upto >= inBox.size) { ready ->
                     // The spines (the case you are on, and one coming out, drawn by itself over them).
                     for (i in slots.indices) {
                         val sl = slots[i]
@@ -818,14 +818,17 @@ internal const val BOX_REVEAL_FADE_MS = 120
  * (a short fade, none in Lite). All warm already: shown from the very first frame. Bounded: after [BOX_REVEAL_MAX_MS] whatever is there shows.
  */
 @Composable
-private fun BoxReveal(keys: List<String>, animate: Boolean, content: @Composable (ready: (String) -> Unit) -> Unit) {
-    val warmStart = remember { keys.all { it in BoxReady.warm } }
-    var revealed by remember { mutableStateOf(warmStart) }
-    val pending = remember { HashSet<String>().apply { if (!warmStart) addAll(keys) } }
+private fun BoxReveal(keys: List<String>, animate: Boolean, composed: Boolean = true, content: @Composable (ready: (String) -> Unit) -> Unit) {
+    // Update 416: "seen before" no longer skips the gate: the bitmaps of a case seen before may have left the memory caches, and a case
+    // drawn then is the dark waiting strip (a dark slab for a frame or two on a warm revisit). Warm cases are ready within a frame or two
+    // and show without a fade; the others fade in as before.
+    val allWarm = remember { keys.all { it in BoxReady.warm } }
+    var revealed by remember { mutableStateOf(false) }
+    val pending = remember { HashSet<String>().apply { addAll(keys) } }
     val alpha by androidx.compose.animation.core.animateFloatAsState(
-        if (revealed) 1f else 0f, if (animate && !warmStart) tween(BOX_REVEAL_FADE_MS) else tween(0), label = "boxReveal"
+        if (revealed && composed) 1f else 0f, if (animate && !allWarm) tween(BOX_REVEAL_FADE_MS) else tween(0), label = "boxReveal"
     )
-    if (!warmStart) LaunchedEffect(Unit) { kotlinx.coroutines.delay(BOX_REVEAL_MAX_MS); revealed = true }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(BOX_REVEAL_MAX_MS); revealed = true }
     Box(Modifier.fillMaxSize().graphicsLayer { this.alpha = alpha }) {
         content { k ->
             BoxReady.note(k)
@@ -872,7 +875,7 @@ private fun BoxCase(
         rise.animateTo(target, tween(ms, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
     }
     // Update 414: a case whose spine is not made yet draws nothing (never the dark waiting strip / a slab); it shows the frame it is whole.
-    var whole by remember(k) { mutableStateOf(k in BoxReady.warm) }
+    var whole by remember(k) { mutableStateOf(false) }
     // (Its front / back pictures only matter once it can be picked up: the case you are on and its neighbours, then any seen before.)
     var wanted by remember(k) { mutableStateOf(k in BoxReady.faces) }
     val faces = wanted || on || pulled || kotlin.math.abs(index - c.focus) <= 2

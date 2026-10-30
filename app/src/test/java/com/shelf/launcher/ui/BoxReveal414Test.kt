@@ -22,7 +22,11 @@ class BoxReveal414Test {
 
     @Test fun boxCasesGoThroughTheGate() {
         val s = src("StyleCardboardBox.kt")
-        assertTrue(s.contains("BoxReveal(inBox, animate)"))
+        assertTrue(s.contains("BoxReveal(inBox, animate, composed = upto >= inBox.size)"))
+        // Update 416: a warm (seen before) case is never drawn before its spine is whole, and a warm box is composed in slices too
+        assertTrue(s.contains("var whole by remember(k) { mutableStateOf(false) }"))
+        assertTrue(s.contains("mutableIntStateOf(BOX_COMPOSE_FIRST)"))
+        assertTrue(!s.contains("mutableStateOf(k in BoxReady.warm)"))
         assertTrue(s.contains("readyNeedsFront = false, faces = faces"))
         assertTrue(s.contains("rank[i] >= upto"))
         // (still the real Case3D, one object at rest and lifted)

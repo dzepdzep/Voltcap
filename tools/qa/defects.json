@@ -1325,18 +1325,27 @@
    "title": "Rapid A B A on the Cardboard box / Game shelf: A reached the Play button of the window that was already closing and launched the game (Thor, 250 ms gaps); window now ignores Play once closing. Remaining: an A pressed during the return flight is dropped (not re-opened); 90 ms stress on Game shelf still launched once",
    "rule": "UX",
    "severity": "medium",
-   "status": "fixed-partly",
+   "status": "fixed",
    "found": "2026-10-30 update 412 Thor frame captures",
    "test": "PlayWhileClosing412Test"
   },
   {
    "id": "D109",
-   "title": "Cardboard Box cold category can still show an empty box for 1-2 s; neighbour-category spine prewarm added in 415 but not measured, composition cost (~19 ms / case, debug) unchanged",
+   "title": "Cardboard Box cold category shows an empty box first: MEASURED update 416 on the Pocket Classic (60 fps recording, boxload.py): release cold 0.5-1.4 s (GB 0.5, GBC 0.7, GBA 1.0, SNES 1.4), warm revisit 0.2 s; debug cold 1.0-2.6 s, warm 0.4 s. Neighbour-spine prewarm: no measurable benefit in 4 A/B runs (noise +-0.3 s), kept, NOT proven. Cost is Case3D composition (~19 ms / case debug) + spine decode, unchanged",
    "rule": "UX",
    "severity": "medium",
    "status": "open",
    "found": "2026-10-30 update 415 (follow-up of 414)",
    "test": "BoxPack415Test (packing only)"
+  },
+  {
+   "id": "D110",
+   "title": "Cardboard Box warm revisit of a category (one seen before) showed a dark navy slab / dark case strips for 1-2 frames and froze ~0.5 s: warm cases skipped the reveal gate although their spine bitmaps had left the cache (SpineCache.WAITING 0xFF1C1E26), and the whole warm box was composed in one frame",
+   "rule": "UX",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-10-30 update 416 (60 fps recording, Pocket Classic, GBA / ALL revisit)",
+   "test": "BoxReveal414Test (gate source asserts); verified on the Pocket Classic: debug + release recordings of cold and warm switches, Lite, no slab frame"
   }
  ]
 }
