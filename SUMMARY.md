@@ -39,9 +39,25 @@
   bar and preview window: PASS (clearly distinct, text readable). Orbit deck (Game Boy category, cartridges): 6 s capture at ~53 fps
   with 8 steps right — no single-frame flash, no blank / luminance-drop frame (`tools`-free check: A-B-A difference + mean luminance).
 
+- **Thor, more:** rapid A-B-A (100-120 ms apart) on Tile home's new card: ends with the window open again, no game started (PASS).
+  Dual screen (Twin showcase, both displays captured): the hinge window opens on the top screen, the grid stays on the lower one;
+  the window's facts scroll inside its half (PASS, but the window does not yet split its halves across the two screens).
+  Physical media audit (Pocket ribbon, Game Boy Color category, 8 games): real scans and the template shells (clear / black / grey GBC
+  paks) look consistent; the drawn fallback (Pokémon Brown, a hack with no scan) could not be re-checked — its ROM is no longer on the
+  Thor (only its save), so the new lighting on drawn shells is NOT seen on hardware.
+  Cardboard box (GameCube, 42 games): one box, back and front rows 21 / 21, softer rim, no black flap outline (PASS).
+
 ## NOT TESTED
 - Orbit deck with spinning discs (disc categories) on hardware, Box balance and cartridge lighting on hardware (in the build installed for
   the popup sweep, not looked at), rapid A/B/A / Lite / touch / compact screens for the new popups, Green Core / Card binder popups.
+
+## Remaining (exact next steps)
+1. KONKR full APK: needs the owner's on-device install attempt (file manager → full `Voltcap-0.6.64.apk`) and the exact message shown;
+   ADB install of the full build is already fine (diagnosis in Update 421).
+2. Compact / near-square screens and Lite mode for the 29 new popups: emulator-5554 was not connected this session.
+3. Twin layouts: put the hinge window's control half on the lower screen when one exists (today: one window on the top screen).
+4. Drawn cartridge lighting: check on hardware with a game that has no scan.
+5. No release until 1-4 are done (both APKs via `tools/release/release.ps1`, signer must stay `88ce4b67…f344197`).
 
 ## Files (synced via src_copy / project_copy)
 src_copy: `CrashGuard.kt`, `LauncherViewModel.kt`, `data/EsdeMedia.kt` (new), `ui/EsdeMediaCard.kt` (new), `ui/WinScenesHomes2.kt` (new),
