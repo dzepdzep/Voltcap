@@ -17,12 +17,23 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 
+/** (Update 429) Where a frame-rate reading came from. */
+enum class FpsKind { GAME_LAYER, DISPLAY, HELD, SCREEN }
+
 /** Everything the sampler could read this second. Null = not readable on this device (shown as "n/a"). */
 data class PerfSnapshot(
     val fps: Float? = null,
     val frameMs: Float? = null,
     /** Why FPS is missing, for the hint line. */
     val fpsNote: String? = null,
+    /**
+     * (Update 429) Where [fps] came from: [FpsKind.GAME_LAYER] the game's own layer, [FpsKind.DISPLAY] a panel-level
+     * counter while the game is in front, [FpsKind.HELD] the last good value held for a few seconds, [FpsKind.SCREEN]
+     * the home screen's rate (no game). AutoTDP acts only on the first three (see TdpSignals).
+     */
+    val fpsKind: FpsKind? = null,
+    /** (Update 429) The panel's refresh rate, Hz. */
+    val screenHz: Float? = null,
     val cpuMaxMhz: Int? = null,
     val cpuAvgMhz: Int? = null,
     val cpuPercent: Int? = null,
@@ -36,6 +47,8 @@ data class PerfSnapshot(
     /** Approximate: battery current x voltage. */
     val powerW: Float? = null,
     val charging: Boolean? = null,
+    /** (Update 429) A charger / USB power is connected (EXTRA_PLUGGED): the battery current is then not the draw. */
+    val plugged: Boolean? = null,
     val batteryPercent: Int? = null,
     /** Energy left in the battery, Wh (charge counter x voltage), when the driver reports it. */
     val batteryWh: Float? = null,
@@ -97,6 +110,7 @@ class PerfReader(context: Context) {
             batteryTempC = batteryTemp,
             powerW = power(battery),
             charging = charging,
+            plugged = battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)?.takeIf { it >= 0 }?.let { it != 0 },
             batteryPercent = battery?.let {
                 val l = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); val sc = it.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
                 if (l >= 0 && sc > 0) l * 100 / sc else null
@@ -224,11 +238,14 @@ object PerfSampler {
                     val base = runCatching { reader.sample() }.getOrDefault(PerfSnapshot())
                     val pkg = gamePackage
                     val now = System.currentTimeMillis()
-                    val gameFps = (if (fpsSource != null && pkg != null) runCatching { fpsSource.read(pkg) }.getOrNull() else null)
+                    val layerFps = if (fpsSource != null && pkg != null) runCatching { fpsSource.read(pkg) }.getOrNull() else null
+                    val gameFps = layerFps
                         // Per-layer timings empty (common on Android 12+): the display's frame counter via root.
                         ?: (if (pkg != null) runCatching { rootCounter.read(pkg) }.getOrNull() else null)
                         // Qualcomm display driver's measured_fps (Retroid Pocket Classic and other Snapdragon handhelds).
                         ?: (if (pkg != null) runCatching { driverFps.read(pkg) }.getOrNull() else null)
+                    // (Update 429: a device profile's own source may itself be a panel counter.)
+                    val layerKind = layerFps != null && fpsSource !is RootFrameCounterFpsSource && fpsSource !is DisplayMeasuredFpsSource
                     if (gameFps != null) { lastGood = gameFps; lastGoodAt = now }
                     val held = if (gameFps == null && pkg != null && now - lastGoodAt < 4_000L) lastGood else null
                     // No game: what the screen shows (the home screen) — its frame counter, else its refresh rate.
@@ -250,6 +267,13 @@ object PerfSampler {
                     push(fpsHist, fps?.fps)
                     _snapshot.value = base.copy(
                         fps = fps?.fps, frameMs = fps?.frameMs, fpsNote = note,
+                        fpsKind = when {
+                            gameFps != null -> if (layerKind) FpsKind.GAME_LAYER else FpsKind.DISPLAY
+                            held != null -> FpsKind.HELD
+                            screen != null -> FpsKind.SCREEN
+                            else -> null
+                        },
+                        screenHz = screenRate(),
                         cpuHistory = cpuHist.toList(), gpuHistory = gpuHist.toList(), fpsHistory = fpsHist.toList()
                     )
                 }

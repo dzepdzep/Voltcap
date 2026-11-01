@@ -32,7 +32,9 @@ data class TunerStatus(
      */
     val resets: Int = 0,
     /** (Update 237, #85: the underclock AutoTDP has stepped to right now, or null when it isn't AutoTDP's to move.) */
-    val autoUnderclock: Underclock? = null
+    val autoUnderclock: Underclock? = null,
+    /** (Update 429) What AutoTDP is doing (power-limited, recovering, no signal…), null when it's off. */
+    val tdpState: TdpState? = null
 )
 
 /**
@@ -168,7 +170,9 @@ object Tuner {
         game = g
         heatReset()
         val (profile, sourceKey, label) = resolve(store, g)
-        level = if (profile.autoTdp) (store.learnedLevel(key) ?: 0.85f).coerceIn(AutoTdpController.MIN_LEVEL, 1f) else 1f
+        // (Update 429: from what the game learned plus a margin — the saved level is where the last session ENDED, often a
+        // menu or a quiet scene; starting there made the first heavy scene stutter. The controller lowers it in ~12 s if unneeded.)
+        level = if (profile.autoTdp) AutoTdpController.startLevel(store.learnedLevel(key)) else 1f
         // (Update 237, #85: AutoTDP's underclock starts from what this game learned (read in apply → ucBegin).)
         ucStep = -1
         currentSourceKey = sourceKey
@@ -217,7 +221,7 @@ object Tuner {
                     if (!relevant) return@synchronized
                     val store = TuneStore(context)
                     val (profile, sourceKey, label) = resolve(store, g)
-                    if (profile.autoTdp && !current.autoTdp) level = (store.learnedLevel(g.key) ?: 0.85f).coerceIn(AutoTdpController.MIN_LEVEL, 1f)
+                    if (profile.autoTdp && !current.autoTdp) level = AutoTdpController.startLevel(store.learnedLevel(g.key))
                     if (!profile.autoTdp) level = 1f
                     currentSourceKey = sourceKey
                     apply(context, profile, g.key, label)
@@ -318,15 +322,15 @@ object Tuner {
      * dwell times and hysteresis. Uses only what the sampler reads: frame rate, CPU / GPU busy %, power.)
      */
     @Synchronized
-    fun autoUnderclockTick(fps: Float?, target: Int?, cpuPct: Int?, gpuPct: Int?, powerW: Float?, dtMs: Long) {
+    fun autoUnderclockTick(fps: Float?, target: Int?, cpuPct: Int?, gpuPct: Int?, overPower: Boolean, dtMs: Long) {
         val p = current
         if (!adaptiveUc(p) || ucStep < 0 || sleeping) return
         val now = compute(p, level)
         val levelHasRoom = compute(p, 1f) != now
         val range = ucRange(p)
         val deeperLowers = ucStep < range.last && computeAt(p, level, ucStep + 1) != now
-        val over = powerW != null && powerW > p.autoMode.ceilingW
-        val next = ucCtl.tick(ucStep, range, fps, target, cpuPct, gpuPct, over, levelHasRoom, deeperLowers, dtMs)
+        // (Update 429: "over" comes from the controller's smoothed battery-only reading, not a raw one that counted the charger.)
+        val next = ucCtl.tick(ucStep, range, fps, target, cpuPct, gpuPct, overPower, levelHasRoom, deeperLowers, dtMs)
         if (next != ucStep) {
             ucStep = next
             write(compute(p, level))
@@ -334,8 +338,8 @@ object Tuner {
         }
     }
 
-    fun updateLive(fps: Float?, target: Int?, powerW: Float?, tempC: Float?, fan: Int?) {
-        _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan)
+    fun updateLive(fps: Float?, target: Int?, powerW: Float?, tempC: Float?, fan: Int?, tdp: TdpState? = null) {
+        _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan, tdpState = tdp)
     }
 
     /** Update 201: when the handheld last put its own clocks back over the limits (elapsedRealtime), 0 = not yet. */

@@ -96,13 +96,19 @@ class TuneService : Service() {
 
             // AutoTDP
             var target: Int? = null
+            var tdpState: TdpState? = null
             if (p.autoTdp) {
                 if (controllerFor != p) { controller = AutoTdpController(p.autoMode, p.targetFps); controllerFor = p }
                 val c = controller!!
-                Tuner.setLevel(c.tick(Tuner.autoTdpLevel(), snap?.fps, snap?.powerW))
+                // (Update 429: only the game's frame rate (never the screen's refresh rate) and only a battery reading
+                // taken on battery reach the controller; see TdpSignals.)
+                val input = TdpSignals.from(snap?.fps, snap?.fpsKind?.name, snap?.powerW, snap?.plugged, snap?.charging, snap?.screenHz)
+                Tuner.setLevel(c.tick(Tuner.autoTdpLevel(), input))
                 target = c.target
+                tdpState = c.state
                 // (Update 237, #85: then AutoTDP's own underclock, from the same readings plus the CPU / GPU busy %.)
-                runCatching { Tuner.autoUnderclockTick(snap?.fps, target, snap?.cpuPercent, snap?.gpuPercent, snap?.powerW, dt) }
+                val ucFps = input.fps.takeIf { input.fresh }
+                runCatching { Tuner.autoUnderclockTick(ucFps, target, snap?.cpuPercent, snap?.gpuPercent, c.state == TdpState.POWER_LIMITED || (c.smoothedW ?: 0f) > p.autoMode.ceilingW, dt) }
             } else { controller = null; controllerFor = null }
 
             // Fan
@@ -127,10 +133,12 @@ class TuneService : Service() {
                 val (onBattery, batteryW) = batteryPower()
                 // The frame rate also when the performance overlay keeps the sampler running.
                 val shared = snap ?: PerfSampler.snapshot.value.takeIf { PerfSampler.activeRefs > 0 }
-                Tuner.measureSample(shared?.fps, snap?.powerW ?: batteryW, temp, onBattery)
+                Tuner.measureSample(shared?.let { sh -> sh.fps.takeIf { sh.fpsKind != com.shelf.launcher.data.perf.FpsKind.SCREEN } }, snap?.powerW ?: batteryW, temp, onBattery)
                 Tuner.heatTick(temp, dt)
             }
-            Tuner.updateLive(snap?.fps, target, snap?.powerW, temp, fan)
+            // (Update 429: watts shown only on battery — plugged in, the battery current is the charge, not the draw.)
+            val shownW = snap?.let { sn -> sn.powerW?.takeIf { sn.plugged == false && sn.charging != true } }
+            Tuner.updateLive(snap?.fps, target, shownW, temp, fan, tdpState)
             // Caps the vendor's daemon lifted are put back within ~4 s.
             // Update 201: while the handheld keeps putting its own clocks back (AYN's root service: every 10 s), a cheap
             // one-call look every second puts them back within a second instead of up to 4 s of every 10 (on the Odin 2

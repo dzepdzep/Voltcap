@@ -1365,6 +1365,60 @@
    "status": "fixed-unverified",
    "found": "2026-11-01 update 428 Thor captures (.shots/428th2)",
    "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked."
+  },
+  {
+   "id": "D113",
+   "title": "AutoTDP cut the level 0.04/s whenever the battery reading was over the budget, even with frames already below target (to the 0.35 floor in ~15 s); no report that the target can't be held",
+   "rule": "AUTOTDP",
+   "severity": "high",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "Now: smoothed power (EMA, 3 readings over, 0.92 band), -0.01/s only while really over, no raise over budget, headroom-limited raises, TdpState.POWER_LIMITED shown on the tuner page. AutoTdp429Test (over-budget, budget-respected, power-spike tests). Thor comparison NOT run."
+  },
+  {
+   "id": "D114",
+   "title": "Battery power read while charging (charge current) or at a charge limit (~0 W) was used as the AutoTDP power reading; whole-device draw labelled like SoC TDP",
+   "rule": "AUTOTDP",
+   "severity": "high",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "TdpSignals.from: battery watts only when EXTRA_PLUGGED = 0 and not charging; PerfSnapshot.plugged; tuner page / notification watts on battery only; tuner text says 'whole handheld battery draw'. Unit-tested; NOT on hardware."
+  },
+  {
+   "id": "D115",
+   "title": "With no game package the sampler's screen refresh rate reached AutoTDP as the game fps (looked on target → clocks lowered with no game signal; target detection could lock to the refresh rate)",
+   "rule": "AUTOTDP",
+   "severity": "high",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "PerfSnapshot.fpsKind (GAME_LAYER / DISPLAY / HELD / SCREEN); SCREEN never reaches the controller or the measurements; HELD readings don't lower or detect; target capped at the refresh rate. Unit-tested; NOT on hardware."
+  },
+  {
+   "id": "D116",
+   "title": "Panel-level frame counters (SurfaceFlinger 1013, Qualcomm measured_fps) may count refreshes, not game frames — unverified per device",
+   "rule": "AUTOTDP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "Guard: a DISPLAY reading that has never dipped below 97 % of the refresh rate can't take the level below 0.6 (TdpState.UNVERIFIED). Whether the Thor / RP Classic counters follow game frames is NOT measured: run a 30 fps-capped game with the overlay on each device."
+  },
+  {
+   "id": "D117",
+   "title": "AutoUnderclock treated unreadable CPU and GPU load as idle and deepened the underclock with no evidence",
+   "rule": "AUTOTDP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "Deeper presets now need a GPU reading (< 75 % with a CPU reading, < 60 % without). Unit-tested; thresholds still an interim guess pending device data."
+  },
+  {
+   "id": "D118",
+   "title": "AutoTDP oscillation and slow recovery: 3 s down / 1 s up sawtooth around the needed level (59 raises / 47 misses in 200 s in the simulated plant), +0.12/s max recovery",
+   "rule": "AUTOTDP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
+   "note": "Proportional recovery (up to +0.25/tick), failed-step floor with back-off 60→480 ticks (modest misses only; loading collapses excluded), session start = learned + 0.1. AutoTdp429Test holdsTheTargetWithoutASawtooth (≤3 raises, ≤3 misses) and recoveryFromABigMissIsQuick. Frame-time effect on hardware NOT measured."
   }
  ]
 }

@@ -1,3 +1,43 @@
+# Update 429 (1 Nov 2026) — AutoTDP / underclock audit: controller fixes + deterministic tests (NOT released, NOT on hardware)
+
+Owner priority 1 of the quality pass. Source audit first, then fixes, each with a test that fails on the 428 controller (traces were
+run through both versions in a Python port of the two controllers; Kotlin tests then pass on the PC: `testDebugUnitTest` BUILD
+SUCCESSFUL, AutoTdp429Test 18 / 18). Thor offline (battery), Odin 2 Portal not used (CLAUDE.md), GT78 not touched.
+
+**Found → fixed (all FIXED-UNVERIFIED, defects D113–D118):**
+- D113: over the power budget the level dropped 0.04/s even with frames below target (0.8 → 0.35 in 15 s). Now power is smoothed (EMA
+  0.35, over after 3 readings, under below 92 %), with frames short it eases 0.01/s only while really over, never raises over budget,
+  raises near the budget are limited by its headroom, and the tuner page says "target not reachable within the power budget". Simulated
+  plant (fps 70×L, 2+8×L W, 7 W): 428 swung L 0.62–0.74 peaking at 7.9 W; 429 settles at 0.60 / 6.8 W.
+- D114: the sampler's |current × voltage| was used while charging (charge current) or at a charge limit (≈0 W). Battery watts now count
+  only unplugged and not charging (`PerfSnapshot.plugged`, `TdpSignals.from`); the tuner page / notification show watts on battery only;
+  the TDP line says it is the whole handheld's battery draw, not the chip.
+- D115: with no game package the screen refresh rate was the "fps" AutoTDP saw. `PerfSnapshot.fpsKind` (GAME_LAYER / DISPLAY / HELD /
+  SCREEN): SCREEN never reaches AutoTDP or the measurements; the 4 s held value no longer lowers clocks or feeds target detection;
+  detected targets never exceed the refresh rate; a target only comes down with the level near full (or raises refused by a binding cap),
+  so a low frame rate AutoTDP or the budget caused isn't mistaken for the game's cap.
+- D116 (guard only): panel-level counters may count refreshes. Until one shows a dip below 97 % of the refresh rate, AutoTDP can't go
+  below level 0.6 ("frame counter unverified"). Whether the Thor / RP Classic counters follow game frames is NOT measured.
+- D117: AutoUnderclock counted unreadable CPU and GPU load as idle. Deeper presets need a GPU reading (< 75 % with a CPU reading, < 60 %
+  without — /proc/stat is usually closed).
+- D118: sawtooth (simulated: 59 raises / 47 misses in 200 s) and +0.12/s recovery. Now proportional recovery (to L × target / fps, max
+  +0.25/tick), a step down undone within 8 s makes its level a floor (60 → 480 ticks, misses > 25 % such as loading screens excluded,
+  reset after 600 ticks clean), session start = learned + 0.1 (the saved level is where the last session ended). Simulated: 1 raise /
+  1 miss.
+- No signal: no drift any more (428 crept up 0.01/s on low watts with no fps).
+
+**Audited, not changed (source evidence, see COWORK_HANDOFF 429 matrix 1.7 / 1.8 / 1.11 / 1.12):** tier and underclock combine as the
+lower of the two (not multiplied); tier × power target × level multiply; `uc_with_power` migration ran once and is not re-run by a
+restore; restoration paths (game end, process restart, tuning off, Restore) put the device profile / stock back; stock is persisted per boot.
+
+**Copy:** `src_copy/data/perf/PerfSampler.kt`, `src_copy/device/tune/AutoTdpController.kt`, `TuneService.kt`, `Tuner.kt`,
+`src_copy/ui/TunerContent.kt`; `project_copy/app/src/test/java/com/shelf/launcher/device/tune/AutoTdp429Test.kt`; tools/qa/defects.json,
+COWORK_HANDOFF.md (consolidated quality-pass matrix), CURRENT_TASK.md.
+
+**NOT done / NOT tested:** any hardware run. Next with a healthy Thor (>= 50 %, unplugged, `dumpsys battery` first): one game, 5 min each
+Stock / manual Medium / AutoTDP Efficient–Balanced–Smooth with the overlay, logging fps, frame times, level, state, watts, caps; kill the
+service mid-game and check caps; plugged run shows no watts and no power cuts. Then priorities 2–6 of the matrix.
+
 # Update 428 (1 Nov 2026) — Stage A review fixes, Stage B device checks of the bright / light themes, D107 (NOT released)
 
 Owner's review of 427: contrast tool must fail, tests use the stated thresholds, WebGL classes are review results not device proof,

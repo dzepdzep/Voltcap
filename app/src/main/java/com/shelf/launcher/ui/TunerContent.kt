@@ -185,6 +185,8 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
             else if (p.underclocked) add("Underclock ${p.effectiveUnderclock.label}")
             if (s.heatStep > 0) add("heat guard: ${s.heatStep} step${if (s.heatStep == 1) "" else "s"} lower")
             s.targetFps?.let { add("target $it fps") }
+            // (Update 429: e.g. "target not reachable within the power budget" — said, not hidden.)
+            if (p.autoTdp && !s.sleeping) s.tdpState?.label?.let { add(it) }
         }
         Text(parts.joinToString(" · "), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         val live = listOfNotNull(
@@ -688,7 +690,7 @@ private fun TierBreakdown(p: TuneProfile, h: TuneHw?) {
             GovernorChoice.POWERSAVE -> "Power save: cores stay low and climb slowly — coolest, longest battery"
         })
         add("Touch / launch boosts" to "Switched off while a limit is on, so the limits above really hold (put back after)")
-        add("Power (TDP)" to if (p.autoTdp) "AutoTDP ${p.autoMode.label}: lowers clocks while the game holds its frame rate, staying under about ${p.autoMode.ceilingW.toInt()} W"
+        add("Power (TDP)" to if (p.autoTdp) "AutoTDP ${p.autoMode.label}: lowers clocks while the game holds its frame rate, keeping the handheld's battery draw (whole device, not the chip alone) under about ${p.autoMode.ceilingW.toInt()} W; read on battery only"
             else "No fixed wattage on Snapdragon handhelds: the clock limits above are what cap power and heat")
         add("Fan" to when (p.fan) {
             FanMode.SYSTEM -> "The device's own setting"

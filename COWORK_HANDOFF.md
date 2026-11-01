@@ -1,3 +1,33 @@
+**UPDATE 429 (1 Nov 2026, newest; NOT released) — AutoTDP / underclock audit (Priority 1, source + deterministic tests). Read this block first.**
+Odin 2 Portal: on ADB but NOT used (CLAUDE.md forbids it; not in the owner's authorized list for this pass — needs explicit owner OK).
+Thor 3140972f: offline (shut down at 1 % battery 1 Nov 19:05), so NOTHING in 429 is hardware-verified. GT78 on ADB: not touched.
+
+**CONSOLIDATED QUALITY-PASS MATRIX (owner prompt 1 Nov "Complete Quality Pass"; status VERIFIED / FIXED-UNVERIFIED / FAILED / BLOCKED / NOT STARTED)**
+| # | Item | Defect | Status | Evidence | Remaining action |
+|---|---|---|---|---|---|
+| 1.1 | Power-based throttling while fps below target | D113 | FIXED-UNVERIFIED | AutoTdp429Test 18/18 PC (gradle testDebugUnitTest) | Thor: Stock vs manual UC vs AutoTDP, battery >= 50 %, unplugged |
+| 1.2 | Charging / charge-limit current used as power | D114 | FIXED-UNVERIFIED | unit test | Thor: plugged, check tuner page shows no W, AutoTDP NO power cuts |
+| 1.3 | Whole-device battery draw vs SoC TDP | D114 | FIXED-UNVERIFIED (labelled; budget stays coarse) | TunerContent text | owner decision: keep 7/9/12 W device budgets or re-derive from measurements |
+| 1.4 | Screen refresh taken as game fps / target lock | D115 | FIXED-UNVERIFIED | unit test | Thor: game without package match → state "no game frame rate read" |
+| 1.5 | Panel counters may count refresh | D116 | FIXED-UNVERIFIED (guard only) | unit test | measure 30 fps-capped game on Thor + RP Classic (Nov 2) |
+| 1.6 | Missing CPU/GPU % treated as headroom | D117 | FIXED-UNVERIFIED | unit test | log gpuPercent availability on Thor |
+| 1.7 | Underclock labels vs real cuts | — | AUDITED (source): tier and underclock combine as min (not multiplied); tier × power target × AutoTDP level do multiply (level 0.35 × Eco 30 % GPU → slowest GPU step); presetKhz picks within 5 % below the label | Tuner.computeAt / TuneHardware.presetKhz | Thor: read scaling_max_freq per preset vs label, log |
+| 1.8 | Compounded limits (tier + AutoTDP + UC + heat guard + governor) | — | AUDITED, NOT CHANGED | as 1.7; performance → balanced governor under AutoTDP | device table of effective caps per combination |
+| 1.9 | Slow recovery | D118 | FIXED-UNVERIFIED | unit test (one tick 0.5→0.75) | frame-time capture on Thor |
+| 1.10 | Oscillation | D118 | FIXED-UNVERIFIED | unit test (≤3 raises / 200 ticks) | Thor 10 min trace |
+| 1.11 | Saved profiles / explicit Off / migration | — | AUDITED: `uc_with_power` OFF→AUTO ran once (flag kept; Backup restore merges, doesn't clear) — no re-run, explicit Off picks made after it stay Off | TuneModel.migrateUnderclockOnce, Backup.kt | none unless owner wants pre-237 Off picks back |
+| 1.12 | Restore after exit / service death / tuning off | — | AUDITED: onGameEnded → global; process restart → applyGlobal; stock persisted with dirty flag per boot; profileChanged without AutoTDP → level 1; Restore → stock + service stop | Tuner.kt | Thor: kill service mid-game, check caps return |
+| 1.13 | Learned level start | D118 | FIXED-UNVERIFIED (learned + 0.1) | unit test | Thor launch stutter check |
+| 2.1 | D111 Lobby / D112 bright scenes after-fix captures | D111 D112 | FIXED-UNVERIFIED | — | Thor captures, several layouts |
+| 2.2 | D107 Cinema / Arctic story with real controller | D107 | FIXED-UNVERIFIED | — | Thor |
+| 2.3 | D102 Cross ◀ ▶ asymmetry | D102 | NOT REPRODUCED in code | — | Thor repro |
+| 2.4 | Pocket Shell, light themes across layouts, 20 POLISH, 6 KEEP*, Chill, 32-bit, music/lyrics, CRT, Showcase, Trophy, OLED, Lite, idle power, smoothness | D64 D67 | NOT STARTED (device) | REVIEW_427 = simulated only | Thor + RP Classic (Nov 2) |
+| 3 | All 53 HomeLayouts (appearance, nav, focus, rapid nav, category switch rule 14, art, empty / small / large, missing art, dual screen, small screens, perf, settings); Case Stacks 13 arrangements; Tile Home; Pocket Ribbon; carousel / physical media (Game Shelf, Cover Details, Orbit Deck, Disc Station, Cardboard Box); dual-screen D-pad Down | D61 D86 D96 D109 | NOT STARTED this pass | 423 audit (old, not permanent proof) | Thor batches 5-8 layouts |
+| 4 | Popup audit: R1 modes Own / Banner / Classic / Row reveal / Shared-Glance × 53 layouts; Wii Channel (Menu / Start / Details); Twin both screens + fallback; Details / Options / Achievements / Performance by controller; no clipping / ellipses / stale covers | — | NOT STARTED this pass | 425-426 partial | Thor |
+| 5 | Older: L2/R2 category parity + hidden categories; category-switch flashes; .trashed-*; monochrome icons; DS/3DS/GB/Switch art; PSP UMD; PS1/PS3/PSP/3DS backs; N64/Saturn/DC spines; DS/GBA 3-row boxes; Android / RetroArch representation (owner decision); status bar per layout; stretching; Save Vault labels; truncation D83; cold start D24; category / popup perf; Stacks / Arcade pacing D61; idle GPU D64 / D67; D12 D13 D38 D39 D42 D60 D73 D91 | many | OPEN | — | per item |
+| 6 | Process: reproduce → cause → fix → regression test → hardware → evidence | — | ongoing | — | — |
+
+
 **UPDATES 423–428 (1 Nov 2026, newest; NOT released, latest release still per SUMMARY) — read this block first.**
 Commits: 6d13d3c (423), 2ae6cbb / 9d19e46 / 49adbbd / b0c738a (424, 424b, 424c), b0c2700 (425–426), 763132b (427 stage A), 428 (this block).
 - **423:** visual QA of all 53 layouts on the Thor with the demo library; 53 new 16:9 layout previews (`lp_*.webp`, `LayoutPreviews423Test`),
