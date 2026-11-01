@@ -110,7 +110,10 @@ internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INF
     /** Update 408: the Channel grid window, a Wii Channel preview (WinScenesWii.kt). */
     WII_PREVIEW,
     /** Update 421 (WinScenesMore.kt): the layouts that had no window of their own. */
-    RECORD_SLEEVE, CARD_BACK, DISC_PANEL, CORE_PANEL, CUBE_FACE, POCKET_LCD, INDEX_CARD, TWIN_HINGE, GALLERY_PLACARD }
+    RECORD_SLEEVE, CARD_BACK, DISC_PANEL, CORE_PANEL, CUBE_FACE, POCKET_LCD, INDEX_CARD, TWIN_HINGE, GALLERY_PLACARD,
+    /** Update 422 (WinScenesHomes2.kt): the last shared-window layouts. */
+    CROSS_OPTIONS, LIVE_PANEL, DASH_CARD, SIDE_DRAWER, SPOT_POSTER, DOCK_FLYOUT, HUB_PLATE, DISCOVER_CARD, CHIP_SHEET, LIBRARY_PAGE,
+    TIMELINE_ENTRY, HERO_BANNER, TILE_CARD, VOLT_PANEL }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -142,6 +145,22 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES, HomeLayout.COVERDETAILS -> WinScene.INDEX_CARD
     HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE -> WinScene.TWIN_HINGE
     HomeLayout.ARTLIB -> WinScene.GALLERY_PLACARD
+    // Update 422: the rest. (Layout Studio is built by the user: the standard window in its chosen look. The TV room opens on
+    // the TV's own screen, GameWindow's tvRect.)
+    HomeLayout.CROSS -> WinScene.CROSS_OPTIONS
+    HomeLayout.LIVE -> WinScene.LIVE_PANEL
+    HomeLayout.DASH -> WinScene.DASH_CARD
+    HomeLayout.SIDE -> WinScene.SIDE_DRAWER
+    HomeLayout.SPOT -> WinScene.SPOT_POSTER
+    HomeLayout.BAR -> WinScene.DOCK_FLYOUT
+    HomeLayout.HUB -> WinScene.HUB_PLATE
+    HomeLayout.RESUME -> WinScene.DISCOVER_CARD
+    HomeLayout.CIRCUIT -> WinScene.CHIP_SHEET
+    HomeLayout.LIBRARY -> WinScene.LIBRARY_PAGE
+    HomeLayout.TIMELINE -> WinScene.TIMELINE_ENTRY
+    HomeLayout.HERO, HomeLayout.HERO_TILES -> WinScene.HERO_BANNER
+    HomeLayout.TILES, HomeLayout.GRID -> WinScene.TILE_CARD
+    HomeLayout.CLASSIC -> WinScene.VOLT_PANEL
     else -> null
 }
 
@@ -179,6 +198,13 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.INDEX_CARD -> Brush.verticalGradient(listOf(Color(0xFF15100A).copy(alpha = 0.45f), Color(0xFF0A0805).copy(alpha = 0.78f)))
     WinScene.TWIN_HINGE -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Black.copy(alpha = 0.85f)))
     WinScene.GALLERY_PLACARD -> Brush.verticalGradient(listOf(Color(0xFF1C1B19).copy(alpha = 0.6f), Color(0xFF0D0C0B).copy(alpha = 0.86f)))
+    WinScene.CROSS_OPTIONS, WinScene.SIDE_DRAWER -> Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.7f)))
+    WinScene.LIVE_PANEL, WinScene.DASH_CARD, WinScene.HUB_PLATE, WinScene.DISCOVER_CARD, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.VOLT_PANEL ->
+        Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.8f)))
+    WinScene.SPOT_POSTER, WinScene.HERO_BANNER -> Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Black.copy(alpha = 0.9f)))
+    WinScene.DOCK_FLYOUT -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.3f), Color.Black.copy(alpha = 0.7f)))
+    WinScene.CHIP_SHEET -> Brush.verticalGradient(listOf(Color(0xFF02120B).copy(alpha = 0.6f), Color(0xFF010805).copy(alpha = 0.86f)))
+    WinScene.TILE_CARD -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.7f)))
     WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
@@ -280,6 +306,20 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.INDEX_CARD -> IndexCard(ctx)
         WinScene.TWIN_HINGE -> TwinHinge(ctx)
         WinScene.GALLERY_PLACARD -> GalleryPlacard(ctx)
+        WinScene.CROSS_OPTIONS -> CrossOptions(ctx)
+        WinScene.LIVE_PANEL -> LiveTilesPanel(ctx)
+        WinScene.DASH_CARD -> DashCard(ctx)
+        WinScene.SIDE_DRAWER -> SideDrawer(ctx)
+        WinScene.SPOT_POSTER -> SpotPoster(ctx)
+        WinScene.DOCK_FLYOUT -> DockFlyout(ctx)
+        WinScene.HUB_PLATE -> HubPlate(ctx)
+        WinScene.DISCOVER_CARD -> DiscoverCard(ctx)
+        WinScene.CHIP_SHEET -> ChipSheet(ctx)
+        WinScene.LIBRARY_PAGE -> LibraryPage(ctx)
+        WinScene.TIMELINE_ENTRY -> TimelineEntry(ctx)
+        WinScene.HERO_BANNER -> HeroBanner(ctx)
+        WinScene.TILE_CARD -> TileCard(ctx)
+        WinScene.VOLT_PANEL -> VoltPanel(ctx)
     }
 }
 

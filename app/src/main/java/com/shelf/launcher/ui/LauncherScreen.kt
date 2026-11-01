@@ -369,6 +369,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // hidden here, so every screen falls back to the app-icon look.
     val state = remember(uiState) { uiState.forDisplay() }
     // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
+    // Update 422: Settings › Library › ES-DE artwork works through the view model.
+    androidx.compose.runtime.SideEffect {
+        EsdeActions.rescan = { done -> viewModel.rescanEsde(done) }
+        EsdeActions.disconnect = { viewModel.disconnectEsde() }
+        EsdeActions.apply = { viewModel.applyEsde() }
+    }
     run { val m = PopupStyle.motion(state.appearance.homeLayout.name); androidx.compose.runtime.SideEffect { if (ActiveWinMotion.value != m) ActiveWinMotion.value = m } }
     // Update 177: the consoles there are, for Settings › Second screen Games page (FolderArt).
     androidx.compose.runtime.SideEffect {

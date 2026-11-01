@@ -149,6 +149,9 @@ internal fun bigLogo(g: Game, state: LauncherUiState): String? {
 /** Update 403: how visible the window's veil is for a given flight progress: exactly the flight's own progress (0 = piece still in its slot, 1 = landed), so the screen never dims ahead of the movement. */
 internal fun flightVeil(lift: Float): Float = lift.coerceIn(0f, 1f)
 
+/** Update 422: scenes that move in from a screen edge themselves (GameWindow doesn't grow them out of the game's card). */
+internal val SELF_MOVING_SCENES = setOf(WinScene.CROSS_OPTIONS, WinScene.SIDE_DRAWER, WinScene.DOCK_FLYOUT)
+
 internal val PICKUP_CARD_LAYOUTS =setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
 
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
@@ -1311,8 +1314,9 @@ internal fun GameWindow(
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            if (discFlight) {
-                                // (Its scene flies the disc and opens the rest round it.)
+                            if (discFlight || scene in SELF_MOVING_SCENES) {
+                                // (Its scene flies the disc and opens the rest round it. Update 422: the screen-edge scenes —
+                                // Cross options, Side drawer, Dock flyout — slide in from their own edge, not out of the card.)
                             } else if (from == null || !anim) {
                                 val s = 0.86f + 0.14f * k
                                 scaleX = s; scaleY = s

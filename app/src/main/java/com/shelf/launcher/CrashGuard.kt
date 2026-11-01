@@ -148,14 +148,17 @@ object CrashGuard {
                     timeMillis = exit.timeMillis, kind = CrashReports.kindFor(exit), pid = exit.pid, thread = null,
                     details = null, safeRun = ofPrevRun && prevSafe, exit = exit
                 )
-                if (ofPrevRun) {
+                // Update 422: an ANR Android raises because the app had NO focused window (the screen was off or locked
+                // while a key arrived — seen in a QA run on the Thor) is not Voltcap failing to start: it is reported, but it
+                // never counts towards safe mode (and so can never trigger the settings reset).
+                if (ofPrevRun && !noWindowAnr(exit)) {
                     early = if (exit.timeMillis - prevStart in 0 until EARLY_WINDOW_MS) early + 1 else 0
                 }
             }
         }
         events.sortBy { it.timeMillis }
 
-        val crashedInSafe = events.any { it.safeRun }
+        val crashedInSafe = events.any { it.safeRun && !(it.exit?.let(::noWindowAnr) ?: false) }
         val loop = early >= 2
         val safe = loop || crashedInSafe
         safeMode = safe
@@ -235,16 +238,53 @@ object CrashGuard {
     }
 
     /** Clears the display and app-library settings. Returns the names of those that had anything saved (never their contents). */
+    /** Update 422: an ANR that only says the app had no focused window (screen off / locked when input arrived). */
+    internal fun noWindowAnr(exit: CrashReports.ExitEvent): Boolean =
+        exit.reasonCode == CrashReports.REASON_ANR && (exit.description ?: "").contains("does not have a focused window", ignoreCase = true)
+
     fun resetSettings(context: Context): List<String> {
         val cleared = mutableListOf<String>()
         RESETTABLE.forEach { name ->
             runCatching {
                 val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
                 if (prefs.all.isNotEmpty()) cleared += name
+                // Update 422: a copy is kept first ("<name>__before_reset"), so Settings can put the look back
+                // (restoreResetSettings) — a reset never loses the user's settings for good.
+                runCatching { copyPrefs(prefs, context.getSharedPreferences(name + BACKUP_SUFFIX, Context.MODE_PRIVATE)) }
                 prefs.edit().clear().commit()
             }
         }
         return cleared
+    }
+
+    private const val BACKUP_SUFFIX = "__before_reset"
+
+    private fun copyPrefs(from: android.content.SharedPreferences, to: android.content.SharedPreferences) {
+        val e = to.edit().clear()
+        from.all.forEach { (k, v) ->
+            when (v) {
+                is String -> e.putString(k, v); is Boolean -> e.putBoolean(k, v); is Int -> e.putInt(k, v)
+                is Long -> e.putLong(k, v); is Float -> e.putFloat(k, v)
+                is Set<*> -> e.putStringSet(k, v.filterIsInstance<String>().toSet())
+            }
+        }
+        e.commit()
+    }
+
+    /** Update 422: whether a safe-mode reset left a copy of the settings it cleared. */
+    fun hasResetBackup(context: Context): Boolean =
+        RESETTABLE.any { context.getSharedPreferences(it + BACKUP_SUFFIX, Context.MODE_PRIVATE).all.isNotEmpty() }
+
+    /** Update 422: puts back what the last safe-mode reset cleared (needs a restart to show everywhere). */
+    fun restoreResetSettings(context: Context): List<String> {
+        val back = mutableListOf<String>()
+        RESETTABLE.forEach { name ->
+            runCatching {
+                val copy = context.getSharedPreferences(name + BACKUP_SUFFIX, Context.MODE_PRIVATE)
+                if (copy.all.isNotEmpty()) { copyPrefs(copy, context.getSharedPreferences(name, Context.MODE_PRIVATE)); back += name }
+            }
+        }
+        return back
     }
 
     /** Only the stack trace (with causes) and breadcrumbs: no IPC, no disk beyond the caller's prefs write. */

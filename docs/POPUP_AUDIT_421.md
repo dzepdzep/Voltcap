@@ -1,4 +1,4 @@
-# Popup audit — Update 421 (1 Nov 2026)
+# Popup audit — Update 421 / 422 (1 Nov 2026)
 
 Source of truth: `winSceneFor()` in `ui/WinScenes.kt` (layout → scene) and `PopupStyle` in `ui/QuickSettings.kt`
 (which window A opens). 53 `HomeLayout` values. Before 421: 19 layouts had a scene. After 421: 34.
@@ -29,10 +29,25 @@ Legend — HW: checked on the AYN Thor 3140972f (screenshot, release build of th
 | Game shelf / Case stacks / Console stack / Coverflow details | **new** library index card beside the real case | new; card flight kept for the plain-window path | HW (Shelf, Stacks, Coverflow) |
 | Twin desk / icons / showcase | **new** hinge window (art half / controls half) | new | HW (Twin desk, single screen only) |
 | Artwork library | **new** gallery wall + placard (art whole, never stretched) | new | HW |
-| Voltcap row, Tile home, Hero, Grid, TV room, Dashboard, Live tiles, Side menu, Cross, Spotlight, Icon bar, Console hub, Resume, Circuit, Library panel, Timeline, Hero tiles, Layout Studio | the standard window in the layout's look (`lookFor`) | none — still to design | — |
+| Cross menu | **422** options column sliding in from the right edge, title + facts on the left | new | HW |
+| Live tiles | **422** flat tile panel, lower-case title, turnstile entrance | new | HW |
+| Dashboard | **422** widget card with art header and three stat widgets | new | HW |
+| Side menu | **422** drawer from the left edge, menu rows with accent bar | new | HW |
+| Spotlight | **422** poster under a spotlight, logo + pill keys | new | HW |
+| Icon bar | **422** flyout rising from the dock, round icon keys, pointer | new | HW |
+| Console hub | **422** brushed-metal nameplate with console badge | new | HW |
+| Resume & discover | **422** big square + discover card | new | HW |
+| Circuit board | **422** chip datasheet (pin-numbered facts, PCB, traces) | new | HW |
+| Library panel | **422** library page: hero banner, big green Play, stats + progress bar | new | HW |
+| Timeline | **422** entry pinned to a year bubble on the line | new | HW |
+| Hero carousel / Hero tiles | **422** hero banner opening from its strip | new | HW (Hero) |
+| Tile home / Grid | **422** clean game card popping out of the tile | new | HW |
+| Voltcap row | **422** house panel with the charge stripe | new | HW |
+| TV room | opens on the TV's own screen (tvRect) | kept | — |
+| Layout Studio | the standard window in the user's chosen look (user-built layout) | kept on purpose | — |
 
 ## Remaining
-- 18 standard layouts still use the shared window (in their own colours): TIMELINE, CIRCUIT, CROSS are the next candidates.
+- Every layout except Layout Studio and TV room now has its own window (51 of 53, checked by `Popup421Test`).
 - Twin layouts: the hinge window is one window; a true split across the two physical screens is not done.
 - Green Core and Card binder scenes not seen on hardware.
 - Rapid A/B/A, Lite, touch and compact-screen checks of the new scenes: NOT TESTED.

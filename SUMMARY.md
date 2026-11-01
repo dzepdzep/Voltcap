@@ -1,3 +1,49 @@
+# Update 422 (1 Nov 2026) — last 14 popups, Box rows balanced, drawn cartridges lit, ES-DE artwork (read-only), CrashGuard fix (NOT released)
+
+## Done
+- **Popups** (`ui/WinScenesHomes2.kt`, `WinScenes.kt`, `GameWindow.kt` `SELF_MOVING_SCENES`): own windows for Cross menu, Live tiles,
+  Dashboard, Side menu, Spotlight, Icon bar, Console hub, Resume & discover, Circuit board, Library panel, Timeline, Hero / Hero tiles,
+  Tile home / Grid, Voltcap row. 51 of 53 layouts now have their own window (Layout Studio = user-built, TV room = on its TV);
+  `Popup421Test` enforces it. Edge scenes (Cross, Side, Icon bar) slide in from their screen edge instead of growing out of the card.
+  Key labels no longer show the look's own "▶" twice (`sceneLabel`). Audit: `docs/POPUP_AUDIT_421.md`.
+- **Cardboard box rows** (`StyleCardboardBox.kt` `packBoxesFull`): the last, partly filled box shares its cases over its rows (the owner's
+  shot: 20 in the back row, 1 alone in front). Full boxes and boxes with fewer than 3 cases a row pack exactly as before. `BoxBalance422Test`.
+- **Drawn cartridges** (`CartShells.frontOrNull`, cache key f8): sticker recess shadow, broad soft light from the upper left and a lit /
+  shaded rounded bevel along the shell edge (was one flat outline). Real scans untouched.
+- **ES-DE artwork** (`data/EsdeMedia.kt`, `ui/EsdeMediaCard.kt`, Settings › Library › ES-DE artwork, `LauncherViewModel` applyEsde /
+  rescanEsde / disconnectEsde, artwork picker source "ES-DE"): reads ES-DE's downloaded_media (standard places + es_settings.xml
+  MediaDirectory, or a folder picked with the Storage Access Framework, READ permission only, persisted). Matching: console → ES-DE system
+  folders + the ROM's own folder name, exact ROM base name (no fuzzy). Covers (or the flat 3D box picture), fan art / screenshot as hero,
+  marquee as logo, screenshots + title screens, physical media as the "Disc / cartridge" photo, clips. Priority: your own picks always
+  first, then "ES-DE first" on/off (default: ES-DE only fills what VoltCap lacks). Rescan, unmatched list, skipped-file count, Disconnect
+  (ES-DE pictures removed from the games and VoltCap's art cache; ES-DE's files never touched). `EsdeMedia422Test`.
+- **CrashGuard** (`CrashGuard.kt`, Settings › Backup "Undo the safe-mode reset"): ANRs that only say "Application does not have a
+  focused window" (screen off / locked) no longer count towards safe mode; a safe-mode reset now keeps a copy of what it clears and can
+  be undone.
+
+## QA incident (my QA, owner please read)
+- During the Thor popup sweep the screen went off between steps; keys sent then made Android raise repeated "no focused window" ANRs,
+  Voltcap restarted into **safe mode** and — because it "crashed again in safe mode" — the old CrashGuard **cleared the look settings
+  (`appearance`, `library_apps`, `categories`, `screensaver`)**. Evidence: before the sweep the Thor showed the Pocket camera layout,
+  after it the default Voltcap row. The Features settings and categories were put back from the QA snapshot; the `appearance` /
+  `library_apps` / `screensaver` values could NOT be restored (no copy existed then; no settings-sync file on the Thor). If you have a
+  Google Drive backup (Settings › Backup) it can bring them back. The code fix above stops both the false trigger and the silent loss.
+  QA scripts now wake the screen before each step.
+
+## Checked (actual)
+- `testDebugUnitTest` EXIT 0 (new `BoxBalance422Test`, `EsdeMedia422Test`; `Popup421Test` extended; `Layouts330Test` updated).
+  `static_checks.py` [PASS]. Release build installed on Thor 3140972f; all 14 new popups screenshotted open (`.shots/422/q422/`, not
+  committed): Play first, keys reachable.
+
+## NOT TESTED
+- ES-DE on hardware (no ES-DE media on the Thor checked yet), Box balance and cartridge lighting on hardware (in the build installed for
+  the popup sweep, not looked at), rapid A/B/A / Lite / touch / compact screens for the new popups, Green Core / Card binder popups.
+
+## Files (synced via src_copy / project_copy)
+src_copy: `CrashGuard.kt`, `LauncherViewModel.kt`, `data/EsdeMedia.kt` (new), `ui/EsdeMediaCard.kt` (new), `ui/WinScenesHomes2.kt` (new),
+`ui/WinScenes.kt`, `ui/WinScenesMore.kt`, `ui/GameWindow.kt`, `ui/LauncherScreen.kt`, `ui/SettingsDialog.kt`, `ui/StyleCardboardBox.kt`,
+`ui/CartShells.kt`. project_copy: tests, `.gitignore`, `SUMMARY.md`, `docs/POPUP_AUDIT_421.md`.
+
 # Update 421 (1 Nov 2026) — popups for 15 more layouts, popup style fixes, Wii palettes, Box outline, Orbit spin (NOT released)
 
 v0.6.64 stays the latest release. No version bump.

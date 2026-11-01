@@ -59,7 +59,7 @@ import coil.compose.AsyncImage
  */
 
 /** The facts the scenes print, label to value, in one order everywhere. */
-private fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNotNull(
+internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNotNull(
     "Console" to ctx.console,
     ctx.year?.let { "Year" to it },
     ctx.developer?.let { "Made by" to it },
@@ -70,12 +70,12 @@ private fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNot
 )
 
 /** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips. */
-private fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
+internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
     ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())
 
 /** A row of keys that scrolls sideways when it doesn't fit (never squeezed, never cut). */
 @Composable
-private fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
+internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
         keys.forEach { key(it) }
     }
@@ -83,7 +83,7 @@ private fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinA
 
 /** A key drawn as [shape] in [fill] (lit: [onFill]) with an outline; its word in full, never wrapped mid-word. */
 @Composable
-private fun SceneKey(
+internal fun SceneKey(
     a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
     font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false
 ) {
@@ -95,15 +95,21 @@ private fun SceneKey(
         ) {
             Icon(a.icon, null, tint = if (on) onInk else ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
             Spacer(Modifier.width(5.dp))
-            Text(if (upper) a.label.uppercase() else a.label, color = if (on) onInk else if (a.urgent) Color(0xFFFF8A3D) else ink,
+            Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) onInk else if (a.urgent) Color(0xFFFF8A3D) else ink,
                 fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, softWrap = false)
         }
     }
 }
 
+/**
+ * Update 422: a key's word without a symbol the layout's look puts in front of it ("▶ continue" in Hero / Disc looks — the
+ * key already draws its icon, so it read "▶ ▶ continue"), first letter capitalised.
+ */
+internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit() }.ifEmpty { l }.replaceFirstChar { it.uppercase() }
+
 /** The first page's facts, label over value in two columns, or the other page's body. */
 @Composable
-private fun ColumnScope.SceneBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true) {
+internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true) {
     if (ctx.page == WinPage.MAIN) {
         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             sceneFacts(ctx).chunked(2).forEach { pair ->
@@ -122,7 +128,7 @@ private fun ColumnScope.SceneBody(ctx: WinSceneCtx, label: Color, value: Color, 
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 }
 
-private fun ease(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
+internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
 
 // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
 
@@ -132,7 +138,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
     val side = minOf(ctx.maxW, ctx.maxH, 460.dp)
     Box(Modifier.size(side).graphicsLayer {
         // The sleeve slides out of the crate sideways, the way a record is pulled from its neighbours.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.15f
         rotationZ = (1f - e) * -4f
         alpha = (ctx.reveal() * 2.2f).coerceIn(0f, 1f)
@@ -187,7 +193,7 @@ internal fun CardBack(ctx: WinSceneCtx) {
     val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
     Box(Modifier.width(w).height(h).graphicsLayer {
         // A card turned over in the binder: a half turn about its upright axis (closing turns it back).
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         rotationY = (1f - e) * 90f
         cameraDistance = 14f * density
         alpha = if (ctx.reveal() < 0.02f) 0f else 1f
@@ -205,7 +211,7 @@ internal fun CardBack(ctx: WinSceneCtx) {
             }
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.3f)))
-            SceneBody(ctx, ink.copy(alpha = 0.55f), ink)
+            SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink)
             Spacer(Modifier.weight(0.01f))
             Spacer(Modifier.height(6.dp))
             KeyRow(sceneKeys(ctx)) { a ->
@@ -225,7 +231,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
     val lcdBg = Color(0xFF0F2A2A); val lcd = Color(0xFF7BF2D6)
     Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
         // The tray comes out of the deck: up from below, the panel already in place.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * size.height * 0.25f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(8.dp); clip = true
@@ -248,7 +254,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             }
             StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
-            SceneBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace)
+            SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace)
         }
         Spacer(Modifier.height(10.dp))
         // The transport keys.
@@ -267,7 +273,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 600.dp)
     Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
         // Opens from one glowing line, the console's own boot.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         scaleY = 0.04f + 0.96f * e
         transformOrigin = TransformOrigin(0.5f, 0.5f)
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
@@ -281,7 +287,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
                 ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit) }
             }
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) { SceneBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
+            Column(Modifier.weight(1f)) { SceneFactsBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
         }
         Spacer(Modifier.height(10.dp))
         KeyRow(sceneKeys(ctx)) { a ->
@@ -301,7 +307,7 @@ internal fun CubeFace(ctx: WinSceneCtx) {
     val a = ctx.accent
     Box(Modifier.size(side).graphicsLayer {
         // The cube turns a quarter: the face swings in on its left edge (and back out the same way).
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         rotationY = (1f - e) * -90f
         transformOrigin = TransformOrigin(0f, 0.5f)
         cameraDistance = 10f * density
@@ -315,7 +321,7 @@ internal fun CubeFace(ctx: WinSceneCtx) {
             StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Black)
             Text(ctx.console, color = a, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f)) { SceneBody(ctx, Color.White.copy(alpha = 0.6f), Color.White) }
+            Column(Modifier.weight(1f)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.6f), Color.White) }
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
                     Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
@@ -334,7 +340,7 @@ internal fun PocketScreen(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 320.dp)
     Box(Modifier.width(w).height(h).graphicsLayer {
         // Power on: a line across the screen opens to the picture.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         scaleY = 0.03f + 0.97f * e
         scaleX = 0.92f + 0.08f * e
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
@@ -351,7 +357,7 @@ internal fun PocketScreen(ctx: WinSceneCtx) {
                 }
             }
             Spacer(Modifier.height(4.dp))
-            SceneBody(ctx, c1, c0, FontFamily.Monospace)
+            SceneFactsBody(ctx, c1, c0, FontFamily.Monospace)
             Spacer(Modifier.height(4.dp))
             KeyRow(sceneKeys(ctx), 4.dp) { a ->
                 SceneKey(a, c2, c0, c0, c3, c1, c0, RoundedCornerShape(2.dp), font = FontFamily.Monospace, upper = true, size = 10.sp, pad = 6.dp, height = 24.dp)
@@ -369,7 +375,7 @@ internal fun IndexCard(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 360.dp)
     Box(Modifier.width(w).height(h).graphicsLayer {
         // Drawn up out of the catalogue drawer, beside the case taken off the shelf.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * size.height * 0.2f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shadowElevation = 10.dp.toPx() * e
@@ -386,7 +392,7 @@ internal fun IndexCard(ctx: WinSceneCtx) {
             StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
             Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.65f), fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             Spacer(Modifier.height(10.dp))
-            SceneBody(ctx, red.copy(alpha = 0.8f), ink, FontFamily.Monospace)
+            SceneFactsBody(ctx, red.copy(alpha = 0.8f), ink, FontFamily.Monospace)
             Spacer(Modifier.height(8.dp))
             KeyRow(sceneKeys(ctx)) { a ->
                 SceneKey(a, if (a.primary) ink else paper, red, if (a.primary) paper else ink, Color.White, ink.copy(alpha = 0.4f), red, RoundedCornerShape(2.dp),
@@ -405,7 +411,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
     val a = ctx.accent
     Column(Modifier.width(w).height(h).graphicsLayer {
         // The two halves fold open from the hinge.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         rotationX = (1f - e) * 40f
         cameraDistance = 12f * density
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -425,7 +431,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
             StableFullText(ctx.name, color = Color.White, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
             Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
-            SceneBody(ctx, Color.White.copy(alpha = 0.55f), Color.White)
+            SceneFactsBody(ctx, Color.White.copy(alpha = 0.55f), Color.White)
             Spacer(Modifier.height(6.dp))
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
@@ -444,7 +450,7 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
     val wall = Color(0xFFEDEBE6); val ink = Color(0xFF22201C)
     Column(Modifier.width(w).height(h).graphicsLayer {
         // The picture grows out of its place in the library, the wall fading in round it.
-        val e = ease(ctx.reveal())
+        val e = sceneEase(ctx.reveal())
         val s = 0.86f + 0.14f * e
         scaleX = s; scaleY = s
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)

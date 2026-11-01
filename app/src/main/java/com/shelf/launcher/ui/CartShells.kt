@@ -812,7 +812,7 @@ internal object CartShells {
         val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
         val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
         val head = plaque ?: switchHeader ?: paperHead
-        val key = "f7|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        val key = "f8|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -977,7 +977,26 @@ internal object CartShells {
         // A little gloss over the sticker.
         p.shader = LinearGradient(lr.left, lr.top, lr.right, lr.bottom, intArrayOf(0x22FFFFFF, 0x00FFFFFF, 0x10FFFFFF), floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         c.drawRect(lr, p); p.shader = null
+        // Update 422 (owner: the drawn Pokémon Brown pak looked like flat grey geometry next to the Silver scan): the
+        // sticker sits in a recess — its top and left edges in the recess's shadow, the bottom lip catching light.
+        val rec = 0.9f * k
+        p.shader = LinearGradient(lr.left, lr.top, lr.left, lr.top + rec, 0x40000000, 0x00000000, Shader.TileMode.CLAMP)
+        c.drawRect(RectF(lr.left, lr.top, lr.right, lr.top + rec), p)
+        p.shader = LinearGradient(lr.left, lr.top, lr.left + rec, lr.top, 0x30000000, 0x00000000, Shader.TileMode.CLAMP)
+        c.drawRect(RectF(lr.left, lr.top, lr.left + rec, lr.bottom), p); p.shader = null
         c.restore()
+        // Update 422: the moulded shell lit like the photographed ones — a broad soft light from the upper left over the
+        // plastic and the sticker, falling off to the lower right; a rounded bevel along the edge (lit top / left, shaded
+        // bottom / right) instead of one flat outline. Drawn in the shell's own outline, so nothing spills outside it.
+        p.shader = android.graphics.RadialGradient(bw * 0.22f, bh * 0.12f, maxOf(bw, bh) * 0.95f,
+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f)),
+            floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p); p.shader = null
+        p.style = Paint.Style.STROKE; p.strokeWidth = 2.2f * k
+        p.shader = LinearGradient(0f, 0f, bw.toFloat(), bh.toFloat(),
+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f)),
+            floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+        c.drawPath(path, p); p.shader = null; p.style = Paint.Style.FILL
         c.restore()
         cache.put(key, b)
         return b

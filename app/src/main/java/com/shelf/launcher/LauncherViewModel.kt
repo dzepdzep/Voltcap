@@ -18,6 +18,7 @@ import com.shelf.launcher.data.ArtSlot
 import com.shelf.launcher.data.FavoritesStore
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.GameArt
+import com.shelf.launcher.data.EsdeMedia.Kind as EsKind
 import com.shelf.launcher.data.GameLauncher
 import com.shelf.launcher.data.GameNativeConfig
 import com.shelf.launcher.data.GameNativeSettingsStore
@@ -2377,7 +2378,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 else runCatching { tgdbRepository.fetchArt(key, named) }.getOrNull()?.asCandidates()
             }
             val bySource = linkedMapOf<String, ArtCandidates>()
+            // Update 422: ES-DE's own pictures for this game (read-only; 3D boxes and mix images as flat pictures).
+            val esde = game?.let { com.shelf.launcher.data.EsdeMedia.find(it) }?.files?.let { f ->
+                        ArtCandidates(grids = listOfNotNull(f[EsKind.COVER], f[EsKind.BOX3D], f[EsKind.MIX]), heroes = listOfNotNull(f[EsKind.FANART], f[EsKind.SCREENSHOT], f[EsKind.TITLE]),
+                    logos = listOfNotNull(f[EsKind.MARQUEE]))
+            }
             listOf(
+                "ES-DE" to esde,
                 "SteamGridDB" to sgdb.await(), "IGDB" to igdb.await(), "RAWG" to rawg.await(),
                 "ScreenScraper" to ss.await(), "TheGamesDB" to tgdb.await()
             ).forEach { (label, c) ->
@@ -5251,6 +5258,77 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         refreshCollections()
         recordFirstSeen(merged)
+        applyEsde()
+    }
+
+    // ---- Update 422: ES-DE's downloaded media, read-only (data/EsdeMedia.kt) ----
+
+    /** Puts ES-DE's pictures into the games' art / screenshots / disc photos / clips (on screen only; never ES-DE's files). */
+    fun applyEsde() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val idx = com.shelf.launcher.data.EsdeMedia.load(app) ?: return@launch
+            val prefer = com.shelf.launcher.data.EsdeMedia.prefer(app)
+            _uiState.update { st -> esdeMerged(st, idx, prefer) }
+        }
+    }
+
+    private fun esdeMerged(st: LauncherUiState, idx: com.shelf.launcher.data.EsdeMedia.Index, prefer: Boolean): LauncherUiState {
+        val art = st.art.toMutableMap(); val shots = st.screenshots.toMutableMap()
+        val phys = st.physicalMedia.toMutableMap(); val clips = st.videoUrls.toMutableMap()
+        var changed = false
+        for (g in st.games) {
+            val f = com.shelf.launcher.data.EsdeMedia.find(g, idx)?.files ?: continue
+            val k = g.stableKey
+            com.shelf.launcher.data.EsdeMedia.mergeArt(g, art[k], prefer, idx)?.let { if (it != art[k]) { art[k] = it; changed = true } }
+            val esShots = listOfNotNull(f[EsKind.SCREENSHOT], f[EsKind.TITLE])
+            if (esShots.isNotEmpty()) {
+                val now = shots[k].orEmpty()
+                val next = (if (prefer) esShots + now else now + esShots).distinct()
+                if (next != now) { shots[k] = next; changed = true }
+            }
+            f[EsKind.PHYSICAL]?.let { p ->
+                val now = phys[k].orEmpty()
+                if (now.none { it.first == "Disc / cartridge" } || prefer) {
+                    val next = listOf("Disc / cartridge" to p) + now.filter { it.first != "Disc / cartridge" || !prefer }
+                    if (next != now) { phys[k] = next.distinct(); changed = true }
+                }
+            }
+            f[EsKind.VIDEO]?.let { v -> if (clips[k] == null || prefer) { if (clips[k] != v) { clips[k] = v; changed = true } } }
+        }
+        return if (changed) st.copy(art = art, screenshots = shots, physicalMedia = phys, videoUrls = clips) else st
+    }
+
+    /** Rescans ES-DE's media folder (read-only), then applies it; [done] gets matched / unmatched / unsupported. */
+    fun rescanEsde(done: (Int, Int, Int, List<String>) -> Unit = { _, _, _, _ -> }) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val idx = com.shelf.launcher.data.EsdeMedia.scan(app)
+            val (hit, miss, names) = com.shelf.launcher.data.EsdeMedia.report(_uiState.value.games, idx)
+            val prefer = com.shelf.launcher.data.EsdeMedia.prefer(app)
+            _uiState.update { st -> esdeMerged(st, idx, prefer) }
+            withContext(Dispatchers.Main) { done(hit, miss, idx.unsupported, names) }
+        }
+    }
+
+    /** Disconnects ES-DE: its pictures leave the games (state and VoltCap's art cache); ES-DE's own files are untouched. */
+    fun disconnectEsde() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val idx = com.shelf.launcher.data.EsdeMedia.index ?: com.shelf.launcher.data.EsdeMedia.load(app)
+            fun es(a: String?) = com.shelf.launcher.data.EsdeMedia.isEsde(a, idx)
+            fun clean(a: GameArt) = a.copy(gridUrl = a.gridUrl.takeUnless { es(it) }, heroUrl = a.heroUrl.takeUnless { es(it) }, logoUrl = a.logoUrl.takeUnless { es(it) })
+            artCacheStore.loadAll().forEach { (k, a) -> val c = clean(a); if (c != a) artCacheStore.put(k, c) }
+            com.shelf.launcher.data.EsdeMedia.disconnect(app)
+            _uiState.update { st ->
+                st.copy(
+                    art = st.art.mapValues { clean(it.value) },
+                    screenshots = st.screenshots.mapValues { e -> e.value.filterNot { es(it) } },
+                    physicalMedia = st.physicalMedia.mapValues { e -> e.value.filterNot { es(it.second) } },
+                    videoUrls = st.videoUrls.filterValues { !es(it) }
+                )
+            }
+        }
     }
 
 

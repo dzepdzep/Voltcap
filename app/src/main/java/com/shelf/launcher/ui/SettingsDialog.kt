@@ -543,6 +543,9 @@ fun SettingsDialog(
                                 FoldGroup("Import from other frontends", summary = "ES-DE, Pegasus, Daijisho", key = "lib_import") {
                                 FrontendImportCard(games, listOf(romRoot).filter { it.isNotBlank() } + games.mapNotNull { g -> g.romPath?.substringBeforeLast("/")?.substringBeforeLast("/") }.distinct().take(12))
                                 }
+                                FoldGroup("ES-DE artwork", summary = "Covers, screenshots, clips ES-DE downloaded (read only)", key = "lib_esde") {
+                                EsdeMediaCard()
+                                }
                                 FoldGroup("Screenshots", key = "lib_shots") {
                                 ScreenshotSettings(appearance, onAppearanceChange)
                                 }
@@ -2693,6 +2696,11 @@ private fun BackupContent(onRunSetup: () -> Unit) {
             }
             if (syncExists) Chip("Import from Voltcap settings sync", accent = false) {
                 pendingImport = android.net.Uri.fromFile(com.shelf.launcher.data.Backup.syncFile())
+            }
+            // Update 422: a safe-mode start that cleared the look settings kept a copy (CrashGuard): one tap puts it back.
+            if (com.shelf.launcher.CrashGuard.hasResetBackup(context)) Chip("Undo the safe-mode reset", accent = true) {
+                val back = com.shelf.launcher.CrashGuard.restoreResetSettings(context)
+                message = if (back.isEmpty()) "Nothing to put back." else "Put back: ${back.joinToString(", ")}. Restart Voltcap to see it everywhere."
             }
             Chip("Export to…", accent = false) { exportFile.launch("voltcap-backup.json") }
             Chip("Import…", accent = false) { importFile.launch(arrayOf("application/json", "text/plain", "*/*")) }

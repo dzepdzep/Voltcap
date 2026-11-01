@@ -383,6 +383,31 @@ internal fun packBoxesFull(games: List<Game>, cam: BoxCam, gapMm: Float, messy: 
     val usable = cam.wMm - 2 * BOX_MARGIN
     val rows = cam.rows.coerceAtLeast(1)
     val gapRows = BoxRows.gapFor(rows)
+    // Update 422 (owner screenshot: one box with 20 cases in the back row and a single case alone in the front row, the floor
+    // empty): the last, partly filled box shares its games evenly over its rows instead of filling the back row first. Full
+    // boxes are packed exactly as before. A first pass finds where the last box starts; the second packs that box's rows to an
+    // even share of its width (never past the box's own width).
+    var balanceFrom = Int.MAX_VALUE; var balanceLimit = usable
+    run {
+        var b = 0; var r = 0; var xx = 0f; var startOfBox = 0
+        val widths = FloatArray(order.size)
+        order.forEachIndexed { pos, idx ->
+            val m = caseMm(games[idx], messy); val need = m.extra + m.thick
+            widths[pos] = need + gapMm
+            if (xx > 0f && xx + need > usable) { r++; xx = 0f; if (r >= rows) { b++; r = 0; startOfBox = pos } }
+            xx += need + gapMm
+        }
+        // (A handful of cases — under three a row — stay together in the back row, as updates 400-416 checked on the Thor.)
+        if (rows > 1 && order.size - startOfBox >= rows * 3) {
+            // The last box: an even share each (at least its widest case, so every row gets one).
+            var total = 0f; var widest = 0f
+            for (pos in startOfBox until order.size) { total += widths[pos]; widest = maxOf(widest, widths[pos]) }
+            val share = total / rows
+            // (A nearly full last box is left as packed: an even share there could push its last case into a new box.)
+            if (total <= rows * usable * 0.85f) balanceFrom = startOfBox
+            balanceLimit = minOf(usable, maxOf(share + widest * 0.5f, widest))
+        }
+    }
     var box = 0; var row = 0; var x = 0f
     // The back row against the back wall, the front row against the front wall, a middle row in the middle of its lane (Messy: not quite).
     fun yFor(len: Float, push: Float) = when {
@@ -391,15 +416,16 @@ internal fun packBoxesFull(games: List<Game>, cam: BoxCam, gapMm: Float, messy: 
         else -> BOX_MARGIN + row * (cam.lane + gapRows) + (cam.lane - len) / 2f + (push - 3f)
     }
     var prev: Game? = null; var prevSlot: BoxSlot? = null
-    for (idx in order) {
+    for ((pos, idx) in order.withIndex()) {
         val g = games[idx]
         val m = caseMm(g, messy)
+        val rowLimit = if (pos >= balanceFrom) balanceLimit else usable
         // (Never longer than its lane: BoxRows only offers a row count the category's longest case fits.)
         val len = minOf(m.len, cam.lane)
         val stand = m.stand; val thick = m.thick; val extra = m.extra
         val div = dividers && bySize && prev != null && x > 0f && sizeGroup(prev) != sizeGroup(g)
         val need = extra + thick + (if (div) BOX_DIVIDER_MM + gapMm else 0f)
-        if (x > 0f && x + need > usable) {
+        if (x > 0f && x + need > rowLimit && (row < rows - 1 || x + need > usable)) {
             row++; x = 0f
             if (row >= rows) { box++; row = 0 }
         } else if (div) {

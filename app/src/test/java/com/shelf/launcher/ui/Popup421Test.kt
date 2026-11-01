@@ -58,6 +58,8 @@ class Popup421Test {
             HomeLayout.BOX, HomeLayout.CHAN, HomeLayout.CINEMA, HomeLayout.ARCTIC
         )
         for (l in wanted) assertNotNull(l.name, winSceneFor(l))
+        // Update 422: every layout has its own window except Layout Studio (user-built) and the TV room (opens on its TV).
+        for (l in HomeLayout.values()) if (l != HomeLayout.CUSTOM && l != HomeLayout.TV) assertNotNull("${l.name} has no popup of its own", winSceneFor(l))
         // Every scene is used by at least one layout (no dead scene).
         val used = HomeLayout.values().mapNotNull { winSceneFor(it) }.toSet()
         for (s in WinScene.values()) assertTrue(s.name, s in used)
