@@ -1084,9 +1084,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 330, phase 4: the round shortcuts for this session only — nothing saved.)
     val testShortcuts = TestHooks.shortcuts.value
     LaunchedEffect(testShortcuts) {
-        val spot = testShortcuts ?: return@LaunchedEffect
+        val spec = testShortcuts ?: return@LaunchedEffect
+        // (v0.6.66, D131 QA: `TOP_LEFT|nostatus|dock=TOP` — also the status bar off / on and the game row's place, preview only.)
+        val parts = spec.split('|')
+        val spot = parts[0]
         val p = com.shelf.launcher.data.ShortcutSpot.values().firstOrNull { it.name == spot }
-        viewModel.previewAppearance(state.appearance.copy(tileShortcuts = p != null, shortcutSpot = p ?: state.appearance.shortcutSpot))
+        val statusTest = when { "nostatus" in parts -> false; "status" in parts -> true; else -> state.appearance.showStatusBar }
+        val dockTest = parts.firstOrNull { it.startsWith("dock=") }?.substringAfter('=')
+            ?.let { d -> com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == d } } ?: state.appearance.dockPosition
+        android.util.Log.e("VoltcapTest", "shortcuts $spot status=$statusTest dock=$dockTest")
+        viewModel.previewAppearance(state.appearance.copy(tileShortcuts = p != null, shortcutSpot = p ?: state.appearance.shortcutSpot,
+            showStatusBar = statusTest, dockPosition = dockTest))
         TestHooks.shortcuts.value = null
     }
     // (Update 261: a Settings page asked for by a test walk.)
@@ -2406,6 +2414,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar — StyleHomes.kt): whole-screen
     // layouts with their own menus, laid out and lit like the grid / TV room.
     val styleLayout = state.appearance.homeLayout.styleHome
+    // v0.6.66 (D131): layouts that draw their whole screen (no game row at an edge) — the round shortcuts' corner ☰ isn't
+    // moved by the game-row setting there (ShortcutCorner).
+    val fullScreenLayout = gridLayout || tvLayout || styleLayout
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
@@ -2468,10 +2479,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val scUp = if (spot == com.shelf.launcher.data.ShortcutSpot.FREE) {
             HomeWidgets.position(HomeWidgets.SHORTCUTS)?.let { it.second < 0.5f } ?: (dock == com.shelf.launcher.data.DockPosition.BOTTOM)
         } else {
-            var top = spot == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || spot == com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT
-            if (top && dock == com.shelf.launcher.data.DockPosition.TOP) top = false
-            if (!top && dock == com.shelf.launcher.data.DockPosition.BOTTOM) top = true
-            top
+            ShortcutCorner.resolve(spot, dock, fullScreenLayout).top
         }
         // The small music player (in the status bar or a corner; not while the Now playing panel replaces it).
         val pos = a.musicPlayerPosition
@@ -2621,6 +2629,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     var showWork by remember { mutableStateOf(false) }
     // (Update 330, phase 4: where the status bar made room for the round shortcuts' ☰, root px; null: no room made.)
     var barMenuRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    // (v0.6.66, D131: where the bar's clock / icons cluster and its music player are, root px — the open ☰ row stops before them.)
+    var barClusterRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var barPlayerRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var barPlayerShown by remember { mutableStateOf(false) }
     @Composable
     fun HomeStatusBarPale(): Boolean = run {
         when (state.appearance.homeLayout) {
@@ -2685,8 +2697,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
             modifier = modifier,
             menuSlot = menuSlot,
-            onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r }
+            onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
+            onCluster = { r -> if (barClusterRect != r) barClusterRect = r },
+            onPlayer = { r -> if (barPlayerRect != r) barPlayerRect = r }
         )
+        SideEffect { if (barPlayerShown != (nowPlaying != null)) barPlayerShown = nowPlaying != null }
     }
     @Composable
     fun BoxScope.HomeLayer() {
@@ -3289,9 +3304,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             val on = barHere && state.appearance.tileShortcuts && sp != com.shelf.launcher.data.ShortcutSpot.ROW && sp != com.shelf.launcher.data.ShortcutSpot.FREE &&
                 !HomeEditState.active && !(styleLayout && styleHasShortcuts(state.appearance.homeLayout))
             val dock = state.appearance.dockHere
-            var top = sp == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || sp == com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT
-            if (top && dock == com.shelf.launcher.data.DockPosition.TOP) top = false
-            if (!top && dock == com.shelf.launcher.data.DockPosition.BOTTOM) top = true
+            // (v0.6.66, D131: a whole-screen layout keeps the top band whatever the game-row setting — ShortcutCorner.)
+            val top = ShortcutCorner.resolve(sp, dock, fullScreenLayout).top
             val barTop = !(dock == com.shelf.launcher.data.DockPosition.TOP && !gridLayout && !tvLayout && !styleLayout)
             // (TV room: its category name sits at the bar's left end — the ☰ goes before the clock there.)
             val startSide = (sp == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || sp == com.shelf.launcher.data.ShortcutSpot.BOTTOM_LEFT) && !tvLayout
@@ -3305,13 +3319,23 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             val sp = state.appearance.shortcutSpot
             val l = state.appearance.homeLayout
             !barHere && !screensaverOn && state.appearance.tileShortcuts && !HomeEditState.active &&
-                (sp == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || sp == com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT) &&
-                state.appearance.dockHere != com.shelf.launcher.data.DockPosition.TOP &&
+                sp != com.shelf.launcher.data.ShortcutSpot.ROW && sp != com.shelf.launcher.data.ShortcutSpot.FREE &&
+                ShortcutCorner.resolve(sp, state.appearance.dockHere, fullScreenLayout).top &&
                 !(styleLayout && styleHasShortcuts(l)) &&
                 (l == com.shelf.launcher.data.HomeLayout.CHAN || l == com.shelf.launcher.data.HomeLayout.POCKET ||
                     l == com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC || l == com.shelf.launcher.data.HomeLayout.POCKET_RIBBON ||
                     l == com.shelf.launcher.data.HomeLayout.HERO_TILES || l == com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE)
         }
+        // (v0.6.66, D131: a style home with the status bar off and the corner ☰ at the top starts below the ☰'s band — like it
+        // does below the status bar — instead of under it: the ☰ and its open row lay on Disc station's panel and title.)
+        val menuTopBand = run {
+            val sp = state.appearance.shortcutSpot
+            styleLayout && !barHere && !screensaverOn && state.appearance.tileShortcuts && !HomeEditState.active && !menuInOwnSlot &&
+                sp != com.shelf.launcher.data.ShortcutSpot.ROW && sp != com.shelf.launcher.data.ShortcutSpot.FREE &&
+                !styleHasShortcuts(state.appearance.homeLayout) && !shortcutsFloating &&
+                ShortcutCorner.resolve(sp, state.appearance.dockHere, fullScreenLayout).top
+        }
+        val styleTopFree = if (menuTopBand) 56.dp else 12.dp
         SideEffect { if (HomeMenuSlot.want != menuInOwnSlot) { HomeMenuSlot.want = menuInOwnSlot; if (!menuInOwnSlot) HomeMenuSlot.rect = null } }
         if (barHere) HomeStatusBar(
             menuSlot = menuInBarSlot,
@@ -3344,12 +3368,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             bottomInset = if (state.appearance.legendOn) 34.dp else 10.dp,
             busy = buildSet {
                 // The round shortcuts folded into a corner ☰.
-                if (state.appearance.tileShortcuts && state.appearance.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.ROW) when (state.appearance.shortcutSpot) {
-                    com.shelf.launcher.data.ShortcutSpot.TOP_LEFT -> add(Alignment.TopStart)
-                    com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT -> add(Alignment.TopEnd)
-                    com.shelf.launcher.data.ShortcutSpot.BOTTOM_LEFT -> add(Alignment.BottomStart)
-                    com.shelf.launcher.data.ShortcutSpot.BOTTOM_RIGHT -> add(Alignment.BottomEnd)
-                    else -> Unit
+                // (v0.6.66: the corner it really sits in — ShortcutCorner.)
+                val scSpot = state.appearance.shortcutSpot
+                if (state.appearance.tileShortcuts && scSpot != com.shelf.launcher.data.ShortcutSpot.ROW && scSpot != com.shelf.launcher.data.ShortcutSpot.FREE) {
+                    val pl = ShortcutCorner.resolve(scSpot, state.appearance.dockHere, fullScreenLayout)
+                    add(if (pl.top) (if (pl.start) Alignment.TopStart else Alignment.TopEnd) else (if (pl.start) Alignment.BottomStart else Alignment.BottomEnd))
                 }
                 // The corner music player (when it isn't inside the status bar and wasn't moved in Edit Home).
                 if (state.appearance.miniPlayer && state.nowPlaying != null && HomeWidgets.position(HomeWidgets.MUSIC) == null) when (state.appearance.musicPlayerPosition) {
@@ -3381,10 +3404,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (state.appearance.tileShortcuts && spot != com.shelf.launcher.data.ShortcutSpot.ROW && spot != com.shelf.launcher.data.ShortcutSpot.FREE &&
             !HomeEditState.active && !(styleLayout && styleHasShortcuts(state.appearance.homeLayout))) {
             val dock = state.appearance.dockHere
-            var top = spot == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || spot == com.shelf.launcher.data.ShortcutSpot.TOP_RIGHT
-            val start = spot == com.shelf.launcher.data.ShortcutSpot.TOP_LEFT || spot == com.shelf.launcher.data.ShortcutSpot.BOTTOM_LEFT
-            if (top && dock == com.shelf.launcher.data.DockPosition.TOP) top = false
-            if (!top && dock == com.shelf.launcher.data.DockPosition.BOTTOM) top = true
+            // v0.6.66 (D131): a game row at an edge still sends the ☰ to the other edge; a whole-screen layout (Disc station,
+            // Arctic…, Grid, TV room) has no such row — it keeps the side picked and the top band (ShortcutCorner).
+            val place = ShortcutCorner.resolve(spot, dock, fullScreenLayout)
+            val top = place.top
+            val start = place.start
             val statusTop = state.appearance.statusOn && dock != com.shelf.launcher.data.DockPosition.TOP
             val statusBottom = state.appearance.statusOn && dock == com.shelf.launcher.data.DockPosition.TOP
             val playerCorner = state.appearance.musicPlayerPosition.takeIf { state.appearance.miniPlayer && state.nowPlaying != null }
@@ -3401,15 +3425,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Folding out away from the room's own end: rightward at the bar's left end, leftward before a clock.)
             val screenPx = with(androidx.compose.ui.platform.LocalDensity.current) { androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp.toPx() }
             val barStart = if (menuInBarSlot != 0) menuInBarSlot < 0 else (inBar?.center?.x ?: screenPx) < screenPx / 2f
+            // (v0.6.66, D131: the open row stays in the bar's band — up to the clock / icons or the music player, one line that
+            // scrolls to the button the D-pad is on — instead of running over the bar's pieces or wrapping onto the layout.)
+            val barBusy = listOfNotNull(barClusterRect, barPlayerRect.takeIf { barPlayerShown })
             if (inBar != null) CornerShortcuts(
                 shortcuts = tileShortcuts,
                 themed = state.appearance.tileShortcutTheme,
                 top = true,
                 start = barStart,
                 focused = HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.SHORTCUTS },
+                oneLine = true,
                 // (In the room the status bar made for it: its ☰ end on that room, centred on the bar's line.)
                 modifier = Modifier.zIndex(6f).layout { m, c ->
-                    val p = m.measure(c.copy(minWidth = 0, minHeight = 0))
+                    val room = if (menuInBarSlot != 0) ShortcutCorner.bandRoom(
+                        inBar.left, inBar.right, foldRight = barStart,
+                        busy = barBusy.map { it.left..it.right }, screenW = c.maxWidth.toFloat(),
+                        margin = 8.dp.toPx(), gap = 6.dp.toPx()
+                    ) else c.maxWidth.toFloat()
+                    val maxW = room.toInt().coerceIn(minOf(c.maxWidth, 84.dp.roundToPx()), c.maxWidth) // (☰ + one button at least)
+                    val p = m.measure(c.copy(minWidth = 0, minHeight = 0, maxWidth = maxW))
                     layout(c.maxWidth, c.maxHeight) {
                         val half = 18.dp.toPx()
                         val x = if (barStart) inBar.left else inBar.right - p.width
@@ -3424,6 +3458,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 start = start,
                 // Reached with the D-pad (HomeReach): they fold out and the one you're on is ringed.
                 focused = HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.SHORTCUTS },
+                // (v0.6.66: on a whole-screen layout one line that scrolls — a second line lay on the layout's own content.)
+                oneLine = fullScreenLayout,
                 modifier = Modifier
                     // Over the covers, never behind them.
                     .zIndex(5f)
@@ -3895,10 +3931,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                 },
-                statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp) else 0.dp,
+                statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                     .padding(
-                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else 12.dp, bottom = if (legendShown) 28.dp else 8.dp,
+                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree, bottom = if (legendShown) 28.dp else 8.dp,
                         // The Side menu's panel runs against the left edge.
                         start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE) 0.dp else 12.dp, end = 12.dp
                     )

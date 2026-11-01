@@ -151,6 +151,9 @@ internal fun StatusBar(
      */
     menuSlot: Int = 0,
     onMenuSlot: (androidx.compose.ui.geometry.Rect) -> Unit = {},
+    /** v0.6.66 (D131): where the clock / icons cluster and the music player sit (root px), for the ☰ row beside them. */
+    onCluster: (androidx.compose.ui.geometry.Rect) -> Unit = {},
+    onPlayer: (androidx.compose.ui.geometry.Rect) -> Unit = {},
     /** Update 333: how it's dressed for the layout it's on (StatusLooks.kt); the plain look by default. */
     look0: StatusLook = PlainStatusLook,
     /** QA pass 3 (D34): the layout to dress it for — the look is then made HERE, in the bar's own scope (made by the
@@ -210,7 +213,8 @@ internal fun StatusBar(
                 Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
             }
             Row(
-                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusContainer(look).then(pieceH),
+                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusContainer(look).then(pieceH)
+                    .onGloballyPositioned { onCluster(it.boundsInRoot()) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
             if (menuSlot > 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
@@ -325,7 +329,7 @@ internal fun StatusBar(
         // It gives way to the icons on the right: the clock, battery and the profile picture keep their
         // corner and the player shrinks into what's left (it used to push the profile off the screen).
         if (nowPlaying != null) {
-            Box(Modifier.weight(1f, fill = false)) {
+            Box(Modifier.weight(1f, fill = false).onGloballyPositioned { onPlayer(it.boundsInRoot()) }) {
                 MiniMusicPlayer(
                     nowPlaying,
                     onPlayPause = onPlayPause,

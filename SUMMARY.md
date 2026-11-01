@@ -1,3 +1,30 @@
+# Update 438 (2 Nov 2026) — v0.6.66 batch 1: D131 fixed and verified on the Odin 2 Portal and GT78 (NOT published)
+
+**Cause (replaces the 0.6.66-start notes):** LauncherScreen's generic corner ☰ path flipped the corner by the game-row setting on EVERY
+layout (row Top → top corners to the bottom; row Bottom → bottom corners to the top). Whole-screen layouts (style homes such as Disc station /
+Arctic, Grid, TV room) don't draw that row, so the GT78 (row Top) put all four corners on the bottom edge over Disc station's disc panel and
+"DISC LOADED", and the Odin (row Bottom) put all four into the status bar. StyleDiscStation.kt was not involved.
+**Fix:** new `ui/ShortcutCorner.kt` (pure, unit-tested): row layouts (Classic, Tile home, Hero…) unchanged; whole-screen layouts keep the side
+picked and use the top band — the status bar's own ☰ room when the bar is on (intentional slot, kept), the top corner when it's off, and then the
+style home starts 56 dp down (as it does below the status bar) so the ☰ never lies on its panel / title. The open row stays in the band: it
+stops before the bar's clock cluster / music player (StatusBar reports their bounds: `onCluster` / `onPlayer`) and is one line that scrolls
+(swipe; the D-pad's button is scrolled into view, from the ☰'s side) instead of a second line over the layout (`CornerShortcuts(oneLine)`).
+HomeReach (▲ / ▼ order) and the corner visualizers use the same resolver. QA hook: `voltcap_test_shortcuts "TOP_LEFT|nostatus|dock=TOP"`
+(status bar / row place, preview only). New device script `tools/qa/device/d131.sh` (layouts × status on/off × 4 corners × open/closed).
+**Verified (release APK installed in place on both, data kept, no crash in the crash buffer; `.shots/438`):** GT78 (960×640, row Top) Disc
+station, Arctic, Classic; Odin (1080p) Disc station, Arctic, Classic, plus Classic / Disc station with row Top (the GT78 case on the big screen):
+4 corners × open / closed × status bar on / off — no overlap of DISC LOADED, titles, artwork, action buttons, game row or status bar; Classic
+behaves as before. D-pad: ▲ folds the row out with the first button ringed, ► scrolls to the last one, ▼ folds it and returns to the layout
+(GT78 TOP_LEFT and BOTTOM_RIGHT, Odin BOTTOM_LEFT). Touch (GT78): tap opens, swipe scrolls. Accessibility: buttons keep their labels
+(contentDescription); TalkBack itself NOT run. NOT TESTED: Grid / TV room / other style homes with the status bar off (they get the
+corner-placement change but not the 56 dp band), second screen.
+**Checks:** testDebugUnitTest green incl. `ShortcutCornerD131Test` (9; `wholeScreenLayoutWithTheRowSettingAtTheTopKeepsTheTopBand` fails on
+f0f71bc), assembleRelease OK, static_checks PASS (counts unchanged), QA self-test 71 OK.
+**Devices left:** Features snapshot restored on both, preview ended (GT78 Hub, Odin Classic as found); GT78 hooks / snapshot files removed,
+stay-awake 0, timeout 60 s; Odin hooks file kept as found, its earlier snapshot file put back; /sdcard/d131 removed.
+**Copy:** `src_copy/ui/ShortcutCorner.kt` (new), `LauncherScreen.kt`, `HomeChrome.kt`, `TileHome.kt`;
+`project_copy/app/src/test/java/com/shelf/launcher/ui/ShortcutCornerD131Test.kt`; `tools/qa/device/d131.sh`; defects.json.
+
 # Update 437b (1 Nov 2026) — v0.6.65 compat APK built and verified (NOT published)
 
 After the Claude Desktop restart: `gradle_start assembleCompat` SUCCESS → `app\build\outputs\apk\compat\Voltcap-0.6.65-compat.apk`

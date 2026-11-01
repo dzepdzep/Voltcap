@@ -1,13 +1,16 @@
-**v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here.**
-Session note: only the D131 investigation was done — READ defects.json D131's CORRECTION: Arctic / Disc station use the generic corner ☰
-(Odin: in the status bar's slot by design; GT78: dock on top forces every corner to the bottom edge, over Disc station's panel).
-Batches to do, in order: (1) D131 Disc station row band on short panels — verify GT78 + Odin with `voltcap_test_shortcuts` + snapshot save /
-`shortcuts_open=true` / snapshot restore (see SUMMARY 436 for the exact procedure); (2) popup audit — five R1 popup modes on the priority
-layouts with `screenrecord` clips (vqa.sh rec) and onepress focus logs, Odin first, then GT78 (NOCAT=1); (3) D130 Disc station window disc art,
-D125 Hero small-screen "…", D123 Android 12 legacy scenes, D128 two-game Box; (4) controller / navigation QA on the known-issue layouts;
-(5) D124 hardware re-run (Odin, voltcap_test_tune auto:EFFICIENT, a CPU-heavy game section — ARMSX2 pause menu needs a tap on Resume at
-860,300). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; use a NEW staging folder for every
-device_commit (a reused staged path can upload a stale copy); never run commit + sync in the same parallel batch.
+**v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here. NOT published (owner approval needed).**
+Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
+setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
+StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+Batches to do, in order: (2) popup audit — five R1 popup modes on the priority layouts (Wii channel, Case stacks, Disc station, Twin desk,
+Cinema, Arctic, Cross menu) with `screenrecord` clips (vqa.sh rec), rapid input and focus restoration (onepress focus logs), Odin first, then
+GT78 (NOCAT=1); fix confirmed defects; (3) D130 Disc station window disc art, D125 Hero small-screen "…", D123 Android 12 legacy scenes, D128
+two-game Box — verify on both screen sizes; (4) controller / navigation QA, category-switch focus; (5) D124 hardware re-run (Odin,
+voltcap_test_tune auto:EFFICIENT, a CPU-heavy game section — ARMSX2 pause menu needs a tap on Resume at 860,300); no unplugged-battery claims
+from plugged runs. QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both
+devices show "Who's playing?" or the category screen first — press B before a matrix (an Odin run was INFRA because of it); use a NEW staging
+folder for every device_commit; never run commit + sync in the same parallel batch. Corner-shortcut matrix: `sh /data/local/tmp/vqa/d131.sh TAG
+"DISCS ARCTIC" ["|dock=TOP"]` between `voltcap_test_snapshot save` / `restore` and `voltcap_test_preview false`.
 
 **UPDATE 437 (newest):** MCP tooling can build / install the compat APK and publish an already staged version — **restart Claude Desktop first**. Then: gradle_start assembleCompat → verify 0.6.65 / 72 / com.shelf.launcher / signer 88ce4b67…f344197 → owner approval → publish_release 0.6.65.
 

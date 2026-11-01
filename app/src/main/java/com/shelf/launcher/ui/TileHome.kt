@@ -11,6 +11,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -1040,7 +1041,12 @@ internal fun CornerShortcuts(
     start: Boolean,
     modifier: Modifier = Modifier,
     /** The button the D-pad is on, in the order they're drawn (HomeReach); they fold out while it's set. */
-    focused: Int? = null
+    focused: Int? = null,
+    /**
+     * v0.6.66 (D131): one line that scrolls (swipe, or follows the D-pad) inside the width it's given, instead of a second line —
+     * in the status bar's band and on whole-screen layouts, where a second line lay on the layout's own content.
+     */
+    oneLine: Boolean = false
 ) {
     var openTouch by remember { mutableStateOf(false) }
     val always = com.shelf.launcher.data.Features.shortcutsOpen.state.value
@@ -1075,31 +1081,56 @@ internal fun CornerShortcuts(
         }
         // Update 144: with 'In a corner: always open' the shortcuts can't fold, so the ✕ (which did nothing) is left out.
         if (start && !always) toggle()
-        if (open) {
+        if (open && oneLine) {
+            val ordered = if (start) shortcuts else shortcuts.reversed()
+            val scroll = androidx.compose.foundation.rememberScrollState()
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            // (The button the D-pad is on is scrolled fully into view; laid out from the ☰'s side, so a right-hand ☰ scrolls from the end.)
+            LaunchedEffect(focused, scroll.viewportSize, ordered.size) {
+                val f = focused ?: return@LaunchedEffect
+                val to = ShortcutCorner.scrollFor(
+                    f, ordered.size, fromEnd = !start, stride = with(density) { 40.dp.toPx() }, size = with(density) { 34.dp.toPx() },
+                    viewport = scroll.viewportSize.toFloat(), current = scroll.value.toFloat()
+                )
+                if (to != null) scroll.animateScrollTo(kotlin.math.round(to).toInt())
+            }
+            Row(
+                Modifier.weight(1f, fill = false).horizontalScroll(scroll, reverseScrolling = !start),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ordered.forEachIndexed { i, s -> CornerShortcutButton(s, themed, accent, focused == i) { openTouch = false; s.onClick() } }
+            }
+        } else if (open) {
             androidx.compose.foundation.layout.FlowRow(
                 Modifier.weight(1f, fill = false),
                 horizontalArrangement = Arrangement.spacedBy(6.dp, if (start) Alignment.Start else Alignment.End),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 (if (start) shortcuts else shortcuts.reversed()).forEachIndexed { i, s ->
-                    val tint = if (themed) accent else s.tint
-                    val on = focused == i
-                    Box(
-                        Modifier
-                            .size(34.dp)
-                            .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
-                            .clip(CircleShape)
-                            .background(lerp(ShelfTheme.colors.surfaceRaised, tint, if (on) 0.45f else 0.2f))
-                            .border(if (on) 2.dp else 0.dp, if (on) accent else Color.Transparent, CircleShape)
-                            .tapOnly { openTouch = false; s.onClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(s.icon, contentDescription = s.label, tint = tint, modifier = Modifier.size(18.dp))
-                    }
+                    CornerShortcutButton(s, themed, accent, focused == i) { openTouch = false; s.onClick() }
                 }
             }
         }
         if (!start && !always) toggle()
+    }
+}
+
+/** One round button of the corner ☰'s row (ringed and a little larger while the D-pad is on it). */
+@Composable
+private fun CornerShortcutButton(s: HomeShortcut, themed: Boolean, accent: Color, on: Boolean, onTap: () -> Unit) {
+    val tint = if (themed) accent else s.tint
+    Box(
+        Modifier
+            .size(34.dp)
+            .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
+            .clip(CircleShape)
+            .background(lerp(ShelfTheme.colors.surfaceRaised, tint, if (on) 0.45f else 0.2f))
+            .border(if (on) 2.dp else 0.dp, if (on) accent else Color.Transparent, CircleShape)
+            .tapOnly(onTap),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(s.icon, contentDescription = s.label, tint = tint, modifier = Modifier.size(18.dp))
     }
 }
 
