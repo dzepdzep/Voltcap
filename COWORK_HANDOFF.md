@@ -1,6 +1,6 @@
 **v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here.**
-Session note: the previous session ran out of context right after starting; only the D131 investigation was done (see defects.json D131:
-Arctic / Disc station draw shortcuts in their own row by design; the fix belongs in StyleDiscStation.kt's own row on short panels).
+Session note: only the D131 investigation was done — READ defects.json D131's CORRECTION: Arctic / Disc station use the generic corner ☰
+(Odin: in the status bar's slot by design; GT78: dock on top forces every corner to the bottom edge, over Disc station's panel).
 Batches to do, in order: (1) D131 Disc station row band on short panels — verify GT78 + Odin with `voltcap_test_shortcuts` + snapshot save /
 `shortcuts_open=true` / snapshot restore (see SUMMARY 436 for the exact procedure); (2) popup audit — five R1 popup modes on the priority
 layouts with `screenrecord` clips (vqa.sh rec) and onepress focus logs, Odin first, then GT78 (NOCAT=1); (3) D130 Disc station window disc art,
