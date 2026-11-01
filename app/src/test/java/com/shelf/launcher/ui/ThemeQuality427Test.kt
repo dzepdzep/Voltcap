@@ -15,15 +15,27 @@ class ThemeQuality427Test {
         return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
     }
 
-    @Test fun everyPaletteIsReadableOnItsRaisedSurface() {
+    // The same pairs and aims as tools/themes/contrast_check.py: 4.5:1 for normal text, 3:1 for meaningful controls (no tolerance).
+    private val TEXT = 4.5f
+    private val CONTROL = 3.0f
+
+    @Test fun everyPaletteMeetsTheTextAndControlAims() {
         val bad = AppTheme.values().filter { !it.motif.custom }.mapNotNull { t ->
             val c = t.colors
-            val muted = contrast(c.textMuted, c.surfaceRaised)
-            val text = contrast(c.textPrimary, c.surfaceRaised)
-            val acc = contrast(c.accent, c.surfaceRaised)
-            if (muted < 4.45f || text < 4.45f || acc < 2.95f) "${t.name} muted %.2f text %.2f accent %.2f".format(muted, text, acc) else null
+            val pairs = mapOf(
+                "text/raised" to (contrast(c.textPrimary, c.surfaceRaised) to TEXT),
+                "muted/bg" to (contrast(c.textMuted, c.background) to TEXT),
+                "muted/surface" to (contrast(c.textMuted, c.surface) to TEXT),
+                "muted/raised" to (contrast(c.textMuted, c.surfaceRaised) to TEXT),
+                // The words on an accent fill: onAccentColor() draws black or white, whichever contrasts more.
+                "onAccent/accent" to (maxOf(contrast(Color.White, c.accent), contrast(Color.Black, c.accent)) to TEXT),
+                "accent/raised" to (contrast(c.accent, c.surfaceRaised) to CONTROL),
+                "accent/bg" to (contrast(c.accent, c.background) to CONTROL)
+            )
+            pairs.filter { (_, v) -> v.first < v.second }.takeIf { it.isNotEmpty() }
+                ?.let { f -> t.name + " " + f.entries.joinToString { "${it.key} %.2f".format(it.value.first) } }
         }
-        assertTrue("palettes under 4.5:1 text / 3:1 accent on raised surfaces: $bad", bad.isEmpty())
+        assertTrue("palette pairs under 4.5:1 text / 3:1 control: $bad", bad.isEmpty())
     }
 
     @Test fun fixedPalettesKeepTheirCharacter() {

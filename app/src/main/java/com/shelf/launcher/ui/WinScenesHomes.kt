@@ -163,7 +163,8 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                     // The story and the achievements, as the side column of the page.
                     Column(Modifier.weight(1f).fillMaxHeight()) {
                         val s = rememberScrollState()
-                        Column(Modifier.weight(1f).sceneFadeEdges(s).verticalScroll(s)) {
+                        // (Update 428, D107: reachable with the D-pad — it only scrolled by touch.)
+                        Column(Modifier.weight(1f).sceneReadable(s, ctx.accent).sceneFadeEdges(s).verticalScroll(s)) {
                             ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 19.sp) }
                             Spacer(Modifier.height(8.dp))
                             Text(listOfNotNull(ctx.developer?.let { "Developer: $it" }, ctx.genres?.let { "Genres: $it" }).joinToString("\n"),
@@ -243,7 +244,8 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                         Spacer(Modifier.width(18.dp))
                         // The info list and the plot.
                         val s2 = rememberScrollState()
-                        Column(Modifier.weight(1.1f).fillMaxHeight().sceneFadeEdges(s2).verticalScroll(s2)) {
+                        // (Update 428, D107: the plot reachable with the D-pad — its last rows were cut for a controller.)
+                        Column(Modifier.weight(1.1f).fillMaxHeight().sceneReadable(s2, accent).sceneFadeEdges(s2).verticalScroll(s2)) {
                             @Composable fun line(k: String, v: String?) {
                                 if (v.isNullOrBlank()) return
                                 Row(Modifier.padding(vertical = 2.dp)) {

@@ -1269,7 +1269,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-10-29 update 407 sweep (Thor)",
-   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED."
+   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN."
   },
   {
    "id": "D103",
@@ -1317,8 +1317,9 @@
    "title": "Popup audit notes: Cinema story column fade-scroll not controller-reachable; Arctic drawer last row clipped; shared window story ends with ... (full text in Details)",
    "rule": "UX",
    "severity": "low",
-   "status": "open",
-   "found": "2026-10-30 update 409 Thor batch (docs/POPUP_AUDIT_409.md)"
+   "status": "fixed-unverified",
+   "found": "2026-10-30 update 409 Thor batch (docs/POPUP_AUDIT_409.md)",
+   "note": "2026-11-01 update 428: Cinema story column and Arctic plot column are D-pad stops (WinScenes.sceneReadable: focusable, ▲▼ scroll, ring); Details / Options / Achievements open as a full page since 426 (ExpandedWinPage). Unit test Stage428Test. NOT verified on the Thor (it shut down)."
   },
   {
    "id": "D108",
@@ -1346,6 +1347,24 @@
    "status": "fixed",
    "found": "2026-10-30 update 416 (60 fps recording, Pocket Classic, GBA / ALL revisit)",
    "test": "BoxReveal414Test (gate source asserts); verified on the Pocket Classic: debug + release recordings of cold and warm switches, Lite, no slab frame"
+  },
+  {
+   "id": "D111",
+   "title": "Lobby theme with Colours follow = the game you're on: white chips, game name and status bar on a near-white wash (Classic row)",
+   "rule": "CONTRAST",
+   "severity": "high",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 428 Thor capture (.shots/428th2/LOBBY_a.png)",
+   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down)."
+  },
+  {
+   "id": "D112",
+   "title": "Bright animated scenes (Manga beat, Comic pages, Magical sparkle, Frost / Gale / Alloy 32-bit, Blue sky cruise): white chips, name and clock over light areas",
+   "rule": "CONTRAST",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 428 Thor captures (.shots/428th2)",
+   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked."
   }
  ]
 }

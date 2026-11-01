@@ -1119,7 +1119,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.theme.value = null
         com.shelf.launcher.ui.theme.AppTheme.values().firstOrNull { it.name == name }?.let { t ->
             android.util.Log.e("VoltcapQA", "theme old=${state.appTheme.name} new=${t.name}")
-            viewModel.setTheme(t)
+            // (Update 427: in a preview — `--ez voltcap_test_preview true` — the theme is only shown, with its animated scene
+            // behind the home screen, and nothing is saved; `--ez voltcap_test_preview false` brings yours back.)
+            if (TestHooks.previewOnly) {
+                viewModel.previewTheme(t)
+                viewModel.previewAppearance(state.appearance.copy(backgroundStyle = com.shelf.launcher.data.BackgroundStyle.ANIMATED))
+            } else viewModel.setTheme(t)
         }
     }
     val previewEnds = TestHooks.previewEnded.intValue
@@ -2981,6 +2986,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             ThemeScene(sceneMotif, sceneColors, Modifier.fillMaxSize(), waveY = musicWaveY, waveH = musicWaveH, waveX = musicWaveX)
                         }
                     }
+                    // Update 428 (Thor, real home screen): the bright scenes put the white category chips, the game's name and the
+                    // clock on near-white (Manga beat, Comic pages, Magical sparkle, Frost / Gale / Alloy 32-bit, Blue sky cruise):
+                    // a soft dark band behind the status bar and the lower half only, for those scenes only.
+                    if (sceneMotif in BRIGHT_SCENES) SceneTextShade()
                 }
                 backgroundStyle == com.shelf.launcher.data.BackgroundStyle.WALLPAPER && wallpaper != null -> {
                     // A picture, or a GIF / animated WebP / video that plays while the home screen is in front.

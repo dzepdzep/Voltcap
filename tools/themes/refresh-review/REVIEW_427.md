@@ -5,6 +5,10 @@ All built-in themes rendered with `tools/themes/review_refresh.cjs` (WebGL port 
 re-run the script). Numbers: title zone = mean light of the top-left band where titles sit (0–1), detail = luminance spread, motion = change between moments.
 Contrast of every palette: `python tools/themes/contrast_check.py` (0 under the aims after this update).
 
+**Read this first (update 428 review):** every class below comes from SIMULATED WebGL frames with a mock interface. KEEP and KEEP\* are
+review results, not proof of device quality: readability with the real launcher, animation smoothness, frame pacing, OLED, Lite and
+controller behaviour are only known where the "Device (428)" section says so.
+
 Classes: **KEEP** good as is · **KEEP\*** the preview cannot show it (drawn in Compose): device check needed · **POLISH** a specific weakness below · **REWORK** none found.
 Not in the WebGL gallery: Lobby (drawn in Compose, LobbyScene) and the two custom entries (your own packs).
 Totals: KEEP 181, KEEP* 6, POLISH 20 (of 207 rendered).
@@ -218,3 +222,23 @@ Totals: KEEP 181, KEEP* 6, POLISH 20 (of 207 rendered).
 | Umbra · 32-bit | PX_UMBRA | KEEP | 0.12 | 0.085 | 0.0038 |  |
 | Alloy · 32-bit | PX_ALLOY | POLISH | 0.49 | 0.194 | 0.0468 | The top of the picture (where home titles, the clock and the category name sit) is bright: white words need the launcher's shadow there. Check on the Thor; if it fails, darken only that band in this scene. |
 | Glimmer · 32-bit | PX_GLIMMER | KEEP | 0.31 | 0.150 | 0.0113 |  |
+
+## Device (428) — Thor 3140972f, release build, Classic row, your "Colours follow: the game you're on", real library
+
+26 themes previewed behind the real home screen (not saved; `.shots/428th2`, one frame + one 4 s later each). What the real screen showed:
+
+| Theme | Finding on the Thor | Decision |
+|---|---|---|
+| Pan & zoom (COVER_FOCUS) | Paused / no music: a calm flat wash; chips, name and row clear | KEEP (device-checked; the WebGL bright title zone was the sample cover, not what shows without music) |
+| Pixel world (PIXEL_WORLD) | Busy map behind the category chips; words readable, chips have their own backing | KEEP (device-checked; watch on smaller screens) |
+| Lobby | **White chips, name and status on a near-white wash** (game colours give white writing) | FIXED 428: the wash follows the writing (LobbyScene) |
+| Manga beat, Comic pages, Magical sparkle, Frost · 32-bit, Gale · 32-bit, Alloy · 32-bit, Blue sky cruise | White chips / name / clock over light areas | FIXED 428: `SceneTextShade` for these scenes only (status band + lower half) |
+| Sprout / Torrent / Meadow / Terra · 32-bit, Pixel sky, Summer sky, Meadow, 64-bit plains | Chips and name sit over mid-tone sky / ground; readable | KEEP (device-checked); the WebGL "bright title zone" was the top-left band, which this layout does not use |
+| Still glow | A visible dark gradient on the Thor (not the near-black WebGL frame) | KEEP (device-checked) |
+| Warp drive | Dark tunnel; no bright burst in the two captures | KEEP (2 captures; frame pacing NOT measured) |
+| Lyric cloud / Karaoke / Lyric sheet (no music) | A calm dark fog, not the flat amber of the WebGL frame | KEEP (device-checked idle state; with lyrics NOT checked) |
+| Bold split, Pocket LCD | Palettes after 427: chips and name clear | KEEP (device-checked) |
+| Pocket shell | Capture taken after the preview ended (invalid) | NOT CHECKED |
+
+Not checked on the device: other layouts than the Classic row, the after-fix captures (the Thor shut down at 1 % battery during this
+session), OLED, Lite, legacy fallback, frame pacing.

@@ -1672,6 +1672,33 @@ internal fun DockScrim() {
 }
 
 
+/**
+ * Update 428: the animated scenes measured bright where the home screen writes in white (Thor captures, `.shots/428th2`,
+ * SUMMARY 428). Only these get [SceneTextShade]; the darker scenes stay untouched.
+ */
+internal val BRIGHT_SCENES = setOf(
+    com.shelf.launcher.ui.theme.ThemeMotif.MANGA_BEAT, com.shelf.launcher.ui.theme.ThemeMotif.COMIC_PANELS,
+    com.shelf.launcher.ui.theme.ThemeMotif.MAGICAL, com.shelf.launcher.ui.theme.ThemeMotif.PX_FROST,
+    com.shelf.launcher.ui.theme.ThemeMotif.PX_GALE, com.shelf.launcher.ui.theme.ThemeMotif.PX_ALLOY,
+    com.shelf.launcher.ui.theme.ThemeMotif.BLUE_SKY
+)
+
+/** Update 428: a soft black band under the status bar and behind the lower half (chips, title, row) — not a full-screen dim. */
+@Composable
+internal fun SceneTextShade() {
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                0.0f to Color.Black.copy(alpha = 0.32f),
+                0.1f to Color.Transparent,
+                0.42f to Color.Transparent,
+                0.54f to Color.Black.copy(alpha = 0.34f),
+                1.0f to Color.Black.copy(alpha = 0.42f)
+            )
+        )
+    )
+}
+
 /** The category name, animated when it changes (L2 / R2) per [anim]. */
 @Composable
 internal fun CategoryNameSwap(label: String, anim: com.shelf.launcher.data.CategoryAnim, content: @Composable (String) -> Unit) {

@@ -1,3 +1,42 @@
+**UPDATES 423–428 (1 Nov 2026, newest; NOT released, latest release still per SUMMARY) — read this block first.**
+Commits: 6d13d3c (423), 2ae6cbb / 9d19e46 / 49adbbd / b0c738a (424, 424b, 424c), b0c2700 (425–426), 763132b (427 stage A), 428 (this block).
+- **423:** visual QA of all 53 layouts on the Thor with the demo library; 53 new 16:9 layout previews (`lp_*.webp`, `LayoutPreviews423Test`),
+  scene-window keys wrap (`KeyRow`), demo library (`DemoLibrary.kt`). Doc: `docs/LAYOUT_VISUAL_AUDIT_423.md`.
+- **424 / 424b / 424c:** Cardboard box cases drawn as solid blocks through the box camera (no overlaps, no wash; `BoxSolid424Test`),
+  generated Game Boy paks measured off the real scan, Circuit / Bubbles / index card / Box sheet / compact fixes; hardware checks
+  (Wii custom colours, rapid A/B/A, touch, second-screen companion). Incident: a `wm size` change crashed the system launcher3 — never
+  change wm size / density on the Thor again.
+- **425–426:** popups per layout (Pocket ×3, Shelf, Stacks, Consoles, Cover details — `WinScenesStyled.kt`), Bubbles / Green Core / Cube /
+  Card binder / Disc station follow their settings; Details / Options / Achievements / Performance open as a full readable page
+  (`ExpandedWinPage`); Wii window More page; Live tiles full-screen pale backdrop; contrast shades; no "…" in scene windows / Save Vault;
+  Save Vault 3D sway ±30°. Partly Thor-verified (see SUMMARY 425–426 "NOT verified").
+- **427 stage A:** review gallery covers 207 themes (gen.py had missed 50 scenes), 3 moments + mock home state, `REVIEW_427.md`
+  (KEEP 181 / KEEP* 6 / POLISH 20 — these are SIMULATED WebGL review results, not device proof), palette contrast fixes (Lobby, Pocket LCD,
+  Bold split, Pocket shell), thumbnails with sample art (Thor-verified), cover atlas fit-not-crop.
+- **428 (stage A review fixes + stage B):** see SUMMARY 428 — contrast_check.py fails (exit 1) under 4.5:1 text / 3:1 control and checks
+  the on-accent words as the app draws them; tests use the exact thresholds; theme preview hook no longer saves; device checks of the
+  POLISH themes, Pan & zoom and Pixel world.
+
+**STAGES (owner's theme / layout pass, 1 Nov) — continue in this order, nothing below is done unless SUMMARY says so:**
+- **Stage B (themes):** finish the 20 POLISH themes from device evidence only (no redesigns); Chill (18), 32-bit creatures (18), Showcase /
+  Gaming room / CRT (artwork / missing art / idle GPU), Trophy / Badge themes with 0 / few / many achievements; OLED, Lite, Android 12
+  legacy fallback, frame pacing on the Thor.
+- **Stage C (layouts):** D102 Cross menu ◀ ▶ asymmetry, D107 Cinema story / Arctic drawer reachability, Twin popups using both screens
+  (second screen present) with single-screen fallback, Orbit deck spinning-disc variant on hardware, Case stacks / Arcade frame times
+  (D61, re-measure first), Game shelf / Case stacks / Cover details 3D geometry and pull-out continuity, all 53 HomeLayouts (navigation,
+  category switching per rule 14, popups, small screens, 0 / 1 / 2 / 3 / many games, missing art), the relevant R1 popup modes.
+- **Stage D:** regressions, tests, defect statuses (tools/qa/defects.json), handoff.
+- **Deferred to 2 Nov (RP Classic available then):** battery and idle-GPU tests (D64 gameplay clip ~30 fps forever while idle, D67).
+
+**Open defects carried (do not close without evidence):** D12, D13 (suspect render / composition spikes), D24 (cold start), D38, D42
+(explorer fixed-compiles), D39 (design note), D60 (accessibility semantics per frame), D61 (Stacks / Arcade render-bound), D64, D67, D73
+(RP Classic), D83 ("…" seen on Thor: R1 Now Playing artist, Settings header subtitle, widgets), D86 (Box rapid A/B two copies,
+fixed-unverified), D91, D96 (suspect), D102, D107 (fixed-unverified 428), D109 (Box cold category), D111 / D112 (428 theme contrast on the real home screen, fixed-unverified: take the after-fix captures; the Thor shut down at 1 % battery on 1 Nov 19:05 — run `dumpsys battery` before a session). From 424–426: Save Vault blank Game Boy labels NOT
+reproduced; case / disc motion videos 1000199358 / 59 / 62 / 67 not analysed on a direct recording; RetroArch as Android disc / cartridge
+= owner decision pending; wallpaper readability on case / disc layouts; Lite / per-layout second screen / missing-art passes; Pocket Quest
+info line and Cube hints at 1280×720.
+
+
 > Update 415 (30 Oct 2026): see SUMMARY top entry. Box Order / dividers done + unit-tested, prewarm unmeasured (P1 open), P2 / P3 mostly not reached, no release.
 
 > Update 412 (30 Oct 2026): see SUMMARY top entry. D108 fixed-partly, D97 / D98 still open (evidence in SUMMARY 412), release 0.6.61 = both APKs.

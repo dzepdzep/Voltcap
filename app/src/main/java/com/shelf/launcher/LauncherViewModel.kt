@@ -736,7 +736,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Pass 5 (QA): the saved appearance back on screen after a test preview (TestHooks). */
     fun reloadAppearance() {
         artShown = null
-        _uiState.update { it.copy(appearance = withCategoryArt(it, appearanceStore.load())) }
+        // (Update 427: and the saved theme — a QA preview may have shown another one, see previewTheme.)
+        _uiState.update { it.copy(appearance = withCategoryArt(it, appearanceStore.load()), appTheme = themeStore.load()) }
+    }
+
+    /** Update 427 (QA hooks only): show [theme] for this session without saving it; reloadAppearance() puts yours back. */
+    fun previewTheme(theme: AppTheme) {
+        _uiState.update { it.copy(appTheme = theme) }
     }
 
     /** Pass 5 (Settings › Categories): the category you're in keeps [look] as its own game look (null: its layout's). */

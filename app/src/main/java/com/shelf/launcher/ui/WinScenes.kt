@@ -43,6 +43,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
+import androidx.compose.ui.composed
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.focusable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -339,6 +344,28 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
             .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
+}
+
+/**
+ * Update 428 (D107): a scene's text column that only scrolled by touch (Cinema's story, Arctic's plot) becomes a D-pad stop:
+ * ▲ ▼ scroll it while it has focus, and at its top / bottom the press goes on to the next control. A thin ring shows it is
+ * the one the D-pad is on. Put it before sceneFadeEdges / verticalScroll(state).
+ */
+internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color): Modifier = this.composed {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.ui.Modifier.onFocusChanged { on = it.isFocused }
+        .onPreviewKeyEvent { e ->
+            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            when (e.key) {
+                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * 0.6f) }; true } else false
+                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * 0.6f) }; true } else false
+                else -> false
+            }
+        }
+        .then(androidx.compose.ui.Modifier.focusable())
+        .border(if (on) 2.dp else 0.dp, if (on) ring else Color.Transparent, RoundedCornerShape(6.dp))
+        .padding(4.dp) // (the same room with or without the ring: the text never jumps when it is reached)
 }
 
 /**

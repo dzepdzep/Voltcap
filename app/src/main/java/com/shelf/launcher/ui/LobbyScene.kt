@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import com.shelf.launcher.ui.theme.ShelfColors
@@ -39,8 +40,12 @@ internal fun LobbyScene(colors: ShelfColors, modifier: Modifier = Modifier) {
     val dim = tuning.dim
     Spacer(
         modifier.drawWithCache {
-            val top = lerp(colors.background, Color.White, 0.6f)
-            val bottom = lerp(colors.background, colors.surface, 0.85f)
+            // (Update 428, Thor: with Theme › Colours follow › The game you're on, the colours are the game's — light writing
+            // on a dark background — and the light Lobby wash put that white writing on near-white. The wash follows the
+            // writing: light (as designed) under dark writing, a deep slate of the same colours under light writing.)
+            val lightText = colors.textPrimary.luminance() > 0.5f
+            val top = if (lightText) lerp(colors.background, Color.Black, 0.2f) else lerp(colors.background, Color.White, 0.6f)
+            val bottom = if (lightText) lerp(colors.background, Color.Black, 0.45f) else lerp(colors.background, colors.surface, 0.85f)
             val gradient = Brush.verticalGradient(listOf(top, colors.background, bottom))
             // One line every ~4 dp, one pixel thick, in the text colour at a whisper.
             val period = maxOf(3, (4.dp.toPx()).toInt())

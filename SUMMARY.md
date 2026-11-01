@@ -1,3 +1,49 @@
+# Update 428 (1 Nov 2026) — Stage A review fixes, Stage B device checks of the bright / light themes, D107 (NOT released)
+
+Owner's review of 427: contrast tool must fail, tests use the stated thresholds, WebGL classes are review results not device proof,
+recheck Pan & zoom / Pixel world on the Thor, continue POLISH and stages B–D, update the handoff.
+
+## What was wrong → what changed → what was verified
+- **contrast_check.py always exited 0.** Now exit 1 when any pair is under its aim (verified: a copy with Lobby's old muted grey →
+  "FAIL LOBBY … 3.09", exit 1; current palettes → exit 0). The pairs are the ones the app draws: text / muted on background, surface
+  and raised rows (4.5:1); the words on an accent fill as `DialogChrome.onAccentColor()` draws them — black or white, whichever is
+  stronger (4.5:1); accent against raised / background (3:1, a picked chip / switch / progress). The D-pad focus ring is not checked:
+  `focusRing` draws its own light ring with a dark inner edge. **Correction to SUMMARY 427:** "white words on the red 3.14" was wrong —
+  onAccentColor draws BLACK on Bold split's red (≈6.8:1).
+- **ThemeQuality427Test used 4.45 / 2.95.** Now exactly 4.5 / 3.0 and the same pairs as the tool (incl. onAccent). Unit tests pass (PC).
+- **Theme QA hook saved the theme** (`--es voltcap_test_theme`): in a preview (`--ez voltcap_test_preview true`) it now only shows it,
+  with the animated scene behind the home screen (`LauncherViewModel.previewTheme`); `--ez voltcap_test_preview false` reloads the saved
+  theme and appearance. Verified on the Thor: 26 themes previewed, preview ended, the Pocket classic home and VOLTCAP theme back.
+- **Thor captures of 26 themes behind the real Classic row** (`.shots/428th2`, `REVIEW_427.md` "Device (428)"):
+  - Pan & zoom and Pixel world: readable → KEEP (device-checked). The WebGL "bright title zone" measured the top-left band, which the
+    Classic row does not use; Sprout / Torrent / Meadow / Terra 32-bit, Pixel sky, Summer sky, Meadow, 64-bit plains: readable → KEEP.
+  - **Lobby: white chips, name and status on a near-white wash** (with "Colours follow: the game you're on" the writing is light) →
+    `LobbyScene`: the wash follows the writing (a deep slate of the same colours under light writing; as designed under dark). D111.
+  - **Manga beat, Comic pages, Magical sparkle, Frost / Gale / Alloy 32-bit, Blue sky cruise: white words over light areas** →
+    `HomeChrome.BRIGHT_SCENES` + `SceneTextShade` (soft black under the status bar and behind the lower half, these scenes only; dark
+    scenes untouched). D112.
+  - Still glow, Warp drive, the three Lyric themes (idle): fine on the device → KEEP. Pocket shell: invalid capture, NOT CHECKED.
+  - After-fix captures NOT taken: **the Thor shut down at 1 % battery** (it read 2 % while charging; ADB lost it at 19:05).
+- **D107 (Cinema story / Arctic drawer)**: the story and plot columns only scrolled by touch → `WinScenes.sceneReadable` (focusable,
+  ▲ ▼ scroll a page, at the end the press goes on, a thin ring shows it); the full Details page is the expanded page since 426.
+  Unit test only (Stage428Test); NOT verified on the Thor → defects.json D107 = fixed-unverified.
+- **D102 (Cross ◀ ▶)**: code read only — ◀ ▶ cycle categories on every key-down, `CategoryStops.stepFrom` wraps both ways, empty ones
+  are skipped; no asymmetry in code. Stays OPEN until reproduced on the Thor with QaTrace category events.
+- `COWORK_HANDOFF.md`: new top block for updates 423–428 with stage B / C / D priorities and every open item (backlog kept).
+
+## Checks
+- PC unit tests (testDebugUnitTest): pass, incl. ThemeQuality427Test (exact thresholds), Stage428Test. Static checks PASS (cloud).
+  QA selftest OK. contrast_check exit codes as above. No release build installed after the fixes (Thor offline).
+
+## Open / next
+- Thor (when charged): after-fix captures of Lobby + the 7 bright scenes on the Classic row AND 2–3 other layouts; Pocket shell;
+  D107 with the D-pad on Cinema / Arctic; D102 repro; then stage C list in COWORK_HANDOFF.md (Twin popups on two screens, Orbit disc,
+  Stacks / Arcade frame times D61, 53 layouts, R1 popup modes). RP Classic (battery, idle GPU D64) from 2 Nov.
+
+Files: LauncherViewModel.kt, ui/LauncherScreen.kt, ui/HomeChrome.kt, ui/LobbyScene.kt, ui/WinScenes.kt, ui/WinScenesHomes.kt;
+tools/themes/contrast_check.py, tools/themes/refresh-review/REVIEW_427.md, tools/qa/defects.json, COWORK_HANDOFF.md;
+tests ThemeQuality427Test.kt, Stage428Test.kt.
+
 # Update 427 (1 Nov 2026) — Stage A: theme coverage, palette contrast, music-theme thumbnails, cover atlas (NOT released)
 
 Theme and home-layout improvement pass, stage A of 4 (B: weak theme collections, C: home layouts, D: verification / backlog).
