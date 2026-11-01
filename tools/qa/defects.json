@@ -1535,7 +1535,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-01 update 436 (.shots/436, voltcap_test_shortcuts + shortcuts_open with snapshot save / restore)",
-   "note": "Odin Arctic: the row sits top-left above the title, no overlap. Odin Classic and the GT78 Hub home: no round buttons shown in the captures. Optional feature (off by default); release limitation, not a blocker."
+   "note": "Odin Arctic: the row sits top-left above the title, no overlap. Odin Classic and the GT78 Hub home: no round buttons shown in the captures. Optional feature (off by default); release limitation, not a blocker. | v0.6.66 investigation (source): Arctic and Disc station are styleHasShortcuts() layouts — they draw the round shortcuts in their OWN row and LauncherScreen deliberately skips the corner ☰ for them (LauncherScreen.kt ~3381: '!(styleLayout && styleHasShortcuts(...))'), so the corner setting not moving them is by design. The real defect is narrower: Disc station's own row (StyleDiscStation.kt) is placed over the disc panel's bottom label on 960x640 when shortcuts are open. Next: give that row its own band (or fold it into the action row) when the panel is short; leave Arctic as is (no overlap)."
   }
  ]
 }

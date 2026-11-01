@@ -1,3 +1,14 @@
+**v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here.**
+Session note: the previous session ran out of context right after starting; only the D131 investigation was done (see defects.json D131:
+Arctic / Disc station draw shortcuts in their own row by design; the fix belongs in StyleDiscStation.kt's own row on short panels).
+Batches to do, in order: (1) D131 Disc station row band on short panels — verify GT78 + Odin with `voltcap_test_shortcuts` + snapshot save /
+`shortcuts_open=true` / snapshot restore (see SUMMARY 436 for the exact procedure); (2) popup audit — five R1 popup modes on the priority
+layouts with `screenrecord` clips (vqa.sh rec) and onepress focus logs, Odin first, then GT78 (NOCAT=1); (3) D130 Disc station window disc art,
+D125 Hero small-screen "…", D123 Android 12 legacy scenes, D128 two-game Box; (4) controller / navigation QA on the known-issue layouts;
+(5) D124 hardware re-run (Odin, voltcap_test_tune auto:EFFICIENT, a CPU-heavy game section — ARMSX2 pause menu needs a tap on Resume at
+860,300). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; use a NEW staging folder for every
+device_commit (a reused staged path can upload a stale copy); never run commit + sync in the same parallel batch.
+
 **UPDATE 437 (newest):** MCP tooling can build / install the compat APK and publish an already staged version — **restart Claude Desktop first**. Then: gradle_start assembleCompat → verify 0.6.65 / 72 / com.shelf.launcher / signer 88ce4b67…f344197 → owner approval → publish_release 0.6.65.
 
 **UPDATE 435 (newest):** v0.6.65 final checks done except the compat APK build (owner: `.\gradlew.bat assembleCompat`) and round-shortcut verification (buttons not shown in captures). After publication: popup audit with recordings, D125, D123, D128, D130, round shortcuts, unplugged AutoTDP.
