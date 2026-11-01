@@ -43,8 +43,26 @@
 - **Orbit deck** rapid navigation (12 × ▶ at 120 ms, 6 × ◀ at 80 ms, screenrecord 30 fps, 346 frames, real art): no frame-to-frame
   luminance flash (min 27 / max 34 / median 28), discs move and titles cross-fade without blank frames.
 
-## NOT done yet in 424
-- Second screen per layout, Lite, touch passes; Wii Custom colours; Recap physical-media options.
+## More hardware checks (Thor, real library; settings snapshot saved and restored)
+- **Wii Channel** Custom colour (coral) on the grid and in the preview window, then Light Blue: both drawn as chosen. PASS.
+- **Rapid A/B/A** in the Cardboard box (A/B × 3 at 150 ms, then A): the window opens once with the pulled case, B returns it; no stuck
+  state. PASS. **Touch**: a tap picks the case under it (tag follows), a second tap pulls it out and opens its window. PASS.
+- **Second screen**: the companion grid on the lower screen follows the focused game (999…) while the Twin showcase window opens on
+  the main screen; B returns to the home. Per-layout second-screen captures: NOT done.
+- **Category switch** in the box with L2 / R2 in preview mode left the preview for the real layout (a test-hook effect, not checked
+  further): NOT verified for the box.
+- **Incident:** the 1280×720 pass (`wm size` / `wm density`, both restored to the Thor's own 1080p / 389 dpi) made the SYSTEM launcher
+  (com.android.launcher3 / Quickstep RecentsActivity "Receiver not registered" on relaunch) crash four times; its "keeps stopping"
+  dialog was on the lower screen and has been closed with Close app. Voltcap did not crash. No further display-size changes were made.
+- Thor left as found: preview / demo off, test snapshot restored, layout Pocket classic, hooks file `.paused`, /sdcard/lp removed.
+
+## NOT done yet in 424 (continue here)
+- Lite-mode pass; second-screen captures per layout; missing-artwork pass with the real library (demo covers it only partly).
+- Generated cases and discs: not reworked (Game Boy family paks only). "Recap" physical-media options: not reviewed.
+- ES-DE read-only media: implemented and checked in 422 (folder picker with persisted read permission, auto-detect, rescan,
+  disconnect, ES-DE-first priority toggle, unmatched report, never writes) — not changed in 424.
+- Pocket Quest home clips its long info line at 1280×720; Cube's button hints touch the edge at 1280×720.
+- No release: the items above are still open.
 - Generated cases / discs: not reworked in this pass (Game Boy family only). TV room picture: unchanged (owner's art; concern noted).
 
 # Update 423 (1 Nov 2026) — visual QA of all 53 layouts, 53 new layout previews, demo library, window keys wrap (NOT released)

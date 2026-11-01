@@ -95,3 +95,9 @@ stretch). "Window" = the window A opens (Classic = the details window by design)
   that look like known game characters / items; its preview shows the same picture. Worth replacing with an original
   picture before the repository is public.
 - The demo's covers repeat (160 designs over 2157 games); fine for previews.
+
+## Update 424 follow-up
+- Cardboard box: cases drawn as solid blocks through the box camera (no overlaps, no dim / warm wash) — real library, Thor: verified.
+- Bubbles (art + description in the info panel), Circuit (sheet fits its content), index card (Shelf / Stacks / Cover details grow with
+  their keys), Box insert sheet (no "…"), Card binder / Twin / Magazine / Cube at 1280×720 — verified on the Thor with real data.
+- Still pending: Pocket Quest info line and Cube button hints at 1280×720; per-layout second-screen captures; Lite.
