@@ -490,9 +490,11 @@ private fun DeskNameStrip(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         } else {
             Column(Modifier.weight(1f)) {
                 // (Update 432, Odin 2 Portal: long names ended in "…"; now they wrap, then shrink — CLAUDE.md rule 11.)
+                // (Update 433, GT78: two lines pushed the console line under the card's edge — on compact screens one line that shrinks.)
                 FitText(
-                    titles.display(g.name), color = DeskInk, maxSize = if (compact) 14.sp else 18.sp, minSize = if (compact) 10.sp else 12.sp,
-                    maxLines = 2, fontWeight = FontWeight.Bold
+                    titles.display(g.name), color = DeskInk, maxSize = if (compact) 14.sp else 18.sp, minSize = if (compact) 9.sp else 12.sp,
+                    maxLines = if (compact) 1 else 2, fontWeight = FontWeight.Bold,
+                    maxHeight = with(androidx.compose.ui.platform.LocalDensity.current) { (if (compact) 19.dp else 48.dp).roundToPx() }
                 )
                 Text(
                     titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),

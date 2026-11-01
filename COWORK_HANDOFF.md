@@ -1,3 +1,12 @@
+**UPDATE 433 (1 Nov 2026, newest; 0.6.65 prepared, NOT published) — resume here.** Release readiness: **READY WITH DOCUMENTED
+LIMITATIONS is NOT yet claimable — BLOCKED on verification only** (no safety / data-loss risk found): (a) CI status and the GitHub release list
+could not be read from the session (owner: confirm v0.6.64 is the latest normal release and CI is green on the 433 commit), (b) the batch 2
+popup audit was not started (no R1 popup mode verified this session), (c) compat APK (release.ps1) not built. Open for the next session in order:
+D126 / D127 (width-based, the `compact` flag is false on the GT78 — evidence G433v), D125, popup audit (Wii, Twin desk, Case stacks, Cover
+details, Disc station, Cinema / Arctic, Cross; recordings for transitions), D124 hardware re-run (CPU-bound game), D123, D128, Thor items.
+Verified this pass: D111, D121, D112 (432), D120 (432); GT78 53/53 + Odin 53/53 layout stills. Clock restore: after every test the Odin's caps
+returned to the saved profile (tune `off`), and game exit re-applied the device profile (tdp432 runs).
+
 **UPDATE 432 / 432b (1 Nov 2026, newest; NOT released; commits 1be38e8 + 432b) — resume here.**
 Devices (USB only): Odin 2 Portal b92036fb (1080p; its wireless twin entry is NOT used), ARBOR GT78 BW0306N230000845 (960×640, Android 12;
 per-category layouts → use `NOCAT=1 sh stills.sh`; sendevent denied → `touch /data/local/tmp/vqa/usekey`). Thor offline. Device scripts:

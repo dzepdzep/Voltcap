@@ -503,12 +503,16 @@ private fun DiscPill(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
             .background(Color.White)
             .border(if (on) 3.dp else 0.dp, if (on) accent else Color.Transparent, pill)
             .tapOnly(onTap)
-            .padding(horizontal = if (compact) 10.dp else 16.dp, vertical = if (compact) 6.dp else 10.dp),
+            .padding(horizontal = if (compact) 6.dp else 16.dp, vertical = if (compact) 6.dp else 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        Icon(icon, null, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
-        Spacer(Modifier.width(6.dp))
-        FullText(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Icon(icon, label, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
+        // (Update 433, GT78 960×640: the pill got so narrow that only "F" / "C" of the word showed. On compact screens it is the
+        // play symbol alone, like the round buttons beside it; the word stays for screen readers.)
+        if (!compact) {
+            Spacer(Modifier.width(6.dp))
+            FullText(label, color = Color(0xFF16171B), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
     }
 }

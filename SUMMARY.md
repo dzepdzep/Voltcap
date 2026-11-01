@@ -1,3 +1,21 @@
+# Update 433 (1 Nov 2026) — 432 follow-up, version 0.6.65 prepared (NOT published)
+
+**Verified on hardware:** D111 Lobby (Odin, scene exposed with `voltcap_test_bg ANIMATED`: status, chip and title readable), D121 Cover details
+(Odin: whole line of story above the shelf). Odin regression stills after the changes: Disc station, Twin desk, Hero, Cover details unchanged
+apart from the fixes. GT78: the remaining 37 layouts captured with the per-category procedure (NOCAT=1) — every still shows the requested
+layout (40 in `.shots/433/G433.tar`; with 432's 16 that is 53 / 53 layouts on the GT78; 53 / 53 on the Odin in 432).
+**Fixed (unit-tested):** D124 review — the idle-GPU excuse for a collapse now lasts 8 s at most, so a CPU-bound slowdown still raises the
+underclock (aCpuBoundSlowdownWithAnIdleGpuStillRecovers). **Attempted, NOT fixed:** D126 (Disc station pill) and D127 (Twin desk card) — the
+fixes were keyed on the layout's `compact` flag, which is false on the GT78; both still show on G433v. D125 Hero small-screen "…" not started.
+D123 (Android 12 dark legacy scenes) and D128 (Box with 2 games) not started. **Not done:** batch 2 popup audit (no popup mode verified this
+session), targeted navigation / focus checks, D124 hardware re-run.
+**Release prep:** versionCode 72 / versionName 0.6.65 (`project_copy/app/build.gradle.kts`), release APK built and installed in place on the Odin
+and GT78 (data kept, no crash in the crash buffer), unit tests + static checks + QA self-test green, draft `docs/CHANGELOG_0.6.65.md`. NOT
+checked from this session: GitHub releases (v0.6.64 latest) and CI — the session has no GitHub API access; the compat APK variant
+(release.ps1) not built. Devices: GT78 hooks file removed, screen timeout 60 s, stay-awake off; Odin hooks file present as found.
+**Copy:** `src_copy/device/tune/AutoTdpController.kt`, `src_copy/ui/StyleDiscStation.kt`, `TwinDesk.kt`; `project_copy/app/build.gradle.kts`,
+`project_copy/app/src/test/.../AutoTdp429Test.kt` (30 tests); docs/CHANGELOG_0.6.65.md; defects.json.
+
 # Update 432b (1 Nov 2026) — Batch 2: AutoTDP runs on the Odin, D112 verified, GT78 small-screen layouts, AutoUnderclock loading fix (NOT released)
 
 **AutoTDP / underclock, Odin 2 Portal (USB b92036fb, plugged at its charge limit → frame / clock data only, NO power data).** PS2 game

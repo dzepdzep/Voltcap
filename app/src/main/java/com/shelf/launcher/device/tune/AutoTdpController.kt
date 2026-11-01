@@ -324,9 +324,10 @@ class AutoUnderclock {
     private var blockedFrom = Int.MAX_VALUE
     private var blockMs = 0L
     private var backoffMs = BACKOFF_START_MS
+    private var collapseMs = 0L
 
     fun reset() {
-        struggleMs = 0L; headroomMs = 0L; sinceStepMs = 0L; sinceDeeperMs = Long.MAX_VALUE / 2
+        struggleMs = 0L; headroomMs = 0L; sinceStepMs = 0L; sinceDeeperMs = Long.MAX_VALUE / 2; collapseMs = 0L
         blockedFrom = Int.MAX_VALUE; blockMs = 0L; backoffMs = BACKOFF_START_MS
     }
 
@@ -347,7 +348,11 @@ class AutoUnderclock {
         // (Update 432, Odin 2 Portal PS2 runs: loading screens and scene cuts collapse the frame rate with the GPU nearly idle
         // (6 %) — counted as a struggle, the underclock stepped out to Off in the first seconds of every session and the 30 s
         // dwell kept it there. A collapse with a clearly idle GPU is not the clocks' fault; a real shortfall keeps the GPU busy.)
-        val collapseIdle = deficit > COLLAPSE && gpuPct != null && gpuPct < GPU_IDLE_NO_CPU
+        // (Update 433, review: an idle GPU doesn't prove a loading screen — a CPU-bound emulator also leaves the GPU idle. So the
+        // excuse only lasts [COLLAPSE_MAX_MS]: a loading screen ends, a CPU-bound slowdown doesn't, and then it counts again.)
+        val idleCollapse = deficit > COLLAPSE && gpuPct != null && gpuPct < GPU_IDLE_NO_CPU
+        collapseMs = if (idleCollapse) collapseMs + dtMs else 0L
+        val collapseIdle = idleCollapse && collapseMs <= COLLAPSE_MAX_MS
         val struggling = !overPower && !levelHasRoom && !collapseIdle && (deficit > MISS || (deficit > HOLD && busy))
         val headroom = deficit <= HOLD && idle
         when {
@@ -380,6 +385,8 @@ class AutoUnderclock {
         const val GPU_IDLE = 75
         /** (Update 432) A miss this deep with an idle GPU is a loading screen / scene cut, not a struggle. */
         const val COLLAPSE = 0.35f
+        /** (Update 433) How long an idle-GPU collapse is taken for a loading screen before it counts as a real slowdown. */
+        const val COLLAPSE_MAX_MS = 8_000L
         /** GPU idle threshold when the CPU load can't be read. */
         const val GPU_IDLE_NO_CPU = 60
         /** Overall CPU busy % (all cores together): a single-thread-bound game can read low, so it's only a guard. */

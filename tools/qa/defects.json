@@ -1353,9 +1353,9 @@
    "title": "Lobby theme with Colours follow = the game you're on: white chips, game name and status bar on a near-white wash (Classic row)",
    "rule": "CONTRAST",
    "severity": "high",
-   "status": "fixed-unverified",
+   "status": "verified",
    "found": "2026-11-01 update 428 Thor capture (.shots/428th2/LOBBY_a.png)",
-   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded). | 432b: the 432 fix did NOT help on the Odin (the home's white writing doesn't follow the theme's text colour); LOBBY added to the shaded scenes and the shade no longer depends on the text colour — after-fix capture NOT taken."
+   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded). | 432b: the 432 fix did NOT help on the Odin (the home's white writing doesn't follow the theme's text colour); LOBBY added to the shaded scenes and the shade no longer depends on the text colour — after-fix capture NOT taken. | 433: VERIFIED on the Odin (d111_CLASSIC_LOBBY, BG=ANIMATED): status bar, 'All' chip and the title white over the shaded Lobby scene, readable."
   },
   {
    "id": "D112",
@@ -1443,9 +1443,9 @@
    "title": "Cover details: the story's lines ran under the shelf of spines on 1080p (shelf drawn 16 % taller than its slot)",
    "rule": "OVERLAP",
    "severity": "med",
-   "status": "fixed-unverified",
+   "status": "verified",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Info column stops above the shelf top; story only as many whole lines as fit. Odin after-fix V432_COVERDETAILS: no overlap; the whole-lines refinement is NOT on hardware yet."
+   "note": "Info column stops above the shelf top; story only as many whole lines as fit. Odin after-fix V432_COVERDETAILS: no overlap; the whole-lines refinement is NOT on hardware yet. | 433: VERIFIED on the Odin (O433_COVERDETAILS): one whole line of story above the shelf, no overlap; GT78 Cover details also clean (G432)."
   },
   {
    "id": "D122",
@@ -1472,7 +1472,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM→LIGHT→OFF in Efficient, LIGHT→OFF in Balanced)",
-   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done."
+   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done."
   },
   {
    "id": "D125",
@@ -1481,7 +1481,7 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-01 update 432b GT78 G432_HERO",
-   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11."
+   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11. | 433: still present on the GT78 (G433_HERO); not fixed this session."
   },
   {
    "id": "D126",
@@ -1490,7 +1490,7 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-01 update 432b GT78 G432_DISCS",
-   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended."
+   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended. | 433: two fix attempts keyed on the layout's `compact` flag did NOT work on the GT78 (G433v_DISCS: '▶ n') — compact is false there; the pill needs a width-based rule. STILL OPEN."
   },
   {
    "id": "D127",
@@ -1499,7 +1499,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-01 update 432b GT78 G432_TWIN_DESK",
-   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact."
+   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact. | 433: the compact-only one-line rule did NOT apply on the GT78 (compact false; G433v_TWIN_DESK still two lines, console line cut). STILL OPEN — needs a width / height based rule."
   },
   {
    "id": "D128",
@@ -1509,6 +1509,15 @@
    "status": "open",
    "found": "2026-11-01 update 432b GT78 G432_BOX (Continue playing, 2 games)",
    "note": "Box 1-3 games item of the backlog; reproduced on hardware."
+  },
+  {
+   "id": "D129",
+   "title": "GT78: 'App not responding (bg anr)' crash screen after QA key injection while the screen was asleep",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "wontfix",
+   "found": "2026-11-01 update 433 GT78",
+   "note": "dropbox: Input dispatching timed out (Application does not have a focused window), main thread idle in nativePollOnce — caused by the QA script sending keys to a sleeping screen, not by Voltcap work. Keep the screen awake during runs."
   }
  ]
 }

@@ -285,6 +285,17 @@ class AutoTdp429Test {
         assertEquals(1, s2)
     }
 
+    @Test fun aCpuBoundSlowdownWithAnIdleGpuStillRecovers() {
+        // Update 433 (review of D124): a CPU-bound emulator runs 25 against 60 with the GPU at 5 % for 20 s. It must not be
+        // excused as a loading screen forever: after the 8 s grace it counts as a struggle and the underclock steps shallower.
+        val u = AutoUnderclock()
+        var step = 2
+        var steppedAt = -1
+        for (t in 1..20) { val n = u.tick(step, 0..3, 25f, 60, 30, 5, false, false, true, 1000L); if (n < step && steppedAt < 0) steppedAt = t; step = n }
+        assertTrue("stepped at $steppedAt", steppedAt in 9..13)
+        assertTrue(step < 2)
+    }
+
     @Test fun missingFrameRateHoldsTheUnderclock() {
         val u = AutoUnderclock()
         var step = 2
