@@ -16,10 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +71,9 @@ internal fun wiiPaletteNow(): WiiPalette {
 
 private val WiiBlue = Color(0xFF3AA6E8)
 
+/** Update 426: which game's Wii window has its More page open (null: the preview). */
+internal object WiiMore { var key by androidx.compose.runtime.mutableStateOf<String?>(null) }
+
 @Composable
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 internal fun WiiChannelPreview(ctx: WinSceneCtx) {
@@ -79,6 +86,21 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
     val play = ctx.buttons.firstOrNull { it.primary }
     val back = ctx.buttons.firstOrNull { it.back }
     val small = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
+    val I = androidx.compose.material.icons.Icons.Filled
+    // Update 426: the secondary actions' page (More); B / Wii Menu come back to the preview first.
+    // (Kept outside the scene: a page opened from More — Details, Options… — replaces the scene, and B from it comes back
+    // to the More page on the key that opened it. A window opening afresh starts on the preview.)
+    androidx.compose.runtime.remember { if (ctx.reveal() < 0.5f) WiiMore.key = null; 0 }
+    val more = WiiMore.key == ctx.g.stableKey && ctx.page == WinPage.MAIN
+    fun setMore(v: Boolean) { WiiMore.key = if (v) ctx.g.stableKey else null }
+    androidx.activity.compose.BackHandler(enabled = more) { setMore(false) }
+    val moreKey = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
+    var moreTouched by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(more) {
+        if (!moreTouched) { moreTouched = true; return@LaunchedEffect }
+        kotlinx.coroutines.delay(70)
+        runCatching { if (more) small.firstOrNull { it.focus != null }?.focus?.requestFocus() else moreKey.requestFocus() }
+    }
     Column(
         Modifier.width(w).height(h).graphicsLayer {
             // Opens out of the channel tile and closes back into it (B).
@@ -97,7 +119,9 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
             Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(pal.well)
                 .border(2.dp, WiiBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
         ) {
-            if (ctx.page == WinPage.MAIN) {
+            if (ctx.page == WinPage.MAIN && more) {
+                WiiMorePage(small, pal, compact, Modifier.fillMaxSize())
+            } else if (ctx.page == WinPage.MAIN) {
                 // Update 421: wide art fills the preview (cropped to its shape, never stretched); a portrait cover is shown
                 // whole in front of a soft, filled copy of itself, so the well never shows bare bars either side.
                 val wideArt = ctx.wide ?: ctx.backdrop
@@ -122,31 +146,17 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 StableFullText(ctx.name, color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Spacer(Modifier.height(4.dp))
             }
-            // The compact secondary keys, each as wide as its whole name; (Update 423) they wrap onto a second centred line
-            // instead of running off the preview's edge ("S" of Saves was cut).
+            // Update 426: no strip of tiny keys any more (an action was cut at the right edge on the user's Thor): one
+            // readable "More" key opens the secondary actions as a page of big Wii keys in the preview well (above).
             if (small.isNotEmpty()) {
-                androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                    small.forEach { a ->
-                        SceneControl(a, Modifier) { on ->
-                            Row(
-                                Modifier.clip(RoundedCornerShape(50)).background(if (on) pal.keyOn else pal.key)
-                                    .border(if (on) 2.dp else 1.dp, if (on) WiiBlue else if (a.urgent) WiiBlue.copy(alpha = 0.7f) else pal.edge, RoundedCornerShape(50))
-                                    .padding(horizontal = 9.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(a.icon, null, tint = pal.ink, modifier = Modifier.size(13.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(wiiSmallLabel(a.label), color = pal.ink, fontSize = 11.sp, softWrap = false)
-                            }
-                        }
-                    }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    WiiMidKey(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, Modifier.widthIn(min = 150.dp), compact)
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(if (compact) 4.dp else 6.dp))
             }
             // Two prominent keys along the bottom: Wii Menu (back to the tile) and Start.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (back != null) WiiBigKey(back, "Wii Menu", pal, Modifier.weight(1f), compact)
+                if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Wii Menu", pal, Modifier.weight(1f), compact)
                 if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact)
             }
         } else {
@@ -154,6 +164,40 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 ctx.buttons.forEach { a -> WiiBigKey(a, a.label, pal, Modifier.widthIn(min = 140.dp), compact) }
             }
         }
+    }
+}
+
+/** Update 426: the secondary actions as big, readable Wii keys in the preview well, wrapping onto as many rows as needed. */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+private fun WiiMorePage(items: List<WinAction>, pal: WiiPalette, compact: Boolean, modifier: Modifier) {
+    val scroll = rememberScrollState()
+    androidx.compose.foundation.layout.FlowRow(
+        modifier.sceneFadeEdges(scroll).verticalScroll(scroll).padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        // (Four to a row from seven actions on — two rows of whole keys, never a third row cut by the well's edge.)
+        maxItemsInEachRow = if (items.size > 6) 4 else 3
+    ) {
+        items.forEach { a -> WiiMidKey(WinAction(wiiSmallLabel(a.label), a.icon, a.onClick, a.focus, urgent = a.urgent), pal, Modifier.weight(1f), compact, tall = true) }
+    }
+}
+
+/** A medium Wii key: icon over (tall) or beside its whole name, the palette's key colours, the blue rim when lit. */
+@Composable
+private fun WiiMidKey(a: WinAction, pal: WiiPalette, modifier: Modifier, compact: Boolean, tall: Boolean = false) {
+    SceneControl(a, modifier) { on ->
+        val s = RoundedCornerShape(if (tall) 16.dp else 50.dp)
+        val body: @Composable () -> Unit = {
+            Icon(a.icon, null, tint = if (on) WiiBlue else pal.ink, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
+            Text(a.label, color = pal.ink, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+        val m = Modifier.fillMaxWidth().clip(s)
+            .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
+            .border(if (on) 3.dp else 1.5.dp, if (on) WiiBlue else if (a.urgent) WiiBlue.copy(alpha = 0.7f) else pal.edge, s)
+            .padding(horizontal = 12.dp, vertical = if (tall) (if (compact) 6.dp else 10.dp) else (if (compact) 4.dp else 6.dp))
+        if (tall) Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) { body() }
+        else Row(m, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) { body() }
     }
 }
 

@@ -154,7 +154,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
         }
         Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
-            Text(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 2)
             Text(
                 ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""),
                 color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1
@@ -177,7 +177,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 Spacer(Modifier.width(10.dp))
                                 Text(a.label, color = if (on) p.ink else if (a.urgent) Color(0xFFFFC46B) else Color.White,
                                     fontSize = if (a.primary) 18.sp else 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    maxLines = 2)
                             }
                         }
                     }
@@ -208,7 +208,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 fun fact(label: String, value: String?) {
                                     if (value.isNullOrBlank()) return
                                     Text(label.uppercase(), color = lerp(p.glow, Color.White, 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    Text(value, color = Color.White, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text(value, color = Color.White, fontSize = 14.sp, maxLines = 3)
                                     Spacer(Modifier.height(6.dp))
                                 }
                                 fact("Played", ctx.played)
@@ -232,7 +232,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                         }
                         if (!compact) ctx.summary?.let {
                             Spacer(Modifier.height(8.dp))
-                            Text(it, color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                            Text(it, color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 4)
                         }
                     } else ctx.pageBody(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.22f)))
                 }
@@ -294,7 +294,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     }
                     Spacer(Modifier.width(10.dp))
                     Column {
-                        Text(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = if (compact) 17.sp else 21.sp))
                         Text(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
                     }
                 }
@@ -314,14 +315,38 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                             ) {
                                 if (!a.primary) { Icon(a.icon, null, tint = Color(0xFF26364A), modifier = Modifier.size(16.dp)); Spacer(Modifier.width(8.dp)) }
                                 Text(if (a.primary) "Start" else a.label, color = if (a.urgent) Color(0xFFB0630A) else Color(0xFF1A2633),
-                                    fontSize = if (a.primary) 20.sp else 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    fontSize = if (a.primary) 20.sp else 13.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                             }
                         }
                     }
                 }
             }
             Spacer(Modifier.width(14.dp))
-            Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
+            // (Update 425, owner: half the window was a white panel even for a game with almost no details. A game with few
+            // details shows its picture there — LiveArea-style — with the little it has on a strip under it; with no picture
+            // either, the panel is narrower. Nothing is made up to fill it.)
+            val rich = listOfNotNull(ctx.year, ctx.developer, ctx.genres, ctx.summary?.takeIf { it.isNotBlank() }).size >= 2
+            val liveArt = ctx.wide ?: ctx.backdrop ?: ctx.cover
+            if (ctx.page == WinPage.MAIN && !rich && liveArt != null) Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(Color(0xFF0D1520))) {
+                AsyncImage(rememberStyleArtRequest(liveArt), ctx.name, Modifier.fillMaxSize(), contentScale = if (liveArt == ctx.cover) ContentScale.Fit else ContentScale.Crop)
+                Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.White.copy(alpha = 0.92f)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(ctx.played, color = Color(0xFF1A2633), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        if (ctx.total > 0) {
+                            Icon(Icons.Filled.EmojiEvents, null, tint = Color(0xFFE0A400), modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("${ctx.earned} / ${ctx.total}", color = Color(0xFF1A2633), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    ctx.last?.let { Text("Last played  $it", color = Color(0xFF5B6B7C), fontSize = 11.sp) }
+                    ctx.chips.forEach { a ->
+                        SceneControl(a, Modifier) { on ->
+                            Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 11.sp, maxLines = 2,
+                                textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                        }
+                    }
+                }
+            } else Box(Modifier.weight(if (ctx.page == WinPage.MAIN && !rich) 0.36f else 0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
                 if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).then(fadeScroll())) {
                     // (Update 424: the LiveArea's info panel stood mostly empty white beside the bubble's keys: the game's picture
                     // heads it, as on the console's page, and its description follows the facts.)
@@ -343,7 +368,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     fun line(label: String, value: String?) {
                         if (value.isNullOrBlank()) return
                         Text(label, color = Color(0xFF5B6B7C), fontSize = 11.sp)
-                        Text(value, color = Color(0xFF1A2633), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(value, color = Color(0xFF1A2633), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 3)
                         Spacer(Modifier.height(5.dp))
                     }
                     line("Played", ctx.played); line("Last played", ctx.last); line("Released", ctx.year); line("Made by", ctx.developer); line("Kind", ctx.genres)
@@ -411,13 +436,13 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                 }
                 if (land) Spacer(Modifier.weight(1f))
                 Spacer(Modifier.height(u * 2))
-                Text(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
                 // (Update 346: the time on its own line — beside the achievements it was cut to "TROPHIES 0/…".)
-                Text("TIME " + ctx.played.uppercase(), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("TIME " + ctx.played.uppercase(), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
             }
             Spacer(Modifier.width(u * 6))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Text(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = fs(8f))
+                Text(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
                 Spacer(Modifier.height(u))
                 Box(Modifier.fillMaxWidth().height(u).background(c0))
                 Spacer(Modifier.height(u * 3))
@@ -431,13 +456,13 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                                     Canvas(Modifier.size(u * 7)) { if (on) pixelIcon(PX_CURSOR, Offset.Zero, u.toPx(), c3) }
                                     Spacer(Modifier.width(u * 2))
                                     Text(a.label.uppercase(), color = if (on) c3 else if (a.urgent) c1 else c0, fontFamily = font,
-                                        fontSize = fs(if (a.primary) 6f else 5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        fontSize = fs(if (a.primary) 6f else 5f), maxLines = 2)
                                 }
                             }
                         }
                     }
                     Spacer(Modifier.height(u * 2))
-                    if (ctx.total > 0) Text("TROPHIES ${ctx.earned}/${ctx.total}", color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (ctx.total > 0) Text("TROPHIES ${ctx.earned}/${ctx.total}", color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth().background(c0)) { ctx.pageBody(Modifier.fillMaxSize().padding(u * 2)) }
                     Spacer(Modifier.height(u * 2))
@@ -489,7 +514,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
-                    Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                     Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                 }
                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
@@ -507,7 +532,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                                 Icon(a.icon, null, tint = if (on) Color.White else ink.copy(alpha = 0.75f), modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
                                 Spacer(Modifier.width(12.dp))
                                 Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = if (a.primary) 18.sp else if (short) 14.sp else 15.sp,
-                                    fontWeight = if (a.primary || on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    fontWeight = if (a.primary || on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 2)
                             }
                         }
                     }
@@ -524,7 +549,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                             fun fact(label: String, value: String?) {
                                 if (value.isNullOrBlank()) return
                                 Text(label, color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-                                Text(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 3)
                                 Spacer(Modifier.height(6.dp))
                             }
                             if (ctx.total > 0) {
@@ -641,7 +666,7 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                     col.forEach { a ->
                                         SceneControl(a, Modifier) { on ->
                                             Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
-                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 2,
                                                 modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                                     .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
                                         }
@@ -651,7 +676,7 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         }
                     }
                     Text(listOfNotNull(if (ctx.playtime == null && ctx.lastPlayed == null) "NOT PLAYED YET" else "PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
-                        color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 2)
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth().border(1.dp, st.ink.copy(alpha = 0.35f))) { ctx.pageBody(Modifier.fillMaxSize()) }
                     ctx.buttons.forEach { a ->
@@ -709,7 +734,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = h * tear)) {
             if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
             Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
-                maxLines = if (short) 1 else 2, overflow = TextOverflow.Ellipsis)
+                maxLines = if (short) 2 else 3)
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
             if (ctx.page == WinPage.MAIN) {
@@ -718,13 +743,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                     if (ctx.total > 0) "TROPHIES" to "${ctx.earned} / ${ctx.total}" else null)
                 // (Update 347: on a short tag the facts are one line, so every key fits on the tag without scrolling.)
                 if (short) Text(facts.takeLast(2).joinToString("   ·   ") { (l, v) -> "$l ${v.uppercase()}" }, color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    maxLines = 2)
                 else facts.chunked(2).forEach { pair ->
                     Row(Modifier.fillMaxWidth().padding(bottom = 3.dp)) {
                         pair.forEach { (l, v) ->
                             Column(Modifier.weight(1f).padding(end = 6.dp)) {
                                 Text(l, color = ink.copy(alpha = 0.65f), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1)
-                                Text(v.uppercase(), color = ink, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(v.uppercase(), color = ink, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Black, maxLines = 2)
                             }
                         }
                         if (pair.size == 1) Spacer(Modifier.weight(1f))
@@ -746,7 +771,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                                 // (Update 346: the window's look already says "RENT & PLAY" — it read "RENT & RENT & PLAY".)
                                 val label = rentalKeyLabel(a.label, a.primary)
                                 Text(label, color = if (on) ink else if (a.urgent) Color(0xFFFF8A3D) else yellow,
-                                    fontSize = if (a.primary) 15.sp else if (tight) 9.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    fontSize = if (a.primary) 15.sp else if (tight) 9.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 2)
                             }
                         }
                     }
@@ -837,9 +862,9 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
-                Text(ctx.name.uppercase(), style = style.copy(color = tc.accent), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(ctx.name.uppercase(), style = style.copy(color = tc.accent), maxLines = 3)
                 @Composable
-                fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 2) }
                 line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)
                 if (ctx.total > 0) {
                     val filled = ((ctx.earned.toFloat() / ctx.total) * 12).toInt().coerceIn(0, 12)
@@ -847,7 +872,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 }
                 if (ctx.page == WinPage.MAIN && !compact) ctx.summary?.let {
                     Spacer(Modifier.height(6.dp))
-                    Text(it.uppercase(), style = style.copy(color = tc.dim, fontSize = fs * 0.85f), maxLines = 6, overflow = TextOverflow.Ellipsis)
+                    Text(it.uppercase(), style = style.copy(color = tc.dim, fontSize = fs * 0.85f), maxLines = 7)
                 }
                 if (ctx.page != WinPage.MAIN) Box(Modifier.fillMaxWidth().height(h * 0.5f).padding(top = 6.dp).border(1.dp, tc.dim)) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
@@ -857,7 +882,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 rows.forEach { a ->
                     SceneControl(a, Modifier.fillMaxWidth()) { on ->
                         Text((if (on) "► " else "  ") + a.label.uppercase(), style = if (on) style.copy(color = tc.hiInk, shadow = null) else style.copy(color = if (a.urgent) tc.accent else tc.fg),
-                            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp))
+                            maxLines = 2, modifier = Modifier.fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp))
                     }
                 }
                 if (ctx.page == WinPage.MAIN) ctx.chips.forEach { a ->

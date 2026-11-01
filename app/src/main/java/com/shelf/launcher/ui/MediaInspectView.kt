@@ -503,8 +503,9 @@ private fun inspectPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
     val small = Features.bigGcDiscs.state.value.not()
     // (Update 162 (review): a list mixing consoles draws its games by "Mixed categories", as the carousel's cards do.)
     val mixed = mixedConsoles(state.visibleGames)
-    // Disc station: every game is a disc there, whatever the look (as LaunchThrow's).
-    if (a.homeLayout == HomeLayout.DISCS) {
+    // Disc station: a disc game's disc, whatever the look (as LaunchThrow's). (Update 425, owner: "do not invent a physical disc for
+    // cartridge-based platforms merely to populate the popup" — a cartridge / card game's window shows what the look draws for it.)
+    if (a.homeLayout == HomeLayout.DISCS && mediaKind(p) == "disc") {
         val pick = mediaFor(p, asDisc = true)
             ?.takeIf { it.shell.disc || it.shell == MediaShell.UMD || it.platform.startsWith(GENERIC_DISC) }
             ?: MediaPick(MediaShell.DISC, genericDiscKey(if (p == "App") "Android" else p))

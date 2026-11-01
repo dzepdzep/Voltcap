@@ -1,3 +1,60 @@
+# Update 425–426 (1 Nov 2026) — popups per layout, readable pages, Live tiles full screen, Wii More page, contrast and "…" fixes (NOT released)
+
+From the user's Thor photos / videos (`VoltCap_Visual_QA_References_2026-11-01`, kept outside Git) and the 425 popup brief.
+
+## Done (code)
+- **425 popups** (`WinScenesStyled.kt`, new): Pocket classic (white / blue pixel menu), Pocket ribbon (pale sheet, big cartridge art),
+  Pocket Quest (pqPalette, cut corners); Shelf (dark wood panel, case on its lip), Case stacks (no second case — the case flies), Console
+  stack (console module with the cover in its bay), Cover details (glass panel beside the case, no paper card). Bubbles panel adapts to
+  the metadata it has (art fills it when sparse); Green Core uses `greenCoreAccent()`; Cube uses `Features.cubeTint`; Card binder uses the
+  card's palette (`rememberCardPalette`); Disc station labels by media (CARTRIDGE / SLOT A for cartridge consoles, no invented disc).
+- **Pages open as a readable page** (`GameWindow.kt` `ExpandedWinPage`): Details, Options, Achievements and Performance of every layout
+  window (scene windows and the shared window) open at the window's full room in the window's own colours (its panel, else its details
+  paper — the Wii window's white — else dark glass), header with page / game / console, the list filling it, the page's keys along the
+  bottom. They were drawn inside the scene's small picture (the Wii well, a label, a card) — the achievements list was one thin bar in
+  the salmon popup of the photo. B / Back returns to the quick window (focus back on the key that opened the page). Cross menu keeps its
+  own column.
+- **Wii Channel window** (`WinScenesWii.kt`): the strip of tiny keys is gone. One "More" key opens the secondary actions (Performance,
+  Details, Config, Achievements, Saves, Manual, Inspect…) as big Wii keys in the preview well (4 to a row from 7 actions), "Wii Menu"
+  becomes "Back", B closes the More page first; a page opened from More comes back to it on the same key. Palette as before.
+- **Live tiles** (`StyleHomes.kt`, `StyleLiveTiles.kt`): the pale backdrop fills the whole screen (it stopped under the status bar and left
+  a band of the game's art — photo 1000199364). With "Your theme" and a theme background that is the game's art, Live tiles draws its own
+  dark slate (`LiveSlateBackdrop`); the game's art only with "The game's art" picked for this layout. Tile names wrap to 2 lines.
+- **Contrast**: the Voltcap row's banner buttons (Play, trophy count, ★, …) sit on a soft shade at the card's foot only (GameCard);
+  the Edit Home achievements card has its own dark surface (HomeParts) — photo 1000199366 (words over a bright face / the long title).
+- **No "…"**: every `TextOverflow.Ellipsis` removed from the scene windows (WinScenes, WinScenesConsole, WinScenesArcade: one more line
+  instead); Arcade / Bubbles titles wrap; Hero banner title 3 lines and its summary scrolls so the title is never squeezed to a sliding
+  line ("Nine Persons, Nin" on the Thor); scene keys (SceneKey) wrap onto 2 lines instead of running past the panel (Pocket "Device d");
+  Save Vault names (grid, details, header) wrap instead of "Pokemon Silver Version (GB Comp…".
+- **Save Vault 3D cartridges** (`SaveVaultStyles.kt` `gridSway`): in the grid the picked 3D card sways ±30° (like the other looks)
+  instead of turning all the way round — the photo's "thin red strip" is the picked Pokémon Red caught edge-on mid-turn. The full turn and
+  its engraved back stay in the save's own window. Save files / backups untouched (UI only).
+- QA hook: `--es voltcap_test_settings Save_Vault` (meant to open the Save Vault; on the Thor it opened Settings › Home instead — not
+  working yet, the vault was opened by touch).
+
+## Checked on the Thor (release build, preview mode, real library)
+- 425: 22 popups captured (Pocket ×3, Shelf, Stacks, Consoles, Cover details, Bubbles, Circuit, Green Core, Cube, Cards, Discs, Twin desk,
+  Hero, Hero tiles, Tiles, Grid, Wii, Arcade, Magazine, Shop) — `.shots/425a`. Found and fixed from them: Arcade / Bubbles "…", Hero title,
+  Pocket chips cut at the edge.
+- 426: Live tiles full screen (PS2 category); Wii window: preview → More → Config page (expanded, readable) → B → More (focus on Config) →
+  B → preview (focus on More) — `.shots/426b`. Save Vault opened (classic look) — names cut with "…" (fixed).
+- Before recordings kept: Console stack and Game shelf moving between WWE games (`.shots/426`).
+
+## NOT verified / not done (continue here)
+- After-captures of: the Wii page in its white paper (the capture shows the earlier dark glass), Arcade / Bubbles / Hero titles, Pocket chips,
+  the SmackDown home (achievements card surface, banner shade), Save Vault 3D sway (style switch via `voltcap_test_pref` did not take).
+- Save Vault blank Game Boy labels (photo 1000199365): NOT reproduced (this Thor uses the classic look). Most likely the label art (the
+  save's icon / vault art for saves from another device) is missing; not changed.
+- Case / disc motion (videos 1000199367, 1000199362, 1000199358, 1000199357): not analysed frame by frame on a direct recording of the same
+  layout; RetroArch drawn as an Android disc / cartridge follows Settings › Game look › Android games (and the Disc station / Orbit rule) —
+  a design question for the owner, not changed.
+- Wallpaper readability on the case / disc layouts (photos 1000199361, 1000199363): not changed.
+- Compact (1280×720), second screen, Lite: not re-run for these changes.
+
+Files: ui/WinScenesStyled.kt (new), GameWindow, WinScenes, WinScenesMore, WinScenesConsole, WinScenesArcade, WinScenesHomes2, WinScenesWii,
+StyleCardBinder, MediaInspectView, StyleHomes, StyleLiveTiles, LauncherScreen, GameCard, HomeParts, SaveVaultStyles, SaveExplorer;
+test Visual426Test.kt.
+
 # Update 424 (1 Nov 2026) — Cardboard box: solid cases drawn through the box's camera, no overlaps, no wash; boxes as deep as their rows (NOT released)
 
 ## Done

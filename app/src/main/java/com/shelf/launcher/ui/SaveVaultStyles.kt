@@ -187,6 +187,9 @@ internal fun SwayingModel(
     }
 }
 
+/** Update 426: the grid's sway for a turning 3D card: ±30° round its front, from the vault's 0…360° clock. */
+internal fun gridSway(clock: Float): Float = kotlin.math.sin(Math.toRadians(clock.toDouble())).toFloat() * 30f
+
 /** Update 207: a Save Vault 3D card's thickness against its longest side (a memory card is about 6 mm on 55). */
 internal const val SAVE_CARD_DEPTH = 0.1f
 
@@ -375,7 +378,10 @@ internal fun StyledSaveCard(
                     }
             ) {
                 // (Update 141: the picked one turns as a whole, with "3D turn" on — not just its picture.)
-                if (selected && spin != null && Features.saveTurn.state.value) SwayingModel(card, icon, name, platform, spin, Modifier.fillMaxSize(), shell = look?.shell, badge = look?.trim)
+                // (Update 426, Thor photo: the picked cartridge caught edge-on — a thin red strip among whole cartridges — as it
+                // turned all the way round in the grid. In the grid it now sways ±30° like the other looks, never past
+                // three-quarters; the full turn (and its engraved back) stays in the save's own window, SaveExplorer.)
+                if (selected && spin != null && Features.saveTurn.state.value) SwayingModel(card, icon, name, platform, { gridSway(spin()) }, Modifier.fillMaxSize(), shell = look?.shell, badge = look?.trim)
                 else Model3DArt(card, icon, if (selected) 0f else 20f, Modifier.fillMaxSize(), name = name, alwaysName = true, platform = platform, shellOverride = look?.shell, badgeOverride = look?.trim)
                 if (selected) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.5f).height(3.dp).clip(RoundedCornerShape(50)).background(ShelfTheme.accent))
                 SyncBadge(state, 18.dp, Modifier.align(Alignment.BottomEnd).padding(4.dp))

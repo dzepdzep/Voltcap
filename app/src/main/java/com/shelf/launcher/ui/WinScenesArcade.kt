@@ -99,11 +99,11 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
             Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 14.dp else 22.dp, vertical = if (compact) 8.dp else 14.dp)) {
                 // The top line: the game, like a high-score table's header.
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 1, overflow = TextOverflow.Ellipsis, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
+                    Text(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(big), maxFontSize = big), style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
                     if (ctx.page != WinPage.MAIN) Text(" " + arcadePageName(ctx.page), color = ArcCyan, fontSize = small, style = glow, maxLines = 1)
                 }
-                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, style = glow)
+                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
+                    style = glow)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     // The picture, INSERT COIN under it.
@@ -182,7 +182,7 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
         ) {
             Text(if (on) "▶ " else "  ", color = if (on) Color(0xFF1A1300) else ArcPink, fontSize = size, style = TextStyle(fontFamily = font))
             Text(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
-                fontSize = size, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                fontSize = size, maxLines = 2,
                 style = TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f)))
         }
     }

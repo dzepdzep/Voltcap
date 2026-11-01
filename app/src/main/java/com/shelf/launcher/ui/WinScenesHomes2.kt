@@ -528,10 +528,16 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
         Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
             ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-                ?: StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 2, fontWeight = FontWeight.Black)
+                ?: StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 3, fontWeight = FontWeight.Black)
             Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString("  ·  "), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
-            if (ctx.page == WinPage.MAIN) ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp, maxLines = 3) }
-            else ctx.pageBody(Modifier.fillMaxWidth().height(h * 0.45f))
+            // (Update 426: the summary gives way first — it scrolls — so the title is never squeezed to one cut line when the
+            // keys wrap; it was "999 Nine Hours, Nine Persons, Nin" on the Thor.)
+            if (ctx.page == WinPage.MAIN) ctx.summary?.let {
+                val sc = androidx.compose.foundation.rememberScrollState()
+                Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp,
+                    modifier = Modifier.weight(1f, fill = false).heightIn(max = 15.dp * 4).sceneFadeEdges(sc).verticalScroll(sc))
+            }
+            else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
             Spacer(Modifier.height(10.dp))
             KeyRow(sceneKeys(ctx), 8.dp) { k ->
                 SceneKey(k, if (k.primary) Color.White else Color.White.copy(alpha = 0.16f), a, if (k.primary) Color.Black else Color.White, onColor(a),

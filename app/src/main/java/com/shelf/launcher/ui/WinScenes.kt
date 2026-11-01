@@ -302,8 +302,8 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.DISC_PANEL -> DiscPlayerPanel(ctx)
         WinScene.CORE_PANEL -> CorePanel(ctx)
         WinScene.CUBE_FACE -> CubeFace(ctx)
-        WinScene.POCKET_LCD -> PocketScreen(ctx)
-        WinScene.INDEX_CARD -> IndexCard(ctx)
+        WinScene.POCKET_LCD -> PocketPopup(ctx)
+        WinScene.INDEX_CARD -> ShelfFamilyPopup(ctx)
         WinScene.TWIN_HINGE -> TwinHinge(ctx)
         WinScene.GALLERY_PLACARD -> GalleryPlacard(ctx)
         WinScene.CROSS_OPTIONS -> CrossOptions(ctx)
@@ -567,11 +567,11 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     }
                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f).fillMaxHeight()) {
-                        Text(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 2,
-                            overflow = TextOverflow.Ellipsis, style = if (ink == Color.White) FsOutline else TextStyle())
+                        Text(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                            style = if (ink == Color.White) FsOutline else TextStyle())
                         Spacer(Modifier.height(4.dp))
-                        Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
+                        Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
+                            fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(8.dp))
                         // The inset panel: time played and the story.
                         Column(
@@ -591,7 +591,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                             }
                             ctx.summary?.let {
                                 Spacer(Modifier.height(8.dp))
-                                Text(it, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = 16.sp, overflow = TextOverflow.Ellipsis,
+                                Text(it, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = 16.sp,
                                     maxLines = if (h > 420.dp) 5 else 3)
                             }
                         }
@@ -764,8 +764,8 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                 }
                 Spacer(Modifier.height(8.dp))
                 Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = 5.dp)) {
-                    Text(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 2,
-                        overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                    Text(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                        textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 12.dp, vertical = 3.dp)) {
@@ -783,7 +783,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                 Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
                             }
                             Spacer(Modifier.width(8.dp))
-                            Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                         }
                     }
                     Column(Modifier.fillMaxWidth().weight(1f, fill = false)) {
@@ -818,7 +818,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                     ) {
                                         Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
                                         Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black,
-                                            fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            fontFamily = FontFamily.Monospace, maxLines = 2)
                                     }
                                 }
                             }
@@ -902,10 +902,10 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.7f)))))
                 Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
-                    Text(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    Text(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 3,
                         style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.8f), Offset(0f, 2f), 6f)))
-                    Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1,
-                        overflow = TextOverflow.Ellipsis)
+                    Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 2,
+                        )
                 }
             } else ctx.pageBody(Modifier.fillMaxSize())
         }
@@ -940,7 +940,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             }
             ctx.summary?.let {
                 Spacer(Modifier.height(6.dp))
-                Text(it, color = Color(0xFFB9BEC9), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(it, color = Color(0xFFB9BEC9), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -1177,8 +1177,8 @@ private fun OdKey(a: WinAction, on: Boolean, glow: Color, keyD: Dp, labelW: Dp) 
         }
         if (labelW > 0.dp) Spacer(Modifier.width(6.dp))
         if (labelW > 0.dp) Text(
-            a.label.uppercase(), color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-            overflow = TextOverflow.Ellipsis, letterSpacing = 1.sp, modifier = Modifier.widthIn(max = labelW),
+            a.label.uppercase(), color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+            letterSpacing = 1.sp, modifier = Modifier.widthIn(max = labelW),
             style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
         )
     }
@@ -1216,8 +1216,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("DISC", style = label)
                 Spacer(Modifier.width(8.dp))
-                Text(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Text(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
+                    modifier = Modifier.weight(1f))
                 // A small LED, breathing.
                 Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }
                 Spacer(Modifier.width(5.dp))
@@ -1232,8 +1232,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
                 if (v.isNullOrBlank()) return
                 Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(k, style = label, modifier = Modifier.width(74.dp))
-                    Text(v.uppercase(), color = Color(0xFFEAF2FF), fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1,
-                        overflow = TextOverflow.Ellipsis)
+                    Text(v.uppercase(), color = Color(0xFFEAF2FF), fontSize = 14.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 2,
+                        )
                 }
             }
             readout("TIME", ctx.played)
@@ -1266,7 +1266,7 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
                     }
                 }
             } else if (!ctx.summary.isNullOrBlank()) {
-                Text(ctx.summary, color = Color(0xFFC5D0E0), fontSize = 12.sp, maxLines = 4, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp)
+                Text(ctx.summary, color = Color(0xFFC5D0E0), fontSize = 12.sp, maxLines = 5, lineHeight = 16.sp)
             }
             if (ctx.chips.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
@@ -1282,8 +1282,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
         if (command.isNotEmpty()) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("CMD", style = label)
             Spacer(Modifier.width(8.dp))
-            Text("▸ " + command.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, style = TextStyle(shadow = Shadow(glow, Offset.Zero, 8f)))
+            Text("▸ " + command.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 2,
+                style = TextStyle(shadow = Shadow(glow, Offset.Zero, 8f)))
         }
         }
     }
@@ -1324,7 +1324,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                 if (ctx.page == WinPage.MAIN) {
                     Row(verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
-                            Text(ctx.name, color = Color(0xFF2D3440), fontSize = 28.sp, lineHeight = 31.sp, fontWeight = FontWeight.Light, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(ctx.name, color = Color(0xFF2D3440), fontSize = 28.sp, lineHeight = 31.sp, fontWeight = FontWeight.Light, maxLines = 3)
                             Text(ctx.console, color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         }
                         AiryLcd(ctx.cover, Modifier.size(84.dp, 64.dp))
@@ -1339,7 +1339,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                     }
                     ctx.summary?.let {
                         Spacer(Modifier.height(10.dp))
-                        Text(it, color = Color(0xFF66707E), fontSize = 13.sp, lineHeight = 18.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Text(it, color = Color(0xFF66707E), fontSize = 13.sp, lineHeight = 18.sp, maxLines = 4)
                     }
                 } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
@@ -1400,7 +1400,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 Text("STATUS", color = hi.copy(alpha = 1f).let { mixS(it, Color.Black, 0.45f) }, fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                 Spacer(Modifier.width(16.dp))
                 Text(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    maxLines = 2)
             }
         }
         // The cover in its slanted frame.
@@ -1421,7 +1421,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 fun stat(label: String, value: String?) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(96.dp))
-                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                     }
                 }
                 stat("PLAY TIME", ctx.played)
@@ -1466,7 +1466,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         ) {
                             Text(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
                                 fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                maxLines = 2)
                         }
                     }
                 }

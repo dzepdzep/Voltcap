@@ -1086,7 +1086,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val cat = testSettings ?: return@LaunchedEffect
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false
         kotlinx.coroutines.delay(200)
-        menuStartCategory = cat; showMenu = true
+        // (Update 426: `--es voltcap_test_settings Save_Vault` opens the Save Vault, for its visual QA.)
+        if (cat == "Save_Vault") showSaveExplorer = true
+        else { menuStartCategory = cat; showMenu = true }
         // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
         TestHooks.settings.value = null
     }
@@ -3031,7 +3033,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 gameKey = g?.stableKey,
                 artUrl = g?.let { com.shelf.launcher.data.ArtPick.backdrop(it, state.artOverrides, state.art, state.screenshots) },
                 topInset = if (state.appearance.statusOn) 46.dp else 0.dp,
-                bottomInset = if (state.appearance.legendOn) 28.dp else 0.dp
+                bottomInset = if (state.appearance.legendOn) 28.dp else 0.dp,
+                themeShowsArt = backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ART || backgroundStyle == com.shelf.launcher.data.BackgroundStyle.BLURRED
             )
         }
         // The shade over the game's art (Theme › Background › Shade on the game's art): darker at the left, top,

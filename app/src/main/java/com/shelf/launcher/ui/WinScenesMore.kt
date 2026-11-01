@@ -102,7 +102,7 @@ internal fun SceneKey(
             Icon(a.icon, null, tint = if (on) onInk else ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
             Spacer(Modifier.width(5.dp))
             Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) onInk else if (a.urgent) Color(0xFFFF8A3D) else ink,
-                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, softWrap = false)
+                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2)
         }
     }
 }
@@ -198,7 +198,10 @@ internal fun CardBack(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 520.dp)
     // (Update 424: on a short screen the card is a little wider than a card, so its keys take fewer lines and its art keeps room.)
     val w = minOf(ctx.maxW, h * (if (h < 420.dp) 1.3f else 0.74f)).coerceAtLeast(minOf(ctx.maxW, 280.dp))
-    val foil = Brush.linearGradient(listOf(Color(0xFFE9C46A), Color(0xFFFFF1C1), Color(0xFFC79A3B), Color(0xFFFFE08A)))
+    // (Update 425: the card's own frame — Layout options › Frame colour (console / game's art, gold once mastered), as the card in
+    // the binder wears it — not always gold foil.)
+    val pal = rememberCardPalette(ctx.cover, if (ctx.total > 0) ctx.earned to ctx.total else null, ctx.g)
+    val foil = pal.frame
     val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
     Box(Modifier.width(w).height(h).graphicsLayer {
         // A card turned over in the binder: a half turn about its upright axis (closing turns it back).
@@ -226,8 +229,8 @@ internal fun CardBack(ctx: WinSceneCtx) {
             Spacer(Modifier.weight(0.01f))
             Spacer(Modifier.height(6.dp))
             KeyRow(sceneKeys(ctx)) { a ->
-                SceneKey(a, if (a.primary) Color(0xFF2A2620) else Color.White, Color(0xFFFFE08A), if (a.primary) Color(0xFFFFE08A) else ink, ink,
-                    ink.copy(alpha = 0.35f), Color(0xFFC79A3B), RoundedCornerShape(50), size = 11.sp)
+                SceneKey(a, if (a.primary) Color(0xFF2A2620) else Color.White, Color(0xFF2A2620), if (a.primary) pal.star else ink, pal.star,
+                    ink.copy(alpha = 0.35f), ink, RoundedCornerShape(50), size = 11.sp)
             }
         }
     }
@@ -252,14 +255,15 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF2A2D31)))
             Spacer(Modifier.width(10.dp))
-            Text("COMPACT DISC  DIGITAL", color = Color(0xFF3A3E44), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            // (Update 425: what the game really comes on — a cartridge game's window doesn't call itself a compact disc.)
+            Text(discPanelLabels(ctx.g.platform).first, color = Color(0xFF3A3E44), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
         }
         Spacer(Modifier.height(10.dp))
         // The LCD: the title on the display, the facts as its readouts.
         Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
             .border(2.dp, Color(0xFF1B1E22), RoundedCornerShape(6.dp)).padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("TRACK 01", color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                Text(discPanelLabels(ctx.g.platform).second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
                 Spacer(Modifier.weight(1f))
                 Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
             }
@@ -280,7 +284,10 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
 
 @Composable
 internal fun CorePanel(ctx: WinSceneCtx) {
-    val glow = Color(0xFF39FF88); val dim = Color(0xFF0B1F14); val ink = Color(0xFFC9FFE0)
+    // (Update 425: the layout's own glow colour — Layout options › accent (greenCoreAccent) — not one fixed neon green.)
+    val glow = greenCoreAccent()
+    val dim = androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.86f)
+    val ink = androidx.compose.ui.graphics.lerp(glow, Color.White, 0.78f)
     val w = minOf(ctx.maxW, 600.dp)
     Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
         // Opens from one glowing line, the console's own boot.
@@ -288,7 +295,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
         scaleY = 0.04f + 0.96f * e
         transformOrigin = TransformOrigin(0.5f, 0.5f)
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
-    }.clip(CutCornerShapeCompat).background(Brush.verticalGradient(listOf(Color(0xFF04120A).copy(alpha = 0.96f), Color(0xFF020805).copy(alpha = 0.98f))))
+    }.clip(CutCornerShapeCompat).background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.93f).copy(alpha = 0.96f), androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.97f).copy(alpha = 0.98f))))
         .border(1.5.dp, glow.copy(alpha = 0.8f), CutCornerShapeCompat).padding(14.dp)) {
         Text("// SYSTEM  ›  TITLE", color = glow.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
         StableFullText(ctx.name, color = ink, fontSize = 22.sp, maxLines = 2, fontWeight = FontWeight.Bold)
@@ -304,7 +311,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(10.dp))
         KeyRow(sceneKeys(ctx)) { a ->
-            SceneKey(a, dim, glow, glow, Color(0xFF02140A), glow.copy(alpha = 0.4f), glow, CutCornerShapeCompat, font = FontFamily.Monospace, upper = true, size = 11.sp)
+            SceneKey(a, dim, glow, glow, androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.9f), glow.copy(alpha = 0.4f), glow, CutCornerShapeCompat, font = FontFamily.Monospace, upper = true, size = 11.sp)
         }
     }
 }
@@ -317,7 +324,11 @@ private val CutCornerShapeCompat = androidx.compose.foundation.shape.CutCornerSh
 @Composable
 internal fun CubeFace(ctx: WinSceneCtx) {
     val side = minOf(ctx.maxW, ctx.maxH, 470.dp)
-    val a = ctx.accent
+    // (Update 425: the cube's own glass colour — Layout options › Cube colour (Features.cubeTint), the theme's accent for "Theme
+    // accent" — not a fixed purple; its keys lit in the same colour.)
+    val tintPick = com.shelf.launcher.data.Features.cubeTint.state.value
+    val tint = if (tintPick == com.shelf.launcher.data.Features.CubeTint.THEME) ctx.accent else Color(tintPick.argb)
+    val a = androidx.compose.ui.graphics.lerp(tint, Color.White, 0.25f)
     Box(Modifier.size(side).graphicsLayer {
         // The cube turns a quarter: the face swings in on its left edge (and back out the same way).
         val e = sceneEase(ctx.reveal())
@@ -326,7 +337,7 @@ internal fun CubeFace(ctx: WinSceneCtx) {
         cameraDistance = 10f * density
         alpha = if (ctx.reveal() < 0.02f) 0f else 1f
         shape = RoundedCornerShape(10.dp); clip = true
-    }.background(Brush.linearGradient(listOf(Color(0xFF3B3F78), Color(0xFF1C1E42))))
+    }.background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.35f), androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.72f))))
         .border(3.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(10.dp))) {
         // The face's bevel and the art faint behind the text.
         (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.22f) }

@@ -1302,7 +1302,7 @@ internal fun GameWindow(
                         onPlaced = { r -> if (target == null) target = r },
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
-                        if (scene != null) SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { motion.closing }) { motion.lift.floatValue }
+                        if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { motion.closing }) { motion.lift.floatValue } }
                         else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                     }
                 } else Box(
@@ -1349,7 +1349,7 @@ internal fun GameWindow(
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
                     if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight) origin else null)) {
-                        SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value }
+                        androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value } }
                     }
                     else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
@@ -1886,7 +1886,18 @@ private fun WindowBody(
             }
         }
     }
-    when (look.arrange) {
+    // Update 426 (Thor, WWE SmackDown! Vs. Raw: the achievements list drawn as one thin bar inside the picture's slot): a page
+    // opens as a readable page of the window's own size, in its colours; B / Back brings the window back.
+    if (details) ExpandedWinPage(look, name, sub, page, maxH, { 1f }, { m ->
+        when (page) {
+            WinPage.MAIN -> {}
+            WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+            WinPage.OPTIONS -> WindowOptions(look, options, listFocus, m)
+            WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, m, extras.onLoadComments)
+            WinPage.PERF -> WindowPerformance(look, listFocus, m)
+        }
+    }) { _ -> Buttons(vertical = false) }
+    else when (look.arrange) {
         // The picture (16:9) on top, the buttons under it.
         Arrange.STACK -> {
             // (Update 119: facts, achievements and two lines of the story under the picture, when chosen and there's room.)
@@ -2114,7 +2125,81 @@ private fun SceneBody(
             }
         }
     )
-    DrawWinScene(scene, ctx)
+    // Update 426: Details / Options / Achievements / Performance were drawn inside the scene's own small picture or panel
+    // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
+    // own in the window's colours, the scene's quick window coming back on B / Back.
+    if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    else DrawWinScene(scene, ctx)
+}
+
+internal fun winPageTitle(page: WinPage): String = when (page) {
+    WinPage.MAIN -> ""
+    WinPage.DETAILS -> "Details"
+    WinPage.OPTIONS -> "Options"
+    WinPage.TROPHIES -> "Achievements"
+    WinPage.PERF -> PERF_LABEL
+}
+
+/** Update 426: a layout window's page, as big as the window's room allows (max 1100 × the height), in [look]'s colours. */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, maxW: Dp, maxH: Dp, reveal: () -> Float) {
+    ExpandedWinPage(look, ctx.name, ctx.console, page, maxH, reveal, ctx.pageBody) { compact ->
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically
+        ) {
+            ctx.buttons.forEach { a ->
+                WinButton(look, if (look.caps) a.label.uppercase() else a.label, if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier, wideButton = false, compact = compact, onClick = a.onClick)
+            }
+        }
+    }
+}
+
+/** Update 426: the expanded page itself — header, the page filling the room, the page's keys ([keys]) along the bottom. */
+@Composable
+private fun ExpandedWinPage(
+    look: WinLook, name: String, console: String, page: WinPage, maxH: Dp, reveal: () -> Float,
+    body: @Composable (Modifier) -> Unit, keys: @Composable (Boolean) -> Unit
+) {
+    val shape = RoundedCornerShape(look.corner.coerceIn(6.dp, 26.dp))
+    // (The window's own panel; a look whose parts float on the veil takes its details paper — the Wii window's white — and
+    // only a look with neither gets a dark glass.)
+    val own = look.panel != null || look.paper != null
+    val panel = look.panel ?: look.paper?.let { solid(it) } ?: solid(Color(0xF2121519))
+    val ink = if (own) look.ink else Color.White
+    val muted = if (own) look.muted else Color.White.copy(alpha = 0.7f)
+    val compact = maxH < 420.dp
+    val enter = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(Unit) { enter.animateTo(1f, tween(200)) }
+    Column(
+        Modifier.widthIn(max = 1100.dp).fillMaxWidth().height(maxH)
+            .graphicsLayer {
+                val k = enter.value * reveal().coerceIn(0f, 1f)
+                alpha = k; val s = 0.96f + 0.04f * k; scaleX = s; scaleY = s
+            }
+            .clip(shape).background(panel)
+            .then(if (look.frame != null && look.frameW > 0.dp) Modifier.border(look.frameW, look.frame, shape) else Modifier.border(1.dp, look.accent.copy(alpha = 0.45f), shape))
+            .pointerInput(Unit) { detectTapGestures { } }
+            .padding(horizontal = if (compact) 14.dp else 22.dp, vertical = if (compact) 10.dp else 16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(width = 4.dp, height = if (compact) 30.dp else 40.dp).background(look.accent, RoundedCornerShape(2.dp)))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                androidx.compose.material3.Text(
+                    winPageTitle(page).let { if (look.caps) it.uppercase() else it }, color = look.accent,
+                    fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null
+                )
+                StableFullText(name, color = ink, fontSize = if (compact) 17.sp else 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+            }
+            androidx.compose.material3.Text(console, color = muted, fontSize = if (compact) 12.sp else 14.sp, maxLines = 2)
+        }
+        Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
+        Box(Modifier.weight(1f).fillMaxWidth()) { body(Modifier.fillMaxSize()) }
+        Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
+        keys(compact)
+    }
 }
 
 /**

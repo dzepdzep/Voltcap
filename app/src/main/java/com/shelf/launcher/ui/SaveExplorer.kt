@@ -644,7 +644,7 @@ private fun ConsoleHeader(name: String, platform: String, count: Int, current: B
             }
             Text(
                 name, color = if (current) Color.White else Color.White.copy(alpha = 0.82f),
-                fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold, maxLines = 3,
                 modifier = Modifier.weight(1f, fill = false)
             )
             Spacer(Modifier.width(8.dp))
@@ -838,7 +838,7 @@ private fun SaveSlot(
         Spacer(Modifier.height(4.dp))
         Text(
             gameDisplayName(game.name), color = if (selected) ShelfTheme.accent else Color.White,
-            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
+            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 3, lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
         )
     }
 }
@@ -1032,8 +1032,8 @@ private fun SaveDetail(
             }
             Spacer(Modifier.width(if (compact) 14.dp else 24.dp))
             Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 3)
+                Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                 Spacer(Modifier.height(12.dp))
                 val lastSave = maxOf(last, capsule?.lastSaved ?: 0L)
                 DetailRow("Last saved", if (lastSave > 0) "${fmt.format(java.util.Date(lastSave))}, ${time.format(java.util.Date(lastSave))} (${syncAgo(lastSave)})" else "Unknown")

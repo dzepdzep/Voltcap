@@ -538,13 +538,13 @@ private data class CardFrontData(
 private fun cardFrontData(c: StyleCtx, g: Game) = CardFrontData(c.cover(g), c.wide(g), c.progress(g), c.lastPlayed(g), c.playtime(g), c.games.size)
 
 /** A card's colours: its frame (console / art, gold when mastered) and what reads on it. */
-private class CardPalette(val frame: Brush, val ink: Color, val muted: Color, val panel: Color, val rim: Color, val star: Color)
+internal class CardPalette(val frame: Brush, val ink: Color, val muted: Color, val panel: Color, val rim: Color, val star: Color)
 
 @Composable
 private fun rememberCardPalette(c: StyleCtx, g: Game): CardPalette = rememberCardPalette(c.cover(g), c.progress(g), g)
 
 @Composable
-private fun rememberCardPalette(cover: String?, progress: Pair<Int, Int>?, g: Game): CardPalette {
+internal fun rememberCardPalette(cover: String?, progress: Pair<Int, Int>?, g: Game): CardPalette {
     val gold = progress != null && progress.first >= progress.second
     val console = consoleColor(g.platform)
     val fromArt = Features.cardsFrame.state.value == Features.CardFrame.ART && !gold

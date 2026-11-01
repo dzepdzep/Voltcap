@@ -261,7 +261,7 @@ private fun LiveTile(c: StyleCtx, g: Game, i: Int, on: Boolean, ink: Color, tint
             ) {
                 FullText(
                     LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium,
-                    maxLines = 1
+                    maxLines = 2
                 )
             }
         }
@@ -277,5 +277,16 @@ internal fun LiveBackdrop(modifier: Modifier = Modifier) {
         val r = size.minDimension * 0.75f
         drawCircle(Color.White.copy(alpha = 0.55f), r, Offset(size.width * 0.12f, size.height * 0.05f), style = Stroke(width = r * 0.18f))
         drawCircle(Color.White.copy(alpha = 0.45f), r * 0.9f, Offset(size.width * 0.95f, size.height * 1.05f), style = Stroke(width = r * 0.14f))
+    }
+}
+
+/** Update 426: Live tiles' own dark slate, used instead of a theme background that is the game's art. */
+@Composable
+internal fun LiveSlateBackdrop(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        drawRect(Brush.verticalGradient(listOf(Color(0xFF26292E), Color(0xFF15171A))))
+        val r = size.minDimension * 0.75f
+        drawCircle(Color.White.copy(alpha = 0.04f), r, Offset(size.width * 0.12f, size.height * 0.05f), style = Stroke(width = r * 0.18f))
+        drawCircle(Color.White.copy(alpha = 0.03f), r * 0.9f, Offset(size.width * 0.95f, size.height * 1.05f), style = Stroke(width = r * 0.14f))
     }
 }

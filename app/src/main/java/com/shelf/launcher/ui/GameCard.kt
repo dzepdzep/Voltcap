@@ -934,6 +934,12 @@ fun GameCard(
                         )
                     }
                 }
+                // Update 426 (Thor, WWE SmackDown art): Play, the trophy count and the round icons sat straight on a busy cover
+                // ("0/160 · 0%" over the art's own printed title): a soft shade under the row only, never over the whole art.
+                if (look.bannerButtons) Box(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height(86.dp)
+                        .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.38f), Color.Black.copy(alpha = 0.7f))))
+                )
                 if (look.bannerButtons) Row(
                     Modifier
                         .align(Alignment.BottomStart)

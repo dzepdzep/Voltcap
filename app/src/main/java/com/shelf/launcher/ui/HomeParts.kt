@@ -184,7 +184,11 @@ internal fun HomeAchievementsPart(
 ) {
     val total = if (list.isNotEmpty()) list.size else progress?.NumPossibleAchievements ?: 0
     val earned = if (list.isNotEmpty()) list.count { it.isUnlocked } else progress?.NumAchieved ?: 0
-    androidx.compose.foundation.layout.Column {
+    // Update 426 (Thor, WWE SmackDown: the card's words over a bright face and over the long title): the card on its own
+    // soft dark surface — local contrast, the art around it untouched.
+    androidx.compose.foundation.layout.Column(
+        Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.55f)).padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
         Text("ACHIEVEMENTS", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
         // Update 144: if / else instead of an early return out of the Column (that crashes this Compose compiler).
         if (game.raGameId == null || total <= 0) {
@@ -220,7 +224,7 @@ internal fun HomeAchievementsPart(
                     }
                 }
                 next.firstOrNull()?.title?.let { t ->
-                    FullText("Next: $t", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW))
+                    FullText("Next: $t", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW))
                 }
             }
         }

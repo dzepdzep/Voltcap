@@ -1398,7 +1398,7 @@ internal fun HomeLayout.drawsUnderStatusBar(): Boolean = this == HomeLayout.CINE
  * white text stays readable). Drawn here rather than inside the layout so nothing stops short of the screen's edges.
  */
 @Composable
-internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String?, topInset: Dp, bottomInset: Dp) {
+internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String?, topInset: Dp, bottomInset: Dp, themeShowsArt: Boolean = false) {
     if (styleArtBehind(layout)) {
         // Icon bar › Cut at the middle: the art fills the top half and fades out at the middle of the screen.
         if (layout == HomeLayout.BAR && Features.barArtCut.state.value) {
@@ -1438,7 +1438,12 @@ internal fun StyleBackLayer(layout: HomeLayout, gameKey: String?, artUrl: String
         HomeLayout.CIRCUIT -> if (Features.circuitBackdrop.state.value) CircuitBackdrop(Modifier.fillMaxSize())
         // Update 158: Hero tiles' pale backdrop (its option; off: the theme's background).
         HomeLayout.HERO_TILES -> if (Features.heroTilesPale.state.value) HeroTilesBackdrop(Modifier.fillMaxSize())
-        HomeLayout.LIVE -> if (Features.liveLight.state.value) LiveBackdrop(Modifier.fillMaxSize().padding(top = topInset, bottom = bottomInset))
+        // Update 426 (Thor, Toni: "a white panel floating over a huge wallpaper"): the pale backdrop fills the WHOLE screen
+        // (the status bar turns dark over it, HomeStatusBarPale) — it stopped under the status bar and left a band of the
+        // game's art. With "Your theme" and a theme whose background is the game's art, Live tiles draws its own slate
+        // instead: the game's art behind the tiles only when "The game's art" is picked for this layout.
+        HomeLayout.LIVE -> if (Features.liveLight.state.value && !Features.liveArt.state.value) LiveBackdrop(Modifier.fillMaxSize())
+            else if (!Features.liveArt.state.value && themeShowsArt) LiveSlateBackdrop(Modifier.fillMaxSize())
         // Update 176: the custom layout's colour, the game's art and its picture (StyleCustom.kt).
         HomeLayout.CUSTOM -> CustomBackLayer(gameKey, artUrl)
         // Update 180: the two-screen layouts filling the top screen (two screens in use): their own background.
