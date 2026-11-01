@@ -7,7 +7,8 @@ sh vqa.sh ready > /dev/null || { sh vqa.sh hooks off > /dev/null; echo "stills $
 A="am start -n com.shelf.launcher/.MainActivity"
 for L in $list; do
   $A --ez voltcap_test_preview true --es voltcap_test_layout $L > /dev/null 2>&1; sleep 3
-  $A --es voltcap_test_category ALL > /dev/null 2>&1; sleep 2
+  # (Update 432: NOCAT=1 keeps the category — on a device with per-category layouts the ALL category switched back to its own layout.)
+  [ -z "$NOCAT" ] && { $A --es voltcap_test_category ALL > /dev/null 2>&1; sleep 2; }
   sh vqa.sh seq "R L" 300 > /dev/null; sleep 2.5
   screencap -p out/${run}_${L}.png
   echo "$L done"

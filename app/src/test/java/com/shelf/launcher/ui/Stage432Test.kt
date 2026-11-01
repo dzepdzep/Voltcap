@@ -30,6 +30,6 @@ class Stage432Test {
 
     @Test fun theNewlyMeasuredBrightScenesAreShaded() {
         assertTrue(BRIGHT_SCENES.containsAll(listOf(ThemeMotif.MEADOW, ThemeMotif.CEL_SKY, ThemeMotif.PIXEL_SKY, ThemeMotif.PIXEL_FALLS,
-            ThemeMotif.SHOWCASE_FILMSTRIP, ThemeMotif.BADGE_BOUNCE)))
+            ThemeMotif.SHOWCASE_FILMSTRIP, ThemeMotif.BADGE_BOUNCE, ThemeMotif.LOBBY)))
     }
 }

@@ -1355,16 +1355,16 @@
    "severity": "high",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 428 Thor capture (.shots/428th2/LOBBY_a.png)",
-   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded)."
+   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded). | 432b: the 432 fix did NOT help on the Odin (the home's white writing doesn't follow the theme's text colour); LOBBY added to the shaded scenes and the shade no longer depends on the text colour — after-fix capture NOT taken."
   },
   {
    "id": "D112",
    "title": "Bright animated scenes (Manga beat, Comic pages, Magical sparkle, Frost / Gale / Alloy 32-bit, Blue sky cruise): white chips, name and clock over light areas",
    "rule": "CONTRAST",
    "severity": "med",
-   "status": "fixed-unverified",
+   "status": "verified",
    "found": "2026-11-01 update 428 Thor captures (.shots/428th2)",
-   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked. | 432: FAILED on the Odin (Classic row big title at 45-55 % height ~1.3:1 on Manga beat, Magical, Blue sky, Meadow, Pixel sky, Waterfall, Filmstrip, Badge bounce; GT78 has its status bar at the bottom). Shade rebuilt (both edges + ~0.48 from 42 % down, >= 3:1 white-on-white in Stage432Test) and 6 more scenes added; device after-fix capture NOT valid (hero art)."
+   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked. | 432: FAILED on the Odin (Classic row big title at 45-55 % height ~1.3:1 on Manga beat, Magical, Blue sky, Meadow, Pixel sky, Waterfall, Filmstrip, Badge bounce; GT78 has its status bar at the bottom). Shade rebuilt (both edges + ~0.48 from 42 % down, >= 3:1 white-on-white in Stage432Test) and 6 more scenes added; device after-fix capture NOT valid (hero art). | 432b: VERIFIED on the Odin with voltcap_test_bg ANIMATED (af432e): Manga beat, Blue sky, Pixel sky, Magical, Meadow, Waterfall, Badge bounce — white titles / chips readable over the shade. GT78 not re-captured."
   },
   {
    "id": "D113",
@@ -1449,12 +1449,12 @@
   },
   {
    "id": "D122",
-   "title": "QA infra: on the GT78 the layout hook (voltcap_test_layout, preview) does not change the home layout, so the 53-layout stills there all show the same home",
+   "title": "QA infra: on the GT78 the layout hook (voltcap_test_layout, preview) does not change the home layout, so the 53-layout stills there all show the same home (cause found: QA infra)",
    "rule": "INFRA",
    "severity": "low",
-   "status": "open",
+   "status": "wontfix",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Theme hook works; sendevent is denied there (vqa.sh needs the usekey file). Cause not found; GT78 layout pass BLOCKED until then."
+   "note": "Theme hook works; sendevent is denied there (vqa.sh needs the usekey file). Cause not found; GT78 layout pass BLOCKED until then. | 432b: cause = the GT78 has per-category layouts; stills.sh's category hook (ALL) switched back to that category's own layout after the preview. stills2.sh with NOCAT=1 works (16 layouts captured). Also: vqa.sh `hooks off` at the end of stills.sh pauses the hooks file, so later hooks (tune, bg) are ignored until `hooks on`."
   },
   {
    "id": "D123",
@@ -1464,6 +1464,51 @@
    "status": "open",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
    "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture."
+  },
+  {
+   "id": "D124",
+   "title": "AutoTDP's own underclock stepped out to Off in the first seconds of every session: loading screens / scene cuts (frame rate collapsed, GPU ~6 %) counted as a struggle",
+   "rule": "AUTOTDP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM→LIGHT→OFF in Efficient, LIGHT→OFF in Balanced)",
+   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done."
+  },
+  {
+   "id": "D125",
+   "title": "GT78 960x640: Hero layout side list and overview end names / summary with '…' (Pokemon Silver Version (GB Compati…)",
+   "rule": "TRUNCATE",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-01 update 432b GT78 G432_HERO",
+   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11."
+  },
+  {
+   "id": "D126",
+   "title": "GT78 960x640: Disc station's Continue pill shows only 'F' (label cut)",
+   "rule": "TRUNCATE",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-01 update 432b GT78 G432_DISCS",
+   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended."
+  },
+  {
+   "id": "D127",
+   "title": "GT78 960x640: Twin desk focused card — a two-line name pushes the console / playtime line under the card's bottom edge",
+   "rule": "CLIP",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 432b GT78 G432_TWIN_DESK",
+   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact."
+  },
+  {
+   "id": "D128",
+   "title": "Cardboard box with a 2-game category: two small cases in the box's top-left corner, the rest of the box empty",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 432b GT78 G432_BOX (Continue playing, 2 games)",
+   "note": "Box 1-3 games item of the backlog; reproduced on hardware."
   }
  ]
 }

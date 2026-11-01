@@ -344,7 +344,11 @@ class AutoUnderclock {
         // (Update 429: an unreadable GPU load is no longer "idle" — deeper presets need a real reading. The overall CPU % is
         // rarely readable on Android (/proc/stat is closed to apps), so without it the GPU has to be clearly idle.)
         val idle = gpuPct != null && (if (cpuPct == null) gpuPct < GPU_IDLE_NO_CPU else gpuPct < GPU_IDLE && cpuPct < CPU_IDLE)
-        val struggling = !overPower && !levelHasRoom && (deficit > MISS || (deficit > HOLD && busy))
+        // (Update 432, Odin 2 Portal PS2 runs: loading screens and scene cuts collapse the frame rate with the GPU nearly idle
+        // (6 %) — counted as a struggle, the underclock stepped out to Off in the first seconds of every session and the 30 s
+        // dwell kept it there. A collapse with a clearly idle GPU is not the clocks' fault; a real shortfall keeps the GPU busy.)
+        val collapseIdle = deficit > COLLAPSE && gpuPct != null && gpuPct < GPU_IDLE_NO_CPU
+        val struggling = !overPower && !levelHasRoom && !collapseIdle && (deficit > MISS || (deficit > HOLD && busy))
         val headroom = deficit <= HOLD && idle
         when {
             struggling -> { struggleMs += dtMs; headroomMs = 0L }
@@ -374,6 +378,8 @@ class AutoUnderclock {
         const val GPU_BUSY = 90
         const val CPU_BUSY = 85
         const val GPU_IDLE = 75
+        /** (Update 432) A miss this deep with an idle GPU is a loading screen / scene cut, not a struggle. */
+        const val COLLAPSE = 0.35f
         /** GPU idle threshold when the CPU load can't be read. */
         const val GPU_IDLE_NO_CPU = 60
         /** Overall CPU busy % (all cores together): a single-thread-bound game can read low, so it's only a guard. */

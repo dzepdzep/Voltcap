@@ -1685,7 +1685,7 @@ internal val BRIGHT_SCENES = setOf(
     com.shelf.launcher.ui.theme.ThemeMotif.BLUE_SKY, com.shelf.launcher.ui.theme.ThemeMotif.MEADOW,
     com.shelf.launcher.ui.theme.ThemeMotif.CEL_SKY, com.shelf.launcher.ui.theme.ThemeMotif.PIXEL_SKY,
     com.shelf.launcher.ui.theme.ThemeMotif.PIXEL_FALLS, com.shelf.launcher.ui.theme.ThemeMotif.SHOWCASE_FILMSTRIP,
-    com.shelf.launcher.ui.theme.ThemeMotif.BADGE_BOUNCE
+    com.shelf.launcher.ui.theme.ThemeMotif.BADGE_BOUNCE, com.shelf.launcher.ui.theme.ThemeMotif.LOBBY
 )
 
 /**
@@ -1693,11 +1693,12 @@ internal val BRIGHT_SCENES = setOf(
  * (Update 432: the 428 band was too weak where the titles really sit — the Classic row's big title at ~45-55 % height read
  * about 1.3:1 on Manga beat / Blue sky on the Odin — and it assumed the status bar at the top, while the GT78 home has it at
  * the bottom. Now: a band at both edges, light over the upper third so the scene still shows, ~50 % black from the middle
- * down. Only while the writing is light; dark writing on a bright scene needs no shade.)
+ * down.)
  */
 @Composable
 internal fun SceneTextShade() {
-    if (com.shelf.launcher.ui.theme.ShelfTheme.colors.textPrimary.luminance() <= 0.5f) return
+    // (432b, Odin after-fix capture: the home's titles, chips and status over a scene are white whatever the theme's text colour —
+    // Lobby's palette has dark text, yet its home writing stayed white on near-white — so the shade doesn't depend on it.)
     Box(Modifier.fillMaxSize().background(SCENE_TEXT_SHADE))
 }
 

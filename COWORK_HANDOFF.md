@@ -1,3 +1,18 @@
+**UPDATE 432 / 432b (1 Nov 2026, newest; NOT released; commits 1be38e8 + 432b) — resume here.**
+Devices (USB only): Odin 2 Portal b92036fb (1080p; its wireless twin entry is NOT used), ARBOR GT78 BW0306N230000845 (960×640, Android 12;
+per-category layouts → use `NOCAT=1 sh stills.sh`; sendevent denied → `touch /data/local/tmp/vqa/usekey`). Thor offline. Device scripts:
+`/data/local/tmp/vqa` (tar of tools/qa/device), `tdp.sh` / `tdprun.sh` / `tdpall.sh` in /data/local/tmp on the Odin. **QA trap:** stills.sh /
+layouts.sh end with `vqa.sh hooks off` → re-enable (`mv …voltcap_test_hooks.paused …voltcap_test_hooks` + restart) before tune / bg hooks.
+Matrix updates: 1.x AutoTDP — plugged frame/clock comparison DONE on light content (SUMMARY 432b table), real gameplay BLOCKED (ADB
+can't start a match reliably), power BLOCKED (USB = plugged); D124 FIXED-UNVERIFIED. 2.x themes — 28 themes × 2 devices captured,
+D112 VERIFIED (Odin), D111 FIXED-UNVERIFIED (2nd fix), Lyric ×3 / Still glow / Warp / Pocket shell KEEP (device), Showcase ×4 + Badge
+bounce checked (Filmstrip / Badge shaded); GT78 Android 12 legacy scenes D123 OPEN. 3 layouts — Odin 53/53 stills inspected (D120
+VERIFIED, D121 FIXED), GT78 16/53 (D125-D128 OPEN), navigation / focus / category-switch / dual-screen NOT re-run this session.
+4 popups — NOT STARTED (the window hook needs the hooks on; GT78 try was during hooks-off). 5/6 — unchanged.
+**Next, in order:** (1) D111 Lobby after-fix capture (BG=ANIMATED themes.sh), (2) D125 / D126 / D127 small-screen fixes on the GT78,
+(3) popup modes per layout on the Odin (voltcap_test_window + R1 popup modes via voltcap_test_pref with restore), (4) GT78 remaining
+37 layouts with NOCAT=1, (5) D124 hardware re-run, (6) unplugged power runs when the owner can play on battery, (7) Thor items.
+
 **UPDATE 431 (1 Nov 2026, newest; NOT released):** USB device rule in CLAUDE.md; GT78 = ARBOR GT78 handheld (Android 12, 960×640),
 covered, untouched so far; first AutoTDP hardware run on the Odin 2 Portal (plugged → frame / clock data only, no power) — Efficient
 held 60 fps with clearly lower clocks than Stock on a light PS2 load; D119 (per-session controller, launcher frames ignored) fixed;

@@ -272,6 +272,19 @@ class AutoTdp429Test {
         assertEquals(2, ucRun(AutoUnderclock(), 40, cpu = 30, gpu = 70))
     }
 
+    @Test fun aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock() {
+        // Update 432 (Odin 2 Portal): 20 fps against 60 for 10 s with the GPU at 6 % — a loading screen. 431 stepped out.
+        val u = AutoUnderclock()
+        var step = 2
+        repeat(10) { step = u.tick(step, 0..3, 20f, 60, null, 6, false, false, true, 1000L) }
+        assertEquals(2, step)
+        // The same miss with the GPU saturated is a real struggle: one step shallower.
+        val v = AutoUnderclock()
+        var s2 = 2
+        repeat(7) { s2 = v.tick(s2, 0..3, 20f, 60, null, 98, false, false, true, 1000L) }
+        assertEquals(1, s2)
+    }
+
     @Test fun missingFrameRateHoldsTheUnderclock() {
         val u = AutoUnderclock()
         var step = 2

@@ -1,3 +1,34 @@
+# Update 432b (1 Nov 2026) — Batch 2: AutoTDP runs on the Odin, D112 verified, GT78 small-screen layouts, AutoUnderclock loading fix (NOT released)
+
+**AutoTDP / underclock, Odin 2 Portal (USB b92036fb, plugged at its charge limit → frame / clock data only, NO power data).** PS2 game
+(ARMSX2, WWE SmackDown! Vs. Raw) from the Continue playing row, title / intro / loading content (a match could not be started reliably
+over ADB → real gameplay BLOCKED); 75 s per mode, `voltcap_test_tune`, `.shots/432/tdp432.tar`:
+| Mode | fps avg / min | s < 57 | little / big / prime GHz | GPU MHz | AutoTDP level | own underclock |
+|---|---|---|---|---|---|---|
+| Stock | 59.4 / 57.2 | 0 | 1.84 / 2.20 / 2.48 | 550 | — | — |
+| Efficient | 59.6 / 58.4 | 0 | 1.31 / 1.57 / 0.74 | 177 | 1.00 → 0.58 | MEDIUM → LIGHT → OFF |
+| Balanced | 58.8 / 23.8 | 2 | 1.66 / 1.78 / 0.75 | 179 | 1.00 (held full) | LIGHT → OFF |
+| Smooth | 59.6 / 57.7 | 0 | 1.37 / 1.64 / 0.73 | 173 | 1.00 → 0.55 | OFF |
+| Medium (manual) | 58.7 / 31.6 | 4 | 1.56 / 1.60 / 0.76 | 200 | — | MEDIUM |
+The dips under 57 (Balanced, Medium) are scene cuts / loading (same content position), not a sustained shortfall; with this light content
+the three AutoTDP styles hold 60 at far lower clocks than Stock. **Finding D124 (fixed):** AutoTDP's own underclock stepped out to Off in
+the first seconds of every session — loading collapses with the GPU ~6 % counted as a struggle; now a > 35 % miss with an idle GPU is not
+a struggle (unit test; hardware re-run NOT done). An earlier run of the same comparison was VOID: stills.sh's `hooks off` had paused the
+hooks file, so the tune hook was ignored and every mode ran the saved profile.
+
+**Themes:** D112 VERIFIED on the Odin (voltcap_test_bg ANIMATED): white titles / chips readable over the new shade on Manga beat, Blue sky,
+Pixel sky, Magical, Meadow, Waterfall, Badge bounce. D111 Lobby still failed after 432 (the home writes white whatever the theme's text
+colour) → LOBBY joins the shaded scenes and the shade no longer depends on the text colour (after-fix capture NOT taken).
+
+**GT78 (960×640) layouts:** D122 explained (per-category layouts + the ALL category hook; NOCAT=1). 16 layouts captured: Classic, Shelf,
+Stacks, Cover details, Pocket ribbon (one centred cartridge, no blur panel), Tiles, Orbit, Discs, Cross, Cinema, Arctic, Twin desk, Box,
+Case flow, Hero, Terminal. New: D125 Hero "…" on small screens, D126 Disc station Continue pill shows "F", D127 Twin desk compact card
+clips its second line, D128 Box with 2 games nearly empty.
+
+**Copy:** `src_copy/ui/HomeChrome.kt`, `src_copy/device/tune/AutoTdpController.kt`; `project_copy/app/src/test/.../ui/Stage432Test.kt`,
+`.../device/tune/AutoTdp429Test.kt` (29 tests); `tools/qa/device/stills.sh` (NOCAT); defects.json. Unit tests: full testDebugUnitTest green.
+Devices restored: Odin hooks file as found (present), timeouts as found; GT78 hooks file removed, screen timeout back to 60 s.
+
 # Update 432 (1 Nov 2026) — Batch 1: theme readability and layout stills on the Odin 2 Portal (1080p) and GT78 (960×640) (NOT released)
 
 Devices (USB, serials confirmed): Odin 2 Portal b92036fb, ARBOR GT78 BW0306N230000845 (release build installed in place on both, data
