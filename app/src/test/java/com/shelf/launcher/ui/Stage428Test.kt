@@ -18,7 +18,8 @@ class Stage428Test {
     }
 
     @Test fun lobbyWashFollowsTheWriting() {
-        assertTrue(src("LobbyScene.kt").contains("val lightText = colors.textPrimary.luminance() > 0.5f"))
+        // (Update 432: the writing on screen — the UI colours — not the scene's own palette.)
+        assertTrue(src("LobbyScene.kt").contains("val lightText = uiText.luminance() > 0.5f"))
     }
 
     @Test fun cinemaStoryAndArcticPlotAreReachableWithTheDpad() {

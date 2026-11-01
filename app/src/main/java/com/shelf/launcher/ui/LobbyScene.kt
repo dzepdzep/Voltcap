@@ -38,12 +38,15 @@ internal fun LobbyScene(colors: ShelfColors, modifier: Modifier = Modifier) {
     val tuning = LocalSceneTuning.current
     SceneClock(active, time, maxOf(idleFrameMs(), 50), tuning.speed)
     val dim = tuning.dim
+    // (Update 432, Odin 2 Portal + GT78 captures: the 428 check read the SCENE's palette, which keeps Lobby's own dark writing,
+    // while the home screen wrote in the game's light colours — white on near-white again. It follows the writing on screen.)
+    val uiText = com.shelf.launcher.ui.theme.ShelfTheme.colors.textPrimary
     Spacer(
         modifier.drawWithCache {
             // (Update 428, Thor: with Theme › Colours follow › The game you're on, the colours are the game's — light writing
             // on a dark background — and the light Lobby wash put that white writing on near-white. The wash follows the
             // writing: light (as designed) under dark writing, a deep slate of the same colours under light writing.)
-            val lightText = colors.textPrimary.luminance() > 0.5f
+            val lightText = uiText.luminance() > 0.5f
             val top = if (lightText) lerp(colors.background, Color.Black, 0.2f) else lerp(colors.background, Color.White, 0.6f)
             val bottom = if (lightText) lerp(colors.background, Color.Black, 0.45f) else lerp(colors.background, colors.surface, 0.85f)
             val gradient = Brush.verticalGradient(listOf(top, colors.background, bottom))

@@ -200,7 +200,10 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
                 CoverBigCases(c, g, depth, stageH, shelfH, accent)
             }
             Spacer(Modifier.width(if (compact) 18.dp else 32.dp))
-            CoverDetailsInfo(c, g, compact, accent, Modifier.weight(1f).fillMaxHeight().riseOnChange(g.stableKey, floor = 0.4f, ms = 240))
+            // (Update 432, Odin 2 Portal 1080p: the shelf is drawn 16 % taller than its slot, over the stage's bottom edge, and the
+            // story's last line ran under the spines. The facts stop above the shelf's top edge.)
+            CoverDetailsInfo(c, g, compact, accent, Modifier.weight(1f).fillMaxHeight().padding(bottom = shelfH * 0.16f + 6.dp)
+                .riseOnChange(g.stableKey, floor = 0.4f, ms = 240))
         }
 
         // The shelf of spines along the bottom.
@@ -243,7 +246,17 @@ private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Col
         val story = meta?.summary?.takeIf { it.isNotBlank() }
         if (story != null) {
             Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-            RollingStory(story, Color.White.copy(alpha = 0.8f), if (compact) 12.sp else 14.sp, if (compact) 17.sp else 20.sp, if (compact) 54.dp else 104.dp)
+            // (Update 432: only as tall as the room left — a fixed 104 dp pushed the column past the stage on 1080p screens.)
+            val want = if (compact) 54.dp else 104.dp
+            val line = if (compact) 17.dp else 20.dp
+            Box(Modifier.weight(1f, fill = false)) {
+                BoxWithConstraints {
+                    // Whole lines only (Odin: a half line showed at the bottom edge).
+                    val lines = (minOf(want, maxHeight) / line).toInt()
+                    val room = line * lines
+                    if (lines >= 1) RollingStory(story, Color.White.copy(alpha = 0.8f), if (compact) 12.sp else 14.sp, if (compact) 17.sp else 20.sp, room)
+                }
+            }
         }
     }
 }

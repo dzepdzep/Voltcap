@@ -1675,29 +1675,36 @@ internal fun DockScrim() {
 /**
  * Update 428: the animated scenes measured bright where the home screen writes in white (Thor captures, `.shots/428th2`,
  * SUMMARY 428). Only these get [SceneTextShade]; the darker scenes stay untouched.
+ * (Update 432, Odin 2 Portal 1080p + GT78 960×640 captures, `.shots/432`: also Meadow, Summer sky, Pixel sky, Waterfall cliffs,
+ * Filmstrip and Badge bounce — white titles over clouds, water, film frames or badges.)
  */
 internal val BRIGHT_SCENES = setOf(
     com.shelf.launcher.ui.theme.ThemeMotif.MANGA_BEAT, com.shelf.launcher.ui.theme.ThemeMotif.COMIC_PANELS,
     com.shelf.launcher.ui.theme.ThemeMotif.MAGICAL, com.shelf.launcher.ui.theme.ThemeMotif.PX_FROST,
     com.shelf.launcher.ui.theme.ThemeMotif.PX_GALE, com.shelf.launcher.ui.theme.ThemeMotif.PX_ALLOY,
-    com.shelf.launcher.ui.theme.ThemeMotif.BLUE_SKY
+    com.shelf.launcher.ui.theme.ThemeMotif.BLUE_SKY, com.shelf.launcher.ui.theme.ThemeMotif.MEADOW,
+    com.shelf.launcher.ui.theme.ThemeMotif.CEL_SKY, com.shelf.launcher.ui.theme.ThemeMotif.PIXEL_SKY,
+    com.shelf.launcher.ui.theme.ThemeMotif.PIXEL_FALLS, com.shelf.launcher.ui.theme.ThemeMotif.SHOWCASE_FILMSTRIP,
+    com.shelf.launcher.ui.theme.ThemeMotif.BADGE_BOUNCE
 )
 
-/** Update 428: a soft black band under the status bar and behind the lower half (chips, title, row) — not a full-screen dim. */
+/**
+ * Update 428: a soft black shade where the home screen writes, not a full-screen dim.
+ * (Update 432: the 428 band was too weak where the titles really sit — the Classic row's big title at ~45-55 % height read
+ * about 1.3:1 on Manga beat / Blue sky on the Odin — and it assumed the status bar at the top, while the GT78 home has it at
+ * the bottom. Now: a band at both edges, light over the upper third so the scene still shows, ~50 % black from the middle
+ * down. Only while the writing is light; dark writing on a bright scene needs no shade.)
+ */
 @Composable
 internal fun SceneTextShade() {
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.verticalGradient(
-                0.0f to Color.Black.copy(alpha = 0.32f),
-                0.1f to Color.Transparent,
-                0.42f to Color.Transparent,
-                0.54f to Color.Black.copy(alpha = 0.34f),
-                1.0f to Color.Black.copy(alpha = 0.42f)
-            )
-        )
-    )
+    if (com.shelf.launcher.ui.theme.ShelfTheme.colors.textPrimary.luminance() <= 0.5f) return
+    Box(Modifier.fillMaxSize().background(SCENE_TEXT_SHADE))
 }
+
+/** (Update 432) Height share → black alpha of [SceneTextShade]; checked by Stage432Test. */
+internal val SCENE_TEXT_SHADE_STOPS = listOf(0.0f to 0.46f, 0.06f to 0.42f, 0.12f to 0.14f, 0.30f to 0.22f, 0.42f to 0.48f, 0.88f to 0.48f, 1.0f to 0.56f)
+
+internal val SCENE_TEXT_SHADE = Brush.verticalGradient(*SCENE_TEXT_SHADE_STOPS.map { (y, a) -> y to Color.Black.copy(alpha = a) }.toTypedArray())
 
 /** The category name, animated when it changes (L2 / R2) per [anim]. */
 @Composable

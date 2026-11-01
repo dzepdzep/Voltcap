@@ -1,3 +1,28 @@
+# Update 432 (1 Nov 2026) — Batch 1: theme readability and layout stills on the Odin 2 Portal (1080p) and GT78 (960×640) (NOT released)
+
+Devices (USB, serials confirmed): Odin 2 Portal b92036fb, ARBOR GT78 BW0306N230000845 (release build installed in place on both, data
+kept; the GT78 got the test-hooks file and a temporary 30-min screen timeout, put back to 60 s at the end). Evidence `.shots/432/`.
+
+**Checked on hardware (screenshots inspected):**
+- 28 themes behind the Classic row on the Odin (all 20 POLISH, the 6 KEEP* incl. the 4 Showcase themes and Badge bounce, Lobby, Pocket
+  shell) and the same 28 on the GT78's own home. Results: Lyric cloud / Karaoke / Sheet idle (no music) = a calm dark frame, not a
+  "not loaded" fog → KEEP (device); Still glow visible dark gradient → KEEP; Warp drive no burst in 2 frames → KEEP (pacing not
+  measured); Pocket shell readable → KEEP; Frost / Gale / Alloy / Torrent / Sprout / Terra / Meadow 32-bit and Summer sky readable on the
+  Odin; Showcase Parallax / Cinema / Mosaic busy but readable. **FAILED:** Lobby (D111 — white on near-white, both devices), Manga beat,
+  Comic pages, Magical, Blue sky, Meadow, Pixel sky, Waterfall cliffs, Filmstrip, Badge bounce (title over badges) — D112.
+- 53 home layouts on the Odin (one still each, demo-free real library): no clipping / overlap except D120 (Twin desk "…") and D121
+  (Cover details story under the shelf); marquee-cut lines (Library, Discs, Pocket, Blades, Artwork library) are scrolling text by design.
+- GT78: the 53-layout run is INVALID (D122: the layout hook doesn't apply there); Android 12 legacy scenes partly near-black (D123).
+
+**Fixed:** D111 (Lobby wash follows the writing actually on screen), D112 (stronger, edge-aware text shade + 6 more bright scenes;
+Stage432Test proves ≥ 3:1 for white on a pure-white scene where titles sit), D120 (Twin desk names wrap / shrink, verified on the Odin),
+D121 (Cover details info stops above the shelf, whole lines of story; overlap gone on the Odin). New QA hook `voltcap_test_bg` (background
+style for this session only). **Not verified:** the D111 / D112 after-fix on the device — the Classic row's hero shows the game's own art
+once it has loaded, so the scene is hidden behind it; needs a game without art focused.
+
+**Copy:** `src_copy/ui/HomeChrome.kt`, `LobbyScene.kt`, `TwinDesk.kt`, `StyleCoverDetails.kt`, `TestHooks.kt`, `LauncherScreen.kt`;
+`project_copy/app/src/test/.../ui/Stage428Test.kt`, `Stage432Test.kt`; `tools/qa/device/themes.sh`; defects.json.
+
 # Update 431 (1 Nov 2026) — device rule, first AutoTDP hardware run (Odin 2 Portal), per-session controller fix (NOT released)
 
 **Device rule (owner):** all handhelds physically connected to the PC by USB and visible in ADB may be used for QA; wireless ADB is not

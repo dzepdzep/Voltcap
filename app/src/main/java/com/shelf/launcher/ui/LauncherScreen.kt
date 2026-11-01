@@ -1027,6 +1027,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         viewModel.setFocus(0)
         TestHooks.category.value = null
     }
+    // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
+    val testBg = TestHooks.bg.value
+    LaunchedEffect(testBg) {
+        val name = testBg ?: return@LaunchedEffect
+        TestHooks.bg.value = null
+        com.shelf.launcher.data.BackgroundStyle.values().firstOrNull { it.name == name }?.let { b ->
+            viewModel.previewAppearance(state.appearance.copy(backgroundStyle = b))
+        }
+    }
     // (Update 261: a game look for this session only, for a test walk — nothing saved.)
     val testLook = TestHooks.look.value
     LaunchedEffect(testLook) {

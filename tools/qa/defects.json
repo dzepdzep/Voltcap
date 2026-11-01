@@ -1355,7 +1355,7 @@
    "severity": "high",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 428 Thor capture (.shots/428th2/LOBBY_a.png)",
-   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down)."
+   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded)."
   },
   {
    "id": "D112",
@@ -1364,7 +1364,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 428 Thor captures (.shots/428th2)",
-   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked."
+   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked. | 432: FAILED on the Odin (Classic row big title at 45-55 % height ~1.3:1 on Manga beat, Magical, Blue sky, Meadow, Pixel sky, Waterfall, Filmstrip, Badge bounce; GT78 has its status bar at the bottom). Shade rebuilt (both edges + ~0.48 from 42 % down, >= 3:1 white-on-white in Stage432Test) and 6 more scenes added; device after-fix capture NOT valid (hero art)."
   },
   {
    "id": "D113",
@@ -1428,6 +1428,42 @@
    "status": "fixed-unverified",
    "found": "2026-11-01 update 431 Odin 2 Portal b92036fb hardware run (.shots/431/tdp_autoeff.log)",
    "note": "Tuner.session per launch / end; TuneService recreates the controller per session; panel-counter readings in the first 5 ticks ignored. Test theLaunchersOwnFramesAreNotTheGamesTarget. Seen with the earlier build only: the target fell back to 60 once the level reached full (the 429 rule), costing ~10 s at full clocks. Re-run with the 431 build NOT done."
+  },
+  {
+   "id": "D120",
+   "title": "Twin desk list rows ended long names in '…' (Yu Gi Oh! Capsule Monster Coliseu…)",
+   "rule": "TRUNCATE",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
+   "note": "TwinDesk.kt: FitText (wrap to 2 lines, then shrink) for the shelf card and list names. Odin after-fix still V432_TWIN_DESK shows the whole name."
+  },
+  {
+   "id": "D121",
+   "title": "Cover details: the story's lines ran under the shelf of spines on 1080p (shelf drawn 16 % taller than its slot)",
+   "rule": "OVERLAP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
+   "note": "Info column stops above the shelf top; story only as many whole lines as fit. Odin after-fix V432_COVERDETAILS: no overlap; the whole-lines refinement is NOT on hardware yet."
+  },
+  {
+   "id": "D122",
+   "title": "QA infra: on the GT78 the layout hook (voltcap_test_layout, preview) does not change the home layout, so the 53-layout stills there all show the same home",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
+   "note": "Theme hook works; sendevent is denied there (vqa.sh needs the usekey file). Cause not found; GT78 layout pass BLOCKED until then."
+  },
+  {
+   "id": "D123",
+   "title": "Android 12 (GT78): several shader scenes fall back to a near-black legacy frame (Manga beat, Magical, Blue sky, Pixel sky) while Meadow / Waterfall have a picture",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
+   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture."
   }
  ]
 }

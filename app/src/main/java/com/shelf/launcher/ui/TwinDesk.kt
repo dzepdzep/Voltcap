@@ -489,9 +489,10 @@ private fun DeskNameStrip(c: StyleCtx, compact: Boolean, modifier: Modifier) {
             Text(EmptyShelf.text, color = DeskMuted, fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.weight(1f))
         } else {
             Column(Modifier.weight(1f)) {
-                Text(
-                    titles.display(g.name), color = DeskInk, fontSize = if (compact) 14.sp else 18.sp, fontWeight = FontWeight.Bold,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                // (Update 432, Odin 2 Portal: long names ended in "…"; now they wrap, then shrink — CLAUDE.md rule 11.)
+                FitText(
+                    titles.display(g.name), color = DeskInk, maxSize = if (compact) 14.sp else 18.sp, minSize = if (compact) 10.sp else 12.sp,
+                    maxLines = 2, fontWeight = FontWeight.Bold
                 )
                 Text(
                     titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
@@ -641,9 +642,10 @@ private fun DeskPanel(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, compac
         // (Update 247, #94, RP Classic: the two lines at their own height — the theme's text style spaces each line 24 sp
         // apart, so in a small panel the console's line was cut in half under the name.)
         Column(Modifier.weight(1f)) {
-            Text(
-                titles.display(g.name), color = DeskInk, fontSize = if (compact) 12.sp else 15.sp, fontWeight = FontWeight.Bold,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.2.em
+            // (Update 432, Odin 2 Portal: "Yu Gi Oh! Capsule Monster Coliseu…" — wrap, then shrink, never "…".)
+            FitText(
+                titles.display(g.name), color = DeskInk, maxSize = if (compact) 12.sp else 15.sp, minSize = if (compact) 9.sp else 11.sp,
+                maxLines = 2, fontWeight = FontWeight.Bold, lineHeightRatio = 1.12f
             )
             Text(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.2.em)
         }

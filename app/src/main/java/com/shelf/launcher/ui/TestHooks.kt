@@ -16,6 +16,8 @@ internal object TestHooks {
     val game = mutableStateOf<String?>(null)
     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
     val settings = mutableStateOf<String?>(null)
+    /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
+    val bg = mutableStateOf<String?>(null)
     /**
      * A game look shown for this session only (`--es voltcap_test_look CASE`); while it's on, the layout hook only shows
      * layouts too (nothing saved). A restart of Voltcap brings your own settings back.
@@ -123,6 +125,7 @@ internal object TestHooks {
         val pr = intent?.getStringExtra("voltcap_test_pref")
         val th = intent?.getStringExtra("voltcap_test_theme")
         val pm = intent?.getStringExtra("voltcap_test_perf")
+        intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
         // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
         // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
         intent?.getStringExtra("voltcap_test_tune")?.let { t ->
