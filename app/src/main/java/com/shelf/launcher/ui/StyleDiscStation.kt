@@ -496,23 +496,30 @@ private fun DiscRound(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
 private fun DiscPill(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, on: Boolean, accent: Color, compact: Boolean, modifier: Modifier = Modifier, onTap: () -> Unit) {
     val pill = RoundedCornerShape(50)
     // (Update 149: it takes the room the round buttons leave, so Details always fits beside it.)
-    Row(
-        modifier
-            .graphicsLayer { val k = if (on) 1.06f else 1f; scaleX = k; scaleY = k }
-            .clip(pill)
-            .background(Color.White)
-            .border(if (on) 3.dp else 0.dp, if (on) accent else Color.Transparent, pill)
-            .tapOnly(onTap)
-            .padding(horizontal = if (compact) 6.dp else 16.dp, vertical = if (compact) 6.dp else 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Icon(icon, label, tint = Color(0xFF16171B), modifier = Modifier.size(if (compact) 18.dp else 22.dp))
-        // (Update 433, GT78 960×640: the pill got so narrow that only "F" / "C" of the word showed. On compact screens it is the
-        // play symbol alone, like the round buttons beside it; the word stays for screen readers.)
-        if (!compact) {
-            Spacer(Modifier.width(6.dp))
-            FullText(label, color = Color(0xFF16171B), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+    // (Update 434, GT78 960×640: the layout isn't "compact" there, yet the pill was so narrow that only "F" / "n" of the word showed.
+    // Decided by the width it really gets: the word when it fits at a readable size, else the play symbol alone — like the round
+    // buttons beside it — with the word kept for screen readers.)
+    BoxWithConstraints(modifier) {
+        val pad = if (compact) 8.dp else 16.dp
+        val iconSize = if (compact) 18.dp else 22.dp
+        val textRoom = maxWidth - pad * 2 - iconSize - 6.dp
+        val showWord = textRoom >= (label.length * (if (compact) 7.5f else 9f)).dp
+        Row(
+            Modifier.fillMaxWidth()
+                .graphicsLayer { val k = if (on) 1.06f else 1f; scaleX = k; scaleY = k }
+                .clip(pill)
+                .background(Color.White)
+                .border(if (on) 3.dp else 0.dp, if (on) accent else Color.Transparent, pill)
+                .tapOnly(onTap)
+                .padding(horizontal = pad, vertical = if (compact) 6.dp else 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, label, tint = Color(0xFF16171B), modifier = Modifier.size(iconSize))
+            if (showWord) {
+                Spacer(Modifier.width(6.dp))
+                FullText(label, color = Color(0xFF16171B), fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            }
         }
     }
 }

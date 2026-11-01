@@ -1488,18 +1488,18 @@
    "title": "GT78 960x640: Disc station's Continue pill shows only 'F' (label cut)",
    "rule": "TRUNCATE",
    "severity": "med",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_DISCS",
-   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended. | 433: two fix attempts keyed on the layout's `compact` flag did NOT work on the GT78 (G433v_DISCS: '▶ n') — compact is false there; the pill needs a width-based rule. STILL OPEN."
+   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended. | 433: two fix attempts keyed on the layout's `compact` flag did NOT work on the GT78 (G433v_DISCS: '▶ n') — compact is false there; the pill needs a width-based rule. STILL OPEN. | 434: width-based (BoxWithConstraints): the word when it fits, else the play symbol alone. GT78 G434_DISCS: clean play symbol, no letter; Odin O434_DISCS: 'Continue' kept."
   },
   {
    "id": "D127",
    "title": "GT78 960x640: Twin desk focused card — a two-line name pushes the console / playtime line under the card's bottom edge",
    "rule": "CLIP",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_TWIN_DESK",
-   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact. | 433: the compact-only one-line rule did NOT apply on the GT78 (compact false; G433v_TWIN_DESK still two lines, console line cut). STILL OPEN — needs a width / height based rule."
+   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact. | 433: the compact-only one-line rule did NOT apply on the GT78 (compact false; G433v_TWIN_DESK still two lines, console line cut). STILL OPEN — needs a width / height based rule. | 434: the focused card's name is one line that shrinks on every screen. GT78 G434_TWIN_DESK: full 'Pokemon Silver Version (GB Compatible)' + 'Game Boy Color · 6 h 27 min' inside the card; Odin O434 unchanged."
   },
   {
    "id": "D128",
@@ -1518,6 +1518,15 @@
    "status": "wontfix",
    "found": "2026-11-01 update 433 GT78",
    "note": "dropbox: Input dispatching timed out (Application does not have a focused window), main thread idle in nativePollOnce — caused by the QA script sending keys to a sleeping screen, not by Voltcap work. Keep the screen awake during runs."
+  },
+  {
+   "id": "D130",
+   "title": "Disc station game window shows a generic blank silver disc instead of the game's disc art",
+   "rule": "ARTWORK",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 434 Odin P434_DISCS",
+   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic."
   }
  ]
 }

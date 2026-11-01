@@ -1,3 +1,17 @@
+# Update 434 (1 Nov 2026) — 0.6.65 release candidate: D126 / D127 fixed and verified, first popup smoke on the Odin (NOT published)
+
+GitHub (owner-verified): v0.6.64 is the latest normal release; QA workflow run 41351047615 passed on 886895d.
+**Fixed + verified:** D126 Disc station pill decided by its real width (word when it fits, play symbol alone otherwise) — GT78 G434_DISCS clean,
+Odin keeps "Continue"; D127 Twin desk focused card name one line that shrinks — GT78 full name + second line inside the card, Odin unchanged
+(`.shots/434`). **Popup smoke (Odin, static frames only, no recordings):** game window opened with the window hook and closed with B on Channel
+grid (Wii channel preview: More / Wii Menu / Start), Twin desk, Case stacks, Cover details, Disc station, Cinema — each opens its own window
+style and B returns to the layout on the same game; Arctic / Cross captures cut short (script time limit). New D130 (Disc station window shows a
+generic disc). **Not done:** recordings of transitions, GT78 popups, round-shortcut positions, D124 hardware re-run, D125 Hero, D123, D128
+(documented as known limitations in the changelog). **Release package:** release APK 0.6.65 built and installed in place on both devices (data and
+settings kept, no crash in the crash buffer); the compat APK needs `assembleCompat`, which only tools/release/release.ps1 runs (not available from
+this session's build tool) — it is built by release.ps1 at publish time. Changelog corrected to list only verified fixes.
+**Copy:** `src_copy/ui/StyleDiscStation.kt`, `TwinDesk.kt`; docs/CHANGELOG_0.6.65.md; defects.json.
+
 # Update 433 (1 Nov 2026) — 432 follow-up, version 0.6.65 prepared (NOT published)
 
 **Verified on hardware:** D111 Lobby (Odin, scene exposed with `voltcap_test_bg ANIMATED`: status, chip and title readable), D121 Cover details
