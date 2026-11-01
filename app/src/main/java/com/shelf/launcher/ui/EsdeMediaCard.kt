@@ -58,7 +58,7 @@ internal fun EsdeMediaCard() {
             tree != null -> "Folder: picked by you (read access only)."
             else -> "Folder: ${auto.firstOrNull()?.absolutePath ?: "not found (storage removed?)"}"
         })
-        EsdeMedia.index?.let { MutedNote("Last scan: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(it.scannedAt))}") }
+        if (on) EsdeMedia.index?.let { MutedNote("Last scan: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(it.scannedAt))}") }
         if (busy) MutedNote("Scanning ES-DE's media…")
         result?.let { MutedNote(it) }
         Spacer(Modifier.height(8.dp))
