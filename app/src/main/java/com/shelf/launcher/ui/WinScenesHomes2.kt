@@ -383,7 +383,9 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
         scaleY = 0.05f + 0.95f * e
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
     }.clip(CutCornerShape(8.dp)).background(pcb).border(2.dp, trace.copy(alpha = 0.7f), CutCornerShape(8.dp))) {
-        Canvas(Modifier.fillMaxSize()) {
+        // (Update 424: the traces follow the sheet's size instead of setting it — fillMaxSize made the sheet as tall as the screen
+        // allows, its lower half empty board with a few vias.)
+        Canvas(Modifier.matchParentSize()) {
             // Traces along the edges with their vias.
             val s = Stroke(1.5.dp.toPx())
             for (i in 0 until 6) {

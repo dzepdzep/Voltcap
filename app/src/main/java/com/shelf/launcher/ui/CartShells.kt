@@ -66,6 +66,8 @@ internal class ShellExtra(val kind: Int, val x: Float, val y: Float, val w: Floa
         const val WINDOW = 3   // a dark glass window (solar sensor, LCD)
         const val FLAP = 4     // a hinged cover (lock-on)
         const val KEYPAD = 5   // a printed keypad (Microvision)
+        const val RECESS = 6   // Update 424: a moulded recessed panel (the Game Boy pak's top panel), no print in it
+        const val ARROW = 7    // Update 424: a small moulded arrow pointing in (the Game Boy pak's foot)
     }
 }
 
@@ -117,6 +119,10 @@ internal object CartShells {
     private fun sc(x: Float, y: Float) = floatArrayOf(x, y)
 
     private val GREY = 0xFF8A8B8EL
+    // Update 424: the Game Boy pak's front, measured off a straight-on scan (Pokémon Silver): sticker, side grips, top panel, foot arrow.
+    private val GB_LABEL = floatArrayOf(7.2f, 18.5f, 42.6f, 38.5f)
+    private val GB_RIDGES = listOf(floatArrayOf(0.9f, 3f, 4.2f, 12f, 6f, 1f), floatArrayOf(51.9f, 3f, 4.2f, 12f, 6f, 1f))
+    private val GB_EXTRAS = listOf(ShellExtra(ShellExtra.RECESS, 7.5f, 3.2f, 42f, 10.6f), ShellExtra(ShellExtra.ARROW, 26f, 59.3f, 5f, 2.6f))
     private val BLACK = 0xFF1C1C1EL
 
     val all: List<CartShell> = listOf(
@@ -173,19 +179,22 @@ internal object CartShells {
             // GoldenEye photo 50.8 × 60.3; the Super Mario 64 photo 57 × 63.5), so it isn't changed until it's measured.)
             check = CaseCheck.ESTIMATED, labelRadius = 4f, ridgeDepth = 0.3f, labelRadiusBottom = 3f, labelTopArc = 325f,
             note = "Size measured (116×76.6×18.5, ConsoleMods / Wikipedia); arched top, panel grooves, side step and the 57×63.5 label measured off a straight-on photo (approximate; ConsoleMods' label table says 54.5×62.5); label corners 4 / 3 mm and its 325 mm top arc from ConsoleMods."),
-        CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
-            listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)),
-            contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED,
+        // (Update 424, owner: the drawn Pokémon Brown pak next to the Silver scan "looked like an oversized plastic toy": measured off
+        // the Silver front scan — the sticker 42.6 × 38.5 from 18.5 mm down (it was 14 mm, too high), the top a recessed panel between
+        // short grip ridges at both sides (it was four lines across the whole top, like vents), a small moulded arrow at the foot.)
+        CartShell("gb", "Game Boy Game Pak", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), GB_LABEL,
+            GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Grey", 0xFFA3A2A8), c("Yellow", 0xFFE8C51E)), extras = GB_EXTRAS,
+            contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f,
             note = "Size (57×65×7.8) and sticker (42×37) measured; places estimated. The power-lock notch is at the top-right corner seen from the front (Wikipedia, Game Boy Game Pak) — drawn on the back (CartBacks), not on the front."),
         // (Update 300: the black dual-mode Game Pak is the Game Boy's own case in black — Game Verifying: "GBC games with
         // black DMG cases… follow the same rules as the DMG games" — so it has the Game Boy shell's size, not the clear
         // Color-only cart's 9 mm.)
-        CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
-            listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)),
-            contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
-        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), lab(7.5f, 14f, 42f, 37f),
-            listOf(rid(4f, 3f, 49f, 9f, 4)), listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)),
-            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, note = "Clear shell, the board shows through; size measured, layout estimated."),
+        CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), GB_LABEL,
+            GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)), extras = GB_EXTRAS,
+            contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
+        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
+            GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)), extras = GB_EXTRAS,
+            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured, layout estimated."),
         CartShell("gba", "Game Boy Advance Game Pak", ShellGroup.NINTENDO, 60f, 35f, 8f,
             o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f),
             // (Update 240, #90: the sticker 43 × 22 mm with 1 mm corners — ConsoleMods' Cart Labels table, test-fitted on an
@@ -764,11 +773,13 @@ internal object CartShells {
         }
         if (colour.glitter > 0f) {
             val rnd = java.util.Random((s.id.hashCode() * 31 + if (front) 1 else 2).toLong())
-            val n = (s.w * s.h * colour.glitter * 0.9f).toInt().coerceIn(0, 4000)
+            // (Update 424, owner: the drawn silver Pokémon pak "sparkled like a toy" next to the real one: pigment speckles are fine and
+            // faint — real metallic plastic reads smooth from a step away.)
+            val n = (s.w * s.h * colour.glitter * 0.45f).toInt().coerceIn(0, 2000)
             for (i in 0 until n) {
                 val x = rnd.nextFloat() * bw; val y = rnd.nextFloat() * bh
-                val r = ((0.1f + rnd.nextFloat() * 0.2f) * k).coerceAtLeast(0.6f)
-                p.color = withAlpha(if (rnd.nextInt(6) == 0) 0xFFFFFFFF.toInt() else hi, 0.3f + rnd.nextFloat() * 0.6f)
+                val r = ((0.06f + rnd.nextFloat() * 0.1f) * k).coerceAtLeast(0.5f)
+                p.color = withAlpha(if (rnd.nextInt(8) == 0) 0xFFFFFFFF.toInt() else hi, 0.08f + rnd.nextFloat() * 0.22f)
                 c.drawCircle(x, y, r, p)
             }
         }
@@ -812,7 +823,7 @@ internal object CartShells {
         val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
         val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
         val head = plaque ?: switchHeader ?: paperHead
-        val key = "f8|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        val key = "f9|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -1426,6 +1437,22 @@ internal object CartShells {
             ShellExtra.FLAP -> {
                 p.color = e.argb; c.drawRoundRect(r, 1.5f * k, 1.5f * k, p)
                 p.color = shade(e.argb, -0.4f); c.drawRect(r.left, r.bottom - 0.5f * k, r.right, r.bottom, p)
+            }
+            ShellExtra.RECESS -> {
+                // A shallow moulded panel: its floor a touch darker, the upper / left wall in shadow, the lower lip lit.
+                val rr = 2.6f * k
+                p.color = withAlpha(shade(base, -0.06f), 1f); c.drawRoundRect(r, rr, rr, p)
+                p.style = Paint.Style.STROKE; p.strokeWidth = 0.7f * k
+                p.shader = LinearGradient(r.left, r.top, r.left, r.bottom, withAlpha(shade(base, -0.45f), 0.9f), withAlpha(shade(base, 0.45f), 0.9f), Shader.TileMode.CLAMP)
+                c.drawRoundRect(r, rr, rr, p); p.shader = null; p.style = Paint.Style.FILL
+            }
+            ShellExtra.ARROW -> {
+                // A small moulded arrow, pointing into the console (down): a shadow edge and a lit one.
+                val path = android.graphics.Path().apply { moveTo(r.left, r.top); lineTo(r.right, r.top); lineTo(r.centerX(), r.bottom); close() }
+                p.style = Paint.Style.STROKE; p.strokeWidth = 0.45f * k
+                p.color = withAlpha(shade(base, -0.4f), 0.85f); c.drawPath(path, p)
+                c.save(); c.translate(0.3f * k, 0.35f * k); p.color = withAlpha(shade(base, 0.4f), 0.7f); c.drawPath(path, p); c.restore()
+                p.style = Paint.Style.FILL
             }
             ShellExtra.KEYPAD -> {
                 p.color = e.argb; c.drawRoundRect(r, 1f * k, 1f * k, p)

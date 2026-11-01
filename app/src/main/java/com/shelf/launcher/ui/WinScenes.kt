@@ -418,8 +418,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 Text(ctx.console.uppercase(), color = SheetMuted, fontSize = 11.sp, fontFamily = mono, maxLines = 1)
             }
             Spacer(Modifier.height(4.dp))
-            Text(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 2,
-                overflow = TextOverflow.Ellipsis)
+            // (Update 424, rule 11: the sheet scrolls, so its title, values and description are never cut with "…" — seen on the Thor
+            // with "Role-playing (RPG), Turn-based strat…" and the description's last words.)
+            Text(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 3)
             Spacer(Modifier.height(6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
             Spacer(Modifier.height(8.dp))
@@ -434,8 +435,8 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             var x = 0f
                             while (x < size.width) { drawCircle(SheetRule, 1.1f, Offset(x, size.height - 2f)); x += 5f }
                         }
-                        Text(value, color = SheetInk, fontSize = 13.sp, fontFamily = mono, fontWeight = FontWeight.Bold, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
+                        Text(value, color = SheetInk, fontSize = 13.sp, fontFamily = mono, fontWeight = FontWeight.Bold, maxLines = 3,
+                            textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
                     }
                 }
                 line("Released", ctx.year)
@@ -446,8 +447,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
                 ctx.summary?.let {
                     Spacer(Modifier.height(8.dp))
-                    Text(it, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono, maxLines = if (ctx.maxH > 480.dp) 3 else 2,
-                        overflow = TextOverflow.Ellipsis)
+                    Text(it, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
                 }
             } else {
                 // The other pages, on the same paper.

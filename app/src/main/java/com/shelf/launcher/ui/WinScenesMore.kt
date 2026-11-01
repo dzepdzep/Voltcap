@@ -117,7 +117,9 @@ internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit()
 @Composable
 internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true) {
     if (ctx.page == WinPage.MAIN) {
-        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+        // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
+        val sc = rememberScrollState()
+        Column(Modifier.weight(1f, fill = false).sceneFadeEdges(sc).verticalScroll(sc)) {
             sceneFacts(ctx).chunked(2).forEach { pair ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     pair.forEach { (l, v) ->
@@ -129,7 +131,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
-            ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, maxLines = 4, modifier = Modifier.padding(top = 2.dp)) }
+            ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
         }
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 }
@@ -380,15 +382,16 @@ internal fun PocketScreen(ctx: WinSceneCtx) {
 internal fun IndexCard(ctx: WinSceneCtx) {
     val paper = Color(0xFFFBF7EC); val rule = Color(0xFFB9D4EA); val red = Color(0xFFC94A3F); val ink = Color(0xFF2A2A30)
     val w = minOf(ctx.maxW, 470.dp)
-    val h = minOf(ctx.maxH, 360.dp)
-    Box(Modifier.width(w).height(h).graphicsLayer {
+    // (Update 424: the card grows with its keys — they wrap onto more lines now — up to the screen; at a fixed 360 dp the facts were
+    // squeezed to a sliver cut mid-line on the Thor.)
+    Box(Modifier.width(w).heightIn(min = minOf(ctx.maxH, 300.dp), max = ctx.maxH).graphicsLayer {
         // Drawn up out of the catalogue drawer, beside the case taken off the shelf.
         val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * size.height * 0.2f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shadowElevation = 10.dp.toPx() * e
     }.clip(RoundedCornerShape(3.dp)).background(paper)) {
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(Modifier.matchParentSize()) {
             // The ruled lines, the red header line and the drawer rod's hole.
             val step = 22.dp.toPx(); var y = 58.dp.toPx()
             while (y < size.height) { drawLine(rule, Offset(0f, y), Offset(size.width, y), 1f); y += step }
@@ -396,7 +399,7 @@ internal fun IndexCard(ctx: WinSceneCtx) {
             drawLine(red.copy(alpha = 0.5f), Offset(44.dp.toPx(), 0f), Offset(44.dp.toPx(), size.height), 1f)
             drawCircle(Color(0xFFD8D2C2), 7.dp.toPx(), Offset(size.width / 2f, size.height - 12.dp.toPx()))
         }
-        Column(Modifier.fillMaxSize().padding(start = 52.dp, end = 14.dp, top = 10.dp, bottom = 24.dp)) {
+        Column(Modifier.fillMaxWidth().padding(start = 52.dp, end = 14.dp, top = 10.dp, bottom = 24.dp)) {
             StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
             Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.65f), fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             Spacer(Modifier.height(10.dp))

@@ -388,8 +388,9 @@ fun SettingsDialog(
                                 color = ShelfTheme.textMuted,
                                 fontSize = 12.sp,
                                 lineHeight = 15.sp,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                // (Update 424, rule 11: the page's blurb wraps instead of ending in "…" — Home's "…where the games, n…"
+                                // on the Thor needs three lines beside the search field.)
+                                maxLines = 4
                             )
                         }
                     }

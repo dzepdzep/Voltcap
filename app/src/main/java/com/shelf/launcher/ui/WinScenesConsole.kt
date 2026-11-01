@@ -323,6 +323,14 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             Spacer(Modifier.width(14.dp))
             Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
                 if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).then(fadeScroll())) {
+                    // (Update 424: the LiveArea's info panel stood mostly empty white beside the bubble's keys: the game's picture
+                    // heads it, as on the console's page, and its description follows the facts.)
+                    (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { art ->
+                        Box(Modifier.fillMaxWidth().height(if (compact) 96.dp else 140.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF0D1520))) {
+                            AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = if (art == ctx.cover) ContentScale.Fit else ContentScale.Crop)
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
                     if (ctx.total > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.EmojiEvents, null, tint = Color(0xFFE0A400), modifier = Modifier.size(18.dp))
@@ -339,6 +347,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                         Spacer(Modifier.height(5.dp))
                     }
                     line("Played", ctx.played); line("Last played", ctx.last); line("Released", ctx.year); line("Made by", ctx.developer); line("Kind", ctx.genres)
+                    ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color(0xFF34404D), fontSize = 12.sp, lineHeight = 16.sp); Spacer(Modifier.height(6.dp)) }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 12.sp, maxLines = 2,

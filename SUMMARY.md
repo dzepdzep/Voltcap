@@ -21,6 +21,23 @@
 - All, N64, PS2, Game Boy, DS boxes: no overlapping cases, ends and sides visible, art colours untouched. Pull-out (screenrecord at
   30 fps): the case rises from its slot and turns without a blank frame; return lands in the slot.
 
+## Also in 424 (generated media, popup polish, settings)
+- **Generated Game Boy paks** (`CartShells.kt`, cache f9): measured off the Pokémon Silver front scan — sticker 42.6 × 38.5 mm from
+  18.5 mm down (was 14 mm: too high), the top a recessed moulded panel between short grip ridges at both sides (was four lines across
+  the whole top, read as vents), a small moulded arrow at the foot; glitter speckles fine and faint (the silver edition sparkled like a
+  toy). Same for Game Boy, the black dual-mode and the clear Color pak. Compared side by side on the Thor (real scan vs generated, same game).
+- **Circuit** datasheet no longer fills the screen's height (its trace canvas set the size): it ends under its keys. **Bubbles**: the
+  info panel is headed by the game's picture and shows its description (it was mostly empty white).
+- **Index card** (Game shelf, Case stacks, Cover details) grows with its wrapped keys up to the screen (fixed 360 dp squeezed the facts
+  to a sliver cut mid-line); facts lists fade at a scroll edge instead of a half line. **Box insert sheet**: title, values and the
+  description wrap / scroll instead of "…" (rule 11). **Settings** page blurb wraps (Home's was cut with "…").
+- Checked on the Thor with the real library (Pokémon Silver): Shelf, Case stacks, Cover details, Box, Card binder, Green Core, Disc
+  station, Twin desk, Channel grid, Art library windows; Settings › Home header.
+
+## NOT done yet in 424
+- Compact 1280×720 / second screen / Lite / touch passes; Orbit rapid navigation; Wii Custom colours; Recap physical-media options.
+- Generated cases / discs: not reworked in this pass (Game Boy family only). TV room picture: unchanged (owner's art; concern noted).
+
 # Update 423 (1 Nov 2026) — visual QA of all 53 layouts, 53 new layout previews, demo library, window keys wrap (NOT released)
 
 ## Done
