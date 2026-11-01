@@ -1,3 +1,15 @@
+# Update 435 (1 Nov 2026) — v0.6.65 final checks (NOT published)
+
+Owner-verified: v0.6.64 latest, QA workflow green on 598c338. Odin popup smoke (`.shots/435`): Arctic and Cross menu — window opens on the
+focused game, D-pad moves focus inside it (Continue → Performance), B returns to the layout on the same game; R1 panel opens over the Classic row.
+Round shortcuts (`voltcap_test_shortcuts`, 4 positions, Odin + GT78): no round buttons appeared in any capture, so no overlap was seen but the
+Update 330 fix is NOT verified (the shortcut buttons may need their own switch on) — backlog. No QA tuner override active (tune `off`, app
+reinstalled since); GT78 hooks file removed, stay-awake off, timeout 60 s; Odin hooks file present as found. Normal APK 0.6.65 / versionCode 72 /
+com.shelf.launcher installed on both devices with the same signing certificate as 0.6.64 (in-place update accepted). **Compat APK NOT built:**
+the session's build tool only allows assembleRelease / assembleDebug / test tasks — run `.\gradlew.bat assembleCompat` (or release.ps1, which
+builds both and then publishes). Assets per release.ps1: `Voltcap-0.6.65-compat.apk` (attached first) and `Voltcap-0.6.65.apk`; notes =
+docs/CHANGELOG_0.6.65.md.
+
 # Update 434 (1 Nov 2026) — 0.6.65 release candidate: D126 / D127 fixed and verified, first popup smoke on the Odin (NOT published)
 
 GitHub (owner-verified): v0.6.64 is the latest normal release; QA workflow run 41351047615 passed on 886895d.

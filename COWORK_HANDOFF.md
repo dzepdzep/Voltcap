@@ -1,3 +1,5 @@
+**UPDATE 435 (newest):** v0.6.65 final checks done except the compat APK build (owner: `.\gradlew.bat assembleCompat`) and round-shortcut verification (buttons not shown in captures). After publication: popup audit with recordings, D125, D123, D128, D130, round shortcuts, unplugged AutoTDP.
+
 **UPDATE 434 (1 Nov 2026, newest; 0.6.65 RC, NOT published).** Release status: READY WITH DOCUMENTED LIMITATIONS (see SUMMARY 434 /
 docs/CHANGELOG_0.6.65.md). To publish (owner approval needed): run tools/release/release.ps1 (builds normal + compat APKs, versionCode 72).
 Open next: popup recordings (Odin + GT78), round shortcuts on both screens, D124 hardware re-run, D125, D123, D128, D130, Thor items.
