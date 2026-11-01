@@ -275,8 +275,13 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                         .zIndex(zNow)
                         .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }
                 ) {
+                    // Update 421 (Orbit Deck flicker): the spin used to be the global clock × 24° for the disc you're on and 0° for
+                    // every other: each step the newly selected disc's art jumped to a random angle and the one you left snapped
+                    // back upright in the same frame — on a printed label that reads as the artwork flashing / swapping. Now a
+                    // disc starts spinning from the angle it is at, and one you leave eases back upright (0.4 s).
+                    val spinMem = remember { OdSpin() }
                     OrbitDisc(
-                        c, g, on, spinDeg = { if (on) clock.floatValue * 24f else 0f }, col = col,
+                        c, g, on, spinDeg = { spinMem.angle(on, clock.floatValue) }, col = col,
                         light = {
                             // The core's light falls on the side facing it; the far discs are in its shadow.
                             val th = (slot - scroll.value) * step
@@ -462,4 +467,28 @@ internal fun OrbitDeckSettings() {
     Toggle(Icons.Filled.Sync, "The disc you're on spins", "Slowly, as a disc in a player. Off: it stands still.", Features.odSpin)
     Toggle(Icons.Filled.AutoAwesome, "Twinkling stars", "The stars behind twinkle. Off: still stars.", Features.odStars)
     Toggle(Icons.Filled.Album, "The games' own discs", "Each game's real disc where it has a scan (its cartridge for a cartridge game). Off: every disc printed with its cover.", Features.odReal)
+}
+
+/**
+ * Update 421: one disc's spin, continuous across focus changes (read while drawing; plain fields, no state writes).
+ * Selected: turns at 24°/s from where it was; deselected: eases back to upright over 0.4 s of the orbit's clock.
+ */
+internal class OdSpin {
+    private var wasOn = false
+    private var startT = 0f
+    private var base = 0f
+    private var offFrom = 0f
+    private var offT = 0f
+    private var current = 0f
+    fun angle(on: Boolean, t: Float): Float {
+        if (on != wasOn) {
+            if (on) { startT = t; base = current } else { offFrom = ((current % 360f) + 540f) % 360f - 180f; offT = t }
+            wasOn = on
+        }
+        current = if (on) base + (t - startT) * 24f else {
+            val k = ((t - offT) / 0.4f).coerceIn(0f, 1f)
+            offFrom * (1f - (k * k * (3f - 2f * k)))
+        }
+        return current
+    }
 }

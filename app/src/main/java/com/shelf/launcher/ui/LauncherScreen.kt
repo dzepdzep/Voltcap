@@ -489,7 +489,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CROSS &&
                 state.specialFilter == com.shelf.launcher.SpecialFilter.TROPHIES && g.raGameId != null) viewingAchievementsForGame = g
             else if (!com.shelf.launcher.data.Features.gameWindow.value) startGame(g)
-            else if (state.appearance.homeLayout.name in com.shelf.launcher.data.Features.classicWindowLayouts.value) openDetails()
+            else if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails()
             else GamePopup.game = g
         }
     }
@@ -1004,7 +1004,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.window.value = false
         val g = focusedGame
         if (g != null) {
-            if (state.appearance.homeLayout.name in com.shelf.launcher.data.Features.classicWindowLayouts.value) openDetails() else GamePopup.game = g
+            if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails() else GamePopup.game = g
         }
     }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
@@ -2255,7 +2255,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             if (index >= 0) viewModel.setFocus(index)
                             sounds?.play(UiSound.SELECT)
                             if (index >= 0 && com.shelf.launcher.data.Features.gameWindow.value) {
-                                if (state.appearance.homeLayout.name in com.shelf.launcher.data.Features.classicWindowLayouts.value) openDetails()
+                                if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails()
                                 else GamePopup.game = g
                             }
                         },
@@ -2384,7 +2384,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; GameOrigin.rect = null /* (Update 421: the old layout's card never counts as this one's row) */; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
@@ -2601,7 +2601,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         when (state.appearance.homeLayout) {
                 com.shelf.launcher.data.HomeLayout.TWIN_DESK -> true
                 com.shelf.launcher.data.HomeLayout.LIVE -> com.shelf.launcher.data.Features.liveLight.state.value && !com.shelf.launcher.data.Features.liveArt.state.value
-                com.shelf.launcher.data.HomeLayout.CHAN -> chanOled().not() && com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanArt.state.value
+                com.shelf.launcher.data.HomeLayout.CHAN -> chanLightLook() && !com.shelf.launcher.data.Features.chanArt.state.value
                 com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesPale.state.value
                 else -> false
             }
@@ -5223,7 +5223,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 BoxNav.pull = null
                 androidx.compose.runtime.withFrameNanos { }
                 if (GamePopup.game == null) BoxNav.pullAsk?.invoke()
-            } else if (GamePopup.game == null) GamePopup.game = again
+            } else if (GamePopup.game == null) {
+                // (Update 421: a layout set to Classic reopens the classic details window, never its own scene.)
+                if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails() else GamePopup.game = again
+            }
             GamePopup.reopenGame = null
         }
     }

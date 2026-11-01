@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.CircleShape
@@ -223,6 +224,8 @@ internal fun cardboardBoxButton(event: KeyEvent, sound: (UiSound) -> Unit): Bool
         Key.ButtonA, Key.Enter, Key.DirectionCenter -> {
             val ask = BoxNav.pullAsk ?: return false
             if (BoxNav.current == null) return false
+            // (Update 421: Classic opens the details window straight away — no case is pulled out for a window that never comes.)
+            if (PopupStyle.opensClassic(com.shelf.launcher.data.HomeLayout.BOX.name)) return false
             if (down && n.repeatCount == 0 && BoxNav.pull == null) { sound(UiSound.SELECT); ask() }
             true
         }
@@ -465,21 +468,30 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, divide
         val fl = quad(c.o(-hw - t, -t + 4f, H), c.o(-hw - t, d + t - 4f, H), c.o(-hw - t - sideFlap, d + t - 10f, H - droop), c.o(-hw - t - sideFlap, -t + 10f, H - droop))
         val fr = quad(c.o(hw + t, -t + 4f, H), c.o(hw + t, d + t - 4f, H), c.o(hw + t + sideFlap, d + t - 10f, H - droop), c.o(hw + t + sideFlap, -t + 10f, H - droop))
         val origin = c.o(0f, 0f, H)
-        // (The flaps' shadow on the floor under them, then the flaps — lit by how they face the light.)
-        for ((p, sh) in listOf(fb to 0.06f, fl to 0.2f, fr to 0.02f, ff to 0.12f)) {
-            drawPath(p, Color.Black.copy(alpha = 0.35f), style = androidx.compose.ui.graphics.drawscope.Stroke(c.k(H) * 14f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-            texturedPath(p, mat.face, mat.tint, kH, 260f, 0f, sh, origin)
+        // (The flaps' shadow on the table under them, then the flaps — lit by how they face the light.)
+        // Update 421 (owner screenshot: "heavy black outline round the box and flaps"): the shadow was a 14 mm black STROKE
+        // round every flap, which read as a drawn outline. Now a soft contact shadow only: the flap's own shape, offset
+        // away from the light (upper left) in a few faint layers, so it fades out instead of ending in a line.
+        val shadowStep = kH * 5f
+        for (p in listOf(fb, fl, fr, ff)) {
+            for (i in 1..4) translate(left = shadowStep * i * 0.6f, top = shadowStep * i) { drawPath(p, Color.Black.copy(alpha = 0.045f)) }
         }
-        // The creases where the flaps fold.
-        val crease = Color.Black.copy(alpha = 0.32f)
-        drawLine(crease, c.o(-hw - t, -t, H), c.o(hw + t, -t, H), kH * 2.5f)
-        drawLine(crease, c.o(-hw - t, d + t, H), c.o(hw + t, d + t, H), kH * 2.5f)
-        drawLine(crease, c.o(-hw - t, -t, H), c.o(-hw - t, d + t, H), kH * 2.5f)
-        drawLine(crease, c.o(hw + t, -t, H), c.o(hw + t, d + t, H), kH * 2.5f)
+        for ((p, sh) in listOf(fb to 0.04f, fl to 0.14f, fr to 0.0f, ff to 0.08f)) texturedPath(p, mat.face, mat.tint, kH, 260f, 0f, sh, origin)
+        // The flaps' cut outer edges: a thin lit line (board edge catching the light), not a dark keyline.
+        for (p in listOf(fb, fl, fr, ff)) drawPath(p, Color(0xFFF3DFB8).copy(alpha = 0.16f), style = androidx.compose.ui.graphics.drawscope.Stroke(kH * 1.2f))
+        // The creases where the flaps fold: a soft dark fold with its lit lip next to it.
+        val crease = Color(0xFF3A2814).copy(alpha = 0.16f)
+        val lip = Color(0xFFFFF0D0).copy(alpha = 0.12f)
+        drawLine(crease, c.o(-hw - t, -t, H), c.o(hw + t, -t, H), kH * 1.6f)
+        drawLine(crease, c.o(-hw - t, d + t, H), c.o(hw + t, d + t, H), kH * 1.6f)
+        drawLine(crease, c.o(-hw - t, -t, H), c.o(-hw - t, d + t, H), kH * 1.6f)
+        drawLine(crease, c.o(hw + t, -t, H), c.o(hw + t, d + t, H), kH * 1.6f)
+        drawLine(lip, c.o(-hw - t, -t - 3f, H), c.o(hw + t, -t - 3f, H), kH * 1.2f)
+        drawLine(lip, c.o(-hw - t - 3f, -t, H), c.o(-hw - t - 3f, d + t, H), kH * 1.2f)
 
         // The floor.
         val floor = quad(c.o(-hw, 0f, 0f), c.o(hw, 0f, 0f), c.o(hw, d, 0f), c.o(-hw, d, 0f))
-        texturedPath(floor, mat.face, mat.tint, k0, 260f, 90f, 0.22f, c.o(0f, 0f, 0f))
+        texturedPath(floor, mat.face, mat.tint, k0, 260f, 90f, 0.14f, c.o(0f, 0f, 0f))
         // The fold down the middle of the floor (where its flaps meet), and the floor's shade at the walls.
         drawLine(Color.Black.copy(alpha = 0.14f), c.o(-hw, d / 2f, 0f), c.o(hw, d / 2f, 0f), k0 * 1.6f)
         drawLine(Color.White.copy(alpha = 0.08f), c.o(-hw, d / 2f + 2f, 0f), c.o(hw, d / 2f + 2f, 0f), k0 * 1.2f)
@@ -514,7 +526,7 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, divide
             val face = quad(c.o(faceX, dv.y0, 0f), c.o(faceX, dv.y1, 0f), c.o(faceX, dv.y1, z), c.o(faceX, dv.y0, z))
             drawPath(face, Color(0xFF9C7440))
             drawPath(top, Color(0xFFD2AC74))
-            drawPath(top, Color.Black.copy(alpha = 0.35f), style = androidx.compose.ui.graphics.drawscope.Stroke(1f))
+            drawPath(top, Color(0xFF3A2814).copy(alpha = 0.14f), style = androidx.compose.ui.graphics.drawscope.Stroke(1f))
         }
 
         // The walls' insides: back (lit), right (facing the light), left (in its own shade), front (in shade).
@@ -522,25 +534,30 @@ private fun BoxBody(cam: BoxCam, mat: BoxMaterials, slots: List<BoxSlot>, divide
         val front = quad(c.o(-hw, d, 0f), c.o(hw, d, 0f), c.o(hw, d, H), c.o(-hw, d, H))
         val left = quad(c.o(-hw, 0f, H), c.o(-hw, 0f, 0f), c.o(-hw, d, 0f), c.o(-hw, d, H))
         val right = quad(c.o(hw, 0f, H), c.o(hw, 0f, 0f), c.o(hw, d, 0f), c.o(hw, d, H))
-        texturedPath(back, mat.wall, mat.tint, kH, 240f, 90f, 0.12f, origin)
-        texturedPath(left, mat.wall, mat.tint, kH, 240f, 0f, 0.42f, origin)
-        texturedPath(right, mat.wall, mat.tint, kH, 240f, 0f, 0.04f, origin)
-        texturedPath(front, mat.wall, mat.tint, kH, 240f, 90f, 0.3f, origin)
-        // Each wall darker toward the floor (less light gets down there).
-        fun wallAo(p: Path, from: Offset, to: Offset) = drawPath(p, Brush.linearGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.38f)), start = from, end = to))
+        // (Update 421: the inside was near-black on the shaded walls; real kraft board stays brown in shade.)
+        texturedPath(back, mat.wall, mat.tint, kH, 240f, 90f, 0.08f, origin)
+        texturedPath(left, mat.wall, mat.tint, kH, 240f, 0f, 0.26f, origin)
+        texturedPath(right, mat.wall, mat.tint, kH, 240f, 0f, 0.02f, origin)
+        texturedPath(front, mat.wall, mat.tint, kH, 240f, 90f, 0.18f, origin)
+        // Each wall a little darker toward the floor (less light gets down there), warm brown rather than black.
+        fun wallAo(p: Path, from: Offset, to: Offset) = drawPath(p, Brush.linearGradient(listOf(Color.Transparent, Color(0xFF2A1B0C).copy(alpha = 0.24f)), start = from, end = to))
         wallAo(back, c.o(0f, 0f, H), c.o(0f, 0f, 0f))
         wallAo(left, c.o(-hw, d / 2f, H), c.o(-hw, d / 2f, 0f))
         wallAo(right, c.o(hw, d / 2f, H), c.o(hw, d / 2f, 0f))
         wallAo(front, c.o(0f, d, H), c.o(0f, d, 0f))
         // The inside corners' seams.
-        val seam = Color.Black.copy(alpha = 0.45f)
-        for ((x, y) in listOf(-hw to 0f, hw to 0f, -hw to d, hw to d)) drawLine(seam, c.o(x, y, 0f), c.o(x, y, H), 2f)
+        // (Update 421: a soft fold where two walls meet, not a black line.)
+        val seam = Color(0xFF2A1B0C).copy(alpha = 0.18f)
+        for ((x, y) in listOf(-hw to 0f, hw to 0f, -hw to d, hw to d)) drawLine(seam, c.o(x, y, 0f), c.o(x, y, H), kH * 3f)
 
         // The walls' cut top edge: the board's thickness, its fluting showing.
         fun edge(a: Offset, b: Offset, outerA: Offset, outerB: Offset, deg: Float) {
             val p = quad(a, b, outerB, outerA)
             texturedPath(p, mat.flute, mat.tint, kH, t * 8f, deg, 0f, a)
-            drawLine(Color.White.copy(alpha = 0.22f), outerA, outerB, 1.5f)
+            // (Update 421, Thor: the fluting alone read as a dark line drawn round the opening; a cut kraft edge is light —
+            // the corrugation shows faintly through the board colour, lit on its outer lip.)
+            drawPath(p, Color(mat.top).copy(alpha = 0.62f))
+            drawLine(Color.White.copy(alpha = 0.28f), outerA, outerB, 1.5f)
         }
         edge(c.o(-hw, 0f, H), c.o(hw, 0f, H), c.o(-hw - t, -t, H), c.o(hw + t, -t, H), 0f)
         edge(c.o(-hw, d, H), c.o(hw, d, H), c.o(-hw - t, d + t, H), c.o(hw + t, d + t, H), 0f)
@@ -960,10 +977,10 @@ private fun BoxCase(
             val px = 1.dp.toPx()
             val tl = Offset((size.width - w) / 2f, 0f)
             val cr = androidx.compose.ui.geometry.CornerRadius(2.5f * px)
-            drawRoundRect(Color.Black.copy(alpha = 0.55f * a), tl - Offset(px, px), Size(w + 2 * px, size.height + 2 * px), cr,
+            // (Update 421: no dark keyline — light falling on the case you're on: a warm sheen down its face and a fine lit edge.)
+            drawRoundRect(Brush.verticalGradient(listOf(Color(0xFFFFF3D2).copy(alpha = 0.16f * a), Color.Transparent)), tl, Size(w, size.height * 0.6f), cr)
+            drawRoundRect(Color(0xFFFFF3D2).copy(alpha = 0.7f * a), tl + Offset(0.5f * px, 0.5f * px), Size(w - px, size.height - px), cr,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(px))
-            drawRoundRect(Color(0xFFFFF3D2).copy(alpha = 0.95f * a), tl + Offset(0.75f * px, 0.75f * px), Size(w - 1.5f * px, size.height - 1.5f * px), cr,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f * px))
         }
     }
     if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))

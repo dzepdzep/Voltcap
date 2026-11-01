@@ -50,11 +50,26 @@ internal fun wiiPalette(light: Boolean) = if (light)
 else
     WiiPalette(Color(0xFF1B2028), Color(0xFF11151B), Color(0xFF3A4350), Color(0xFFE9EEF4), Color(0xFF9AA6B6), Color(0xFF2A313B), Color(0xFF26384C), false)
 
+/**
+ * Update 421: the preview window in the grid's palette (ChanPalette.kt) — Original Pale / OLED Black keep the exact colours
+ * above; Light Blue, Light Yellow and Custom take their surfaces, rim and writing from the same palette as the tiles.
+ */
+internal fun wiiPaletteNow(): WiiPalette {
+    val c = chanColors()
+    return when {
+        !Features.chanLight.state.value -> wiiPalette(false) // (the theme / art backdrop: the dark window, as before)
+        c.palette == Features.ChanPalette.PALE -> wiiPalette(true)
+        c.palette == Features.ChanPalette.OLED -> WiiPalette(Color(0xFF0E1012), Color(0xFF050607), Color(0xFF2A2F36), Color(0xFFE9EEF4), Color(0xFF9AA6B6), Color(0xFF17191D), Color(0xFF1E2A38), false)
+        c.light -> WiiPalette(c.surface, c.surface2, c.edge, c.ink, c.ink.copy(alpha = 0.72f), c.surface, androidx.compose.ui.graphics.lerp(c.surface2, Color.White, 0.4f), true)
+        else -> WiiPalette(c.surface, c.surface3, c.edge, Color.White, Color.White.copy(alpha = 0.7f), c.surface2, androidx.compose.ui.graphics.lerp(c.surface2, Color.White, 0.12f), false)
+    }
+}
+
 private val WiiBlue = Color(0xFF3AA6E8)
 
 @Composable
 internal fun WiiChannelPreview(ctx: WinSceneCtx) {
-    val pal = wiiPalette(Features.chanLight.state.value && !Features.chanDark.state.value)
+    val pal = wiiPaletteNow()
     // Update 411: the real Wii Channel Preview is a compact, nearly 4:3 white card, not a full-screen dashboard.
     val w = minOf(ctx.maxW, 440.dp)
     val h = minOf(ctx.maxH * 0.74f, 330.dp)
@@ -82,10 +97,19 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 .border(2.dp, WiiBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
         ) {
             if (ctx.page == WinPage.MAIN) {
-                val art = ctx.wide ?: ctx.backdrop ?: ctx.cover
-                if (art != null) AsyncImage(
-                    rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit
-                )
+                // Update 421: wide art fills the preview (cropped to its shape, never stretched); a portrait cover is shown
+                // whole in front of a soft, filled copy of itself, so the well never shows bare bars either side.
+                val wideArt = ctx.wide ?: ctx.backdrop
+                if (wideArt != null) AsyncImage(
+                    rememberStyleArtRequest(wideArt), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop
+                ) else if (ctx.cover != null) {
+                    AsyncImage(rememberStyleArtRequest(ctx.cover), null, Modifier.fillMaxSize().graphicsLayer {
+                        renderEffect = if (android.os.Build.VERSION.SDK_INT >= 31) androidx.compose.ui.graphics.BlurEffect(18.dp.toPx(), 18.dp.toPx()) else null
+                        alpha = 0.55f
+                    }, contentScale = ContentScale.Crop)
+                    Box(Modifier.fillMaxSize().background(pal.well.copy(alpha = 0.25f)))
+                    AsyncImage(rememberStyleArtRequest(ctx.cover), ctx.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
+                }
             } else {
                 ctx.pageBody(Modifier.fillMaxSize())
             }

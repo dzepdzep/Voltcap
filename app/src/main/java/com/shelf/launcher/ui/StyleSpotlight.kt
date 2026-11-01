@@ -569,7 +569,7 @@ private fun SpotHomeMenu(c: StyleCtx, modifier: Modifier) {
     // What A does on the game (the same as the home screen's A): the game window, the classic details, or straight in.
     val aWord = when {
         !Features.gameWindow.state.value -> if (g != null && c.lastPlayed(g) != null) "Continue" else "Play"
-        com.shelf.launcher.data.HomeLayout.SPOT.name in Features.classicWindowLayouts.state.value -> "Details"
+        PopupStyle.opensClassic(com.shelf.launcher.data.HomeLayout.SPOT.name).also { Features.popupStyleByLayout.state.value; Features.classicWindowLayouts.state.value } -> "Details"
         else -> "Open"
     }
     val running = g != null && g.stableKey in com.shelf.launcher.data.RunningGames.keys

@@ -315,17 +315,18 @@ private fun DashSettings() {
  * that light backdrop, your theme's own background, or the game you're on's art (dimmed as the theme says).
  */
 @Composable
-private fun BackdropChoice(light: Features.BoolPref, art: Features.BoolPref) {
+private fun BackdropChoice(light: Features.BoolPref, art: Features.BoolPref, ownName: String = "Pale") {
     val now = when {
         art.state.value -> 2
         light.state.value -> 0
         else -> 1
     }
-    StyleChoice("Background", arrayOf(0, 1, 2), now, { when (it) { 0 -> "Pale"; 1 -> "Your theme"; else -> "The game's art" } }) {
+    StyleChoice("Background", arrayOf(0, 1, 2), now, { when (it) { 0 -> ownName; 1 -> "Your theme"; else -> "The game's art" } }) {
         light.value = it == 0
         art.value = it == 2
     }
-    MutedNote("Pale: a light backdrop with dark writing. Your theme: the theme's own background (Settings › Theme). The game's art: the game you're on fills the screen.")
+    MutedNote(if (ownName == "Pale") "Pale: a light backdrop with dark writing. Your theme: the theme's own background (Settings › Theme). The game's art: the game you're on fills the screen."
+        else "$ownName: the palette below across the backdrop, tiles, bar and buttons. Your theme: the theme's own background (Settings › Theme). The game's art: the game you're on fills the screen.")
 }
 
 @Composable
@@ -494,13 +495,21 @@ private fun ChannelSettings() {
     Spacer(Modifier.height(10.dp))
     // Update 151: a clear choice of 2 to 6 channels per row (it was a slider from 3 to 6 that was easy to miss).
     StyleChoice("Channels per row", arrayOf(2, 3, 4, 5, 6), Features.chanCols.state.value, { "$it" }) { Features.chanCols.value = it }
-    BackdropChoice(Features.chanLight, Features.chanArt)
-    // Update 329 (Toni: "a dark Wii Channel-inspired theme as a toggle, because of OLED"): the pale look in black.
-    if (Features.chanLight.state.value && !Features.chanArt.state.value) Toggle(
-        Icons.Filled.DarkMode, "Dark (OLED)",
-        "The same look in black and dark grey: true black behind, dark tiles, bar and buttons, light writing — kinder to OLED screens at night.",
-        Features.chanDark
-    )
+    BackdropChoice(Features.chanLight, Features.chanArt, ownName = "Channel colours")
+    // Update 421: one palette for the backdrop, tiles, bar, buttons, focus and the preview window (ChanPalette.kt). It replaces
+    // the separate "Dark (OLED)" switch (Update 329) — OLED Black is that look; old saves keep theirs (Dark on = OLED Black).
+    if (Features.chanLight.state.value && !Features.chanArt.state.value) {
+        val now = chanPaletteNow()
+        StyleChoice("Channel palette", Features.ChanPalette.values(), now, { it.label }) { setChanPalette(it) }
+        MutedNote(when (now) {
+            Features.ChanPalette.PALE -> "The original pale look: white channels on a soft grey, dark writing."
+            Features.ChanPalette.OLED -> "True black behind, dark tiles, bar and buttons, light writing — kinder to OLED screens at night."
+            Features.ChanPalette.BLUE -> "Pale sky blue backdrop and bar, white channels, deep blue writing."
+            Features.ChanPalette.YELLOW -> "Warm cream backdrop and bar, ivory channels, brown writing."
+            Features.ChanPalette.CUSTOM -> "Your own colour: the backdrop, bar and channels are worked out from it, and the writing stays readable (dark on a light colour, white on a dark one)."
+        })
+        if (now == Features.ChanPalette.CUSTOM) ColorFineTune("Palette colour", Features.chanCustom.state.value) { Features.chanCustom.value = it }
+    }
     Toggle(Icons.Filled.Label, "Name on the tile you're on", "A small name pill along the bottom of the selected tile.", Features.chanNames)
     Toggle(Icons.Filled.Label, "Scroll on continuously", "◀ ▶ move a column over and the grid glides along with you. Off: pages that turn at the edge.", Features.gridsContinuous)
     MutedNote("The game window (A on a game: Home · Details · Start) is in Home › Game window, for every layout.")

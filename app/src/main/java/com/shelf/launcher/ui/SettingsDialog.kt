@@ -3576,12 +3576,18 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         // Update 119: the classic details window instead (this layout only), the window's colours and what it shows.
         if (com.shelf.launcher.data.Features.gameWindow.state.value) {
             val F = com.shelf.launcher.data.Features
-            val classic = appearance.homeLayout.name in F.classicWindowLayouts.state.value
-            RowChoice("In ${appearance.homeLayout.label}, A opens", arrayOf(false, true), classic, { if (it) "The classic details window" else "This layout's own window" }) {
-                // (Update 409, D105: only this layout; off = back to the global default below.)
-                if (it != classic) { if (it) PopupStyle.set(appearance.homeLayout.name, PopupStyle.CLASSIC) else PopupStyle.useDefault(appearance.homeLayout.name) }
+            // Update 421: the same choices as R1 › Popup (PopupStyle.offered), not just own / classic, so the two never disagree.
+            val lname = appearance.homeLayout.name
+            F.popupStyleByLayout.state.value; F.classicWindowLayouts.state.value // (re-read on change)
+            val setHere = androidx.compose.ui.platform.LocalView.current
+            val offered = PopupStyle.offered(lname, PopupStyle.hasRowNow(runCatching { setHere.display?.displayId }.getOrNull() ?: -1))
+            val choices: Array<PopupStyle?> = (listOf<PopupStyle?>(null) + offered).toTypedArray()
+            val chosen: PopupStyle? = if (PopupStyle.isOwnChoice(lname) || PopupStyle.opensClassic(lname)) PopupStyle.current(lname) else null
+            RowChoice("In ${appearance.homeLayout.label}, A opens", choices, chosen, { st -> if (st == null) "Default (${PopupStyle.globalDefault().short})" else st.label }) { st ->
+                if (st == null) PopupStyle.useDefault(lname) else PopupStyle.set(lname, st)
             }
-            MutedNote("This layout's popup style: ${PopupStyle.current(appearance.homeLayout.name).label}" + (if (PopupStyle.isOwnChoice(appearance.homeLayout.name)) " (chosen for this layout, R1 › Popup)" else " (the default for every layout below)") + ".")
+            MutedNote("Now: ${PopupStyle.current(lname).label} — ${PopupStyle.describe(PopupStyle.current(lname))}" + (if (PopupStyle.isOwnChoice(lname)) " (chosen for this layout; R1 › Popup shows the same list)." else " (the default for every layout below).") +
+                (if (offered.none { PopupStyle.rowStyle(it) }) " The row styles are hidden: this layout has no row with the game you're on." else ""))
             // Update 330: the layouts with a window of their own (WinScenes.kt) — it, or the standard window in their colours.
             if (winSceneFor(appearance.homeLayout) != null) {
                 RowChoice("${appearance.homeLayout.label}'s window", arrayOf(true, false), F.winScenes.state.value, { if (it) "Built into the layout" else "Standard window" }) { F.winScenes.value = it }

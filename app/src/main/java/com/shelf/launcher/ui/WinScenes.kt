@@ -108,7 +108,9 @@ internal enum class WinScene { BOX_SHEET, FILE_CARD, STORAGE_RECORD, MEMCARD_INF
     /** Next version: Cinema Premiere and the Arctic info drawer (WinScenesHomes.kt). */
     CINEMA_PREMIERE, ARCTIC_DRAWER,
     /** Update 408: the Channel grid window, a Wii Channel preview (WinScenesWii.kt). */
-    WII_PREVIEW }
+    WII_PREVIEW,
+    /** Update 421 (WinScenesMore.kt): the layouts that had no window of their own. */
+    RECORD_SLEEVE, CARD_BACK, DISC_PANEL, CORE_PANEL, CUBE_FACE, POCKET_LCD, INDEX_CARD, TWIN_HINGE, GALLERY_PLACARD }
 
 internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.BOX -> WinScene.BOX_SHEET
@@ -130,6 +132,16 @@ internal fun winSceneFor(layout: HomeLayout): WinScene? = when (layout) {
     HomeLayout.CINEMA -> WinScene.CINEMA_PREMIERE
     HomeLayout.ARCTIC -> WinScene.ARCTIC_DRAWER
     HomeLayout.CHAN -> WinScene.WII_PREVIEW
+    // Update 421: a window for each of the layouts that only had the generic one.
+    HomeLayout.CRATE -> WinScene.RECORD_SLEEVE
+    HomeLayout.CARDS -> WinScene.CARD_BACK
+    HomeLayout.DISCS -> WinScene.DISC_PANEL
+    HomeLayout.GREENCORE -> WinScene.CORE_PANEL
+    HomeLayout.CUBE -> WinScene.CUBE_FACE
+    HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET -> WinScene.POCKET_LCD
+    HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES, HomeLayout.COVERDETAILS -> WinScene.INDEX_CARD
+    HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE -> WinScene.TWIN_HINGE
+    HomeLayout.ARTLIB -> WinScene.GALLERY_PLACARD
     else -> null
 }
 
@@ -151,9 +163,22 @@ internal fun sceneVeil(scene: WinScene): Brush = when (scene) {
     WinScene.ARCADE_MENU -> Brush.radialGradient(listOf(Color(0xFF0A0420).copy(alpha = 0.55f), Color.Black.copy(alpha = 0.9f)))
     WinScene.CINEMA_PREMIERE -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Black.copy(alpha = 0.86f)))
     WinScene.ARCTIC_DRAWER -> Brush.horizontalGradient(listOf(Color(0xFF0D141D).copy(alpha = 0.35f), Color(0xFF0D141D).copy(alpha = 0.8f)))
-    WinScene.WII_PREVIEW -> if (com.shelf.launcher.data.Features.chanLight.state.value && !com.shelf.launcher.data.Features.chanDark.state.value)
-        Brush.verticalGradient(listOf(Color(0xFFF6F8FB).copy(alpha = 0.82f), Color(0xFFE4E9F0).copy(alpha = 0.9f)))
-    else Brush.verticalGradient(listOf(Color(0xFF0E1116).copy(alpha = 0.86f), Color(0xFF0A0D12).copy(alpha = 0.92f)))
+    // (Update 421: the veil in the grid's palette — Original Pale / OLED Black as before.)
+    WinScene.WII_PREVIEW -> chanColors().let { pal ->
+        if (chanLightLook()) Brush.verticalGradient(listOf(pal.bgTop.copy(alpha = 0.82f), pal.bgBottom.copy(alpha = 0.9f)))
+        else if (pal.palette == com.shelf.launcher.data.Features.ChanPalette.CUSTOM && pal.darkBase != null)
+            Brush.verticalGradient(listOf(pal.bgTop.copy(alpha = 0.86f), pal.bgBottom.copy(alpha = 0.92f)))
+        else Brush.verticalGradient(listOf(Color(0xFF0E1116).copy(alpha = 0.86f), Color(0xFF0A0D12).copy(alpha = 0.92f)))
+    }
+    WinScene.RECORD_SLEEVE -> Brush.verticalGradient(listOf(Color(0xFF1A120B).copy(alpha = 0.55f), Color(0xFF0B0805).copy(alpha = 0.8f)))
+    WinScene.CARD_BACK -> Brush.radialGradient(listOf(Color(0xFF1A1610).copy(alpha = 0.55f), Color.Black.copy(alpha = 0.82f)))
+    WinScene.DISC_PANEL -> Brush.verticalGradient(listOf(Color(0xFF0A0C10).copy(alpha = 0.5f), Color(0xFF050608).copy(alpha = 0.84f)))
+    WinScene.CORE_PANEL -> Brush.verticalGradient(listOf(Color(0xFF01080A).copy(alpha = 0.7f), Color(0xFF000403).copy(alpha = 0.9f)))
+    WinScene.CUBE_FACE -> Brush.radialGradient(listOf(Color(0xFF14163A).copy(alpha = 0.55f), Color(0xFF05060F).copy(alpha = 0.85f)))
+    WinScene.POCKET_LCD -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Black.copy(alpha = 0.8f)))
+    WinScene.INDEX_CARD -> Brush.verticalGradient(listOf(Color(0xFF15100A).copy(alpha = 0.45f), Color(0xFF0A0805).copy(alpha = 0.78f)))
+    WinScene.TWIN_HINGE -> Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Black.copy(alpha = 0.85f)))
+    WinScene.GALLERY_PLACARD -> Brush.verticalGradient(listOf(Color(0xFF1C1B19).copy(alpha = 0.6f), Color(0xFF0D0C0B).copy(alpha = 0.86f)))
     WinScene.CAMERA_MENU -> com.shelf.launcher.data.Features.pcPalette.value.shades.let { s -> Brush.verticalGradient(listOf(Color(s[0]).copy(alpha = 0.8f), Color(s[0]).copy(alpha = 0.92f))) }
     // (The browser's own grey screen — the info screen takes it over, as the console's does; on your theme: dimmed.)
     WinScene.MEMCARD_INFO -> when (com.shelf.launcher.data.Features.mcBack.value) {
@@ -246,6 +271,15 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
         WinScene.CINEMA_PREMIERE -> CinemaPremiere(ctx)
         WinScene.ARCTIC_DRAWER -> ArcticDrawer(ctx)
         WinScene.WII_PREVIEW -> WiiChannelPreview(ctx)
+        WinScene.RECORD_SLEEVE -> RecordSleeve(ctx)
+        WinScene.CARD_BACK -> CardBack(ctx)
+        WinScene.DISC_PANEL -> DiscPlayerPanel(ctx)
+        WinScene.CORE_PANEL -> CorePanel(ctx)
+        WinScene.CUBE_FACE -> CubeFace(ctx)
+        WinScene.POCKET_LCD -> PocketScreen(ctx)
+        WinScene.INDEX_CARD -> IndexCard(ctx)
+        WinScene.TWIN_HINGE -> TwinHinge(ctx)
+        WinScene.GALLERY_PLACARD -> GalleryPlacard(ctx)
     }
 }
 

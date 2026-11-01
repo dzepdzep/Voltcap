@@ -1578,6 +1578,15 @@ object Features {
      * pale backdrop (Layout options › Background: Pale).
      */
     val chanDark = BoolPref("chan_dark", false)
+    /**
+     * Update 421: the Channel grid's colours — "" = follow the older switches (Dark on = OLED Black, else Original Pale), so a
+     * saved setup looks exactly as before until a palette is picked; otherwise a [ChanPalette] name. Setting it keeps
+     * [chanDark] in step (OLED Black ⇔ Dark on), so presets and backups made before it read the same.
+     */
+    val chanPalette = StringPref("chan_palette", "")
+    /** Update 421: the Channel grid's Custom palette base colour (ARGB), edited with the shared HEX / saturation / brightness tool. */
+    val chanCustom = IntPref("chan_custom", 0xFFDCE8F4.toInt())
+    enum class ChanPalette(val label: String) { PALE("Original Pale"), OLED("OLED Black"), BLUE("Light Blue"), YELLOW("Light Yellow"), CUSTOM("Custom") }
     /** Update 146, Channel grid: the game's art fills the background (then the pale backdrop is off). */
     val chanArt = BoolPref("chan_art", false)
     val chanNames = BoolPref("chan_names", true)

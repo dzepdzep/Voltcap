@@ -348,8 +348,8 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
         // The Channel grid: a rounded screen on a see-through white (or dark) veil, round-ended buttons.
         HomeLayout.CHAN -> {
             // (Update 329: the Dark version takes the dark window.)
-            val light = Features.chanLight.state.value && !Features.chanDark.state.value
-            val ink = if (light) Color(0xFF3B4450) else Color.White
+            val light = chanLightLook()
+            val ink = if (light) (if (chanPaletteNow() == Features.ChanPalette.PALE) Color(0xFF3B4450) else chanColors().ink) else Color.White
             WinLook(
                 Arrange.STACK, Btn.PILL,
                 veil = solid(if (light) Color(0xFFF6F8FB).copy(alpha = 0.82f) else Color(0xFF0E1116).copy(alpha = 0.86f)),
@@ -962,6 +962,13 @@ internal fun GameWindow(
         MediaInspect.force = g.stableKey
         askedInspect = true
     }) else null
+    // Update 421: Classic means the classic details window, whichever path set the game (second screen, reopen, a
+    // layout's own button): never this layout's scene. An explicit Inspect (MediaInspect.force) still opens here.
+    if (PopupStyle.opensClassic(layout.name) && !askedInspect && MediaInspect.force != g.stableKey) {
+        val toDetails by rememberUpdatedState(onFullDetails)
+        androidx.compose.runtime.LaunchedEffect(g.stableKey) { toDetails() }
+        return
+    }
     // (Update 250, #119: the shared move — Game Glance's open, GlanceWindow.kt.)
     if (rowMotion == Features.WinMotion.SHARED && !askedInspect) {
         GlanceWindow(g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)
@@ -1022,7 +1029,9 @@ internal fun GameWindow(
     val sceneOwnsOpen = (scene == WinScene.FILE_CARD || scene == WinScene.STORAGE_RECORD || scene == WinScene.MEMCARD_INFO ||
         scene == WinScene.ORBIT_TERMINAL || scene == WinScene.AIRY_PANEL || scene == WinScene.NIGHT_STATUS ||
         scene == WinScene.BLADE_GUIDE || scene == WinScene.BUBBLE_CARD || scene == WinScene.CAMERA_MENU || scene == WinScene.PANEL_DETAIL ||
-        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU || scene == WinScene.WII_PREVIEW) && !askedInspect && MediaInspect.force != g.stableKey
+        scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU || scene == WinScene.WII_PREVIEW ||
+        // (Update 421: these grow out of the picture / face itself; a physical piece only when Inspect asks for it.)
+        scene == WinScene.CORE_PANEL || scene == WinScene.CUBE_FACE || scene == WinScene.GALLERY_PLACARD) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
@@ -1070,7 +1079,7 @@ internal fun GameWindow(
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
-    val cardFlight = piece == null && scene == null && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
+    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
     val close: () -> Unit = {
         closingFlag[0] = true
         if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
@@ -1362,7 +1371,7 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
     WinScene.TERM_RUN -> 560
     WinScene.ARCADE_MENU -> 440
     WinScene.CAMERA_MENU -> 420
-    WinScene.MAG_PAGE, WinScene.BUBBLE_CARD -> 400
+    WinScene.MAG_PAGE, WinScene.BUBBLE_CARD, WinScene.CARD_BACK, WinScene.CUBE_FACE -> 400
     WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 380
     else -> 320
 }

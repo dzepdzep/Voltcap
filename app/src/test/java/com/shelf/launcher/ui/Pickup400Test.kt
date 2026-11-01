@@ -9,8 +9,10 @@ import org.junit.Test
 /** Update 400: the plain-window storage layouts that still open out of the picked case (GameWindow's cardFlight). */
 class Pickup400Test {
     @Test fun cardFlightLayoutsHaveNoSceneOfTheirOwn() {
-        // (A layout with its own window scene owns its open / close; the card flight is only for the plain window.)
-        for (l in PICKUP_CARD_LAYOUTS) assertNull("$l has a scene", winSceneFor(l))
+        // (Update 421: the storage layouts got scenes of their own (index card, record sleeve, card back); those scenes
+        // keep the card flight — the picked case / sleeve / card still fades out of its slot as the window grows from it.)
+        val flightScenes = setOf(WinScene.INDEX_CARD, WinScene.RECORD_SLEEVE, WinScene.CARD_BACK)
+        for (l in PICKUP_CARD_LAYOUTS) { val s = winSceneFor(l); assertTrue("$l: $s", s == null || s in flightScenes) }
     }
 
     @Test fun theStorageLayoutsAreCovered() {

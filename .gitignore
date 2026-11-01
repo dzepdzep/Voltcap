@@ -40,3 +40,11 @@ shots*/
 
 # QA runs: recordings, frame stats and dumps pulled from the handhelds (tools/qa)
 /qa_runs/
+
+# Update 421: local QA captures, owner reference pictures and backups never go to GitHub (the commit tool adds everything).
+/.shots/
+/SUMMARY.md.*.bak
+/reference-*
+/qa_reference_update403/*.jpg
+/qa_reference_update403/*.png
+/app/src/test/java/com/shelf/launcher/ui/c.kt

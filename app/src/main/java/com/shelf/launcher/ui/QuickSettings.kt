@@ -305,6 +305,7 @@ fun QuickSettingsCard(
     }
 
     // Update 202: what decides which tiles show here (r1TileFit, R1TileRules.kt) — read again on resume / after a tap.
+    val r1HostView = androidx.compose.ui.platform.LocalView.current
     val secondDisplayHere = remember(refresh) { hasSecondDisplay(context) }
     val bluetoothHere = remember { hasBluetooth(context) }
     val rommSetUp = remember(refresh) { runCatching { com.shelf.launcher.data.RommCredentialsStore(context).load() != null }.getOrDefault(false) }
@@ -478,7 +479,9 @@ fun QuickSettingsCard(
             run {
                 val F = com.shelf.launcher.data.Features
                 val lname = a.homeLayout.name
-                val styles = PopupStyle.values()
+                val hereDisplay = runCatching { r1HostView.display?.displayId }.getOrNull() ?: -1
+                // (Update 421: only the styles that can work here; the row ones need a row with the game on it.)
+                val styles = PopupStyle.offered(lname, PopupStyle.hasRowNow(hereDisplay))
                 val now = PopupStyle.current(lname)
                 add(R1Tile("popupstyle", Icons.Filled.OpenInNew, "Popup\n" + now.short, false,
                     longAction = {
@@ -486,12 +489,12 @@ fun QuickSettingsCard(
                         val dflt = PopupStyle.globalDefault()
                         choiceSheet = "Game popup · ${a.homeLayout.label}" to (
                             listOf(R1Choice("Use the default (${dflt.short})", !PopupStyle.isOwnChoice(lname)) { PopupStyle.useDefault(lname) }) +
-                            styles.map { st -> R1Choice(st.label, PopupStyle.isOwnChoice(lname) && PopupStyle.current(lname) == st) { PopupStyle.set(lname, st) } } +
+                            styles.map { st -> R1Choice(st.label + " · " + PopupStyle.describe(st), PopupStyle.isOwnChoice(lname) && PopupStyle.current(lname) == st) { PopupStyle.set(lname, st) } } +
                             (if (PopupStyle.current(lname) != PopupStyle.CLASSIC)
                                 listOf(R1Choice("Make ${PopupStyle.current(lname).short} the default for all layouts", false) { PopupStyle.setGlobalDefault(PopupStyle.current(lname)) })
                             else emptyList()))
                     }) {
-                    if (F.gameWindow.value) PopupStyle.set(lname, styles[(PopupStyle.current(lname).ordinal + 1) % styles.size])
+                    if (F.gameWindow.value) PopupStyle.set(lname, styles[(styles.indexOf(PopupStyle.current(lname)) + 1).mod(styles.size)])
                 })
             }
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
@@ -2074,6 +2077,41 @@ internal enum class PopupStyle(val label: String, val short: String) {
             ROW_REVEAL -> com.shelf.launcher.data.Features.WinMotion.ROW_REVEAL
             SHARED -> com.shelf.launcher.data.Features.WinMotion.SHARED
             else -> com.shelf.launcher.data.Features.WinMotion.NONE
+        }
+
+        /**
+         * Update 421: Classic is the classic details window and nothing else — every opener (A, tap, the second screen, a
+         * reopen after B) asks this one question, so a layout set to Classic can never show its own scene by accident.
+         */
+        fun opensClassic(layout: String): Boolean = current(layout) == CLASSIC
+
+        /** Update 421: the row-based styles need the game you're on drawn on this screen (GameOrigin, marked by the layout). */
+        fun rowStyle(style: PopupStyle) = style == ROW_OPENS || style == ROW_REVEAL || style == SHARED
+
+        /**
+         * Update 421: the styles R1 › Popup and Settings › Game window offer for [layout] — the same list in both places.
+         * The row-based ones only where the layout has drawn the game you're on ([hasRow]); a style that is already chosen
+         * stays listed (never reset silently), so the user can see it and move off it.
+         */
+        fun offered(layout: String, hasRow: Boolean): List<PopupStyle> {
+            val now = current(layout)
+            return values().filter { !rowStyle(it) || hasRow || it == now }
+        }
+
+        /** Update 421: one-line description of each style (R1 hold list and Settings say the same). */
+        fun describe(style: PopupStyle): String = when (style) {
+            OWN -> "This layout's own window"
+            BANNER -> "Art banner page, same for every layout"
+            ROW_OPENS -> "The row rises into the page"
+            ROW_REVEAL -> "Other games fade, details slide in"
+            SHARED -> "Art stays, details travel into place"
+            CLASSIC -> "The big details window"
+        }
+
+        /** True when a row-based style can open in this layout right now (the game you're on is drawn on this screen). */
+        fun hasRowNow(displayId: Int): Boolean {
+            val r = GameOrigin.rect ?: return false
+            return r.width >= 4f && r.height >= 4f && (GameOrigin.displayId == displayId || GameOrigin.displayId < 0)
         }
 
         /** The banner page is the window for [layout]; also where a row motion has no row to open (unless the layout chose a style itself). */

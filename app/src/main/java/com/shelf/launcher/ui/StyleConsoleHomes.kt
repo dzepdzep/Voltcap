@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -451,19 +452,24 @@ internal fun StyleConsoleResume(c: StyleCtx, modifier: Modifier) {
 @Composable
 internal fun ChannelBackdrop(modifier: Modifier = Modifier) {
     // (Update 329: Dark — true black for OLED screens, a breath of grey at the bottom like the pale one's.)
-    if (chanOled()) Box(modifier.background(Brush.verticalGradient(listOf(Color.Black, Color.Black, Color(0xFF0A0B0E)))))
-    else Box(modifier.background(Brush.verticalGradient(listOf(Color(0xFFF6F8FB), Color(0xFFDDE2E9)))))
+    // (Update 421: the palette's own backdrop — Original Pale and OLED Black exactly as before.)
+    val pal = chanColors()
+    if (pal.pure) Box(modifier.background(Brush.verticalGradient(listOf(Color.Black, Color.Black, Color(0xFF0A0B0E)))))
+    else Box(modifier.background(Brush.verticalGradient(listOf(pal.bgTop, pal.bgBottom))))
 }
 
 /** Update 329: the Channel grid's Dark version is on (Pale backdrop + Dark, Layout options). */
-internal fun chanOled(): Boolean = Features.chanLight.state.value && Features.chanDark.state.value
+internal fun chanOled(): Boolean = Features.chanLight.state.value && chanPaletteNow() == Features.ChanPalette.OLED
 
 /**
  * Update 329: the Channel grid's dark greys — with Dark on, fixed near-black greys (OLED: no theme tint lifting them);
  * otherwise the theme-tinted ones as before (themeDark).
  */
 @Composable
-private fun chanShade(base: Color): Color = if (!chanOled()) themeDark(base) else when (base) {
+private fun chanShade(base: Color): Color = chanColors().darkBase?.takeIf { Features.chanLight.state.value }?.let { cb ->
+    // (Update 421: a dark Custom palette: its own shades, darkest for the deepest of the old greys.)
+    androidx.compose.ui.graphics.lerp(cb, Color.Black, (1f - base.luminance() * 4f).coerceIn(0.1f, 0.85f))
+} ?: if (!chanOled()) themeDark(base) else when (base) {
     Color(0xFF1D222B) -> Color(0xFF111316)
     Color(0xFF2E3540) -> Color(0xFF202328)
     Color(0xFF1B2028) -> Color(0xFF0E1012)
@@ -477,8 +483,8 @@ internal fun StyleChannelGrid(c: StyleCtx, modifier: Modifier) {
     val cols = Features.chanCols.state.value
     val rows = 3
     val per = cols * rows
-    // (Update 329: the Dark version is the pale layout drawn in its dark colours.)
-    val light = Features.chanLight.state.value && !Features.chanDark.state.value
+    // (Update 329: the Dark version is the pale layout drawn in its dark colours. Update 421: any light palette.)
+    val light = chanLightLook()
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     // Update 109: the corner buttons / the clock bar hidden in Edit Home are skipped by the D-pad.
@@ -567,8 +573,8 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
         modifier
             .graphicsLayer { val k = 1f + 0.04f * lift; scaleX = k; scaleY = k }
             .clip(shape)
-            .background(if (light) Color.White else chanShade(Color(0xFF1D222B))) // (update 151: themed)
-            .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(if (chanOled()) Color(0xFF3A414C) else Color(0xFFB9C3D0), ShelfTheme.accent, 0.3f), shape)
+            .background(if (light) chanColors().surface else chanShade(Color(0xFF1D222B))) // (update 151: themed; 421: the palette's)
+            .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(if (chanOled()) Color(0xFF3A414C) else if (light) chanColors().edge else Color(0xFFB9C3D0), ShelfTheme.accent, 0.3f), shape)
             .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
     ) {
         StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp)
@@ -681,7 +687,8 @@ internal fun ContinuousGrid(
 /** The round buttons in the top right corner (update 104): profile, Settings, notifications, save sync. */
 @Composable
 private fun ChannelCorner(c: StyleCtx, light: Boolean) {
-    val ink = if (light) Color(0xFF4A5461) else Color.White
+    val pal = chanColors()
+    val ink = if (light) pal.ink else Color.White
     val avatar = profilePictureUrl(RaBadges.mediaUrl(c.state.raProfile?.UserPic))
     val items = listOf(
         Icons.Filled.Person to c.actions.profile, Icons.Filled.Settings to c.actions.settings,
@@ -703,7 +710,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
                 Modifier.padding(start = 8.dp).size(34.dp)
                     .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
                     .clip(CircleShape)
-                    .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFE3E8EF))) else Brush.verticalGradient(listOf(chanShade(Color(0xFF2E3540)), chanShade(Color(0xFF1B2028)))))
+                    .background(if (light) Brush.verticalGradient(listOf(pal.surface, pal.surface2)) else Brush.verticalGradient(listOf(chanShade(Color(0xFF2E3540)), chanShade(Color(0xFF1B2028)))))
                     // (Update 151: the rim and the dark follow the theme.)
                     .border(if (on) 3.dp else 1.5.dp, if (on) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(Color(0xFF9FB6CF), ShelfTheme.accent, 0.45f), CircleShape)
                     .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, i); act() } },
@@ -721,7 +728,8 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
 private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: Int) {
     val (time, date) = rememberConsoleClock()
     OwnClock.Mark() // (Update 333: the status bar leaves its clock out — one clock on screen.)
-    val ink = if (light) Color(0xFF4A5461) else Color.White
+    val pal = chanColors()
+    val ink = if (light) pal.ink else Color.White
     // Update 151: the rims and the dark bar take the theme's colour (they were one fixed blue-grey).
     val rim = androidx.compose.ui.graphics.lerp(Color(0xFF8FB4D8), ShelfTheme.accent, 0.45f)
     val darkTop = chanShade(Color(0xFF2A303A))
@@ -731,7 +739,7 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
         Box(
             Modifier.fillMaxSize().padding(top = barH * 0.16f)
                 .clip(RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp))
-                .background(if (light) Brush.verticalGradient(listOf(Color.White, Color(0xFFD5DBE3))) else Brush.verticalGradient(listOf(darkTop, chanShade(Color(0xFF171B22)))))
+                .background(if (light) Brush.verticalGradient(listOf(pal.surface, pal.surface3)) else Brush.verticalGradient(listOf(darkTop, chanShade(Color(0xFF171B22)))))
                 .border(1.dp, rim.copy(alpha = 0.7f), RoundedCornerShape(topStart = 44.dp, topEnd = 44.dp))
         )
         Column(Modifier.align(Alignment.Center).padding(top = barH * 0.12f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -748,7 +756,7 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             Modifier.align(Alignment.CenterStart).padding(start = 14.dp, top = barH * 0.1f).size(ring)
                 .graphicsLayer { val k = if (leftOn) 1.1f else 1f; scaleX = k; scaleY = k }
                 .clip(CircleShape)
-                .background(if (light) Color.White else darkTop)
+                .background(if (light) pal.surface else darkTop)
                 .border(if (leftOn) 5.dp else 3.dp, if (leftOn) ShelfTheme.accent else rim, CircleShape)
                 .pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, 0); category(1) } },
             contentAlignment = Alignment.Center
@@ -787,7 +795,7 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             Modifier.align(Alignment.CenterEnd).padding(end = 14.dp, top = barH * 0.1f).size(ring)
                 .graphicsLayer { val k = if (rightOn) 1.1f else 1f; scaleX = k; scaleY = k }
                 .clip(CircleShape)
-                .background(if (light) Color.White else darkTop)
+                .background(if (light) pal.surface else darkTop)
                 .border(if (rightOn) 5.dp else 3.dp, if (rightOn) ShelfTheme.accent else rim, CircleShape)
                 .pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.BAR, 1); open() } },
             contentAlignment = Alignment.Center

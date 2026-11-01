@@ -1,3 +1,67 @@
+# Update 421 (1 Nov 2026) — popups for 15 more layouts, popup style fixes, Wii palettes, Box outline, Orbit spin (NOT released)
+
+v0.6.64 stays the latest release. No version bump.
+
+## Done
+- **Popup style logic** (`QuickSettings.kt` PopupStyle, `GameWindow.kt`, `LauncherScreen.kt`, `SettingsDialog.kt`, `StyleCardboardBox.kt`,
+  `StyleSpotlight.kt`): Classic is one question everywhere (`PopupStyle.opensClassic`), so it can never show a layout scene (also via
+  reopen-after-B and other openers; GameWindow redirects to the details window if reached with Classic). Row styles (Opens / Reveal /
+  Shared) are offered only when the layout has drawn the game you're on (`offered` / `hasRowNow`, GameOrigin reset on layout change);
+  a saved one stays listed. Settings › Game window now offers the same list as R1 › Popup (was own / classic only), with descriptions.
+- **New layout popups** (`ui/WinScenesMore.kt`, wired in `WinScenes.kt`): Record sleeve (Record crate), Card back (Card binder),
+  Disc player panel (Disc station), Core panel (Green Core), Cube face (Cube), Pocket LCD (Pocket classic / ribbon / Quest),
+  Index card (Game shelf / Case stacks / Console stack / Coverflow details, beside the real case), Twin hinge (Twin layouts),
+  Gallery placard (Artwork library). 19 → 34 layouts with their own window. Audit: `docs/POPUP_AUDIT_421.md`.
+- **Cardboard box** (`StyleCardboardBox.kt`): the "heavy black outline" was a 14 mm black stroke round every flap — replaced by a soft
+  layered contact shadow and a lit cut edge; creases, wall seams, wall shade and floor shade much lighter (warm brown, not black);
+  the walls' rim tinted in the board colour; selected case: no dark keyline (warm sheen + fine lit edge).
+- **Wii Channel palettes** (`ui/ChanPalette.kt`, `Features.chanPalette` / `chanCustom`, `StyleConsoleHomes.kt`, `WinScenesWii.kt`,
+  `WinScenes.kt`, `GameWindow.kt`, `PlayerSkins.kt`, `StyleHomeSettings.kt`): Original Pale, OLED Black, Light Blue, Light Yellow, Custom
+  (shared `ColorFineTune`: HEX, saturation, brightness; readable ink worked out). One palette for backdrop, tiles, bar, round and corner
+  buttons, clock, status bar paleness, preview window and its veil. Background choice renamed "Channel colours / Your theme / The game's
+  art"; the separate "Dark (OLED)" switch is replaced by the palette (old saves: Dark on = OLED Black; picking keeps `chanDark` in step).
+  Preview: wide art crop-fills the well, portrait cover whole over a blurred filled copy.
+- **Orbit Deck flicker** (`StyleOrbitDeck.kt` `OdSpin`): the focused disc's spin was the global clock × 24°, others 0° — every step the
+  new disc's art jumped to a random angle and the old one snapped upright in the same frame. Now spin starts from the current angle and a
+  deselected disc eases upright in 0.4 s.
+- **Sync safety**: `sync_sources` copied stale `project_copy` files over newer ones (CLAUDE.md, HANDOVER.md, SUMMARY.md, release.ps1,
+  two tests) and a stale `src_copy/ui/CompanionHub.kt`; all restored to git HEAD in both places. `c.kt` (a stray duplicate of
+  HomeLayoutCount408Test that broke test compilation) emptied in app + project_copy (delete it by hand). `.gitignore` now excludes
+  `.shots/`, `reference-*`, the 403 reference pictures and `SUMMARY.md.*.bak` (the commit tool runs `git add -A`).
+
+## Checked (actual)
+- `:app:compileDebugKotlin` EXIT 0; `testDebugUnitTest` EXIT 0 (new `Popup421Test`, `ChanPalette421Test`, `OrbitSpin421Test`; updated
+  `Pickup400Test`); `static_checks.py` [PASS], no new findings in touched files; `assembleRelease` EXIT 0, installed on Thor 3140972f.
+- Thor screenshots (`.shots/421/`, not committed): Record crate, Disc station, Cube, Pocket classic, Game shelf, Case stacks, Coverflow
+  details, Twin desk, Artwork library, Channel grid (Light Blue + preview) popups open with Play/Continue focused first; ◀ ▶ walk the key
+  row (it scrolls), B closes. Box + Classic: A opened the classic details, no case pulled. Settings restored (snapshot), preview ended,
+  hooks paused again.
+- **QA side effect:** during the sweep A in Card binder (setting "A plays" on) started Pokémon Silver in RetroArch, and later A in the
+  Artwork library resumed it. RetroArch was left running in the background (not force-stopped, to protect the save); "Last played" of
+  Pokémon Silver now says Today.
+
+## NOT TESTED / NOT DONE
+- Cardboard box outline change after the last tweak (rim tint) not re-shot; case packing gaps / spacing / per-format scale NOT changed.
+- Light Blue / Light Yellow strengthened after the Thor shot (first version too close to Pale) — new values not seen on hardware;
+  Custom palette, OLED, Light Yellow not seen on hardware.
+- Orbit Deck fix: unit test only, no 60 fps capture.
+- Green Core and Card binder popups not seen on hardware; rapid A/B/A, Lite, touch, compact / dual-screen sizes for all new scenes.
+- **P3 physical media realism** (generated GB / GBC cartridges vs real scans): audited the path (`CartShells.frontFor` / `CustomCarts`),
+  NOT changed.
+- **P6 ES-DE import**: NOT STARTED (plan in Update 420 below stands).
+- **KONKR (BW0306N230000845, GT78-VN, Android 12 / SDK 31, arm64, maker ARBOR)**, read-only diagnosis: the FULL 0.6.64 APK
+  (versionCode 71, with `ShelfNotificationListener`) IS installed (installer = adb/none, updated 30 Oct 15:16) and notification
+  access is granted; Play Protect verification is on (`package_verifier_user_consent=1`). So the full build installs fine through ADB;
+  the failure the owner sees must be on the on-device installer path (file manager → package installer → Play Protect scan). Needs the
+  exact on-screen message to go further (no logs of the failed attempt left). Nothing was installed or changed on the KONKR.
+- No release.
+
+## Files to copy (already copied to app/ by sync_sources)
+src_copy: `ui/WinScenesMore.kt` (new), `ui/ChanPalette.kt` (new), `ui/WinScenes.kt`, `ui/WinScenesWii.kt`, `ui/GameWindow.kt`,
+`ui/LauncherScreen.kt`, `ui/QuickSettings.kt`, `ui/SettingsDialog.kt`, `ui/StyleCardboardBox.kt`, `ui/StyleSpotlight.kt`,
+`ui/StyleConsoleHomes.kt`, `ui/StyleHomeSettings.kt`, `ui/PlayerSkins.kt`, `ui/StyleOrbitDeck.kt`, `data/Features.kt`.
+project_copy: tests `Popup421Test`, `ChanPalette421Test`, `OrbitSpin421Test`, `Pickup400Test`; `.gitignore`; `docs/POPUP_AUDIT_421.md`.
+
 ## Wii Channel palettes + settings — NOT IMPLEMENTED
 
 User confirmed v0.6.64 contains no new Wii colors.
