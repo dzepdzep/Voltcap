@@ -1,3 +1,26 @@
+# Update 424 (1 Nov 2026) — Cardboard box: solid cases drawn through the box's camera, no overlaps, no wash; boxes as deep as their rows (NOT released)
+
+## Done
+- **Overlaps fixed at the cause** (`StyleCardboardBox.kt` BoxCase, `boxCaseFit`): Case3D looks from 3.4 case-heights away, so a case standing
+  spine-on was drawn 1 / q bigger than its slot (DVD case +12 %, N64 box +26 %) — neighbours were painted over each other and long cases
+  reached toward the next row. Its room is now q of the slot, so its spine is exactly the slot (packing was right; the drawing was not).
+- **Resting cases are solid blocks** (`BoxCaseDraw`): drawn through the box's own camera — the spine picture exactly on the slot's top, the
+  end and the side that face the camera going down to the floor in true perspective (the front cover on cases right of the middle, the
+  shell's own colour from its spine picture on the others), lit from the upper left, darker toward the floor, the existing per-case
+  contact shadow now at the foot of a real end face (the "stepped shadows" under floating spines are gone). Draw order: the case nearer
+  the middle in front (correct occlusion); focus no longer changes the order. Case3D takes over the moment the case lifts (≈70 ms
+  cross-fade, same size and place) for the pull-out / turn / return.
+- **No wash**: unselected cases are no longer darkened (shade 0), the warm cream sheen over the selected case's art is gone; selection is
+  a fine neutral white edge with a hairline dark keyline.
+- **Box depth** (`BoxRows.depthFor` / `laneFor`): a two-row box is as deep as its two rows of the category's longest case (the DVD box
+  stays 414 mm); an N64 / Game Boy box no longer has a bare floor between two short rows.
+- Tests: `BoxSolid424Test` (no overlaps / wall / row intrusions for 1–140 mixed games in 1–3 rows; Case3D fit; no wash),
+  `BoxRows400Test` updated (depth by lane).
+
+## Checked (Thor, real library, preview mode)
+- All, N64, PS2, Game Boy, DS boxes: no overlapping cases, ends and sides visible, art colours untouched. Pull-out (screenrecord at
+  30 fps): the case rises from its slot and turns without a blank frame; return lands in the slot.
+
 # Update 423 (1 Nov 2026) — visual QA of all 53 layouts, 53 new layout previews, demo library, window keys wrap (NOT released)
 
 ## Done

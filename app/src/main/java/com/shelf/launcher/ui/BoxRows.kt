@@ -33,13 +33,15 @@ internal object BoxRows {
 
     fun gapFor(rows: Int): Float = when (rows) { 1 -> 0f; 2 -> BOX_ROW_GAP; else -> GAP_THREE }
 
-    /** Inside depth of a [rows]-row box for lanes [laneMm] long (two rows: the fixed two-DVD box). */
-    fun depthFor(rows: Int, laneMm: Float): Float =
-        if (rows == 2) BOX_LEN * 2 + BOX_ROW_GAP + BOX_MARGIN * 2
-        else rows * laneMm + (rows - 1) * gapFor(rows) + BOX_MARGIN * 2
+    /**
+     * Inside depth of a [rows]-row box for lanes [laneMm] long. (Update 424, owner: "excessive empty space": a box of N64 or Game Boy
+     * boxes was the two-DVD box, its floor bare between two short rows; every box is now as deep as its rows — the two-DVD box
+     * still for DVD-size cases.)
+     */
+    fun depthFor(rows: Int, laneMm: Float): Float = rows * laneMm + (rows - 1) * gapFor(rows) + BOX_MARGIN * 2
 
-    /** The lane a [rows]-row box is drawn with: two rows keep the DVD lane; the others the category's longest case. */
-    fun laneFor(rows: Int, plan: Plan): Float = if (rows == 2) BOX_LEN else plan.lane.coerceIn(90f, BOX_LEN)
+    /** The lane a box is drawn with: the category's longest case (a DVD case: the classic two-DVD box). */
+    fun laneFor(rows: Int, plan: Plan): Float = plan.lane.coerceIn(90f, BOX_LEN)
 
     /** Whether [rows] rows of lanes [laneMm] long fit a real storage box. */
     fun fitsDepth(rows: Int, laneMm: Float): Boolean = laneMm <= BOX_LEN && depthFor(rows, laneMm) <= MAX_DEPTH_MM + 0.01f

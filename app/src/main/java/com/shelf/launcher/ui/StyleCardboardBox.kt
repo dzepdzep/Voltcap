@@ -929,7 +929,8 @@ private fun BoxCase(
     var wanted by remember(k) { mutableStateOf(k in BoxReady.faces) }
     val faces = wanted || on || pulled || kotlin.math.abs(index - c.focus) <= 2
     LaunchedEffect(faces) { if (faces) { wanted = true; BoxReady.faces.add(k) } }
-    val dim by animateFloatAsState(if (on) 0f else 0.14f, if (animate) tween((220 / speed).toInt()) else tween(0), label = "boxDim")
+    // Update 424 (owner: "an artificial dark / brown wash over the cases"): no dimming of the cases you are not on — every case keeps
+    // its own colours; the one you are on is marked by a fine neutral edge only.
     val flip by animateFloatAsState(if (flippedNow) 1f else 0f, if (animate) tween((520 / speed).toInt(), delayMillis = (500 / speed).toInt()) else tween(0), label = "boxFlip")
     var warm by remember(k) { mutableStateOf(false) }
     LaunchedEffect(on) { if (on) { kotlinx.coroutines.delay(220); warm = true } else warm = false }
@@ -945,11 +946,27 @@ private fun BoxCase(
     val aspect = remember(k) { case3dAspect(g, false) }
     val outMm = (cam.wallH - z + 150f) * liftK
     val caseLenPx = bottom - top
+    // Update 424 (owner screenshots: cases overlapping, poking into the next row): Case3D draws with its own camera 3.4 case-heights
+    // away, so a case standing spine-on came out 1 / q bigger than its slot (a DVD case 12 % wider and longer, an N64 box 26 %): the
+    // neighbours were drawn over each other. Its room is q of the slot, so the spine it draws is exactly the slot again (and the flight
+    // out of the box starts from that same size).
+    val q = boxCaseFit(aspect)
     val caseW = caseLenPx * aspect
     val cxPx = (left + right) / 2f; val cyPx = (top + bottom) / 2f
+    // Update 424: resting, the case is drawn through the box's own camera (top, the side and end that face the camera, contact
+    // shadow); Case3D takes over the moment it lifts (a short cross-fade, same size and place).
+    var spineBmp by remember(k) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val towardRight = (sl.x0 + sl.x1) / 2f > 0f
+    val sideX = if (towardRight) sl.x0 else sl.x1
+    val sidePx = kotlin.math.abs(cam.sx(sideX, z) - cam.sx(sideX, 0f))
+    val cover = c.cover(g)
+    val sideCover = rememberSoftBitmap(if (towardRight && sidePx > 3f) cover else null, 320, trim = true)
+    val toneArgb = BoxTones.map[k]
+    // The case nearer the middle is in front of the one beside it, toward the wall (looking down from above the middle).
+    val zRest = 1f - (kotlin.math.abs((sl.x0 + sl.x1) / 2f) / (cam.wMm / 2f)).coerceIn(0f, 1f) * 0.9f
     Box(
         Modifier.offset(x0, y0).size(wDp, hDp)
-            .zIndex(if (rise.value > 0.001f) 5f else if (on) 1f else 0f)
+            .zIndex(if (rise.value > 0.001f) 5f else zRest)
             .graphicsLayer { alpha = if (whole || rise.value > 0.001f) 1f else 0f }
             .graphicsLayer {
                 val r = rise.value
@@ -972,6 +989,13 @@ private fun BoxCase(
             .pointerInput(index) { detectTapGestures { if (flip > 0.5f) BoxNav.flipped = null else onTap() } },
         contentAlignment = Alignment.Center
     ) {
+        val restA = if (spineBmp == null) 0f else (1f - rise.value * 14f).coerceIn(0f, 1f)
+        // The resting case, through the box's camera.
+        if (restA > 0.001f) Canvas(Modifier.matchParentSize().graphicsLayer { alpha = restA }) {
+            drawIntoCanvas { cv ->
+                BoxCaseDraw.draw(cv.nativeCanvas, cam, sl, left, top, spineBmp!!, sideCover, toneArgb, g.platform, towardRight, sideX)
+            }
+        }
         // Its shadow on the cases below (only while it is up: nothing is drawn for a resting case).
         Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)) {
             val r = smoothUp(rise.value)
@@ -987,26 +1011,27 @@ private fun BoxCase(
                     Size(sw + 2f * grow, size.height + 2f * grow), androidx.compose.ui.geometry.CornerRadius(8f + grow))
             }
         }
-        val cover = c.cover(g)
         val back = remember(k, physical) { defaultCaseBack(g, physical, cover, aspect) }
-        Box(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp).gameOrigin(k, on)) {
+        Box(Modifier.requiredSize(with(density) { (caseW * q).toDp() }, with(density) { (caseLenPx * q).toDp() }).gameOrigin(k, on)
+            .graphicsLayer { alpha = 1f - restA }) {
             Case3D(g, cover, physical, 0f, aspect, Modifier.fillMaxSize(), pitch = -3f * tilt,
-                yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, shadeOf = { dim },
-                realFront = true, back = back, fill = 1f, onReady = { whole = true; onReady() }, readyNeedsFront = false, faces = faces)
+                yawOf = { 90f - BoxNav.OUT_TURN * smoothTurn(rise.value) - 55f * flip }, shadeOf = { 0f },
+                realFront = true, back = back, fill = 1f, onReady = { whole = true; onReady() }, readyNeedsFront = false, faces = faces,
+                onSpine = { b -> spineBmp = b; if (BoxTones.map[k] == null) BoxTones.map[k] = BoxCaseDraw.average(b) })
         }
-        // Update 417: a thin lit edge on the case you are on (cream, dark keyline outside): visible on black / dark-blue spines and
-        // light ones. Follows the case outline (slot while resting, its width as it turns out); no fill, no glow, nothing on neighbours.
+        // Update 417 / 424: the case you are on: a fine neutral lit edge round its top (no warm sheen over its art, no fill), visible
+        // on black and on white spines alike. Follows the case outline (slot while resting, its width as it turns out).
         val edge by animateFloatAsState(if (on) 1f else 0f, if (animate) tween((180 / speed).toInt()) else tween(0), label = "boxEdge")
         if (edge > 0.01f) Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)) {
-            val w = (right - left) + (caseW - (right - left)) * smoothTurn(rise.value)
+            val w = (right - left) + (caseW * q - (right - left)) * smoothTurn(rise.value)
             val a = edge * (1f - 0.35f * smoothUp(rise.value))
             val px = 1.dp.toPx()
             val tl = Offset((size.width - w) / 2f, 0f)
-            val cr = androidx.compose.ui.geometry.CornerRadius(2.5f * px)
-            // (Update 421: no dark keyline — light falling on the case you're on: a warm sheen down its face and a fine lit edge.)
-            drawRoundRect(Brush.verticalGradient(listOf(Color(0xFFFFF3D2).copy(alpha = 0.16f * a), Color.Transparent)), tl, Size(w, size.height * 0.6f), cr)
-            drawRoundRect(Color(0xFFFFF3D2).copy(alpha = 0.7f * a), tl + Offset(0.5f * px, 0.5f * px), Size(w - px, size.height - px), cr,
+            val cr = androidx.compose.ui.geometry.CornerRadius(2f * px)
+            drawRoundRect(Color.Black.copy(alpha = 0.35f * a), tl - Offset(px, px), Size(w + 2f * px, size.height + 2f * px), cr,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(px))
+            drawRoundRect(Color.White.copy(alpha = 0.75f * a), tl, Size(w, size.height), cr,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f * px))
         }
     }
     if (warm && flip <= 0.02f && !pulled) PrewarmInspectCase(g, c.state, Modifier.offset(x0, y0).size(with(density) { caseW.toDp() }, hDp))
@@ -1052,3 +1077,114 @@ internal fun CardboardBoxSettings() {
 
 /** Update 402: the yaw (degrees from facing you) a case has when A pulls it: spine-on (90) in its slot, or as turned to its cover with Y. */
 internal fun boxPickStartYaw(turnedToCover: Boolean): Float = if (turnedToCover) 90f - BoxNav.OUT_TURN - 55f else 90f
+
+/**
+ * Update 424: how much of its room a Case3D standing spine-on may take so its spine comes out exactly the room's size: Case3D
+ * looks from 3.4 case-heights away, and the spine of a case [aspect] wide (front width / height) stands half a front width nearer
+ * that eye than the case's middle — drawn 3.4 / (3.4 − aspect / 2) times bigger.
+ */
+internal fun boxCaseFit(aspect: Float): Float = (1f - aspect.coerceIn(0.3f, 2f) / 6.8f).coerceIn(0.6f, 1f)
+
+/**
+ * Update 424 (owner screenshots: cases overlapping, floating spines with stepped shadows, hollow-looking sides): a resting case in
+ * the Cardboard box drawn through the box's own camera — a solid block standing on the floor. Its top is the spine picture, exactly
+ * its slot; the side that faces the camera (the front cover on the cases right of the middle, the back's plain shell on the left)
+ * and the end facing the camera go down to the floor in the box's perspective, lit from the upper left, darker toward the floor;
+ * a soft contact shadow where it meets the floor. Nothing over the artwork's own colours.
+ */
+internal object BoxCaseDraw {
+    private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+    private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+    private val path = android.graphics.Path()
+    private val matrix = android.graphics.Matrix()
+    private val src = FloatArray(8)
+    private val dst = FloatArray(8)
+    private val rect = android.graphics.RectF()
+
+    /** The spine picture's average colour (a coarse grid of samples), for the case's own body colour on its sides and ends. */
+    fun average(b: android.graphics.Bitmap): Int {
+        if (b.width < 1 || b.height < 1) return 0xFF808080.toInt()
+        var r = 0L; var g = 0L; var bl = 0L; var n = 0
+        for (i in 0 until 6) for (j in 0 until 12) {
+            val p = runCatching { b.getPixel(((i + 0.5f) * b.width / 6f).toInt().coerceIn(0, b.width - 1), ((j + 0.5f) * b.height / 12f).toInt().coerceIn(0, b.height - 1)) }.getOrNull() ?: continue
+            r += (p shr 16) and 0xFF; g += (p shr 8) and 0xFF; bl += p and 0xFF; n++
+        }
+        if (n == 0) return 0xFF808080.toInt()
+        return (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
+    }
+
+    private fun scale(argb: Int, k: Float): Int {
+        val r = (((argb shr 16) and 0xFF) * k).toInt().coerceIn(0, 255)
+        val g = (((argb shr 8) and 0xFF) * k).toInt().coerceIn(0, 255)
+        val b = ((argb and 0xFF) * k).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
+    private fun quad(c: android.graphics.Canvas, p: FloatArray, color: Int, shadeTop: Float, shadeBottom: Float) {
+        path.reset(); path.moveTo(p[0], p[1]); path.lineTo(p[2], p[3]); path.lineTo(p[4], p[5]); path.lineTo(p[6], p[7]); path.close()
+        fill.shader = null; fill.color = color; c.drawPath(path, fill)
+        // Less light down toward the floor (between the cases): top edge = p[0..3], floor edge = p[4..7].
+        val ty = (p[1] + p[3]) / 2f; val tx = (p[0] + p[2]) / 2f; val by = (p[5] + p[7]) / 2f; val bx = (p[4] + p[6]) / 2f
+        fill.shader = android.graphics.LinearGradient(tx, ty, bx, by, android.graphics.Color.argb((shadeTop * 255).toInt(), 0, 0, 0),
+            android.graphics.Color.argb((shadeBottom * 255).toInt(), 0, 0, 0), android.graphics.Shader.TileMode.CLAMP)
+        c.drawPath(path, fill); fill.shader = null
+    }
+
+    /** Draws the case of slot [s] (screen px relative to ([ox], [oy]), the top-left of its top). */
+    fun draw(
+        c: android.graphics.Canvas, cam: BoxCam, s: BoxSlot, ox: Float, oy: Float, spine: android.graphics.Bitmap,
+        cover: android.graphics.Bitmap?, tone: Int?, platform: String?, towardRight: Boolean, sideX: Float
+    ) {
+        val z = s.stand
+        fun px(x: Float, zz: Float) = cam.sx(x, zz) - ox
+        fun py(y: Float, zz: Float) = cam.sy(y, zz) - oy
+        // The case's own colour: its spine's, toward the console's material (plastic grey / cardboard) a little.
+        val (lit, dark) = boxSideTone(platform, tone)
+        val body = android.graphics.Color.argb(255, (lit.red * 255).toInt(), (lit.green * 255).toInt(), (lit.blue * 255).toInt())
+        val bodyDark = android.graphics.Color.argb(255, (dark.red * 255).toInt(), (dark.green * 255).toInt(), (dark.blue * 255).toInt())
+        // The end facing the camera (the back row's front end, the front row's back end; none for a case under the camera).
+        val endY = if (s.y1 <= cam.yc) s.y1 else if (s.y0 >= cam.yc) s.y0 else Float.NaN
+        if (!endY.isNaN()) {
+            dst[0] = px(s.x0, z); dst[1] = py(endY, z); dst[2] = px(s.x1, z); dst[3] = py(endY, z)
+            dst[4] = px(s.x1, 0f); dst[5] = py(endY, 0f); dst[6] = px(s.x0, 0f); dst[7] = py(endY, 0f)
+            // (Light from the upper left: an end facing the back of the box is lit, one facing the front is in shade.)
+            val facesFront = endY == s.y1
+            quad(c, dst, if (facesFront) scale(body, 0.78f) else scale(body, 0.98f), 0.02f, 0.42f)
+            // Its top edge catching the light.
+            fill.color = android.graphics.Color.argb(46, 255, 255, 255); fill.strokeWidth = 1f
+            c.drawLine(dst[0], dst[1], dst[2], dst[3], fill)
+        }
+        // The side facing the camera: down to the floor along the case's whole length.
+        dst[0] = px(sideX, z); dst[1] = py(s.y0, z); dst[2] = px(sideX, z); dst[3] = py(s.y1, z)
+        dst[4] = px(sideX, 0f); dst[5] = py(s.y1, 0f); dst[6] = px(sideX, 0f); dst[7] = py(s.y0, 0f)
+        if (kotlin.math.abs(dst[0] - dst[6]) > 0.6f) {
+            if (towardRight && cover != null) {
+                // Its front cover, standing on its long edge: the spine edge up, the picture's top toward the back wall.
+                src[0] = 0f; src[1] = 0f; src[2] = 0f; src[3] = cover.height.toFloat()
+                src[4] = cover.width.toFloat(); src[5] = cover.height.toFloat(); src[6] = cover.width.toFloat(); src[7] = 0f
+                matrix.reset()
+                if (matrix.setPolyToPoly(src, 0, dst, 0, 4)) {
+                    paint.colorFilter = android.graphics.LightingColorFilter(android.graphics.Color.rgb(222, 222, 222), 0)
+                    c.save(); c.concat(matrix); c.drawBitmap(cover, 0f, 0f, paint); c.restore()
+                    paint.colorFilter = null
+                }
+                // (Shade toward the floor over the picture.)
+                val tmp = floatArrayOf(dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7])
+                path.reset(); path.moveTo(tmp[0], tmp[1]); path.lineTo(tmp[2], tmp[3]); path.lineTo(tmp[4], tmp[5]); path.lineTo(tmp[6], tmp[7]); path.close()
+                fill.shader = android.graphics.LinearGradient(tmp[0], tmp[1], tmp[6], tmp[7], android.graphics.Color.argb(0, 0, 0, 0),
+                    android.graphics.Color.argb(110, 0, 0, 0), android.graphics.Shader.TileMode.CLAMP)
+                c.drawPath(path, fill); fill.shader = null
+            } else {
+                // The other side (the back) in the shade, the shell's own colour.
+                quad(c, dst, if (towardRight) body else scale(bodyDark, 1.25f), 0.04f, 0.45f)
+            }
+        }
+        // The top: the spine picture, exactly the slot.
+        rect.set(px(s.x0, z), py(s.y0, z), px(s.x1, z), py(s.y1, z))
+        c.drawBitmap(spine, null, rect, paint)
+        // A fine bevel: the lit long edge toward the light, a darker one away from it, the end toward the camera a touch darker.
+        fill.strokeWidth = 1f
+        fill.color = android.graphics.Color.argb(40, 255, 255, 255); c.drawLine(rect.left + 0.5f, rect.top, rect.left + 0.5f, rect.bottom, fill)
+        fill.color = android.graphics.Color.argb(60, 0, 0, 0); c.drawLine(rect.right - 0.5f, rect.top, rect.right - 0.5f, rect.bottom, fill)
+    }
+}

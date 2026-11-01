@@ -23,7 +23,9 @@ class BoxRows400Test {
         val cam = boxCam(W, H, 0.5f, 1f)
         assertEquals(2, cam.rows)
         assertEquals(414f, cam.dMm, 0.001f)
-        assertEquals(414f, BoxRows.depthFor(2, 120f), 0.001f)
+        assertEquals(414f, BoxRows.depthFor(2, BOX_LEN), 0.001f)
+        // (Update 424: a box of shorter cases is as deep as its two rows, no bare floor between them.)
+        assertEquals(2 * 120f + BOX_ROW_GAP + 2 * BOX_MARGIN, BoxRows.depthFor(2, 120f), 0.001f)
     }
 
     @Test fun compactCasesFitThreeRowsDvdCasesDoNot() {

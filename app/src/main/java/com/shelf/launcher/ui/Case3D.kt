@@ -55,7 +55,9 @@ internal fun Case3D(
     /** Update 414: [onReady] waits for the front picture too (false: the spine alone, for a case standing edge-on in the Cardboard box). */
     readyNeedsFront: Boolean = true,
     /** Update 414: false = the front and back pictures are not decoded yet (a case standing edge-on in a crowded box shows its spine only); true once it is wanted. */
-    faces: Boolean = true
+    faces: Boolean = true,
+    /** Update 424: the spine picture once it is made (the Cardboard box draws a resting case's top itself, through its own camera). */
+    onSpine: ((android.graphics.Bitmap) -> Unit)? = null
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -228,6 +230,7 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING
             else madeConsoleSpine ?: SpineCache.WAITING
     }
+    if (onSpine != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) { onSpine(spine) }
     if (onReady != null) {
         val wholeNow = spine !== SpineCache.WAITING && (!readyNeedsFront || (cover == null && ownFront == null) || front != null)
         androidx.compose.runtime.LaunchedEffect(wholeNow) { if (wholeNow) onReady() }
