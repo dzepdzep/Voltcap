@@ -1,3 +1,12 @@
+# Update 436 (1 Nov 2026) — v0.6.65 final readiness (NOT published)
+
+Round shortcuts (Features snapshot saved → `shortcuts_open=true` → 4 positions × 2 layouts per device → snapshot restored; logs "snapshot
+restored" on both): visible and clear of the title / row on the Odin's Arctic; on the GT78's Disc station the round row covers the disc panel's
+bottom label and sits beside the action row (D131); Odin Classic and GT78 Hub showed no round buttons; the corner choice did not move the row on
+Arctic / Disc station. Compat APK: NOT built — no PowerShell / shell on the PC is available to this session (only the restricted Gradle tool);
+owner command: `cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; .\gradlew.bat assembleCompat` → `app\build\outputs\apk\compat\`.
+Devices: GT78 QA files removed (hooks, snapshot), stay-awake off; Odin hooks file as found; user settings restored by the snapshot.
+
 # Update 435 (1 Nov 2026) — v0.6.65 final checks (NOT published)
 
 Owner-verified: v0.6.64 latest, QA workflow green on 598c338. Odin popup smoke (`.shots/435`): Arctic and Cross menu — window opens on the

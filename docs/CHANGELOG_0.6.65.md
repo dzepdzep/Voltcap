@@ -21,4 +21,5 @@ Changes since 0.6.64 (updates 423–434). Only items verified on a device or by 
 ## Known limitations
 - Hero layout shortens names / summary with "…" on small screens; Disc station's game window shows a generic disc; the Cardboard box looks
   empty with only two games; on Android 12 some animated themes fall back to a dark frame.
-- Popup transitions, dual-screen (Thor) and round-shortcut positions were not re-verified for this build.
+- Popup transitions and dual-screen (Thor) were not re-verified for this build. Round shortcuts: on small screens in Disc station the open
+  shortcut row can cover the disc panel's bottom label (the corner setting does not move it there).

@@ -1527,6 +1527,15 @@
    "status": "open",
    "found": "2026-11-01 update 434 Odin P434_DISCS",
    "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic."
+  },
+  {
+   "id": "D131",
+   "title": "Round shortcuts (tile shortcuts, open): on the GT78 Disc station the row of round buttons sits over the disc panel's bottom ('DISC LOADED') / beside the action row; the requested corner (TOP_LEFT / TOP_RIGHT / BOTTOM_*) did not change the placement on Disc station or Arctic",
+   "rule": "OVERLAP",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-01 update 436 (.shots/436, voltcap_test_shortcuts + shortcuts_open with snapshot save / restore)",
+   "note": "Odin Arctic: the row sits top-left above the title, no overlap. Odin Classic and the GT78 Hub home: no round buttons shown in the captures. Optional feature (off by default); release limitation, not a blocker."
   }
  ]
 }
