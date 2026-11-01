@@ -21,22 +21,26 @@
   focused window" (screen off / locked) no longer count towards safe mode; a safe-mode reset now keeps a copy of what it clears and can
   be undone.
 
-## QA incident (my QA, owner please read)
-- During the Thor popup sweep the screen went off between steps; keys sent then made Android raise repeated "no focused window" ANRs,
-  Voltcap restarted into **safe mode** and — because it "crashed again in safe mode" — the old CrashGuard **cleared the look settings
-  (`appearance`, `library_apps`, `categories`, `screensaver`)**. Evidence: before the sweep the Thor showed the Pocket camera layout,
-  after it the default Voltcap row. The Features settings and categories were put back from the QA snapshot; the `appearance` /
-  `library_apps` / `screensaver` values could NOT be restored (no copy existed then; no settings-sync file on the Thor). If you have a
-  Google Drive backup (Settings › Backup) it can bring them back. The code fix above stops both the false trigger and the silent loss.
-  QA scripts now wake the screen before each step.
+## QA incident (my QA)
+- During the Thor popup sweep the screen went off between steps; keys sent then made Android raise repeated "no focused window" ANRs and
+  Voltcap restarted into **safe mode**. I first reported that the look settings had been reset — that was wrong: the Pocket classic screen I
+  compared with is the layout assigned to "Continue playing", and it, the GameCube category's Voltcap row and the categories were all
+  still in place afterwards. Features settings were also restored from the QA snapshot. The CrashGuard fix above stops the false trigger
+  (and keeps a copy should a reset ever happen). QA scripts now wake the screen before each step.
 
 ## Checked (actual)
 - `testDebugUnitTest` EXIT 0 (new `BoxBalance422Test`, `EsdeMedia422Test`; `Popup421Test` extended; `Layouts330Test` updated).
   `static_checks.py` [PASS]. Release build installed on Thor 3140972f; all 14 new popups screenshotted open (`.shots/422/q422/`, not
   committed): Play first, keys reachable.
 
+- **Thor, later the same update:** ES-DE artwork — found `/storage/emulated/0/ES-DE/downloaded_media` by itself, scan matched 2034 games,
+  106 unmatched (Switch titles, hacks — listed correctly), index kept across a restart; Disconnect works; no file in ES-DE's folder
+  changed (find -newer: none). Left disconnected (as before the test). Wii palettes Light Blue / Light Yellow / OLED Black on the grid,
+  bar and preview window: PASS (clearly distinct, text readable). Orbit deck (Game Boy category, cartridges): 6 s capture at ~53 fps
+  with 8 steps right — no single-frame flash, no blank / luminance-drop frame (`tools`-free check: A-B-A difference + mean luminance).
+
 ## NOT TESTED
-- ES-DE on hardware (no ES-DE media on the Thor checked yet), Box balance and cartridge lighting on hardware (in the build installed for
+- Orbit deck with spinning discs (disc categories) on hardware, Box balance and cartridge lighting on hardware (in the build installed for
   the popup sweep, not looked at), rapid A/B/A / Lite / touch / compact screens for the new popups, Green Core / Card binder popups.
 
 ## Files (synced via src_copy / project_copy)
