@@ -34,8 +34,17 @@
 - Checked on the Thor with the real library (Pokémon Silver): Shelf, Case stacks, Cover details, Box, Card binder, Green Core, Disc
   station, Twin desk, Channel grid, Art library windows; Settings › Home header.
 
+## Compact screen pass (Thor at 1280×720, 320 dpi; restored to its own size / 389 dpi after)
+- Captured Box, Art library, Channel grid, Game shelf, Cube, Tile home, Cross menu, Pocket Quest, Card binder, Green Core, Twin desk,
+  Magazine (home + window, real library). Fixed: Card binder window — the art window at full width pushed the keys off the card (art now
+  takes what the keys leave; the card is wider on short screens); Twin hinge on short screens gives the controls more room (facts were
+  only labels); Magazine headline and Cube's game name wrapped / stepped down instead of "…"; Cube's info line wraps.
+- Seen, not changed: Pocket Quest home clips its long info line at 1280×720 (no "…"); Cube's button hints touch the edge.
+- **Orbit deck** rapid navigation (12 × ▶ at 120 ms, 6 × ◀ at 80 ms, screenrecord 30 fps, 346 frames, real art): no frame-to-frame
+  luminance flash (min 27 / max 34 / median 28), discs move and titles cross-fade without blank frames.
+
 ## NOT done yet in 424
-- Compact 1280×720 / second screen / Lite / touch passes; Orbit rapid navigation; Wii Custom colours; Recap physical-media options.
+- Second screen per layout, Lite, touch passes; Wii Custom colours; Recap physical-media options.
 - Generated cases / discs: not reworked in this pass (Game Boy family only). TV room picture: unchanged (owner's art; concern noted).
 
 # Update 423 (1 Nov 2026) — visual QA of all 53 layouts, 53 new layout previews, demo library, window keys wrap (NOT released)

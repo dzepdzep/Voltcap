@@ -606,8 +606,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                 Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
                 Text(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
-                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
-                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = 3,
+                    // (Update 424, rule 11: the headline wraps — "POKEMON SILVER VERSION (GB CO…" at 1280×720 — and shrinks a step when long.)
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = if (compact) 14.sp else 18.sp, maxFontSize = if (compact) 20.sp else 26.sp))
+                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                 if (ctx.page == WinPage.MAIN) {
                     Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {

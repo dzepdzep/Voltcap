@@ -196,7 +196,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
 @Composable
 internal fun CardBack(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 520.dp)
-    val w = minOf(ctx.maxW, h * 0.74f).coerceAtLeast(minOf(ctx.maxW, 280.dp))
+    // (Update 424: on a short screen the card is a little wider than a card, so its keys take fewer lines and its art keeps room.)
+    val w = minOf(ctx.maxW, h * (if (h < 420.dp) 1.3f else 0.74f)).coerceAtLeast(minOf(ctx.maxW, 280.dp))
     val foil = Brush.linearGradient(listOf(Color(0xFFE9C46A), Color(0xFFFFF1C1), Color(0xFFC79A3B), Color(0xFFFFE08A)))
     val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
     Box(Modifier.width(w).height(h).graphicsLayer {
@@ -214,7 +215,9 @@ internal fun CardBack(ctx: WinSceneCtx) {
                 if (ctx.total > 0) Text("${ctx.earned}/${ctx.total}", color = Color(0xFFB0302A), fontSize = 13.sp, fontWeight = FontWeight.Black)
             }
             // The art window, the shape of the card's picture box; the art whole inside it.
-            Box(Modifier.fillMaxWidth().aspectRatio(1.55f).padding(vertical = 6.dp).border(3.dp, foil, RoundedCornerShape(4.dp)).background(Color(0xFF26221C))) {
+            // (Update 424, compact 1280×720 on the Thor: the art window at the card's full width pushed the keys off the card's foot.
+            // It now takes the room the keys leave, its own shape kept.)
+            Box(Modifier.align(Alignment.CenterHorizontally).weight(1f, fill = false).aspectRatio(1.55f).padding(vertical = 6.dp).border(3.dp, foil, RoundedCornerShape(4.dp)).background(Color(0xFF26221C))) {
                 (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize().padding(3.dp), contentScale = ContentScale.Crop) }
             }
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -428,7 +431,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
     }) {
         // Upper half: what the top screen shows (the art, whole).
-        Box(Modifier.weight(0.36f).fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(Color(0xFF101318))) {
+        Box(Modifier.weight(if (h < 420.dp) 0.26f else 0.36f).fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(Color(0xFF101318))) {
             val art = ctx.wide ?: ctx.backdrop
             if (art != null) {
                 AsyncImage(rememberStyleArtRequest(art), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.35f)
@@ -440,7 +443,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
         // Lower half: the touch screen's controls.
         // (Update 423: the keys wrap onto three lines now, so the controls half is the bigger one — at 0.54 the facts were
         // squeezed to their labels only.)
-        Column(Modifier.weight(0.64f).fillMaxWidth().clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)).background(Color(0xFF1A1E25)).padding(12.dp)) {
+        Column(Modifier.weight(if (h < 420.dp) 0.74f else 0.64f).fillMaxWidth().clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)).background(Color(0xFF1A1E25)).padding(12.dp)) {
             StableFullText(ctx.name, color = Color.White, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
             Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))

@@ -481,8 +481,10 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
             val g = c.game
             if (g != null) {
                 Text(
-                    titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
+                    // (Update 424, rule 11: at 1280×720 "Pokemon Silver Version (G…" — the name now shrinks a step, then wraps.)
+                    titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 19.sp),
+                    textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
                     modifier = Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
                 )
                 val meta = c.state.metadata[g.stableKey]
@@ -492,7 +494,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                     meta?.genres?.firstOrNull()?.let { add(it) }
                     add(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
                 }.joinToString("  ·  ")
-                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     HubHint("A", "Open") { live.actions.open() }
