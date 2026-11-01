@@ -858,8 +858,10 @@ internal fun overlayText(cfg: PerfConfig, s: PerfSnapshot): String {
     val lines = mutableListOf<String>()
     if (cfg.fps || cfg.frameTime) {
         val parts = mutableListOf<String>()
-        if (cfg.fps) parts += s.fps?.let { "FPS ${Math.round(it)}" } ?: "FPS n/a"
-        if (cfg.frameTime) parts += s.frameMs?.let { "%.1f ms".format(it) } ?: "n/a ms"
+        // (Update 430: the screen's refresh rate (no game recognised) says so — it is never shown as the game's FPS.)
+        val screen = s.fpsKind == com.shelf.launcher.data.perf.FpsKind.SCREEN
+        if (cfg.fps) parts += s.fps?.let { if (screen) "Screen ${Math.round(it)} Hz" else "FPS ${Math.round(it)}" } ?: "FPS n/a"
+        if (cfg.frameTime) parts += s.frameMs?.takeIf { !screen }?.let { "%.1f ms".format(it) } ?: "n/a ms"
         lines += parts.joinToString(" · ")
     }
     if (cfg.cpu) {

@@ -97,10 +97,12 @@ class AutoTdp429Test {
         val out = run(c, 120, 1f, { _, _ -> 60f }, display = true, hz = 60f)
         assertEquals(AutoTdpController.UNVERIFIED_FLOOR, out.last().first, 0.001f)
         assertEquals(TdpState.UNVERIFIED, c.state)
-        // Once it has shown a real dip (a loading screen), it follows frames and may go lower.
+        // (Update 430, review: one dip — a loading screen — is no longer proof that it follows the game's frames. 429 took it
+        // as proof and went to 0.35.)
         val d = ctl(target = 0)
         val out2 = run(d, 200, 1f, { _, i -> if (i in 10..12) 41f else 60f }, display = true, hz = 60f)
-        assertTrue("level ${out2.last().first}", out2.last().first < AutoTdpController.UNVERIFIED_FLOOR)
+        assertEquals(AutoTdpController.UNVERIFIED_FLOOR, out2.last().first, 0.001f)
+        assertTrue(!d.displayVerified)
     }
 
     @Test fun detectedTargetNeverExceedsTheRefreshRate() {
@@ -161,6 +163,85 @@ class AutoTdp429Test {
         assertEquals(0.5f, AutoTdpController.startLevel(0.4f), 0.0001f)
         assertEquals(1f, AutoTdpController.startLevel(0.97f), 0.0001f)
         assertEquals(AutoTdpController.MIN_LEVEL, AutoTdpController.startLevel(0.1f).coerceAtLeast(AutoTdpController.MIN_LEVEL), 0.0001f)
+    }
+
+    // ---- Update 430 (review): no / stale / misleading signals ----
+
+    @Test fun sustainedHighPowerWithoutFpsStopsAtTheSignalFloor() {
+        // 429 eased 0.02 a tick with no frame rate at all: 12 W for 2 min took it to 0.35 with nothing showing the cost.
+        val c = ctl()
+        val out = run(c, 120, 1f, { _, _ -> null }, { _, _ -> 12f })
+        assertEquals(AutoTdpController.UNVERIFIED_FLOOR, out.last().first, 0.001f)
+        assertEquals(TdpState.NO_SIGNAL, c.state)
+        // Already below the floor (a learned level): it isn't lowered further, nor raised.
+        val d = ctl()
+        assertEquals(0.5f, run(d, 60, 0.5f, { _, _ -> null }, { _, _ -> 12f }).last().first, 0.001f)
+    }
+
+    @Test fun sustainedHighPowerWithOnlyStaleFpsStopsAtTheSignalFloor() {
+        val c = ctl()
+        val out = run(c, 120, 1f, { _, _ -> 45f }, { _, _ -> 12f }, fresh = false)
+        assertEquals(AutoTdpController.UNVERIFIED_FLOOR, out.last().first, 0.001f)
+    }
+
+    @Test fun sustainedHighPowerWithAnUnprovedCounterStopsAtTheSignalFloor() {
+        // On target over budget the budget lowers 0.04 a tick — with a counter that may be counting refreshes, not past 0.6.
+        val c = ctl()
+        val out = run(c, 120, 1f, { _, _ -> 60f }, { _, _ -> 12f }, display = true, hz = 60f)
+        assertEquals(AutoTdpController.UNVERIFIED_FLOOR, out.last().first, 0.001f)
+        // A reliable reading (the game's layer) still lets the budget go below it.
+        val d = ctl()
+        assertTrue(run(d, 120, 1f, { _, _ -> 60f }, { _, _ -> 12f }).last().first < AutoTdpController.UNVERIFIED_FLOOR)
+    }
+
+    @Test fun aHeldMissTriggersNoRecoveryJump() {
+        // 429: a held 40 against 60 jumped the level up every tick for the 4 s hold (a stale value, not a new miss).
+        val c = ctl()
+        run(c, 6, 0.7f, { _, _ -> 60f })
+        val before = 0.7f
+        val out = run(c, 4, before, { _, _ -> 40f }, fresh = false)
+        out.forEach { assertEquals(before, it.first, 0.0001f) }
+        assertTrue(c.state != TdpState.RECOVERING)
+    }
+
+    @Test fun chanceDipsOfAMisleadingCounterAreNotProof() {
+        // A counter at the refresh rate with a one-tick dip every 15 s (system composition): never trusted, never below 0.6.
+        val c = ctl()
+        val out = run(c, 400, 1f, { _, i -> if (i % 15 == 14) 52f else 60f }, display = true, hz = 60f)
+        assertTrue(!c.displayVerified)
+        assertTrue("min ${out.minOf { it.first }}", out.minOf { it.first } >= AutoTdpController.UNVERIFIED_FLOOR - 0.001f)
+    }
+
+    @Test fun aLoadingCollapseIsNotProof() {
+        val c = ctl(target = 0)
+        run(c, 100, 1f, { _, i -> if (i in 30..37) 4f else 60f }, display = true, hz = 60f)
+        assertTrue(!c.displayVerified)
+    }
+
+    @Test fun aCounterThatMovesWithTheClocksIsTrusted() {
+        // fps = 85 × level on a panel counter: misses at the same level after AutoTDP's own steps, twice → proof.
+        val c = ctl()
+        run(c, 300, 1f, { l, _ -> minOf(60f, 85f * l) }, display = true, hz = 60f)
+        assertTrue(c.displayVerified)
+    }
+
+    @Test fun aSteadyCapIsProof() {
+        val c = ctl(target = 0)
+        run(c, 14, 1f, { _, i -> 30f + (i % 3) * 0.3f }, display = true, hz = 60f)
+        assertTrue(c.displayVerified)
+        // A steady loading screen at a few frames is not.
+        val d = ctl(target = 0)
+        run(d, 14, 1f, { _, _ -> 8f }, display = true, hz = 60f)
+        assertTrue(!d.displayVerified)
+    }
+
+    @Test fun screenRateIsNeverShownAsGameFps() {
+        val s = com.shelf.launcher.data.perf.PerfSnapshot(fps = 120f, frameMs = 8.3f, fpsKind = com.shelf.launcher.data.perf.FpsKind.SCREEN)
+        val text = com.shelf.launcher.ui.overlayText(com.shelf.launcher.data.perf.PerfConfig(), s)
+        assertTrue(text, !text.contains("FPS 120"))
+        assertTrue(text, text.contains("Screen 120 Hz"))
+        val src = java.io.File(listOf("src/main/java/com/shelf/launcher/device/tune/TuneService.kt", "app/src/main/java/com/shelf/launcher/device/tune/TuneService.kt").first { java.io.File(it).exists() }).readText()
+        assertTrue("tuner page fps only from game readings", src.contains("val shownFps = snap?.fps?.takeIf { lastFreshKind != null }"))
     }
 
     // ---- AutoTDP's own underclock ----

@@ -34,7 +34,9 @@ data class TunerStatus(
     /** (Update 237, #85: the underclock AutoTDP has stepped to right now, or null when it isn't AutoTDP's to move.) */
     val autoUnderclock: Underclock? = null,
     /** (Update 429) What AutoTDP is doing (power-limited, recovering, no signal…), null when it's off. */
-    val tdpState: TdpState? = null
+    val tdpState: TdpState? = null,
+    /** (Update 430) [fps] is the game's own layer reading or a panel counter that proved itself; false = shown as unverified. */
+    val fpsVerified: Boolean = true
 )
 
 /**
@@ -338,8 +340,8 @@ object Tuner {
         }
     }
 
-    fun updateLive(fps: Float?, target: Int?, powerW: Float?, tempC: Float?, fan: Int?, tdp: TdpState? = null) {
-        _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan, tdpState = tdp)
+    fun updateLive(fps: Float?, target: Int?, powerW: Float?, tempC: Float?, fan: Int?, tdp: TdpState? = null, fpsVerified: Boolean = true) {
+        _status.value = _status.value.copy(fps = fps, targetFps = target, powerW = powerW, tempC = tempC, fanPercent = fan, tdpState = tdp, fpsVerified = fpsVerified)
     }
 
     /** Update 201: when the handheld last put its own clocks back over the limits (elapsedRealtime), 0 = not yet. */

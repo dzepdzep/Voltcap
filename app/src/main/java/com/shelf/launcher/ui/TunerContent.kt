@@ -190,7 +190,7 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
         }
         Text(parts.joinToString(" · "), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         val live = listOfNotNull(
-            s.fps?.let { "${it.toInt()} fps" },
+            s.fps?.let { if (s.fpsVerified) "${it.toInt()} fps" else "${it.toInt()} fps (display counter, unverified)" },
             s.powerW?.let { "%.1f W".format(it) },
             s.tempC?.let { "${it.toInt()} °C" },
             s.fanPercent?.let { "fan $it %" }

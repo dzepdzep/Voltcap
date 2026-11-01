@@ -67,6 +67,7 @@ class TuneService : Service() {
     private suspend fun run() {
         var tick = 0
         var controller: AutoTdpController? = null
+        var lastFreshKind: com.shelf.launcher.data.perf.FpsKind? = null
         var controllerFor: TuneProfile? = null
         var integral = 0f
         var lastReassert = 0L
@@ -138,7 +139,14 @@ class TuneService : Service() {
             }
             // (Update 429: watts shown only on battery — plugged in, the battery current is the charge, not the draw.)
             val shownW = snap?.let { sn -> sn.powerW?.takeIf { sn.plugged == false && sn.charging != true } }
-            Tuner.updateLive(snap?.fps, target, shownW, temp, fan, tdpState)
+            // (Update 430: the tuner page shows only a game's frame rate — never the screen's refresh rate — and says when it
+            // comes from a panel counter that hasn't proved it follows the game's frames.)
+            val kind = snap?.fpsKind
+            if (kind == com.shelf.launcher.data.perf.FpsKind.GAME_LAYER || kind == com.shelf.launcher.data.perf.FpsKind.DISPLAY) lastFreshKind = kind
+            else if (kind != com.shelf.launcher.data.perf.FpsKind.HELD) lastFreshKind = null
+            val shownFps = snap?.fps?.takeIf { lastFreshKind != null }
+            val fpsVerified = lastFreshKind == com.shelf.launcher.data.perf.FpsKind.GAME_LAYER || controller?.displayVerified == true
+            Tuner.updateLive(shownFps, target, shownW, temp, fan, tdpState, fpsVerified)
             // Caps the vendor's daemon lifted are put back within ~4 s.
             // Update 201: while the handheld keeps putting its own clocks back (AYN's root service: every 10 s), a cheap
             // one-call look every second puts them back within a second instead of up to 4 s of every 10 (on the Odin 2

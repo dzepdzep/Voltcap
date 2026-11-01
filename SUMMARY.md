@@ -1,3 +1,32 @@
+# Update 430 (1 Nov 2026) — AutoTDP review fixes: no throttling without a reliable reading, panel counters need real proof, stale readings decide nothing (NOT released)
+
+Independent review of 429, three points; all confirmed in the code, fixed with small changes, 9 new tests (AutoTdp429Test 27 / 27,
+full `testDebugUnitTest` BUILD SUCCESSFUL on the PC). Hardware: NOT run yet (see below).
+
+1. **No-FPS branch (confirmed):** with no frame rate (or only a held one) and battery draw over the budget, 429 still lowered 0.02/tick
+   — 12 W for 2 min took it to 0.35 with nothing showing what that cost the game. Now the budget may only take the level below
+   `UNVERIFIED_FLOOR` (0.6) with a reliable reading (fresh, from the game's layer or a counter that proved itself); without one it stops
+   at 0.6 (or wherever it already was below that). Same for over-budget with an unproved panel counter (429 lowered 0.04/tick to 0.35).
+   Tests: sustainedHighPowerWithoutFps / WithOnlyStaleFps / WithAnUnprovedCounter.
+2. **DISPLAY trust (confirmed):** one dip below 97 % of the refresh rate made the counter trusted. Now proof is either two "responses"
+   (a modest miss right after AutoTDP's own step down that persists a second tick at that level — one tick is waited out before raising,
+   only while unproved — then clears after a raise, both times within 0.05 of the same level) or a steady cap (10 fresh readings in a row
+   at 30–90 % of the refresh rate within 10 % of each other). Single dips, a loading collapse, a steady few-fps loading screen and
+   periodic one-tick composition dips are not proof (tests chanceDipsOfAMisleadingCounter, aLoadingCollapse, aSteadyCapIsProof,
+   aCounterThatMovesWithTheClocksIsTrusted). The 429 test `anUnverifiedPanelCounterCannotTakeClocksFarDown` keeps its first half; its
+   second half asserted the old single-dip rule and now asserts the opposite (stays at 0.6, not verified).
+3. **Held readings / UI (confirmed):** a held miss (the sampler's 4 s repeat) still drove recovery jumps every tick and power-limited easing.
+   A held reading now goes through the no-signal rules (nothing changes the level, the state is kept so a short gap doesn't flash). The
+   tuner page showed `snap.fps` whatever its kind — the screen's refresh rate when no game was recognised. It now shows only a game's
+   reading, marked "(display counter, unverified)" until the counter proves itself; the in-game overlay shows "Screen N Hz" instead of
+   "FPS N" for the screen rate (test screenRateIsNeverShownAsGameFps).
+
+Devices: the owner now allows any ADB device except TVs / streamers (CLAUDE.md updated). The unidentified GT78 is still not touched.
+
+**Copy:** `src_copy/device/tune/AutoTdpController.kt`, `TuneService.kt`, `Tuner.kt`, `src_copy/ui/TunerContent.kt`, `PerfOverlayService.kt`;
+`project_copy/app/src/test/.../device/tune/AutoTdp429Test.kt`; CLAUDE.md, SUMMARY.md (also into `project_copy/` — a stale
+`project_copy/SUMMARY.md` and `REVIEW_427.md` had been copied over the newer root files by the sync; both copies now match).
+
 # Update 429 (1 Nov 2026) — AutoTDP / underclock audit: controller fixes + deterministic tests (NOT released, NOT on hardware)
 
 Owner priority 1 of the quality pass. Source audit first, then fixes, each with a test that fails on the 428 controller (traces were

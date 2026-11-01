@@ -66,8 +66,9 @@ object TdpSignals {
  *  - Anti-oscillation: a step down that has to be undone within [FAIL_TICKS] makes the level it came from a floor for a
  *    back-off ([BACKOFF_START] … [BACKOFF_MAX] ticks, doubling) — no more 3 s down / 1 s up sawtooth.
  *  - Only fresh readings lower the level (the sampler's 4 s hold is a repeat) and feed target detection.
- *  - A panel-level counter that has never shown a dip below the refresh rate can't lower the level below
- *    [UNVERIFIED_FLOOR]: it may be counting refreshes, not game frames.
+ *  - A panel-level counter that hasn't proved it follows game frames ([displayVerified]; one dip is not proof) can't
+ *    lower the level below [UNVERIFIED_FLOOR]: it may be counting refreshes, not game frames. (Update 430: neither can the
+ *    power budget without a reliable reading — no fps, a held one or an unproved counter.)
  *  - The detected target never goes above the refresh rate and only comes down when the level is near full, or when
  *    raises keep being refused because a cap above it binds (a low frame rate AutoTDP itself caused is not mistaken for
  *    the game's cap).
@@ -86,7 +87,14 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
     private var floorUntil = 0L
     private var backoff = BACKOFF_START
     private var lastFailTick = Long.MIN_VALUE / 2
-    private var counterDipped = false
+    /** (Update 430) A panel-level counter has shown it follows the game's frames (see [displayVerified]). */
+    private var counterTrusted = false
+    private var responseAt = Long.MIN_VALUE / 2
+    private var responseLevel = 1f
+    private var responses = 0
+    private var firstResponseLevel = 1f
+    private var missWaitTick = Long.MIN_VALUE / 2
+    private val capRun = ArrayList<Float>()
     /** What the last tick asked for, and how many ticks in a row a raise it asked for didn't happen (a cap above it binds). */
     private var asked = Float.NaN
     private var askedFrom = Float.NaN
@@ -97,6 +105,19 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
 
     var state: TdpState = TdpState.NO_SIGNAL
         private set
+
+    /**
+     * (Update 430) Whether a DISPLAY counter has proved it follows game frames. One dip is not proof (a loading screen or a
+     * moment with nothing to compose dips any counter); either of these is:
+     *  - responses: [RESPONSES_NEEDED] times, a modest miss right after one of AutoTDP's own steps down that persists for a
+     *    second tick at that level (one tick is waited out before raising) and is cleared again
+     *    within [RESPONSE_TICKS] after it raised the level, both at about the same level ([RESPONSE_SPREAD]) — the counter
+     *    moved with the clocks (twice, at the same place: a chance dip isn't proof);
+     *  - a steady cap: [CAP_TICKS] fresh readings in a row under 90 % (and over 30 %) of the refresh rate, within 10 % of
+     *    each other (a game holding 30 or 45), not a collapse.
+     * The game's own layer reading needs no proof.
+     */
+    val displayVerified: Boolean get() = counterTrusted
 
     /** The smoothed battery draw the budget is compared with (whole handheld), or null. */
     val smoothedW: Float? get() = powerEma
@@ -124,15 +145,42 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
         val over = powerOver
         if (fps != null && input.fresh) {
             recentFps.addLast(fps); while (recentFps.size > 20) recentFps.removeFirst()
-            if (input.displayCounter && hz != null && fps < hz * 0.97f) counterDipped = true
+            if (input.displayCounter && hz != null) {
+                if (fps < hz * 0.9f) capRun += fps else capRun.clear()
+                if (capRun.size > CAP_TICKS) capRun.removeAt(0)
+                val mean = capRun.average().toFloat()
+                // (A steady reading far below the refresh rate — a loading screen's few frames — isn't a game's cap.)
+                if (capRun.size >= CAP_TICKS && mean >= hz * 0.3f && capRun.maxOrNull()!! - capRun.minOrNull()!! <= mean * 0.1f) counterTrusted = true
+            }
             if (fixedTarget <= 0) detect(level, over, hz)
         }
-        if (fps != null && input.fresh && !input.displayCounter) counterDipped = true // the game's own layer: real frames
+        if (fps != null && input.fresh && !input.displayCounter) counterTrusted = true // the game's own layer: real frames
+        // A reading that may steer the clocks: fresh, and from the game's layer or a counter that proved itself.
+        val reliable = fps != null && input.fresh && (!input.displayCounter || counterTrusted)
         val t = target?.let { if (hz != null) minOf(it, snapTarget(hz)) else it }
         if (floorUntil in 1..tickNo) { floor = MIN_LEVEL; floorUntil = 0L }
-        val minL = if (input.displayCounter && !counterDipped) maxOf(floor, UNVERIFIED_FLOOR) else floor
-        if (fps != null && t != null) {
+        val minL = if (input.displayCounter && !counterTrusted) maxOf(floor, UNVERIFIED_FLOOR) else floor
+        // (Update 430: a held (stale) reading decides nothing — no recovery jump, no step, no power-limited easing; it
+        // goes through the no-signal rules below.)
+        if (fps != null && t != null && input.fresh) {
             val deficit = (t - fps) / t
+            var waitOneTick = false
+            if (input.displayCounter && !counterTrusted) {
+                if (deficit > HOLD && deficit <= FAIL_DEFICIT && tickNo - lastDownTick <= FAIL_TICKS) {
+                    // The first miss after a step down: hold one tick to see whether it persists at this level (a chance
+                    // composition dip clears by itself; a real shortfall doesn't). Costs one second of a modest miss, only
+                    // until the counter has proved itself.
+                    if (missWaitTick != tickNo - 1) { missWaitTick = tickNo; waitOneTick = true }
+                    else { responseAt = tickNo; responseLevel = level }
+                }
+                else if (deficit <= HOLD && tickNo - responseAt in 1..RESPONSE_TICKS && level > responseLevel + 0.001f) {
+                    responseAt = Long.MIN_VALUE / 2
+                    // The misses have to come back at about the same level (where the game really needs more): chance dips
+                    // land wherever the level happens to be.
+                    if (responses == 0 || kotlin.math.abs(responseLevel - firstResponseLevel) > RESPONSE_SPREAD) { responses = 1; firstResponseLevel = responseLevel }
+                    else if (++responses >= RESPONSES_NEEDED) counterTrusted = true
+                }
+            }
             when {
                 deficit > HOLD && over -> {
                     // Short of the target AND over the budget: the budget wins, but gently (and only while the smoothed
@@ -140,6 +188,7 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
                     if ((powerEma ?: 0f) > mode.ceilingW) l -= 0.01f
                     onTarget = 0; state = TdpState.POWER_LIMITED
                 }
+                deficit > HOLD && waitOneTick -> { onTarget = 0; state = TdpState.RECOVERING }
                 deficit > HOLD -> {
                     var up = when {
                         deficit > 0.15f -> minOf(MAX_JUMP, maxOf(0.05f, level * (t / fps) * 1.05f - level))
@@ -176,17 +225,24 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
                             if (down < l - 0.001f) { levelBeforeDown = l; lastDownTick = tickNo; l = down; state = TdpState.SAVING }
                         }
                     }
-                    if (input.displayCounter && !counterDipped && l <= UNVERIFIED_FLOOR + 0.001f) state = TdpState.UNVERIFIED
+                    if (input.displayCounter && !counterTrusted && l <= UNVERIFIED_FLOOR + 0.001f) state = TdpState.UNVERIFIED
                 }
             }
         } else {
             onTarget = 0
-            state = TdpState.NO_SIGNAL
-            // No game frame rate: only the budget may move it (down, gently); it never drifts on its own.
+            // A held reading keeps the state it had (a 1-4 s gap shouldn't flash "no signal"); nothing at all = no signal.
+            if (fps == null || t == null) state = TdpState.NO_SIGNAL
+            // No usable frame rate: only the budget may move it (down, gently), never below [UNVERIFIED_FLOOR] — without a
+            // reading nothing shows what a lower level costs the game. It never drifts on its own.
             if (over) l -= 0.02f
         }
-        // The budget may go below the floors (it's the user's ceiling); frame-rate lowering never does. Over budget: no raise.
-        val lo = if (over) MIN_LEVEL else minOf(minL, level).coerceAtLeast(MIN_LEVEL)
+        // The budget may go below the floors (it's the user's ceiling) only with a reliable reading; without one it stops at
+        // [UNVERIFIED_FLOOR] (Update 430). Frame-rate lowering never goes below its floors. Over budget: no raise.
+        val lo = when {
+            over && reliable -> MIN_LEVEL
+            over -> minOf(level, UNVERIFIED_FLOOR)
+            else -> minOf(minL, level)
+        }.coerceAtLeast(MIN_LEVEL)
         val out = l.coerceIn(lo, 1f).let { if (over && it > level) level else it }
         asked = out; askedFrom = level
         return out
@@ -222,6 +278,11 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
         /** A miss bigger than this right after a step down is a scene / loading collapse, not the step's fault. */
         const val FAIL_DEFICIT = 0.25f
         const val UNVERIFIED_FLOOR = 0.6f
+        /** (Update 430) Proof for a panel counter: a miss after a step down cleared within this many ticks, or a steady cap this long. */
+        const val RESPONSE_TICKS = 6L
+        const val CAP_TICKS = 10
+        const val RESPONSES_NEEDED = 2
+        const val RESPONSE_SPREAD = 0.05f
         const val START_DEFAULT = 0.85f
         const val START_MARGIN = 0.1f
 
