@@ -1,3 +1,38 @@
+# Update 431 (1 Nov 2026) — device rule, first AutoTDP hardware run (Odin 2 Portal), per-session controller fix (NOT released)
+
+**Device rule (owner):** all handhelds physically connected to the PC by USB and visible in ADB may be used for QA; wireless ADB is not
+covered; confirm connection type + serial, `adb -s <serial>`; preserve data / settings / charge limits (CLAUDE.md updated, root and
+project_copy). Connected now: Odin 2 Portal **b92036fb (USB; its second, wireless entry is NOT used)**, GT78 **BW0306N230000845 (USB)**
+identified read-only: ARBOR GT78, MediaTek MT6785, Android 12, 960×640 touch at 240 dpi, no TV / leanback feature, USB powered,
+Voltcap already installed → a handheld, compatible (minSdk 24); nothing installed or changed on it yet. Thor 3140972f: offline.
+
+**QA tooling:** `--es voltcap_test_tune stock|uc:MEDIUM|tier:SAVER|auto:EFFICIENT[:60]|off` (test hooks only) — a tuner profile for this
+process instead of every saved one; nothing saved, no learned level, no measurement session; `off` puts the saved ones back. With it and the
+hooks file, TuneService logs one `VoltcapTdp` line a tick (fps, kind, target, level, state, verified, loads, clocks, watts, plugged, pkg, note).
+Device scripts on the Odin: `/data/local/tmp/tdp.sh LABEL SECS` (measured_fps + clocks + GPU each second → CSV), `tdprun.sh`.
+
+**Hardware run (Odin 2 Portal, release build, 80 %, AC at its charge limit → no power readings by design):** one PS2 game (ARMSX2,
+WWE SmackDown! Vs. Raw — attract / loading scenes, a light load, not gameplay), from the Continue playing row.
+| Mode | fps avg / min | s < 57 fps | little / big / prime GHz | GPU MHz |
+|---|---|---|---|---|
+| Stock (53 s) | 59.4 / 58.8 | 0 | 1.89 / 2.12 / 2.48 | 550 |
+| AutoTDP Efficient (75 s) | 59.7 / 57.9 | 0 | 1.31 / 1.54 / 0.74 | 157 |
+AutoTDP stepped the level 1.0 → 0.50 in 75 s holding 60 (states HOLDING / SAVING, reading kind GAME_LAYER = the game's own layer).
+Manual Medium: the scaling caps matched the label (big 2.19 GHz ≈ 78 %, prime 1.98 GHz ≈ 62 % of max) but the frame data is void —
+ARMSX2 had opened its pause menu on resume (0 fps), which also made AutoTDP's first run show NO_SIGNAL (correct for a paused game).
+**Not measured:** power / battery (needs an unplugged device; USB ADB keeps it plugged), real gameplay load, Balanced / Smooth modes,
+manual Medium frame data, the Thor and RP Classic. Saved profiles restored (`off`), ARMSX2 closed (it wasn't running before), battery 80 %.
+
+**Found and fixed (D119):** the controller survived from one game session to the next when the profile was the same, and right after a
+launch the panel counter still counted Voltcap's own animated screen (118 fps → target 120 for a 60 fps game; it fell back to 60 only once
+the level reached full). Now a new controller per session (`Tuner.session`) and panel readings in the first 5 ticks are ignored; test
+`theLaunchersOwnFramesAreNotTheGamesTarget` (AutoTdp429Test 28 / 28; full testDebugUnitTest green). Odin noted: as an app, Voltcap's
+direct sysfs reads of measured_fps / gpuclk / /proc/stat are SELinux-denied (it goes through the vendor root service); GPU busy % came back
+null in-game.
+
+**Copy:** `src_copy/device/tune/AutoTdpController.kt`, `Tuner.kt`, `TuneService.kt`, `src_copy/ui/TestHooks.kt`;
+`project_copy/app/src/test/.../AutoTdp429Test.kt`; CLAUDE.md; tools/qa/defects.json; COWORK_HANDOFF.md; SUMMARY.md (root + project_copy).
+
 # Update 430 (1 Nov 2026) — AutoTDP review fixes: no throttling without a reliable reading, panel counters need real proof, stale readings decide nothing (NOT released)
 
 Independent review of 429, three points; all confirmed in the code, fixed with small changes, 9 new tests (AutoTdp429Test 27 / 27,

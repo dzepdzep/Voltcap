@@ -1,3 +1,11 @@
+**UPDATE 431 (1 Nov 2026, newest; NOT released):** USB device rule in CLAUDE.md; GT78 = ARBOR GT78 handheld (Android 12, 960×640),
+covered, untouched so far; first AutoTDP hardware run on the Odin 2 Portal (plugged → frame / clock data only, no power) — Efficient
+held 60 fps with clearly lower clocks than Stock on a light PS2 load; D119 (per-session controller, launcher frames ignored) fixed;
+`voltcap_test_tune` hook for controlled comparisons. NEXT (in order): (1) unplugged power comparison — needs the owner to run the
+Odin / Thor off USB, or a Voltcap measurement session played on battery; (2) Balanced / Smooth / manual Medium frame runs in real
+gameplay (resume ARMSX2 with a tap on Resume, its pause menu takes A); (3) priorities 2–6 of the matrix below — the GT78 (960×640) is the
+small-screen device for layout / popup scaling, the Odin for 1080p, the Thor (offline) for dual screen and D107 / D111 / D112.
+
 **UPDATE 430 (1 Nov 2026, newest; NOT released):** review fixes to 429 (no throttling below 0.6 without a reliable reading, panel
 counters need repeated proof, held readings decide nothing, screen rate never shown as game FPS; AutoTdp429Test 27 / 27). Devices:
 owner allows any ADB handheld, never TVs / streamers (CLAUDE.md); GT78 BW0306N230000845 stays untouched until identified.

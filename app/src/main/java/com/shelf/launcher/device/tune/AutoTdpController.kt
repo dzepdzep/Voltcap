@@ -143,7 +143,11 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
             else if (e < mode.ceilingW * UNDER_BAND) powerOver = false
         }
         val over = powerOver
-        if (fps != null && input.fresh) {
+        // (Update 431, Odin 2 Portal: for a second or two after a launch the panel counter still counts Voltcap's own
+        // animated screen — 118 fps read as the game's and a target of 120 detected. Panel readings in the first
+        // [WARMUP_TICKS] of a session are not used for detection or proof.)
+        val warm = tickNo > WARMUP_TICKS || !input.displayCounter
+        if (fps != null && input.fresh && warm) {
             recentFps.addLast(fps); while (recentFps.size > 20) recentFps.removeFirst()
             if (input.displayCounter && hz != null) {
                 if (fps < hz * 0.9f) capRun += fps else capRun.clear()
@@ -162,7 +166,7 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
         val minL = if (input.displayCounter && !counterTrusted) maxOf(floor, UNVERIFIED_FLOOR) else floor
         // (Update 430: a held (stale) reading decides nothing — no recovery jump, no step, no power-limited easing; it
         // goes through the no-signal rules below.)
-        if (fps != null && t != null && input.fresh) {
+        if (fps != null && t != null && input.fresh && warm) {
             val deficit = (t - fps) / t
             var waitOneTick = false
             if (input.displayCounter && !counterTrusted) {
@@ -282,6 +286,8 @@ class AutoTdpController(private val mode: AutoTdpMode, private val fixedTarget: 
         const val RESPONSE_TICKS = 6L
         const val CAP_TICKS = 10
         const val RESPONSES_NEEDED = 2
+        /** (Update 431) Ticks at the start of a session whose panel-counter readings are left out. */
+        const val WARMUP_TICKS = 5L
         const val RESPONSE_SPREAD = 0.05f
         const val START_DEFAULT = 0.85f
         const val START_MARGIN = 0.1f

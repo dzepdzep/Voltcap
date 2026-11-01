@@ -68,7 +68,9 @@ class TuneService : Service() {
         var tick = 0
         var controller: AutoTdpController? = null
         var lastFreshKind: com.shelf.launcher.data.perf.FpsKind? = null
+        val qaLog = com.shelf.launcher.ui.TestHooks.enabled(applicationContext)
         var controllerFor: TuneProfile? = null
+        var controllerSession = -1
         var integral = 0f
         var lastReassert = 0L
         var lastTemp: Float? = null
@@ -99,7 +101,11 @@ class TuneService : Service() {
             var target: Int? = null
             var tdpState: TdpState? = null
             if (p.autoTdp) {
-                if (controllerFor != p) { controller = AutoTdpController(p.autoMode, p.targetFps); controllerFor = p }
+                // (Update 431: also a new controller per game session — on the Odin 2 Portal the same profile carried a target of
+                // 120 detected from Voltcap's own animated screen into the next game.)
+                if (controllerFor != p || controllerSession != Tuner.session) {
+                    controller = AutoTdpController(p.autoMode, p.targetFps); controllerFor = p; controllerSession = Tuner.session
+                }
                 val c = controller!!
                 // (Update 429: only the game's frame rate (never the screen's refresh rate) and only a battery reading
                 // taken on battery reach the controller; see TdpSignals.)
@@ -147,6 +153,11 @@ class TuneService : Service() {
             val shownFps = snap?.fps?.takeIf { lastFreshKind != null }
             val fpsVerified = lastFreshKind == com.shelf.launcher.data.perf.FpsKind.GAME_LAYER || controller?.displayVerified == true
             Tuner.updateLive(shownFps, target, shownW, temp, fan, tdpState, fpsVerified)
+            // (Update 431, QA only: one line a tick for the hardware comparisons — with the test hooks file and a test profile only.)
+            if (qaLog && Tuner.testProfile != null) android.util.Log.i("VoltcapTdp", "fps=${snap?.fps} kind=${snap?.fpsKind} tgt=$target lvl=${"%.3f".format(Tuner.autoTdpLevel())} " +
+                "st=$tdpState ver=$fpsVerified gpu%=${snap?.gpuPercent} cpu%=${snap?.cpuPercent} cpuMax=${snap?.cpuMaxMhz} gpuMhz=${snap?.gpuMhz} " +
+                "W=${snap?.powerW} plugged=${snap?.plugged} T=$temp uc=${Tuner.status.value.autoUnderclock} src=${Tuner.status.value.source} " +
+                "pkg=${com.shelf.launcher.data.perf.PerfSampler.gamePackage} note=${snap?.fpsNote}")
             // Caps the vendor's daemon lifted are put back within ~4 s.
             // Update 201: while the handheld keeps putting its own clocks back (AYN's root service: every 10 s), a cheap
             // one-call look every second puts them back within a second instead of up to 4 s of every 10 (on the Odin 2

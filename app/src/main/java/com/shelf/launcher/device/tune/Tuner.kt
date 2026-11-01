@@ -139,8 +139,37 @@ object Tuner {
     @Synchronized
     fun applyGlobal(context: Context) {
         if (currentKey != null) return // a game's profile is in charge right now
-        apply(context, TuneStore(context).global(), key = null, source = "Device")
+        val t = testProfile
+        apply(context, t ?: TuneStore(context).global(), key = null, source = if (t != null) "QA test" else "Device")
     }
+
+    /**
+     * (Update 431, QA only — reached through the test hooks `--es voltcap_test_tune …`, see TestHooks.) A profile used for
+     * this process instead of every saved one (device-wide, console, game), for controlled Stock / underclock / AutoTDP
+     * comparisons on hardware. NOTHING is saved: no profile, no learned level, no measurement; null puts the saved ones back.
+     */
+    @Volatile var testProfile: TuneProfile? = null
+        private set
+
+    fun setTestProfile(context: Context, p: TuneProfile?) {
+        testProfile = p
+        val g = game
+        if (g != null && currentKey != null) {
+            Thread { runCatching { synchronized(this) {
+                val (profile, _, label) = resolve(TuneStore(context), g)
+                level = if (profile.autoTdp) AutoTdpController.startLevel(null) else 1f
+                ucStep = -1; ucMode = null
+                apply(context, profile, g.key, label)
+            } } }.start()
+        } else Thread { runCatching { synchronized(this) { applyGlobal(context) } } }.start()
+    }
+
+    /**
+     * (Update 431) Counts game launches (and game ends): AutoTDP starts a fresh controller for each, so a detected target,
+     * a counter's proof or a failed-step floor never carries over from one game (or the home screen) to the next.
+     */
+    @Volatile var session = 0
+        private set
 
     /** The running game, as launched (to work its profile out again when profiles change mid-game). */
     private data class RunningGame(val key: String, val name: String, val packageName: String?, val platform: String?, val consoleName: String?)
@@ -152,6 +181,7 @@ object Tuner {
      * Returns (profile, store key or null for device-wide, label for "from …").
      */
     private fun resolve(store: TuneStore, g: RunningGame): Triple<TuneProfile, String?, String> {
+        testProfile?.let { return Triple(it, null, "QA test") }
         store.forKey(g.key)?.let { return Triple(it, g.key, g.name) }
         g.packageName?.let { pkg -> store.forKey("pkg:$pkg")?.let { return Triple(it, "pkg:$pkg", g.name) } }
         if (store.consoleProfiles && !g.platform.isNullOrBlank()) {
@@ -170,18 +200,19 @@ object Tuner {
         val store = TuneStore(context)
         val g = RunningGame(key, name, packageName, platform, consoleName)
         game = g
+        session++
         heatReset()
         val (profile, sourceKey, label) = resolve(store, g)
         // (Update 429: from what the game learned plus a margin — the saved level is where the last session ENDED, often a
         // menu or a quiet scene; starting there made the first heavy scene stutter. The controller lowers it in ~12 s if unneeded.)
-        level = if (profile.autoTdp) AutoTdpController.startLevel(store.learnedLevel(key)) else 1f
+        level = if (profile.autoTdp) AutoTdpController.startLevel(if (testProfile != null) null else store.learnedLevel(key)) else 1f
         // (Update 237, #85: AutoTDP's underclock starts from what this game learned (read in apply → ucBegin).)
         ucStep = -1
         currentSourceKey = sourceKey
         apply(context, profile, key = key, source = label)
         // Screen rate, button layout, charge limit: a game's own or its console's profile changes those.
         if (sourceKey != null) GameExtras.apply(context, profile)
-        if (store.measure) measureStart(context, key, profile)
+        if (store.measure && testProfile == null) measureStart(context, key, profile)
     }
 
     /** Back in Voltcap: the game's profile ends; the device-wide one (or stock) returns. Blocking. */
@@ -190,18 +221,22 @@ object Tuner {
         // Voltcap was closed while the game ran: no session here, but the buttons / screen rate it set still
         // have to go back.
         val key = currentKey ?: run { GameExtras.restore(context); return }
-        if (current.autoTdp) TuneStore(context).setLearnedLevel(key, level)
+        // (Update 431: a QA test profile learns nothing — your saved levels stay as they were.)
+        val testing = testProfile != null
+        if (current.autoTdp && !testing) TuneStore(context).setLearnedLevel(key, level)
         // (Update 237, #85: and the underclock step AutoTDP ended on, under "uc:<key>" in the same map.)
-        if (ucStep >= 0) TuneStore(context).setLearnedLevel("uc:$key", ucStep.toFloat())
+        if (ucStep >= 0 && !testing) TuneStore(context).setLearnedLevel("uc:$key", ucStep.toFloat())
         ucStep = -1
         measureEnd(context)
         currentKey = null
         currentSourceKey = null
         game = null
+        session++
         heatReset()
         level = 1f
         GameExtras.restore(context)
-        apply(context, TuneStore(context).global(), key = null, source = "Device")
+        val t = testProfile
+        apply(context, t ?: TuneStore(context).global(), key = null, source = if (t != null) "QA test" else "Device")
     }
 
     /**
@@ -244,7 +279,7 @@ object Tuner {
         ledStatus = store.ledStatus
         heatGuardOn = store.heatGuard
         heatGuardC = store.heatGuardC
-        measuring = key != null && store.measure
+        measuring = key != null && store.measure && testProfile == null
         // Heat guard switched off, or no game: its extra steps end with it.
         if (!heatGuardOn || key == null) heatReset()
         // (Update 237, #85: AutoTDP's own underclock, when the profile leaves it to AutoTDP.)
@@ -311,7 +346,7 @@ object Tuner {
     private fun ucBegin(store: TuneStore, p: TuneProfile, key: String?) {
         if (!adaptiveUc(p)) { ucStep = -1; ucMode = null; return }
         if (ucStep >= 0 && ucMode == p.autoMode) { ucStep = ucStep.coerceIn(ucRange(p)); return }
-        val learned = key?.let { store.learnedLevel("uc:$it") }?.toInt()
+        val learned = key?.takeIf { testProfile == null }?.let { store.learnedLevel("uc:$it") }?.toInt()
         ucStep = (learned ?: ucDefault(p)).coerceIn(ucRange(p))
         ucMode = p.autoMode
         ucCtl.reset()

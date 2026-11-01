@@ -1373,7 +1373,7 @@
    "severity": "high",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
-   "note": "Now: smoothed power (EMA, 3 readings over, 0.92 band), -0.01/s only while really over, no raise over budget, headroom-limited raises, TdpState.POWER_LIMITED shown on the tuner page. AutoTdp429Test (over-budget, budget-respected, power-spike tests). Thor comparison NOT run."
+   "note": "Now: smoothed power (EMA, 3 readings over, 0.92 band), -0.01/s only while really over, no raise over budget, headroom-limited raises, TdpState.POWER_LIMITED shown on the tuner page. AutoTdp429Test (over-budget, budget-respected, power-spike tests). Thor comparison NOT run. | 431 Odin 2 Portal (plugged in at its charge limit, so NO power data): AutoTDP Efficient on a PS2 game (ARMSX2, WWE SmackDown! Vs. Raw attract / loading, light load) held 59.7 fps (min 57.9, 0 s under 57) while stepping the level 1.0 → 0.50; average clocks vs Stock: little 1.31 vs 1.89 GHz, big 1.54 vs 2.12, prime 0.74 vs 2.48, GPU 157 vs 550 MHz. Power saving NOT measured."
   },
   {
    "id": "D114",
@@ -1400,7 +1400,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
-   "note": "Guard: a DISPLAY reading that has never dipped below 97 % of the refresh rate can't take the level below 0.6 (TdpState.UNVERIFIED). Whether the Thor / RP Classic counters follow game frames is NOT measured: run a 30 fps-capped game with the overlay on each device."
+   "note": "Guard: a DISPLAY reading that has never dipped below 97 % of the refresh rate can't take the level below 0.6 (TdpState.UNVERIFIED). Whether the Thor / RP Classic counters follow game frames is NOT measured: run a 30 fps-capped game with the overlay on each device. | 431 Odin 2 Portal: the app's in-game source was the game's own layer (kind GAME_LAYER, ~59.9 fps), so the panel counter wasn't needed there; shell reads of sde-crtc-0/measured_fps show 0 while dozing / paused and 118 on the animated home, i.e. composed frames. Thor / RP Classic NOT measured."
   },
   {
    "id": "D117",
@@ -1419,6 +1419,15 @@
    "status": "fixed-unverified",
    "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
    "note": "Proportional recovery (up to +0.25/tick), failed-step floor with back-off 60→480 ticks (modest misses only; loading collapses excluded), session start = learned + 0.1. AutoTdp429Test holdsTheTargetWithoutASawtooth (≤3 raises, ≤3 misses) and recoveryFromABigMissIsQuick. Frame-time effect on hardware NOT measured."
+  },
+  {
+   "id": "D119",
+   "title": "AutoTDP carried its controller (detected target, counter proof, floors) from one game session to the next when the profile was the same, and counted Voltcap's own animated screen right after a launch as the game's frame rate (Odin 2 Portal: target 120 locked for a 60 fps PS2 game)",
+   "rule": "AUTOTDP",
+   "severity": "med",
+   "status": "fixed-unverified",
+   "found": "2026-11-01 update 431 Odin 2 Portal b92036fb hardware run (.shots/431/tdp_autoeff.log)",
+   "note": "Tuner.session per launch / end; TuneService recreates the controller per session; panel-counter readings in the first 5 ticks ignored. Test theLaunchersOwnFramesAreNotTheGamesTarget. Seen with the earlier build only: the target fell back to 60 once the level reached full (the 429 rule), costing ~10 s at full clocks. Re-run with the 431 build NOT done."
   }
  ]
 }

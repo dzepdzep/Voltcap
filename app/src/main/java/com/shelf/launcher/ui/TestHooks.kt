@@ -81,6 +81,24 @@ internal object TestHooks {
      */
     val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
 
+    /** Update 431: the test tuner profile for [spec] (Result.success(null) = "off"), or null when it doesn't parse. */
+    internal fun tuneProfile(spec: String): Result<com.shelf.launcher.device.tune.TuneProfile?>? {
+        val T = com.shelf.launcher.device.tune.TuneProfile()
+        val parts = spec.split(":")
+        return when (parts[0]) {
+            "off" -> Result.success(null)
+            "stock" -> Result.success(T.copy(underclock = com.shelf.launcher.device.tune.Underclock.OFF))
+            "uc" -> Result.success(T.copy(underclock = com.shelf.launcher.device.tune.Underclock.valueOf(parts[1])))
+            "tier" -> com.shelf.launcher.device.tune.PowerTier.valueOf(parts[1]).let { Result.success(T.copy(tier = it, governor = it.governor)) }
+            "auto" -> Result.success(T.copy(autoTdp = true, autoMode = com.shelf.launcher.device.tune.AutoTdpMode.valueOf(parts[1]),
+                targetFps = parts.getOrNull(2)?.toIntOrNull() ?: 0))
+            else -> null
+        }
+    }
+
+    private fun com.shelf.launcher.device.tune.TuneProfile.summaryForQa() =
+        "tier=$tier uc=$underclock auto=$autoTdp ${if (autoTdp) "$autoMode target=$targetFps" else ""}"
+
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         val want = intent?.getStringExtra("voltcap_test_layout")
         val g = intent?.getStringExtra("voltcap_test_game")
@@ -105,6 +123,14 @@ internal object TestHooks {
         val pr = intent?.getStringExtra("voltcap_test_pref")
         val th = intent?.getStringExtra("voltcap_test_theme")
         val pm = intent?.getStringExtra("voltcap_test_perf")
+        // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
+        // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
+        intent?.getStringExtra("voltcap_test_tune")?.let { t ->
+            if (enabled(context)) runCatching { tuneProfile(t) }.getOrNull().let { r ->
+                if (r != null || t == "off") com.shelf.launcher.device.tune.Tuner.setTestProfile(context.applicationContext, r?.getOrNull())
+                android.util.Log.i("VoltcapTdp", "test profile $t -> ${r?.getOrNull()?.summaryForQa() ?: "saved profiles"}")
+            }
+        }
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")

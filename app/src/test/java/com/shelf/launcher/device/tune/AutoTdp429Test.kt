@@ -227,11 +227,11 @@ class AutoTdp429Test {
 
     @Test fun aSteadyCapIsProof() {
         val c = ctl(target = 0)
-        run(c, 14, 1f, { _, i -> 30f + (i % 3) * 0.3f }, display = true, hz = 60f)
+        run(c, 20, 1f, { _, i -> 30f + (i % 3) * 0.3f }, display = true, hz = 60f)
         assertTrue(c.displayVerified)
         // A steady loading screen at a few frames is not.
         val d = ctl(target = 0)
-        run(d, 14, 1f, { _, _ -> 8f }, display = true, hz = 60f)
+        run(d, 20, 1f, { _, _ -> 8f }, display = true, hz = 60f)
         assertTrue(!d.displayVerified)
     }
 
@@ -242,6 +242,14 @@ class AutoTdp429Test {
         assertTrue(text, text.contains("Screen 120 Hz"))
         val src = java.io.File(listOf("src/main/java/com/shelf/launcher/device/tune/TuneService.kt", "app/src/main/java/com/shelf/launcher/device/tune/TuneService.kt").first { java.io.File(it).exists() }).readText()
         assertTrue("tuner page fps only from game readings", src.contains("val shownFps = snap?.fps?.takeIf { lastFreshKind != null }"))
+    }
+
+    @Test fun theLaunchersOwnFramesAreNotTheGamesTarget() {
+        // Update 431, seen on the Odin 2 Portal: right after a launch the panel counter still counted Voltcap's animated
+        // screen (118 on a 120 Hz panel) and AutoTDP locked a target of 120 for a game running 60.
+        val c = ctl(target = 0)
+        run(c, 30, 1f, { _, i -> if (i < 3) 118f else 60f }, display = true, hz = 120f)
+        assertEquals(60, c.target)
     }
 
     // ---- AutoTDP's own underclock ----
