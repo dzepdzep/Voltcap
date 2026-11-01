@@ -1,3 +1,53 @@
+# Update 427 (1 Nov 2026) — Stage A: theme coverage, palette contrast, music-theme thumbnails, cover atlas (NOT released)
+
+Theme and home-layout improvement pass, stage A of 4 (B: weak theme collections, C: home layouts, D: verification / backlog).
+
+## Done
+- **Review gallery covers every theme** (`tools/themes/gen.py`): 50 scenes added since ~update 330 (18 Chill, 18 32-bit creatures,
+  Trophy vault, Badge stars / bounce, Gaming room, Poster wall, Console disc, Handheld boot, Pocket beat, Arcade attract, Neon cartridge,
+  Data stream, Portal gallery, Pixel world, Album tide) were written into `ThemeShaders.kt` but never listed in gen.py, so the preview /
+  review stopped at 150 themes. Listed now (plus Waterfall via the shared Voltcap pixels scene); regenerating `ThemeShaders.kt` gives the
+  same content (sorted lines identical, only the order of `when` branches changed). `preview_template.html` now feeds the newer scenes'
+  pictures (covers atlas, game media, poster, trophies, the 12 paintings, the Gaming room picture). `check_uniforms.py`: 194 scenes, 0
+  problems (was 143 checked).
+- **Review tooling** (`review_refresh.cjs`): 207 themes × 3 moments (2 / 9 / 17 s) + a "home" state with a mock row, focus ring, long title,
+  status and buttons; per-theme numbers (title-zone light, detail, motion) in `refresh-review/coverage.json`; sheets as JPEG, not committed
+  (old PNG sheets of 150 themes remain in the repo, stale — delete them by hand). Classification of every theme:
+  `tools/themes/refresh-review/REVIEW_427.md` — KEEP 181, KEEP* 6 (drawn in Compose: device check needed), POLISH 20, REWORK 0.
+- **Palette contrast** (`ShelfColors.kt`, new `tools/themes/contrast_check.py`, all 196 `pal()` palettes): only the four known ones failed;
+  fixed while keeping their look —
+  Lobby: muted 0x757C85 → 0x5C626A (raised 3.09 → 4.51), accent 0x4592CC → 0x3C82B7 (2.46 → 3.03; white on it 3.37 → 4.14);
+  Pocket LCD: muted 0xABBE9E → 0xC8D9BC (3.38 → 4.50); Bold split: accent 0xF93444 → 0xFB5866 with raised 0x4A4E5A → 0x42454E (2.22 → 3.05;
+  trade-off: white words on the red 3.75 → 3.14); Pocket shell: accent 0xC86490 → 0xCB6B95 (2.81 → 3.01). Now 0 palettes under the aims.
+- **Theme thumbnails** (`ThemeThumbs.kt`, new `ThemeSampleArt.kt`): the music / cover / poster / disc / trophy themes were rendered with a
+  2 × 2 accent pixel as the cover and a blank label — flat coloured squares in the picker. Now a made-up sample cover (no words, no real art),
+  its blurred copy, a song label ("Paper Lanterns / The Night Shift"), a 4 × 2 covers atlas, a disc and 7 trophy cells, all drawn locally once
+  per process. Cache key v1 → v3 (old pictures deleted as before). Live scenes unchanged.
+- **Cover atlas** (`SceneArt.kt`, Poster wall): a cover whose shape differs by more than ~20 % from the 160 × 224 cell (wide DS / GBA / SNES
+  boxes, square CD cases, landscape key art) is shown whole over a dimmed, filled copy of itself instead of centre-cropped (half a wide cover
+  was cut away); covers close to the cell still fill it. Never stretched.
+- Tests: `ThemeQuality427Test` (every palette 4.5:1 text / 3:1 accent on raised; fixed palettes keep their character; fit vs fill rule and
+  centred fit rect; every non-custom theme known to gen.py).
+
+## Checked
+- Unit tests (PC, testDebugUnitTest): pass incl. ThemeQuality427Test, ThemeContrastTest, Visual426Test. Static check / QA selftest unchanged.
+- WebGL (cloud, SwiftShader): 207 themes render at 3 moments with 0 errors; check_uniforms 194 scenes OK; contrast_check 0 failures.
+- **Thor (release build):** Settings › Theme › Music · with the album cover — before: flat accent squares; after: sample covers, label,
+  atlas (`.shots/427`). Still, calm & bold group shows the new Bold split red. Settings snapshot restored, hooks paused.
+
+## NOT done / not verified (next)
+- Lobby / Bold split / Pocket LCD / Pocket shell NOT checked on a real home screen (the palette numbers are fixed; rendered use not seen).
+- POLISH list (REVIEW_427.md): bright title band in 15 themes (Sprout / Torrent / Meadow / Terra / Alloy / Gale / Frost 32-bit, Magical,
+  N64 plains, Manga beat, Comic pages, Meadow, Pixel sky, Summer sky, Blue sky) — confirm on the Thor with real text before changing scenes;
+  Lyric themes' empty state; Still glow too dark; Warp drive brightness swing.
+- Not measured this stage: frame pacing, OLED, Lite, legacy (Android 12) fallback, idle GPU of gameplay clips (RP Classic — not an allowed
+  device in this task).
+- Stage B (Chill / 32-bit / showcase / trophy), C (layouts: D102, D107, Twin, Orbit disc, Stacks / Arcade frame times), D: not started.
+
+Files: ui/theme/ShelfColors.kt, ui/ThemeThumbs.kt, ui/ThemeSampleArt.kt (new), ui/SceneArt.kt, ui/ThemeShaders.kt (regenerated);
+tools/themes/{gen.py, preview_template.html, preview.html, review_refresh.cjs, contrast_check.py (new), check_uniforms.py,
+refresh-review/coverage.json, refresh-review/REVIEW_427.md}; .gitignore; test ThemeQuality427Test.kt.
+
 # Update 425–426 (1 Nov 2026) — popups per layout, readable pages, Live tiles full screen, Wii More page, contrast and "…" fixes (NOT released)
 
 From the user's Thor photos / videos (`VoltCap_Visual_QA_References_2026-11-01`, kept outside Git) and the 425 popup brief.

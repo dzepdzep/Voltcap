@@ -1,602 +1,3521 @@
 [
-  {
-    "name": "VOLTCAP",
-    "label": "Voltcap"
-  },
-  {
-    "name": "VOLTCAP_BEAT",
-    "label": "Voltcap beat"
-  },
-  {
-    "name": "VOLTCAP_PIXELS",
-    "label": "Voltcap 32-bit"
-  },
-  {
-    "name": "RETRO_BOUNCE",
-    "label": "Retro bounce"
-  },
-  {
-    "name": "LYRIC_CLOUD",
-    "label": "Lyric cloud"
-  },
-  {
-    "name": "LYRIC_KARAOKE",
-    "label": "Karaoke"
-  },
-  {
-    "name": "LYRIC_SHEET",
-    "label": "Lyric sheet"
-  },
-  {
-    "name": "LYRIC_NEON",
-    "label": "Neon lyrics"
-  },
-  {
-    "name": "VOLT",
-    "label": "Volt"
-  },
-  {
-    "name": "TIDE",
-    "label": "Tide"
-  },
-  {
-    "name": "EMBER",
-    "label": "Ember"
-  },
-  {
-    "name": "COBALT",
-    "label": "Cobalt"
-  },
-  {
-    "name": "SYNTHWAVE",
-    "label": "Synthwave"
-  },
-  {
-    "name": "MATCHA",
-    "label": "Matcha"
-  },
-  {
-    "name": "MONO",
-    "label": "Mono (OLED)"
-  },
-  {
-    "name": "NOW_PLAYING",
-    "label": "Now playing"
-  },
-  {
-    "name": "SPECTRUM",
-    "label": "Spectrum"
-  },
-  {
-    "name": "PULSE_RING",
-    "label": "Pulse ring"
-  },
-  {
-    "name": "BEAT_TUNNEL",
-    "label": "Beat tunnel"
-  },
-  {
-    "name": "REACTOR",
-    "label": "Reactor core"
-  },
-  {
-    "name": "THUNDER",
-    "label": "Thunderstorm"
-  },
-  {
-    "name": "BLOOM",
-    "label": "Bloom"
-  },
-  {
-    "name": "TAPE_DECK",
-    "label": "Tape deck"
-  },
-  {
-    "name": "CHLADNI",
-    "label": "Sand patterns"
-  },
-  {
-    "name": "LASER_STAGE",
-    "label": "Laser stage"
-  },
-  {
-    "name": "KALEIDO",
-    "label": "Kaleido cover"
-  },
-  {
-    "name": "SHATTER",
-    "label": "Cover shatter"
-  },
-  {
-    "name": "TERRAIN",
-    "label": "Wire terrain"
-  },
-  {
-    "name": "FIREWORKS",
-    "label": "Fireworks"
-  },
-  {
-    "name": "NEON_PUDDLE",
-    "label": "Neon puddle"
-  },
-  {
-    "name": "VINYL",
-    "label": "Vinyl spin"
-  },
-  {
-    "name": "CD_SPIN",
-    "label": "Disc spin"
-  },
-  {
-    "name": "LAVA",
-    "label": "Album lava"
-  },
-  {
-    "name": "RIBBONS",
-    "label": "Sound ribbons"
-  },
-  {
-    "name": "DISCO",
-    "label": "Disco floor"
-  },
-  {
-    "name": "SPEAKER",
-    "label": "Bass cones"
-  },
-  {
-    "name": "SPARK_TYPE",
-    "label": "Spark"
-  },
-  {
-    "name": "TORRENT_TYPE",
-    "label": "Torrent"
-  },
-  {
-    "name": "SPROUT_TYPE",
-    "label": "Sprout"
-  },
-  {
-    "name": "MIND_TYPE",
-    "label": "Mind"
-  },
-  {
-    "name": "BLAZE_TYPE",
-    "label": "Blaze"
-  },
-  {
-    "name": "PHANTOM_TYPE",
-    "label": "Phantom"
-  },
-  {
-    "name": "FROST_TYPE",
-    "label": "Frost"
-  },
-  {
-    "name": "TERRA_TYPE",
-    "label": "Terra"
-  },
-  {
-    "name": "VENOM_TYPE",
-    "label": "Venom"
-  },
-  {
-    "name": "MEADOW_TYPE",
-    "label": "Meadow"
-  },
-  {
-    "name": "DOJO_TYPE",
-    "label": "Dojo"
-  },
-  {
-    "name": "GALE_TYPE",
-    "label": "Gale"
-  },
-  {
-    "name": "THICKET_TYPE",
-    "label": "Thicket"
-  },
-  {
-    "name": "BEDROCK_TYPE",
-    "label": "Bedrock"
-  },
-  {
-    "name": "WYRM_TYPE",
-    "label": "Wyrm"
-  },
-  {
-    "name": "UMBRA_TYPE",
-    "label": "Umbra"
-  },
-  {
-    "name": "ALLOY_TYPE",
-    "label": "Alloy"
-  },
-  {
-    "name": "GLIMMER_TYPE",
-    "label": "Glimmer"
-  },
-  {
-    "name": "POCKET_LCD",
-    "label": "Pocket LCD"
-  },
-  {
-    "name": "POCKET_SHELL",
-    "label": "Pocket shell"
-  },
-  {
-    "name": "SHINOBI",
-    "label": "Shinobi"
-  },
-  {
-    "name": "POWER_AURA",
-    "label": "Power aura"
-  },
-  {
-    "name": "SUMMER_SKY",
-    "label": "Summer sky"
-  },
-  {
-    "name": "MECHA_HUD",
-    "label": "Mecha HUD"
-  },
-  {
-    "name": "MOON_BLADE",
-    "label": "Moon blade"
-  },
-  {
-    "name": "CIRCUIT",
-    "label": "Circuit board"
-  },
-  {
-    "name": "GEARWORKS",
-    "label": "Gearworks"
-  },
-  {
-    "name": "WARP",
-    "label": "Warp drive"
-  },
-  {
-    "name": "PRISM_ATRIUM",
-    "label": "Prism atrium"
-  },
-  {
-    "name": "ORBIT_STATION",
-    "label": "Orbit station"
-  },
-  {
-    "name": "AURORA",
-    "label": "Aurora"
-  },
-  {
-    "name": "NEBULA",
-    "label": "Nebula"
-  },
-  {
-    "name": "PIXEL_FLOW",
-    "label": "Pixel flow"
-  },
-  {
-    "name": "GLASS",
-    "label": "Glass"
-  },
-  {
-    "name": "RETRO_WAVE",
-    "label": "Retro wave"
-  },
-  {
-    "name": "ORBIT",
-    "label": "Orbit"
-  },
-  {
-    "name": "DIGITAL_RAIN",
-    "label": "Digital rain"
-  },
-  {
-    "name": "CONSTELLATION",
-    "label": "Constellation"
-  },
-  {
-    "name": "LIQUID",
-    "label": "Liquid"
-  },
-  {
-    "name": "MINIMAL_CONSOLE",
-    "label": "Minimal console"
-  },
-  {
-    "name": "SHALLOWS",
-    "label": "Sunlit shallows"
-  },
-  {
-    "name": "INK_WASH",
-    "label": "Ink wash"
-  },
-  {
-    "name": "PAPER_LAYERS",
-    "label": "Paper layers"
-  },
-  {
-    "name": "PIXEL_VALLEY",
-    "label": "16-bit valley"
-  },
-  {
-    "name": "HOLO_FOIL",
-    "label": "Holo foil"
-  },
-  {
-    "name": "CAMPFIRE",
-    "label": "Campfire"
-  },
-  {
-    "name": "ERA_8BIT",
-    "label": "8-bit quest"
-  },
-  {
-    "name": "MODE7",
-    "label": "16-bit mode 7"
-  },
-  {
-    "name": "PS1_POLY",
-    "label": "32-bit polygons"
-  },
-  {
-    "name": "N64_PLAINS",
-    "label": "64-bit plains"
-  },
-  {
-    "name": "PS2_HAZE",
-    "label": "128-bit haze"
-  },
-  {
-    "name": "BLUE_SKY",
-    "label": "Blue sky cruise"
-  },
-  {
-    "name": "XMB_WAVE",
-    "label": "Wave menu"
-  },
-  {
-    "name": "PLAZA",
-    "label": "Motion plaza"
-  },
-  {
-    "name": "VECTOR",
-    "label": "Vector arcade"
-  },
-  {
-    "name": "CRT_TUNNEL",
-    "label": "CRT tunnel"
-  },
-  {
-    "name": "MEMORY_CARD",
-    "label": "Memory card"
-  },
-  {
-    "name": "ENERGY_CORE",
-    "label": "Energy core"
-  },
-  {
-    "name": "RACING_32",
-    "label": "32-bit racing"
-  },
-  {
-    "name": "FIRE_32",
-    "label": "32-bit fire"
-  },
-  {
-    "name": "SHOWCASE_PARALLAX",
-    "label": "Hero parallax"
-  },
-  {
-    "name": "SHOWCASE_CINEMA",
-    "label": "Cinematic"
-  },
-  {
-    "name": "SHOWCASE_FILMSTRIP",
-    "label": "Filmstrip"
-  },
-  {
-    "name": "SHOWCASE_MOSAIC",
-    "label": "Screenshot wall"
-  },
-  {
-    "name": "ARENA",
-    "label": "Arena entrance"
-  },
-  {
-    "name": "SPECIMEN_LAB",
-    "label": "Specimen lab"
-  },
-  {
-    "name": "MAGICAL",
-    "label": "Magical sparkle"
-  },
-  {
-    "name": "SPIRIT_FOREST",
-    "label": "Spirit forest"
-  },
-  {
-    "name": "FESTIVAL",
-    "label": "Summer festival"
-  },
-  {
-    "name": "AURA_CLASH",
-    "label": "Aura clash"
-  },
-  {
-    "name": "COVER_WALL",
-    "label": "Cover wall"
-  },
-  {
-    "name": "COVER_TUNNEL",
-    "label": "Cover tunnel"
-  },
-  {
-    "name": "POP_ART",
-    "label": "Pop art cover"
-  },
-  {
-    "name": "COVER_RIPPLE",
-    "label": "Cover ripple"
-  },
-  {
-    "name": "BLAZE_BEAT",
-    "label": "Blaze beat"
-  },
-  {
-    "name": "AURA_BEAT",
-    "label": "Aura clash · music"
-  },
-  {
-    "name": "MOUNTAINS",
-    "label": "Mountains forming"
-  },
-  {
-    "name": "SPECIMEN_BEAT",
-    "label": "Specimen lab · music"
-  },
-  {
-    "name": "TOWERS_128",
-    "label": "128-bit towers"
-  },
-  {
-    "name": "CARTRIDGE_16",
-    "label": "16-bit cartridge"
-  },
-  {
-    "name": "HANDHELD",
-    "label": "Handheld"
-  },
-  {
-    "name": "PIXEL_PARADE",
-    "label": "Pixel parade"
-  },
-  {
-    "name": "CAMPFIRE_BEAT",
-    "label": "Campfire beat"
-  },
-  {
-    "name": "MANGA_BEAT",
-    "label": "Manga beat"
-  },
-  {
-    "name": "COMIC_PANELS",
-    "label": "Comic pages"
-  },
-  {
-    "name": "PIXEL_SKY",
-    "label": "Pixel sky"
-  },
-  {
-    "name": "CRT_ROOM",
-    "label": "CRT room"
-  },
-  {
-    "name": "COVER_FLOW",
-    "label": "Cover flow"
-  },
-  {
-    "name": "RECORD_SHELF",
-    "label": "Record shelf"
-  },
-  {
-    "name": "COVER_CUBE",
-    "label": "Cover cube"
-  },
-  {
-    "name": "COVER_FLOAT",
-    "label": "Floating cover"
-  },
-  {
-    "name": "HOLO_COVER",
-    "label": "Holo card"
-  },
-  {
-    "name": "COVER_HALO",
-    "label": "Cover halo"
-  },
-  {
-    "name": "BIG_TYPE",
-    "label": "Big type"
-  },
-  {
-    "name": "PIXEL_COVER",
-    "label": "Pixel cover"
-  },
-  {
-    "name": "POLAROID",
-    "label": "Polaroids"
-  },
-  {
-    "name": "RETRO_TV",
-    "label": "Retro TV"
-  },
-  {
-    "name": "JUKEBOX",
-    "label": "Jukebox"
-  },
-  {
-    "name": "NEON_FRAME",
-    "label": "Neon frame"
-  },
-  {
-    "name": "MAGAZINE",
-    "label": "Magazine"
-  },
-  {
-    "name": "COVER_FOCUS",
-    "label": "Pan & zoom"
-  },
-  {
-    "name": "DISC_SLEEVE",
-    "label": "Disc & sleeve"
-  },
-  {
-    "name": "STILL_DUSK",
-    "label": "Still dusk"
-  },
-  {
-    "name": "STILL_HORIZON",
-    "label": "Still horizon"
-  },
-  {
-    "name": "STILL_GLOW",
-    "label": "Still glow"
-  },
-  {
-    "name": "CALM_RIBBON",
-    "label": "Light ribbon"
-  },
-  {
-    "name": "CALM_DRIFT",
-    "label": "Night drift"
-  },
-  {
-    "name": "CALM_HALO",
-    "label": "Soft halo"
-  },
-  {
-    "name": "BOLD_SPLIT",
-    "label": "Bold split"
-  },
-  {
-    "name": "BOLD_DOTS",
-    "label": "Bold dots"
-  },
-  {
-    "name": "BOLD_BANDS",
-    "label": "Bold bands"
-  },
-  {
-    "name": "SAKURA",
-    "label": "Sakura"
-  },
-  {
-    "name": "ARCADE_CRT",
-    "label": "Arcade CRT"
-  },
-  {
-    "name": "DEEP_SEA",
-    "label": "Deep sea"
+ {
+  "name": "VOLT",
+  "label": "Volt · bright synth arps",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.082,
+   "mean": 0.07,
+   "detail": 0.094,
+   "motion": 0.0193
   }
+ },
+ {
+  "name": "TIDE",
+  "label": "Tide · calm, watery",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.093,
+   "mean": 0.081,
+   "detail": 0.098,
+   "motion": 0.0199
+  }
+ },
+ {
+  "name": "EMBER",
+  "label": "Ember · warm and glowing",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.083,
+   "mean": 0.071,
+   "detail": 0.094,
+   "motion": 0.0192
+  }
+ },
+ {
+  "name": "COBALT",
+  "label": "Cobalt · cool, spacey",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.07,
+   "mean": 0.059,
+   "detail": 0.082,
+   "motion": 0.0169
+  }
+ },
+ {
+  "name": "SYNTHWAVE",
+  "label": "Synthwave · retro night drive",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.077,
+   "mean": 0.067,
+   "detail": 0.079,
+   "motion": 0.0161
+  }
+ },
+ {
+  "name": "MATCHA",
+  "label": "Matcha · soft and cosy",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.086,
+   "mean": 0.073,
+   "detail": 0.099,
+   "motion": 0.0201
+  }
+ },
+ {
+  "name": "MONO",
+  "label": "Mono · minimal",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.054,
+   "mean": 0.038,
+   "detail": 0.118,
+   "motion": 0.0242
+  }
+ },
+ {
+  "name": "VOLTCAP",
+  "label": "Voltcap",
+  "motif": "VOLT_INTRO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.156,
+   "mean": 0.147,
+   "detail": 0.165,
+   "motion": 0.0162
+  }
+ },
+ {
+  "name": "VOLTCAP_BEAT",
+  "label": "Voltcap beat",
+  "motif": "VOLT_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.194,
+   "mean": 0.187,
+   "detail": 0.107,
+   "motion": 0.0076
+  }
+ },
+ {
+  "name": "VOLTCAP_PIXELS",
+  "label": "Voltcap 32-bit",
+  "motif": "VOLT_PIXELS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.053,
+   "mean": 0.07,
+   "detail": 0.113,
+   "motion": 0.0282
+  }
+ },
+ {
+  "name": "WATERFALL",
+  "label": "Waterfall cliffs",
+  "motif": "PIXEL_FALLS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.079,
+   "mean": 0.102,
+   "detail": 0.102,
+   "motion": 0.0265
+  }
+ },
+ {
+  "name": "RETRO_BOUNCE",
+  "label": "Retro bounce",
+  "motif": "RETRO_BOUNCE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.083,
+   "mean": 0.124,
+   "detail": 0.055,
+   "motion": 0.0014
+  }
+ },
+ {
+  "name": "LYRIC_CLOUD",
+  "label": "Lyric cloud",
+  "motif": "LYRIC_CLOUD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.109,
+   "mean": 0.115,
+   "detail": 0.035,
+   "motion": 0.0032
+  }
+ },
+ {
+  "name": "LYRIC_KARAOKE",
+  "label": "Karaoke",
+  "motif": "LYRIC_KARAOKE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.14,
+   "mean": 0.156,
+   "detail": 0.056,
+   "motion": 0.022
+  }
+ },
+ {
+  "name": "LYRIC_SHEET",
+  "label": "Lyric sheet",
+  "motif": "LYRIC_SHEET",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.109,
+   "mean": 0.115,
+   "detail": 0.035,
+   "motion": 0.0032
+  }
+ },
+ {
+  "name": "LYRIC_NEON",
+  "label": "Neon lyrics",
+  "motif": "LYRIC_NEON",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.111,
+   "mean": 0.098,
+   "detail": 0.039,
+   "motion": 0.0061
+  }
+ },
+ {
+  "name": "VOLT",
+  "label": "Volt",
+  "motif": "SPARKS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.078,
+   "mean": 0.077,
+   "detail": 0.045,
+   "motion": 0.0267
+  }
+ },
+ {
+  "name": "TIDE",
+  "label": "Tide",
+  "motif": "LIQUID",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.182,
+   "mean": 0.124,
+   "detail": 0.069,
+   "motion": 0.0277
+  }
+ },
+ {
+  "name": "EMBER",
+  "label": "Ember",
+  "motif": "FLAMES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.045,
+   "mean": 0.124,
+   "detail": 0.125,
+   "motion": 0.0261
+  }
+ },
+ {
+  "name": "COBALT",
+  "label": "Cobalt",
+  "motif": "ORBIT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.058,
+   "mean": 0.113,
+   "detail": 0.113,
+   "motion": 0.006
+  }
+ },
+ {
+  "name": "SYNTHWAVE",
+  "label": "Synthwave",
+  "motif": "RETRO_GRID",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.193,
+   "mean": 0.165,
+   "detail": 0.201,
+   "motion": 0.0274
+  }
+ },
+ {
+  "name": "MATCHA",
+  "label": "Matcha",
+  "motif": "LEAVES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.137,
+   "mean": 0.099,
+   "detail": 0.071,
+   "motion": 0.0261
+  }
+ },
+ {
+  "name": "MONO",
+  "label": "Mono (OLED)",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.054,
+   "mean": 0.038,
+   "detail": 0.118,
+   "motion": 0.0242
+  }
+ },
+ {
+  "name": "NOW_PLAYING",
+  "label": "Now playing",
+  "motif": "MUSIC",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.353,
+   "mean": 0.367,
+   "detail": 0.117,
+   "motion": 0.017
+  }
+ },
+ {
+  "name": "SPECTRUM",
+  "label": "Spectrum",
+  "motif": "SPECTRUM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.276,
+   "mean": 0.302,
+   "detail": 0.09,
+   "motion": 0.0099
+  }
+ },
+ {
+  "name": "PULSE_RING",
+  "label": "Pulse ring",
+  "motif": "PULSE_RING",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.255,
+   "mean": 0.259,
+   "detail": 0.093,
+   "motion": 0.0133
+  }
+ },
+ {
+  "name": "BEAT_TUNNEL",
+  "label": "Beat tunnel",
+  "motif": "BEAT_TUNNEL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.131,
+   "mean": 0.134,
+   "detail": 0.079,
+   "motion": 0.0504
+  }
+ },
+ {
+  "name": "REACTOR",
+  "label": "Reactor core",
+  "motif": "REACTOR",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.161,
+   "mean": 0.167,
+   "detail": 0.079,
+   "motion": 0.0046
+  }
+ },
+ {
+  "name": "THUNDER",
+  "label": "Thunderstorm",
+  "motif": "THUNDER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.092,
+   "mean": 0.107,
+   "detail": 0.043,
+   "motion": 0.0107
+  }
+ },
+ {
+  "name": "BLOOM",
+  "label": "Bloom",
+  "motif": "BLOOM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.186,
+   "mean": 0.196,
+   "detail": 0.068,
+   "motion": 0.0086
+  }
+ },
+ {
+  "name": "TAPE_DECK",
+  "label": "Tape deck",
+  "motif": "TAPE_DECK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.244,
+   "mean": 0.233,
+   "detail": 0.131,
+   "motion": 0.0054
+  }
+ },
+ {
+  "name": "CHLADNI",
+  "label": "Sand patterns",
+  "motif": "CHLADNI",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.143,
+   "mean": 0.152,
+   "detail": 0.071,
+   "motion": 0.0116
+  }
+ },
+ {
+  "name": "LASER_STAGE",
+  "label": "Laser stage",
+  "motif": "LASER_STAGE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.089,
+   "mean": 0.099,
+   "detail": 0.074,
+   "motion": 0.0353
+  }
+ },
+ {
+  "name": "KALEIDO",
+  "label": "Kaleido cover",
+  "motif": "KALEIDO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.196,
+   "mean": 0.189,
+   "detail": 0.121,
+   "motion": 0.0157
+  }
+ },
+ {
+  "name": "SHATTER",
+  "label": "Cover shatter",
+  "motif": "SHATTER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.289,
+   "mean": 0.26,
+   "detail": 0.12,
+   "motion": 0.0216
+  }
+ },
+ {
+  "name": "TERRAIN",
+  "label": "Wire terrain",
+  "motif": "TERRAIN",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.18,
+   "mean": 0.123,
+   "detail": 0.132,
+   "motion": 0.0251
+  }
+ },
+ {
+  "name": "FIREWORKS",
+  "label": "Fireworks",
+  "motif": "FIREWORKS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.071,
+   "mean": 0.088,
+   "detail": 0.047,
+   "motion": 0.0066
+  }
+ },
+ {
+  "name": "NEON_PUDDLE",
+  "label": "Neon puddle",
+  "motif": "NEON_PUDDLE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.064,
+   "mean": 0.065,
+   "detail": 0.088,
+   "motion": 0.0209
+  }
+ },
+ {
+  "name": "VINYL",
+  "label": "Vinyl spin",
+  "motif": "VINYL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.368,
+   "mean": 0.282,
+   "detail": 0.164,
+   "motion": 0.0201
+  }
+ },
+ {
+  "name": "CD_SPIN",
+  "label": "Disc spin",
+  "motif": "CD_SPIN",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.336,
+   "mean": 0.299,
+   "detail": 0.11,
+   "motion": 0.0457
+  }
+ },
+ {
+  "name": "LAVA",
+  "label": "Album lava",
+  "motif": "LAVA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.313,
+   "mean": 0.291,
+   "detail": 0.145,
+   "motion": 0.0618
+  }
+ },
+ {
+  "name": "RIBBONS",
+  "label": "Sound ribbons",
+  "motif": "RIBBONS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.222,
+   "mean": 0.254,
+   "detail": 0.158,
+   "motion": 0.0278
+  }
+ },
+ {
+  "name": "DISCO",
+  "label": "Disco floor",
+  "motif": "DISCO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.201,
+   "mean": 0.285,
+   "detail": 0.176,
+   "motion": 0.1402
+  }
+ },
+ {
+  "name": "SPEAKER",
+  "label": "Bass cones",
+  "motif": "SPEAKER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.177,
+   "mean": 0.169,
+   "detail": 0.058,
+   "motion": 0.0135
+  }
+ },
+ {
+  "name": "SPARK_TYPE",
+  "label": "Spark",
+  "motif": "SPARKS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.082,
+   "mean": 0.081,
+   "detail": 0.048,
+   "motion": 0.0287
+  }
+ },
+ {
+  "name": "TORRENT_TYPE",
+  "label": "Torrent",
+  "motif": "BUBBLES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.349,
+   "mean": 0.213,
+   "detail": 0.129,
+   "motion": 0.0381
+  }
+ },
+ {
+  "name": "SPROUT_TYPE",
+  "label": "Sprout",
+  "motif": "LEAVES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.14,
+   "mean": 0.101,
+   "detail": 0.074,
+   "motion": 0.0273
+  }
+ },
+ {
+  "name": "MIND_TYPE",
+  "label": "Mind",
+  "motif": "PSY_WAVES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.108,
+   "mean": 0.118,
+   "detail": 0.101,
+   "motion": 0.0108
+  }
+ },
+ {
+  "name": "BLAZE_TYPE",
+  "label": "Blaze",
+  "motif": "ANIME_FLAMES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.053,
+   "mean": 0.266,
+   "detail": 0.29,
+   "motion": 0.1023
+  }
+ },
+ {
+  "name": "PHANTOM_TYPE",
+  "label": "Phantom",
+  "motif": "WISPS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.094,
+   "mean": 0.156,
+   "detail": 0.102,
+   "motion": 0.0255
+  }
+ },
+ {
+  "name": "FROST_TYPE",
+  "label": "Frost",
+  "motif": "FROST",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.186,
+   "mean": 0.212,
+   "detail": 0.143,
+   "motion": 0.0755
+  }
+ },
+ {
+  "name": "TERRA_TYPE",
+  "label": "Terra",
+  "motif": "TERRA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.199,
+   "mean": 0.274,
+   "detail": 0.142,
+   "motion": 0.0186
+  }
+ },
+ {
+  "name": "VENOM_TYPE",
+  "label": "Venom",
+  "motif": "VENOM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.155,
+   "mean": 0.165,
+   "detail": 0.11,
+   "motion": 0.0429
+  }
+ },
+ {
+  "name": "MEADOW_TYPE",
+  "label": "Meadow",
+  "motif": "MEADOW",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.561,
+   "mean": 0.53,
+   "detail": 0.19,
+   "motion": 0.0208
+  }
+ },
+ {
+  "name": "DOJO_TYPE",
+  "label": "Dojo",
+  "motif": "DOJO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.259,
+   "mean": 0.244,
+   "detail": 0.187,
+   "motion": 0.0005
+  }
+ },
+ {
+  "name": "GALE_TYPE",
+  "label": "Gale",
+  "motif": "GALE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.312,
+   "mean": 0.513,
+   "detail": 0.206,
+   "motion": 0.0385
+  }
+ },
+ {
+  "name": "THICKET_TYPE",
+  "label": "Thicket",
+  "motif": "THICKET",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.177,
+   "mean": 0.336,
+   "detail": 0.169,
+   "motion": 0.0084
+  }
+ },
+ {
+  "name": "BEDROCK_TYPE",
+  "label": "Bedrock",
+  "motif": "BEDROCK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.401,
+   "mean": 0.386,
+   "detail": 0.143,
+   "motion": 0.0012
+  }
+ },
+ {
+  "name": "WYRM_TYPE",
+  "label": "Wyrm",
+  "motif": "WYRM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.115,
+   "mean": 0.18,
+   "detail": 0.093,
+   "motion": 0.0469
+  }
+ },
+ {
+  "name": "UMBRA_TYPE",
+  "label": "Umbra",
+  "motif": "UMBRA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.04,
+   "mean": 0.046,
+   "detail": 0.077,
+   "motion": 0.0086
+  }
+ },
+ {
+  "name": "ALLOY_TYPE",
+  "label": "Alloy",
+  "motif": "ALLOY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.197,
+   "mean": 0.175,
+   "detail": 0.112,
+   "motion": 0.0344
+  }
+ },
+ {
+  "name": "GLIMMER_TYPE",
+  "label": "Glimmer",
+  "motif": "GLIMMER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.209,
+   "mean": 0.264,
+   "detail": 0.123,
+   "motion": 0.0227
+  }
+ },
+ {
+  "name": "POCKET_LCD",
+  "label": "Pocket LCD",
+  "motif": "LCD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.175,
+   "mean": 0.211,
+   "detail": 0.102,
+   "motion": 0.0437
+  }
+ },
+ {
+  "name": "POCKET_SHELL",
+  "label": "Pocket shell",
+  "motif": "LCD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.115,
+   "mean": 0.141,
+   "detail": 0.068,
+   "motion": 0.0282
+  }
+ },
+ {
+  "name": "SHINOBI",
+  "label": "Shinobi",
+  "motif": "LEAF_SWIRL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.099,
+   "mean": 0.156,
+   "detail": 0.129,
+   "motion": 0.0252
+  }
+ },
+ {
+  "name": "POWER_AURA",
+  "label": "Power aura",
+  "motif": "AURA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.133,
+   "mean": 0.268,
+   "detail": 0.281,
+   "motion": 0.0923
+  }
+ },
+ {
+  "name": "SUMMER_SKY",
+  "label": "Summer sky",
+  "motif": "CEL_SKY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.414,
+   "mean": 0.607,
+   "detail": 0.203,
+   "motion": 0.0282
+  }
+ },
+ {
+  "name": "MECHA_HUD",
+  "label": "Mecha HUD",
+  "motif": "MECHA_HUD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.058,
+   "mean": 0.048,
+   "detail": 0.049,
+   "motion": 0.024
+  }
+ },
+ {
+  "name": "MOON_BLADE",
+  "label": "Moon blade",
+  "motif": "MOON_BLADE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.13,
+   "mean": 0.149,
+   "detail": 0.211,
+   "motion": 0.0247
+  }
+ },
+ {
+  "name": "CIRCUIT",
+  "label": "Circuit board",
+  "motif": "CIRCUIT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.065,
+   "mean": 0.064,
+   "detail": 0.084,
+   "motion": 0.0085
+  }
+ },
+ {
+  "name": "GEARWORKS",
+  "label": "Gearworks",
+  "motif": "GEARWORKS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.138,
+   "mean": 0.129,
+   "detail": 0.147,
+   "motion": 0.0263
+  }
+ },
+ {
+  "name": "WARP",
+  "label": "Warp drive",
+  "motif": "WARP",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.045,
+   "mean": 0.048,
+   "detail": 0.053,
+   "motion": 0.0635
+  }
+ },
+ {
+  "name": "PRISM_ATRIUM",
+  "label": "Prism atrium",
+  "motif": "PRISM_ATRIUM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.094,
+   "mean": 0.091,
+   "detail": 0.107,
+   "motion": 0.0721
+  }
+ },
+ {
+  "name": "ORBIT_STATION",
+  "label": "Orbit station",
+  "motif": "ORBIT_STATION",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.033,
+   "mean": 0.041,
+   "detail": 0.054,
+   "motion": 0.0025
+  }
+ },
+ {
+  "name": "AURORA",
+  "label": "Aurora",
+  "motif": "AURORA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.266,
+   "mean": 0.202,
+   "detail": 0.149,
+   "motion": 0.1538
+  }
+ },
+ {
+  "name": "NEBULA",
+  "label": "Nebula",
+  "motif": "NEBULA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.091,
+   "mean": 0.093,
+   "detail": 0.05,
+   "motion": 0.0195
+  }
+ },
+ {
+  "name": "PIXEL_FLOW",
+  "label": "Pixel flow",
+  "motif": "PIXELS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.171,
+   "mean": 0.216,
+   "detail": 0.205,
+   "motion": 0.1977
+  }
+ },
+ {
+  "name": "GLASS",
+  "label": "Glass",
+  "motif": "SHOWCASE_GLASS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.151,
+   "mean": 0.174,
+   "detail": 0.117,
+   "motion": 0.0577
+  }
+ },
+ {
+  "name": "RETRO_WAVE",
+  "label": "Retro wave",
+  "motif": "RETRO_GRID",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.155,
+   "mean": 0.144,
+   "detail": 0.147,
+   "motion": 0.0251
+  }
+ },
+ {
+  "name": "ORBIT",
+  "label": "Orbit",
+  "motif": "ORBIT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.062,
+   "mean": 0.125,
+   "detail": 0.131,
+   "motion": 0.0074
+  }
+ },
+ {
+  "name": "DIGITAL_RAIN",
+  "label": "Digital rain",
+  "motif": "RAIN",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.084,
+   "mean": 0.083,
+   "detail": 0.101,
+   "motion": 0.0675
+  }
+ },
+ {
+  "name": "CONSTELLATION",
+  "label": "Constellation",
+  "motif": "STARS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.107,
+   "mean": 0.089,
+   "detail": 0.096,
+   "motion": 0.0167
+  }
+ },
+ {
+  "name": "LIQUID",
+  "label": "Liquid",
+  "motif": "LIQUID",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.174,
+   "mean": 0.115,
+   "detail": 0.068,
+   "motion": 0.0277
+  }
+ },
+ {
+  "name": "MINIMAL_CONSOLE",
+  "label": "Minimal console",
+  "motif": "MINIMAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.1,
+   "mean": 0.089,
+   "detail": 0.089,
+   "motion": 0.0181
+  }
+ },
+ {
+  "name": "SHALLOWS",
+  "label": "Sunlit shallows",
+  "motif": "CAUSTICS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.258,
+   "mean": 0.315,
+   "detail": 0.096,
+   "motion": 0.0797
+  }
+ },
+ {
+  "name": "INK_WASH",
+  "label": "Ink wash",
+  "motif": "INK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.292,
+   "mean": 0.263,
+   "detail": 0.074,
+   "motion": 0.0339
+  }
+ },
+ {
+  "name": "PAPER_LAYERS",
+  "label": "Paper layers",
+  "motif": "PAPERCUT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.263,
+   "mean": 0.248,
+   "detail": 0.088,
+   "motion": 0.0142
+  }
+ },
+ {
+  "name": "PIXEL_VALLEY",
+  "label": "16-bit valley",
+  "motif": "PARALLAX16",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.122,
+   "mean": 0.139,
+   "detail": 0.084,
+   "motion": 0.0227
+  }
+ },
+ {
+  "name": "HOLO_FOIL",
+  "label": "Holo foil",
+  "motif": "HOLO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.178,
+   "mean": 0.205,
+   "detail": 0.107,
+   "motion": 0.0628
+  }
+ },
+ {
+  "name": "CAMPFIRE",
+  "label": "Campfire",
+  "motif": "CAMPFIRE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.061,
+   "mean": 0.09,
+   "detail": 0.1,
+   "motion": 0.0106
+  }
+ },
+ {
+  "name": "ERA_8BIT",
+  "label": "8-bit quest",
+  "motif": "ERA_8BIT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.241,
+   "mean": 0.323,
+   "detail": 0.166,
+   "motion": 0.0439
+  }
+ },
+ {
+  "name": "MODE7",
+  "label": "16-bit mode 7",
+  "motif": "MODE7",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.323,
+   "mean": 0.349,
+   "detail": 0.091,
+   "motion": 0.0546
+  }
+ },
+ {
+  "name": "PS1_POLY",
+  "label": "32-bit polygons",
+  "motif": "PS1_POLY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.097,
+   "mean": 0.172,
+   "detail": 0.141,
+   "motion": 0.0596
+  }
+ },
+ {
+  "name": "N64_PLAINS",
+  "label": "64-bit plains",
+  "motif": "N64_PLAINS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.673,
+   "mean": 0.519,
+   "detail": 0.139,
+   "motion": 0.05
+  }
+ },
+ {
+  "name": "PS2_HAZE",
+  "label": "128-bit haze",
+  "motif": "PS2_HAZE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.076,
+   "mean": 0.126,
+   "detail": 0.112,
+   "motion": 0.063
+  }
+ },
+ {
+  "name": "BLUE_SKY",
+  "label": "Blue sky cruise",
+  "motif": "BLUE_SKY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.43,
+   "mean": 0.5,
+   "detail": 0.201,
+   "motion": 0.0899
+  }
+ },
+ {
+  "name": "XMB_WAVE",
+  "label": "Wave menu",
+  "motif": "XMB_WAVE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.17,
+   "mean": 0.228,
+   "detail": 0.174,
+   "motion": 0.0421
+  }
+ },
+ {
+  "name": "PLAZA",
+  "label": "Motion plaza",
+  "motif": "PLAZA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.357,
+   "mean": 0.303,
+   "detail": 0.092,
+   "motion": 0.034
+  }
+ },
+ {
+  "name": "VECTOR",
+  "label": "Vector arcade",
+  "motif": "VECTOR",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.009,
+   "mean": 0.013,
+   "detail": 0.051,
+   "motion": 0.0115
+  }
+ },
+ {
+  "name": "CRT_TUNNEL",
+  "label": "CRT tunnel",
+  "motif": "CRT_TUNNEL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.137,
+   "mean": 0.131,
+   "detail": 0.086,
+   "motion": 0.0805
+  }
+ },
+ {
+  "name": "MEMORY_CARD",
+  "label": "Memory card",
+  "motif": "MEMORY_CARD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.109,
+   "mean": 0.072,
+   "detail": 0.098,
+   "motion": 0.0126
+  }
+ },
+ {
+  "name": "ENERGY_CORE",
+  "label": "Energy core",
+  "motif": "ENERGY_CORE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.073,
+   "mean": 0.095,
+   "detail": 0.183,
+   "motion": 0.0136
+  }
+ },
+ {
+  "name": "RACING_32",
+  "label": "32-bit racing",
+  "motif": "RACING_32",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.233,
+   "mean": 0.225,
+   "detail": 0.104,
+   "motion": 0.0186
+  }
+ },
+ {
+  "name": "FIRE_32",
+  "label": "32-bit fire",
+  "motif": "FIRE_32",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.095,
+   "mean": 0.201,
+   "detail": 0.223,
+   "motion": 0.0271
+  }
+ },
+ {
+  "name": "SHOWCASE_PARALLAX",
+  "label": "Hero parallax",
+  "motif": "SHOWCASE_PARALLAX",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.071,
+   "mean": 0.105,
+   "detail": 0.044,
+   "motion": 0.0215
+  }
+ },
+ {
+  "name": "SHOWCASE_CINEMA",
+  "label": "Cinematic",
+  "motif": "SHOWCASE_CINEMA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.057,
+   "mean": 0.097,
+   "detail": 0.053,
+   "motion": 0.0249
+  }
+ },
+ {
+  "name": "SHOWCASE_FILMSTRIP",
+  "label": "Filmstrip",
+  "motif": "SHOWCASE_FILMSTRIP",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.061,
+   "mean": 0.091,
+   "detail": 0.04,
+   "motion": 0.0197
+  }
+ },
+ {
+  "name": "SHOWCASE_MOSAIC",
+  "label": "Screenshot wall",
+  "motif": "SHOWCASE_MOSAIC",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.064,
+   "mean": 0.094,
+   "detail": 0.039,
+   "motion": 0.0195
+  }
+ },
+ {
+  "name": "ARENA",
+  "label": "Arena entrance",
+  "motif": "ARENA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.195,
+   "mean": 0.144,
+   "detail": 0.184,
+   "motion": 0.0145
+  }
+ },
+ {
+  "name": "SPECIMEN_LAB",
+  "label": "Specimen lab",
+  "motif": "SPECIMEN_LAB",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.259,
+   "mean": 0.233,
+   "detail": 0.144,
+   "motion": 0.0092
+  }
+ },
+ {
+  "name": "MAGICAL",
+  "label": "Magical sparkle",
+  "motif": "MAGICAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.702,
+   "mean": 0.699,
+   "detail": 0.131,
+   "motion": 0.0708
+  }
+ },
+ {
+  "name": "SPIRIT_FOREST",
+  "label": "Spirit forest",
+  "motif": "SPIRIT_FOREST",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.492,
+   "mean": 0.362,
+   "detail": 0.231,
+   "motion": 0.0222
+  }
+ },
+ {
+  "name": "FESTIVAL",
+  "label": "Summer festival",
+  "motif": "FESTIVAL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.145,
+   "mean": 0.169,
+   "detail": 0.151,
+   "motion": 0.0337
+  }
+ },
+ {
+  "name": "AURA_CLASH",
+  "label": "Aura clash",
+  "motif": "AURA_CLASH",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.452,
+   "mean": 0.295,
+   "detail": 0.284,
+   "motion": 0.0574
+  }
+ },
+ {
+  "name": "COVER_WALL",
+  "label": "Cover wall",
+  "motif": "ART_WALL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.333,
+   "mean": 0.216,
+   "detail": 0.201,
+   "motion": 0.1182
+  }
+ },
+ {
+  "name": "COVER_TUNNEL",
+  "label": "Cover tunnel",
+  "motif": "ART_TUNNEL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.452,
+   "mean": 0.341,
+   "detail": 0.224,
+   "motion": 0.1337
+  }
+ },
+ {
+  "name": "POP_ART",
+  "label": "Pop art cover",
+  "motif": "POP_ART",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.223,
+   "mean": 0.198,
+   "detail": 0.127,
+   "motion": 0.0082
+  }
+ },
+ {
+  "name": "COVER_RIPPLE",
+  "label": "Cover ripple",
+  "motif": "COVER_RIPPLE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.338,
+   "mean": 0.301,
+   "detail": 0.134,
+   "motion": 0.0158
+  }
+ },
+ {
+  "name": "BLAZE_BEAT",
+  "label": "Blaze beat",
+  "motif": "BLAZE_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.06,
+   "mean": 0.191,
+   "detail": 0.2,
+   "motion": 0.0583
+  }
+ },
+ {
+  "name": "AURA_BEAT",
+  "label": "Aura clash · music",
+  "motif": "AURA_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.375,
+   "mean": 0.284,
+   "detail": 0.246,
+   "motion": 0.0523
+  }
+ },
+ {
+  "name": "MOUNTAINS",
+  "label": "Mountains forming",
+  "motif": "MOUNTAINS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.183,
+   "mean": 0.188,
+   "detail": 0.168,
+   "motion": 0.01
+  }
+ },
+ {
+  "name": "SPECIMEN_BEAT",
+  "label": "Specimen lab · music",
+  "motif": "SPECIMEN_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.202,
+   "mean": 0.177,
+   "detail": 0.115,
+   "motion": 0.009
+  }
+ },
+ {
+  "name": "TOWERS_128",
+  "label": "128-bit towers",
+  "motif": "TOWERS_128",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.097,
+   "mean": 0.095,
+   "detail": 0.06,
+   "motion": 0.0077
+  }
+ },
+ {
+  "name": "CARTRIDGE_16",
+  "label": "16-bit cartridge",
+  "motif": "CARTRIDGE_16",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.118,
+   "mean": 0.16,
+   "detail": 0.139,
+   "motion": 0.0014
+  }
+ },
+ {
+  "name": "HANDHELD",
+  "label": "Handheld",
+  "motif": "HANDHELD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.271,
+   "mean": 0.229,
+   "detail": 0.215,
+   "motion": 0.0124
+  }
+ },
+ {
+  "name": "PIXEL_PARADE",
+  "label": "Pixel parade",
+  "motif": "PIXEL_PARADE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.166,
+   "mean": 0.123,
+   "detail": 0.148,
+   "motion": 0.0343
+  }
+ },
+ {
+  "name": "CAMPFIRE_BEAT",
+  "label": "Campfire beat",
+  "motif": "CAMPFIRE_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.033,
+   "mean": 0.085,
+   "detail": 0.158,
+   "motion": 0.0046
+  }
+ },
+ {
+  "name": "MANGA_BEAT",
+  "label": "Manga beat",
+  "motif": "MANGA_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.664,
+   "mean": 0.663,
+   "detail": 0.286,
+   "motion": 0.0252
+  }
+ },
+ {
+  "name": "COMIC_PANELS",
+  "label": "Comic pages",
+  "motif": "COMIC_PANELS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.611,
+   "mean": 0.587,
+   "detail": 0.215,
+   "motion": 0.1944
+  }
+ },
+ {
+  "name": "PIXEL_SKY",
+  "label": "Pixel sky",
+  "motif": "PIXEL_SKY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.498,
+   "mean": 0.63,
+   "detail": 0.149,
+   "motion": 0.0391
+  }
+ },
+ {
+  "name": "CRT_ROOM",
+  "label": "CRT room",
+  "motif": "SHOWCASE_CRT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.074,
+   "mean": 0.054,
+   "detail": 0.081,
+   "motion": 0.018
+  }
+ },
+ {
+  "name": "COVER_FLOW",
+  "label": "Cover flow",
+  "motif": "COVER_FLOW",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.238,
+   "mean": 0.172,
+   "detail": 0.139,
+   "motion": 0.0112
+  }
+ },
+ {
+  "name": "RECORD_SHELF",
+  "label": "Record shelf",
+  "motif": "RECORD_SHELF",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.216,
+   "mean": 0.168,
+   "detail": 0.142,
+   "motion": 0.0028
+  }
+ },
+ {
+  "name": "COVER_CUBE",
+  "label": "Cover cube",
+  "motif": "COVER_CUBE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.135,
+   "mean": 0.095,
+   "detail": 0.112,
+   "motion": 0.0166
+  }
+ },
+ {
+  "name": "COVER_FLOAT",
+  "label": "Floating cover",
+  "motif": "COVER_FLOAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.2,
+   "mean": 0.192,
+   "detail": 0.098,
+   "motion": 0.0109
+  }
+ },
+ {
+  "name": "HOLO_COVER",
+  "label": "Holo card",
+  "motif": "HOLO_COVER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.181,
+   "mean": 0.128,
+   "detail": 0.122,
+   "motion": 0.0501
+  }
+ },
+ {
+  "name": "COVER_HALO",
+  "label": "Cover halo",
+  "motif": "COVER_HALO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.194,
+   "mean": 0.182,
+   "detail": 0.12,
+   "motion": 0.0063
+  }
+ },
+ {
+  "name": "BIG_TYPE",
+  "label": "Big type",
+  "motif": "BIG_TYPE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.131,
+   "mean": 0.136,
+   "detail": 0.12,
+   "motion": 0.0168
+  }
+ },
+ {
+  "name": "PIXEL_COVER",
+  "label": "Pixel cover",
+  "motif": "PIXEL_COVER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.116,
+   "mean": 0.072,
+   "detail": 0.161,
+   "motion": 0.0022
+  }
+ },
+ {
+  "name": "POLAROID",
+  "label": "Polaroids",
+  "motif": "POLAROID",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.451,
+   "mean": 0.383,
+   "detail": 0.178,
+   "motion": 0.0166
+  }
+ },
+ {
+  "name": "RETRO_TV",
+  "label": "Retro TV",
+  "motif": "RETRO_TV",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.124,
+   "mean": 0.085,
+   "detail": 0.144,
+   "motion": 0.0025
+  }
+ },
+ {
+  "name": "JUKEBOX",
+  "label": "Jukebox",
+  "motif": "JUKEBOX",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.147,
+   "mean": 0.081,
+   "detail": 0.134,
+   "motion": 0.0025
+  }
+ },
+ {
+  "name": "NEON_FRAME",
+  "label": "Neon frame",
+  "motif": "NEON_FRAME",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.148,
+   "mean": 0.103,
+   "detail": 0.128,
+   "motion": 0.0007
+  }
+ },
+ {
+  "name": "MAGAZINE",
+  "label": "Magazine",
+  "motif": "MAGAZINE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.177,
+   "mean": 0.099,
+   "detail": 0.192,
+   "motion": 0.004
+  }
+ },
+ {
+  "name": "COVER_FOCUS",
+  "label": "Pan & zoom",
+  "motif": "COVER_FOCUS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.546,
+   "mean": 0.453,
+   "detail": 0.234,
+   "motion": 0.0448
+  }
+ },
+ {
+  "name": "DISC_SLEEVE",
+  "label": "Disc & sleeve",
+  "motif": "DISC_SLEEVE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.337,
+   "mean": 0.286,
+   "detail": 0.135,
+   "motion": 0.0206
+  }
+ },
+ {
+  "name": "ALBUM_TIDE",
+  "label": "Album tide",
+  "motif": "ALBUM_TIDE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.238,
+   "mean": 0.176,
+   "detail": 0.211,
+   "motion": 0.0018
+  }
+ },
+ {
+  "name": "STILL_DUSK",
+  "label": "Still dusk",
+  "motif": "STILL_DUSK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.1,
+   "mean": 0.236,
+   "detail": 0.137,
+   "motion": 0
+  }
+ },
+ {
+  "name": "STILL_HORIZON",
+  "label": "Still horizon",
+  "motif": "STILL_HORIZON",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.302,
+   "mean": 0.295,
+   "detail": 0.098,
+   "motion": 0
+  }
+ },
+ {
+  "name": "STILL_GLOW",
+  "label": "Still glow",
+  "motif": "STILL_GLOW",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.149,
+   "mean": 0.113,
+   "detail": 0.031,
+   "motion": 0
+  }
+ },
+ {
+  "name": "CALM_RIBBON",
+  "label": "Light ribbon",
+  "motif": "CALM_RIBBON",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.076,
+   "mean": 0.097,
+   "detail": 0.064,
+   "motion": 0.0223
+  }
+ },
+ {
+  "name": "CALM_DRIFT",
+  "label": "Night drift",
+  "motif": "CALM_DRIFT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.158,
+   "mean": 0.127,
+   "detail": 0.035,
+   "motion": 0.0136
+  }
+ },
+ {
+  "name": "CALM_HALO",
+  "label": "Soft halo",
+  "motif": "CALM_HALO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.117,
+   "mean": 0.133,
+   "detail": 0.056,
+   "motion": 0.0077
+  }
+ },
+ {
+  "name": "BOLD_SPLIT",
+  "label": "Bold split",
+  "motif": "BOLD_SPLIT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.31,
+   "mean": 0.365,
+   "detail": 0.13,
+   "motion": 0
+  }
+ },
+ {
+  "name": "BOLD_DOTS",
+  "label": "Bold dots",
+  "motif": "BOLD_DOTS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.326,
+   "mean": 0.335,
+   "detail": 0.11,
+   "motion": 0
+  }
+ },
+ {
+  "name": "BOLD_BANDS",
+  "label": "Bold bands",
+  "motif": "BOLD_BANDS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.275,
+   "mean": 0.285,
+   "detail": 0.252,
+   "motion": 0
+  }
+ },
+ {
+  "name": "SAKURA",
+  "label": "Sakura",
+  "motif": "PETALS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.152,
+   "mean": 0.127,
+   "detail": 0.11,
+   "motion": 0.0242
+  }
+ },
+ {
+  "name": "ARCADE_CRT",
+  "label": "Arcade CRT",
+  "motif": "SHOWCASE_CRT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.063,
+   "mean": 0.044,
+   "detail": 0.079,
+   "motion": 0.0169
+  }
+ },
+ {
+  "name": "DEEP_SEA",
+  "label": "Deep sea",
+  "motif": "BUBBLES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.394,
+   "mean": 0.235,
+   "detail": 0.15,
+   "motion": 0.0412
+  }
+ },
+ {
+  "name": "HANDHELD_BOOT",
+  "label": "Handheld boot",
+  "motif": "HANDHELD_BOOT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.233,
+   "mean": 0.213,
+   "detail": 0.23,
+   "motion": 0.0121
+  }
+ },
+ {
+  "name": "POCKET_BEAT",
+  "label": "Pocket beat",
+  "motif": "POCKET_BEAT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.305,
+   "mean": 0.288,
+   "detail": 0.176,
+   "motion": 0.0278
+  }
+ },
+ {
+  "name": "CONSOLE_DISC",
+  "label": "Console disc",
+  "motif": "CONSOLE_DISC",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.174,
+   "mean": 0.162,
+   "detail": 0.131,
+   "motion": 0.0112
+  }
+ },
+ {
+  "name": "ARCADE_ATTRACT",
+  "label": "Arcade attract",
+  "motif": "ARCADE_ATTRACT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.077,
+   "mean": 0.062,
+   "detail": 0.098,
+   "motion": 0.0104
+  }
+ },
+ {
+  "name": "NEON_CARTRIDGE",
+  "label": "Neon cartridge",
+  "motif": "NEON_CARTRIDGE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.126,
+   "mean": 0.121,
+   "detail": 0.183,
+   "motion": 0.0265
+  }
+ },
+ {
+  "name": "DATA_STREAM",
+  "label": "Data stream",
+  "motif": "DATA_STREAM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.042,
+   "mean": 0.057,
+   "detail": 0.079,
+   "motion": 0.011
+  }
+ },
+ {
+  "name": "PORTAL_GALLERY",
+  "label": "Portal gallery",
+  "motif": "PORTAL_GALLERY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.181,
+   "mean": 0.172,
+   "detail": 0.235,
+   "motion": 0.1026
+  }
+ },
+ {
+  "name": "POSTER_WALL",
+  "label": "Poster wall",
+  "motif": "POSTER_WALL",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.201,
+   "mean": 0.164,
+   "detail": 0.157,
+   "motion": 0.1019
+  }
+ },
+ {
+  "name": "GAMING_ROOM",
+  "label": "Gaming room",
+  "motif": "GAMING_ROOM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.253,
+   "mean": 0.273,
+   "detail": 0.162,
+   "motion": 0.0026
+  }
+ },
+ {
+  "name": "TROPHY_VAULT",
+  "label": "Trophy vault",
+  "motif": "TROPHY_VAULT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.154,
+   "mean": 0.164,
+   "detail": 0.13,
+   "motion": 0.0159
+  }
+ },
+ {
+  "name": "BADGE_BOUNCE",
+  "label": "Badge bounce",
+  "motif": "BADGE_BOUNCE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.169,
+   "mean": 0.161,
+   "detail": 0.049,
+   "motion": 0.0226
+  }
+ },
+ {
+  "name": "CHILL_BLADES",
+  "label": "Glass blades",
+  "motif": "CHILL_BLADES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.146,
+   "mean": 0.219,
+   "detail": 0.146,
+   "motion": 0.0198
+  }
+ },
+ {
+  "name": "CHILL_POLAR",
+  "label": "Polar veil",
+  "motif": "CHILL_POLAR",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.433,
+   "mean": 0.183,
+   "detail": 0.205,
+   "motion": 0.014
+  }
+ },
+ {
+  "name": "CHILL_PLANET",
+  "label": "Planet rise",
+  "motif": "CHILL_PLANET",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.025,
+   "mean": 0.069,
+   "detail": 0.105,
+   "motion": 0.0043
+  }
+ },
+ {
+  "name": "CHILL_MOON",
+  "label": "Moon tide",
+  "motif": "CHILL_MOON",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.073,
+   "mean": 0.172,
+   "detail": 0.144,
+   "motion": 0.0039
+  }
+ },
+ {
+  "name": "CHILL_ORBS",
+  "label": "Glass orbs",
+  "motif": "CHILL_ORBS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.083,
+   "mean": 0.141,
+   "detail": 0.068,
+   "motion": 0.011
+  }
+ },
+ {
+  "name": "CHILL_SILK",
+  "label": "Silk folds",
+  "motif": "CHILL_SILK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.178,
+   "mean": 0.121,
+   "detail": 0.147,
+   "motion": 0.011
+  }
+ },
+ {
+  "name": "CHILL_DUNES",
+  "label": "Dune hour",
+  "motif": "CHILL_DUNES",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.239,
+   "mean": 0.292,
+   "detail": 0.145,
+   "motion": 0.0019
+  }
+ },
+ {
+  "name": "CHILL_MESH",
+  "label": "Mesh glow",
+  "motif": "CHILL_MESH",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.154,
+   "mean": 0.196,
+   "detail": 0.117,
+   "motion": 0.0184
+  }
+ },
+ {
+  "name": "CHILL_LIGHT",
+  "label": "Morning light",
+  "motif": "CHILL_LIGHT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.253,
+   "mean": 0.261,
+   "detail": 0.101,
+   "motion": 0.0018
+  }
+ },
+ {
+  "name": "CHILL_SHADE",
+  "label": "Leaf shade",
+  "motif": "CHILL_SHADE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.458,
+   "mean": 0.395,
+   "detail": 0.085,
+   "motion": 0.0294
+  }
+ },
+ {
+  "name": "CHILL_RAIN",
+  "label": "Rainy window",
+  "motif": "CHILL_RAIN",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.105,
+   "mean": 0.131,
+   "detail": 0.069,
+   "motion": 0.0216
+  }
+ },
+ {
+  "name": "CHILL_CITY",
+  "label": "Rooftop dusk",
+  "motif": "CHILL_CITY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.139,
+   "mean": 0.209,
+   "detail": 0.117,
+   "motion": 0.0006
+  }
+ },
+ {
+  "name": "CHILL_JELLY",
+  "label": "Jellyfish drift",
+  "motif": "CHILL_JELLY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.109,
+   "mean": 0.084,
+   "detail": 0.063,
+   "motion": 0.0094
+  }
+ },
+ {
+  "name": "CHILL_GLADE",
+  "label": "Firefly glade",
+  "motif": "CHILL_GLADE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.179,
+   "mean": 0.154,
+   "detail": 0.101,
+   "motion": 0.0032
+  }
+ },
+ {
+  "name": "CHILL_HEX",
+  "label": "Hex lattice",
+  "motif": "CHILL_HEX",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.088,
+   "mean": 0.073,
+   "detail": 0.054,
+   "motion": 0.0102
+  }
+ },
+ {
+  "name": "CHILL_CLOUDS",
+  "label": "Above the clouds",
+  "motif": "CHILL_CLOUDS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.31,
+   "mean": 0.435,
+   "detail": 0.166,
+   "motion": 0.0044
+  }
+ },
+ {
+  "name": "CHILL_KOI",
+  "label": "Koi pond",
+  "motif": "CHILL_KOI",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.199,
+   "mean": 0.164,
+   "detail": 0.107,
+   "motion": 0.0182
+  }
+ },
+ {
+  "name": "CHILL_PEAKS",
+  "label": "Winter peaks",
+  "motif": "CHILL_PEAKS",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.103,
+   "mean": 0.189,
+   "detail": 0.102,
+   "motion": 0.0014
+  }
+ },
+ {
+  "name": "PIXEL_WORLD",
+  "label": "Pixel world",
+  "motif": "PIXEL_WORLD",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.539,
+   "mean": 0.523,
+   "detail": 0.157,
+   "motion": 0.1535
+  }
+ },
+ {
+  "name": "SPARK_PX",
+  "label": "Spark · 32-bit",
+  "motif": "PX_SPARK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.422,
+   "mean": 0.266,
+   "detail": 0.211,
+   "motion": 0.1409
+  }
+ },
+ {
+  "name": "TORRENT_PX",
+  "label": "Torrent · 32-bit",
+  "motif": "PX_TORRENT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.67,
+   "mean": 0.538,
+   "detail": 0.175,
+   "motion": 0.0227
+  }
+ },
+ {
+  "name": "SPROUT_PX",
+  "label": "Sprout · 32-bit",
+  "motif": "PX_SPROUT",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.704,
+   "mean": 0.541,
+   "detail": 0.205,
+   "motion": 0.011
+  }
+ },
+ {
+  "name": "MIND_PX",
+  "label": "Mind · 32-bit",
+  "motif": "PX_MIND",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.135,
+   "mean": 0.141,
+   "detail": 0.13,
+   "motion": 0.0288
+  }
+ },
+ {
+  "name": "BLAZE_PX",
+  "label": "Blaze · 32-bit",
+  "motif": "PX_BLAZE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.061,
+   "mean": 0.127,
+   "detail": 0.15,
+   "motion": 0.0364
+  }
+ },
+ {
+  "name": "PHANTOM_PX",
+  "label": "Phantom · 32-bit",
+  "motif": "PX_PHANTOM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.113,
+   "mean": 0.11,
+   "detail": 0.147,
+   "motion": 0.0266
+  }
+ },
+ {
+  "name": "FROST_PX",
+  "label": "Frost · 32-bit",
+  "motif": "PX_FROST",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.486,
+   "mean": 0.524,
+   "detail": 0.227,
+   "motion": 0.0351
+  }
+ },
+ {
+  "name": "TERRA_PX",
+  "label": "Terra · 32-bit",
+  "motif": "PX_TERRA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.61,
+   "mean": 0.535,
+   "detail": 0.143,
+   "motion": 0.1006
+  }
+ },
+ {
+  "name": "VENOM_PX",
+  "label": "Venom · 32-bit",
+  "motif": "PX_VENOM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.077,
+   "mean": 0.168,
+   "detail": 0.156,
+   "motion": 0.0188
+  }
+ },
+ {
+  "name": "MEADOW_PX",
+  "label": "Meadow · 32-bit",
+  "motif": "PX_MEADOW",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.666,
+   "mean": 0.599,
+   "detail": 0.15,
+   "motion": 0.0038
+  }
+ },
+ {
+  "name": "DOJO_PX",
+  "label": "Dojo · 32-bit",
+  "motif": "PX_DOJO",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.358,
+   "mean": 0.33,
+   "detail": 0.163,
+   "motion": 0.0007
+  }
+ },
+ {
+  "name": "GALE_PX",
+  "label": "Gale · 32-bit",
+  "motif": "PX_GALE",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.469,
+   "mean": 0.641,
+   "detail": 0.175,
+   "motion": 0.0545
+  }
+ },
+ {
+  "name": "THICKET_PX",
+  "label": "Thicket · 32-bit",
+  "motif": "PX_THICKET",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.393,
+   "mean": 0.348,
+   "detail": 0.176,
+   "motion": 0.0127
+  }
+ },
+ {
+  "name": "BEDROCK_PX",
+  "label": "Bedrock · 32-bit",
+  "motif": "PX_BEDROCK",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.294,
+   "mean": 0.281,
+   "detail": 0.135,
+   "motion": 0.0023
+  }
+ },
+ {
+  "name": "WYRM_PX",
+  "label": "Wyrm · 32-bit",
+  "motif": "PX_WYRM",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.152,
+   "mean": 0.121,
+   "detail": 0.158,
+   "motion": 0.0268
+  }
+ },
+ {
+  "name": "UMBRA_PX",
+  "label": "Umbra · 32-bit",
+  "motif": "PX_UMBRA",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.125,
+   "mean": 0.09,
+   "detail": 0.085,
+   "motion": 0.0038
+  }
+ },
+ {
+  "name": "ALLOY_PX",
+  "label": "Alloy · 32-bit",
+  "motif": "PX_ALLOY",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.494,
+   "mean": 0.39,
+   "detail": 0.194,
+   "motion": 0.0468
+  }
+ },
+ {
+  "name": "GLIMMER_PX",
+  "label": "Glimmer · 32-bit",
+  "motif": "PX_GLIMMER",
+  "times": [
+   2,
+   9,
+   17
+  ],
+  "errors": [],
+  "metrics": {
+   "titleZone": 0.307,
+   "mean": 0.285,
+   "detail": 0.15,
+   "motion": 0.0113
+  }
+ }
 ]

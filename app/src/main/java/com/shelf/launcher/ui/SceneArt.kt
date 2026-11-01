@@ -111,19 +111,9 @@ internal object SceneArt {
                 val canvas = android.graphics.Canvas(out)
                 val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
                 bitmaps.forEachIndexed { i, bmp ->
-                    // Each cell filled, the cover's middle kept (a wide cover loses its sides).
-                    val target = CELL_W.toFloat() / CELL_H
-                    val have = bmp.width.toFloat() / bmp.height
-                    val src = if (have > target) {
-                        val w = (bmp.height * target).toInt()
-                        android.graphics.Rect((bmp.width - w) / 2, 0, (bmp.width + w) / 2, bmp.height)
-                    } else {
-                        val h = (bmp.width / target).toInt()
-                        android.graphics.Rect(0, (bmp.height - h) / 2, bmp.width, (bmp.height + h) / 2)
-                    }
                     val x = (i % 4) * CELL_W
                     val y = (i / 4) * CELL_H
-                    canvas.drawBitmap(bmp, src, android.graphics.Rect(x, y, x + CELL_W, y + CELL_H), paint)
+                    drawCoverCell(canvas, bmp, android.graphics.Rect(x, y, x + CELL_W, y + CELL_H), paint)
                 }
                 Covers(
                     urls,
@@ -132,6 +122,30 @@ internal object SceneArt {
                 ).also { lastCovers = it }
             }.getOrNull()
         }
+    }
+
+    /**
+     * Update 427: one cover into its atlas cell. A cover close to the cell's shape fills it (cropped a little at most); a
+     * cover of quite another shape (a wide DS / GBA / SNES box, a square CD case, a landscape key art) is shown WHOLE,
+     * centred, over a dimmed, filled copy of itself — the centre crop cut away half of a wide cover (its title, its
+     * characters). Never stretched.
+     */
+    private fun drawCoverCell(canvas: android.graphics.Canvas, bmp: Bitmap, dst: android.graphics.Rect, paint: android.graphics.Paint) {
+        val target = dst.width().toFloat() / dst.height()
+        val have = bmp.width.toFloat() / bmp.height
+        val fillSrc = if (have > target) {
+            val w = (bmp.height * target).toInt()
+            android.graphics.Rect((bmp.width - w) / 2, 0, (bmp.width + w) / 2, bmp.height)
+        } else {
+            val h = (bmp.width / target).toInt()
+            android.graphics.Rect(0, (bmp.height - h) / 2, bmp.width, (bmp.height + h) / 2)
+        }
+        if (!atlasFitsWhole(have, target)) { canvas.drawBitmap(bmp, fillSrc, dst, paint); return }
+        // The backdrop: the same cover filling the cell, dimmed, so the cell never shows bare bars.
+        canvas.drawBitmap(bmp, fillSrc, dst, paint)
+        canvas.drawRect(dst, android.graphics.Paint().apply { color = 0x99000000.toInt() })
+        val r = atlasFitRect(bmp.width, bmp.height, dst.width(), dst.height())
+        canvas.drawBitmap(bmp, null, android.graphics.Rect(dst.left + r[0], dst.top + r[1], dst.left + r[2], dst.top + r[3]), paint)
     }
 
     /** The game's hero (soft background) and cover (sharp square) for a console-era music scene. */
@@ -179,4 +193,14 @@ internal fun rememberGameMusicArt(enabled: Boolean): State<SceneArt.MusicArt?> {
     return produceKeyed<SceneArt.MusicArt?>(null, g?.key, g?.key, g?.hero, g?.cover) {
         value = if (g == null) null else SceneArt.musicArt(context, g)
     }
+}
+
+/** Update 427: a cover of [have] aspect in a cell of [target] aspect is shown whole (fitted) rather than centre-cropped. */
+internal fun atlasFitsWhole(have: Float, target: Float): Boolean = have / target > 1.22f || have / target < 0.82f
+
+/** Update 427: [w] × [h] fitted whole and centred in a [cw] × [ch] cell (no stretching): left, top, right, bottom. */
+internal fun atlasFitRect(w: Int, h: Int, cw: Int, ch: Int): IntArray {
+    val k = minOf(cw.toFloat() / w, ch.toFloat() / h)
+    val fw = (w * k).toInt().coerceIn(1, cw); val fh = (h * k).toInt().coerceIn(1, ch)
+    return intArrayOf((cw - fw) / 2, (ch - fh) / 2, (cw - fw) / 2 + fw, (ch - fh) / 2 + fh)
 }

@@ -136,6 +136,15 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> PRELUDE + LYRIC_CLOUD
         ThemeMotif.LYRIC_NEON -> PRELUDE + LYRIC_NEON
         ThemeMotif.DISC_SLEEVE -> PRELUDE + DISC_SLEEVE
+        ThemeMotif.STILL_DUSK -> PRELUDE + STILL_DUSK
+        ThemeMotif.STILL_HORIZON -> PRELUDE + STILL_HORIZON
+        ThemeMotif.STILL_GLOW -> PRELUDE + STILL_GLOW
+        ThemeMotif.CALM_RIBBON -> PRELUDE + CALM_RIBBON
+        ThemeMotif.CALM_DRIFT -> PRELUDE + CALM_DRIFT
+        ThemeMotif.CALM_HALO -> PRELUDE + CALM_HALO
+        ThemeMotif.BOLD_SPLIT -> PRELUDE + BOLD_SPLIT
+        ThemeMotif.BOLD_DOTS -> PRELUDE + BOLD_DOTS
+        ThemeMotif.BOLD_BANDS -> PRELUDE + BOLD_BANDS
         ThemeMotif.ALBUM_TIDE -> PRELUDE + ALBUM_TIDE
         ThemeMotif.CHILL_BLADES -> PRELUDE + CHILL_BLADES
         ThemeMotif.CHILL_POLAR -> PRELUDE + CHILL_POLAR
@@ -186,15 +195,6 @@ internal object ThemeShaders {
         ThemeMotif.PX_ALLOY -> PRELUDE + PX_ALLOY
         ThemeMotif.PX_GLIMMER -> PRELUDE + PX_GLIMMER
         ThemeMotif.GAMING_ROOM -> PRELUDE + GAMING_ROOM
-        ThemeMotif.STILL_DUSK -> PRELUDE + STILL_DUSK
-        ThemeMotif.STILL_HORIZON -> PRELUDE + STILL_HORIZON
-        ThemeMotif.STILL_GLOW -> PRELUDE + STILL_GLOW
-        ThemeMotif.CALM_RIBBON -> PRELUDE + CALM_RIBBON
-        ThemeMotif.CALM_DRIFT -> PRELUDE + CALM_DRIFT
-        ThemeMotif.CALM_HALO -> PRELUDE + CALM_HALO
-        ThemeMotif.BOLD_SPLIT -> PRELUDE + BOLD_SPLIT
-        ThemeMotif.BOLD_DOTS -> PRELUDE + BOLD_DOTS
-        ThemeMotif.BOLD_BANDS -> PRELUDE + BOLD_BANDS
         ThemeMotif.SHOWCASE_PARALLAX -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_CINEMA -> PRELUDE + SHOWCASE_BG
         ThemeMotif.SHOWCASE_FILMSTRIP -> PRELUDE + SHOWCASE_BG
@@ -335,6 +335,15 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> setOf("uArt")
         ThemeMotif.LYRIC_NEON -> emptySet()
         ThemeMotif.DISC_SLEEVE -> setOf("uCover")
+        ThemeMotif.STILL_DUSK -> emptySet()
+        ThemeMotif.STILL_HORIZON -> emptySet()
+        ThemeMotif.STILL_GLOW -> emptySet()
+        ThemeMotif.CALM_RIBBON -> emptySet()
+        ThemeMotif.CALM_DRIFT -> emptySet()
+        ThemeMotif.CALM_HALO -> emptySet()
+        ThemeMotif.BOLD_SPLIT -> emptySet()
+        ThemeMotif.BOLD_DOTS -> emptySet()
+        ThemeMotif.BOLD_BANDS -> emptySet()
         ThemeMotif.ALBUM_TIDE -> setOf("uArt", "uCover", "uLabel")
         ThemeMotif.CHILL_BLADES -> emptySet()
         ThemeMotif.CHILL_POLAR -> setOf("uPaint")
@@ -385,15 +394,6 @@ internal object ThemeShaders {
         ThemeMotif.PX_ALLOY -> emptySet()
         ThemeMotif.PX_GLIMMER -> emptySet()
         ThemeMotif.GAMING_ROOM -> setOf("uPoster", "uRoom", "uShot")
-        ThemeMotif.STILL_DUSK -> emptySet()
-        ThemeMotif.STILL_HORIZON -> emptySet()
-        ThemeMotif.STILL_GLOW -> emptySet()
-        ThemeMotif.CALM_RIBBON -> emptySet()
-        ThemeMotif.CALM_DRIFT -> emptySet()
-        ThemeMotif.CALM_HALO -> emptySet()
-        ThemeMotif.BOLD_SPLIT -> emptySet()
-        ThemeMotif.BOLD_DOTS -> emptySet()
-        ThemeMotif.BOLD_BANDS -> emptySet()
         ThemeMotif.SHOWCASE_PARALLAX -> emptySet()
         ThemeMotif.SHOWCASE_CINEMA -> emptySet()
         ThemeMotif.SHOWCASE_FILMSTRIP -> emptySet()
@@ -537,6 +537,15 @@ internal object ThemeShaders {
         ThemeMotif.LYRIC_SHEET -> setOf("uAcc", "uArtSize", "uBass", "uBeatAge", "uBg", "uDensity", "uHasArt", "uIntensity", "uLod", "uPlaying", "uRes", "uSec", "uTime")
         ThemeMotif.LYRIC_NEON -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uIntensity", "uPlaying", "uRes", "uSec", "uTime")
         ThemeMotif.DISC_SLEEVE -> setOf("uAcc", "uBass", "uBeatAge", "uBg", "uCoverSize", "uDensity", "uHasArt", "uHigh", "uIntensity", "uLod", "uMid", "uPlayT", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
+        ThemeMotif.STILL_DUSK -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.STILL_HORIZON -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.STILL_GLOW -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_RIBBON -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_DRIFT -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
+        ThemeMotif.CALM_HALO -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
+        ThemeMotif.BOLD_SPLIT -> setOf("uAcc", "uBg", "uRes", "uSec")
+        ThemeMotif.BOLD_DOTS -> setOf("uAcc", "uBg", "uRes", "uSec")
+        ThemeMotif.BOLD_BANDS -> setOf("uAcc", "uBg", "uRes", "uSec")
         ThemeMotif.ALBUM_TIDE -> setOf("uAcc", "uArtSize", "uBass", "uBg", "uCoverSize", "uDensity", "uHasArt", "uHigh", "uIntensity", "uLabelSize", "uLod", "uMid", "uPlaying", "uRes", "uSec", "uTime", "uWaveH", "uWaveX", "uWaveY")
         ThemeMotif.CHILL_BLADES -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.CHILL_POLAR -> setOf("uAcc", "uBg", "uDensity", "uHasPaint", "uPaintSize", "uRes", "uTime")
@@ -587,15 +596,6 @@ internal object ThemeShaders {
         ThemeMotif.PX_ALLOY -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.PX_GLIMMER -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
         ThemeMotif.GAMING_ROOM -> setOf("uFocusY", "uHasPoster", "uHasShot", "uPosterSize", "uRes", "uRoomSize", "uShotSize", "uTime", "uTune", "uTvL", "uTvR")
-        ThemeMotif.STILL_DUSK -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.STILL_HORIZON -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.STILL_GLOW -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.CALM_RIBBON -> setOf("uAcc", "uBg", "uDensity", "uRes", "uSec", "uTime")
-        ThemeMotif.CALM_DRIFT -> setOf("uAcc", "uBg", "uLod", "uRes", "uSec", "uTime")
-        ThemeMotif.CALM_HALO -> setOf("uAcc", "uBg", "uRes", "uSec", "uTime")
-        ThemeMotif.BOLD_SPLIT -> setOf("uAcc", "uBg", "uRes", "uSec")
-        ThemeMotif.BOLD_DOTS -> setOf("uAcc", "uBg", "uRes", "uSec")
-        ThemeMotif.BOLD_BANDS -> setOf("uAcc", "uBg", "uRes", "uSec")
         ThemeMotif.SHOWCASE_PARALLAX -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_CINEMA -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
         ThemeMotif.SHOWCASE_FILMSTRIP -> setOf("uAcc", "uBg", "uDensity", "uLod", "uRes", "uSec", "uTime")
@@ -20156,6 +20156,256 @@ half4 main(float2 fc) {
 }
 """
 
+    private const val STILL_DUSK = """
+// Still dusk: a calm, unmoving picture — a deep gradient sky warming towards a low glow, a soft halo
+// and fine grain. Drawn once; costs nothing while you rest on it. Theme colours throughout.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float y = uv.y;
+    float3 col = mix(BG * 0.8, mix(BG, A, 0.35), smoothstep(0.0, 1.0, y));
+    col = mix(col, mix(A, S, 0.4) * 0.7 + BG * 0.3, smoothstep(0.55, 1.0, y) * 0.6);
+    float2 g = uv - float2(asp * 0.7, 0.78);
+    col += mix(A, float3(1.0), 0.3) * exp(-length(g * float2(0.6, 1.4)) * 3.0) * 0.35;
+    col += S * exp(-length(uv - float2(asp * 0.2, 0.2)) * 2.5) * 0.08;
+    // Soft cloud bands, very low contrast.
+    float cl = fbm(float2(uv.x * 1.3, y * 5.0));
+    col = mix(col, col * 1.12 + A * 0.03, smoothstep(0.55, 0.8, cl) * 0.35 * smoothstep(0.2, 0.7, y));
+    col += (hash12(fc) - 0.5) * 0.018;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val STILL_HORIZON = """
+// Still horizon: layered soft hills fading into haze under a pale sky, like a quiet wallpaper. A still
+// picture (drawn once). Theme colours: sky from the background, hills from the accent and second colour.
+
+float hill(float x, float base, float amp, float seed) {
+    return base - amp * (0.55 * fbm(float2(x * 1.1 + seed, seed)) + 0.45 * sin(x * 1.7 + seed));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 sky = mix(mix(BG, S, 0.25) * 1.1, mix(BG, A, 0.3), smoothstep(0.0, 0.7, uv.y));
+    float3 col = sky;
+    col += mix(A, float3(1.0), 0.5) * exp(-length((uv - float2(asp * 0.32, 0.5)) * float2(0.5, 1.5)) * 3.5) * 0.3;
+    float3 haze = mix(sky, mix(A, S, 0.5), 0.25);
+    float h1 = hill(uv.x, 0.62, 0.08, 2.0);
+    float h2 = hill(uv.x + 3.0, 0.74, 0.09, 5.0);
+    float h3 = hill(uv.x + 7.0, 0.88, 0.1, 9.0);
+    col = mix(col, mix(haze, A * 0.5 + BG * 0.5, 0.35), smoothstep(h1, h1 + 0.004, uv.y));
+    col = mix(col, mix(haze, S * 0.35 + BG * 0.65, 0.55), smoothstep(h2, h2 + 0.004, uv.y));
+    col = mix(col, BG * 0.55 + A * 0.08, smoothstep(h3, h3 + 0.004, uv.y));
+    col += (hash12(fc) - 0.5) * 0.016;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val STILL_GLOW = """
+// Still glow: a minimal, unmoving field — two large soft light pools in the theme colours over a dark
+// gradient, a faint diagonal sheen and grain. Drawn once.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG * 1.15, BG * 0.7, uv.y);
+    col += A * exp(-length((uv - float2(asp * 0.15, 0.1)) * float2(0.7, 1.0)) * 2.2) * 0.32;
+    col += S * exp(-length((uv - float2(asp * 0.9, 0.95)) * float2(0.7, 1.0)) * 2.4) * 0.22;
+    float sheen = 1.0 - smoothstep(0.0, 0.25, abs(uv.x / asp - uv.y * 0.5 - 0.35));
+    col += float3(1.0) * sheen * 0.025;
+    col += (hash12(fc) - 0.5) * 0.02;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_RIBBON = """
+// Calm ribbon: a slow, quiet console-menu mood — a few thin bands of light rolling gently across a deep
+// gradient, with a soft glow where they bunch together. Very slow, very soft (original design).
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime * 0.18;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG * 1.25, BG * 0.65, smoothstep(0.0, 1.0, uv.y));
+    col += mix(A, S, 0.5) * exp(-abs(uv.y - 0.55) * 4.0) * 0.06;
+    float x = uv.x / asp;
+    for (int i = 0; i < 6; i++) {
+        float fi = float(i);
+        float y = 0.55 + 0.07 * sin(x * (2.2 + fi * 0.35) + t * (0.7 + fi * 0.13) + fi * 1.7)
+                       + 0.035 * sin(x * 5.1 - t * 0.9 + fi * 2.3);
+        float w = 0.0018 + 0.0012 * fi;
+        float line = exp(-abs(uv.y - y) / w);
+        float glow = exp(-abs(uv.y - y) * 22.0);
+        float3 lc = mix(float3(1.0), mix(A, S, fi / 5.0), 0.45);
+        col += lc * (line * 0.22 + glow * 0.035);
+    }
+    // A few slow motes of light.
+    col += float3(1.0) * dots(uv, 18.0, float2(t * 0.05, -t * 0.03), 0.12, 0.05, 3.0) * 0.12;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_DRIFT = """
+// Calm drift: soft out-of-focus lights rising very slowly through a misty gradient, like a quiet
+// console menu at night. Gentle and low-contrast so the games stay in front.
+
+float bokeh(float2 uv, float scale, float speed, float seed, float t) {
+    float2 p = uv * scale + float2(seed * 3.1, t * speed);
+    float2 id = floor(p);
+    float2 f = fract(p);
+    float2 r = hash22(id + seed);
+    if (r.x > 0.35) return 0.0;
+    float2 o = 0.5 + (r - 0.5) * 0.6;
+    float d = length(f - o);
+    float size = 0.18 + 0.2 * r.y;
+    return smoothstep(size, size * 0.55, d) * (0.6 + 0.4 * sin(t * 0.7 + r.y * 30.0));
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float t = uTime * 0.25;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(mix(BG, A, 0.12) * 1.1, BG * 0.6, uv.y);
+    float mist = fbm(float2(uv.x * 1.5 + t * 0.1, uv.y * 2.0 - t * 0.05));
+    col += mix(A, S, 0.5) * mist * 0.1;
+    col += mix(A, float3(1.0), 0.4) * bokeh(uv, 4.0, -0.25, 1.0, t) * 0.12;
+    col += mix(S, float3(1.0), 0.4) * bokeh(uv, 7.0, -0.4, 5.0, t) * 0.06;
+    col += float3(1.0) * bokeh(uv, 12.0, -0.6, 9.0, t) * 0.05;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val CALM_HALO = """
+// Calm halo: one big soft halo of light breathing very slowly, faint concentric rings and a hint of
+// colour drifting round it. Minimal, quiet, original.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float t = uTime * 0.2;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float2 c = float2(asp * 0.62, 0.42);
+    float2 d = uv - c;
+    float r = length(d);
+    float a = atan(d.y, d.x);
+    float breathe = 0.5 + 0.5 * sin(t * 0.8);
+    float3 col = mix(BG * 1.1, BG * 0.7, uv.y);
+    float3 tint = mix(A, S, 0.5 + 0.5 * sin(a + t * 0.6));
+    col += tint * exp(-r * (2.2 - 0.4 * breathe)) * 0.38;
+    col += float3(1.0) * exp(-abs(r - 0.28 - 0.02 * breathe) * 60.0) * 0.08;
+    col += float3(1.0) * exp(-abs(r - 0.46 - 0.03 * breathe) * 50.0) * 0.03;
+    col += A * exp(-abs(r - 0.7) * 30.0) * 0.025;
+    return half4(finish(col, fc), 1.0);
+}
+"""
+
+    private const val BOLD_SPLIT = """
+// Bold split: a crisp, flat console-style home backdrop — a clean light field with one big rounded
+// slab of the accent colour sweeping in from the side. Static, flat colours, sharp edges.
+
+float rbox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + r;
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = mix(BG, float3(0.93), 0.08) * 1.15;
+    // The big slab, tilted a little.
+    float2 p = uv - float2(asp * 0.9, 0.35);
+    float ca = cos(-0.18); float sa = sin(-0.18);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    float d = rbox(p, float2(asp * 0.42, 0.42), 0.12);
+    col = mix(col, A, 1.0 - smoothstep(-px, px, d));
+    // A second, smaller pill in the second colour, overlapping.
+    float d2 = rbox(uv - float2(asp * 0.08, 0.92), float2(0.32, 0.12), 0.12);
+    col = mix(col, S, 1.0 - smoothstep(-px, px, d2));
+    // A thin ring for balance.
+    float r = abs(length(uv - float2(asp * 0.24, 0.24)) - 0.11) - 0.012;
+    col = mix(col, mix(A, float3(1.0), 0.2), 1.0 - smoothstep(-px, px, r));
+    return half4(col, 1.0);
+}
+"""
+
+    private const val BOLD_DOTS = """
+// Bold dots: a flat console-style backdrop — a solid colour field with a tidy grid of big round dots
+// in a slightly lighter tone, a few picked out in the accent. Static, crisp and clean.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 base = mix(BG, A, 0.18) * 1.1;
+    float3 col = base;
+    float n = 7.0;
+    float2 g = uv * n;
+    float2 id = floor(g);
+    float2 f = fract(g) - 0.5;
+    float h = hash12(id + 3.0);
+    float rad = 0.28 + 0.06 * step(0.7, h);
+    float d = length(f) - rad;
+    float3 dotc = mix(base * 1.25 + 0.03, h > 0.88 ? A : (h > 0.8 ? S : base * 1.25 + 0.03), 1.0);
+    col = mix(col, dotc, 1.0 - smoothstep(-px * n, px * n, d));
+    return half4(col, 1.0);
+}
+"""
+
+    private const val BOLD_BANDS = """
+// Bold bands: thick rounded colour bands laid diagonally across a flat field, like a clean, modern
+// console home screen. Static, flat colours, sharp antialiased edges.
+
+half4 main(float2 fc) {
+    float2 uv = fc / uRes.y;
+    float asp = uRes.x / uRes.y;
+    float px = 1.5 / uRes.y;
+    float3 A = uAcc.rgb;
+    float3 S = uSec.rgb;
+    float3 BG = uBg.rgb;
+    float3 col = BG * 1.1;
+    float2 p = uv - float2(asp * 0.5, 0.5);
+    float ca = cos(0.45); float sa = sin(0.45);
+    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
+    for (int i = 0; i < 4; i++) {
+        float fi = float(i);
+        float y = -0.45 + fi * 0.3;
+        float len = 0.5 + 0.35 * hash11(fi + 2.0);
+        float x0 = -0.9 + 0.5 * hash11(fi + 7.0);
+        float2 q = p - float2(x0 + len, y);
+        float2 b = float2(len, 0.085);
+        float2 qq = abs(q) - b + 0.085;
+        float d = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - 0.085;
+        float3 bc = i == 1 ? A : (i == 3 ? S : mix(BG, A, 0.35) * 1.2);
+        col = mix(col, bc, 1.0 - smoothstep(-px, px, d));
+    }
+    return half4(col, 1.0);
+}
+"""
+
     private const val ALBUM_TIDE = """
 // Album tide: an original paper-white album card over a softly drifting cover field.
 // The wave joins the artwork to the label; the launcher's existing player stays below it.
@@ -26584,256 +26834,6 @@ half4 main(float2 fc) {
     float2 dg = floor((ip + float2(t * 6.0, -t * 9.0)) / 5.0);
     col += float3(0.6, 0.7, 1.0) * 0.35 * beam * step(0.993, hash12(dg));
     return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_DUSK = """
-// Still dusk: a calm, unmoving picture — a deep gradient sky warming towards a low glow, a soft halo
-// and fine grain. Drawn once; costs nothing while you rest on it. Theme colours throughout.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float y = uv.y;
-    float3 col = mix(BG * 0.8, mix(BG, A, 0.35), smoothstep(0.0, 1.0, y));
-    col = mix(col, mix(A, S, 0.4) * 0.7 + BG * 0.3, smoothstep(0.55, 1.0, y) * 0.6);
-    float2 g = uv - float2(asp * 0.7, 0.78);
-    col += mix(A, float3(1.0), 0.3) * exp(-length(g * float2(0.6, 1.4)) * 3.0) * 0.35;
-    col += S * exp(-length(uv - float2(asp * 0.2, 0.2)) * 2.5) * 0.08;
-    // Soft cloud bands, very low contrast.
-    float cl = fbm(float2(uv.x * 1.3, y * 5.0));
-    col = mix(col, col * 1.12 + A * 0.03, smoothstep(0.55, 0.8, cl) * 0.35 * smoothstep(0.2, 0.7, y));
-    col += (hash12(fc) - 0.5) * 0.018;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_HORIZON = """
-// Still horizon: layered soft hills fading into haze under a pale sky, like a quiet wallpaper. A still
-// picture (drawn once). Theme colours: sky from the background, hills from the accent and second colour.
-
-float hill(float x, float base, float amp, float seed) {
-    return base - amp * (0.55 * fbm(float2(x * 1.1 + seed, seed)) + 0.45 * sin(x * 1.7 + seed));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 sky = mix(mix(BG, S, 0.25) * 1.1, mix(BG, A, 0.3), smoothstep(0.0, 0.7, uv.y));
-    float3 col = sky;
-    col += mix(A, float3(1.0), 0.5) * exp(-length((uv - float2(asp * 0.32, 0.5)) * float2(0.5, 1.5)) * 3.5) * 0.3;
-    float3 haze = mix(sky, mix(A, S, 0.5), 0.25);
-    float h1 = hill(uv.x, 0.62, 0.08, 2.0);
-    float h2 = hill(uv.x + 3.0, 0.74, 0.09, 5.0);
-    float h3 = hill(uv.x + 7.0, 0.88, 0.1, 9.0);
-    col = mix(col, mix(haze, A * 0.5 + BG * 0.5, 0.35), smoothstep(h1, h1 + 0.004, uv.y));
-    col = mix(col, mix(haze, S * 0.35 + BG * 0.65, 0.55), smoothstep(h2, h2 + 0.004, uv.y));
-    col = mix(col, BG * 0.55 + A * 0.08, smoothstep(h3, h3 + 0.004, uv.y));
-    col += (hash12(fc) - 0.5) * 0.016;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val STILL_GLOW = """
-// Still glow: a minimal, unmoving field — two large soft light pools in the theme colours over a dark
-// gradient, a faint diagonal sheen and grain. Drawn once.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG * 1.15, BG * 0.7, uv.y);
-    col += A * exp(-length((uv - float2(asp * 0.15, 0.1)) * float2(0.7, 1.0)) * 2.2) * 0.32;
-    col += S * exp(-length((uv - float2(asp * 0.9, 0.95)) * float2(0.7, 1.0)) * 2.4) * 0.22;
-    float sheen = 1.0 - smoothstep(0.0, 0.25, abs(uv.x / asp - uv.y * 0.5 - 0.35));
-    col += float3(1.0) * sheen * 0.025;
-    col += (hash12(fc) - 0.5) * 0.02;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_RIBBON = """
-// Calm ribbon: a slow, quiet console-menu mood — a few thin bands of light rolling gently across a deep
-// gradient, with a soft glow where they bunch together. Very slow, very soft (original design).
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime * 0.18;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG * 1.25, BG * 0.65, smoothstep(0.0, 1.0, uv.y));
-    col += mix(A, S, 0.5) * exp(-abs(uv.y - 0.55) * 4.0) * 0.06;
-    float x = uv.x / asp;
-    for (int i = 0; i < 6; i++) {
-        float fi = float(i);
-        float y = 0.55 + 0.07 * sin(x * (2.2 + fi * 0.35) + t * (0.7 + fi * 0.13) + fi * 1.7)
-                       + 0.035 * sin(x * 5.1 - t * 0.9 + fi * 2.3);
-        float w = 0.0018 + 0.0012 * fi;
-        float line = exp(-abs(uv.y - y) / w);
-        float glow = exp(-abs(uv.y - y) * 22.0);
-        float3 lc = mix(float3(1.0), mix(A, S, fi / 5.0), 0.45);
-        col += lc * (line * 0.22 + glow * 0.035);
-    }
-    // A few slow motes of light.
-    col += float3(1.0) * dots(uv, 18.0, float2(t * 0.05, -t * 0.03), 0.12, 0.05, 3.0) * 0.12;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_DRIFT = """
-// Calm drift: soft out-of-focus lights rising very slowly through a misty gradient, like a quiet
-// console menu at night. Gentle and low-contrast so the games stay in front.
-
-float bokeh(float2 uv, float scale, float speed, float seed, float t) {
-    float2 p = uv * scale + float2(seed * 3.1, t * speed);
-    float2 id = floor(p);
-    float2 f = fract(p);
-    float2 r = hash22(id + seed);
-    if (r.x > 0.35) return 0.0;
-    float2 o = 0.5 + (r - 0.5) * 0.6;
-    float d = length(f - o);
-    float size = 0.18 + 0.2 * r.y;
-    return smoothstep(size, size * 0.55, d) * (0.6 + 0.4 * sin(t * 0.7 + r.y * 30.0));
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float t = uTime * 0.25;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(mix(BG, A, 0.12) * 1.1, BG * 0.6, uv.y);
-    float mist = fbm(float2(uv.x * 1.5 + t * 0.1, uv.y * 2.0 - t * 0.05));
-    col += mix(A, S, 0.5) * mist * 0.1;
-    col += mix(A, float3(1.0), 0.4) * bokeh(uv, 4.0, -0.25, 1.0, t) * 0.12;
-    col += mix(S, float3(1.0), 0.4) * bokeh(uv, 7.0, -0.4, 5.0, t) * 0.06;
-    col += float3(1.0) * bokeh(uv, 12.0, -0.6, 9.0, t) * 0.05;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val CALM_HALO = """
-// Calm halo: one big soft halo of light breathing very slowly, faint concentric rings and a hint of
-// colour drifting round it. Minimal, quiet, original.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float t = uTime * 0.2;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float2 c = float2(asp * 0.62, 0.42);
-    float2 d = uv - c;
-    float r = length(d);
-    float a = atan(d.y, d.x);
-    float breathe = 0.5 + 0.5 * sin(t * 0.8);
-    float3 col = mix(BG * 1.1, BG * 0.7, uv.y);
-    float3 tint = mix(A, S, 0.5 + 0.5 * sin(a + t * 0.6));
-    col += tint * exp(-r * (2.2 - 0.4 * breathe)) * 0.38;
-    col += float3(1.0) * exp(-abs(r - 0.28 - 0.02 * breathe) * 60.0) * 0.08;
-    col += float3(1.0) * exp(-abs(r - 0.46 - 0.03 * breathe) * 50.0) * 0.03;
-    col += A * exp(-abs(r - 0.7) * 30.0) * 0.025;
-    return half4(finish(col, fc), 1.0);
-}
-"""
-
-    private const val BOLD_SPLIT = """
-// Bold split: a crisp, flat console-style home backdrop — a clean light field with one big rounded
-// slab of the accent colour sweeping in from the side. Static, flat colours, sharp edges.
-
-float rbox(float2 p, float2 b, float r) {
-    float2 q = abs(p) - b + r;
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-}
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = mix(BG, float3(0.93), 0.08) * 1.15;
-    // The big slab, tilted a little.
-    float2 p = uv - float2(asp * 0.9, 0.35);
-    float ca = cos(-0.18); float sa = sin(-0.18);
-    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
-    float d = rbox(p, float2(asp * 0.42, 0.42), 0.12);
-    col = mix(col, A, 1.0 - smoothstep(-px, px, d));
-    // A second, smaller pill in the second colour, overlapping.
-    float d2 = rbox(uv - float2(asp * 0.08, 0.92), float2(0.32, 0.12), 0.12);
-    col = mix(col, S, 1.0 - smoothstep(-px, px, d2));
-    // A thin ring for balance.
-    float r = abs(length(uv - float2(asp * 0.24, 0.24)) - 0.11) - 0.012;
-    col = mix(col, mix(A, float3(1.0), 0.2), 1.0 - smoothstep(-px, px, r));
-    return half4(col, 1.0);
-}
-"""
-
-    private const val BOLD_DOTS = """
-// Bold dots: a flat console-style backdrop — a solid colour field with a tidy grid of big round dots
-// in a slightly lighter tone, a few picked out in the accent. Static, crisp and clean.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 base = mix(BG, A, 0.18) * 1.1;
-    float3 col = base;
-    float n = 7.0;
-    float2 g = uv * n;
-    float2 id = floor(g);
-    float2 f = fract(g) - 0.5;
-    float h = hash12(id + 3.0);
-    float rad = 0.28 + 0.06 * step(0.7, h);
-    float d = length(f) - rad;
-    float3 dotc = mix(base * 1.25 + 0.03, h > 0.88 ? A : (h > 0.8 ? S : base * 1.25 + 0.03), 1.0);
-    col = mix(col, dotc, 1.0 - smoothstep(-px * n, px * n, d));
-    return half4(col, 1.0);
-}
-"""
-
-    private const val BOLD_BANDS = """
-// Bold bands: thick rounded colour bands laid diagonally across a flat field, like a clean, modern
-// console home screen. Static, flat colours, sharp antialiased edges.
-
-half4 main(float2 fc) {
-    float2 uv = fc / uRes.y;
-    float asp = uRes.x / uRes.y;
-    float px = 1.5 / uRes.y;
-    float3 A = uAcc.rgb;
-    float3 S = uSec.rgb;
-    float3 BG = uBg.rgb;
-    float3 col = BG * 1.1;
-    float2 p = uv - float2(asp * 0.5, 0.5);
-    float ca = cos(0.45); float sa = sin(0.45);
-    p = float2(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
-    for (int i = 0; i < 4; i++) {
-        float fi = float(i);
-        float y = -0.45 + fi * 0.3;
-        float len = 0.5 + 0.35 * hash11(fi + 2.0);
-        float x0 = -0.9 + 0.5 * hash11(fi + 7.0);
-        float2 q = p - float2(x0 + len, y);
-        float2 b = float2(len, 0.085);
-        float2 qq = abs(q) - b + 0.085;
-        float d = length(max(qq, 0.0)) + min(max(qq.x, qq.y), 0.0) - 0.085;
-        float3 bc = i == 1 ? A : (i == 3 ? S : mix(BG, A, 0.35) * 1.2);
-        col = mix(col, bc, 1.0 - smoothstep(-px, px, d));
-    }
-    return half4(col, 1.0);
 }
 """
 

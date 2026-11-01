@@ -48,7 +48,7 @@ internal object ThemeThumbs {
         val src = runCatching { SceneSource.source(theme.motif).hashCode() }.getOrDefault(0)
         val c = theme.colors
         val col = (c.background.toArgb() * 31 + c.accent.toArgb()) * 31 + c.secondary.toArgb()
-        return "v1_${theme.name}_${Integer.toHexString(src)}_${Integer.toHexString(col)}"
+        return "v3_${theme.name}_${Integer.toHexString(src)}_${Integer.toHexString(col)}"
     }
 
     fun cached(theme: AppTheme): ImageBitmap? = mem.get(key(theme))
@@ -65,7 +65,9 @@ internal object ThemeThumbs {
                 ?: runCatching { render(context, theme) }.getOrNull()?.also { b ->
                     runCatching {
                         // Old pictures of this theme go (a scene or its colours changed).
-                        dir.listFiles()?.filter { it.name.startsWith("v1_${theme.name}_") && it.name != file.name }?.forEach { it.delete() }
+                        // (Update 427: and the pictures of an older thumbnail version, v1 = the flat placeholder art.)
+                        val mine = Regex("^v\\d+_" + Regex.escape(theme.name) + "_")
+                        dir.listFiles()?.filter { mine.containsMatchIn(it.name) && it.name != file.name }?.forEach { it.delete() }
                         file.outputStream().use { b.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, it) }
                     }
                 }
@@ -99,19 +101,37 @@ internal object ThemeThumbs {
         f("uAcc", c.accent.red, c.accent.green, c.accent.blue, 1f)
         f("uSec", c.secondary.red, c.secondary.green, c.secondary.blue, 1f)
         if (motif.reactive) {
+            // (Update 427: a made-up sample cover and song label — ThemeSampleArt — so the tile shows the finished theme, not
+            // a flat accent square with a blank label.)
             f("uWaveY", 0.5f); f("uWaveH", 0.22f); f("uBass", 0.45f); f("uMid", 0.4f); f("uHigh", 0.35f)
-            f("uBeatAge", 0.35f); f("uPlaying", 1f); f("uIntensity", 0.7f); f("uHasArt", 0f)
+            f("uBeatAge", 0.35f); f("uPlaying", 1f); f("uIntensity", 0.7f); f("uHasArt", 1f)
             f("uEqA", 0.6f, 0.7f, 0.55f, 0.45f); f("uEqB", 0.4f, 0.35f, 0.3f, 0.25f)
-            f("uArtSize", 2f, 2f); f("uCoverSize", 2f, 2f); f("uLabelSize", 2f, 2f)
+            val clean = theme.motif == com.shelf.launcher.ui.theme.ThemeMotif.HOLO_COVER
+            f("uArtSize", 96f, 96f); f("uCoverSize", 256f, 256f); f("uLabelSize", 640f, if (clean) 170f else 280f)
+            f("uSubject", 0.5f, 0.38f, 0.2f)
             f("uPlayT", STILL_FRAME_TIME); f("uBassT", STILL_FRAME_TIME * 0.45f); f("uMidT", STILL_FRAME_TIME * 0.4f); f("uHighT", STILL_FRAME_TIME * 0.35f)
         }
         // Only the pictures the scene really uses (see ThemeShaders.children: anything else aborts on Android 13).
         val kids = SceneSource.children(motif)
         if (kids.isNotEmpty()) {
             val px = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888).apply { eraseColor(c.accent.toArgb()) }
-            // The song's label (Tape deck, Holo card) stays blank: no song in a thumbnail.
-            val blank = Bitmap.createBitmap(2, 2, Bitmap.Config.ARGB_8888)
-            kids.forEach { name -> shader.setInputShader(name, BitmapShader(if (name == "uLabel") blank else px, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)) }
+            // Update 427: sample pictures (ThemeSampleArt) where the scene shows a cover, a label, the row's covers, the game's
+            // disc or the trophies; anything else keeps the plain accent pixel.
+            val clean = theme.motif == com.shelf.launcher.ui.theme.ThemeMotif.HOLO_COVER
+            fun pic(name: String): Bitmap = when (name) {
+                "uArt" -> ThemeSampleArt.softCover
+                "uCover", "uPoster" -> ThemeSampleArt.cover
+                "uLabel" -> ThemeSampleArt.label(clean)
+                "uCovers" -> ThemeSampleArt.coversAtlas
+                "uMedia" -> ThemeSampleArt.disc
+                "uTrophies" -> ThemeSampleArt.trophies
+                else -> px
+            }
+            kids.forEach { name -> shader.setInputShader(name, BitmapShader(pic(name), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)) }
+            if ("uCovers" in kids) { f("uCoversSize", 640f, 448f); f("uCoverN", 8f) }
+            if ("uMedia" in kids) { f("uMediaSize", 256f, 256f); f("uHasMedia", 1f); f("uMediaKind", 0f) }
+            if ("uPoster" in kids) { f("uPosterSize", 256f, 256f); f("uHasPoster", 1f) }
+            if ("uTrophies" in kids) { f("uTrophySize", 7 * 96f, 96f); f("uTrophyN", 4f); f("uMasteredN", 1f) }
             // Gaming room: its painting (the monitor shows the painting's own screen: no game in a thumbnail).
             // A painted scene: its painting.
             if ("uPaint" in kids) {

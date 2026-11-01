@@ -21,7 +21,7 @@ for m,a in sorted(res.items()):
     if isinstance(a,str): print(m,a[:100]); failed = True; continue
     act=set(x.replace('Tex','') for x in a)
     o=ours.get(m,set())
-    extra=o-act; missing=act-o-{'uArt','uCover','uLabel','uHistory','uShot'}
+    extra=o-act; missing=act-o-{'uArt','uCover','uLabel','uHistory','uShot','uCovers','uMedia','uPaint','uPoster','uRoom','uTrophies'}  # pictures (update 427: and the newer scenes' ones)
     if extra or missing: print(m,'ours-but-inactive',sorted(extra),'active-not-ours',sorted(missing)); failed = True
 print('checked',len(res))
 sys.exit(1 if failed else 0)

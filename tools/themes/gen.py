@@ -94,6 +94,24 @@ MOTIFS = [
     ("STILL_DUSK", "still_dusk"), ("STILL_HORIZON", "still_horizon"), ("STILL_GLOW", "still_glow"),
     ("CALM_RIBBON", "calm_ribbon"), ("CALM_DRIFT", "calm_drift"), ("CALM_HALO", "calm_halo"),
     ("BOLD_SPLIT", "bold_split"), ("BOLD_DOTS", "bold_dots"), ("BOLD_BANDS", "bold_bands"),
+    # (Update 427: the scenes added since update 330 were written into ThemeShaders.kt without being listed here, so the
+    # preview / review gallery stopped at 150 themes. Listed now in ThemeShaders.kt's order.)
+    ("ALBUM_TIDE", "album_tide"), ("CHILL_BLADES", "chill_blades"), ("CHILL_POLAR", "chill_polar"),
+    ("CHILL_PLANET", "chill_planet"), ("CHILL_MOON", "chill_moon"), ("CHILL_ORBS", "chill_orbs"),
+    ("CHILL_SILK", "chill_silk"), ("CHILL_DUNES", "chill_dunes"), ("CHILL_MESH", "chill_mesh"),
+    ("CHILL_LIGHT", "chill_light"), ("CHILL_SHADE", "chill_shade"), ("CHILL_RAIN", "chill_rain"),
+    ("CHILL_CITY", "chill_city"), ("CHILL_JELLY", "chill_jelly"), ("CHILL_GLADE", "chill_glade"),
+    ("CHILL_HEX", "chill_hex"), ("CHILL_CLOUDS", "chill_clouds"), ("CHILL_KOI", "chill_koi"),
+    ("CHILL_PEAKS", "chill_peaks"), ("HANDHELD_BOOT", "handheld_boot"), ("POCKET_BEAT", "pocket_beat"),
+    ("CONSOLE_DISC", "console_disc"), ("ARCADE_ATTRACT", "arcade_attract"), ("NEON_CARTRIDGE", "neon_cartridge"),
+    ("DATA_STREAM", "data_stream"), ("PORTAL_GALLERY", "portal_gallery"), ("POSTER_WALL", "poster_wall"),
+    ("TROPHY_VAULT", "trophy_vault"), ("BADGE_STARS", "badge_stars"), ("PIXEL_WORLD", "pixel_world"),
+    ("BADGE_BOUNCE", "badge_bounce"), ("PX_SPARK", "px_spark"), ("PX_TORRENT", "px_torrent"),
+    ("PX_SPROUT", "px_sprout"), ("PX_MIND", "px_mind"), ("PX_BLAZE", "px_blaze"), ("PX_PHANTOM", "px_phantom"),
+    ("PX_FROST", "px_frost"), ("PX_TERRA", "px_terra"), ("PX_VENOM", "px_venom"), ("PX_MEADOW", "px_meadow"),
+    ("PX_DOJO", "px_dojo"), ("PX_GALE", "px_gale"), ("PX_THICKET", "px_thicket"), ("PX_BEDROCK", "px_bedrock"),
+    ("PX_WYRM", "px_wyrm"), ("PX_UMBRA", "px_umbra"), ("PX_ALLOY", "px_alloy"), ("PX_GLIMMER", "px_glimmer"),
+    ("GAMING_ROOM", "gaming_room"),
 ]
 
 
@@ -239,6 +257,7 @@ def write_kotlin(sources):
     lines += [f"        ThemeMotif.{m} -> \"\"" for m in NO_SCENE]
     for motif, scene in MOTIFS + SHOWCASE:
         lines.append(f"        {_case(motif)} -> PRELUDE + {scene.upper()}")
+    lines.append("        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> \"\"  // your own packs: CustomPacks gives their source")
     lines.append("    }")
     lines.append("")
     lines.append("    /** Child shaders each scene really samples (only these may be set; see gen.py used_children). */")
@@ -247,6 +266,7 @@ def write_kotlin(sources):
     for motif, scene in MOTIFS + SHOWCASE:
         kids = used_children(sources[scene])
         lines.append(f"        {_case(motif)} -> " + ("setOf(" + ", ".join('"' + k + '"' for k in kids) + ")" if kids else "emptySet()"))
+    lines.append("        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // your own packs (CustomPacks)")
     lines.append("    }")
     lines.append("")
     lines.append("    /**")
@@ -258,6 +278,7 @@ def write_kotlin(sources):
     for motif, scene in MOTIFS + SHOWCASE:
         us = used_uniforms(sources[scene])
         lines.append(f"        {_case(motif)} -> " + ("setOf(" + ", ".join('"' + u + '"' for u in us) + ")" if us else "emptySet()"))
+    lines.append("        ThemeMotif.CUSTOM_SCENE, ThemeMotif.CUSTOM_VIZ -> emptySet()  // your own packs (CustomPackRules)")
     lines.append("    }")
     lines.append("")
     lines.append('    private const val PRELUDE = """')
@@ -282,7 +303,9 @@ def reactive_motifs():
 
 def write_html(sources):
     tpl = open(os.path.join(HERE, "preview_template.html"), encoding="utf-8").read()
-    data = {"scenes": {m: sources[s] for m, s in MOTIFS + SHOWCASE if s in sources}, "themes": [t for t in theme_palettes() if any(m == t["motif"] and s in sources for m, s in MOTIFS + SHOWCASE)],
+    # (Update 427: the motifs that share a scene — PIXEL_FALLS draws on the 32-bit Voltcap sky — are previewed too.)
+    pairs = MOTIFS + SHOWCASE + [(a, s) for m, s in MOTIFS for a in ALSO.get(m, [])]
+    data = {"scenes": {m: sources[s] for m, s in pairs if s in sources}, "themes": [t for t in theme_palettes() if any(m == t["motif"] and s in sources for m, s in pairs)],
             "reactive": reactive_motifs()}
     with open(HTML_OUT, "w", encoding="utf-8") as f:
         f.write(tpl.replace("/*DATA*/null", json.dumps(data)))
