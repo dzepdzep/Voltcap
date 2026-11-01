@@ -1,3 +1,14 @@
+# Update 437 (1 Nov 2026) — MCP build / release tooling: compat APK, staged-version publishing (owner-authorized; NOT published)
+
+`tools/adb_mcp/server.js` (no app code, no version / signing change): `assembleCompat` added to the fixed Gradle task list (still no free shell
+commands); `gradle_status` reports the APK of the variant the task built (`apk\compat\` for assembleCompat); `install_build` takes
+`variant: compat` (still `adb install -r` only: data kept, never `-d`, never uninstall); `publish_release` accepts the already staged version
+(build.gradle.kts = 0.6.65 / 72) only when it is newer than the latest published release (gh api …/releases/latest) and tag v<version> exists
+neither on origin, locally nor as a GitHub release; branch-main, clean-tree and gh-signed-in checks unchanged; release.ps1 untouched (it keeps
+a staged version's code). Test: `node tools/adb_mcp/test/helpers.test.js` (helpers read from server.js) OK, `node --check` OK.
+**Claude Desktop must be restarted (quit fully and reopen) before the changed tools take effect** — the MCP server is loaded at start-up.
+**Copy:** `tools/adb_mcp/server.js` and `tools/adb_mcp/test/helpers.test.js` (root and `project_copy/`, so the sync doesn't put the old one back).
+
 # Update 436 (1 Nov 2026) — v0.6.65 final readiness (NOT published)
 
 Round shortcuts (Features snapshot saved → `shortcuts_open=true` → 4 positions × 2 layouts per device → snapshot restored; logs "snapshot

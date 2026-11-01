@@ -1,3 +1,5 @@
+**UPDATE 437 (newest):** MCP tooling can build / install the compat APK and publish an already staged version — **restart Claude Desktop first**. Then: gradle_start assembleCompat → verify 0.6.65 / 72 / com.shelf.launcher / signer 88ce4b67…f344197 → owner approval → publish_release 0.6.65.
+
 **UPDATE 435 (newest):** v0.6.65 final checks done except the compat APK build (owner: `.\gradlew.bat assembleCompat`) and round-shortcut verification (buttons not shown in captures). After publication: popup audit with recordings, D125, D123, D128, D130, round shortcuts, unplugged AutoTDP.
 
 **UPDATE 434 (1 Nov 2026, newest; 0.6.65 RC, NOT published).** Release status: READY WITH DOCUMENTED LIMITATIONS (see SUMMARY 434 /
