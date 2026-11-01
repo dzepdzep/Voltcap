@@ -1,3 +1,15 @@
+**UPDATE 430 (1 Nov 2026, newest; NOT released):** review fixes to 429 (no throttling below 0.6 without a reliable reading, panel
+counters need repeated proof, held readings decide nothing, screen rate never shown as game FPS; AutoTdp429Test 27 / 27). Devices:
+owner allows any ADB handheld, never TVs / streamers (CLAUDE.md); GT78 BW0306N230000845 stays untouched until identified.
+Hardware so far (Odin 2 Portal b92036fb, release a5d21fb installed in place, data kept, no crash, TuneService running):
+- Battery 80 %, AC plugged at its charge limit (status NOT_CHARGING) → by design no power readings; **power / battery comparisons need
+  the Odin or Thor unplugged** (owner action). Thor 3140972f still offline.
+- D116 evidence (Odin only): `sde-crtc-0/measured_fps` reads 0.0 with the screen dozing and 117–118 on the animated category screen with
+  dips to 43 / 69 → it counts composed frames, not a fixed refresh. Game-frame tracking during a capped game NOT yet measured.
+- As shell, `gpu_busy_percentage` and `/proc/stat` are readable on the Odin; whether the app can read them is NOT checked (D117).
+Matrix rows 1.x: still FIXED-UNVERIFIED on hardware. Next: unplugged 5-min runs Stock / manual Medium / AutoTDP per mode with one game
+and the overlay; then priorities 2–6 (Odin can take layout / popup passes; the Thor still owns D107 / D111 / D112 captures).
+
 **UPDATE 429 (1 Nov 2026, newest; NOT released) — AutoTDP / underclock audit (Priority 1, source + deterministic tests). Read this block first.**
 Odin 2 Portal: on ADB but NOT used (CLAUDE.md forbids it; not in the owner's authorized list for this pass — needs explicit owner OK).
 Thor 3140972f: offline (shut down at 1 % battery 1 Nov 19:05), so NOTHING in 429 is hardware-verified. GT78 on ADB: not touched.
