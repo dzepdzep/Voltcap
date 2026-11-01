@@ -1,3 +1,11 @@
+# Update 437b (1 Nov 2026) — v0.6.65 compat APK built and verified (NOT published)
+
+After the Claude Desktop restart: `gradle_start assembleCompat` SUCCESS → `app\build\outputs\apk\compat\Voltcap-0.6.65-compat.apk`
+(53.8 MB). Read from the APK files themselves (binary manifest + APK Signature Scheme v2 block): compat and release both
+`com.shelf.launcher` / versionCode 72 / versionName 0.6.65, signer SHA-256 `88ce4b67ae3825a04585114aec25cfaf5023e0b55cfdb61f375d30945f344197`
+= v0.6.63 / v0.6.64. Not installed: no available device carries the compat variant (both run the full one) and no emulator is available —
+installing it would switch the variant, so it was not done. Ready for `publish_release 0.6.65` on the owner's approval.
+
 # Update 437 (1 Nov 2026) — MCP build / release tooling: compat APK, staged-version publishing (owner-authorized; NOT published)
 
 `tools/adb_mcp/server.js` (no app code, no version / signing change): `assembleCompat` added to the fixed Gradle task list (still no free shell
