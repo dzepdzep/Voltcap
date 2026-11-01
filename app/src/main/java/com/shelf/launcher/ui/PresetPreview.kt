@@ -123,9 +123,9 @@ internal fun PresetPreview(
             HomeLayout.MAGAZINE -> p.magazine()
             HomeLayout.SHOP -> p.shop()
             HomeLayout.TERMINAL -> p.terminal()
-            // Next version: the nearest mock screens (a big picture over rows; a menu beside tiles).
-            HomeLayout.CINEMA -> p.hero()
-            HomeLayout.ARCTIC -> p.dash()
+            // Update 423: their own mock screens (were Hero's and Dashboard's).
+            HomeLayout.CINEMA -> p.cinema()
+            HomeLayout.ARCTIC -> p.arctic()
             // Update 374: the nearest mock screens (a stage over spines; a list beside a picture).
             HomeLayout.COVERDETAILS -> p.coverDetails()
             HomeLayout.ARTLIB -> p.artLib()
@@ -1253,6 +1253,51 @@ private class PreviewPainter(
         for (r in 0 until 6) rect(0.53f, 0.2f + r * 0.08f, 0.2f, 0.03f, m.muted, 0f)
         rect(0.76f, 0.2f, 0.12f, 0.16f, m.accent, 0f)
         rect(0.76f, 0.42f, 0.12f, 0.14f, m.accent2, 0f)
+    }
+
+    /**
+     * Update 423: Cinema — near-black room, the billboard across the top (art fading to black, logo, facts, red Play and a
+     * grey More info), then rows of wide tiles, the one you're on lifted with a light frame.
+     */
+    fun cinema() {
+        d.drawRect(Color(0xFF0B0B0D))
+        rect(0f, 0f, 1f, 0.56f, cover(3), 0f)
+        d.drawRect(Brush.horizontalGradient(listOf(Color(0xFF0B0B0D), Color(0xFF0B0B0D).copy(alpha = 0.6f), Color.Transparent), endX = w * 0.7f), Offset.Zero, Size(w, h * 0.56f))
+        d.drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF0B0B0D)), startY = h * 0.32f, endY = h * 0.56f), Offset.Zero, Size(w, h * 0.56f))
+        line(0.05f, 0.16f, 0.28f, Color.White, 0.07f)
+        line(0.05f, 0.27f, 0.2f, Color.White.copy(alpha = 0.6f))
+        line(0.05f, 0.31f, 0.3f, Color.White.copy(alpha = 0.35f), 0.016f)
+        rect(0.05f, 0.38f, 0.09f, 0.06f, Color(0xFFE50914), 2f)
+        rect(0.15f, 0.38f, 0.11f, 0.06f, Color.White.copy(alpha = 0.25f), 2f)
+        for (r in 0 until 2) {
+            val y = 0.6f + r * 0.2f
+            line(0.05f, y, 0.12f, Color.White.copy(alpha = 0.75f), 0.02f)
+            for (i in 0 until 6) {
+                val on = r == 0 && i == 0
+                val x = 0.05f + i * 0.16f
+                card(x, y + 0.035f, 0.145f, 0.13f, i + r * 6, on = on, plainCover = true)
+            }
+        }
+    }
+
+    /**
+     * Update 423: Arctic hub — deep slate room with the game's fanart behind, the rail of icons down the left, the logo and
+     * an info line top left, a wide Spotlight tile then a row of posters.
+     */
+    fun arctic() {
+        d.drawRect(Color(0xFF0D141D))
+        rect(0.35f, 0f, 0.65f, 0.6f, cover(5).copy(alpha = 0.55f), 0f)
+        d.drawRect(Brush.horizontalGradient(listOf(Color(0xFF0D141D), Color(0xFF0D141D).copy(alpha = 0.3f)), startX = w * 0.3f, endX = w * 0.75f), Offset(w * 0.3f, 0f), Size(w * 0.7f, h * 0.6f))
+        rect(0f, 0f, 0.07f, 1f, Color(0xFF09101A), 0f)
+        for (i in 0 until 6) dot(0.035f, 0.14f + i * 0.12f, 4.2f, if (i == 1) accent else Color.White.copy(alpha = 0.45f))
+        line(0.11f, 0.1f, 0.26f, Color.White, 0.07f)
+        for (i in 0 until 4) dot(0.12f + i * 0.05f, 0.24f, 2.2f, Color.White.copy(alpha = 0.5f))
+        line(0.11f, 0.29f, 0.36f, Color.White.copy(alpha = 0.35f), 0.016f)
+        line(0.11f, 0.33f, 0.3f, Color.White.copy(alpha = 0.35f), 0.016f)
+        card(0.11f, 0.44f, 0.36f, 0.22f, 7, on = true, plainCover = true)
+        for (i in 0 until 4) card(0.49f + i * 0.125f, 0.44f, 0.11f, 0.22f, 8 + i, plainCover = true)
+        line(0.11f, 0.72f, 0.1f, Color.White.copy(alpha = 0.6f), 0.018f)
+        for (i in 0 until 7) card(0.11f + i * 0.125f, 0.77f, 0.11f, 0.2f, 12 + i, plainCover = true)
     }
 
     /** Update 344: Rental shop — a purple wall, a neon line, three shelves of cases. */

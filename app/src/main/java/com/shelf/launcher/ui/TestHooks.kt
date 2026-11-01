@@ -135,6 +135,15 @@ internal object TestHooks {
             SetupJump.step = su
             VoltHub.replay = true
         }
+        // Update 423: `--ez voltcap_test_demo true|false` — the made-up stand-in library for preview pictures (DemoLibrary.kt).
+        if (intent?.hasExtra("voltcap_test_demo") == true && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false))
+        {
+            val on = intent.getBooleanExtra("voltcap_test_demo", false)
+            DemoLibrary.on.value = on
+            val app = context.applicationContext
+            if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
+            else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
+        }
         val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
         if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
             // (A walk only ever previews: nothing it changes is saved.)

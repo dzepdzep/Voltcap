@@ -367,7 +367,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     // What to draw: apps set to use their own icon have their scraped art
     // hidden here, so every screen falls back to the app-icon look.
-    val state = remember(uiState) { uiState.forDisplay() }
+    // (Update 423: the QA stand-in library for preview pictures, display only — DemoLibrary.kt.)
+    val demoOn = DemoLibrary.on.value
+    val demoArt = DemoLibrary.artDir.value
+    val state = remember(uiState, demoOn, demoArt) { uiState.forDisplay().let { if (demoOn) DemoLibrary.dress(it) else it } }
     // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
     // Update 422: Settings › Library › ES-DE artwork works through the view model.
     androidx.compose.runtime.SideEffect {

@@ -68,6 +68,7 @@ internal fun wiiPaletteNow(): WiiPalette {
 private val WiiBlue = Color(0xFF3AA6E8)
 
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 internal fun WiiChannelPreview(ctx: WinSceneCtx) {
     val pal = wiiPaletteNow()
     // Update 411: the real Wii Channel Preview is a compact, nearly 4:3 white card, not a full-screen dashboard.
@@ -121,9 +122,11 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 StableFullText(ctx.name, color = pal.ink, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                 Spacer(Modifier.height(4.dp))
             }
-            // The compact secondary keys: one line that scrolls sideways, each key as wide as its whole name.
+            // The compact secondary keys, each as wide as its whole name; (Update 423) they wrap onto a second centred line
+            // instead of running off the preview's edge ("S" of Saves was cut).
             if (small.isNotEmpty()) {
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                     small.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(

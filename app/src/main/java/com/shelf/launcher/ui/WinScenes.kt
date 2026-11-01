@@ -1272,8 +1272,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
                 Spacer(Modifier.height(8.dp))
                 ctx.chips.forEach { a ->
                     SceneControl(a, Modifier.padding(vertical = 1.dp)) { on ->
-                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else Color(0xFF9FB0C8), fontSize = 11.sp, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else Color(0xFF9FB0C8), fontSize = 11.sp, maxLines = 2,
+                            textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                     }
                 }
             }
@@ -1439,8 +1439,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(6.dp))
                 ctx.chips.forEach { a ->
                     SceneControl(a, Modifier) { on ->
-                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1,
-                            overflow = TextOverflow.Ellipsis, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
+                            textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                     }
                 }
             } else ctx.pageBody(Modifier.fillMaxSize())

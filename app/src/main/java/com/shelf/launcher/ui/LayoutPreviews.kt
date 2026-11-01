@@ -19,11 +19,16 @@ import com.shelf.launcher.data.HomeLayout
 /*
  * Update 337: a small picture of each home layout (Settings › Home › Layout & presets, and the first-start setup's Your
  * home step), so you see what a layout looks like before switching to it. Taken in Voltcap with made-up games (plain
- * covers, no real game art); one per layout in res/drawable-nodpi/lp_<layout>.webp (520 × 234).
+ * covers, no real game art); one per layout in res/drawable-nodpi/lp_<layout>.webp.
+ *
+ * Update 423: all 53 taken again on the AYN Thor (1920 × 1080) from the current designs with the made-up stand-in library
+ * (DemoLibrary, `--ez voltcap_test_demo true`), scaled to 640 × 360 — the screen's own 16:9, nothing stretched or borrowed.
+ * Every layout must have one: the `when` has no else branch (a new layout doesn't compile without its picture) and
+ * LayoutPreviews423Test checks that each file is there.
  */
 
-/** [l]'s picture, or null for a layout without one. */
-internal fun layoutPreviewRes(l: HomeLayout): Int? = when (l) {
+/** [l]'s picture. */
+internal fun layoutPreviewRes(l: HomeLayout): Int = when (l) {
     HomeLayout.CLASSIC -> R.drawable.lp_classic
     HomeLayout.TILES -> R.drawable.lp_tiles
     HomeLayout.HERO -> R.drawable.lp_hero
@@ -66,21 +71,28 @@ internal fun layoutPreviewRes(l: HomeLayout): Int? = when (l) {
     HomeLayout.ORBIT -> R.drawable.lp_orbit
     HomeLayout.AIRY -> R.drawable.lp_airy
     HomeLayout.NIGHT -> R.drawable.lp_night
-    // Update 375: taken in Voltcap on the emulator (made-up games, no real art), not borrowed from another layout.
+    HomeLayout.BLADES -> R.drawable.lp_blades
+    HomeLayout.BUBBLES -> R.drawable.lp_bubbles
+    HomeLayout.CAMERA -> R.drawable.lp_camera
+    HomeLayout.PANELS -> R.drawable.lp_panels
+    HomeLayout.MAGAZINE -> R.drawable.lp_magazine
+    HomeLayout.SHOP -> R.drawable.lp_shop
+    HomeLayout.TERMINAL -> R.drawable.lp_terminal
+    HomeLayout.CINEMA -> R.drawable.lp_cinema
+    HomeLayout.ARCTIC -> R.drawable.lp_arctic
     HomeLayout.COVERDETAILS -> R.drawable.lp_coverdetails
     HomeLayout.ARTLIB -> R.drawable.lp_artlib
-    else -> null
 }
 
 /** [l]'s picture, rounded, as wide as it may be (up to 420 dp). Nothing for a layout without one. */
 @Composable
 internal fun LayoutPreview(l: HomeLayout, modifier: Modifier = Modifier) {
-    val res = layoutPreviewRes(l) ?: return
+    val res = layoutPreviewRes(l)
     val shape = RoundedCornerShape(10.dp)
     Image(
         painterResource(res), l.label + " preview",
         contentScale = ContentScale.Crop,
-        modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(520f / 234f)
+        modifier = modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(16f / 9f)
             .clip(shape).border(1.dp, Color.White.copy(alpha = 0.14f), shape)
     )
 }

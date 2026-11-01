@@ -1,3 +1,42 @@
+# Update 423 (1 Nov 2026) — visual QA of all 53 layouts, 53 new layout previews, demo library, window keys wrap (NOT released)
+
+## Done
+- **All 53 layouts captured on the Thor** (home + the window A opens, 1920×1080, release build) with a stand-in library; per-layout
+  status in `docs/LAYOUT_VISUAL_AUDIT_423.md` (verified / improved / pending). Captures stay out of Git (`.shots/`).
+- **Layout previews** (`res/drawable-nodpi/lp_<name>.webp`, 640×360, 16:9): all 53 regenerated from those captures (44 replaced, 9 new:
+  Blades, Bubbles, Pocket camera, Panels, Magazine, Rental shop, Terminal, Cinema, Arctic). `layoutPreviewRes()` maps every layout (no
+  `else`), the picker draws 16:9. `PresetPreview` draws Cinema and Arctic in their own looks (were Hero / Dashboard).
+  `LayoutPreviews423Test`: a file per layout, no shared bytes, distinct ids, 16:9.
+- **Demo library** (`ui/DemoLibrary.kt`, QA hooks only: `--ez voltcap_test_demo true|false`): same games / consoles / order / focus,
+  made-up names, Voltcap-drawn covers and wide pictures (`DemoArt`, cache/demo_art, deleted when off; no words, no real art), no
+  RA / SGDB / Steam ids (their icons are real covers), no scans ("looked up, none" so spines draw), "Player" as the account. Display only.
+  The dressed list is memoised (a new list every state change kept the Cardboard box / shelf from ever finishing). `DemoLibrary423Test`.
+- **Window keys wrap** (`WinScenesMore.KeyRow` → FlowRow): no key cut by the window edge in 20+ scene windows; Wii preview small keys
+  wrap centred; status chips wrap instead of "…" (Arcade, WinScenes / WinScenesConsole chip lists; rule 11).
+- **Twin hinge** facts were squeezed to labels once keys wrapped → halves 0.36 / 0.64. **Green Core** cover sized by height (it covered
+  the title).
+
+## Copy
+- `src_copy/ui/`: DemoLibrary.kt (new), TestHooks.kt, LauncherScreen.kt, MainActivity.kt (root), PocketShared.kt, PresetPreview.kt,
+  LayoutPreviews.kt, WinScenesMore.kt, WinScenesArcade.kt, WinScenesWii.kt, WinScenes.kt, WinScenesConsole.kt
+- `project_copy/`: app/src/main/res/drawable-nodpi/lp_*.webp (53), app/src/test/.../ui/LayoutPreviews423Test.kt, DemoLibrary423Test.kt;
+  docs/LAYOUT_VISUAL_AUDIT_423.md, SUMMARY.md
+
+## Checked
+- testDebugUnitTest green (LayoutPreviews423Test 3/3, DemoLibrary423Test 3/3), assembleRelease green, installed on the Thor.
+- Thor: all 53 home + window captures after the fixes; Cardboard box and Game shelf draw their cases with the demo library; Settings ›
+  Home › Layout shows the new preview at 16:9. Thor left as found: demo off, preview off, test snapshot restored, layout Pocket classic
+  (an accidental R1 Layout-tile tap had moved it to Pocket ribbon; put back), hooks file renamed `.paused`, /sdcard/lp removed.
+
+## NOT tested / pending
+- Compact screens (Lite, 1280×720) and the second screen per layout: NOT captured (emulator not connected).
+- Bubbles window large empty right panel; Circuit datasheet empty lower half — polish only.
+- TV room picture (`tv_room.webp`, owner's picture, update 378) shows a plush figure / cap / ball resembling known game characters; the
+  preview shows it too. Replace with an original picture before a public release.
+- Settings › Home header subtitle is cut with "…" (seen on the Thor; existing, not from this update).
+- Earlier open items unchanged: KONKR on-device install message, Twin controls on the lower screen, drawn-cartridge lighting check,
+  Orbit with discs. No release.
+
 # Update 422 (1 Nov 2026) — last 14 popups, Box rows balanced, drawn cartridges lit, ES-DE artwork (read-only), CrashGuard fix (NOT released)
 
 ## Done

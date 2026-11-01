@@ -134,8 +134,8 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                                     Spacer(Modifier.height(4.dp))
                                     ctx.chips.forEach { a ->
                                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                                            Text("  " + a.label.uppercase(), color = if (on) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcDim, fontSize = small, maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis, style = TextStyle(fontFamily = font), modifier = Modifier.fillMaxWidth())
+                                            Text(sceneLabel(a.label).uppercase(), color = if (on) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcDim, fontSize = small, maxLines = 3,
+                                                style = TextStyle(fontFamily = font), modifier = Modifier.fillMaxWidth().padding(start = 14.dp))
                                         }
                                     }
                                 }
@@ -154,7 +154,7 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Text(
                     listOfNotNull("PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null, ctx.last?.let { "LAST " + it.uppercase() })
                         .joinToString("   "),
-                    color = ArcInk, fontSize = small, maxLines = 1, overflow = TextOverflow.Ellipsis, style = glow
+                    color = ArcInk, fontSize = small, maxLines = 2, style = glow
                 )
             }
             // The tube: scan lines, its curve, the glass.

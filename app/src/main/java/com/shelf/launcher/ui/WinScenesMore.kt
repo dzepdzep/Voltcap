@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -73,10 +75,14 @@ internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNo
 internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
     ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())
 
-/** A row of keys that scrolls sideways when it doesn't fit (never squeezed, never cut). */
+/** A row of keys that wraps onto more lines when it doesn't fit (never squeezed, never cut). */
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
+    // Update 423: the keys wrap onto a second line instead of running off the window's edge (the 53-layout visual pass found
+    // "Achievem" / "Opti" / a lone half key cut by the edge in 20 windows). D-pad ▼ reaches the second line (2D focus).
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap),
+        itemVerticalAlignment = Alignment.CenterVertically) {
         keys.forEach { key(it) }
     }
 }
@@ -283,7 +289,9 @@ internal fun CorePanel(ctx: WinSceneCtx) {
         StableFullText(ctx.name, color = ink, fontSize = 22.sp, maxLines = 2, fontWeight = FontWeight.Bold)
         Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0f)))))
         Row(Modifier.weight(1f, fill = false)) {
-            Box(Modifier.width(minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
+            // (Update 423: the cover follows the room left under the keys — sized by its width it grew past the row and covered
+            // the title once the keys wrapped onto more lines.)
+            Box(Modifier.widthIn(max = minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f, matchHeightConstraintsFirst = true).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
                 ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit) }
             }
             Spacer(Modifier.width(12.dp))
@@ -417,7 +425,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
     }) {
         // Upper half: what the top screen shows (the art, whole).
-        Box(Modifier.weight(0.46f).fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(Color(0xFF101318))) {
+        Box(Modifier.weight(0.36f).fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(Color(0xFF101318))) {
             val art = ctx.wide ?: ctx.backdrop
             if (art != null) {
                 AsyncImage(rememberStyleArtRequest(art), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.35f)
@@ -427,7 +435,9 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
         // The hinge.
         Box(Modifier.fillMaxWidth().height(10.dp).background(Brush.verticalGradient(listOf(Color(0xFF2A2F37), Color(0xFF555C67), Color(0xFF2A2F37)))))
         // Lower half: the touch screen's controls.
-        Column(Modifier.weight(0.54f).fillMaxWidth().clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)).background(Color(0xFF1A1E25)).padding(12.dp)) {
+        // (Update 423: the keys wrap onto three lines now, so the controls half is the bigger one — at 0.54 the facts were
+        // squeezed to their labels only.)
+        Column(Modifier.weight(0.64f).fillMaxWidth().clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)).background(Color(0xFF1A1E25)).padding(12.dp)) {
             StableFullText(ctx.name, color = Color.White, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
             Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
@@ -435,7 +445,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
-                    Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 34.dp)
+                    Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp)
             }
         }
     }

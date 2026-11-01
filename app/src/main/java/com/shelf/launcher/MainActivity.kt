@@ -262,7 +262,7 @@ class MainActivity : ComponentActivity() {
         // For the accent-from-art option: the focused game's cover.
         val focusedCover by remember(vm) {
             vm.uiState.map { s ->
-                val shown = s.forDisplay()
+                val shown = s.forDisplay().let { if (com.shelf.launcher.ui.DemoLibrary.on.value) com.shelf.launcher.ui.DemoLibrary.dress(it) else it }
                 shown.visibleGames.getOrNull(shown.focusedIndex)?.let {
                     shown.artOverrides[it.stableKey]?.cover ?: shown.art[it.stableKey]?.gridUrl
                 }

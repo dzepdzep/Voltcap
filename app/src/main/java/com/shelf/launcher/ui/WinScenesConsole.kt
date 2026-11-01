@@ -186,7 +186,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                         ctx.chips.forEach { a ->
                             SceneControl(a, Modifier.fillMaxWidth()) { on ->
                                 Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFC46B) else Color.White.copy(alpha = 0.72f), fontSize = 12.sp,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    maxLines = 2,
                                     textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp))
                             }
@@ -341,7 +341,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     line("Played", ctx.played); line("Last played", ctx.last); line("Released", ctx.year); line("Made by", ctx.developer); line("Kind", ctx.genres)
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 12.sp, maxLines = 2,
                                 textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                         }
                     }
@@ -532,8 +532,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                             fact("Played", ctx.played); fact("Last played", ctx.last); fact("Released", ctx.year); fact("Made by", ctx.developer); fact("Kind", ctx.genres)
                             ctx.chips.forEach { a ->
                                 SceneControl(a, Modifier) { on ->
-                                    Text(a.label, color = if (on) p.accent else if (a.urgent) Color(0xFFC0700A) else ink.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                                    Text(a.label, color = if (on) p.accent else if (a.urgent) Color(0xFFC0700A) else ink.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 2,
+                                        textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                                 }
                             }
                         }
@@ -751,7 +751,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                     }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text(a.label.uppercase(), color = if (on) neon else ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(a.label.uppercase(), color = if (on) neon else ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                         }
                     }
                 }
@@ -851,7 +851,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 }
                 if (ctx.page == WinPage.MAIN) ctx.chips.forEach { a ->
                     SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                        Text("  " + a.label.uppercase(), style = style.copy(color = if (on) tc.accent else tc.dim, fontSize = fs * 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        Text("  " + a.label.uppercase(), style = style.copy(color = if (on) tc.accent else tc.dim, fontSize = fs * 0.8f), maxLines = 2,
                             modifier = Modifier.fillMaxWidth())
                     }
                 }
