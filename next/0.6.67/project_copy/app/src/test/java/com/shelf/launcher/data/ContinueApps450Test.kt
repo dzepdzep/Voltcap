@@ -119,3 +119,66 @@ class ContinueApps450Test {
         }
     }
 }
+
+/** Update 451: uninstalled apps, Usage access off and profile switches. */
+class ContinueApps451Test {
+    private val pxplay = "psplay.grill.com"
+    private val px = Game("PXPlay", "App", 1, SourceType.APP, packageName = pxplay)
+
+    @Test fun anUninstalledOptedInAppSimplyIsntListed() {
+        val s = LauncherUiState(
+            games = emptyList(), libraryApps = LibraryAppsSettings(continueApps = setOf(pxplay)),
+            lastPlayedAt = mapOf(pxplay to 5L), specialFilter = SpecialFilter.RECENT
+        )
+        assertTrue(s.visibleGames.isEmpty())
+        val back = s.copy(games = listOf(px))
+        assertEquals(listOf(pxplay), back.visibleGames.map { it.stableKey }) // reinstalled: back, history kept
+    }
+
+    private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
+        .map(::File).first { it.exists() }.readText()
+
+    @Test fun usageGoesToTheProfileThatWasPlaying() {
+        val vm = src("LauncherViewModel.kt")
+        val sw = vm.substring(vm.indexOf("fun switchProfile(id: Int)"))
+        assertTrue(sw.indexOf("settleContinueAppsNow()") in 0 until sw.indexOf("Profiles.setActive(app, id)"))
+        val ca = src("data/ContinueApps.kt")
+        assertTrue(ca.contains("@Synchronized"))
+        assertTrue(ca.contains("getSharedPreferences(\"continue_apps_scan\"")) // one device-wide cursor: each moment read once
+    }
+
+    @Test fun timeWithUsageAccessOffIsNeverReadLater() {
+        val ca = src("data/ContinueApps.kt")
+        val i = ca.indexOf("if (!usageAvailable(c)) {")
+        assertTrue(i > 0 && ca.indexOf("putLong(KEY_CURSOR, now).remove(KEY_OPEN)", i) > i)
+    }
+}
+
+/** Update 451 (D152): a Continue-playing app opened from a tile takes the light app path; Clear survives last-played sync. */
+class ContinueApps451LaunchTest {
+    private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
+        .map(::File).first { it.exists() }.readText()
+
+    @Test fun tileLaunchOfAContinueAppSkipsTheGamePath() {
+        val vm = src("LauncherViewModel.kt")
+        val l = vm.substring(vm.indexOf("    fun launch(game: Game) {"))
+        assertTrue(l.indexOf("if (_uiState.value.isContinueApp(game)) { launchApp(game); return }") in 0 until l.indexOf("launchNow(game)"))
+        val o = vm.substring(vm.indexOf("fun otherOpenGames(game: Game)"))
+        assertTrue(o.indexOf("isContinueApp(game)) return emptyList()") in 0 until 300)
+    }
+
+    @Test fun clearLeavesAMarkSoSyncedOldTimesStayAway() {
+        val r = src("data/RecentlyPlayedStore.kt")
+        val f = r.substring(r.indexOf("fun forget("))
+        assertTrue(f.substring(0, 400).contains("loadHidden() + (stableKey to at)"))
+    }
+}
+
+class ContinueApps451OpenGamesTest {
+    @Test fun anOpenStreamingAppIsNeverAGameToQuitFirst() {
+        val vm = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
+            .map(::File).first { it.exists() }.readText()
+        val o = vm.substring(vm.indexOf("fun otherOpenGames(game: Game)"))
+        assertTrue(o.substring(0, 1400).contains("it.stableKey in others && !_uiState.value.isContinueApp(it)"))
+    }
+}

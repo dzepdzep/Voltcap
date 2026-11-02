@@ -164,6 +164,14 @@ internal object TestHooks {
     @Volatile var appProbe: ((String) -> String)? = null
 
     /**
+     * Update 451: the home screen's own state for QA snapshots — selected category (console or special list), the focused
+     * game, the playing profile and the remembered last category (set by the view model). [restoreViewState] puts a saved
+     * one back on the main thread and returns what it verified ("OK …" or "MISMATCH …").
+     */
+    @Volatile var viewState: (() -> org.json.JSONObject)? = null
+    @Volatile var restoreViewState: ((org.json.JSONObject, (String) -> Unit) -> Unit)? = null
+
+    /**
      * Update 450: `--es voltcap_test_appinfo pkg1,pkg2` — READ-ONLY: writes how Voltcap classifies each app (its own
      * state + Android's game flag) to `<external files>/voltcap_qa_appinfo.txt`. Changes nothing.
      */
@@ -298,8 +306,13 @@ internal object TestHooks {
         if (rs != null) { previewOnly = true; shortcuts.value = rs }
         if (snap != null) runCatching {
             val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
+            val vf = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_view.json")
+            val verify = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_verify.txt")
             if (snap == "save") {
                 f.writeText(org.json.JSONObject(com.shelf.launcher.data.Features.snapshot() as Map<*, *>).toString())
+                // Update 451: the selected category, focused game and profile too (a test once left the Thor on an empty category).
+                viewState?.invoke()?.let { vf.writeText(it.toString()) }
+                verify.delete()
                 // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
                 val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                 java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
@@ -316,6 +329,11 @@ internal object TestHooks {
                     val h = l.getOrNull(1)
                     if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
                     e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
+                }
+                // Update 451: the selected category and focused game back, then checked (the result in voltcap_test_snapshot_verify.txt).
+                if (vf.exists()) restoreViewState?.invoke(org.json.JSONObject(vf.readText())) { result ->
+                    runCatching { verify.writeText(result + "\n") }
+                    android.util.Log.e("VoltcapTest", "view state $result")
                 }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }

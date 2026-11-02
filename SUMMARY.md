@@ -1,3 +1,47 @@
+# Update 451 (2 Nov 2026) — final checks: Continue playing on screen (D152/D154/D155), QA view-state restore, charging wake-lock review, game-window "More" (D156) (NOT published)
+
+**Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112. The Odin appeared on wireless ADB only — not used. Thor charging untouched.
+**Continue playing (Thor, Pocket classic, the owner's layout):** PXPlay and Asobi (opted in for the test) appear with their own names and art
+("Other apps"), newest first between the ROMs (PXPlay, Asobi, Advance Wars, GoldenEye…), one entry each. Found and fixed:
+- *D152:* from the tile an opted-in app took the whole game path (second-screen info page, play-time session, save watch). Now the light app
+  path: Thor — same task #10483 brought forward, no CompanionActivity, play time unchanged.
+- *D154:* starting a game asked "PXPlay is still open — quit it?" (left over from the old path). Open streaming apps are never "games to quit".
+- *D155:* Clear came back through the Drive last-played sync; Clear now leaves a cleared-at mark. Thor: Asobi cleared → gone.
+- Usage access off (`appops … ignore`, restored to allow): 15 s of Asobi not counted, and nothing back-filled when switched on again.
+  Time with access off is never read later (cursor moves on). Background / screen-off: update 450 (20.1 s of 50).
+- Profiles: use is settled to the profile playing before a profile switch (one device-wide cursor, synchronized). Unit-tested only — the owner
+  has one profile and real profiles were not touched.
+- Uninstalled opted-in app: not listed (built from installed apps); reinstalling brings it back with its history (unit test).
+- *D153 (open, low):* on the Thor the first key after an adb intent / HOME reaches AYN's second-display launcher (Voltcap sees only the KeyUp);
+  QA-only so far.
+- Compact (RP Classic): PXPlay / Asobi aren't installed there; Continue playing itself shown (the owner's start view).
+**Selected category (P2):** no snapshot or backup held the Thor's pre-450 selected category (the old snapshot keeps only Features + category
+order; no Voltcap backup files; logcat starts after the change) — left as it is (All, 007 focused). The start category setting was never changed.
+New: `--es voltcap_test_snapshot save|restore` also keeps the selected category, focused game and profile and VERIFIES the restore
+(`voltcap_test_snapshot_verify.txt`, `tools/qa/device/viewstate.sh` exit 0 only on OK); `voltcap_test_category` takes `S:<list>` and never
+leaves an empty category. Every run this update: save → test → restore "OK" (Thor: All / 007 / profile 0; RP Classic: Continue playing /
+Mario's Picross X / profile 0).
+**Charging (P6, Retroid only, 80 % / < 77 % unchanged):** the battery-change wake lock now only while the limit is on and plugged in (or a stop
+is held / the cable just changed) — none on battery or with the limit off; one stop check at a time (a newer stop supersedes); a check gives up
+when unplugged, the limit is switched off or bypass took over; after a restart the R1 chip shows the held level. ChargeWake451Test.
+**Game windows (D156):** audit of all 53 layouts on the RP Classic (own style, launches blocked, stills). 22 layouts showed nine actions + two
+status lines at once. They now show Play, Details, Back, Inspect and More; More opens in place (Performance, Options, Achievements, Save sync,
+Manual, the save / AutoTDP lines, Less), focus on its first action, B closes More before the window, focus back on More; a save problem stays
+visible. Layouts with their own compact window or a menu list are unchanged. Verified: RP Classic Cover details, Thor Twin desk + Hero (B, B
+pattern); no launch in any run.
+**Dual-screen regression (Thor, P5):** Twin desk / icons / showcase, Pocket classic / ribbon: dashboard opens, ▼ lights the return button,
+A returns, ▶ moves; no launch. Settings › Device › Gesture hint seen on the Thor: both switches off, note "The handheld's own setting is hiding
+the bar" (hide_nav_bar=1) — D150 visually right. Switches not toggled (owner's settings).
+**D137 (P3):** measured only (RP Classic, RC): 1-16 missed frames per 6-move run, each move's first frame 36-40 ms in composition (the home
+screen recomposing). No change made. **D124 (P4):** not re-run (a real game session would change play history / saves).
+**Checks (final code):** testDebugUnitTest green (ContinueApps450/451 suites, ChargeFastStop450Test, ChargeWake451Test, PopupMore451Test,
+NavBar449Test, TwinBack447Test, ProfilePicker445Test), static checks PASS (counts unchanged), QA selftest OK, patch `git apply --check` OK.
+**Restored:** RC rebuilt and installed on both. Thor: hooks `.paused`, previews ended, PXPlay / Asobi opted out, usage access allow, view state OK.
+RP Classic: view state OK, its own hooks file left as found, stay_on 0. Note: `viewstate.sh save` rewrote the QA snapshot files
+(voltcap_test_snapshot.json / _categories.txt) on both devices — the RP Classic's from 30 Oct and the Thor's from 1 Nov are replaced by today's (QA files only). PXPlay / Asobi left open in the background on the Thor.
+**Copy:** nothing (app/ = RC). next/0.6.67 (patch + copies incl. GameWindow.kt, tools viewstate / cp1 / popscan / popmore / dualreg),
+defects D137 / D124 / D152-D156, `.gitignore` (2 more placeholders).
+
 # Update 450 (2 Nov 2026) — D148 Retroid fast-charge stop fixed and verified; apps in Continue playing (PXPlay / Asobi, D151) (NOT published)
 
 **Devices (USB):** Retroid Pocket Classic MC94516AQF091001112 (D148), AYN Thor 3140972f (Continue playing). The Odin 2 Portal showed up over

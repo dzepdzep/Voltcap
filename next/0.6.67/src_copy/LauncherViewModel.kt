@@ -2008,13 +2008,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Other games open in the background (a different app than [game]'s): ask before starting [game]. */
     fun otherOpenGames(game: Game): List<Game> {
+        // Update 451: opening a streaming app never asks about closing an open game (it doesn't start one).
+        if (_uiState.value.isContinueApp(game)) return emptyList()
         val app = getApplication<Application>()
         val pkg = if (game.sourceType == SourceType.APP) game.packageName else emulatorPackageFor(game)
         // Only games known to be open: asking about one that may already be closed would just nag.
         val sure = com.shelf.launcher.data.RunningGames.confirmed
         val others = com.shelf.launcher.data.RunningGames.others(app, game.stableKey)
             .filter { it.pkg != pkg && it.key in sure }.map { it.key }.toSet()
-        return _uiState.value.games.filter { it.stableKey in others }
+        // Update 451: an app in Continue playing still open in the background (a streaming client) isn't a game to quit
+        // first — starting a game never asks about it (the Thor asked "PXPlay is still open" before Dr. Mario).
+        return _uiState.value.games.filter { it.stableKey in others && !_uiState.value.isContinueApp(it) }
     }
 
     /** X on a game that's still open: close it. */
@@ -4009,6 +4013,39 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         recombineGames()
     }
 
+    /** Update 451: what the home screen is on now (QA snapshots). */
+    internal fun qaViewState(): org.json.JSONObject {
+        val s = _uiState.value
+        return org.json.JSONObject()
+            .put("platform", s.platformFilter ?: "")
+            .put("special", s.specialFilter?.name ?: "")
+            .put("focus", s.visibleGames.getOrNull(s.focusedIndex)?.stableKey ?: "")
+            .put("profile", com.shelf.launcher.data.Profiles.activeId.value)
+    }
+
+    /**
+     * Update 451: puts a saved [qaViewState] back — the same category (never an empty one: it stays where it is and says so)
+     * and the same game focused — then compares. The profile is only checked, never switched.
+     */
+    internal suspend fun qaRestoreViewState(j: org.json.JSONObject): String {
+        val special = j.optString("special").takeIf { it.isNotEmpty() }?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }
+        val platform = j.optString("platform").takeIf { it.isNotEmpty() }
+        val now = _uiState.value
+        if (now.specialFilter != special || now.platformFilter != platform) {
+            if (special != null) setSpecialFilter(special) else setPlatformFilter(platform)
+            kotlinx.coroutines.delay(300)
+        }
+        val key = j.optString("focus")
+        if (key.isNotEmpty()) {
+            val i = _uiState.value.visibleGames.indexOfFirst { it.stableKey == key }
+            if (i >= 0) setFocus(i)
+            kotlinx.coroutines.delay(150)
+        }
+        val got = qaViewState()
+        val diffs = listOf("platform", "special", "focus", "profile").filter { got.opt(it)?.toString() != j.opt(it)?.toString() }
+        return if (diffs.isEmpty()) "OK $got" else "MISMATCH ${diffs.joinToString(",")} want=$j got=$got"
+    }
+
     /** Update 450: QA (`voltcap_test_appinfo`, read-only) — how this app is classified right now. */
     private fun appProbe(pkg: String): String {
         val s = _uiState.value
@@ -4021,7 +4058,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             "continue_opt_in=${pkg in lib.continueApps} last_played=${recentlyPlayedStore.loadAll()[pkg] ?: 0} " +
             "removed_from_continue=$hiddenFromContinue in_continue_list=${s.copy(specialFilter = SpecialFilter.RECENT).visibleGames.any { it.packageName == pkg }} " +
             "usage_access=${com.shelf.launcher.data.ContinueApps.usageAvailable(getApplication())} " +
-            "foreground_ms=${com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())[pkg] ?: 0} profile=${com.shelf.launcher.data.Profiles.activeId.value}"
+            "foreground_ms=${com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())[pkg] ?: 0} profile=${com.shelf.launcher.data.Profiles.activeId.value} " +
+            "playtime_ms=${playtimeStore.loadTotals()[pkg] ?: 0} visible_last_played=${recentlyPlayedStore.loadVisible()[pkg] ?: 0}"
     }
 
     /** Time in front per opted-in app (this profile, from Usage access); for the app's options. */
@@ -4031,6 +4069,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * With Usage access (optional, never switched on here): when the opted-in apps were in front since the last look —
      * also when opened outside Voltcap — becomes their Continue playing time. Read once when Voltcap comes back.
      */
+    /** Update 451: [refreshContinueApps] right now, on this thread, for the profile playing now (before a profile switch). */
+    private fun settleContinueAppsNow() {
+        val pkgs = _uiState.value.libraryApps.continueApps
+        if (pkgs.isEmpty()) return
+        runCatching {
+            com.shelf.launcher.data.ContinueApps.scan(getApplication(), pkgs)?.forEach { (pkg, u) -> recentlyPlayedStore.recordIfNewer(pkg, u.lastUsed) }
+        }
+    }
+
     private fun refreshContinueApps() {
         val pkgs = _uiState.value.libraryApps.continueApps
         if (pkgs.isEmpty()) return
@@ -4766,6 +4813,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun switchProfile(id: Int) {
         val app = getApplication<Application>()
+        // Update 451: use of the opted-in apps (PXPlay, Asobi…) up to now goes to the profile that was playing, before it changes.
+        if (id != com.shelf.launcher.data.Profiles.activeId.value) settleContinueAppsNow()
         val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
         val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
         if (slot != null) switchRaAccount(slot)
@@ -5445,6 +5494,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun launch(game: Game) {
         if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
+        // Update 451 (D152): an app put in Continue playing (PXPlay, Asobi…) opened from a tile is just opened, like from the
+        // drawer — it took the whole game path before (second-screen info page, play-time session, save watch, overlays).
+        if (_uiState.value.isContinueApp(game)) { launchApp(game); return }
         com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
         val check = preparedCheck?.second
         if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
@@ -6712,6 +6764,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     init {
         // Update 450: read-only QA probe (voltcap_test_appinfo).
         com.shelf.launcher.ui.TestHooks.appProbe = { pkg -> runCatching { appProbe(pkg) }.getOrElse { "voltcap_state=error ${it.message}" } }
+        // Update 451: QA snapshots keep / put back / check the selected category, focused game and profile.
+        com.shelf.launcher.ui.TestHooks.viewState = { qaViewState() }
+        com.shelf.launcher.ui.TestHooks.restoreViewState = { j, done -> viewModelScope.launch { done(runCatching { qaRestoreViewState(j) }.getOrElse { "MISMATCH error ${it.message}" }) } }
         // Pass 5: the start category's own game look (data/CategoryGameLooks.kt).
         runCatching { _uiState.update { it.copy(appearance = withCategoryArt(it, it.appearance)) } }
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the

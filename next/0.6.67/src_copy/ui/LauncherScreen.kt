@@ -1038,9 +1038,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val c = testCategory ?: return@LaunchedEffect
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
         viewModel.setSearchQuery("")
-        viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
+        // Update 451: `S:<list>` (S:RECENT = Continue playing) picks a special list; a name that leaves the screen empty is
+        // undone at once (update 450 left the Thor on an empty "RECENT" console filter).
+        val before = viewModel.uiState.value.let { it.platformFilter to it.specialFilter }
+        val special = c.takeIf { it.startsWith("S:") }?.removePrefix("S:")?.let { n -> runCatching { com.shelf.launcher.SpecialFilter.valueOf(n) }.getOrNull() }
+        if (special != null) viewModel.setSpecialFilter(special)
+        else viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
         kotlinx.coroutines.delay(300)
-        viewModel.setFocus(0)
+        if (viewModel.uiState.value.visibleGames.isEmpty()) {
+            if (before.second != null) viewModel.setSpecialFilter(before.second) else viewModel.setPlatformFilter(before.first)
+            android.util.Log.e("VoltcapQA", "category $c is empty here; left as it was")
+        } else viewModel.setFocus(0)
         TestHooks.category.value = null
     }
     // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)

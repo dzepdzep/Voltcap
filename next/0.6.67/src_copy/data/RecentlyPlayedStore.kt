@@ -48,11 +48,15 @@ class RecentlyPlayedStore(context: Context) {
         return all.filter { (k, t) -> (hidden[k] ?: Long.MIN_VALUE) < t }
     }
 
-    /** Update 450: "Clear from Continue playing" — forgets [stableKey]'s last-played time (and its hide mark) on this profile. */
-    fun forget(stableKey: String) {
+    /**
+     * Update 450: "Clear from Continue playing" — forgets [stableKey]'s last-played time on this profile. Update 451: and marks it
+     * cleared as of [at], so a time from before that coming back from "Last played on every device" (Drive) doesn't bring the
+     * entry back (seen on the Thor); using it again afterwards does.
+     */
+    fun forget(stableKey: String, at: Long = System.currentTimeMillis()) {
         prefs.edit()
             .putString(KEY, gson.toJson(loadAll() - stableKey))
-            .putString(KEY_HIDDEN, gson.toJson(loadHidden() - stableKey))
+            .putString(KEY_HIDDEN, gson.toJson(loadHidden() + (stableKey to at)))
             .apply()
     }
 

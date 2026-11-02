@@ -176,6 +176,8 @@ object ChargeLimiter {
     @Volatile private var stopWasFast = false
     @Volatile private var settledMax = -1
     @Volatile private var observing = false
+    /** Update 451: the newest stop check; an older one still waiting gives up. */
+    @Volatile private var verifyGen = 0
     /** The highest level seen while stopped (for the R1 chip), or null when not stopped. */
     @Volatile var stoppedAt: Int? = null
         private set
@@ -198,8 +200,9 @@ object ChargeLimiter {
         runCatching {
             app.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(c: Context, i: Intent) {
-                    // D148: on a Retroid keep the handheld awake until the battery change is handled (it slept after ~0.45 s).
-                    val awake = holdAwake(app, 10_000L)
+                    // D148: on a Retroid keep the handheld awake until the battery change is handled (it slept after ~0.45 s) —
+                    // update 451: only while the limit has something to do (on and plugged in, or still holding a stop).
+                    val awake = if (needsAwake(app, i)) holdAwake(app, 10_000L) else null
                     val pending = goAsync()
                     Thread {
                         try { runCatching { check(app, i) } } finally { pending.finish(); runCatching { awake?.release() } }
@@ -281,6 +284,22 @@ object ChargeLimiter {
         return _status.value
     }
 
+    /**
+     * Update 451: a battery change is worth keeping the handheld awake for only while the limit is on and the charger is in
+     * (or the cable just changed, or a stop / cut-off is still held). Unplugged with the limit off: no wake lock at all.
+     */
+    private fun needsAwake(context: Context, i: Intent): Boolean {
+        if (!isRetroid()) return false
+        val limitOn = runCatching { ownSwitch(context) }.getOrDefault(false)
+        val plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+        val cable = i.action == Intent.ACTION_POWER_CONNECTED || i.action == Intent.ACTION_POWER_DISCONNECTED
+        return wantsAwake(limitOn, plugged, cable, paused == true || draining)
+    }
+
+    /** Update 451: the rule behind [needsAwake] (unit-tested). */
+    internal fun wantsAwake(limitOn: Boolean, plugged: Boolean, cableChanged: Boolean, holding: Boolean): Boolean =
+        (limitOn && (plugged || cableChanged)) || holding
+
     /** A partial wake lock with a time-out, on a Retroid only (null elsewhere: the AYN path is unchanged). */
     private fun holdAwake(context: Context, ms: Long): PowerManager.WakeLock? {
         if (!isRetroid()) return null
@@ -307,11 +326,14 @@ object ChargeLimiter {
      */
     private fun verifyLater(context: Context) {
         if (!isRetroid()) return
+        // Update 451: one check at a time — a newer stop (replug, setting switched) supersedes the one still waiting.
+        val gen = ++verifyGen
         val awake = holdAwake(context, 30_000L)
         Thread {
             try {
                 for (attempt in 1..2) {
                     Thread.sleep(12_000L)
+                    if (gen != verifyGen) break
                     if (!verifyStop(context, attempt)) break
                 }
             } catch (_: Throwable) {
@@ -322,7 +344,8 @@ object ChargeLimiter {
     /** True when it still charged and something was done about it (so look once more). */
     @Synchronized
     private fun verifyStop(context: Context, attempt: Int): Boolean {
-        if (paused != true || draining || lastPlugged != true) return false
+        // Unplugged, the limit switched off (paused false) or bypass taken over since the stop: nothing to check.
+        if (paused != true || draining || lastPlugged != true || !ownSwitch(context)) return false
         val ma = currentMa(context)
         if (ma == null || ma <= STILL_CHARGING_MA) { log(context, "limit_verify_ok"); return false }
         val flags = held().filter { it.kind != Kind.THRESHOLD }
@@ -441,6 +464,8 @@ object ChargeLimiter {
             lastNodeCheck = now
             paused = limitOn && flags.any { it.isStopped(read(it.path)) }
             if (paused == true) pausedAtPercent = maxOf(percent, STOP_AT)
+            // Update 451: after a restart the R1 chip still shows the real level it is held at.
+            if (paused == true && isRetroid()) stoppedAt = percent
         }
 
         // Limit off and charge bypass on: bypass owns AYN's switch; let go of anything else still held.

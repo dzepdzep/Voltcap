@@ -1472,7 +1472,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM→LIGHT→OFF in Efficient, LIGHT→OFF in Balanced)",
-   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done."
+   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done. | Update 451: not re-run — a real game session would change the owner's play history (last played, play time) and possibly emulator saves; the code paths are covered by AutoTdp429Test. Still fixed-unverified."
   },
   {
    "id": "D125",
@@ -1591,7 +1591,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
-   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC."
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC. | Update 451 (RP Classic, RC, d137.sh NOVIDEO): cadence missed per 6-move run 16 / 3 / 1, idle 2 / 2 / 0; the first frame after each move has anim 36-40 ms (the home screen recomposing: Screen=3-4, CarRun/CarP per move). Idle renders at 60 fps with gpu ~14-19 ms (the background). Not changed — no optimisation found within this batch; the root-level recomposition per focus move is the lead."
   },
   {
    "id": "D138",
@@ -1718,6 +1718,51 @@
    "status": "verified",
    "found": "2026-11-02 update 450 (owner request)",
    "note": "Thor 3140972f (read-only probe voltcap_test_appinfo): both kind=AUTO, no Android game flag, auto_game=false, not added, not hidden, not removed from Continue playing (manual exclusion: none) — filtered by design (update 200). v0.6.67 staging: per-app opt-in 'Show in Continue playing' (app drawer menu, game options) in library_apps.continue_apps (empty by default; stays an app), launch from Voltcap records the time only (no session / play time / save sync / tuning; no second instance), Usage access (optional) picks up use outside Voltcap: foreground stretches only (screen off / lock / other app / background excluded, < 5 s ignored), counted from opt-in, per profile; one entry per package; Clear / take out per app. Thor: Asobi opened outside Voltcap 25 s -> last used + 25.1 s; PXPlay 15 s, screen off 30 s, 5 s, background 30 s -> 20.1 s; chosen from the drawer -> same task #10483 brought forward; clear + opt-out restore the original state. ContinueApps450Test (10)."
+  },
+  {
+   "id": "D152",
+   "title": "Continue playing: an opted-in app (PXPlay) opened from its tile took the whole game path — second-screen info page, play-time session, save watch",
+   "rule": "LAUNCH",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 451 visual check (Thor)",
+   "note": "LauncherScreen startGame → viewModel.launch → launchNow for every tile; update 450 only made the drawer / shortcuts light. Fix (staging): launch() sends a Continue-playing app to launchApp (no CompanionActivity, session, save watch, Discord, tuning; existing task brought forward). Thor: tile launch → psplay task #10483 brought forward, companion 0, LAUNCH vm.launch then launchApp; play time unchanged. ContinueApps451LaunchTest."
+  },
+  {
+   "id": "D153",
+   "title": "Thor (two screens): the first key after an adb intent or HOME can reach AYN's own second-display launcher; Voltcap sees only its KeyUp",
+   "rule": "INPUT",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 451",
+   "note": "Seen in QA (`input keyevent` after `am start` / HOME): mCurrentFocus = com.android.launcher3 SecondaryDisplayLauncher, VoltcapQA 'homekey 96 KeyUp' only. Not confirmed with the real controller. QA scripts send a harmless SCROLL_LOCK first. Not changed."
+  },
+  {
+   "id": "D154",
+   "title": "Starting a game asked 'PXPlay is still open — quit it and play?' (a streaming app counted as an open game)",
+   "rule": "LAUNCH",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-02 update 451 (Thor, before Dr. Mario)",
+   "note": "A full-path launch registered PXPlay in RunningGames; otherOpenGames listed it. Fix: otherOpenGames never lists a Continue-playing app, and asks nothing when opening one. Unit-tested (ContinueApps451OpenGamesTest); not re-run on hardware (the check comes before the launch hook, so it can't be run with launches blocked)."
+  },
+  {
+   "id": "D155",
+   "title": "'Clear from Continue playing' came back: the Drive 'Last played on every device' sync re-added the cleared time",
+   "rule": "LIBRARY",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-02 update 451 (Thor: Asobi last_played back after a clear)",
+   "note": "forget() now also leaves a 'cleared at' mark (the existing hide map), so an older time from sync stays hidden; using the app again shows it. Thor: clear → last 0 / visible 0. Sync round itself not forced (every 20 min). ContinueApps451LaunchTest."
+  },
+  {
+   "id": "D156",
+   "title": "Game windows: 22 layouts showed every action at once (Play, Performance, Details, Back, Options, Achievements, Save sync, Manual, Inspect + 2 status lines) — cramped on the RP Classic",
+   "rule": "UI",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-02 update 451 popup audit (RP Classic, all 53 layouts, own style)",
+   "note": "Audit: tools/qa/device/popscan.sh RPC (53 stills). Clean already (unchanged): Channel grid (More), Cinema, Bubbles, Cards, Memory card, Airy, Arctic, Discover, TV room and the menu-list windows (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop, Storage, Box, Orbit, Blades). Fix (GameWindow SceneBody, MORE_SCENES): Play, Details, Back, Inspect + More; More opens in place (Performance, Options, Achievements, Save sync, Manual, status lines, Less), focus to Options, B closes More first, focus back on More; an urgent save line stays visible; each layout keeps its own look. RP Classic: Cover details B closes More then the window; Thor Twin desk + Hero: same (popmore.sh). PopupMore451Test."
   }
  ]
 }

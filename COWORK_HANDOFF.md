@@ -2,6 +2,9 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 451: Continue playing visually checked (Thor) + D152/D154/D155 fixed; ALWAYS `viewstate.sh save` before and `restore` (must print OK)
+after device tests; never `voltcap_test_category <console>` blindly (use S:<list>). Game-window More (D156) in 22 layouts. D137 measured only,
+D124 not re-run. Placeholders also ChargeWake451Test, PopupMore451Test (gitignored).**
 **Update 450: D148 fixed + verified in staging (RP Classic on the owner's fast charger, screen on and off: stops at 80 %; Retroid-only wake lock /
 current check / learned lead; Thor charging untouched). D151: PXPlay (psplay.grill.com) / Asobi (com.asobi.droid) per-app "Show in Continue
 playing" + Usage-access detection outside Voltcap, Thor-verified. More placeholders: data/ContinueApps.kt, ContinueApps450Test, ChargeFastStop450Test

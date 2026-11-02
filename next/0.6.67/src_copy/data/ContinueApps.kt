@@ -126,9 +126,16 @@ object ContinueApps {
      * without Usage access (nothing is read, nothing turned on). The first look starts now — nothing from before you
      * opted an app in is counted.
      */
+    @Synchronized // (update 451: a look on return and one before a profile switch never read the same time twice)
     fun scan(c: Context, pkgs: Set<String>, now: Long = System.currentTimeMillis()): Map<String, Use>? {
-        if (pkgs.isEmpty() || !usageAvailable(c)) return null
+        if (pkgs.isEmpty()) return null
         val p = scanPrefs(c)
+        if (!usageAvailable(c)) {
+            // Update 451: while Usage access is off nothing is read — and that time is never read later either (switched back
+            // on, counting starts again from then, so it can't land on whichever profile happens to be playing by then).
+            if (p.getLong(KEY_CURSOR, 0L) > 0L) p.edit().putLong(KEY_CURSOR, now).remove(KEY_OPEN).apply()
+            return null
+        }
         val cursor = p.getLong(KEY_CURSOR, 0L)
         if (cursor <= 0L) { p.edit().putLong(KEY_CURSOR, now).apply(); return emptyMap() }
         val from = maxOf(cursor, now - MAX_LOOKBACK_MS)

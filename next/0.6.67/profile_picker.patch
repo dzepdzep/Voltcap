@@ -29,7 +29,7 @@ index c29e9a0..4acd436 100644
              specialFilter == SpecialFilter.MOST_PLAYED ->
                  library.filter { (playtime[it.stableKey] ?: 0L) > 0L }
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
-index a6aad66..cd8a4a7 100644
+index a6aad66..2eb8b07 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 +++ b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 @@ -86,6 +86,7 @@ import com.shelf.launcher.data.mergeArt
@@ -48,7 +48,26 @@ index a6aad66..cd8a4a7 100644
          // Back on the home screen: the game is over, so whatever Voltcap put on
          // the other screen for it goes (the home screen's own second-screen
          // view takes over again). Not in the moment right after a launch,
-@@ -3567,12 +3569,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -2006,13 +2008,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+ 
+     /** Other games open in the background (a different app than [game]'s): ask before starting [game]. */
+     fun otherOpenGames(game: Game): List<Game> {
++        // Update 451: opening a streaming app never asks about closing an open game (it doesn't start one).
++        if (_uiState.value.isContinueApp(game)) return emptyList()
+         val app = getApplication<Application>()
+         val pkg = if (game.sourceType == SourceType.APP) game.packageName else emulatorPackageFor(game)
+         // Only games known to be open: asking about one that may already be closed would just nag.
+         val sure = com.shelf.launcher.data.RunningGames.confirmed
+         val others = com.shelf.launcher.data.RunningGames.others(app, game.stableKey)
+             .filter { it.pkg != pkg && it.key in sure }.map { it.key }.toSet()
+-        return _uiState.value.games.filter { it.stableKey in others }
++        // Update 451: an app in Continue playing still open in the background (a streaming client) isn't a game to quit
++        // first — starting a game never asks about it (the Thor asked "PXPlay is still open" before Dr. Mario).
++        return _uiState.value.games.filter { it.stableKey in others && !_uiState.value.isContinueApp(it) }
+     }
+ 
+     /** X on a game that's still open: close it. */
+@@ -3567,12 +3573,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          // task forward there. A second instance is only safe for ordinary
          // apps — never emulators, whose two copies would fight over saves.
          val previous = lastAppDisplay[pkg]
@@ -70,7 +89,7 @@ index a6aad66..cd8a4a7 100644
                  noteOwnLaunch(null)
                  // The second-screen home is a window above every app on its
                  // display; step aside so the app can be seen.
-@@ -3983,6 +3993,56 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3983,6 +3997,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          recombineGames()
      }
  
@@ -90,6 +109,39 @@ index a6aad66..cd8a4a7 100644
 +        recombineGames()
 +    }
 +
++    /** Update 451: what the home screen is on now (QA snapshots). */
++    internal fun qaViewState(): org.json.JSONObject {
++        val s = _uiState.value
++        return org.json.JSONObject()
++            .put("platform", s.platformFilter ?: "")
++            .put("special", s.specialFilter?.name ?: "")
++            .put("focus", s.visibleGames.getOrNull(s.focusedIndex)?.stableKey ?: "")
++            .put("profile", com.shelf.launcher.data.Profiles.activeId.value)
++    }
++
++    /**
++     * Update 451: puts a saved [qaViewState] back — the same category (never an empty one: it stays where it is and says so)
++     * and the same game focused — then compares. The profile is only checked, never switched.
++     */
++    internal suspend fun qaRestoreViewState(j: org.json.JSONObject): String {
++        val special = j.optString("special").takeIf { it.isNotEmpty() }?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }
++        val platform = j.optString("platform").takeIf { it.isNotEmpty() }
++        val now = _uiState.value
++        if (now.specialFilter != special || now.platformFilter != platform) {
++            if (special != null) setSpecialFilter(special) else setPlatformFilter(platform)
++            kotlinx.coroutines.delay(300)
++        }
++        val key = j.optString("focus")
++        if (key.isNotEmpty()) {
++            val i = _uiState.value.visibleGames.indexOfFirst { it.stableKey == key }
++            if (i >= 0) setFocus(i)
++            kotlinx.coroutines.delay(150)
++        }
++        val got = qaViewState()
++        val diffs = listOf("platform", "special", "focus", "profile").filter { got.opt(it)?.toString() != j.opt(it)?.toString() }
++        return if (diffs.isEmpty()) "OK $got" else "MISMATCH ${diffs.joinToString(",")} want=$j got=$got"
++    }
++
 +    /** Update 450: QA (`voltcap_test_appinfo`, read-only) — how this app is classified right now. */
 +    private fun appProbe(pkg: String): String {
 +        val s = _uiState.value
@@ -102,7 +154,8 @@ index a6aad66..cd8a4a7 100644
 +            "continue_opt_in=${pkg in lib.continueApps} last_played=${recentlyPlayedStore.loadAll()[pkg] ?: 0} " +
 +            "removed_from_continue=$hiddenFromContinue in_continue_list=${s.copy(specialFilter = SpecialFilter.RECENT).visibleGames.any { it.packageName == pkg }} " +
 +            "usage_access=${com.shelf.launcher.data.ContinueApps.usageAvailable(getApplication())} " +
-+            "foreground_ms=${com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())[pkg] ?: 0} profile=${com.shelf.launcher.data.Profiles.activeId.value}"
++            "foreground_ms=${com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())[pkg] ?: 0} profile=${com.shelf.launcher.data.Profiles.activeId.value} " +
++            "playtime_ms=${playtimeStore.loadTotals()[pkg] ?: 0} visible_last_played=${recentlyPlayedStore.loadVisible()[pkg] ?: 0}"
 +    }
 +
 +    /** Time in front per opted-in app (this profile, from Usage access); for the app's options. */
@@ -112,6 +165,15 @@ index a6aad66..cd8a4a7 100644
 +     * With Usage access (optional, never switched on here): when the opted-in apps were in front since the last look —
 +     * also when opened outside Voltcap — becomes their Continue playing time. Read once when Voltcap comes back.
 +     */
++    /** Update 451: [refreshContinueApps] right now, on this thread, for the profile playing now (before a profile switch). */
++    private fun settleContinueAppsNow() {
++        val pkgs = _uiState.value.libraryApps.continueApps
++        if (pkgs.isEmpty()) return
++        runCatching {
++            com.shelf.launcher.data.ContinueApps.scan(getApplication(), pkgs)?.forEach { (pkg, u) -> recentlyPlayedStore.recordIfNewer(pkg, u.lastUsed) }
++        }
++    }
++
 +    private fun refreshContinueApps() {
 +        val pkgs = _uiState.value.libraryApps.continueApps
 +        if (pkgs.isEmpty()) return
@@ -127,12 +189,34 @@ index a6aad66..cd8a4a7 100644
      fun toggleFavorite(game: Game) {
          val updated = favoritesStore.toggle(game.stableKey)
          _uiState.update { it.copy(favorites = updated) }
-@@ -6650,6 +6710,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -4706,6 +4813,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+      */
+     fun switchProfile(id: Int) {
+         val app = getApplication<Application>()
++        // Update 451: use of the opted-in apps (PXPlay, Asobi…) up to now goes to the profile that was playing, before it changes.
++        if (id != com.shelf.launcher.data.Profiles.activeId.value) settleContinueAppsNow()
+         val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
+         val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
+         if (slot != null) switchRaAccount(slot)
+@@ -5385,6 +5494,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+      */
+     fun launch(game: Game) {
+         if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
++        // Update 451 (D152): an app put in Continue playing (PXPlay, Asobi…) opened from a tile is just opened, like from the
++        // drawer — it took the whole game path before (second-screen info page, play-time session, save watch, overlays).
++        if (_uiState.value.isContinueApp(game)) { launchApp(game); return }
+         com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
+         val check = preparedCheck?.second
+         if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
+@@ -6650,6 +6762,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      }
  
      init {
 +        // Update 450: read-only QA probe (voltcap_test_appinfo).
 +        com.shelf.launcher.ui.TestHooks.appProbe = { pkg -> runCatching { appProbe(pkg) }.getOrElse { "voltcap_state=error ${it.message}" } }
++        // Update 451: QA snapshots keep / put back / check the selected category, focused game and profile.
++        com.shelf.launcher.ui.TestHooks.viewState = { qaViewState() }
++        com.shelf.launcher.ui.TestHooks.restoreViewState = { j, done -> viewModelScope.launch { done(runCatching { qaRestoreViewState(j) }.getOrElse { "MISMATCH error ${it.message}" }) } }
          // Pass 5: the start category's own game look (data/CategoryGameLooks.kt).
          runCatching { _uiState.update { it.copy(appearance = withCategoryArt(it, it.appearance)) } }
          // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the
@@ -179,10 +263,10 @@ index 851d86a..cdd0006 100644
      private fun plugged(c: Context): Boolean = (battery(c)?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
 diff --git a/app/src/main/java/com/shelf/launcher/data/ContinueApps.kt b/app/src/main/java/com/shelf/launcher/data/ContinueApps.kt
 new file mode 100644
-index 0000000..bbd962f
+index 0000000..543fe89
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/data/ContinueApps.kt
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,203 @@
 +package com.shelf.launcher.data
 +
 +import android.app.usage.UsageEvents
@@ -311,9 +395,16 @@ index 0000000..bbd962f
 +     * without Usage access (nothing is read, nothing turned on). The first look starts now — nothing from before you
 +     * opted an app in is counted.
 +     */
++    @Synchronized // (update 451: a look on return and one before a profile switch never read the same time twice)
 +    fun scan(c: Context, pkgs: Set<String>, now: Long = System.currentTimeMillis()): Map<String, Use>? {
-+        if (pkgs.isEmpty() || !usageAvailable(c)) return null
++        if (pkgs.isEmpty()) return null
 +        val p = scanPrefs(c)
++        if (!usageAvailable(c)) {
++            // Update 451: while Usage access is off nothing is read — and that time is never read later either (switched back
++            // on, counting starts again from then, so it can't land on whichever profile happens to be playing by then).
++            if (p.getLong(KEY_CURSOR, 0L) > 0L) p.edit().putLong(KEY_CURSOR, now).remove(KEY_OPEN).apply()
++            return null
++        }
 +        val cursor = p.getLong(KEY_CURSOR, 0L)
 +        if (cursor <= 0L) { p.edit().putLong(KEY_CURSOR, now).apply(); return emptyMap() }
 +        val from = maxOf(cursor, now - MAX_LOOKBACK_MS)
@@ -546,18 +637,22 @@ index e27ce09..56e53ad 100644
          .apply()
  }
 diff --git a/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt b/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt
-index 2912fab..e6b9544 100644
+index 2912fab..da81cd9 100644
 --- a/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt
-@@ -48,6 +48,14 @@ class RecentlyPlayedStore(context: Context) {
+@@ -48,6 +48,18 @@ class RecentlyPlayedStore(context: Context) {
          return all.filter { (k, t) -> (hidden[k] ?: Long.MIN_VALUE) < t }
      }
  
-+    /** Update 450: "Clear from Continue playing" — forgets [stableKey]'s last-played time (and its hide mark) on this profile. */
-+    fun forget(stableKey: String) {
++    /**
++     * Update 450: "Clear from Continue playing" — forgets [stableKey]'s last-played time on this profile. Update 451: and marks it
++     * cleared as of [at], so a time from before that coming back from "Last played on every device" (Drive) doesn't bring the
++     * entry back (seen on the Thor); using it again afterwards does.
++     */
++    fun forget(stableKey: String, at: Long = System.currentTimeMillis()) {
 +        prefs.edit()
 +            .putString(KEY, gson.toJson(loadAll() - stableKey))
-+            .putString(KEY_HIDDEN, gson.toJson(loadHidden() - stableKey))
++            .putString(KEY_HIDDEN, gson.toJson(loadHidden() + (stableKey to at)))
 +            .apply()
 +    }
 +
@@ -588,7 +683,7 @@ index 404cf8e..a65207c 100644
          // of this handheld; where this device keeps its files; this device's web remote (and its PIN).
          "gesture_hint", "tuner", "charge_limit", "accessories", "app_storage", "web_remote", "bios_check",
 diff --git a/app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt b/app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt
-index 4892158..475c0d1 100644
+index 4892158..e4b0134 100644
 --- a/app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt
 +++ b/app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt
 @@ -5,6 +5,7 @@ import android.content.Context
@@ -658,7 +753,7 @@ index 4892158..475c0d1 100644
  
      enum class Kind { STOP_FLAG, ENABLE_FLAG, THRESHOLD, LEVEL_MAX }
  
-@@ -122,6 +168,17 @@ object ChargeLimiter {
+@@ -122,6 +168,19 @@ object ChargeLimiter {
      /** Plugged in above the limit: the charger is cut off so the battery comes down to 80 %. */
      @Volatile private var draining = false
      @Volatile private var bypassOn = false
@@ -670,18 +765,21 @@ index 4892158..475c0d1 100644
 +    @Volatile private var stopWasFast = false
 +    @Volatile private var settledMax = -1
 +    @Volatile private var observing = false
++    /** Update 451: the newest stop check; an older one still waiting gives up. */
++    @Volatile private var verifyGen = 0
 +    /** The highest level seen while stopped (for the R1 chip), or null when not stopped. */
 +    @Volatile var stoppedAt: Int? = null
 +        private set
      /** How often a held switch was found undone (by the driver or firmware) and put back. */
      @Volatile var restored = 0
          private set
-@@ -141,9 +198,11 @@ object ChargeLimiter {
+@@ -141,9 +200,12 @@ object ChargeLimiter {
          runCatching {
              app.registerReceiver(object : BroadcastReceiver() {
                  override fun onReceive(c: Context, i: Intent) {
-+                    // D148: on a Retroid keep the handheld awake until the battery change is handled (it slept after ~0.45 s).
-+                    val awake = holdAwake(app, 10_000L)
++                    // D148: on a Retroid keep the handheld awake until the battery change is handled (it slept after ~0.45 s) —
++                    // update 451: only while the limit has something to do (on and plugged in, or still holding a stop).
++                    val awake = if (needsAwake(app, i)) holdAwake(app, 10_000L) else null
                      val pending = goAsync()
                      Thread {
 -                        try { runCatching { check(app, i) } } finally { pending.finish() }
@@ -689,10 +787,26 @@ index 4892158..475c0d1 100644
                      }.start()
                  }
              }, IntentFilter().apply {
-@@ -222,6 +281,73 @@ object ChargeLimiter {
+@@ -222,6 +284,93 @@ object ChargeLimiter {
          return _status.value
      }
  
++    /**
++     * Update 451: a battery change is worth keeping the handheld awake for only while the limit is on and the charger is in
++     * (or the cable just changed, or a stop / cut-off is still held). Unplugged with the limit off: no wake lock at all.
++     */
++    private fun needsAwake(context: Context, i: Intent): Boolean {
++        if (!isRetroid()) return false
++        val limitOn = runCatching { ownSwitch(context) }.getOrDefault(false)
++        val plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
++        val cable = i.action == Intent.ACTION_POWER_CONNECTED || i.action == Intent.ACTION_POWER_DISCONNECTED
++        return wantsAwake(limitOn, plugged, cable, paused == true || draining)
++    }
++
++    /** Update 451: the rule behind [needsAwake] (unit-tested). */
++    internal fun wantsAwake(limitOn: Boolean, plugged: Boolean, cableChanged: Boolean, holding: Boolean): Boolean =
++        (limitOn && (plugged || cableChanged)) || holding
++
 +    /** A partial wake lock with a time-out, on a Retroid only (null elsewhere: the AYN path is unchanged). */
 +    private fun holdAwake(context: Context, ms: Long): PowerManager.WakeLock? {
 +        if (!isRetroid()) return null
@@ -719,11 +833,14 @@ index 4892158..475c0d1 100644
 +     */
 +    private fun verifyLater(context: Context) {
 +        if (!isRetroid()) return
++        // Update 451: one check at a time — a newer stop (replug, setting switched) supersedes the one still waiting.
++        val gen = ++verifyGen
 +        val awake = holdAwake(context, 30_000L)
 +        Thread {
 +            try {
 +                for (attempt in 1..2) {
 +                    Thread.sleep(12_000L)
++                    if (gen != verifyGen) break
 +                    if (!verifyStop(context, attempt)) break
 +                }
 +            } catch (_: Throwable) {
@@ -734,7 +851,8 @@ index 4892158..475c0d1 100644
 +    /** True when it still charged and something was done about it (so look once more). */
 +    @Synchronized
 +    private fun verifyStop(context: Context, attempt: Int): Boolean {
-+        if (paused != true || draining || lastPlugged != true) return false
++        // Unplugged, the limit switched off (paused false) or bypass taken over since the stop: nothing to check.
++        if (paused != true || draining || lastPlugged != true || !ownSwitch(context)) return false
 +        val ma = currentMa(context)
 +        if (ma == null || ma <= STILL_CHARGING_MA) { log(context, "limit_verify_ok"); return false }
 +        val flags = held().filter { it.kind != Kind.THRESHOLD }
@@ -763,7 +881,7 @@ index 4892158..475c0d1 100644
      private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
  
      private fun ownSwitch(context: Context): Boolean = prefs(context).getBoolean(KEY_ON, false)
-@@ -294,6 +420,15 @@ object ChargeLimiter {
+@@ -294,6 +443,15 @@ object ChargeLimiter {
  
          val plugChanged = lastPlugged != plugged
          lastPlugged = plugged
@@ -779,7 +897,16 @@ index 4892158..475c0d1 100644
          val all = held()
          val flags = all.filter { it.kind != Kind.THRESHOLD }
          val thresholds = all.filter { it.kind == Kind.THRESHOLD }
-@@ -352,7 +487,7 @@ object ChargeLimiter {
+@@ -306,6 +464,8 @@ object ChargeLimiter {
+             lastNodeCheck = now
+             paused = limitOn && flags.any { it.isStopped(read(it.path)) }
+             if (paused == true) pausedAtPercent = maxOf(percent, STOP_AT)
++            // Update 451: after a restart the R1 chip still shows the real level it is held at.
++            if (paused == true && isRetroid()) stoppedAt = percent
+         }
+ 
+         // Limit off and charge bypass on: bypass owns AYN's switch; let go of anything else still held.
+@@ -352,7 +512,7 @@ object ChargeLimiter {
          if (flags.isNotEmpty()) {
              val wantPaused = when {
                  !limitOn || !plugged -> false
@@ -788,7 +915,7 @@ index 4892158..475c0d1 100644
                  percent < RESUME_BELOW -> false
                  else -> paused ?: false // in between: keep whatever it is doing
              }
-@@ -361,6 +496,17 @@ object ChargeLimiter {
+@@ -361,6 +521,17 @@ object ChargeLimiter {
                  list.forEach { setSwitch(it, wantPaused) }
                  paused = wantPaused
                  if (wantPaused) pausedAtPercent = maxOf(percent, STOP_AT)
@@ -806,7 +933,7 @@ index 4892158..475c0d1 100644
              } else if (wantPaused && recheck) {
                  // Drivers and firmware undo these (on a replug, a charger renegotiation, or restrict_cur
                  // going back to full current while restrict_chg still says "stopped"): put back whatever
-@@ -376,6 +522,17 @@ object ChargeLimiter {
+@@ -376,6 +547,17 @@ object ChargeLimiter {
              paused = limitOn && plugged && percent >= STOP_AT
          }
  
@@ -945,6 +1072,96 @@ index 836ed64..ae31045 100644
          if (onGuide != null) {
              MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
          }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
+index 3ce9e16..40c9857 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
+@@ -46,6 +46,8 @@ import androidx.compose.foundation.rememberScrollState
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.foundation.verticalScroll
++import androidx.compose.material.icons.filled.ExpandLess
++import androidx.compose.material.icons.filled.MoreHoriz
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.LaunchedEffect
+ import androidx.compose.runtime.CompositionLocalProvider
+@@ -2117,11 +2119,19 @@ private fun SceneBody(
+         kotlinx.coroutines.delay(120)
+         runCatching { f.requestFocus() }
+     }
++    // v0.6.67 (update 451): the windows that showed every action as a wall of chips keep Play, Details, Inspect and Back in
++    // view and put the rest (Performance, Options, Achievements, Save sync, Manual, the save / performance lines) behind
++    // More, opened in place. B closes More first; focus goes to the first revealed action, and back to More when it closes.
++    val compactMore = scene in MORE_SCENES && page == WinPage.MAIN
++    var moreOpen by remember(g.stableKey) { mutableStateOf(false) }
++    val moreF = remember { FocusRequester() }
++    val showAll = !compactMore || moreOpen
++    androidx.activity.compose.BackHandler(enabled = compactMore && moreOpen) { moreOpen = false; moreRefocus(moreF) }
+     val buttons = buildList {
+         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
+         when (page) {
+             WinPage.MAIN -> {
+-                if (perf) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
++                if (perf && showAll) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
+                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
+                 add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+             }
+@@ -2130,20 +2140,28 @@ private fun SceneBody(
+             WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
+         }
+     }
+-    val tools = buildList {
++    val allTools = buildList {
+         add(WinAction("Options", I.Settings, opener(optionsF, extras.onOptions), focus = optionsF))
+         add(WinAction("Achievements", I.EmojiEvents, opener(trophiesF, extras.onAchievements), focus = trophiesF))
+         add(WinAction("Save sync", I.CloudSync, extras.onSync))
+         extras.onManual?.let { add(WinAction("Manual", I.MenuBook, it)) }
+         extras.onInspect?.let { add(WinAction("Inspect", InspectIcon.vector, it)) }
+     }
+-    val chips = buildList {
++    val allChips = buildList {
+         status?.let { st ->
+             val sv = st.sync
+             add(WinAction("Saves: " + sv.text, sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
+             st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf)) }
+         }
+     }
++    val tools = when {
++        !compactMore -> allTools
++        moreOpen -> allTools + WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
++        else -> allTools.filter { it.label == "Inspect" } +
++            WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
++    }
++    // (A save problem stays in view: it needs you.)
++    val chips = if (showAll) allChips else allChips.filter { it.urgent }
+     val list = state.raAchievementDetails[g.stableKey].orEmpty()
+     val p = state.raProgress[g.stableKey]
+     val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
+@@ -2179,6 +2197,24 @@ private fun SceneBody(
+     else DrawWinScene(scene, ctx)
+ }
+ 
++/**
++ * v0.6.67 (update 451): the layout windows that get More (they showed all nine actions and two status lines at once). The others
++ * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Airy, Arctic's drawer,
++ * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
++ * Storage, Box, Orbit, Blades).
++ */
++internal val MORE_SCENES = setOf(
++    WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
++    WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
++    WinScene.TILE_CARD, WinScene.POCKET_LCD, WinScene.DISC_PANEL, WinScene.CORE_PANEL, WinScene.CUBE_FACE, WinScene.RECORD_SLEEVE,
++    WinScene.CASE_MEDIA, WinScene.FILE_CARD
++)
++
++/** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
++private fun moreRefocus(f: FocusRequester) {
++    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ runCatching { f.requestFocus() } }, 90)
++}
++
+ internal fun winPageTitle(page: WinPage): String = when (page) {
+     WinPage.MAIN -> ""
+     WinPage.DETAILS -> "Details"
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt b/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
 index e2f49d8..bcb4a5a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
@@ -989,7 +1206,7 @@ index e2f49d8..bcb4a5a 100644
          // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.
          val rooted = com.shelf.launcher.device.RootShell.available
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..f0725cf 100644
+index 0b73fb5..10663bc 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -835,6 +835,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -1014,7 +1231,27 @@ index 0b73fb5..f0725cf 100644
      if (whoAsk) {
          ProfileSelectScreen(
              profiles = com.shelf.launcher.data.Profiles.list.value,
-@@ -2340,6 +2355,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1023,9 +1038,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         val c = testCategory ?: return@LaunchedEffect
+         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
+         viewModel.setSearchQuery("")
+-        viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
++        // Update 451: `S:<list>` (S:RECENT = Continue playing) picks a special list; a name that leaves the screen empty is
++        // undone at once (update 450 left the Thor on an empty "RECENT" console filter).
++        val before = viewModel.uiState.value.let { it.platformFilter to it.specialFilter }
++        val special = c.takeIf { it.startsWith("S:") }?.removePrefix("S:")?.let { n -> runCatching { com.shelf.launcher.SpecialFilter.valueOf(n) }.getOrNull() }
++        if (special != null) viewModel.setSpecialFilter(special)
++        else viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
+         kotlinx.coroutines.delay(300)
+-        viewModel.setFocus(0)
++        if (viewModel.uiState.value.visibleGames.isEmpty()) {
++            if (before.second != null) viewModel.setSpecialFilter(before.second) else viewModel.setPlatformFilter(before.first)
++            android.util.Log.e("VoltcapQA", "category $c is empty here; left as it was")
++        } else viewModel.setFocus(0)
+         TestHooks.category.value = null
+     }
+     // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
+@@ -2340,6 +2363,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      menuStartCategory = e?.section ?: "Screens"; showMenu = true
                  },
                  onShortcut = dockShortcut,
@@ -1025,7 +1262,7 @@ index 0b73fb5..f0725cf 100644
                  options = SecondScreenOptions(
                      artType = state.appearance.secondArtType,
                      artBlur = state.appearance.secondArtBlur,
-@@ -2397,8 +2416,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2397,8 +2424,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      ) {
          Box(Modifier.fillMaxSize()) {
              SecondScreenContent()
@@ -1041,7 +1278,7 @@ index 0b73fb5..f0725cf 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -4996,7 +5020,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4996,7 +5028,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -1056,7 +1293,7 @@ index 0b73fb5..f0725cf 100644
          )
      }
  
-@@ -6014,7 +6044,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6052,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -1069,7 +1306,7 @@ index 0b73fb5..f0725cf 100644
          )
      }
  
-@@ -7263,3 +7297,21 @@ internal object HomeKeyGuard {
+@@ -7263,3 +7305,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -2122,7 +2359,7 @@ index 55ac6bf..f9fadad 100644
          for (wait in longArrayOf(120, 350, 800)) {
              kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..9a68e57 100644
+index df68497..5a8fd71 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -27,6 +27,18 @@ internal object TestHooks {
@@ -2182,7 +2419,7 @@ index df68497..9a68e57 100644
      /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
      @Volatile var noLaunch = false
      /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
-@@ -114,7 +157,34 @@ internal object TestHooks {
+@@ -114,7 +157,42 @@ internal object TestHooks {
      private fun com.shelf.launcher.device.tune.TuneProfile.summaryForQa() =
          "tier=$tier uc=$underclock auto=$autoTdp ${if (autoTdp) "$autoMode target=$targetFps" else ""}"
  
@@ -2191,6 +2428,14 @@ index df68497..9a68e57 100644
 +     * hidden, in Continue playing… For `voltcap_test_appinfo`.
 +     */
 +    @Volatile var appProbe: ((String) -> String)? = null
++
++    /**
++     * Update 451: the home screen's own state for QA snapshots — selected category (console or special list), the focused
++     * game, the playing profile and the remembered last category (set by the view model). [restoreViewState] puts a saved
++     * one back on the main thread and returns what it verified ("OK …" or "MISMATCH …").
++     */
++    @Volatile var viewState: (() -> org.json.JSONObject)? = null
++    @Volatile var restoreViewState: ((org.json.JSONObject, (String) -> Unit) -> Unit)? = null
 +
 +    /**
 +     * Update 450: `--es voltcap_test_appinfo pkg1,pkg2` — READ-ONLY: writes how Voltcap classifies each app (its own
@@ -2217,7 +2462,7 @@ index df68497..9a68e57 100644
          val want = intent?.getStringExtra("voltcap_test_layout")
          val g = intent?.getStringExtra("voltcap_test_game")
          val st = intent?.getStringExtra("voltcap_test_settings")
-@@ -173,6 +243,16 @@ internal object TestHooks {
+@@ -173,6 +251,16 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -2234,7 +2479,7 @@ index df68497..9a68e57 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -205,6 +285,9 @@ internal object TestHooks {
+@@ -205,6 +293,9 @@ internal object TestHooks {
              previewOnly = true
              tileWalk.value = tw
          }
@@ -2244,6 +2489,32 @@ index df68497..9a68e57 100644
          if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
+@@ -215,8 +306,13 @@ internal object TestHooks {
+         if (rs != null) { previewOnly = true; shortcuts.value = rs }
+         if (snap != null) runCatching {
+             val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
++            val vf = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_view.json")
++            val verify = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_verify.txt")
+             if (snap == "save") {
+                 f.writeText(org.json.JSONObject(com.shelf.launcher.data.Features.snapshot() as Map<*, *>).toString())
++                // Update 451: the selected category, focused game and profile too (a test once left the Thor on an empty category).
++                viewState?.invoke()?.let { vf.writeText(it.toString()) }
++                verify.delete()
+                 // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
+                 val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
+                 java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
+@@ -234,6 +330,11 @@ internal object TestHooks {
+                     if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
+                     e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
+                 }
++                // Update 451: the selected category and focused game back, then checked (the result in voltcap_test_snapshot_verify.txt).
++                if (vf.exists()) restoreViewState?.invoke(org.json.JSONObject(vf.readText())) { result ->
++                    runCatching { verify.writeText(result + "\n") }
++                    android.util.Log.e("VoltcapTest", "view state $result")
++                }
+                 android.util.Log.e("VoltcapTest", "snapshot restored")
+             }
+         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt b/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
 index 054c3eb..e6ac515 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
@@ -2363,10 +2634,10 @@ index 054c3eb..e6ac515 100644
      this == HomeLayout.TWIN_SHOWCASE || // Update 307
 diff --git a/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt b/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt
 new file mode 100644
-index 0000000..e6e8da6
+index 0000000..ae63672
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,184 @@
 +package com.shelf.launcher.data
 +
 +import com.shelf.launcher.LauncherUiState
@@ -2488,6 +2759,69 @@ index 0000000..e6e8da6
 +        }
 +    }
 +}
++
++/** Update 451: uninstalled apps, Usage access off and profile switches. */
++class ContinueApps451Test {
++    private val pxplay = "psplay.grill.com"
++    private val px = Game("PXPlay", "App", 1, SourceType.APP, packageName = pxplay)
++
++    @Test fun anUninstalledOptedInAppSimplyIsntListed() {
++        val s = LauncherUiState(
++            games = emptyList(), libraryApps = LibraryAppsSettings(continueApps = setOf(pxplay)),
++            lastPlayedAt = mapOf(pxplay to 5L), specialFilter = SpecialFilter.RECENT
++        )
++        assertTrue(s.visibleGames.isEmpty())
++        val back = s.copy(games = listOf(px))
++        assertEquals(listOf(pxplay), back.visibleGames.map { it.stableKey }) // reinstalled: back, history kept
++    }
++
++    private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
++        .map(::File).first { it.exists() }.readText()
++
++    @Test fun usageGoesToTheProfileThatWasPlaying() {
++        val vm = src("LauncherViewModel.kt")
++        val sw = vm.substring(vm.indexOf("fun switchProfile(id: Int)"))
++        assertTrue(sw.indexOf("settleContinueAppsNow()") in 0 until sw.indexOf("Profiles.setActive(app, id)"))
++        val ca = src("data/ContinueApps.kt")
++        assertTrue(ca.contains("@Synchronized"))
++        assertTrue(ca.contains("getSharedPreferences(\"continue_apps_scan\"")) // one device-wide cursor: each moment read once
++    }
++
++    @Test fun timeWithUsageAccessOffIsNeverReadLater() {
++        val ca = src("data/ContinueApps.kt")
++        val i = ca.indexOf("if (!usageAvailable(c)) {")
++        assertTrue(i > 0 && ca.indexOf("putLong(KEY_CURSOR, now).remove(KEY_OPEN)", i) > i)
++    }
++}
++
++/** Update 451 (D152): a Continue-playing app opened from a tile takes the light app path; Clear survives last-played sync. */
++class ContinueApps451LaunchTest {
++    private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
++        .map(::File).first { it.exists() }.readText()
++
++    @Test fun tileLaunchOfAContinueAppSkipsTheGamePath() {
++        val vm = src("LauncherViewModel.kt")
++        val l = vm.substring(vm.indexOf("    fun launch(game: Game) {"))
++        assertTrue(l.indexOf("if (_uiState.value.isContinueApp(game)) { launchApp(game); return }") in 0 until l.indexOf("launchNow(game)"))
++        val o = vm.substring(vm.indexOf("fun otherOpenGames(game: Game)"))
++        assertTrue(o.indexOf("isContinueApp(game)) return emptyList()") in 0 until 300)
++    }
++
++    @Test fun clearLeavesAMarkSoSyncedOldTimesStayAway() {
++        val r = src("data/RecentlyPlayedStore.kt")
++        val f = r.substring(r.indexOf("fun forget("))
++        assertTrue(f.substring(0, 400).contains("loadHidden() + (stableKey to at)"))
++    }
++}
++
++class ContinueApps451OpenGamesTest {
++    @Test fun anOpenStreamingAppIsNeverAGameToQuitFirst() {
++        val vm = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
++            .map(::File).first { it.exists() }.readText()
++        val o = vm.substring(vm.indexOf("fun otherOpenGames(game: Game)"))
++        assertTrue(o.substring(0, 1400).contains("it.stableKey in others && !_uiState.value.isContinueApp(it)"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt b/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt
 new file mode 100644
 index 0000000..1687ad3
@@ -2550,6 +2884,41 @@ index 0000000..1687ad3
 +        assertTrue(src.contains("val stopAt = if (isRetroid()) stopLevel(lead(context), fast) else STOP_AT"))
 +        assertTrue(src.contains("private fun verifyLater(context: Context) {\n        if (!isRetroid()) return"))
 +        assertTrue(src.contains("if (isRetroid()) runCatching { com.shelf.launcher.data.ChargeLog.event(context, event) }"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt b/app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
+new file mode 100644
+index 0000000..e751de5
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
+@@ -0,0 +1,29 @@
++package com.shelf.launcher.device
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 451: the Retroid charge-stop wake lock only when the limit has something to do; one stop check at a time. */
++class ChargeWake451Test {
++    @Test fun wakeLockOnlyWhileTheLimitHasWork() {
++        assertTrue(ChargeLimiter.wantsAwake(limitOn = true, plugged = true, cableChanged = false, holding = false))
++        assertTrue(ChargeLimiter.wantsAwake(limitOn = true, plugged = false, cableChanged = true, holding = false))
++        assertTrue(ChargeLimiter.wantsAwake(limitOn = false, plugged = false, cableChanged = false, holding = true)) // a stop still held
++        assertFalse(ChargeLimiter.wantsAwake(limitOn = true, plugged = false, cableChanged = false, holding = false)) // on battery
++        assertFalse(ChargeLimiter.wantsAwake(limitOn = false, plugged = true, cableChanged = false, holding = false)) // limit off
++        assertFalse(ChargeLimiter.wantsAwake(limitOn = false, plugged = false, cableChanged = true, holding = false))
++    }
++
++    private val src = listOf("src/main/java/com/shelf/launcher/device/ChargeLimiter.kt", "app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt")
++        .map(::File).first { it.exists() }.readText()
++
++    @Test fun olderStopChecksGiveWayAndRespectUnplugAndSetting() {
++        assertTrue(src.contains("val gen = ++verifyGen"))
++        assertTrue(src.contains("if (gen != verifyGen) break"))
++        assertTrue(src.contains("if (paused != true || draining || lastPlugged != true || !ownSwitch(context)) return false"))
++        assertTrue(src.contains("val awake = if (needsAwake(app, i)) holdAwake(app, 10_000L) else null"))
++        assertTrue(src.contains("if (!isRetroid()) return false")) // needsAwake: never on the AYN path
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
@@ -2616,6 +2985,48 @@ index 0000000..7d99650
 +        assertEquals(null, GestureHint.limitNote(immersive = false, force = false, ayn = true, deviceHides = false))
 +        // Hide off while the device's own setting hides it: explained.
 +        assertTrue(GestureHint.limitNote(immersive = false, force = false, ayn = false, deviceHides = true) != null)
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
+new file mode 100644
+index 0000000..249059f
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
+@@ -0,0 +1,36 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** v0.6.67 (update 451): More in the layout windows that showed every action at once — nothing removed, Play never hidden. */
++class PopupMore451Test {
++    @Test fun moreOnlyWhereTheWindowWasAChipWall() {
++        for (s in listOf(WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.POCKET_LCD, WinScene.TILE_CARD, WinScene.HERO_BANNER))
++            assertTrue("$s gets More", s in MORE_SCENES)
++        // Their own compact designs / menu lists stay as they are.
++        for (s in listOf(WinScene.WII_PREVIEW, WinScene.CINEMA_PREMIERE, WinScene.ARCTIC_DRAWER, WinScene.BUBBLE_CARD, WinScene.CARD_BACK,
++            WinScene.MEMCARD_INFO, WinScene.AIRY_PANEL, WinScene.CROSS_OPTIONS, WinScene.ARCADE_MENU, WinScene.TERM_RUN))
++            assertFalse("$s keeps its own window", s in MORE_SCENES)
++    }
++
++    private val src = listOf("src/main/java/com/shelf/launcher/ui/GameWindow.kt", "app/src/main/java/com/shelf/launcher/ui/GameWindow.kt")
++        .map(::File).first { it.exists() }.readText()
++
++    @Test fun everyActionStaysReachableAndPlayIsNeverHidden() {
++        val b = src.substring(src.indexOf("val compactMore = scene in MORE_SCENES"), src.indexOf("internal val MORE_SCENES"))
++        // Play is added unconditionally; Details and Back stay; Inspect stays in view; the rest are all in More.
++        assertTrue(b.contains("add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))"))
++        assertTrue(b.contains("moreOpen -> allTools + WinAction(\"Less\""))
++        assertTrue(b.contains("else -> allTools.filter { it.label == \"Inspect\" } +"))
++        assertTrue(b.contains("val chips = if (showAll) allChips else allChips.filter { it.urgent }"))
++        assertTrue(b.contains("if (perf && showAll) add(WinAction(PERF_LABEL"))
++        // B closes More before the window; focus goes to the first revealed action and back to More.
++        assertTrue(b.contains("BackHandler(enabled = compactMore && moreOpen) { moreOpen = false; moreRefocus(moreF) }"))
++        assertTrue(b.contains("{ moreOpen = true; moreRefocus(optionsF) }"))
++        // A new game in the window starts collapsed.
++        assertTrue(b.contains("var moreOpen by remember(g.stableKey) { mutableStateOf(false) }"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
@@ -2802,7 +3213,7 @@ index 0000000..1b27c17
 +    }
 +}
 diff --git a/tools/qa/README.md b/tools/qa/README.md
-index e482bd7..6c1b6cf 100644
+index e482bd7..f52ac64 100644
 --- a/tools/qa/README.md
 +++ b/tools/qa/README.md
 @@ -82,7 +82,7 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
@@ -2814,6 +3225,16 @@ index e482bd7..6c1b6cf 100644
    `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
    the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
    folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
+@@ -96,3 +96,9 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
+ 
+ ## Physical QA on the Thor (standing authorization, CLAUDE.md)
+ The owner's standing authorization in `CLAUDE.md` ("Standing Thor QA authorization") covers routine QA on the AYN Thor, ADB serial **3140972f** (always `adb -s 3140972f`): no per-session permission is needed. Safeguards stay: max 15 minutes physical QA per task; never clear app data or uninstall; no charging-limit changes; preserve games, saves, profiles, artwork; restore volume / DND / display; stop test processes and recorders; never touch any other device (Google TV Streamer, Odin 2 Portal). A simulated test is still not hardware verification: mark untested rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the device-free element geometry check.
++
++## Keeping the owner's home state (update 451)
++`device/viewstate.sh save` before a test and `device/viewstate.sh restore` after it: settings, category order, the selected
++category, the focused game and the profile are saved; restore puts them back and the app checks them (exit 0 only on `OK`).
++`voltcap_test_category` takes `S:<list>` for a special list (`S:RECENT` = Continue playing) and never leaves the screen on an empty
++category. Never end a run without a passing restore.
 diff --git a/tools/qa/device/d147.sh b/tools/qa/device/d147.sh
 new file mode 100644
 index 0000000..8ab1075
@@ -3104,7 +3525,7 @@ index 1561f46..e7a7406 100644
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -51,12 +51,3 @@
+@@ -51,14 +51,3 @@
  
  # Update 427: review sheets are regenerated by tools/themes/review_refresh.cjs (large; not committed)
  tools/themes/refresh-review/sheet-*
@@ -3117,3 +3538,5 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/main/java/com/shelf/launcher/data/ContinueApps.kt
 -/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt
 -/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt
+-/app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
