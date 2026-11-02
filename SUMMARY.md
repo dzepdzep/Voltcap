@@ -1,4 +1,4 @@
-# Update 457 (2 Nov 2026) — D172 Settings profiled (perfetto) + window fix; D173 not reproduced; D174 / D175 reproduced, causes narrowed (NOT published)
+# Update 457 (2 Nov 2026) — D172 Settings: rows no longer pop in (look-ahead focus scroll) + window fix; D173 not reproduced; D174 / D175 reproduced, causes narrowed (NOT published)
 
 **Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. v0.6.66 frozen; staging only. D137, AutoTDP, D168/D169 untouched.
 **D172 Settings (RP Classic) — measured with perfetto (gfx/view/sched, 8-9 s, ▼x10 ▲x10, Settings › Home), parsed per frame:**
@@ -25,6 +25,15 @@ the face's edge pixels (grooves + label colours). Not fixed.
 **Restored:** both devices on the RC rebuild, Thor view verified (All / 007 TWINE / 0), RP Classic view unchanged, hwui overdraw prop
 back to unset, perfetto traces / QA scripts removed, Thor hooks `.paused`. **Checks:** Render457Test assertions match the staging SettingsDialog.kt; patch `git apply --check` OK; full unit-test run on the 0.6.67 tree NOT done (staging is not in app/).
 **Copy (0.6.67):** next/0.6.67/src_copy/ui/{SettingsDialog,TestHooks,VoltUi}.kt, Render457Test (also in the patch).
+
+**Update 457b (owner: "the new settings just spawn in") — D172 cause found and fixed (staging):** with ▼ the Settings pane scrolled only until the
+focused row touched the bottom edge, so the next row was never in view and each new setting popped in from under the edge (RP Classic
+recording, 30 fps). Focus scrolling in the Settings pane now keeps a 56 dp look-ahead (max a quarter of the pane) above / below the focused row
+(`SettingsDialog.kt` SettingsLookAhead / lookAheadDistance via LocalBringIntoViewSpec; touch scrolling unchanged). **Hardware:** RP Classic A/B
+(`--ez voltcap_test_lookahead false|true`, ▼x10) — off: focused row flush with the edge, nothing below; on: the next row is visible below the
+focused one at every step. Thor: same, no regression. Full testDebugUnitTest green with the staging tree (Render457Test 3/3); patch `git apply --check` OK.
+**D173:** owner saw it on the **KONKR Pocket** — not connected (only Thor + RP Classic on USB), so blocked until it is plugged in.
+Both devices back on the RC rebuild afterwards.
 
     cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; git pull origin main
 

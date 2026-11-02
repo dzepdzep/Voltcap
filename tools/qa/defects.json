@@ -1905,18 +1905,18 @@
    "title": "Settings window's own frames are expensive on the RP Classic (~27 ms vsync-to-complete, GPU ~14 ms, cmd ~9 ms) — vertical navigation still misses ~17-20 vsyncs per 20 presses, worst gap ~200 ms",
    "rule": "PERF",
    "severity": "med",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-02 update 456 (winpace.sh, per-window framestats)",
-   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision."
+   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision. Update 457b: owner clarified \"the new settings just spawn in\" — reproduced on the RP Classic (30 fps recording): focus scroll stopped with the focused row flush on the bottom edge, so the next row was never visible and popped in. Fixed in staging: SettingsLookAhead (LocalBringIntoViewSpec, 56 dp margin, max 1/4 pane). Verified RP Classic A/B (voltcap_test_lookahead) + Thor; Render457Test."
   },
   {
    "id": "D173",
    "title": "Pokémon Stadium / Pokémon Snap (N64): owner reports the wrong case / packaging",
    "rule": "ART",
    "severity": "med",
-   "status": "suspect",
+   "status": "blocked",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen."
+   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen. Owner (457): seen on the KONKR Pocket — not connected; test there when it is plugged in via USB."
   },
   {
    "id": "D174",

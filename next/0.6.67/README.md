@@ -72,8 +72,8 @@ Kept outside `app/` so it can never be built into the frozen 0.6.66 release cand
    `StyleCircuit.kt`, `ShowcaseScene.kt`), Pocket Quest tab names (`StylePocketQuest.kt`), QA hooks panelhold / tabnames (`TestHooks.kt`).
    Tests PanelHold456Test, PqTabs456Test.
 
-14. **Update 457.** Settings window flat — elevation 0, no unseen shadow insets (`SettingsDialog.kt` SettingsWindowFlat, D172; GPU 11.0 -> 10.2 ms on the
-    RP Classic); QA hooks `voltcap_test_settingsflat` / `voltcap_test_surfaceprobe` (`TestHooks.kt`, `VoltUi.kt` voltSurface probe, measurement only;
+14. **Update 457.** Settings rows no longer pop in at the bottom edge — focus scroll keeps a look-ahead (`SettingsDialog.kt` SettingsLookAhead, D172); Settings window flat — elevation 0, no unseen shadow insets (`SettingsDialog.kt` SettingsWindowFlat, D172; GPU 11.0 -> 10.2 ms on the
+    RP Classic); QA hooks `voltcap_test_lookahead` / `voltcap_test_settingsflat` / `voltcap_test_surfaceprobe` (`TestHooks.kt`, `VoltUi.kt` voltSurface probe, measurement only;
     default look unchanged). Test: `Render457Test`.
 
 ## Placeholders in the 0.6.66 tree

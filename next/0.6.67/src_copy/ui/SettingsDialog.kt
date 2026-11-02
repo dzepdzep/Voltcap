@@ -470,9 +470,10 @@ fun SettingsDialog(
                         // the previous (long) page's position, so a new page
                         // opened scrolled down past its top.
                         val paneScroll = androidx.compose.runtime.key(category.label) { rememberScrollState() }
+                        val paneWeight = Modifier.weight(1f)
+                        SettingsLookAhead {
                         Column(
-                            Modifier
-                                .weight(1f)
+                            paneWeight
                                 // (0.6.15: a group the sidebar's ▶ enters at its first setting.)
                                 .focusRequester(paneFocus)
                                 .focusGroup()
@@ -683,6 +684,7 @@ fun SettingsDialog(
                                     }
                                 }
                             }
+                        }
                         }
                         // (Update 144: no Close button floating under the settings any more — ✕ at the top and B close.)
                     }
@@ -6249,3 +6251,41 @@ private fun SettingsWindowFlat() {
         onDispose { }
     }
 }
+
+/**
+ * Update 457 (D172, owner: "the new settings just spawn in"): ▼ moved focus and the pane scrolled only until the focused row
+ * touched the bottom edge, so the row after it was never in view — every new setting popped in from under the edge. Focus
+ * scrolling now keeps a look-ahead margin (56 dp, at most a quarter of the pane) above and below
+ * the focused row, so the next setting is already sliding in before you reach it. Touch / fling scrolling is not affected;
+ * a row taller than the pane still aligns as before. QA A/B: `--ez voltcap_test_lookahead false` (session).
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun SettingsLookAhead(content: @Composable () -> Unit) {
+    val on = TestHooks.settingsLookAhead.value
+    val wanted = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+    val default = androidx.compose.foundation.gestures.LocalBringIntoViewSpec.current
+    val spec = androidx.compose.runtime.remember(on, wanted, default) {
+        if (!on) default else object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+                lookAheadDistance(offset, size, containerSize, wanted)
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides spec, content = content
+    )
+}
+
+/** Scroll distance that shows the item at [offset] / [size] with up to [wanted] px of its neighbours (pure, unit-tested). */
+internal fun lookAheadDistance(offset: Float, size: Float, containerSize: Float, wanted: Float): Float {
+    val margin = minOf(wanted, containerSize / 4f, ((containerSize - size) / 2f).coerceAtLeast(0f))
+    val lead = offset - margin
+    val trail = offset + size + margin
+    return when {
+        lead >= 0f && trail <= containerSize -> 0f
+        lead < 0f && trail > containerSize -> 0f
+        kotlin.math.abs(lead) < kotlin.math.abs(trail - containerSize) -> lead
+        else -> trail - containerSize
+    }
+}
+
