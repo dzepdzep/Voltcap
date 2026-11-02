@@ -2,6 +2,10 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 450: D148 fixed + verified in staging (RP Classic on the owner's fast charger, screen on and off: stops at 80 %; Retroid-only wake lock /
+current check / learned lead; Thor charging untouched). D151: PXPlay (psplay.grill.com) / Asobi (com.asobi.droid) per-app "Show in Continue
+playing" + Usage-access detection outside Voltcap, Thor-verified. More placeholders: data/ContinueApps.kt, ContinueApps450Test, ChargeFastStop450Test
+(gitignored). GameOptionsDialog.kt and SettingsScopes.kt are CRLF in git too. Odin is on wireless ADB only — not used.**
 **Update 449: D147 verified on the final build (Thor, all five layouts). Gesture pill: D149 (Retroid, window now asks while the device's
 hide_nav_bar is 0) + D150 (card state) fixed in staging; AYN limitation documented. Placeholders now also NavBar449Test (gitignored).
 SecondScreen.kt / SecondScreenHome.kt / TwinScreens.kt are CRLF in git: write CRLF when restoring. RP Classic now on the 0.6.66 RC.**

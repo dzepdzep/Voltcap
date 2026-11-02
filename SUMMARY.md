@@ -1,3 +1,29 @@
+# Update 450 (2 Nov 2026) — D148 Retroid fast-charge stop fixed and verified; apps in Continue playing (PXPlay / Asobi, D151) (NOT published)
+
+**Devices (USB):** Retroid Pocket Classic MC94516AQF091001112 (D148), AYN Thor 3140972f (Continue playing). The Odin 2 Portal showed up over
+wireless ADB only — not used. Thor charging logic and settings not touched (every charge change is Retroid-only; the Thor just ran the build).
+**D148 (fixed, verified):** cause from batterystats — on AC with the screen off the RP Classic woke ~0.45 s per battery change and slept again, so
+the root writes begun at 80 % finished at 83 %. Staging (Retroid only): wake lock while handling a battery change (<= 10 s), current check
+~12 s after a stop (re-write, then next switch), learned fast-charge lead 0–2 % (own overshoot only, only while 1 % < 90 s), R1 chip shows the
+real level when it isn't 80, `limit_*` rows in charge_log.csv. 80 % / < 77 % / rise tolerance unchanged. Owner's fast charger (3.7–4.2 A):
+screen on → stopped at 80, −293 mA 13 s later; screen OFF (device suspending) → stopped at 80, wake lock 13 s, 4341 → 4180 mV, charge counter
+flat, −181 mA at +12 s, 80 % held 7.5 min; learned lead stays 0 (no early stop needed). ChargeFastStop450Test 6/6.
+**PXPlay / Asobi (D151):** `psplay.grill.com` and `com.asobi.droid` on the Thor: kind AUTO, no Android game flag, not added, not hidden, not
+removed from Continue playing — left out by design (ordinary apps get no launch time; the list is games only). Staging: "Show in Continue
+playing" per app (app drawer menu, the app's options), "Clear from Continue playing"; empty by default, apps stay apps; a launch records the
+time only (no session / play time / save sync / tuning; no second instance); with Usage access, use outside Voltcap counts (only time in
+front, from the opt-in, per profile, < 5 s ignored). Thor: Asobi opened by adb outside Voltcap 25 s → last used + 25.1 s; PXPlay 15 s + screen
+off 30 s + 5 s + background 30 s → 20.1 s; picked from the drawer → the same task (#10483) came forward; Clear + opt-out → original state
+(the opt-in, its scan files and PXPlay's newer last-used time stay in the staging-only prefs; the RC ignores them). ContinueApps450Test 10/10.
+**Checks after the final code change:** testDebugUnitTest green (ContinueApps450Test 10, ChargeFastStop450Test 6, NavBar449Test 4,
+TwinBack447Test 4, ProfilePicker445Test 11), static checks PASS (finding counts unchanged), QA selftest 73 OK, patch `git apply --check` OK.
+**Restored:** RC rebuilt and installed on both; Thor hooks back to `.paused`, preview ended, category back to All (a `voltcap_test_category RECENT`
+run had set an empty console filter; what it was before isn't known — Pocket classic showed games again), test screenshots removed.
+PXPlay and Asobi left open in the background (they were opened for the test). Profiles untouched.
+**Copy:** nothing (app/ = RC). next/0.6.67 (patch + copies: ChargeLimiter, ChargeLog, DeviceControls, ContinueApps, LibraryAppsStore,
+RecentlyPlayedStore, SettingsScopes, LauncherUiState, LauncherViewModel, AppDrawer, GameOptionsDialog, LauncherScreen, TestHooks, tests),
+defects D148 / D151, `.gitignore` (3 more placeholders).
+
 # Update 449 (2 Nov 2026) — D147 verified on the final build; navigation bar / gesture pill (D149, D150, AYN limit); D148 unchanged (NOT published)
 
 **Devices (USB):** AYN Thor 3140972f, Retroid Pocket Classic MC94516AQF091001112. Nothing else contacted.

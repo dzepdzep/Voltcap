@@ -1685,12 +1685,12 @@
   },
   {
    "id": "D148",
-   "title": "Retroid Pocket Classic: with Voltcap's 80 % charge limit on, a fast (AC) charge went 80 → 83 % before charging stopped",
+   "title": "Retroid Pocket Classic: with Voltcap's 80 % charge limit on, a fast (AC) charge went 80 → 83 % before charging stopped — fixed in v0.6.67 staging (update 450)",
    "rule": "DEVICE",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-02 update 448 battery diagnosis (owner: 'charged only to 83 %')",
-   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh. Update 449: left as is (owner: no threshold change). The R1 chip already says 'Stopped at 80 %'. Possible later, with approval: show the real level when it stopped above 80 % ('Stopped at 83 %, limit 80 %'), or stop one percent early while the charge rate is high."
+   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh. Update 449: left as is (owner: no threshold change). The R1 chip already says 'Stopped at 80 %'. Possible later, with approval: show the real level when it stopped above 80 % ('Stopped at 83 %, limit 80 %'), or stop one percent early while the charge rate is high. Update 450 (owner asked for the fix): cause found in batterystats — on AC with the screen off the handheld woke ~0.45 s per battery change and slept again, so the root writes begun at 80 % finished at 83 % (voltage drop + flat charge counter right then). Fix (staging, Retroid only; AYN path unchanged): partial wake lock (<=10 s) while a battery change is handled; current checked ~12 s after a stop (still > 150 mA -> written again, then the next switch added); learned fast-charge lead 0-2 % (only while 1 % takes < 90 s, only from this device's own measured overshoot); R1 chip shows the real level if it isn't 80; limit_* rows in charge_log.csv. STOP_AT 80 / resume < 77 / RISE_TOLERANCE unchanged. RP Classic on the owner's fast charger (AC, ~3.7-4.2 A): screen on 79->80 stop 13:25:30, -293 mA 13 s later, max 80; screen OFF (device suspending) 79->80 stop 13:36:16, wake lock held 13 s, voltage 4341->4180 mV in 4 s, charge counter flat, -181 mA at +12 s, held 80 for 7.5 min, learned lead stays 0. ChargeFastStop450Test."
   },
   {
    "id": "D149",
@@ -1709,6 +1709,15 @@
    "status": "fixed",
    "found": "2026-11-02 update 449 code review",
    "note": "GestureHint.forceState (updated by setImmersive / setForce / init) drives the card; the card also explains when the switches can't do what they say (AYN: pill drawn by the device while its own hide_nav_bar is 0 — Force-hide needed; Hide off while the device's own setting hides it). Unit-tested (NavBar449Test); the card itself not opened on hardware."
+  },
+  {
+   "id": "D151",
+   "title": "Continue playing: streaming clients (PXPlay psplay.grill.com, Asobi com.asobi.droid) never appear — ordinary apps get no launch time and the list keeps games only",
+   "rule": "LIBRARY",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 450 (owner request)",
+   "note": "Thor 3140972f (read-only probe voltcap_test_appinfo): both kind=AUTO, no Android game flag, auto_game=false, not added, not hidden, not removed from Continue playing (manual exclusion: none) — filtered by design (update 200). v0.6.67 staging: per-app opt-in 'Show in Continue playing' (app drawer menu, game options) in library_apps.continue_apps (empty by default; stays an app), launch from Voltcap records the time only (no session / play time / save sync / tuning; no second instance), Usage access (optional) picks up use outside Voltcap: foreground stretches only (screen off / lock / other app / background excluded, < 5 s ignored), counted from opt-in, per profile; one entry per package; Clear / take out per app. Thor: Asobi opened outside Voltcap 25 s -> last used + 25.1 s; PXPlay 15 s, screen off 30 s, 5 s, background 30 s -> 20.1 s; chosen from the drawer -> same task #10483 brought forward; clear + opt-out restore the original state. ContinueApps450Test (10)."
   }
  ]
 }

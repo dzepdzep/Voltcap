@@ -57,3 +57,6 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
 /app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
 /app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
+/app/src/main/java/com/shelf/launcher/data/ContinueApps.kt
+/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt
+/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt

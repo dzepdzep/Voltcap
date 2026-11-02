@@ -1,6 +1,6 @@
 # v0.6.67 staging — NOT part of 0.6.66 (nothing here is compiled)
 
-Kept outside `app/` so it can never be built into the frozen 0.6.66 release candidate. Updates 446–447.
+Kept outside `app/` so it can never be built into the frozen 0.6.66 release candidate. Updates 446–450.
 
 ## What is in it (one patch for all three: `profile_picker.patch`)
 1. **"Who's playing?" looks (update 446, owner decisions in 447).** Six looks: Aurora glass, Console classic, Neon arcade,
@@ -30,16 +30,30 @@ Kept outside `app/` so it can never be built into the frozen 0.6.66 release cand
    hide_nav_bar is 0 (ContentObserver, no polling) — the white pill showed there before; AYN: note in the card that the pill needs
    Force-hide; the Force-hide switch shows the live state. GestureHint, SystemBars, SecondScreen, MainActivity, GestureHintCard; NavBar449Test.
 
+6. **D148 — Retroid fast-charge stop (update 450).** On a Retroid only (the AYN path is unchanged): a short partial wake lock while a
+   battery change is handled (the RP Classic slept ~0.45 s after each change, so the stop begun at 80 % landed at 83 %), a current check
+   ~12 s after a stop (still charging → written again, then the next switch added), a learned fast-charge lead (0–2 %, only from this
+   device's own overshoot, only while 1 % takes < 90 s), the R1 chip shows the real level when it isn't 80, `limit_*` rows in
+   charge_log.csv. 80 % / resume < 77 % unchanged. `ChargeLimiter.kt`, `ChargeLog.kt`, `DeviceControls.kt`; ChargeFastStop450Test.
+
+7. **Apps in Continue playing (update 450, D151).** Per-app opt-in "Show in Continue playing" (app drawer › hold / Start on an app, and the
+   app's options) for streaming clients such as PXPlay (`psplay.grill.com`) and Asobi (`com.asobi.droid`); empty by default, the app stays
+   an app. A launch from Voltcap notes the time only (no session, play time, save sync, AutoTDP / tuning, Discord; the existing task is brought
+   forward). With Usage access (optional) use outside Voltcap counts too — only time in front, from the opt-in on, per profile — read once
+   when Voltcap comes back. "Clear from Continue playing" forgets an app's history. `data/ContinueApps.kt`, `LibraryAppsStore.kt`
+   (`continue_apps`), `RecentlyPlayedStore.forget`, `LauncherUiState` (RECENT), `LauncherViewModel`, `AppDrawer`, `GameOptionsDialog`,
+   `LauncherScreen`, `SettingsScopes`; QA hook `--es voltcap_test_appinfo pkg,pkg` (read-only); ContinueApps450Test.
+
 ## Placeholders in the 0.6.66 tree
 `app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt`, `app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt` and
-`TwinBack447Test.kt`, `NavBar449Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,
+`TwinBack447Test.kt`, `NavBar449Test.kt`, plus `data/ContinueApps.kt`, `data/ContinueApps450Test.kt`, `device/ChargeFastStop450Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,
 never committed, and add nothing to a 0.6.66 build. Safe to delete by hand.
 
 ## Apply when 0.6.67 starts (after 0.6.66 is published)
     cd C:\Users\User\AndroidStudioProjects\ShelfLauncher
-    del app\src\main\java\com\shelf\launcher\ui\ProfileLooks.kt, app\src\test\java\com\shelf\launcher\ui\ProfilePicker445Test.kt, app\src\test\java\com\shelf\launcher\ui\TwinBack447Test.kt, app\src\test\java\com\shelf\launcher\ui\NavBar449Test.kt
+    del app\src\main\java\com\shelf\launcher\ui\ProfileLooks.kt, app\src\test\java\com\shelf\launcher\ui\ProfilePicker445Test.kt, app\src\test\java\com\shelf\launcher\ui\TwinBack447Test.kt, app\src\test\java\com\shelf\launcher\ui\NavBar449Test.kt, app\src\main\java\com\shelf\launcher\data\ContinueApps.kt, app\src\test\java\com\shelf\launcher\data\ContinueApps450Test.kt, app\src\test\java\com\shelf\launcher\device\ChargeFastStop450Test.kt
     git apply --ignore-whitespace next/0.6.67/profile_picker.patch
-(the patch also removes the four `.gitignore` lines; SecondScreen / SecondScreenHome / TwinScreens are CRLF in git — `--ignore-whitespace` handles them). Or copy `next/0.6.67/src_copy/*` over `src_copy/` and
+(the patch also removes the seven `.gitignore` lines; SecondScreen / SecondScreenHome / TwinScreens / GameOptionsDialog / SettingsScopes are CRLF in git — `--ignore-whitespace` handles them). Or copy `next/0.6.67/src_copy/*` over `src_copy/` and
 `next/0.6.67/project_copy/*` over `project_copy/`, then sync. **Also copy the same files into `project_copy/` (or delete the stale
 `project_copy` copies of SUMMARY.md / .gitignore / defects.json): `sync_sources` copies project_copy over the root and put older
 docs back once (update 447).** Then: testDebugUnitTest (ProfilePicker445Test, TwinBack447Test), `python3 tools/qa/selftest/test_qa.py`,

@@ -157,7 +157,34 @@ internal object TestHooks {
     private fun com.shelf.launcher.device.tune.TuneProfile.summaryForQa() =
         "tier=$tier uc=$underclock auto=$autoTdp ${if (autoTdp) "$autoMode target=$targetFps" else ""}"
 
+    /**
+     * Update 450: what Voltcap's own state says about an app (set by the view model): game or app, in the library,
+     * hidden, in Continue playing… For `voltcap_test_appinfo`.
+     */
+    @Volatile var appProbe: ((String) -> String)? = null
+
+    /**
+     * Update 450: `--es voltcap_test_appinfo pkg1,pkg2` — READ-ONLY: writes how Voltcap classifies each app (its own
+     * state + Android's game flag) to `<external files>/voltcap_qa_appinfo.txt`. Changes nothing.
+     */
+    private fun appInfo(context: android.content.Context, pkgs: List<String>) {
+        val pm = context.packageManager
+        val lines = pkgs.map { pkg ->
+            val info = runCatching { pm.getApplicationInfo(pkg, 0) }.getOrNull()
+            @Suppress("DEPRECATION")
+            val androidGame = info != null && ((android.os.Build.VERSION.SDK_INT >= 26 && info.category == android.content.pm.ApplicationInfo.CATEGORY_GAME) ||
+                (info.flags and android.content.pm.ApplicationInfo.FLAG_IS_GAME) != 0)
+            val hidden = runCatching { pkg in com.shelf.launcher.data.HiddenAppsStore(context).loadAll() }.getOrDefault(false)
+            "$pkg installed=${info != null} android_game_flag=$androidGame hidden=$hidden " + (appProbe?.invoke(pkg) ?: "voltcap_state=unavailable")
+        }
+        runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_qa_appinfo.txt").writeText(lines.joinToString("\n", postfix = "\n")) }
+        lines.forEach { android.util.Log.e("VoltcapQA", "appinfo $it") }
+    }
+
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
+            if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
+        }
         val want = intent?.getStringExtra("voltcap_test_layout")
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")

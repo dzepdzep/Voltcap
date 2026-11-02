@@ -5020,7 +5020,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
             onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                 { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
-            } else null
+            } else null,
+            // Update 450: an ordinary app can be put in Continue playing (a streaming client); games already are.
+            continueAppOn = continueAppSwitch(state, game),
+            onToggleContinueApp = game.packageName?.let { pkg -> { viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) } },
+            continueAppNote = continueAppNote(state, game, viewModel),
+            onClearContinue = game.packageName?.takeIf { continueAppSwitch(state, game) == true && state.lastPlayedAt.containsKey(game.stableKey) }
+                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } }
         )
     }
 
@@ -6038,7 +6044,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                 }
             },
-            onSetKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) }
+            onSetKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) },
+            isInContinue = { pkg -> pkg in state.libraryApps.continueApps },
+            onToggleContinue = { pkg -> viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) },
+            hasContinueHistory = { pkg -> state.lastPlayedAt.containsKey(pkg) },
+            onClearContinue = { pkg -> viewModel.clearContinueHistory(pkg) }
         )
     }
 
@@ -7286,4 +7296,22 @@ internal object HomeKeyGuard {
     }
     /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
     fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
+}
+
+
+/** Update 450: the "Show in Continue playing" switch for an ordinary app (null for games, emulators and non-apps). */
+internal fun continueAppSwitch(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game): Boolean? {
+    val pkg = game.packageName ?: return null
+    if (game.sourceType != com.shelf.launcher.data.SourceType.APP || state.isAndroidGame(game) || pkg in state.emulatorPackages) return null
+    return pkg in state.libraryApps.continueApps
+}
+
+/** Update 450: "Last used 2 h ago · 1 h 20 min in front", or why it can only note launches from Voltcap. */
+@androidx.compose.runtime.Composable
+internal fun continueAppNote(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game, viewModel: LauncherViewModel): String? {
+    if (continueAppSwitch(state, game) != true) return null
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val usage = androidx.compose.runtime.remember(game.stableKey) { com.shelf.launcher.data.ContinueApps.usageAvailable(ctx) }
+    val fg = androidx.compose.runtime.remember(game.stableKey, state.lastPlayedAt[game.stableKey]) { viewModel.continueForeground()[game.packageName] }
+    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 }
