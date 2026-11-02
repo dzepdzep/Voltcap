@@ -1,3 +1,33 @@
+# Update 447 (2 Nov 2026) — v0.6.67 staging: dual-screen return button (D146), picker default + QA detection (D144); v0.6.66 RC re-verified (NOT published)
+
+**Owner decisions applied (staging only, `next/0.6.67/`, patch `profile_picker.patch`, sheet `TWIN_BACK_447.pdf`):**
+- Picker default: an existing install keeps **Midnight blue**, a new install starts on **Aurora glass**; decided once at start only when
+  `picker_look` is not saved (`Features.firstPickerLook(FirstRun.isDone)`), then saved — a saved choice is never overwritten. Unsaved default
+  = Midnight. Thor and GT78 (existing installs) seeded MIDNIGHT. Odin: still has AURORA saved by update 446's preview test (see README).
+- All six looks, colours, PIN pad, responsive avatars and animations kept. Hero artwork: untouched (no Smart Fit, nothing changed).
+**D146 fixed (staging):** the wide "← <layout>" pill in the dashboard's bottom-left corner (over / beside the dock) is now `TwinBackButton`
+in the header row's end (`SecondScreenHome(headerEnd)`: classic header Row, showcase TopEnd + top bar endInset; fallback top corner over a
+look's own second screen). 32 dp visible, 44 dp target, Twin round / Pocket square + brackets, TalkBack "Back to <layout>"; same pad id and
+action, no setting changed. QA hook `voltcap_test_twindash on|off`.
+**D144 fixed (staging):** picker detection by the app's own `voltcap_qa_screen` mark (hooks only) instead of colours; `picker.sh` checks
+display awake, Voltcap resumed (A12 "ResumedActivity" too), same pid, lit for HOME; old builds fall back. Selftest 73 OK.
+**Hardware (USB only: AYN Thor 3140972f, GT78 BW0306N230000845; Odin not connected, not touched):**
+- Thor `twinback.sh` T1/T2: all five layouts → dashboard → button in the header, dock / tabs / arrows clear on 6 pages; tap returns each
+  layout. D-pad: Pocket classic ▲ from the dock lights the button, A returns. D147 (low, pre-existing, same on RC): Twin desk / icons ▼ does
+  not reach the dashboard. Picker on Thor: six looks, 8 long names, PIN, your profile (T3), D-pad scroll + touch pick (TU). `pickdetect.sh`
+  PICKER→HOME for all six looks: Thor TD1 PASS, GT78 GD1 PASS. No Voltcap crash, no game started (launches blocked), real profile untouched.
+- Dock sizes: not varied (would change your dock list); the button no longer shares the dock row, checked with your dock on every page.
+**v0.6.66 RC re-check (tree = 6e3d263 app sources, placeholders .gitignored):** assembleRelease + assembleCompat OK, testDebugUnitTest OK;
+apkinfo: release 0.6.66 / 73 / listener yes, compat 0.6.66 / 73 / listener no, both signer 88ce4b67…f344197; file SHA-256 release
+f1efea26…5e0e71, compat 6f374e55…5a35 (rebuild, so new hashes); no 0.6.67 strings in the RC dex. RC installed on Thor (was 0.6.65) and GT78.
+**Odin restore evidence (update 446):** restore intent sent, then the update-436 snapshot files moved back; the log buffer had rolled over, so
+"snapshot restored" was NOT confirmed on the Odin (GT78's was). Unverified — re-check when the Odin is connected.
+**Devices restored:** Thor snapshot restored (logged), hooks back to `.paused`, earlier snapshot files back, stay_on 0 unchanged, preview /
+nolaunch off. GT78 snapshot restored (logged), hooks + snapshot files removed, stay_on 0.
+**Tooling note:** `sync_sources` copies project_copy over the root (robocopy copies older files too) — it put older SUMMARY / .gitignore /
+defects.json back once; fixed by writing the current copies into project_copy too. Two RC files are CRLF in git (SecondScreenHome, TwinScreens).
+**Copy:** nothing (app/ = RC). Docs + next/0.6.67 + defects D144 / D146 / D147.
+
 # Update 446 (2 Nov 2026) — v0.6.67 "Who's playing?" looks STAGED in next/0.6.67/ (not compiled, not in 0.6.66, NOT published)
 
 **Where:** `next/0.6.67/` — README (what / how to apply), `profile_picker.patch` (applies to this commit), full copies under `src_copy/` +

@@ -116,6 +116,9 @@ object Features {
             if (!p.contains("twin_desk_play_icon")) twinDeskPlayIcon.value = existing
             if (!p.contains("twin_desk_handles")) twinDeskHandles.value = existing
         }
+        // Update 447: "Who's playing?" look — only when none is saved yet (never overwrites a choice); saved at once, so a
+        // new install keeps Aurora glass after its later updates and an existing one keeps Midnight blue.
+        if (!p.contains("picker_look")) pickerLook.value = firstPickerLook(FirstRun.isDone(context.applicationContext))
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -1407,13 +1410,17 @@ object Features {
     }
     val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
     /**
-     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332); a new
-     * install starts on Aurora glass. Saved and backed up like the other look settings.
+     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332).
+     * Owner decision (update 447): an install that already existed keeps Midnight blue until you pick another; a new install
+     * starts on Aurora glass. Chosen once in [init] and saved ([firstPickerLook]) — a saved choice is never overwritten.
+     * Saved and backed up like the other look settings.
      */
     enum class PickerLook(val label: String) {
         AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue")
     }
-    val pickerLook = EnumPref("picker_look", PickerLook.AURORA, PickerLook.values())
+    val pickerLook = EnumPref("picker_look", PickerLook.MIDNIGHT, PickerLook.values())
+    /** The look a setup without a saved one starts on: [existingInstall] (FirstRun done before this version) keeps Midnight blue. */
+    fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
     /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
     val statusMatchesLayout = BoolPref("status_matches_layout", true)
     val dashStatus = BoolPref("dash_status", true)

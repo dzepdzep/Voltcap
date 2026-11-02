@@ -1,24 +1,51 @@
+diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
+index 18e08fc..a13a546 100644
+--- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
++++ b/app/src/main/java/com/shelf/launcher/MainActivity.kt
+@@ -146,6 +146,8 @@ class MainActivity : ComponentActivity() {
+         LaunchInfo.update(intent)
+         // (Update 334: "Who's playing?" asked from a game — the in-game Quick menu.)
+         if (intent?.getBooleanExtra(com.shelf.launcher.ui.ProfilePicker.EXTRA, false) == true) com.shelf.launcher.ui.ProfilePicker.request = true
++        // Update 447 (D144): a fresh process starts as HOME for QA's picker.sh (a picker that opens writes PICKER after this).
++        com.shelf.launcher.ui.TestHooks.markScreen(this, "HOME")
+         com.shelf.launcher.ui.TestHooks.fromIntent(this, intent)
+         com.shelf.launcher.data.QrTransfer.fromIntent(intent)
+         // Sleep mode for Wi-Fi / Bluetooth (Settings › Device): listens for screen off only when on.
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 0fac442..0cf7850 100644
+index 0fac442..91e3440 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
-@@ -1406,6 +1406,14 @@ object Features {
+@@ -116,6 +116,9 @@ object Features {
+             if (!p.contains("twin_desk_play_icon")) twinDeskPlayIcon.value = existing
+             if (!p.contains("twin_desk_handles")) twinDeskHandles.value = existing
+         }
++        // Update 447: "Who's playing?" look — only when none is saved yet (never overwrites a choice); saved at once, so a
++        // new install keeps Aurora glass after its later updates and an existing one keeps Midnight blue.
++        if (!p.contains("picker_look")) pickerLook.value = firstPickerLook(FirstRun.isDone(context.applicationContext))
+         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
+         // default; it now starts on the games' own art (still pickable).
+         if (!p.contains("category_art")) {
+@@ -1406,6 +1409,18 @@ object Features {
          CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
      }
      val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
 +    /**
-+     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332); a new
-+     * install starts on Aurora glass. Saved and backed up like the other look settings.
++     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332).
++     * Owner decision (update 447): an install that already existed keeps Midnight blue until you pick another; a new install
++     * starts on Aurora glass. Chosen once in [init] and saved ([firstPickerLook]) — a saved choice is never overwritten.
++     * Saved and backed up like the other look settings.
 +     */
 +    enum class PickerLook(val label: String) {
 +        AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue")
 +    }
-+    val pickerLook = EnumPref("picker_look", PickerLook.AURORA, PickerLook.values())
++    val pickerLook = EnumPref("picker_look", PickerLook.MIDNIGHT, PickerLook.values())
++    /** The look a setup without a saved one starts on: [existingInstall] (FirstRun done before this version) keeps Midnight blue. */
++    fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
      val dashStatus = BoolPref("dash_status", true)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..257a389 100644
+index 0b73fb5..78745a1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -835,6 +835,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -43,6 +70,33 @@ index 0b73fb5..257a389 100644
      if (whoAsk) {
          ProfileSelectScreen(
              profiles = com.shelf.launcher.data.Profiles.list.value,
+@@ -2340,6 +2355,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                     menuStartCategory = e?.section ?: "Screens"; showMenu = true
+                 },
+                 onShortcut = dockShortcut,
++                // v0.6.67: the way back to a two-screen layout sits in the header row (it used to be a wide pill over the dock).
++                headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) {
++                    { TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout) }
++                } else null,
+                 options = SecondScreenOptions(
+                     artType = state.appearance.secondArtType,
+                     artBlur = state.appearance.secondArtBlur,
+@@ -2397,8 +2416,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+     ) {
+         Box(Modifier.fillMaxSize()) {
+             SecondScreenContent()
+-            // Update 180: the dashboard opened from a two-screen layout: the way back to the layout's bottom part.
+-            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label, state.appearance.homeLayout)
++            // (Update 180's way back to the layout is in the dashboard's header now: SecondScreenHome(headerEnd = TwinBackButton).)
++            // (A look's own second screen shows instead of the dashboard: the same small button in its top corner.)
++            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard && !screensaverOn &&
++                LookSecondScreen.content != null && !(showDetails && state.appearance.secondDetails)
++            ) Box(Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp)) {
++                TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout)
++            }
+         }
+     }
+     // The companion shows music, so keep it fresh while a second screen is up.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt b/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
 new file mode 100644
 index 0000000..c3865e3
@@ -354,7 +408,7 @@ index 0000000..c3865e3
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
-index 4ef188c..0d5b02f 100644
+index 4ef188c..a1c672c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
 @@ -11,6 +11,7 @@ import androidx.compose.foundation.background
@@ -381,7 +435,15 @@ index 4ef188c..0d5b02f 100644
  import androidx.compose.ui.input.key.Key
  import androidx.compose.ui.input.key.KeyEventType
  import androidx.compose.ui.input.key.key
-@@ -91,6 +94,8 @@ internal object ProfilePicker {
+@@ -64,6 +67,7 @@ import androidx.compose.ui.layout.onPlaced
+ import androidx.compose.ui.layout.positionInRoot
+ import androidx.compose.ui.layout.ContentScale
+ import androidx.compose.ui.platform.LocalContext
++import androidx.compose.runtime.DisposableEffect
+ import androidx.compose.ui.platform.LocalDensity
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.text.style.TextAlign
+@@ -91,6 +95,8 @@ internal object ProfilePicker {
      var request by mutableStateOf(false)
      /** Update 334: an intent extra (true) that opens Voltcap on "Who's playing?" (the in-game Quick menu). */
      const val EXTRA = "voltcap_who_is_playing"
@@ -390,7 +452,7 @@ index 4ef188c..0d5b02f 100644
  }
  
  /** One choice on the selector: a profile, or the "Add" circle (null). */
-@@ -103,11 +108,18 @@ internal fun ProfileSelectScreen(
+@@ -103,11 +109,24 @@ internal fun ProfileSelectScreen(
      /** At start-up: B keeps the profile that played last. Else B closes. */
      atStart: Boolean,
      onPick: (Int) -> Unit,
@@ -407,11 +469,17 @@ index 4ef188c..0d5b02f 100644
      val context = LocalContext.current
      val lite = LocalLiteEffects.current
 -    val canAdd = profiles.size < Profiles.MAX
++    // Update 447 (D144): tell QA's picker.sh that "Who's playing?" is up (only with the test hooks file).
++    val markCtx = LocalContext.current
++    DisposableEffect(Unit) {
++        TestHooks.markScreen(markCtx, "PICKER")
++        onDispose { TestHooks.markScreen(markCtx, "HOME") }
++    }
 +    val canAdd = profiles.size < Profiles.MAX && !lookStrip
      val count = profiles.size + if (canAdd) 1 else 0
      var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
      var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
-@@ -122,11 +134,18 @@ internal fun ProfileSelectScreen(
+@@ -122,11 +141,18 @@ internal fun ProfileSelectScreen(
      LaunchedEffect(Unit) { enter.animateTo(1f, tween(if (lite) 180 else 520, easing = FastOutSlowInEasing)) }
      val focus = remember { FocusRequester() }
      LaunchedEffect(editing) { if (editing == null) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } } }
@@ -430,7 +498,7 @@ index 4ef188c..0d5b02f 100644
              Profiles.add(context, "Player ${profiles.size + 1}")?.let { editing = it; cursor = Profiles.list.value.indexOfFirst { p -> p.id == it.id } }
              return
          }
-@@ -134,7 +153,7 @@ internal fun ProfileSelectScreen(
+@@ -134,7 +160,7 @@ internal fun ProfileSelectScreen(
          unlockThen(profiles[i]) {
              leaving = true
              scope.launch {
@@ -439,7 +507,7 @@ index 4ef188c..0d5b02f 100644
                  onPick(id)
              }
          }
-@@ -142,19 +161,24 @@ internal fun ProfileSelectScreen(
+@@ -142,19 +168,24 @@ internal fun ProfileSelectScreen(
  
      Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
          ImmersiveDialogWindow()
@@ -468,7 +536,7 @@ index 4ef188c..0d5b02f 100644
                          // (Update 334: at start-up a locked profile that played last isn't kept without its PIN.)
                          Key.ButtonB, Key.Back, Key.Escape -> {
                              if (!leaving) {
-@@ -168,151 +192,245 @@ internal fun ProfileSelectScreen(
+@@ -168,151 +199,245 @@ internal fun ProfileSelectScreen(
                  },
              contentAlignment = Alignment.Center
          ) {
@@ -577,10 +645,9 @@ index 4ef188c..0d5b02f 100644
 +        Text("◀ L1", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(-1) } })
 +        Text(look.label, color = style.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
 +        Text("R1 ▶", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(1) } })
-     }
- }
- 
--/** One round picture with its name; the one you're on lifts, grows and glows in its colour. */
++    }
++}
++
 +/** v0.6.67: a button hint — the button in a small round key, then what it does. */
 +@Composable
 +private fun PickerHint(style: PickerStyle, key: String, what: String) {
@@ -593,9 +660,10 @@ index 4ef188c..0d5b02f 100644
 +        Spacer(Modifier.width(6.dp))
 +        // (Whole name of the profile kept: it wraps, never "…".)
 +        Text(what, color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.widthIn(max = 220.dp))
-+    }
-+}
-+
+     }
+ }
+ 
+-/** One round picture with its name; the one you're on lifts, grows and glows in its colour. */
 +/**
 + * One picture with its name, in the look's style; the one you're on lifts, grows, gets a ring and light in its own colour
 + * (Profiles.Profile.hue). The profile playing now carries a "Playing" pill; a locked one a lock badge.
@@ -798,7 +866,7 @@ index 4ef188c..0d5b02f 100644
      }
      ShelfDialog(icon = Icons.Filled.Person, title = "Profile", subtitle = "Its own favorites, Continue playing, play time and achievements account.", onDismiss = {
          if (name.isNotBlank() && name != p.name) save(p.copy(name = name.trim()))
-@@ -322,6 +440,10 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
+@@ -322,6 +447,10 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
              if (name.isNotBlank()) save(p.copy(name = name.trim()))
          })
          Spacer(Modifier.height(10.dp))
@@ -809,7 +877,7 @@ index 4ef188c..0d5b02f 100644
          SettingsHeading("Picture")
          ChipFlow {
              Chip("Initial", accent = p.picture == Profiles.Picture.INITIAL) { save(p.copy(picture = Profiles.Picture.INITIAL)) }
-@@ -351,20 +473,41 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
+@@ -351,20 +480,41 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
          var settingPin by remember { mutableStateOf(false) }
          ChipFlow {
              Chip(if (p.locked) "Change PIN…" else "Set a PIN…", accent = false) { settingPin = true }
@@ -854,7 +922,7 @@ index 4ef188c..0d5b02f 100644
  /**
   * Update 332: the games coming in after "Who's playing?" — each game's art (GameCard, StyleArt, Case stacks' case) slides
   * into its place with a little depth, left to right and top to bottom across the screen (by where it sits), in the layout
-@@ -459,7 +602,7 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
+@@ -459,7 +609,7 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
   * last digit back, B cancels. A wrong PIN shakes the dots and clears them.
   */
  @Composable
@@ -863,7 +931,7 @@ index 4ef188c..0d5b02f 100644
      var digits by remember { mutableStateOf("") }
      var first by remember { mutableStateOf<String?>(null) }
      var cursor by remember { mutableIntStateOf(4) }
-@@ -490,7 +633,7 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+@@ -490,7 +640,7 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
      Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
          ImmersiveDialogWindow()
          Box(
@@ -872,7 +940,7 @@ index 4ef188c..0d5b02f 100644
                  .focusRequester(focus).focusable()
                  .onPreviewKeyEvent { e ->
                      if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-@@ -513,16 +656,16 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+@@ -513,16 +663,16 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
              Column(horizontalAlignment = Alignment.CenterHorizontally) {
                  Text(
                      if (check == null && first != null) "Enter it again" else title,
@@ -893,7 +961,7 @@ index 4ef188c..0d5b02f 100644
                              .border(1.dp, if (shake.value > 0.01f) Color(0xFFFF7A7A) else Color.White.copy(alpha = 0.5f), CircleShape)
                      )
                  }
-@@ -533,19 +676,19 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+@@ -533,19 +683,19 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
                              val i = r * 3 + c
                              val on = i == cursor
                              Box(
@@ -918,6 +986,54 @@ index 4ef188c..0d5b02f 100644
              }
          }
      }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt b/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
+index 5dd75e0..55c73a8 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
+@@ -202,6 +202,11 @@ fun SecondScreenHome(
+     fxOverlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
+     /** Room kept free at the right of the header row for something drawn over it (the in-game timer). */
+     headerEndInset: Dp = 0.dp,
++    /**
++     * v0.6.67: a small control at the end of the header row (the way back to a two-screen layout, [TwinBackButton]).
++     * The header gives it its own room, so it never covers the tabs, the dock or the pages.
++     */
++    headerEnd: (@Composable () -> Unit)? = null,
+     /** Update 189: your picture and points for the "Game art" look's top-left pill (RetroAchievements). */
+     avatarUrl: String? = null,
+     raPoints: Int? = null,
+@@ -437,9 +442,11 @@ fun SecondScreenHome(
+                     }
+                 }
+                 ShowcaseTopBar(
+-                    avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
++                    avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) },
++                    endInset = headerEndInset + (if (headerEnd != null) TWIN_BACK_TARGET + 4.dp else 0.dp),
+                     modifier = Modifier.align(Alignment.TopStart)
+                 )
++                if (headerEnd != null) Box(Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 6.dp + headerEndInset)) { headerEnd() }
+                 // Update 195: ‹ › fixed at the screen's left and right edges, half-way down, to step through the pages
+                 // (swiping still works); reachable with the controller too.
+                 if (visiblePages.size > 1 || gameOpen) for (dir in intArrayOf(-1, 1)) {
+@@ -474,7 +481,8 @@ fun SecondScreenHome(
+             }
+         } else Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
+             // Volt look: the Voltcap mark, underlined tabs and the clock over a voltage line Volt sits on.
+-            Box(Modifier.fillMaxWidth().padding(end = headerEndInset)) {
++            Row(Modifier.fillMaxWidth().padding(end = headerEndInset), verticalAlignment = Alignment.CenterVertically) {
++            Box(Modifier.weight(1f)) {
+             if (gameOpen) PageSwitcher(page, visiblePages.size + 1, latestStep) {
+                 FullText("Game", color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+             }
+@@ -495,6 +503,8 @@ fun SecondScreenHome(
+                 PageArrow(left = false, visible = visiblePages.size > 1) { latestStep(1) }
+             }
+             }
++            if (headerEnd != null) { Spacer(Modifier.width(6.dp)); headerEnd() }
++            }
+             Spacer(Modifier.height(10.dp))
+             // Update 200: the pages slide in the direction of travel instead of just appearing.
+             Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 index 8ae182c..6c93ea6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
@@ -951,10 +1067,29 @@ index 57b595c..dc7b881 100644
          E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
          E("Pages slide (turn off, preview)", "Home", "Animations", null, null),
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..b00e690 100644
+index df68497..08b52cf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-@@ -48,6 +48,37 @@ internal object TestHooks {
+@@ -27,6 +27,18 @@ internal object TestHooks {
+ 
+     /** Update 326: the flag file is there (read once): the test-only logging may run. */
+     @Volatile private var enabledCache: Boolean? = null
++    /**
++     * Update 447 (D144): which screen is in front, for tools/qa/device/picker.sh — "PICKER <pid>" while a "Who's playing?"
++     * screen is up, "HOME <pid>" after it closes. Written only with the hooks file; QA reads it instead of guessing the
++     * screen from its colours (the picker has six looks now).
++     */
++    fun markScreen(context: android.content.Context, screen: String) {
++        if (!enabled(context)) return
++        runCatching {
++            java.io.File(context.getExternalFilesDir(null), "voltcap_qa_screen").writeText("$screen ${android.os.Process.myPid()}\n")
++        }
++    }
++
+     fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
+         java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
+     }.getOrDefault(false).also { enabledCache = it }
+@@ -48,6 +60,37 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
@@ -992,7 +1127,7 @@ index df68497..b00e690 100644
      /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
      @Volatile var noLaunch = false
      /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
-@@ -173,6 +204,16 @@ internal object TestHooks {
+@@ -173,6 +216,16 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -1009,12 +1144,136 @@ index df68497..b00e690 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
+@@ -205,6 +258,9 @@ internal object TestHooks {
+             previewOnly = true
+             tileWalk.value = tw
+         }
++        // Update 447: `--es voltcap_test_twindash on|off` — a two-screen layout's "Second screen" dashboard opened / closed
++        // (as its own button does; nothing saved), so QA can check the way back on every layout.
++        intent?.getStringExtra("voltcap_test_twindash")?.let { v -> if (enabled(context)) TwinScreens.dashboard = v == "on" }
+         if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
+         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
+         if (!on) return
+diff --git a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt b/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
+index 054c3eb..71641bf 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
+@@ -1,6 +1,9 @@
+ package com.shelf.launcher.ui
+ 
+ import com.shelf.launcher.data.categoryBarHere
++import androidx.compose.ui.semantics.contentDescription
++import androidx.compose.ui.semantics.role
++import androidx.compose.ui.semantics.semantics
+ import androidx.compose.material.icons.filled.OpenInFull
+ import androidx.compose.material.icons.filled.Dashboard
+ import androidx.compose.foundation.layout.fillMaxWidth
+@@ -103,65 +106,62 @@ internal fun TwinCommonControls() {
+ 
+ /**
+  * Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back.
+- * Update 182: drawn in the layout's own style — Twin desk's and Twin icons' white bar with a round button (as their
+- * Second screen button), the Pocket layouts' flat white panel with the pixel font and the corner brackets.
++ * Update 182: drawn in the layout's own style. v0.6.67: a compact button in the dashboard's header row (its end), not a
++ * wide pill in the bottom corner — that one covered the dock. The header keeps room for it ([SecondScreenHome]'s
++ * `headerEnd`), so it never overlaps the tabs, the dock or the apps; overlays (drawer, app picker, big player) draw over it.
++ * The visible part is small ([TWIN_BACK_VISIBLE]); the touch / controller target is [TWIN_BACK_TARGET] square.
+  */
++internal val TWIN_BACK_TARGET = 44.dp
++internal val TWIN_BACK_VISIBLE = 32.dp
++
+ @Composable
+-internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
++internal fun TwinBackButton(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
+     val back = { TwinScreens.dashboard = false }
+     val lit = SecondPad.active && SecondPad.focused == "twin-back"
+     val accent = ShelfTheme.accent
+     val ink = Color(0xFF26313C)
+     val edge = Color(0xFFC6CFD7)
+-    if (layout.isPocket) {
+-        val font = pocketFont()
+-        val pAccent = if (layout == HomeLayout.POCKET_RIBBON)
+-            pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.ribbonAccent.state.value) }.getOrDefault(PocketAccent.SKY))
+-        else pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
+-        androidx.compose.foundation.layout.Box(
+-            Modifier.align(Alignment.BottomStart).padding(10.dp)
+-                .padTargetPlain("twin-back") { back() }
+-                .tapOnly { back() }
+-        ) {
+-            androidx.compose.foundation.layout.Row(
+-                Modifier.background(Color.White).border(1.dp, if (lit) Color(0xFF6B7380) else Color(0xFFB9BEC6))
+-                    .padding(horizontal = 10.dp, vertical = 7.dp),
+-                verticalAlignment = Alignment.CenterVertically
++    val label = "Back to $name"
++    androidx.compose.foundation.layout.Box(
++        Modifier.size(TWIN_BACK_TARGET)
++            .padTargetPlain("twin-back") { back() }
++            .backSemantics(label)
++            .tapOnly { back() },
++        contentAlignment = Alignment.Center
++    ) {
++        if (layout.isPocket) {
++            val pAccent = if (layout == HomeLayout.POCKET_RIBBON)
++                pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.ribbonAccent.state.value) }.getOrDefault(PocketAccent.SKY))
++            else pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
++            androidx.compose.foundation.layout.Box(
++                Modifier.size(TWIN_BACK_VISIBLE).background(Color.White).border(1.dp, if (lit) Color(0xFF6B7380) else Color(0xFFB9BEC6)),
++                contentAlignment = Alignment.Center
+             ) {
+                 androidx.compose.foundation.Canvas(Modifier.size(18.dp)) { pocketIcon(PocketIcons.BACK, Color(0xFF3A3F47), pAccent) }
+-                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+-                androidx.compose.material3.Text(name, color = Color(0xFF3A3F47), fontSize = 14.sp, fontFamily = font, maxLines = 1)
++                if (lit) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { pocketBrackets(2.dp.toPx(), pAccent) }
+             }
+-            if (lit) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { pocketBrackets(2.dp.toPx(), pAccent) }
+-        }
+-    } else {
+-        val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+-        androidx.compose.foundation.layout.Row(
+-            Modifier.align(Alignment.BottomStart).padding(10.dp)
+-                .padTargetPlain("twin-back") { back() }
+-                .clip(shape).background(Color.White.copy(alpha = 0.86f)).border(1.dp, edge, shape)
+-                .tapOnly { back() }
+-                .padding(start = 4.dp, end = 14.dp, top = 4.dp, bottom = 4.dp),
+-            verticalAlignment = Alignment.CenterVertically
+-        ) {
++        } else {
++            val circle = androidx.compose.foundation.shape.CircleShape
+             androidx.compose.foundation.layout.Box(
+                 Modifier.graphicsLayer { val k = if (lit) 1.1f else 1f; scaleX = k; scaleY = k }
+-                    .size(34.dp).clip(androidx.compose.foundation.shape.CircleShape)
+-                    .background(if (lit) accent.copy(alpha = 0.18f) else Color.White)
+-                    .border(if (lit) 2.dp else 1.dp, if (lit) accent else edge, androidx.compose.foundation.shape.CircleShape),
++                    .size(TWIN_BACK_VISIBLE).clip(circle)
++                    .background(if (lit) Color.White else Color.White.copy(alpha = 0.86f))
++                    .border(if (lit) 2.dp else 1.dp, if (lit) accent else edge, circle),
+                 contentAlignment = Alignment.Center
+             ) {
+                 androidx.compose.material3.Icon(
+                     androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null,
+-                    tint = if (lit) ink else Color(0xFF4A5562), modifier = Modifier.size(19.dp)
++                    tint = if (lit) ink else Color(0xFF4A5562), modifier = Modifier.size(18.dp)
+                 )
+             }
+-            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
+-            androidx.compose.material3.Text(name, color = ink, fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
+         }
+     }
+ }
+ 
++/** The button's name for TalkBack ("Back to Twin desk"); it shows only an arrow. */
++private fun Modifier.backSemantics(label: String): Modifier =
++    this.semantics { contentDescription = label; role = androidx.compose.ui.semantics.Role.Button }
++
+ /** Update 158: one of the two-screen layouts. */
+ internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
+     this == HomeLayout.TWIN_SHOWCASE || // Update 307
 diff --git a/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
 new file mode 100644
-index 0000000..b8baf8b
+index 0000000..15cb771
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,112 @@
 +package com.shelf.launcher.ui
 +
 +import com.shelf.launcher.data.Features
@@ -1078,6 +1337,22 @@ index 0000000..b8baf8b
 +        assertEquals("picker_look", Features.pickerLook.key)
 +    }
 +
++    @Test fun existingInstallsKeepMidnightBlue() {
++        // Update 447 (owner): existing installs keep today's look, new ones start on Aurora glass; a saved one is never overwritten.
++        assertEquals(Features.PickerLook.MIDNIGHT, Features.firstPickerLook(existingInstall = true))
++        assertEquals(Features.PickerLook.AURORA, Features.firstPickerLook(existingInstall = false))
++        assertEquals("unsaved default before init", Features.PickerLook.MIDNIGHT, Features.pickerLook.default)
++        val f = src("data/Features.kt")
++        assertTrue(f.contains("if (!p.contains(\"picker_look\")) pickerLook.value = firstPickerLook(FirstRun.isDone("))
++    }
++
++    @Test fun pickerTellsQaWhenItIsUp() {
++        // D144: QA reads the app's own mark, not the picker's colours.
++        val s = src("ui/ProfileSelect.kt")
++        assertTrue(s.contains("TestHooks.markScreen(markCtx, \"PICKER\")") && s.contains("TestHooks.markScreen(markCtx, \"HOME\")"))
++        assertTrue(src("ui/TestHooks.kt").contains("if (!enabled(context)) return"))
++    }
++
 +    @Test fun colourPresetsKeepASavedColour() {
 +        val s = src("ui/ProfileSelect.kt")
 +        assertTrue("a saved hue that is no preset is offered as it is", s.contains("else listOf(hue) + PickerGrid.PRESETS"))
@@ -1111,6 +1386,181 @@ index 0000000..b8baf8b
 +        assertTrue(!bubble.contains("TextOverflow.Ellipsis"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt b/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
+new file mode 100644
+index 0000000..94f1006
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
+@@ -0,0 +1,39 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * Update 447: the way back from the second screen's dashboard to a two-screen layout is a compact button in the dashboard's
++ * header (its end), not the wide pill in the bottom corner that covered the dock.
++ */
++class TwinBack447Test {
++    private fun src(name: String): String {
++        val roots = listOf("src_copy/", "../src_copy/", "app/src/main/java/com/shelf/launcher/", "src/main/java/com/shelf/launcher/")
++        return roots.map { File(it + name) }.first { it.exists() }.readText().replace("\r\n", "\n")
++    }
++
++    @Test fun compactButtonComfortableTarget() {
++        assertEquals(44f, TWIN_BACK_TARGET.value, 0.01f)
++        assertTrue(TWIN_BACK_VISIBLE.value <= 34f && TWIN_BACK_VISIBLE.value < TWIN_BACK_TARGET.value)
++        val t = src("ui/TwinScreens.kt")
++        assertTrue("old bottom-corner pill is gone", !t.contains("fun androidx.compose.foundation.layout.BoxScope.TwinBackPill("))
++        val b = t.substring(t.indexOf("internal fun TwinBackButton("))
++        assertTrue(!b.substring(0, 3000).contains("Alignment.BottomStart"))
++        // Same controller id and the same action as before: the layout comes back, settings untouched.
++        assertTrue(b.contains("padTargetPlain(\"twin-back\")") && b.contains("TwinScreens.dashboard = false"))
++        assertTrue(b.contains("layout.isPocket") && b.contains("pocketBrackets"))
++    }
++
++    @Test fun headerKeepsRoomForIt() {
++        val h = src("ui/SecondScreenHome.kt")
++        assertTrue(h.contains("headerEnd: (@Composable () -> Unit)? = null"))
++        assertTrue(h.contains("endInset = headerEndInset + (if (headerEnd != null) TWIN_BACK_TARGET + 4.dp else 0.dp)"))
++        assertTrue(h.contains("if (headerEnd != null) { Spacer(Modifier.width(6.dp)); headerEnd() }"))
++        val l = src("ui/LauncherScreen.kt")
++        assertTrue(l.contains("headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard)"))
++        assertTrue("no overlay over the dock any more", !l.contains("TwinBackPill("))
++    }
++}
+diff --git a/tools/qa/README.md b/tools/qa/README.md
+index e482bd7..6c1b6cf 100644
+--- a/tools/qa/README.md
++++ b/tools/qa/README.md
+@@ -82,7 +82,7 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
+   crossfade is a transient too, so transients are for human review of the contact sheets.
+ - **Device sweeps**: `device/layouts.sh` sources `device/guard.sh` (needs `guard.sh` + `picker.sh` next to `vqa.sh`), writes
+   `out/RUN_manifest.txt`, skips a layout showing "Who's playing?" (SKIP) or a black screen (UNKNOWN). After pulling `out/`:
+-  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` prints PICKER / HOME / UNKNOWN (a black, missing, short or garbage capture is UNKNOWN, never HOME);
++  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` prints PICKER / HOME / UNKNOWN from Voltcap's own `voltcap_qa_screen` mark (update 447, any picker look; old builds: the blue corner); a black, missing, short or garbage capture is UNKNOWN, never HOME;
+   `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
+   the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
+   folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
+diff --git a/tools/qa/device/guard.sh b/tools/qa/device/guard.sh
+index b433cc3..ae1ebdc 100644
+--- a/tools/qa/device/guard.sh
++++ b/tools/qa/device/guard.sh
+@@ -3,7 +3,7 @@
+ # recorded nothing, or that ran on the "Who's playing?" picker can then never read as a pass.
+ #   man_start RUN        start <epoch>                 (the host rejects recordings older than this: stale evidence)
+ #   man_expect RUN NAME  expect NAME                   (declared up front: a name that never gets done/skip = INFRA)
+-#   man_screen RUN NAME  screen NAME HOME|PICKER|UNKNOWN   (picker.sh: Voltcap's blue "Who's playing?" corner)
++#   man_screen RUN NAME  screen NAME HOME|PICKER|UNKNOWN   (picker.sh: Voltcap's own voltcap_qa_screen mark; old builds: the blue corner)
+ #   man_done / man_skip RUN NAME [why] / man_end RUN   done NAME | skip NAME why | end <epoch>
+ # Only writes inside out/ (QA scratch); never touches app data, saves or settings.
+ man_file() { echo out/$1_manifest.txt; }
+diff --git a/tools/qa/device/pickdetect.sh b/tools/qa/device/pickdetect.sh
+new file mode 100644
+index 0000000..723003b
+--- /dev/null
++++ b/tools/qa/device/pickdetect.sh
+@@ -0,0 +1,16 @@
++# Update 447 (D144): picker447.sh (the new picker.sh) on every "Who's playing?" look — sample profiles (ids 900+, nothing saved).
++# usage: sh pickdetect.sh TAG   → /sdcard/pp/TAG/result.txt lines "LOOK picker=X home=Y"; PASS only if PICKER / HOME each time.
++P=com.shelf.launcher; OUT=/sdcard/pp/$1; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++ok=1
++for L in AURORA CONSOLE NEON OLED THEME MIDNIGHT; do
++  A --es voltcap_test_pickerlook $L; sleep 1
++  A --es voltcap_test_profiles "3:active=1"; sleep 2.5
++  a=$(sh /data/local/tmp/vqa/picker447.sh)
++  input keyevent KEYCODE_BUTTON_B; sleep 1.8
++  b=$(sh /data/local/tmp/vqa/picker447.sh)
++  echo "$L picker=$a home=$b" >> $OUT/result.txt
++  [ "$a" = PICKER ] && [ "$b" = HOME ] || ok=0
++done
++A --es voltcap_test_pickerlook off; A --es voltcap_test_profiles off
++[ $ok = 1 ] && echo PASS >> $OUT/result.txt || echo FAIL >> $OUT/result.txt
+diff --git a/tools/qa/device/picker.sh b/tools/qa/device/picker.sh
+index 7bb6cc6..31de7db 100644
+--- a/tools/qa/device/picker.sh
++++ b/tools/qa/device/picker.sh
+@@ -1,25 +1,56 @@
+-# VoltCap QA — which screen is showing? Prints PICKER, HOME or UNKNOWN (never anything else). "Who's playing?" is deep blue
+-# at the top-left corner (uiautomator can't read Voltcap's screen on the Thor). Reads 5 pixels of a raw screencap.
+-#   HOME    = the screen is lit AND the corner is not the picker blue
+-#   PICKER  = lit and the corner is picker blue
+-#   UNKNOWN = black / missing / short / malformed capture (display off, locked, screensaver, failed screencap)
+-# A black screen must never read HOME. PK_RAW=<file> reads an existing capture instead of calling screencap (host tests).
++# VoltCap QA — which screen is showing? Prints PICKER, HOME or UNKNOWN (never anything else).
++# Update 447 (D144): "Who's playing?" has six looks now, so the screen is no longer guessed from its colours. Voltcap (with the
++# test hooks file) writes <external files>/voltcap_qa_screen = "PICKER <pid>" while a picker is up, "HOME <pid>" after it.
++#   PICKER  = the display is awake, Voltcap is in front, and its live process says PICKER
++#   HOME    = the same, it says HOME, AND the screen is lit (a black capture is never HOME)
++#   UNKNOWN = display asleep / Voltcap not in front / a stale mark (another pid) / black, missing, short or malformed capture
++# Without a mark (an older build, hooks off) it falls back to the old check: the deep-blue top-left corner of the Midnight look.
++# Host tests: PK_MARK=<file> PK_PID=<pid> PK_AWAKE=1|0 PK_TOP=1|0 PK_RAW=<raw capture> replace the device reads.
++P=com.shelf.launcher
++MARK=${PK_MARK:-/sdcard/Android/data/$P/files/voltcap_qa_screen}
+ f=${PK_RAW:-/data/local/tmp/pk.raw}
+-[ -n "$PK_RAW" ] || screencap $f 2>/dev/null
+-[ -s $f ] || { echo UNKNOWN; exit 0; }
+-w=$(od -An -tu4 -N4 $f | tr -d ' '); h=$(od -An -tu4 -j4 -N4 $f | tr -d ' ')
+-[ "$w" -gt 64 ] 2>/dev/null && [ "$h" -gt 64 ] 2>/dev/null || { echo UNKNOWN; exit 0; }
+-# the file must hold the whole frame (16-byte header + w*h*4)
+-sz=$(wc -c < $f | tr -d ' ')
+-[ "$sz" -ge $(( 16 + w * h * 4 )) ] 2>/dev/null || { echo UNKNOWN; exit 0; }
+-lit=0
+-for pt in "$((w / 2)) $((h / 2))" "$((w / 4)) $((h / 4))" "$((w * 3 / 4)) $((h * 3 / 4))" "$((w / 2)) $((h * 4 / 5))" "60 60"; do
+-  set -- $pt
+-  set -- $(od -An -tu1 -j $(( 16 + ($2 * w + $1) * 4 )) -N3 $f)
+-  [ -n "$3" ] || { echo UNKNOWN; exit 0; }
+-  [ $(( $1 + $2 + $3 )) -gt 36 ] && lit=$((lit + 1))
+-done
+-[ $lit -eq 0 ] && { echo UNKNOWN; exit 0; }
++
++awake() { [ -n "$PK_AWAKE" ] && { [ "$PK_AWAKE" = 1 ]; return; }; dumpsys power 2>/dev/null | grep -q "mWakefulness=Awake"; }
++ontop() { [ -n "$PK_TOP" ] && { [ "$PK_TOP" = 1 ]; return; }
++  dumpsys activity activities 2>/dev/null | grep -E "ResumedActivity" | head -1 | grep -q "$P/"; }
++livepid() { [ -n "$PK_PID" ] && { echo "$PK_PID"; return; }; pidof $P 2>/dev/null | tr ' ' '\n' | head -1; }
++
++# lit: the capture is whole and not black (5 points). Prints nothing; exit 0 = lit, 1 = black, 2 = bad capture.
++lit() {
++  [ -n "$PK_RAW" ] || screencap $f 2>/dev/null
++  [ -s $f ] || return 2
++  w=$(od -An -tu4 -N4 $f | tr -d ' '); h=$(od -An -tu4 -j4 -N4 $f | tr -d ' ')
++  [ "$w" -gt 64 ] 2>/dev/null && [ "$h" -gt 64 ] 2>/dev/null || return 2
++  sz=$(wc -c < $f | tr -d ' ')
++  [ "$sz" -ge $(( 16 + w * h * 4 )) ] 2>/dev/null || return 2
++  n=0
++  for pt in "$((w / 2)) $((h / 2))" "$((w / 4)) $((h / 4))" "$((w * 3 / 4)) $((h * 3 / 4))" "$((w / 2)) $((h * 4 / 5))" "60 60"; do
++    set -- $pt
++    set -- $(od -An -tu1 -j $(( 16 + ($2 * w + $1) * 4 )) -N3 $f)
++    [ -n "$3" ] || return 2
++    [ $(( $1 + $2 + $3 )) -gt 36 ] && n=$((n + 1))
++  done
++  [ $n -gt 0 ] || return 1
++  return 0
++}
++
++if [ -s "$MARK" ]; then
++  set -- $(cat "$MARK" 2>/dev/null)
++  m=$1; mp=$2
++  if [ -n "$m" ] && [ -n "$mp" ] && [ "$mp" = "$(livepid)" ]; then
++    awake || { echo UNKNOWN; exit 0; }
++    ontop || { echo UNKNOWN; exit 0; }
++    if [ "$m" = PICKER ]; then echo PICKER; exit 0; fi
++    if [ "$m" = HOME ]; then lit && echo HOME || echo UNKNOWN; exit 0; fi
++    echo UNKNOWN; exit 0
++  fi
++  # A mark from another process (Voltcap restarted, or a different build): don't trust it; use the fallback below.
++fi
++
++# Fallback (no mark): the old Midnight-blue corner check.
++lit; r=$?
++[ $r -eq 0 ] || { echo UNKNOWN; exit 0; }
++w=$(od -An -tu4 -N4 $f | tr -d ' ')
+ set -- $(od -An -tu1 -j $(( 16 + (60 * w + 60) * 4 )) -N3 $f)
+ r=$1; g=$2; b=$3
+ if [ $b -gt $((r + 25)) ] && [ $b -gt $((g + 15)) ]; then echo PICKER; else echo HOME; fi
 diff --git a/tools/qa/device/pickerlooks.sh b/tools/qa/device/pickerlooks.sh
 new file mode 100644
 index 0000000..831198b
@@ -1176,10 +1626,84 @@ index 0000000..6bee4eb
 +A --es voltcap_test_profiles off
 +logcat -d | grep -E "FATAL|AndroidRuntime: " | grep -i shelf > $OUT/crash.txt
 +echo done > $OUT/DONE
+diff --git a/tools/qa/device/twinback.sh b/tools/qa/device/twinback.sh
+new file mode 100644
+index 0000000..321e9cc
+--- /dev/null
++++ b/tools/qa/device/twinback.sh
+@@ -0,0 +1,28 @@
++# v0.6.67 (update 447): the way back from the second screen's dashboard on the five two-screen layouts (AYN Thor).
++# usage: sh twinback.sh TAG ["LAYOUTS"] [TAPX TAPY]   — layouts are previews (voltcap_test_preview: nothing saved); the dashboard is
++# opened with voltcap_test_twindash (as the layout's own button does). Per layout: top + bottom stills of the layout, the dashboard,
++# the next page; with TAPX/TAPY (lower-screen px) a tap there, then a still to prove the layout came back. Launches blocked.
++P=com.shelf.launcher; TAG=$1; LAYOUTS=${2:-"TWIN_DESK TWIN_ICONS TWIN_SHOWCASE POCKET_CLASSIC POCKET_RIBBON"}
++TX=$3; TY=$4
++D0=4630946441858561667; D1=4630946482288158084
++OUT=/sdcard/pp/$TAG; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++S() { screencap -d $D0 -p $OUT/${1}_top.png; screencap -d $D1 -p $OUT/${1}_bot.png; }
++A --ez voltcap_test_nolaunch true; sleep 1
++A --ez voltcap_test_preview true; sleep 1
++for L in $LAYOUTS; do
++  A --es voltcap_test_twindash off; sleep 0.5
++  A --es voltcap_test_layout $L; sleep 3.5
++  S ${L}_1layout
++  A --es voltcap_test_twindash on; sleep 2.5
++  S ${L}_2dash
++  input -d 4 swipe 900 600 300 600 250; sleep 1.5
++  screencap -d $D1 -p $OUT/${L}_3page_bot.png
++  if [ -n "$TX" ]; then input -d 4 tap $TX $TY; sleep 2; screencap -d $D1 -p $OUT/${L}_4back_bot.png; fi
++  echo "$L done" >> $OUT/log.txt
++done
++A --es voltcap_test_twindash off; sleep 0.5
++A --ez voltcap_test_preview false; sleep 1.5
++logcat -d | grep -E "FATAL|AndroidRuntime: " | grep -i shelf > $OUT/crash.txt
++logcat -d | grep -E "VoltcapQA.*LAUNCH|blocked launch" | tail -5 > $OUT/launch.txt
++echo done > $OUT/DONE
+diff --git a/tools/qa/selftest/test_qa.py b/tools/qa/selftest/test_qa.py
+index 1561f46..e7a7406 100644
+--- a/tools/qa/selftest/test_qa.py
++++ b/tools/qa/selftest/test_qa.py
+@@ -561,6 +561,35 @@ class TestDeviceScreenScripts(unittest.TestCase):
+         self.assertEqual(self.picker(home), "HOME")
+         self.assertEqual(self.state(home), "HOME")
+ 
++    # Update 447 (D144): the app's own mark decides PICKER / HOME, whatever the picker's colours (six looks).
++    def marked(self, text, raw, pid="4242", awake="1", top="1"):
++        m = os.path.join(self.tmp, "mark")
++        with open(m, "w") as f:
++            f.write(text)
++        env = dict(os.environ, PK_RAW=raw, PK_MARK=m, PK_PID=pid, PK_AWAKE=awake, PK_TOP=top)
++        r = subprocess.run(["sh", os.path.join(self.DEV, "picker.sh")], capture_output=True, text=True, env=env)
++        return r.stdout.strip()
++
++    def test_mark_decides_whatever_the_colours(self):
++        black = self.raw("oled.raw", lambda x, y: (0, 0, 0))            # Minimal OLED picker: black corner
++        grey = self.raw("console.raw", lambda x, y: (40, 42, 46))       # Console classic: graphite
++        blue = self.raw("blue.raw", lambda x, y: (10, 30, 140))         # home that happens to be blue
++        self.assertEqual(self.marked("PICKER 4242\n", black), "PICKER")
++        self.assertEqual(self.marked("PICKER 4242\n", grey), "PICKER")
++        self.assertEqual(self.marked("HOME 4242\n", blue), "HOME")
++        self.assertEqual(self.marked("HOME 4242\n", grey), "HOME")
++
++    def test_mark_never_passes_a_bad_screen(self):
++        black = self.raw("black.raw", lambda x, y: (0, 0, 0))
++        grey = self.raw("grey.raw", lambda x, y: (90, 90, 90))
++        self.assertEqual(self.marked("HOME 4242\n", black), "UNKNOWN")           # black is never HOME
++        self.assertEqual(self.marked("PICKER 4242\n", grey, awake="0"), "UNKNOWN")  # display asleep
++        self.assertEqual(self.marked("HOME 4242\n", grey, top="0"), "UNKNOWN")     # another app in front
++        self.assertEqual(self.marked("SOMETHING 4242\n", grey), "UNKNOWN")
++        # A stale mark (Voltcap restarted: another pid) is ignored: the old check decides (grey = HOME, black = UNKNOWN).
++        self.assertEqual(self.marked("PICKER 1\n", grey), "HOME")
++        self.assertEqual(self.marked("PICKER 1\n", black), "UNKNOWN")
++
+     def test_pop_requires_verified_home(self):
+         src = open(os.path.join(self.DEV, "pop.sh"), encoding="utf-8").read()
+         self.assertIn("screen_state", src)
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -51,7 +51,3 @@ shots*/
+@@ -51,8 +51,3 @@ shots*/
  
  # Update 427: review sheets are regenerated by tools/themes/review_refresh.cjs (large; not committed)
  tools/themes/refresh-review/sheet-*
@@ -1187,3 +1711,4 @@ diff --git a/.gitignore b/.gitignore
 -# v0.6.67 staging placeholders (empty files left in the 0.6.66 tree; the real ones are in next/0.6.67/ and its patch removes these lines)
 -/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
 -/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt

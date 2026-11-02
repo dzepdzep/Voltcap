@@ -27,6 +27,18 @@ internal object TestHooks {
 
     /** Update 326: the flag file is there (read once): the test-only logging may run. */
     @Volatile private var enabledCache: Boolean? = null
+    /**
+     * Update 447 (D144): which screen is in front, for tools/qa/device/picker.sh — "PICKER <pid>" while a "Who's playing?"
+     * screen is up, "HOME <pid>" after it closes. Written only with the hooks file; QA reads it instead of guessing the
+     * screen from its colours (the picker has six looks now).
+     */
+    fun markScreen(context: android.content.Context, screen: String) {
+        if (!enabled(context)) return
+        runCatching {
+            java.io.File(context.getExternalFilesDir(null), "voltcap_qa_screen").writeText("$screen ${android.os.Process.myPid()}\n")
+        }
+    }
+
     fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
         java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
     }.getOrDefault(false).also { enabledCache = it }
@@ -246,6 +258,9 @@ internal object TestHooks {
             previewOnly = true
             tileWalk.value = tw
         }
+        // Update 447: `--es voltcap_test_twindash on|off` — a two-screen layout's "Second screen" dashboard opened / closed
+        // (as its own button does; nothing saved), so QA can check the way back on every layout.
+        intent?.getStringExtra("voltcap_test_twindash")?.let { v -> if (enabled(context)) TwinScreens.dashboard = v == "on" }
         if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
         val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
         if (!on) return

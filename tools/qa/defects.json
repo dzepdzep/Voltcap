@@ -1652,9 +1652,9 @@
    "title": "v0.6.67 picker looks vs tools/qa/device/picker.sh: the picker is detected by a deep-blue top-left corner; Minimal OLED (black) would read UNKNOWN and Console classic (graphite) HOME",
    "rule": "QA-TOOL",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-02 update 446 (code review, staging only)",
-   "note": "Only matters once next/0.6.67 is applied. Fix picker.sh (detect by layout/text, or force voltcap_test_pickerlook MIDNIGHT in QA runs) before trusting it with another look."
+   "note": "Staged in next/0.6.67 (update 447): with the hooks file Voltcap writes <external files>/voltcap_qa_screen = PICKER/HOME <pid> (ProfileSelectScreen DisposableEffect; HOME at every MainActivity start); picker.sh reads it (display awake, Voltcap resumed, same pid; HOME also needs a lit screen) — no background colours; old builds fall back to the Midnight corner. Selftest 73 OK (5 new cases: OLED black / Console graphite / blue home / asleep / other app / stale pid). Device pickdetect.sh: all six looks PICKER then HOME — GT78 (GD1) and AYN Thor (TD1) PASS."
   },
   {
    "id": "D145",
@@ -1664,6 +1664,24 @@
    "status": "verified",
    "found": "2026-11-02 update 446 pickerlooks.sh G1 (GT78)",
    "note": "ProfileName: whole words only (break after a hyphen via U+200B, shrink to 10 sp until every word fits, 2 lines, 3rd only as a last resort, never …); scrolling row gets edge room (10 % of a slot), 22 % vertical room and edge fades. Re-checked G3 / O3 / GU2 on GT78 + Odin. ProfilePicker445Test.longNamesBreakBetweenWordsOnly. Staging only (next/0.6.67)."
+  },
+  {
+   "id": "D146",
+   "title": "Dual-screen return button: switching from a two-screen layout to the normal second-screen dashboard drew a wide 'back to <layout>' pill in the bottom-left corner over the dock",
+   "rule": "LAYOUT",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 owner report (update 447)",
+   "note": "Staged in next/0.6.67: TwinBackButton (TwinScreens.kt) — 32 dp visible / 44 dp target, layout-styled (Twin round, Pocket square + brackets), in SecondScreenHome's header row via headerEnd (classic header Row, showcase TopEnd with the top bar's endInset), fallback top corner over a look's own second screen. Same pad id twin-back and action. AYN Thor 3140972f: twinback.sh T1 / T2 on all five layouts — button in the header, dock / tabs / arrows clear on every page; a tap brings each layout's lower part back; D-pad reaches it (Pocket classic: ▲ from the dock → lit brackets → A). TwinBack447Test."
+  },
+  {
+   "id": "D147",
+   "title": "Twin desk / Twin icons with the second-screen dashboard open: ▼ past the bottom of the main screen does not move the controller onto the dashboard (Pocket classic does)",
+   "rule": "ONEPRESS",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 447 Thor D-pad check",
+   "note": "Pre-existing: same on the 0.6.66 RC (old pill) — the Twin layouts' own StyleNav keeps ▼ on the main screen. The return button stays reachable by touch on every layout and by D-pad where the controller reaches the dashboard (Pocket classic verified). Not changed in the RC; candidate for 0.6.67."
   }
  ]
 }

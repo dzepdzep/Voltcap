@@ -67,6 +67,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -119,6 +120,12 @@ internal fun ProfileSelectScreen(
 ) {
     val context = LocalContext.current
     val lite = LocalLiteEffects.current
+    // Update 447 (D144): tell QA's picker.sh that "Who's playing?" is up (only with the test hooks file).
+    val markCtx = LocalContext.current
+    DisposableEffect(Unit) {
+        TestHooks.markScreen(markCtx, "PICKER")
+        onDispose { TestHooks.markScreen(markCtx, "HOME") }
+    }
     val canAdd = profiles.size < Profiles.MAX && !lookStrip
     val count = profiles.size + if (canAdd) 1 else 0
     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }

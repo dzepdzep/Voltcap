@@ -61,6 +61,22 @@ class ProfilePicker445Test {
         assertEquals("picker_look", Features.pickerLook.key)
     }
 
+    @Test fun existingInstallsKeepMidnightBlue() {
+        // Update 447 (owner): existing installs keep today's look, new ones start on Aurora glass; a saved one is never overwritten.
+        assertEquals(Features.PickerLook.MIDNIGHT, Features.firstPickerLook(existingInstall = true))
+        assertEquals(Features.PickerLook.AURORA, Features.firstPickerLook(existingInstall = false))
+        assertEquals("unsaved default before init", Features.PickerLook.MIDNIGHT, Features.pickerLook.default)
+        val f = src("data/Features.kt")
+        assertTrue(f.contains("if (!p.contains(\"picker_look\")) pickerLook.value = firstPickerLook(FirstRun.isDone("))
+    }
+
+    @Test fun pickerTellsQaWhenItIsUp() {
+        // D144: QA reads the app's own mark, not the picker's colours.
+        val s = src("ui/ProfileSelect.kt")
+        assertTrue(s.contains("TestHooks.markScreen(markCtx, \"PICKER\")") && s.contains("TestHooks.markScreen(markCtx, \"HOME\")"))
+        assertTrue(src("ui/TestHooks.kt").contains("if (!enabled(context)) return"))
+    }
+
     @Test fun colourPresetsKeepASavedColour() {
         val s = src("ui/ProfileSelect.kt")
         assertTrue("a saved hue that is no preset is offered as it is", s.contains("else listOf(hue) + PickerGrid.PRESETS"))

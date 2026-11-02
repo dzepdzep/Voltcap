@@ -24,3 +24,6 @@ Changes since 0.6.65 (updates 438–444). Only items verified on a device (AYN O
 - AutoTDP in real gameplay (D124) and battery savings: not validated on hardware.
 - AYN Thor (dual screen): not tested for this release.
 - Twin window for a game without any artwork: not seen on a device (code path only).
+- Two-screen layouts (AYN Thor): with the normal second-screen dashboard opened from a two-screen layout, the "back to the layout" pill
+  sits in the bottom-left corner and can cover part of the dock (fixed for 0.6.67: a compact button in the header). Twin desk / Twin icons:
+  the D-pad does not move onto that dashboard (touch works; Pocket layouts reach it with the D-pad).

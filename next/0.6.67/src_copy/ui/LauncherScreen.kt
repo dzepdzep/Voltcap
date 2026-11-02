@@ -2355,6 +2355,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     menuStartCategory = e?.section ?: "Screens"; showMenu = true
                 },
                 onShortcut = dockShortcut,
+                // v0.6.67: the way back to a two-screen layout sits in the header row (it used to be a wide pill over the dock).
+                headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) {
+                    { TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout) }
+                } else null,
                 options = SecondScreenOptions(
                     artType = state.appearance.secondArtType,
                     artBlur = state.appearance.secondArtBlur,
@@ -2412,8 +2416,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     ) {
         Box(Modifier.fillMaxSize()) {
             SecondScreenContent()
-            // Update 180: the dashboard opened from a two-screen layout: the way back to the layout's bottom part.
-            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label, state.appearance.homeLayout)
+            // (Update 180's way back to the layout is in the dashboard's header now: SecondScreenHome(headerEnd = TwinBackButton).)
+            // (A look's own second screen shows instead of the dashboard: the same small button in its top corner.)
+            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard && !screensaverOn &&
+                LookSecondScreen.content != null && !(showDetails && state.appearance.secondDetails)
+            ) Box(Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp)) {
+                TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout)
+            }
         }
     }
     // The companion shows music, so keep it fresh while a second screen is up.
