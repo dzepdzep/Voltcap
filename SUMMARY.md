@@ -1,3 +1,35 @@
+# Update 459 (2 Nov 2026) — generated cartridge labels per platform on the existing shells (real codes only, FAN-MADE / HOMEBREW), RP Classic Settings category slide (NOT published)
+
+**Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. v0.6.66 frozen; staging only (next/0.6.67). D173 / D137 (KONKR), D124 (approval) untouched.
+**Shells kept:** the 458 shells / colours / moulded lettering / rotation / light are unchanged; only the printed sticker is new, and only for a cover
+(never over a real label scan, a user-picked label, a DS paper band, a Switch header or a frame). 458's grain, lighting change and sticker crop were
+taken back out (D174 note).
+**Labels (`ui/GeneratedLabels.kt`, new):** one design per platform — DMG / CGB (grey side strips, vertical ID left, region right, keyline), AGB (dark
+printed panel with the title, art at the right edge, code at the foot), N64 (black field, art on top, title + code, "PAL" for Europe), NES / SNES / VB /
+Atari (dark field), Famicom / cards (white paper), SFC (header band "SUPER FAMICOM" / "SUPER NINTENDO" by region), Mega Drive / Genesis / 32X /
+Game Gear (black with the console name band, no Sega logo), Master System (white grid). Cover always whole at its own aspect (unit-tested); a
+narrow cover on a wide sticker goes beside a printed title panel (title set as large as the panel takes). DS / 3DS / Switch keep their existing
+header / paper band.
+**IDs (`data/LabelIds.kt`, new):** codes only from the ROM header (GBA AGB-xxxx-REG, NDS NTR-, CGB-flagged GB/GBC DMG-/CGB-, N64 NUS-, Mega Drive
+GM serial); none invented (the 458 DS "productCode" removed). Hacks print FAN-MADE, homebrew / aftermarket / unl print HOMEBREW (their header code
+is never printed). No rating, licence or approval marks drawn (a cover's own printed marks stay — they are part of its art).
+**Moulded top (`ui/CartShells.kt` gbTopText):** gb / gbc_dual "Nintendo GAME BOY", gbc "GAME BOY COLOR" — no longer tied to the Cartridge backs
+setting; readable on the clear GBC shell.
+**Hardware (Inspect captures, `Claude outputs/qa459/`):** RP — Brown gb 0 / 35 / 90 (whole cover, BROWN VERSION readable, FAN-MADE), gbc, gbc_dual,
+Crystal Clear hack, Silver with its real header code DMG-AAXE-USA, Dr. Mario (USA), Contra Advance (AGB code), SFC ActRaiser. Thor — N64 007 TND hack,
+GBA Advance Wars 2 0 / 35 vs its real box, DS Zoo Tycoon, SNES / SFC Zelda hack. Sheet: qa459/evidence/labels_459.png.
+NOT checked on hardware: 3DS, Switch, PS Vita, NES / Famicom, Sega, Atari, the 14 CustomCarts shapes (the hook capture of 3DS missed its game and the
+US SNES shell id on the RP opened the box). These use the generic code path; their look is NOT verified.
+**Settings slide (`ui/SettingsDialog.kt` SettingsPageSlide):** the category content slides (next from the right, previous from the left, 260 ms
+FastOutSlowIn after an 80 ms hold for the new page's first frame); old page cannot take focus or touches while it leaves; per-category scroll +
+open subpage kept. RP Classic recording (touch on the chips): directional, no blank frame, chip row stays — but only ~3-4 visible steps per slide
+(31 % janky frames; the new page's first composition is slow). Thor (sidebar): smooth, 9 % janky. D-pad L1 / R1 key injection did not switch
+categories on the RP (keyevent 102/103) — controller path not recorded.
+**D175 performance re-measured (Thor GBA row, staging, 16 moves):** 7.3 % (first, cold) / 0.98 % / 1.21 % janky — same as the RC's ~1.6 %. D175 kept.
+**Tests:** Labels459Test (aspect kept and inside for every kind, platform mapping, header codes, FAN-MADE / HOMEBREW, regions, no invented code,
+moulded text without the backs setting, slide direction). testDebugUnitTest green on the 459 staging build.
+**RC restored** on both devices after testing (r457 set + r458 + placeholders); Thor hooks paused; views restored.
+
 # Update 458 (2 Nov 2026) — D175 GBA cartridge sides fixed (home + Inspect, Thor); D174 drawn Game Boy pak made closer to the real ones (RP Classic); D172 frame drops measured, still open (NOT published)
 
 **Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112. v0.6.66 frozen; staging only. D173 / D137 wait for the KONKR Pocket; D124 / AutoTDP untouched.

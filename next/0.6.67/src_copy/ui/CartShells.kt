@@ -635,91 +635,66 @@ internal object CartShells {
         if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
     }.getOrDefault(0xFFE9E6DF.toInt())
 
-    /** Update 458 (D174): the Game Boy Game Pak shells drawn like the photographed paks (full sticker, grain, softer light). */
-    private val GB_FAMILY = setOf("gb", "gbc_dual")
-
     /**
-     * Update 458 (D174): what's moulded in the Game Boy pak's top panel — "Nintendo" and "GAME BOY", or [brand]'s own name on
-     * another console's game (as the backs do, rebranded) — or null for Settings › Game look › Cartridge backs › Neutral.
+     * Update 458 / 459 (D174): what's moulded in a Game Boy pak's top panel — the shell's own branding, part of the plastic,
+     * whatever the Cartridge backs setting says (it only governs the backs): "Nintendo" + "GAME BOY" on the grey and the
+     * black dual-mode paks (the Game Boy's own case), "GAME BOY COLOR" on the clear Color-only pak (ConsoleMods, Identifying
+     * Fake Carts). Another console's game on these shells shows that console's name instead, as the backs do. Null: none.
+     * Returns the small leading word (or "") and the main word.
      */
-    internal fun gbTopText(brand: String): String? {
-        if (com.shelf.launcher.data.Features.cartBackStyle.state.value == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL) return null
+    internal fun gbTopText(shellId: String, brand: String): Pair<String, String>? {
         val gb = setOf("", com.shelf.launcher.data.ConsoleNames.display("GB"), com.shelf.launcher.data.ConsoleNames.display("GBC"))
-        return if (brand in gb) "GAME BOY" else brand.uppercase()
-    }
-
-    /**
-     * Update 458 (D174): the part of a [w] × [h] cover that fills a sticker [la] wide for 1 tall (left, top, right, bottom) — its whole
-     * width (or height) and the upper part kept: a box front's logo / title is near its top, its rating and blurb at its foot (pure).
-     */
-    internal fun stickerCrop(w: Int, h: Int, la: Float): IntArray {
-        val pa = w.toFloat() / h.coerceAtLeast(1)
-        return if (pa < la) {
-            val ch = (w / la).toInt().coerceIn(1, h)
-            val top = ((h - ch) * 0.12f).toInt().coerceIn(0, h - ch)
-            intArrayOf(0, top, w, top + ch)
-        } else {
-            val cw = (h * la).toInt().coerceIn(1, w)
-            intArrayOf((w - cw) / 2, 0, (w - cw) / 2 + cw, h)
+        return when (shellId) {
+            "gb", "gbc_dual" -> if (brand in gb) "Nintendo" to "GAME BOY" else "" to brand.uppercase()
+            "gbc" -> if (brand in gb) "" to "GAME BOY COLOR" else "" to brand.uppercase()
+            else -> null
         }
     }
 
-    /** Update 458 (D174): raised moulded lettering in the pak's top panel [r] — "Nintendo" small, then [name] bold italic, ™. */
-    private fun mouldedTop(c: Canvas, name: String, r: RectF, k: Float, base: Int, op: Float) {
+    /**
+     * Update 458 / 459 (D174): raised moulded lettering in the pak's top panel [r]: "Nintendo" in a heavy face, the main
+     * word thinner and slanted, ™ smallest and thinnest, all on one baseline (ConsoleMods: "The GAME BOY text should be
+     * thinner than the Nintendo logo and somewhat italicized. The trademark symbol should be the smallest and thinnest.
+     * All of these should be aligned at the bottom.")
+     */
+    private fun mouldedTop(c: Canvas, text: Pair<String, String>, r: RectF, k: Float, base: Int, op: Float) {
+        val (lead, name) = text
         val big = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD_ITALIC)
-            textSize = 4.6f * k; letterSpacing = 0.01f
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.ITALIC)
+            textSize = 4.3f * k; letterSpacing = 0.03f
         }
         val small = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-            textSize = 2.9f * k
+            textSize = 3.5f * k; isFakeBoldText = true
         }
-        val tm = android.text.TextPaint(small).apply { textSize = 1.5f * k }
-        val n = "Nintendo"
-        val gap = 1.2f * k
-        var wN = small.measureText(n); var wB = big.measureText(name); val wT = tm.measureText("™")
-        // (A long console name: smaller, so the line stays inside the panel.)
-        val room = r.width() * 0.84f
+        val tm = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+            textSize = 1.4f * k
+        }
+        val gap = if (lead.isEmpty()) 0f else 1.4f * k
+        var wN = if (lead.isEmpty()) 0f else small.measureText(lead); var wB = big.measureText(name); var wT = tm.measureText("™")
+        val room = r.width() * 0.86f
         val total = wN + gap + wB + wT
-        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; wN *= f; wB *= f }
+        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; tm.textSize *= f; wN *= f; wB *= f; wT *= f }
         val x0 = r.centerX() - (wN + gap + wB + wT) / 2f
-        val by = r.centerY() - (big.descent() + big.ascent()) / 2f
+        // (One baseline for all three, the line's middle on the panel's.)
+        val by = r.centerY() + (big.textSize * 0.36f)
         val off = maxOf(0.16f * k, 0.6f)
         val a = maxOf(op, 0.7f)
         fun pass(dy: Float, argb: Int) {
             small.color = argb; big.color = argb; tm.color = argb
-            c.drawText(n, x0, by + dy, small)
+            if (lead.isNotEmpty()) c.drawText(lead, x0, by + dy, small)
             c.drawText(name, x0 + wN + gap, by + dy, big)
-            c.drawText("™", x0 + wN + gap + wB, by + dy - big.textSize * 0.45f, tm)
+            c.drawText("™", x0 + wN + gap + wB, by + dy, tm)
         }
         // Raised: lit above, in shadow below, the face of the letters a touch lighter than the panel's floor.
+        // (On the clear pak the plastic is pale: the letters' faces a little darker than it, so they read as moulded.)
+        val clear = op < 0.85f
         pass(-off, withAlpha(shade(base, 0.38f), a * 0.9f))
-        pass(off, withAlpha(shade(base, -0.5f), a * 0.9f))
-        pass(0f, withAlpha(shade(base, 0.02f), a))
+        pass(off, withAlpha(shade(base, if (clear) -0.6f else -0.5f), a * 0.9f))
+        pass(0f, withAlpha(shade(base, if (clear) -0.22f else 0.02f), a))
     }
 
-    /** Update 458 (D174): a fine moulded grain over the plastic — tiny light and dark specks, very faint (seeded: always the same). */
-    private fun grain(c: Canvas, bw: Int, bh: Int, k: Float, p: Paint) {
-        val tile = grainTile ?: run {
-            val n = 96
-            val px = IntArray(n * n)
-            val rnd = java.util.Random(458L)
-            for (i in px.indices) {
-                val v = rnd.nextGaussian().toFloat()
-                val a = (kotlin.math.abs(v) * 10f).toInt().coerceIn(0, 40)
-                px[i] = (a shl 24) or (if (v > 0f) 0xFFFFFF else 0x000000)
-            }
-            Bitmap.createBitmap(px, n, n, Bitmap.Config.ARGB_8888).also { grainTile = it }
-        }
-        val sh = android.graphics.BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-        // (One speck about 0.12 mm — fine as the real plastic's, at any size drawn.)
-        val sc = (0.12f * k).coerceAtLeast(1f)
-        sh.setLocalMatrix(android.graphics.Matrix().apply { setScale(sc, sc) })
-        p.shader = sh
-        c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p)
-        p.shader = null
-    }
-    @Volatile private var grainTile: Bitmap? = null
 
     private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
         val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
@@ -909,9 +884,12 @@ internal object CartShells {
         val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
         val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
         val head = plaque ?: switchHeader ?: paperHead
-        // (Update 458: the moulded "GAME BOY" in the top panel follows Settings › Game look › Cartridge backs — gbTopText.)
-        val mould = if (s.id == "gb") gbTopText(brand) else null
-        val key = "f10|${mould ?: ""}|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 458 / 459: the moulded branding in a Game Boy pak's top panel — gbTopText; the printed label's facts —
+        // LabelIds: the real product code from the ROM header, or that it's fan-made / homebrew, and the region.)
+        val mould = gbTopText(s.id, brand)
+        val ids = if (!scan) com.shelf.launcher.data.LabelIds.of(title) else null
+        val labelKind = if (!scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
+        val key = "f11|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -938,9 +916,6 @@ internal object CartShells {
         }
         // (Update 210: a metallic-looking plastic's sheen and a glittering one's speckles — ShellMaterials.)
         finish(c, s, colour, k, bw, bh, p, front = true)
-        // Update 458 (D174, owner: the drawn Pokémon Brown pak looked artificial next to the photographed paks): the Game Boy
-        // paks' plastic has a fine moulded grain — the photos show it, the drawn plastic was perfectly smooth.
-        if (s.id in GB_FAMILY && op >= 0.85f) grain(c, bw, bh, k, p)
         // The rim: the moulded edge, a touch darker, lit along the top.
         p.style = Paint.Style.STROKE
         p.strokeWidth = 1.4f * k
@@ -971,7 +946,8 @@ internal object CartShells {
             }
         }
         for (e in s.extras) drawExtra(c, e, k, base, p)
-        // Update 458 (D174): the real pak's top panel has "Nintendo GAME BOY™" moulded in it; the drawn one was empty.
+        // Update 458 / 459 (D174): the real pak's top panel has its branding moulded in it ("Nintendo GAME BOY™"; "GAME BOY
+        // COLOR" on the clear pak); the drawn one was empty.
         if (mould != null) s.extras.firstOrNull { it.kind == ShellExtra.RECESS }?.let { e -> mouldedTop(c, mould, RectF(e.x * k, e.y * k, (e.x + e.w) * k, (e.y + e.h) * k), k, base, op) }
         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
@@ -983,10 +959,9 @@ internal object CartShells {
         val coverPic = if (art != null && !scan) labelArt(s, art) else null
         // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
         // (Update 307: a pack plaque header runs across the whole sticker too.)
-        // (Update 458, D174: a Game Boy pak's sticker always fills its recess, as a real one does — its width followed the
-        // cover's shape, the plastic showing either side like a sticker that didn't fit; the cover is cut to it, below.)
-        val fullSticker = s.id in GB_FAMILY
-        val lr = if (head != null || frame != null || fullSticker) lr0 else coverPic?.let { pic ->
+        // (Update 459, D174: a generated label — GeneratedLabels — is always the real sticker's full size and shape: its width
+        // used to follow the cover's, the plastic showing either side like a sticker that didn't fit.)
+        val lr = if (head != null || frame != null || labelKind != null) lr0 else coverPic?.let { pic ->
             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
@@ -1058,22 +1033,24 @@ internal object CartShells {
                         p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                     }
                     // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
-                    // the left of the band under the art, past the cut corner — see productCode.)
+                    // the left of the band under the art, past the cut corner. Update 459: only a true one — the ROM header's
+                    // code, or FAN-MADE / HOMEBREW (LabelIds); the made-up NTR-codes from the title are gone.)
                     val bandH = lr.bottom - artRect.bottom
-                    if (bandH > 0.8f * k) {
+                    val idText = GeneratedLabels.idLine(ids)
+                    if (bandH > 0.8f * k && idText != null) {
                         val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f
                             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
                         }
                         val by = lr.bottom - bandH / 2f - (tp.ascent() + tp.descent()) / 2f
-                        c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
+                        c.drawText(idText, lr.left + 3.0f * k, by, tp)
                     }
                 } else {
-                    // (Update 458, D174: on a Game Boy pak the cover fills the sticker — cut to its shape, its upper part kept
-                    // (title and logo; a box front's rating and blurb at the foot drop off) — instead of fitted inside it with
-                    // the colour sampled off its edge round it.)
-                    if (fullSticker) {
-                        stickerCrop(pic.width, pic.height, la).let { q -> c.drawBitmap(pic, android.graphics.Rect(q[0], q[1], q[2], q[3]), artRect, p) }
+                    // (Update 459, D174: a generated label — the real sticker printed for this console, the cover whole at its
+                    // own proportions in it (GeneratedLabels); it was cut to fill, which lost "BROWN VERSION" at its foot.)
+                    if (labelKind != null) {
+                        val printed = GeneratedLabels.compose(labelKind, pic, artRect.width().toInt(), artRect.height().toInt(), k, ids, title, brand)
+                        c.drawBitmap(printed, null, artRect, p)
                     } else {
                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
@@ -1102,16 +1079,13 @@ internal object CartShells {
         // Update 422: the moulded shell lit like the photographed ones — a broad soft light from the upper left over the
         // plastic and the sticker, falling off to the lower right; a rounded bevel along the edge (lit top / left, shaded
         // bottom / right) instead of one flat outline. Drawn in the shell's own outline, so nothing spills outside it.
-        // (Update 458, D174: softer on the Game Boy paks — next to the photos the spot of light and the dark corner read as
-        // rendered; the photographed plastic is lit almost evenly, a little darker toward the foot.)
-        val litK = if (s.id in GB_FAMILY) 0.5f else 1f
         p.shader = android.graphics.RadialGradient(bw * 0.22f, bh * 0.12f, maxOf(bw, bh) * 0.95f,
-            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f * litK), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f * litK)),
+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f)),
             floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p); p.shader = null
         p.style = Paint.Style.STROKE; p.strokeWidth = 2.2f * k
         p.shader = LinearGradient(0f, 0f, bw.toFloat(), bh.toFloat(),
-            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f * (0.4f + 0.6f * litK)), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f * (0.4f + 0.6f * litK))),
+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f)),
             floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
         c.drawPath(path, p); p.shader = null; p.style = Paint.Style.FILL
         c.restore()
@@ -1265,27 +1239,6 @@ internal object CartShells {
         return b
     }
 
-    /**
-     * Update 325: the product code a DS / 3DS sticker prints along its bottom ("NTR-ADME-USA", "CTR-P-ADME") — made up
-     * for the game, the same every time: "A", two letters from its title's first words, the region's letter (your case
-     * region: E North America, P Europe, J Japan). The drawing has no ROM file to read the real code from.
-     */
-    private fun productCode(id: String, title: String): String {
-        val region = com.shelf.launcher.data.Features.caseRegion.state.value.code
-        val letter = when (region) { "EU" -> 'P'; "JP" -> 'J'; else -> 'E' }
-        val skip = setOf("THE", "A", "AN", "OF", "AND", "DS", "3D")
-        val words = title.uppercase().split(Regex("[^A-Z]+")).filter { it.isNotEmpty() && it !in skip }
-        val h = kotlin.math.abs(title.hashCode())
-        val fill = "ABCDEFGHJKLMNPRSTUVWXYZ"
-        val two = buildString {
-            words.take(2).forEach { append(it[0]) }
-            if (length < 2 && words.isNotEmpty() && words[0].length > 1) append(words[0][1])
-            var i = 0
-            while (length < 2) { append(fill[(h / (i * 7 + 1)) % fill.length]); i++ }
-        }
-        val code = "A$two$letter"
-        return if (id == "3ds") "CTR-P-$code" else "NTR-$code-" + when (region) { "EU" -> "EUR"; "JP" -> "JPN"; else -> "USA" }
-    }
 
     /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
     private fun paperStrip(brand: String): Bitmap {
@@ -1712,16 +1665,18 @@ internal fun CartShellArt(
         // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
         // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
         // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
-        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
+        // (Update 459: drawn again once the library's label facts are read — LabelIds: a real code / FAN-MADE on the sticker.)
+        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
+        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan|$labelsV"
         val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
         val prior = madeFront.value
-        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
+        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
             if (shell == null) null else runCatching {
                 CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan)
                     ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan) else null
             }.getOrNull()
         }
-        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
+        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
             if (shell == null) { madeFront.value = null; return@LaunchedEffect }
             if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {

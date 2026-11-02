@@ -1,7 +1,7 @@
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,26 +55,3 @@
+@@ -55,29 +55,3 @@
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -28,6 +28,9 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
+-/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
+-/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
+-/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 index c29e9a0..4acd436 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
@@ -642,6 +645,140 @@ index ae616d0..7f84091 100644
          worker.execute {
              runCatching {
                  // On a handheld with a root service: the permission for good, once (no other app needed).
+diff --git a/app/src/main/java/com/shelf/launcher/data/LabelIds.kt b/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
+new file mode 100644
+index 0000000..eead7ba
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
+@@ -0,0 +1,128 @@
++package com.shelf.launcher.data
++
++/**
++ * Update 459: what a generated cartridge label may print to identify a game — never an invented catalogue number.
++ *
++ * - [Id.code]: the real product code, read from the ROM's own header where the format keeps one (Game Boy Advance
++ *   "AGB-AXVE-USA", Nintendo DS "NTR-…", Nintendo 64 "NUS-NSME-USA", newer Game Boy / Color games "CGB-AAUE-USA",
++ *   Mega Drive / Genesis "GM 00001009-00"). Null when the header has none (most original Game Boy, NES, SNES games).
++ * - [Id.unofficial]: "FAN-MADE" for a ROM hack, "HOMEBREW" for homebrew / aftermarket / unlicensed releases — printed
++ *   instead of any code (a hack's header still carries its base game's code, which would claim to be that product).
++ * - [Id.region]: "USA" / "EUR" / "JPN" from the file's region tag (or the header), null when unknown.
++ *
++ * Read once per session in the background ([index]); a label made before its header was read is made again
++ * ([version]). Nothing is written anywhere.
++ */
++object LabelIds {
++    data class Id(val code: String?, val unofficial: String?, val region: String?)
++
++    private val map = java.util.concurrent.ConcurrentHashMap<String, Id>()
++    /** Bumped when header codes come in, so generated labels are drawn again with them. */
++    val version = androidx.compose.runtime.mutableIntStateOf(0)
++    @Volatile private var indexedFor = 0
++
++    private val NON = Regex("[^a-z0-9]+")
++    private fun norm(s: String): String = NON.replace(s.lowercase(), "")
++
++    /** The label facts for a game shown as [title] (its display name or raw name), or null when unknown. */
++    fun of(title: String?): Id? = title?.let { map[norm(it)] ?: map[norm(com.shelf.launcher.ui.gameDisplayName(it))] }
++
++    private val HOMEBREW = Regex("""[(\[](homebrew|aftermarket|unl|unlicensed|pd|public domain)[)\]]""", RegexOption.IGNORE_CASE)
++
++    /** Hack / homebrew tag for a game called [name] from file [path] (pure). */
++    fun unofficialOf(name: String, path: String?): String? = when {
++        RomHacks.isModified(name, path) -> "FAN-MADE"
++        HOMEBREW.containsMatchIn(name) || (path != null && HOMEBREW.containsMatchIn(path.substringAfterLast('/'))) -> "HOMEBREW"
++        else -> null
++    }
++
++    /** Region from No-Intro style tags in a name or file name (pure). */
++    fun regionOf(name: String): String? {
++        val tags = Regex("""\(([^)]*)\)""").findAll(name).map { it.groupValues[1].lowercase() }.toList()
++        for (t in tags) {
++            val parts = t.split(',').map { it.trim() }
++            if ("usa" in parts || "us" in parts) return "USA"
++            if ("europe" in parts || "eu" in parts || "germany" in parts || "france" in parts || "uk" in parts || "spain" in parts || "italy" in parts) return "EUR"
++            if ("japan" in parts || "jp" in parts) return "JPN"
++            if ("world" in parts) return "USA"
++        }
++        return null
++    }
++
++    /** Region letter in Nintendo product codes (the code's last character) → its suffix; null when unknown (pure). */
++    fun nintendoRegion(letter: Char): String? = when (letter) {
++        'E' -> "USA"; 'P' -> "EUR"; 'J' -> "JPN"; 'D' -> "NOE"; 'F' -> "FRA"; 'S' -> "ESP"; 'I' -> "ITA"; 'U' -> "AUS"; 'K' -> "KOR"
++        else -> null
++    }
++
++    private fun alnum4(b: ByteArray, at: Int): String? {
++        if (at + 4 > b.size) return null
++        val s = String(b, at, 4, Charsets.US_ASCII)
++        return s.takeIf { it.all { c -> c in 'A'..'Z' || c in '0'..'9' } }
++    }
++
++    /**
++     * The product code in a ROM [head] (its first 512 bytes at least) for file extension [ext], or null (pure — unit-tested).
++     */
++    fun codeFromHeader(ext: String, head: ByteArray): String? = runCatching {
++        when (ext.lowercase()) {
++            "gba" -> alnum4(head, 0xAC)?.let { c -> "AGB-$c-" + (nintendoRegion(c[3]) ?: return@runCatching null) }
++            "nds" -> alnum4(head, 0x0C)?.let { c -> "NTR-$c-" + (nintendoRegion(c[3]) ?: return@runCatching null) }
++            "gb", "gbc" -> {
++                if (head.size < 0x150) return@runCatching null
++                val cgb = head[0x143].toInt() and 0xFF
++                if (cgb != 0x80 && cgb != 0xC0) return@runCatching null
++                alnum4(head, 0x13F)?.let { c -> (if (cgb == 0xC0) "CGB-" else "DMG-") + c + "-" + (nintendoRegion(c[3]) ?: return@runCatching null) }
++            }
++            "z64", "n64", "v64" -> {
++                if (head.size < 0x40) return@runCatching null
++                val b = when {
++                    head[0] == 0x80.toByte() && head[1] == 0x37.toByte() -> head
++                    head[0] == 0x37.toByte() && head[1] == 0x80.toByte() -> ByteArray(head.size) { i -> head[i xor 1] }
++                    head[0] == 0x40.toByte() && head[3] == 0x80.toByte() -> ByteArray(head.size) { i -> head[(i and 3.inv()) + 3 - (i and 3)] }
++                    else -> return@runCatching null
++                }
++                val s = String(b, 0x3B, 4, Charsets.US_ASCII)
++                if (!s.all { it in 'A'..'Z' || it in '0'..'9' }) return@runCatching null
++                "NUS-$s-" + (nintendoRegion(s[3]) ?: return@runCatching null)
++            }
++            "md", "gen", "bin" -> {
++                if (head.size < 0x18E || String(head, 0x100, 4, Charsets.US_ASCII) != "SEGA") return@runCatching null
++                String(head, 0x180, 14, Charsets.US_ASCII).trim().takeIf { it.length >= 6 && it.startsWith("GM") && it.any { c -> c.isDigit() } }
++            }
++            else -> null
++        }
++    }.getOrNull()
++
++    /** Reads what the labels need for [games], once per library, in the background. */
++    suspend fun index(games: List<Game>) {
++        val tag = games.size * 31 + (games.firstOrNull()?.romPath?.hashCode() ?: 0)
++        if (tag == indexedFor) return
++        indexedFor = tag
++        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
++            for (g in games) {
++                if (g.sourceType != SourceType.ROM) continue
++                val path = g.romPath
++                val un = unofficialOf(g.name, path)
++                val region = regionOf(path?.substringAfterLast('/') ?: g.name) ?: regionOf(g.name)
++                val ext = path?.substringAfterLast('.', "")?.lowercase().orEmpty()
++                val code = if (un != null || path == null || ext !in HEADER_EXT) null else readHead(path)?.let { codeFromHeader(ext, it) }
++                val id = Id(code, un, region ?: code?.substringAfterLast('-')?.takeIf { it.length == 3 })
++                if (id.code != null || id.unofficial != null || id.region != null) {
++                    map[norm(g.name)] = id
++                    map[norm(com.shelf.launcher.ui.gameDisplayName(g.name))] = id
++                }
++            }
++            // (Once, at the end: each bump makes the cartridges on screen draw their fronts again.)
++            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { version.intValue++ }
++        }
++    }
++
++    private val HEADER_EXT = setOf("gba", "nds", "gb", "gbc", "z64", "n64", "v64", "md", "gen", "bin")
++
++    private fun readHead(path: String): ByteArray? = runCatching {
++        val f = java.io.File(path)
++        if (!f.isFile || f.length() < 0x200) return@runCatching null
++        java.io.RandomAccessFile(f, "r").use { r -> ByteArray(0x200).also { r.readFully(it) } }
++    }.getOrNull()
++}
 diff --git a/app/src/main/java/com/shelf/launcher/data/LibraryAppsStore.kt b/app/src/main/java/com/shelf/launcher/data/LibraryAppsStore.kt
 index e27ce09..56e53ad 100644
 --- a/app/src/main/java/com/shelf/launcher/data/LibraryAppsStore.kt
@@ -1153,153 +1290,137 @@ index 78873e0..d56e485 100644
              lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
          )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..9def146 100644
+index fad25ce..82c5687 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-@@ -635,6 +635,92 @@ internal object CartShells {
+@@ -635,6 +635,67 @@ internal object CartShells {
          if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
      }.getOrDefault(0xFFE9E6DF.toInt())
  
-+    /** Update 458 (D174): the Game Boy Game Pak shells drawn like the photographed paks (full sticker, grain, softer light). */
-+    private val GB_FAMILY = setOf("gb", "gbc_dual")
-+
 +    /**
-+     * Update 458 (D174): what's moulded in the Game Boy pak's top panel — "Nintendo" and "GAME BOY", or [brand]'s own name on
-+     * another console's game (as the backs do, rebranded) — or null for Settings › Game look › Cartridge backs › Neutral.
++     * Update 458 / 459 (D174): what's moulded in a Game Boy pak's top panel — the shell's own branding, part of the plastic,
++     * whatever the Cartridge backs setting says (it only governs the backs): "Nintendo" + "GAME BOY" on the grey and the
++     * black dual-mode paks (the Game Boy's own case), "GAME BOY COLOR" on the clear Color-only pak (ConsoleMods, Identifying
++     * Fake Carts). Another console's game on these shells shows that console's name instead, as the backs do. Null: none.
++     * Returns the small leading word (or "") and the main word.
 +     */
-+    internal fun gbTopText(brand: String): String? {
-+        if (com.shelf.launcher.data.Features.cartBackStyle.state.value == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL) return null
++    internal fun gbTopText(shellId: String, brand: String): Pair<String, String>? {
 +        val gb = setOf("", com.shelf.launcher.data.ConsoleNames.display("GB"), com.shelf.launcher.data.ConsoleNames.display("GBC"))
-+        return if (brand in gb) "GAME BOY" else brand.uppercase()
-+    }
-+
-+    /**
-+     * Update 458 (D174): the part of a [w] × [h] cover that fills a sticker [la] wide for 1 tall (left, top, right, bottom) — its whole
-+     * width (or height) and the upper part kept: a box front's logo / title is near its top, its rating and blurb at its foot (pure).
-+     */
-+    internal fun stickerCrop(w: Int, h: Int, la: Float): IntArray {
-+        val pa = w.toFloat() / h.coerceAtLeast(1)
-+        return if (pa < la) {
-+            val ch = (w / la).toInt().coerceIn(1, h)
-+            val top = ((h - ch) * 0.12f).toInt().coerceIn(0, h - ch)
-+            intArrayOf(0, top, w, top + ch)
-+        } else {
-+            val cw = (h * la).toInt().coerceIn(1, w)
-+            intArrayOf((w - cw) / 2, 0, (w - cw) / 2 + cw, h)
++        return when (shellId) {
++            "gb", "gbc_dual" -> if (brand in gb) "Nintendo" to "GAME BOY" else "" to brand.uppercase()
++            "gbc" -> if (brand in gb) "" to "GAME BOY COLOR" else "" to brand.uppercase()
++            else -> null
 +        }
 +    }
 +
-+    /** Update 458 (D174): raised moulded lettering in the pak's top panel [r] — "Nintendo" small, then [name] bold italic, ™. */
-+    private fun mouldedTop(c: Canvas, name: String, r: RectF, k: Float, base: Int, op: Float) {
++    /**
++     * Update 458 / 459 (D174): raised moulded lettering in the pak's top panel [r]: "Nintendo" in a heavy face, the main
++     * word thinner and slanted, ™ smallest and thinnest, all on one baseline (ConsoleMods: "The GAME BOY text should be
++     * thinner than the Nintendo logo and somewhat italicized. The trademark symbol should be the smallest and thinnest.
++     * All of these should be aligned at the bottom.")
++     */
++    private fun mouldedTop(c: Canvas, text: Pair<String, String>, r: RectF, k: Float, base: Int, op: Float) {
++        val (lead, name) = text
 +        val big = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD_ITALIC)
-+            textSize = 4.6f * k; letterSpacing = 0.01f
++            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.ITALIC)
++            textSize = 4.3f * k; letterSpacing = 0.03f
 +        }
 +        val small = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
 +            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
-+            textSize = 2.9f * k
++            textSize = 3.5f * k; isFakeBoldText = true
 +        }
-+        val tm = android.text.TextPaint(small).apply { textSize = 1.5f * k }
-+        val n = "Nintendo"
-+        val gap = 1.2f * k
-+        var wN = small.measureText(n); var wB = big.measureText(name); val wT = tm.measureText("™")
-+        // (A long console name: smaller, so the line stays inside the panel.)
-+        val room = r.width() * 0.84f
++        val tm = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
++            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
++            textSize = 1.4f * k
++        }
++        val gap = if (lead.isEmpty()) 0f else 1.4f * k
++        var wN = if (lead.isEmpty()) 0f else small.measureText(lead); var wB = big.measureText(name); var wT = tm.measureText("™")
++        val room = r.width() * 0.86f
 +        val total = wN + gap + wB + wT
-+        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; wN *= f; wB *= f }
++        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; tm.textSize *= f; wN *= f; wB *= f; wT *= f }
 +        val x0 = r.centerX() - (wN + gap + wB + wT) / 2f
-+        val by = r.centerY() - (big.descent() + big.ascent()) / 2f
++        // (One baseline for all three, the line's middle on the panel's.)
++        val by = r.centerY() + (big.textSize * 0.36f)
 +        val off = maxOf(0.16f * k, 0.6f)
 +        val a = maxOf(op, 0.7f)
 +        fun pass(dy: Float, argb: Int) {
 +            small.color = argb; big.color = argb; tm.color = argb
-+            c.drawText(n, x0, by + dy, small)
++            if (lead.isNotEmpty()) c.drawText(lead, x0, by + dy, small)
 +            c.drawText(name, x0 + wN + gap, by + dy, big)
-+            c.drawText("™", x0 + wN + gap + wB, by + dy - big.textSize * 0.45f, tm)
++            c.drawText("™", x0 + wN + gap + wB, by + dy, tm)
 +        }
 +        // Raised: lit above, in shadow below, the face of the letters a touch lighter than the panel's floor.
++        // (On the clear pak the plastic is pale: the letters' faces a little darker than it, so they read as moulded.)
++        val clear = op < 0.85f
 +        pass(-off, withAlpha(shade(base, 0.38f), a * 0.9f))
-+        pass(off, withAlpha(shade(base, -0.5f), a * 0.9f))
-+        pass(0f, withAlpha(shade(base, 0.02f), a))
++        pass(off, withAlpha(shade(base, if (clear) -0.6f else -0.5f), a * 0.9f))
++        pass(0f, withAlpha(shade(base, if (clear) -0.22f else 0.02f), a))
 +    }
 +
-+    /** Update 458 (D174): a fine moulded grain over the plastic — tiny light and dark specks, very faint (seeded: always the same). */
-+    private fun grain(c: Canvas, bw: Int, bh: Int, k: Float, p: Paint) {
-+        val tile = grainTile ?: run {
-+            val n = 96
-+            val px = IntArray(n * n)
-+            val rnd = java.util.Random(458L)
-+            for (i in px.indices) {
-+                val v = rnd.nextGaussian().toFloat()
-+                val a = (kotlin.math.abs(v) * 10f).toInt().coerceIn(0, 40)
-+                px[i] = (a shl 24) or (if (v > 0f) 0xFFFFFF else 0x000000)
-+            }
-+            Bitmap.createBitmap(px, n, n, Bitmap.Config.ARGB_8888).also { grainTile = it }
-+        }
-+        val sh = android.graphics.BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-+        // (One speck about 0.12 mm — fine as the real plastic's, at any size drawn.)
-+        val sc = (0.12f * k).coerceAtLeast(1f)
-+        sh.setLocalMatrix(android.graphics.Matrix().apply { setScale(sc, sc) })
-+        p.shader = sh
-+        c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p)
-+        p.shader = null
-+    }
-+    @Volatile private var grainTile: Bitmap? = null
 +
      private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
          val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
          val a = art.width.toFloat() / art.height.coerceAtLeast(1)
-@@ -823,7 +909,9 @@ internal object CartShells {
+@@ -823,7 +884,12 @@ internal object CartShells {
          val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
          val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
          val head = plaque ?: switchHeader ?: paperHead
 -        val key = "f9|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
-+        // (Update 458: the moulded "GAME BOY" in the top panel follows Settings › Game look › Cartridge backs — gbTopText.)
-+        val mould = if (s.id == "gb") gbTopText(brand) else null
-+        val key = "f10|${mould ?: ""}|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
++        // (Update 458 / 459: the moulded branding in a Game Boy pak's top panel — gbTopText; the printed label's facts —
++        // LabelIds: the real product code from the ROM header, or that it's fan-made / homebrew, and the region.)
++        val mould = gbTopText(s.id, brand)
++        val ids = if (!scan) com.shelf.launcher.data.LabelIds.of(title) else null
++        val labelKind = if (!scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
++        val key = "f11|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
          cache.get(key)?.let { return it }
          if (peek) return null
          val k = maxPx / maxOf(s.w, s.h)
-@@ -850,6 +938,9 @@ internal object CartShells {
-         }
-         // (Update 210: a metallic-looking plastic's sheen and a glittering one's speckles — ShellMaterials.)
-         finish(c, s, colour, k, bw, bh, p, front = true)
-+        // Update 458 (D174, owner: the drawn Pokémon Brown pak looked artificial next to the photographed paks): the Game Boy
-+        // paks' plastic has a fine moulded grain — the photos show it, the drawn plastic was perfectly smooth.
-+        if (s.id in GB_FAMILY && op >= 0.85f) grain(c, bw, bh, k, p)
-         // The rim: the moulded edge, a touch darker, lit along the top.
-         p.style = Paint.Style.STROKE
-         p.strokeWidth = 1.4f * k
-@@ -880,6 +971,8 @@ internal object CartShells {
+@@ -880,6 +946,9 @@ internal object CartShells {
              }
          }
          for (e in s.extras) drawExtra(c, e, k, base, p)
-+        // Update 458 (D174): the real pak's top panel has "Nintendo GAME BOY™" moulded in it; the drawn one was empty.
++        // Update 458 / 459 (D174): the real pak's top panel has its branding moulded in it ("Nintendo GAME BOY™"; "GAME BOY
++        // COLOR" on the clear pak); the drawn one was empty.
 +        if (mould != null) s.extras.firstOrNull { it.kind == ShellExtra.RECESS }?.let { e -> mouldedTop(c, mould, RectF(e.x * k, e.y * k, (e.x + e.w) * k, (e.y + e.h) * k), k, base, op) }
          s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
          // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
          val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-@@ -890,7 +983,10 @@ internal object CartShells {
+@@ -890,7 +959,9 @@ internal object CartShells {
          val coverPic = if (art != null && !scan) labelArt(s, art) else null
          // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
          // (Update 307: a pack plaque header runs across the whole sticker too.)
 -        val lr = if (head != null || frame != null) lr0 else coverPic?.let { pic ->
-+        // (Update 458, D174: a Game Boy pak's sticker always fills its recess, as a real one does — its width followed the
-+        // cover's shape, the plastic showing either side like a sticker that didn't fit; the cover is cut to it, below.)
-+        val fullSticker = s.id in GB_FAMILY
-+        val lr = if (head != null || frame != null || fullSticker) lr0 else coverPic?.let { pic ->
++        // (Update 459, D174: a generated label — GeneratedLabels — is always the real sticker's full size and shape: its width
++        // used to follow the cover's, the plastic showing either side like a sticker that didn't fit.)
++        val lr = if (head != null || frame != null || labelKind != null) lr0 else coverPic?.let { pic ->
              val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
              val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
              if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
-@@ -973,10 +1069,17 @@ internal object CartShells {
-                         c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
+@@ -962,21 +1033,30 @@ internal object CartShells {
+                         p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
+                     }
+                     // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
+-                    // the left of the band under the art, past the cut corner — see productCode.)
++                    // the left of the band under the art, past the cut corner. Update 459: only a true one — the ROM header's
++                    // code, or FAN-MADE / HOMEBREW (LabelIds); the made-up NTR-codes from the title are gone.)
+                     val bandH = lr.bottom - artRect.bottom
+-                    if (bandH > 0.8f * k) {
++                    val idText = GeneratedLabels.idLine(ids)
++                    if (bandH > 0.8f * k && idText != null) {
+                         val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                             color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f
+                             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+                         }
+                         val by = lr.bottom - bandH / 2f - (tp.ascent() + tp.descent()) / 2f
+-                        c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
++                        c.drawText(idText, lr.left + 3.0f * k, by, tp)
                      }
                  } else {
-+                    // (Update 458, D174: on a Game Boy pak the cover fills the sticker — cut to its shape, its upper part kept
-+                    // (title and logo; a box front's rating and blurb at the foot drop off) — instead of fitted inside it with
-+                    // the colour sampled off its edge round it.)
-+                    if (fullSticker) {
-+                        stickerCrop(pic.width, pic.height, la).let { q -> c.drawBitmap(pic, android.graphics.Rect(q[0], q[1], q[2], q[3]), artRect, p) }
++                    // (Update 459, D174: a generated label — the real sticker printed for this console, the cover whole at its
++                    // own proportions in it (GeneratedLabels); it was cut to fill, which lost "BROWN VERSION" at its foot.)
++                    if (labelKind != null) {
++                        val printed = GeneratedLabels.compose(labelKind, pic, artRect.width().toInt(), artRect.height().toInt(), k, ids, title, brand)
++                        c.drawBitmap(printed, null, artRect, p)
 +                    } else {
                      val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                          else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
@@ -1309,25 +1430,56 @@ index fad25ce..9def146 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -999,13 +1102,16 @@ internal object CartShells {
-         // Update 422: the moulded shell lit like the photographed ones — a broad soft light from the upper left over the
-         // plastic and the sticker, falling off to the lower right; a rounded bevel along the edge (lit top / left, shaded
-         // bottom / right) instead of one flat outline. Drawn in the shell's own outline, so nothing spills outside it.
-+        // (Update 458, D174: softer on the Game Boy paks — next to the photos the spot of light and the dark corner read as
-+        // rendered; the photographed plastic is lit almost evenly, a little darker toward the foot.)
-+        val litK = if (s.id in GB_FAMILY) 0.5f else 1f
-         p.shader = android.graphics.RadialGradient(bw * 0.22f, bh * 0.12f, maxOf(bw, bh) * 0.95f,
--            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f)),
-+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f * litK), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f * litK)),
-             floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
-         c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p); p.shader = null
-         p.style = Paint.Style.STROKE; p.strokeWidth = 2.2f * k
-         p.shader = LinearGradient(0f, 0f, bw.toFloat(), bh.toFloat(),
--            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f)),
-+            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f * (0.4f + 0.6f * litK)), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f * (0.4f + 0.6f * litK))),
-             floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
-         c.drawPath(path, p); p.shader = null; p.style = Paint.Style.FILL
-         c.restore()
+@@ -1159,27 +1239,6 @@ internal object CartShells {
+         return b
+     }
+ 
+-    /**
+-     * Update 325: the product code a DS / 3DS sticker prints along its bottom ("NTR-ADME-USA", "CTR-P-ADME") — made up
+-     * for the game, the same every time: "A", two letters from its title's first words, the region's letter (your case
+-     * region: E North America, P Europe, J Japan). The drawing has no ROM file to read the real code from.
+-     */
+-    private fun productCode(id: String, title: String): String {
+-        val region = com.shelf.launcher.data.Features.caseRegion.state.value.code
+-        val letter = when (region) { "EU" -> 'P'; "JP" -> 'J'; else -> 'E' }
+-        val skip = setOf("THE", "A", "AN", "OF", "AND", "DS", "3D")
+-        val words = title.uppercase().split(Regex("[^A-Z]+")).filter { it.isNotEmpty() && it !in skip }
+-        val h = kotlin.math.abs(title.hashCode())
+-        val fill = "ABCDEFGHJKLMNPRSTUVWXYZ"
+-        val two = buildString {
+-            words.take(2).forEach { append(it[0]) }
+-            if (length < 2 && words.isNotEmpty() && words[0].length > 1) append(words[0][1])
+-            var i = 0
+-            while (length < 2) { append(fill[(h / (i * 7 + 1)) % fill.length]); i++ }
+-        }
+-        val code = "A$two$letter"
+-        return if (id == "3ds") "CTR-P-$code" else "NTR-$code-" + when (region) { "EU" -> "EUR"; "JP" -> "JPN"; else -> "USA" }
+-    }
+ 
+     /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
+     private fun paperStrip(brand: String): Bitmap {
+@@ -1606,16 +1665,18 @@ internal fun CartShellArt(
+         // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
+         // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
+         // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
+-        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
++        // (Update 459: drawn again once the library's label facts are read — LabelIds: a real code / FAN-MADE on the sticker.)
++        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
++        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan|$labelsV"
+         val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
+         val prior = madeFront.value
+-        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
++        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
+             if (shell == null) null else runCatching {
+                 CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan)
+                     ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan) else null
+             }.getOrNull()
+         }
+-        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
++        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
+             if (shell == null) { madeFront.value = null; return@LaunchedEffect }
+             if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
+             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 index 0e7220a..351da84 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
@@ -1577,6 +1729,307 @@ index 3ce9e16..7bc8b6e 100644
  internal fun winPageTitle(page: WinPage): String = when (page) {
      WinPage.MAIN -> ""
      WinPage.DETAILS -> "Details"
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
+new file mode 100644
+index 0000000..d658f4d
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
+@@ -0,0 +1,295 @@
++package com.shelf.launcher.ui
++
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.graphics.LinearGradient
++import android.graphics.Paint
++import android.graphics.RectF
++import android.graphics.Shader
++import android.graphics.Typeface
++import android.text.Layout
++import android.text.StaticLayout
++import android.text.TextPaint
++
++/**
++ * Update 459 (owner: "the difference should be the generated printed label, not the physical cartridge itself"): the
++ * printed sticker for a game with no real label scan — ROM hacks, homebrew, games without a scan — on its console's own
++ * drawn cartridge (CartShells, unchanged). The sticker is always the real sticker's full size and shape; the game's
++ * cover keeps its own proportions, whole (never cut, never stretched), placed where that console's labels carry their
++ * art, and the rest of the sticker is printed the way that console's labels are: the Game Boy's grey side borders with
++ * the serial and region, the Game Boy Advance's dark panel with the title, the Nintendo 64's black foot, the Mega Drive's
++ * header band, the Master System's grid… Printed identification is only what's true (LabelIds): a real product code from
++ * the ROM's header, "FAN-MADE" / "HOMEBREW" for unofficial games, otherwise none — no ratings, seals or licences.
++ *
++ * Pure drawing on a bitmap, deterministic for the same inputs, cached by the shell's front (CartShells.front).
++ */
++internal object GeneratedLabels {
++    enum class Kind { DMG, CGB, AGB, N64, NES, FAMICOM, SNES, SFC, VB, MEGA_DRIVE, MASTER_SYSTEM, GAME_GEAR, SEGA_32X, ATARI, CARD, PLAIN }
++
++    /** The label design for a drawn shell, or null where the shell keeps its own (DS / 3DS / Switch cards — SwitchLabel). */
++    fun kindOf(shellId: String): Kind? = when (shellId) {
++        "ds", "3ds", "switch", "switch2", "switch2_key" -> null
++        "gb", "gbc_dual", "np_gb", "gb_camera", "pokemon_pinball", "megaduck", "supervision" -> Kind.DMG
++        "gbc" -> Kind.CGB
++        "gba", "warioware_twisted", "boktai", "drill_dozer", "yoshi_topsy", "kirby_tilt" -> Kind.AGB
++        "n64" -> Kind.N64
++        "nes" -> Kind.NES
++        "famicom", "fds" -> Kind.FAMICOM
++        "snes_na" -> Kind.SNES
++        "sfc", "np_sfc" -> Kind.SFC
++        "vb" -> Kind.VB
++        "genesis", "megadrive_jp", "genesis_ea", "virtua_racing", "sonic_knuckles", "codemasters", "jcart" -> Kind.MEGA_DRIVE
++        "sms", "sms_jp", "sg1000", "sega_card" -> Kind.MASTER_SYSTEM
++        "game_gear" -> Kind.GAME_GEAR
++        "32x" -> Kind.SEGA_32X
++        "atari2600", "atari2600_activision", "atari5200", "atari7800", "jaguar", "lynx" -> Kind.ATARI
++        "hucard", "ngp", "wonderswan", "pokemini", "ngage", "evercade" -> Kind.CARD
++        else -> Kind.PLAIN
++    }
++
++    /**
++     * Where the cover goes on a [w] × [h] sticker for [kind] — left, top, right, bottom — at the cover's own aspect [a]
++     * (width / height): as large as fits the design's art area, never cut or stretched (pure — unit-tested).
++     */
++    fun artRect(kind: Kind, w: Float, h: Float, a: Float): FloatArray {
++        val area = area(kind, w, h)
++        val aw = area[2] - area[0]; val ah = area[3] - area[1]
++        // (A cover much narrower than a wide sticker's art area — most covers are portrait — goes to the right at the
++        // area's full height, the printed panel left of it carrying the title: no wide empty margins either side.)
++        if (split(kind, aw, ah, a)) {
++            val fw = ah * a
++            return floatArrayOf(area[2] - fw, area[1], area[2], area[3])
++        }
++        val fw: Float; val fh: Float
++        if (a >= aw / ah) { fw = aw; fh = aw / a } else { fh = ah; fw = ah * a }
++        // (GBA: the art bleeds off the sticker's right edge, the printed panel left of it.)
++        val x = if (kind == Kind.AGB) area[2] - fw else area[0] + (aw - fw) / 2f
++        // (Top-aligned where the design prints its text below the art; else centred.)
++        val y = when (kind) {
++            Kind.N64, Kind.NES, Kind.FAMICOM, Kind.SNES, Kind.VB, Kind.ATARI, Kind.CARD, Kind.PLAIN -> area[1]
++            else -> area[1] + (ah - fh) / 2f
++        }
++        return floatArrayOf(x, y, x + fw, y + fh)
++    }
++
++    /** Whether a cover of aspect [a] is set beside a printed title panel in an art area [aw] × [ah] (pure). */
++    fun split(kind: Kind, aw: Float, ah: Float, a: Float): Boolean = when (kind) {
++        Kind.DMG, Kind.CGB, Kind.AGB, Kind.N64 -> false
++        else -> a < (aw / ah) * 0.62f
++    }
++
++    /** The design's art area (left, top, right, bottom) on a [w] × [h] sticker. */
++    private fun area(kind: Kind, w: Float, h: Float): FloatArray = when (kind) {
++        // Game Boy: the grey side borders are at least ~7 % each; the art takes the full height between them.
++        Kind.DMG, Kind.CGB -> floatArrayOf(w * 0.075f, 0f, w * 0.925f, h)
++        // GBA: the art the full height; the dark panel beside it carries the title and code.
++        Kind.AGB -> floatArrayOf(w * 0.30f, 0f, w, h)
++        // N64: under the arched top, the black foot below for the title and code.
++        Kind.N64 -> floatArrayOf(0f, h * 0.04f, w, h * 0.80f)
++        Kind.NES -> floatArrayOf(w * 0.04f, h * 0.05f, w * 0.96f, h * 0.80f)
++        Kind.FAMICOM -> floatArrayOf(w * 0.04f, h * 0.04f, w * 0.96f, h * 0.84f)
++        Kind.SNES -> floatArrayOf(w * 0.03f, h * 0.04f, w * 0.97f, h * 0.82f)
++        Kind.SFC -> floatArrayOf(w * 0.04f, h * 0.17f, w * 0.96f, h * 0.96f)
++        Kind.VB -> floatArrayOf(w * 0.05f, h * 0.05f, w * 0.95f, h * 0.82f)
++        Kind.MEGA_DRIVE, Kind.SEGA_32X -> floatArrayOf(w * 0.03f, h * 0.17f, w * 0.97f, h * 0.97f)
++        Kind.GAME_GEAR -> floatArrayOf(w * 0.04f, h * 0.19f, w * 0.96f, h * 0.97f)
++        Kind.MASTER_SYSTEM -> floatArrayOf(w * 0.05f, h * 0.15f, w * 0.95f, h * 0.95f)
++        Kind.ATARI -> floatArrayOf(w * 0.05f, h * 0.05f, w * 0.95f, h * 0.82f)
++        Kind.CARD, Kind.PLAIN -> floatArrayOf(w * 0.04f, h * 0.04f, w * 0.96f, h * 0.84f)
++    }
++
++    /** What is printed to identify the game: the real code, else "FAN-MADE" / "HOMEBREW", else nothing (pure). */
++    fun idLine(id: com.shelf.launcher.data.LabelIds.Id?): String? = id?.unofficial ?: id?.code
++
++    /**
++     * The sticker for [kind] at [w] × [h] px ([mm]: px per millimetre, for the print's text sizes), [art] whole on it.
++     * [title]: the game's name (typeset only where the design prints one); [brand]: its console's name (header bands).
++     */
++    fun compose(kind: Kind, art: Bitmap, w: Int, h: Int, mm: Float, id: com.shelf.launcher.data.LabelIds.Id?, title: String?, brand: String): Bitmap {
++        val b = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
++        val c = Canvas(b)
++        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
++        val W = b.width.toFloat(); val H = b.height.toFloat()
++        val a = art.width.toFloat() / art.height.coerceAtLeast(1)
++        val r = artRect(kind, W, H, a).let { RectF(it[0], it[1], it[2], it[3]) }
++        val code = idLine(id)
++        val region = id?.region
++        // (The name as printed: no region / version / dump tags.)
++        val name = title?.let { TAGS.replace(gameDisplayName(it), " ").replace(SPACES, " ").trim() }?.takeIf { it.isNotBlank() }
++        val ar = area(kind, W, H)
++        val splitPanel = if (split(kind, ar[2] - ar[0], ar[3] - ar[1], a)) RectF(ar[0] + 1.2f * mm, ar[1] + 0.8f * mm, r.left - 1.4f * mm, ar[3] - 3.4f * mm) else null
++        val head = header(kind, brand, region)
++        when (kind) {
++            Kind.DMG, Kind.CGB -> {
++                // The grey printed borders (ConsoleMods: "grey borders on the left and right sides with the serial code and
++                // region"), the art between them at its full height, a fine dark rule round the art.
++                c.drawColor(if (kind == Kind.DMG) 0xFFBDBEC0.toInt() else 0xFFC9CACC.toInt())
++                fine(c, p, W, H, 0x0A000000)
++                c.drawBitmap(art, null, r, p)
++                rule(c, p, r, 0.12f * mm, 0xCC1A1A1A.toInt())
++                val left = r.left; val right = W - r.right
++                if (code != null && left > 1.6f * mm) vertical(c, code, RectF(0f, 0f, left, H), 1.35f * mm, 0xFF2A2A2C.toInt(), up = true, bold = true)
++                if (region != null && right > 1.6f * mm) vertical(c, region, RectF(r.right, 0f, W, H), 1.35f * mm, 0xFF2A2A2C.toInt(), up = false, bold = true)
++                // (A landscape cover leaves room above / below: the same grey border, the code along the foot.)
++                if (H - r.bottom > 2.2f * mm && left <= 1.6f * mm && code != null) line(c, code, RectF(0f, r.bottom, W, H), 1.3f * mm, 0xFF2A2A2C.toInt(), Paint.Align.CENTER)
++            }
++            Kind.AGB -> {
++                // The dark printed panel left of the art, the title set in it, the code at its foot.
++                p.shader = LinearGradient(0f, 0f, W, H, 0xFF1C1D22.toInt(), 0xFF2B2D35.toInt(), Shader.TileMode.CLAMP)
++                c.drawRect(0f, 0f, W, H, p); p.shader = null
++                fine(c, p, W, H, 0x10FFFFFF)
++                c.drawBitmap(art, null, r, p)
++                val panel = if (r.left > 2f * mm) RectF(1.3f * mm, 1.2f * mm, r.left - 1.0f * mm, H - 3.2f * mm)
++                    else if (W - r.right > 2f * mm) RectF(r.right + 1.0f * mm, 1.2f * mm, W - 1.3f * mm, H - 3.2f * mm) else null
++                if (panel != null && name != null) typeset(c, name, panel, 3.2f * mm, 1.6f * mm, 0xFFF2F2F4.toInt(), maxLines = 5, align = Layout.Alignment.ALIGN_NORMAL)
++                if (code != null) line(c, code, RectF(panel?.left ?: 1.3f * mm, H - 3.0f * mm, panel?.right ?: W, H - 0.6f * mm), 1.15f * mm, 0xFFA9ABB2.toInt(), Paint.Align.LEFT)
++                p.color = 0x55FFFFFF; c.drawRect(r.left - 0.15f * mm, 0f, r.left, H, p)
++            }
++            Kind.N64 -> {
++                c.drawColor(0xFF0E0E10.toInt())
++                c.drawBitmap(art, null, r, p)
++                val foot = RectF(2.5f * mm, r.bottom + 1.2f * mm, W - 2.5f * mm, H - 4.2f * mm)
++                if (name != null) typeset(c, name, foot, 4.2f * mm, 2.0f * mm, 0xFFF4F4F4.toInt(), maxLines = 2)
++                if (code != null) line(c, code, RectF(3f * mm, H - 3.6f * mm, W * 0.7f, H - 1.0f * mm), 1.5f * mm, 0xFFB8B8BC.toInt(), Paint.Align.LEFT)
++                // (PAL labels are marked PAL; the NTSC ones aren't.)
++                if (region == "EUR") line(c, "PAL", RectF(W * 0.7f, H - 3.6f * mm, W - 3f * mm, H - 1.0f * mm), 1.7f * mm, 0xFFE8E8EA.toInt(), Paint.Align.RIGHT, bold = true)
++            }
++            Kind.NES, Kind.SNES, Kind.VB, Kind.ATARI -> {
++                // Black-framed labels: a black field, a thin light keyline round the art, the title and code below it.
++                c.drawColor(if (kind == Kind.SNES) 0xFF2B2B2F.toInt() else 0xFF0F0F11.toInt())
++                c.drawBitmap(art, null, r, p)
++                rule(c, p, r, 0.25f * mm, if (kind == Kind.ATARI) 0xFFC8C8CC.toInt() else 0x66FFFFFF)
++                val foot = RectF(W * 0.05f, r.bottom + 1.0f * mm, W * 0.95f, H - 3.6f * mm)
++                if (splitPanel == null && name != null && foot.height() > 2.5f * mm) typeset(c, name, foot, 5f * mm, 2.2f * mm, 0xFFF0F0F2.toInt(), maxLines = 2)
++                if (code != null) line(c, code, RectF(W * 0.05f, H - 3.2f * mm, W * 0.95f, H - 0.8f * mm), 1.6f * mm, 0xFFAAAAAE.toInt(), Paint.Align.LEFT)
++            }
++            Kind.FAMICOM, Kind.CARD, Kind.PLAIN -> {
++                // White printed paper, the art in it, the title (and code) under it.
++                c.drawColor(0xFFF2F1EC.toInt())
++                fine(c, p, W, H, 0x08000000)
++                c.drawBitmap(art, null, r, p)
++                rule(c, p, r, 0.15f * mm, 0x55000000)
++                val foot = RectF(W * 0.05f, r.bottom + 0.6f * mm, W * 0.95f, H - 2.6f * mm)
++                if (splitPanel == null && name != null && foot.height() > 1.8f * mm) typeset(c, name, foot, 3.4f * mm, 1.4f * mm, 0xFF202022.toInt(), maxLines = 2)
++                if (code != null) line(c, code, RectF(W * 0.05f, H - 2.4f * mm, W * 0.95f, H - 0.5f * mm), 1.2f * mm, 0xFF55555A.toInt(), Paint.Align.RIGHT)
++            }
++            Kind.SFC -> {
++                // Light printed field, a header band with the console's name across the top, the art below.
++                c.drawColor(0xFFE4E4E6.toInt())
++                p.color = 0xFF56565C.toInt(); c.drawRect(0f, 0f, W, H * 0.13f, p)
++                line(c, head, RectF(W * 0.05f, 0f, W * 0.95f, H * 0.13f), H * 0.065f, 0xFFF4F4F6.toInt(), Paint.Align.LEFT, bold = true, italic = true)
++                c.drawBitmap(art, null, r, p)
++                rule(c, p, r, 0.15f * mm, 0x66000000)
++                if (code != null) line(c, code, RectF(W * 0.05f, H - 2.4f * mm, W * 0.95f, H - 0.4f * mm), 1.3f * mm, 0xFF505055.toInt(), Paint.Align.RIGHT)
++            }
++            Kind.MEGA_DRIVE, Kind.SEGA_32X, Kind.GAME_GEAR -> {
++                // Black label with the console's name in a header band (the Sega labels' layout; no maker's logo).
++                c.drawColor(0xFF0B0B0D.toInt())
++                val band = RectF(0f, 0f, W, area(kind, W, H)[1] - 0.6f * mm)
++                p.shader = LinearGradient(0f, 0f, 0f, band.bottom, 0xFF26262B.toInt(), 0xFF0B0B0D.toInt(), Shader.TileMode.CLAMP)
++                c.drawRect(band, p); p.shader = null
++                line(c, head, RectF(W * 0.05f, band.top, W * 0.95f, band.bottom), band.height() * 0.5f, 0xFFF2F2F2.toInt(), Paint.Align.LEFT, bold = true, italic = true)
++                if (code != null) line(c, code, RectF(W * 0.5f, band.top, W * 0.95f, band.bottom), band.height() * 0.28f, 0xFF9C9CA2.toInt(), Paint.Align.RIGHT)
++                c.drawBitmap(art, null, r, p)
++            }
++            Kind.MASTER_SYSTEM -> {
++                // The Master System's white label with its printed grid; the console's name above the art.
++                c.drawColor(0xFFF4F4F2.toInt())
++                p.color = 0x1E000000; p.strokeWidth = 0.12f * mm
++                val step = 2.4f * mm
++                var x = 0f; while (x < W) { c.drawLine(x, 0f, x, H, p); x += step }
++                var y = 0f; while (y < H) { c.drawLine(0f, y, W, y, p); y += step }
++                p.color = 0xFF000000.toInt()
++                line(c, head, RectF(W * 0.06f, 0f, W * 0.94f, H * 0.13f), H * 0.06f, 0xFF1A1A1C.toInt(), Paint.Align.LEFT, bold = true)
++                c.drawBitmap(art, null, r, p)
++                rule(c, p, r, 0.2f * mm, 0xFF1A1A1C.toInt())
++                if (code != null) line(c, code, RectF(W * 0.5f, 0f, W * 0.94f, H * 0.13f), H * 0.04f, 0xFF505055.toInt(), Paint.Align.RIGHT)
++            }
++        }
++        // (Beside a narrow cover: the title set in the printed panel, in the design's ink.)
++        if (splitPanel != null && name != null && splitPanel.width() > 3f * mm) {
++            val ink = when (kind) { Kind.FAMICOM, Kind.CARD, Kind.PLAIN, Kind.MASTER_SYSTEM, Kind.SFC -> 0xFF1E1E20.toInt(); else -> 0xFFF0F0F2.toInt() }
++            // (Update 459, owner check on the RP: a small title left the panel mostly empty — set as large as the panel takes,
++            // like a printed logo line, shrinking only to fit.)
++            typeset(c, name, splitPanel, maxOf(4.2f * mm, splitPanel.height() * 0.24f), 1.6f * mm, ink, maxLines = 4, align = Layout.Alignment.ALIGN_NORMAL)
++        }
++        return b
++    }
++
++    private val TAGS = Regex("""\s*[(\[][^)\]]*[)\]]""")
++    private val SPACES = Regex("""\s+""")
++
++    /** The console's name as its labels print it in their header band, by region (pure). */
++    fun header(kind: Kind, brand: String, region: String?): String = when (kind) {
++        Kind.SFC -> if (region == "JPN") "SUPER FAMICOM" else "SUPER NINTENDO"
++        Kind.MEGA_DRIVE -> if (region == "USA") "GENESIS" else "MEGA DRIVE"
++        Kind.SEGA_32X -> "32X"
++        Kind.GAME_GEAR -> "GAME GEAR"
++        Kind.MASTER_SYSTEM -> if (region == "JPN") "MARK III" else "MASTER SYSTEM"
++        else -> brand.uppercase()
++    }
++
++    // ---- printing helpers ----
++
++    private fun rule(c: Canvas, p: Paint, r: RectF, width: Float, argb: Int) {
++        p.style = Paint.Style.STROKE; p.strokeWidth = width; p.color = argb
++        c.drawRect(r.left + width / 2f, r.top + width / 2f, r.right - width / 2f, r.bottom - width / 2f, p)
++        p.style = Paint.Style.FILL
++    }
++
++    /** A faint printed-paper tooth (seeded, always the same), so a flat colour reads as ink on paper. */
++    private fun fine(c: Canvas, p: Paint, w: Float, h: Float, argb: Int) {
++        val rnd = java.util.Random(459L)
++        p.color = argb
++        val n = ((w * h) / 90f).toInt().coerceIn(0, 6000)
++        for (i in 0 until n) c.drawPoint(rnd.nextFloat() * w, rnd.nextFloat() * h, p)
++        // (The paint goes on to draw the cover: back to opaque, or the cover came out at the tooth's 4 % — washed out.)
++        p.color = 0xFF000000.toInt()
++    }
++
++    private fun face(bold: Boolean, italic: Boolean): Typeface =
++        Typeface.create(Typeface.create("sans-serif-condensed", Typeface.NORMAL),
++            when { bold && italic -> Typeface.BOLD_ITALIC; bold -> Typeface.BOLD; italic -> Typeface.ITALIC; else -> Typeface.NORMAL })
++
++    /** One line of print in [r], at most [size] high, shrunk to fit its width. */
++    private fun line(c: Canvas, s: String, r: RectF, size: Float, argb: Int, align: Paint.Align, bold: Boolean = false, italic: Boolean = false) {
++        if (r.width() <= 2f || r.height() <= 2f) return
++        val tp = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = argb; typeface = face(bold, italic); textAlign = align; letterSpacing = 0.04f }
++        tp.textSize = size
++        val wNeed = tp.measureText(s)
++        if (wNeed > r.width()) tp.textSize = size * r.width() / wNeed
++        val x = when (align) { Paint.Align.LEFT -> r.left; Paint.Align.RIGHT -> r.right; else -> r.centerX() }
++        val y = r.centerY() - (tp.ascent() + tp.descent()) / 2f
++        c.drawText(s, x, y, tp)
++    }
++
++    /** One line turned on its side down the middle of [r] (a Game Boy label's side border). */
++    private fun vertical(c: Canvas, s: String, r: RectF, size: Float, argb: Int, up: Boolean, bold: Boolean) {
++        c.save()
++        c.translate(r.centerX(), r.centerY())
++        c.rotate(if (up) -90f else 90f)
++        val turned = RectF(-r.height() / 2f + r.height() * 0.06f, -r.width() / 2f, r.height() / 2f - r.height() * 0.06f, r.width() / 2f)
++        line(c, s, turned, minOf(size, r.width() * 0.62f), argb, Paint.Align.CENTER, bold)
++        c.restore()
++    }
++
++    /** The game's name set in [r]: the largest size from [max] down to [min] that fits in [maxLines] lines, whole. */
++    private fun typeset(c: Canvas, s: String, r: RectF, max: Float, min: Float, argb: Int, maxLines: Int, align: Layout.Alignment = Layout.Alignment.ALIGN_CENTER) {
++        if (r.width() < 4f || r.height() < 4f) return
++        val tp = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = argb; typeface = face(bold = true, italic = false); letterSpacing = 0.02f }
++        var size = max
++        var lay: StaticLayout
++        while (true) {
++            tp.textSize = size
++            lay = StaticLayout.Builder.obtain(s, 0, s.length, tp, r.width().toInt().coerceAtLeast(1)).setAlignment(align).setIncludePad(false).build()
++            val fitsW = (0 until lay.lineCount).all { lay.getLineWidth(it) <= r.width() + 0.5f }
++            if ((lay.lineCount <= maxLines && lay.height <= r.height() && fitsW) || size <= min) break
++            size *= 0.92f
++        }
++        c.save()
++        c.clipRect(r)
++        c.translate(r.left, r.top + ((r.height() - lay.height) / 2f).coerceAtLeast(0f))
++        lay.draw(c)
++        c.restore()
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt b/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
 index e2f49d8..bcb4a5a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
@@ -1648,7 +2101,7 @@ index cd5b7ae..1ef0d90 100644
                  when (key) {
                      com.shelf.launcher.data.CategorySettings.ALL -> add(key)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..dd23b84 100644
+index 0b73fb5..174dc6c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -1684,7 +2137,15 @@ index 0b73fb5..dd23b84 100644
      if (whoAsk) {
          ProfileSelectScreen(
              profiles = com.shelf.launcher.data.Profiles.list.value,
-@@ -1023,9 +1042,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1018,14 +1037,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         }
+     }
+     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
++    // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
++    // once per library in the background — LabelIds.
++    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games) }
+     val testCategory = TestHooks.category.value
+     LaunchedEffect(testCategory) {
          val c = testCategory ?: return@LaunchedEffect
          closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
          viewModel.setSearchQuery("")
@@ -1704,7 +2165,7 @@ index 0b73fb5..dd23b84 100644
          TestHooks.category.value = null
      }
      // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
-@@ -1596,7 +1623,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1596,7 +1626,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // Power saving while nobody touches the handheld (Appearance › Behind the dock › Save power when idle).
      SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
      LaunchedWhileActive { HomeIdle.watch() }
@@ -1713,7 +2174,7 @@ index 0b73fb5..dd23b84 100644
      BatterySaverDriver() // (Update 187)
      // Only while on screen: no screensaver during a game or with the display off.
      val screensaverActive = rememberIsActive()
-@@ -2340,6 +2367,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2340,6 +2370,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      menuStartCategory = e?.section ?: "Screens"; showMenu = true
                  },
                  onShortcut = dockShortcut,
@@ -1724,7 +2185,7 @@ index 0b73fb5..dd23b84 100644
                  options = SecondScreenOptions(
                      artType = state.appearance.secondArtType,
                      artBlur = state.appearance.secondArtBlur,
-@@ -2397,8 +2428,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2397,8 +2431,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      ) {
          Box(Modifier.fillMaxSize()) {
              SecondScreenContent()
@@ -1740,7 +2201,7 @@ index 0b73fb5..dd23b84 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -2883,6 +2919,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2883,6 +2922,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              com.shelf.launcher.data.Features.discCalm.state.value
          val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
              showAppsLibrary || showAppDrawer || showFirstRun)
@@ -1755,7 +2216,7 @@ index 0b73fb5..dd23b84 100644
          // The second screen only gets the scene while the animated background is on.
          if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
          // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
-@@ -3001,7 +3045,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3001,7 +3048,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      }
                      androidx.compose.runtime.CompositionLocalProvider(
                          LocalSceneAvoid provides sceneAvoid,
@@ -1765,7 +2226,7 @@ index 0b73fb5..dd23b84 100644
                          LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                          // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                          LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
-@@ -3142,7 +3187,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3142,7 +3190,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              if (wantsCrt) CrtArtOverlay(glow)
              if (ambience != null) GameAmbienceLayer(
                  ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
@@ -1774,7 +2235,7 @@ index 0b73fb5..dd23b84 100644
              )
          }
  
-@@ -3211,7 +3256,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3211,7 +3259,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  val total = p.NumPossibleAchievements ?: 0
                  if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
              }
@@ -1783,7 +2244,7 @@ index 0b73fb5..dd23b84 100644
          }
  
          // Video preview: rest on a game for two seconds and its clip fades in.
-@@ -3256,7 +3301,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3256,7 +3304,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -1792,7 +2253,7 @@ index 0b73fb5..dd23b84 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3296,7 +3341,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3296,7 +3344,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -1801,7 +2262,7 @@ index 0b73fb5..dd23b84 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -3738,6 +3783,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3738,6 +3786,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                  when (state.appearance.categoryBarHere) {
                      com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
@@ -1815,7 +2276,7 @@ index 0b73fb5..dd23b84 100644
                          bottomGap = state.appearance.infoSpacing.dp.dp,
                          platforms = state.availablePlatforms,
                          order = state.categoryOrder,
-@@ -4996,7 +5048,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4996,7 +5051,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -1830,7 +2291,7 @@ index 0b73fb5..dd23b84 100644
          )
      }
  
-@@ -6014,7 +6072,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6075,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -1843,7 +2304,7 @@ index 0b73fb5..dd23b84 100644
          )
      }
  
-@@ -6169,6 +6231,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6169,6 +6234,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              .onPreviewKeyEvent { event ->
                  lastInputAt = System.currentTimeMillis()
                  // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
@@ -1858,7 +2319,7 @@ index 0b73fb5..dd23b84 100644
                  HomeKeyGuard.trackA(event.key, event.type)
                  if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                  when {
-@@ -6242,6 +6312,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6242,6 +6315,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                  // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                  // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
@@ -1873,7 +2334,7 @@ index 0b73fb5..dd23b84 100644
                  if (event.key == Key.ButtonB || event.key == Key.Back) {
                      if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                      else if (event.type == KeyEventType.KeyUp) {
-@@ -7252,6 +7330,8 @@ internal object HomeKeyGuard {
+@@ -7252,6 +7333,8 @@ internal object HomeKeyGuard {
       * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
       */
      @Volatile var aDown = false
@@ -1882,7 +2343,7 @@ index 0b73fb5..dd23b84 100644
      fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
          k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
              k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
-@@ -7263,3 +7343,21 @@ internal object HomeKeyGuard {
+@@ -7263,3 +7346,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -3084,10 +3545,20 @@ index 5dd75e0..55c73a8 100644
              // Update 200: the pages slide in the direction of travel instead of just appearing.
              Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index 8ae182c..45ee84b 100644
+index 8ae182c..3b27d17 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-@@ -341,6 +341,7 @@ fun SettingsDialog(
+@@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.foundation.focusGroup
++import androidx.compose.ui.draw.clipToBounds
++import androidx.compose.ui.focus.focusProperties
++import androidx.compose.animation.togetherWith
+ import androidx.compose.ui.focus.focusRequester
+ import androidx.compose.foundation.focusable
+ import androidx.compose.ui.input.key.onKeyEvent
+@@ -341,6 +344,7 @@ fun SettingsDialog(
          properties = DialogProperties(usePlatformDefaultWidth = false)
      ) {
          ImmersiveDialogWindow()
@@ -3095,28 +3566,58 @@ index 8ae182c..45ee84b 100644
          // Small screens (Retroid Pocket Classic and the like): the dialog fills
          // nearly the whole screen, the side list becomes a row of category pills
          // along the top, and paddings shrink — so every option stays reachable.
-@@ -469,9 +470,10 @@ fun SettingsDialog(
+@@ -468,19 +472,26 @@ fun SettingsDialog(
+                         // A fresh scroll position per category: sharing one kept
                          // the previous (long) page's position, so a new page
                          // opened scrolled down past its top.
-                         val paneScroll = androidx.compose.runtime.key(category.label) { rememberScrollState() }
+-                        val paneScroll = androidx.compose.runtime.key(category.label) { rememberScrollState() }
 +                        val paneWeight = Modifier.weight(1f)
++                        // Update 459 (owner, RP Classic: "the current category's content simply disappears and the next one
++                        // appears"): the pages slide — the next category in from the right, the previous out to the left,
++                        // back the other way (SettingsPageSlide).
++                        SettingsPageSlide(category, CATEGORIES, paneWeight) { cat, isTarget ->
++                        val paneScroll = androidx.compose.runtime.key(cat.label) { rememberScrollState() }
 +                        SettingsLookAhead {
                          Column(
 -                            Modifier
 -                                .weight(1f)
-+                            paneWeight
++                            Modifier.fillMaxSize()
                                  // (0.6.15: a group the sidebar's ▶ enters at its first setting.)
-                                 .focusRequester(paneFocus)
+-                                .focusRequester(paneFocus)
++                                // (Update 459: only the page sliding in — the one sliding out takes no focus.)
++                                .then(if (isTarget) Modifier.focusRequester(paneFocus) else Modifier)
                                  .focusGroup()
-@@ -683,6 +685,7 @@ fun SettingsDialog(
+                                 // ▲ ▼ scroll text-only pages that have nothing to focus.
+                                 .dpadScroll(paneScroll)
+                                 .verticalScroll(paneScroll)
+                                 .padding(if (compact) 12.dp else 20.dp)
+                         ) {
+-                            if (searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
++                            CompositionLocalProviderSection(cat.label) {
++                            if (isTarget && searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
+                                 // Straight to it: its section, its sub-page, its group opened.
+                                 searchQuery = ""
+                                 subpageMemory[hit.section] = hit.subpage
+@@ -492,7 +503,7 @@ fun SettingsDialog(
+                                     if (target == category) { currentSection = target.label; setSubpage(hit.subpage) }
+                                     category = target
+                                 }
+-                            } else when (category.label) {
++                            } else when (cat.label) {
+                                 "Home" -> HomeContent(currentTheme, onSelectTheme, appearance, onAppearanceChange)
+                                 "Game look" -> GameLookContent(appearance, onAppearanceChange)
+                                 "Theme" -> ThemeContent(
+@@ -683,6 +694,9 @@ fun SettingsDialog(
                                  }
                              }
                          }
 +                        }
++                        }
++                        }
                          // (Update 144: no Close button floating under the settings any more — ✕ at the top and B close.)
                      }
                  }
-@@ -904,6 +907,14 @@ private fun HomeContent(
+@@ -904,6 +918,14 @@ private fun HomeContent(
                      if (F.rolloutOn.state.value) RowChoice("Speed", com.shelf.launcher.data.Features.RolloutSpeed.values(), F.rolloutSpeed.state.value, { it.label }) { F.rolloutSpeed.value = it }
                      Spacer(Modifier.height(6.dp))
                      Chip("Who's playing? now", accent = false) { ProfilePicker.request = true }
@@ -3131,7 +3632,18 @@ index 8ae182c..45ee84b 100644
                  } }
              }
              item { m -> Box(m) { ShelfCard { CapsuleRevealChoice() } } }
-@@ -6221,3 +6232,60 @@ private fun HandheldControllerStyle() {
+@@ -2804,7 +2826,9 @@ internal fun CollapsibleSection(title: String, startExpanded: Boolean = false, c
+     // (‹ or B goes back). startExpanded is kept for callers but no longer used.
+     @Suppress("UNUSED_VARIABLE") val unused = startExpanded
+     val shape = uiRounded(14.dp)
+-    val open = openSubpage
++    // (Update 459: a page sliding out keeps its own sub-page while the next one slides in — SettingsPageSlide.)
++    val sec = LocalSettingsSection.current
++    val open = if (sec == null || sec == currentSection) openSubpage else subpageMemory[sec]
+     when (open) {
+         null -> {
+             val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+@@ -6221,3 +6245,118 @@ private fun HandheldControllerStyle() {
      }
      Spacer(Modifier.height(12.dp))
  }
@@ -3189,6 +3701,64 @@ index 8ae182c..45ee84b 100644
 +        lead < 0f && trail > containerSize -> 0f
 +        kotlin.math.abs(lead) < kotlin.math.abs(trail - containerSize) -> lead
 +        else -> trail - containerSize
++    }
++}
++
++/** Update 459: the Settings section a page belongs to (SettingsPageSlide shows two while one slides out). */
++private val LocalSettingsSection = androidx.compose.runtime.staticCompositionLocalOf<String?> { null }
++
++@Composable
++private fun CompositionLocalProviderSection(section: String, content: @Composable () -> Unit) =
++    androidx.compose.runtime.CompositionLocalProvider(LocalSettingsSection provides section, content = content)
++
++/** Update 459: how long a Settings page takes to slide in (ms) — short and eased, so it reads as one move. */
++internal const val SETTINGS_SLIDE_MS = 260
++
++/** Update 459: the hold before the slide starts (ms) — see SettingsPageSlide. */
++internal const val SETTINGS_SLIDE_HOLD_MS = 80
++
++/** Update 459: +1 when [to] comes after [from] in [order] (slides in from the right), −1 before, 0 the same (pure). */
++internal fun <T> slideDirection(order: List<T>, from: T, to: T): Int {
++    val a = order.indexOf(from); val b = order.indexOf(to)
++    return if (a < 0 || b < 0 || a == b) 0 else if (b > a) 1 else -1
++}
++
++/**
++ * Update 459 (owner, RP Classic): changing the Settings category replaced the page in one frame. Now the pages slide as
++ * a carousel — the next category in from the right while the one you leave goes left, back the other way — over
++ * [SETTINGS_SLIDE_MS] with an easing that settles without a snap. Only placement moves (no re-measure per frame); the
++ * page sliding out is cut off from input (no focus can enter it, touches on it are swallowed) and keeps its own scroll
++ * and sub-page; a new press mid-slide simply retargets it. [content] gets the page's category and whether it's the one
++ * sliding in (or shown).
++ */
++@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
++@Composable
++private fun <T : Any> SettingsPageSlide(current: T, order: List<T>, modifier: Modifier, content: @Composable (T, Boolean) -> Unit) {
++    androidx.compose.animation.AnimatedContent(
++        targetState = current,
++        modifier = modifier.clipToBounds(),
++        transitionSpec = {
++            val dir = slideDirection(order, initialState, targetState).let { if (it == 0) 1 else it }
++            // (A short hold first: the new page's first frame — composed and drawn for the first time — is the slow one
++            // (~100 ms on the RP Classic); the slide starts after it, so it doesn't jump half-way in on its first step.)
++            val spec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(SETTINGS_SLIDE_MS, delayMillis = SETTINGS_SLIDE_HOLD_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
++            (androidx.compose.animation.slideInHorizontally(spec) { w -> dir * w } togetherWith
++                androidx.compose.animation.slideOutHorizontally(spec) { w -> -dir * w })
++                .using(androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.snap() })
++        },
++        label = "settingsPage"
++    ) { page ->
++        val isTarget = transition.targetState == androidx.compose.animation.EnterExitState.Visible
++        Box(
++            Modifier.fillMaxSize()
++                .focusProperties { if (!isTarget) enter = { androidx.compose.ui.focus.FocusRequester.Cancel } }
++                .focusGroup()
++        ) {
++            content(page, isTarget)
++            if (!isTarget) Box(Modifier.matchParentSize().pointerInput(Unit) {
++                awaitPointerEventScope { while (true) awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.forEach { it.consume() } }
++            })
++        }
 +    }
 +}
 +
@@ -4378,46 +4948,97 @@ index 0000000..74ac78f
 +        assertTrue(s.contains("if (focused) FullText(\n            app.name"))
 +    }
 +}
-diff --git a/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt b/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt b/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
 new file mode 100644
-index 0000000..9137708
+index 0000000..d7d70ac
 --- /dev/null
-+++ b/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
-@@ -0,0 +1,36 @@
++++ b/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
+@@ -0,0 +1,87 @@
 +package com.shelf.launcher.ui
 +
++import com.shelf.launcher.data.LabelIds
 +import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
 +import org.junit.Assert.assertTrue
 +import org.junit.Test
 +
-+/** Update 458 (D174): a drawn Game Boy pak's sticker fills its recess like a real one; moulded top panel; grain. */
-+class GbPak458Test {
-+    @Test fun portraitCoverKeepsItsTop() {
-+        // a box front cut to its art (≈0.81 wide for 1 tall) into the 42.6 × 38.5 sticker
-+        val r = CartShells.stickerCrop(810, 1000, 42.6f / 38.5f)
-+        assertEquals(0, r[0]); assertEquals(810, r[2])
-+        val keptH = r[3] - r[1]
-+        assertEquals(810f / (42.6f / 38.5f), keptH.toFloat(), 2f)
-+        // the upper part is kept: far less cut off the top than the foot
-+        assertTrue(r[1] < (1000 - r[3]))
++/**
++ * Update 459: generated cartridge labels — the full sticker, the cover whole at its own proportions, true identification
++ * only (header codes, FAN-MADE / HOMEBREW), and the Settings pages' slide direction.
++ */
++class Labels459Test {
++    private fun inside(r: FloatArray, w: Float, h: Float) = r[0] >= -0.01f && r[1] >= -0.01f && r[2] <= w + 0.01f && r[3] <= h + 0.01f
++
++    @Test fun coverKeepsItsShapeAndIsWhole() {
++        // Pokémon Brown's cover (≈0.81 wide for 1 tall) on the Game Boy sticker (42.6 × 38.5 mm)
++        for (kind in GeneratedLabels.Kind.values()) for (a in listOf(0.62f, 0.81f, 1f, 1.38f, 1.9f)) {
++            val r = GeneratedLabels.artRect(kind, 426f, 385f, a)
++            assertEquals("$kind $a aspect kept", a, (r[2] - r[0]) / (r[3] - r[1]), 0.01f)
++            assertTrue("$kind $a inside the sticker", inside(r, 426f, 385f))
++        }
++        // Game Boy: full height between the grey borders, centred
++        val gb = GeneratedLabels.artRect(GeneratedLabels.Kind.DMG, 426f, 385f, 0.81f)
++        assertEquals(385f, gb[3] - gb[1], 0.5f)
++        assertEquals(gb[0], 426f - gb[2], 0.5f)
++        // GBA: the art against the right edge, the printed panel left of it
++        val agb = GeneratedLabels.artRect(GeneratedLabels.Kind.AGB, 430f, 220f, 0.9f)
++        assertEquals(430f, agb[2], 0.5f)
 +    }
 +
-+    @Test fun wideCoverCutInTheMiddle() {
-+        val r = CartShells.stickerCrop(2000, 1000, 1.1f)
-+        assertEquals(1000, r[3] - r[1])
-+        assertEquals(1100f, (r[2] - r[0]).toFloat(), 2f)
-+        assertTrue(kotlin.math.abs(r[0] - (2000 - r[2])) <= 1)
++    @Test fun platformDesigns() {
++        assertEquals(GeneratedLabels.Kind.DMG, GeneratedLabels.kindOf("gb"))
++        assertEquals(GeneratedLabels.Kind.DMG, GeneratedLabels.kindOf("gbc_dual"))
++        assertEquals(GeneratedLabels.Kind.CGB, GeneratedLabels.kindOf("gbc"))
++        assertEquals(GeneratedLabels.Kind.AGB, GeneratedLabels.kindOf("gba"))
++        assertEquals(GeneratedLabels.Kind.N64, GeneratedLabels.kindOf("n64"))
++        assertEquals(GeneratedLabels.Kind.SNES, GeneratedLabels.kindOf("snes_na"))
++        assertEquals(GeneratedLabels.Kind.SFC, GeneratedLabels.kindOf("sfc"))
++        assertEquals(GeneratedLabels.Kind.NES, GeneratedLabels.kindOf("nes"))
++        assertEquals(GeneratedLabels.Kind.FAMICOM, GeneratedLabels.kindOf("famicom"))
++        assertEquals(GeneratedLabels.Kind.MEGA_DRIVE, GeneratedLabels.kindOf("genesis"))
++        assertEquals(GeneratedLabels.Kind.MASTER_SYSTEM, GeneratedLabels.kindOf("sms"))
++        assertEquals(GeneratedLabels.Kind.GAME_GEAR, GeneratedLabels.kindOf("game_gear"))
++        assertEquals(GeneratedLabels.Kind.SEGA_32X, GeneratedLabels.kindOf("32x"))
++        // DS / 3DS / Switch keep their own sticker frames (SwitchLabel)
++        assertNull(GeneratedLabels.kindOf("ds")); assertNull(GeneratedLabels.kindOf("3ds")); assertNull(GeneratedLabels.kindOf("switch"))
 +    }
 +
-+    @Test fun wired() {
-+        val src = listOf(java.io.File("../src_copy/ui"), java.io.File("src/main/java/com/shelf/launcher/ui"), java.io.File("app/src/main/java/com/shelf/launcher/ui"))
-+            .first { it.exists() }
-+        val s = java.io.File(src, "CartShells.kt").readText()
-+        assertTrue(s.contains("val fullSticker = s.id in GB_FAMILY"))
-+        assertTrue(s.contains("mouldedTop(c, mould"))
-+        assertTrue(s.contains("grain(c, bw, bh, k, p)"))
-+        // a real label scan is still drawn as it is (never cropped by the pak's own fitting)
-+        assertTrue(s.contains("if (scan) c.drawBitmap(art, foldCrop(s, art)"))
++    @Test fun onlyTrueIdentification() {
++        val gba = ByteArray(0x200); "AW2E".toByteArray().copyInto(gba, 0xAC)
++        assertEquals("AGB-AW2E-USA", LabelIds.codeFromHeader("gba", gba))
++        val nds = ByteArray(0x200); "ADME".toByteArray().copyInto(nds, 0x0C)
++        assertEquals("NTR-ADME-USA", LabelIds.codeFromHeader("nds", nds))
++        val n64 = ByteArray(0x200); n64[0] = 0x80.toByte(); n64[1] = 0x37; "NSME".toByteArray().copyInto(n64, 0x3B)
++        assertEquals("NUS-NSME-USA", LabelIds.codeFromHeader("z64", n64))
++        val dmg = ByteArray(0x200) // an original Game Boy game: no code in its header
++        assertNull(LabelIds.codeFromHeader("gb", dmg))
++        val junk = ByteArray(0x200) { 0x7F }
++        assertNull(LabelIds.codeFromHeader("gba", junk))
++        // a hack is FAN-MADE, never its base game's code; homebrew is HOMEBREW
++        assertEquals("FAN-MADE", LabelIds.unofficialOf("Pokemon - Brown Version (Hack)", "/r/Pokemon - Brown Version (Hack).gb"))
++        assertEquals("HOMEBREW", LabelIds.unofficialOf("Adulting! (World) (v2.0) (Aftermarket)", null))
++        assertNull(LabelIds.unofficialOf("Advance Wars 2 - Black Hole Rising (USA)", null))
++        assertEquals("FAN-MADE", GeneratedLabels.idLine(LabelIds.Id("AGB-BPRE-USA", "FAN-MADE", "USA")))
++        assertEquals("EUR", LabelIds.regionOf("Asterix & Obelix XXL (Europe) (En,Fr,De)"))
++        assertEquals("USA", LabelIds.regionOf("Aladdin (USA) (En,Fr,De,Es)"))
++    }
++
++    @Test fun inventedCodesGone() {
++        val src = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it).exists() }, "CartShells.kt").readText()
++        assertTrue("no made-up DS codes", !src.contains("fun productCode("))
++        assertTrue(src.contains("GeneratedLabels.compose(labelKind"))
++        // the moulded branding no longer depends on the Cartridge backs setting
++        val top = src.substringAfter("internal fun gbTopText").substringBefore("\n    }\n")
++        assertTrue(!top.contains("cartBackStyle"))
++    }
++
++    @Test fun settingsSlideDirection() {
++        val order = listOf("Home", "Game look", "Theme")
++        assertEquals(1, slideDirection(order, "Home", "Theme"))
++        assertEquals(-1, slideDirection(order, "Theme", "Game look"))
++        assertEquals(0, slideDirection(order, "Theme", "Theme"))
++        val src = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it).exists() }, "SettingsDialog.kt").readText()
++        assertTrue(src.contains("SettingsPageSlide(category, CATEGORIES, paneWeight)"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt

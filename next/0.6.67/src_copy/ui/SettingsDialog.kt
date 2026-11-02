@@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.onKeyEvent
@@ -469,20 +472,26 @@ fun SettingsDialog(
                         // A fresh scroll position per category: sharing one kept
                         // the previous (long) page's position, so a new page
                         // opened scrolled down past its top.
-                        val paneScroll = androidx.compose.runtime.key(category.label) { rememberScrollState() }
                         val paneWeight = Modifier.weight(1f)
+                        // Update 459 (owner, RP Classic: "the current category's content simply disappears and the next one
+                        // appears"): the pages slide — the next category in from the right, the previous out to the left,
+                        // back the other way (SettingsPageSlide).
+                        SettingsPageSlide(category, CATEGORIES, paneWeight) { cat, isTarget ->
+                        val paneScroll = androidx.compose.runtime.key(cat.label) { rememberScrollState() }
                         SettingsLookAhead {
                         Column(
-                            paneWeight
+                            Modifier.fillMaxSize()
                                 // (0.6.15: a group the sidebar's ▶ enters at its first setting.)
-                                .focusRequester(paneFocus)
+                                // (Update 459: only the page sliding in — the one sliding out takes no focus.)
+                                .then(if (isTarget) Modifier.focusRequester(paneFocus) else Modifier)
                                 .focusGroup()
                                 // ▲ ▼ scroll text-only pages that have nothing to focus.
                                 .dpadScroll(paneScroll)
                                 .verticalScroll(paneScroll)
                                 .padding(if (compact) 12.dp else 20.dp)
                         ) {
-                            if (searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
+                            CompositionLocalProviderSection(cat.label) {
+                            if (isTarget && searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
                                 // Straight to it: its section, its sub-page, its group opened.
                                 searchQuery = ""
                                 subpageMemory[hit.section] = hit.subpage
@@ -494,7 +503,7 @@ fun SettingsDialog(
                                     if (target == category) { currentSection = target.label; setSubpage(hit.subpage) }
                                     category = target
                                 }
-                            } else when (category.label) {
+                            } else when (cat.label) {
                                 "Home" -> HomeContent(currentTheme, onSelectTheme, appearance, onAppearanceChange)
                                 "Game look" -> GameLookContent(appearance, onAppearanceChange)
                                 "Theme" -> ThemeContent(
@@ -684,6 +693,8 @@ fun SettingsDialog(
                                     }
                                 }
                             }
+                        }
+                        }
                         }
                         }
                         // (Update 144: no Close button floating under the settings any more — ✕ at the top and B close.)
@@ -2815,7 +2826,9 @@ internal fun CollapsibleSection(title: String, startExpanded: Boolean = false, c
     // (‹ or B goes back). startExpanded is kept for callers but no longer used.
     @Suppress("UNUSED_VARIABLE") val unused = startExpanded
     val shape = uiRounded(14.dp)
-    val open = openSubpage
+    // (Update 459: a page sliding out keeps its own sub-page while the next one slides in — SettingsPageSlide.)
+    val sec = LocalSettingsSection.current
+    val open = if (sec == null || sec == currentSection) openSubpage else subpageMemory[sec]
     when (open) {
         null -> {
             val focus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -6286,6 +6299,64 @@ internal fun lookAheadDistance(offset: Float, size: Float, containerSize: Float,
         lead < 0f && trail > containerSize -> 0f
         kotlin.math.abs(lead) < kotlin.math.abs(trail - containerSize) -> lead
         else -> trail - containerSize
+    }
+}
+
+/** Update 459: the Settings section a page belongs to (SettingsPageSlide shows two while one slides out). */
+private val LocalSettingsSection = androidx.compose.runtime.staticCompositionLocalOf<String?> { null }
+
+@Composable
+private fun CompositionLocalProviderSection(section: String, content: @Composable () -> Unit) =
+    androidx.compose.runtime.CompositionLocalProvider(LocalSettingsSection provides section, content = content)
+
+/** Update 459: how long a Settings page takes to slide in (ms) — short and eased, so it reads as one move. */
+internal const val SETTINGS_SLIDE_MS = 260
+
+/** Update 459: the hold before the slide starts (ms) — see SettingsPageSlide. */
+internal const val SETTINGS_SLIDE_HOLD_MS = 80
+
+/** Update 459: +1 when [to] comes after [from] in [order] (slides in from the right), −1 before, 0 the same (pure). */
+internal fun <T> slideDirection(order: List<T>, from: T, to: T): Int {
+    val a = order.indexOf(from); val b = order.indexOf(to)
+    return if (a < 0 || b < 0 || a == b) 0 else if (b > a) 1 else -1
+}
+
+/**
+ * Update 459 (owner, RP Classic): changing the Settings category replaced the page in one frame. Now the pages slide as
+ * a carousel — the next category in from the right while the one you leave goes left, back the other way — over
+ * [SETTINGS_SLIDE_MS] with an easing that settles without a snap. Only placement moves (no re-measure per frame); the
+ * page sliding out is cut off from input (no focus can enter it, touches on it are swallowed) and keeps its own scroll
+ * and sub-page; a new press mid-slide simply retargets it. [content] gets the page's category and whether it's the one
+ * sliding in (or shown).
+ */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+@Composable
+private fun <T : Any> SettingsPageSlide(current: T, order: List<T>, modifier: Modifier, content: @Composable (T, Boolean) -> Unit) {
+    androidx.compose.animation.AnimatedContent(
+        targetState = current,
+        modifier = modifier.clipToBounds(),
+        transitionSpec = {
+            val dir = slideDirection(order, initialState, targetState).let { if (it == 0) 1 else it }
+            // (A short hold first: the new page's first frame — composed and drawn for the first time — is the slow one
+            // (~100 ms on the RP Classic); the slide starts after it, so it doesn't jump half-way in on its first step.)
+            val spec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(SETTINGS_SLIDE_MS, delayMillis = SETTINGS_SLIDE_HOLD_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+            (androidx.compose.animation.slideInHorizontally(spec) { w -> dir * w } togetherWith
+                androidx.compose.animation.slideOutHorizontally(spec) { w -> -dir * w })
+                .using(androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.snap() })
+        },
+        label = "settingsPage"
+    ) { page ->
+        val isTarget = transition.targetState == androidx.compose.animation.EnterExitState.Visible
+        Box(
+            Modifier.fillMaxSize()
+                .focusProperties { if (!isTarget) enter = { androidx.compose.ui.focus.FocusRequester.Cancel } }
+                .focusGroup()
+        ) {
+            content(page, isTarget)
+            if (!isTarget) Box(Modifier.matchParentSize().pointerInput(Unit) {
+                awaitPointerEventScope { while (true) awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.forEach { it.consume() } }
+            })
+        }
     }
 }
 

@@ -1037,6 +1037,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
+    // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
+    // once per library in the background — LabelIds.
+    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games) }
     val testCategory = TestHooks.category.value
     LaunchedEffect(testCategory) {
         val c = testCategory ?: return@LaunchedEffect

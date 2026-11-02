@@ -3,6 +3,24 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 459 (2 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Reuse the existing shells, only the sticker generated | DONE (staging) | 458 grain / light / crop removed; real scans and user labels never replaced |
+| Game Boy (gb / gbc / gbc_dual), Pokémon Brown | DONE (staging), HARDWARE-VERIFIED RP Classic | whole cover, BROWN VERSION readable, grey printed strips, FAN-MADE, moulded lettering on all three shells |
+| Moulded branding not tied to Cartridge backs = Neutral | DONE, unit-tested + RP | gbTopText unconditional |
+| GBA labels | DONE (staging), HARDWARE Thor + RP | dark printed panel + title + real AGB code; no DS frame; D175 kept |
+| N64 label | DONE (staging), HARDWARE Thor | full-width sticker, title + ID, PAL for Europe |
+| SNES / SFC | DONE (staging), HARDWARE Thor + RP (SFC) | header band by region; title panel beside portrait art; US SNES not captured on the RP |
+| NES / Famicom / VB / Atari / Sega / cards | CODE + UNIT TESTS ONLY | not seen on hardware |
+| DS / 3DS / Switch / PS Vita | PARTLY | DS seen (Thor); 3DS / Switch / Vita not captured; SwitchLabel unchanged |
+| CustomCarts 14 shapes audit | NOT DONE | |
+| Real codes only, FAN-MADE / HOMEBREW | DONE, unit-tested + hardware (DMG-AAXE-USA, CGB-BYTE-USA, AGB codes, FAN-MADE) | invented DS productCode removed; no rating / licence marks drawn |
+| Comparison sheets | DONE | qa459/evidence/labels_459.png ("real" column = VoltCap's real box scan; no external photos) |
+| RP Classic Settings category slide | FIXED (staging), PARTLY VERIFIED | directional, no blank frame, chips stay (RP touch recording); RP ~3-4 steps per slide (31 % janky); Thor smooth (9 %); controller L1/R1 not recorded on the RP |
+| D175 performance | VERIFIED Thor | staging 0.98 / 1.21 % after warm-up vs RC ~1.6 % |
+| D172 / D173 / D137 / D124 | KEPT / DEFERRED | unchanged |
+
 ## Update 458 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|
