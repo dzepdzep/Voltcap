@@ -1,3 +1,24 @@
+# Update 458 (2 Nov 2026) — D175 GBA cartridge sides fixed (home + Inspect, Thor); D174 drawn Game Boy pak made closer to the real ones (RP Classic); D172 frame drops measured, still open (NOT published)
+
+**Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112. v0.6.66 frozen; staging only. D173 / D137 wait for the KONKR Pocket; D124 / AutoTDP untouched.
+**D175 GBA side lines — causes found and fixed (staging):**
+- Home / carousel pieces (`SolidPiece.kt`): the sides are copies of the face's outline (planes parallel to the face). (1) Edge-on they had no width — at 90° the GBA cart **vanished** (Thor capture). Now the copies are never turned past ≈88° (`edgeOnSafeYaw`, |cos| ≥ 0.035) and the face / back fades over the last few degrees instead of showing its label squeezed into a line (`edgeOnFade`). (2) Each copy's top edge slants (its near end is taller), so between two copies a step showed — the "sharp, rough" saw-tooth along the top of the side at 45-90° (worst side-on). The copies are now cut to the side's real top / bottom edge (the line through every copy's corner, placed with the same Skia camera as the layers — `SideClip`), and nearly side-on (> ~81°) the side's own strip is filled under them in the sides' plastic and light. Same number of copies as before.
+- Inspect (`MediaInspectView.kt` InspectSlab): the face is never drawn narrower than 1 %, so at 90° the label was squeezed into a **striped coloured column** down the side. It fades out edge-on now (same `edgeOnFade`); slices up to 72 (was 48) for big carts side-on.
+- **Hardware (Thor):** home poses 0 / 45 / 75 / 85 / 88 / 90 / 92 / 120 / 180 / −75 / −90 and Inspect 45 / 88 / 90, before / after; a turn 0→180 in 22 steps and an L/R scroll recorded (no gaps, no vanish, no stripes). Also GB (Addams Family), GBC (Antz), N64 (007), 3DS (Mario Kart 7) at 0 / 75 / 90: solid sides. Left: a faint ~1 px fine tooth at ~75° on the GBA top edge; Switch not tested (no Switch game found); D175 not checked on the RP Classic.
+- Performance (Thor, GBA row ▶x8 ◀x8, gfxinfo): staging 4.3 % janky / p90 22 ms / GPU p90 6 ms (1 run) vs RC 1.5-1.7 % / 13-20 ms / 5 ms (3 runs). Flat pieces take the old path (no change), so this is likely first-run cost (new fronts drawn) — NOT proven: re-measure staging with several runs. RP Classic GB row: staging 14.2 % vs RC 13.9 % (same).
+**D174 Pokémon Brown generated pak (`CartShells.kt`, Game Boy shells gb / gbc_dual only; real label scans and photo carts untouched):**
+- the sticker fills its recess like a real one (42.6 × 38.5) — its width no longer follows the cover with plastic showing either side; the cover is cut to it keeping its upper part (logo / title), so a box front's rating / blurb at the foot drops off (trade-off: Brown's "BROWN VERSION" line at the box's foot is cut too);
+- "Nintendo GAME BOY™" moulded in the top panel (raised, lit / shadowed), another console's name on a rebranded game (as the backs), nothing with Settings › Cartridge backs › Neutral;
+- fine plastic grain; the simulated spot light and bevel at half strength.
+- **Hardware (RP Classic):** home row (Brown next to the Dr. Mario photo cart) and Inspect 0° / 60°, Brown and a generated official game (Fire Red on the gb shell, rebranded GAME BOY ADVANCE), before / after.
+**D172 Settings frame drops (RP Classic, Settings › Home ▼x10 ▲x10, gfxinfo):** still 12-14 % janky, GPU p50 13 / p90 18-19 ms, ~20 slow UI-thread frames per 20 presses (one per press). Plain panels (surface probe) give the same janky % on this metric — so the remaining drop is the per-press UI frame (focus move + recomposition) plus GPU. Not fixed; next: trace what recomposes per press.
+**D170 Pocket Quest long names:** verified in update 456 (RP Classic + Thor) — complete.
+**Tests:** testDebugUnitTest green with the staging tree (SideEdge458Test 3, GbPak458Test 3, Render457Test 3); patch `git apply --check` OK on the RC tree.
+**Restored:** both devices on the RC rebuild (versionCode 73, Home = HomeAlias); Thor All / 007 1/2157, hooks `.paused`; RP Classic on its second category stop (the Continue list — its order had changed by the RetroArch save check); QA files removed.
+**Copy (0.6.67):** next/0.6.67/src_copy/ui/{SolidPiece,MediaInspectView,CartShells,SettingsDialog,TestHooks,VoltUi}.kt, tests SideEdge458Test / GbPak458Test / Render457Test (all in the patch).
+
+    cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; git pull origin main
+
 # Update 457 (2 Nov 2026) — D172 Settings: rows no longer pop in (look-ahead focus scroll) + window fix; D173 not reproduced; D174 / D175 reproduced, causes narrowed (NOT published)
 
 **Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. v0.6.66 frozen; staging only. D137, AutoTDP, D168/D169 untouched.

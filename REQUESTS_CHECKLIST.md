@@ -3,6 +3,17 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 458 (2 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| D175 GBA side lines (front, 45, 75, 90, rear) | FIXED (staging), HARDWARE-VERIFIED Thor | vanish at 90° fixed; saw-tooth cut to the side's own edge; Inspect stripe gone; GB/GBC/N64/3DS checked; ~1 px fine tooth left at ~75°; Switch + RP Classic not tested |
+| D175 movement | VERIFIED Thor | turn 0→180 (22 steps) + L/R scroll recordings |
+| D175 performance | NOT PROVEN | Thor GBA row staging 4.3 % janky (1 run) vs RC ~1.6 % (3 runs); RP same (14.2 vs 13.9 %) — re-measure staging |
+| D174 Pokémon Brown generated pak | IMPROVED (staging), HARDWARE-VERIFIED RP Classic, owner look pending | full sticker, moulded "Nintendo GAME BOY", grain, softer light; box-foot text (BROWN VERSION, rating) cut off by the fill |
+| D172 Settings frame drops (RP Classic) | OPEN | 12-14 % janky; one slow UI frame per press + GPU; plain panels don't change it |
+| D170 Pocket Quest long names | DONE (456) | verified RP Classic + Thor |
+| D173 / D137 (KONKR), D124 (approval) | DEFERRED | unchanged |
+
 ## Update 457 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

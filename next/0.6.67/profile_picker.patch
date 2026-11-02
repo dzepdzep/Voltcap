@@ -1,7 +1,7 @@
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,24 +55,3 @@
+@@ -55,26 +55,3 @@
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -26,6 +26,8 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PqTabs456Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 index c29e9a0..4acd436 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
@@ -1150,6 +1152,182 @@ index 78873e0..d56e485 100644
              textAlign = TextAlign.Center,
              lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
          )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
+index fad25ce..9def146 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
+@@ -635,6 +635,92 @@ internal object CartShells {
+         if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
+     }.getOrDefault(0xFFE9E6DF.toInt())
+ 
++    /** Update 458 (D174): the Game Boy Game Pak shells drawn like the photographed paks (full sticker, grain, softer light). */
++    private val GB_FAMILY = setOf("gb", "gbc_dual")
++
++    /**
++     * Update 458 (D174): what's moulded in the Game Boy pak's top panel — "Nintendo" and "GAME BOY", or [brand]'s own name on
++     * another console's game (as the backs do, rebranded) — or null for Settings › Game look › Cartridge backs › Neutral.
++     */
++    internal fun gbTopText(brand: String): String? {
++        if (com.shelf.launcher.data.Features.cartBackStyle.state.value == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL) return null
++        val gb = setOf("", com.shelf.launcher.data.ConsoleNames.display("GB"), com.shelf.launcher.data.ConsoleNames.display("GBC"))
++        return if (brand in gb) "GAME BOY" else brand.uppercase()
++    }
++
++    /**
++     * Update 458 (D174): the part of a [w] × [h] cover that fills a sticker [la] wide for 1 tall (left, top, right, bottom) — its whole
++     * width (or height) and the upper part kept: a box front's logo / title is near its top, its rating and blurb at its foot (pure).
++     */
++    internal fun stickerCrop(w: Int, h: Int, la: Float): IntArray {
++        val pa = w.toFloat() / h.coerceAtLeast(1)
++        return if (pa < la) {
++            val ch = (w / la).toInt().coerceIn(1, h)
++            val top = ((h - ch) * 0.12f).toInt().coerceIn(0, h - ch)
++            intArrayOf(0, top, w, top + ch)
++        } else {
++            val cw = (h * la).toInt().coerceIn(1, w)
++            intArrayOf((w - cw) / 2, 0, (w - cw) / 2 + cw, h)
++        }
++    }
++
++    /** Update 458 (D174): raised moulded lettering in the pak's top panel [r] — "Nintendo" small, then [name] bold italic, ™. */
++    private fun mouldedTop(c: Canvas, name: String, r: RectF, k: Float, base: Int, op: Float) {
++        val big = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
++            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD_ITALIC)
++            textSize = 4.6f * k; letterSpacing = 0.01f
++        }
++        val small = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
++            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
++            textSize = 2.9f * k
++        }
++        val tm = android.text.TextPaint(small).apply { textSize = 1.5f * k }
++        val n = "Nintendo"
++        val gap = 1.2f * k
++        var wN = small.measureText(n); var wB = big.measureText(name); val wT = tm.measureText("™")
++        // (A long console name: smaller, so the line stays inside the panel.)
++        val room = r.width() * 0.84f
++        val total = wN + gap + wB + wT
++        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; wN *= f; wB *= f }
++        val x0 = r.centerX() - (wN + gap + wB + wT) / 2f
++        val by = r.centerY() - (big.descent() + big.ascent()) / 2f
++        val off = maxOf(0.16f * k, 0.6f)
++        val a = maxOf(op, 0.7f)
++        fun pass(dy: Float, argb: Int) {
++            small.color = argb; big.color = argb; tm.color = argb
++            c.drawText(n, x0, by + dy, small)
++            c.drawText(name, x0 + wN + gap, by + dy, big)
++            c.drawText("™", x0 + wN + gap + wB, by + dy - big.textSize * 0.45f, tm)
++        }
++        // Raised: lit above, in shadow below, the face of the letters a touch lighter than the panel's floor.
++        pass(-off, withAlpha(shade(base, 0.38f), a * 0.9f))
++        pass(off, withAlpha(shade(base, -0.5f), a * 0.9f))
++        pass(0f, withAlpha(shade(base, 0.02f), a))
++    }
++
++    /** Update 458 (D174): a fine moulded grain over the plastic — tiny light and dark specks, very faint (seeded: always the same). */
++    private fun grain(c: Canvas, bw: Int, bh: Int, k: Float, p: Paint) {
++        val tile = grainTile ?: run {
++            val n = 96
++            val px = IntArray(n * n)
++            val rnd = java.util.Random(458L)
++            for (i in px.indices) {
++                val v = rnd.nextGaussian().toFloat()
++                val a = (kotlin.math.abs(v) * 10f).toInt().coerceIn(0, 40)
++                px[i] = (a shl 24) or (if (v > 0f) 0xFFFFFF else 0x000000)
++            }
++            Bitmap.createBitmap(px, n, n, Bitmap.Config.ARGB_8888).also { grainTile = it }
++        }
++        val sh = android.graphics.BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
++        // (One speck about 0.12 mm — fine as the real plastic's, at any size drawn.)
++        val sc = (0.12f * k).coerceAtLeast(1f)
++        sh.setLocalMatrix(android.graphics.Matrix().apply { setScale(sc, sc) })
++        p.shader = sh
++        c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p)
++        p.shader = null
++    }
++    @Volatile private var grainTile: Bitmap? = null
++
+     private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
+         val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
+         val a = art.width.toFloat() / art.height.coerceAtLeast(1)
+@@ -823,7 +909,9 @@ internal object CartShells {
+         val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
+         val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
+         val head = plaque ?: switchHeader ?: paperHead
+-        val key = "f9|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
++        // (Update 458: the moulded "GAME BOY" in the top panel follows Settings › Game look › Cartridge backs — gbTopText.)
++        val mould = if (s.id == "gb") gbTopText(brand) else null
++        val key = "f10|${mould ?: ""}|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+         cache.get(key)?.let { return it }
+         if (peek) return null
+         val k = maxPx / maxOf(s.w, s.h)
+@@ -850,6 +938,9 @@ internal object CartShells {
+         }
+         // (Update 210: a metallic-looking plastic's sheen and a glittering one's speckles — ShellMaterials.)
+         finish(c, s, colour, k, bw, bh, p, front = true)
++        // Update 458 (D174, owner: the drawn Pokémon Brown pak looked artificial next to the photographed paks): the Game Boy
++        // paks' plastic has a fine moulded grain — the photos show it, the drawn plastic was perfectly smooth.
++        if (s.id in GB_FAMILY && op >= 0.85f) grain(c, bw, bh, k, p)
+         // The rim: the moulded edge, a touch darker, lit along the top.
+         p.style = Paint.Style.STROKE
+         p.strokeWidth = 1.4f * k
+@@ -880,6 +971,8 @@ internal object CartShells {
+             }
+         }
+         for (e in s.extras) drawExtra(c, e, k, base, p)
++        // Update 458 (D174): the real pak's top panel has "Nintendo GAME BOY™" moulded in it; the drawn one was empty.
++        if (mould != null) s.extras.firstOrNull { it.kind == ShellExtra.RECESS }?.let { e -> mouldedTop(c, mould, RectF(e.x * k, e.y * k, (e.x + e.w) * k, (e.y + e.h) * k), k, base, op) }
+         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
+         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
+         val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
+@@ -890,7 +983,10 @@ internal object CartShells {
+         val coverPic = if (art != null && !scan) labelArt(s, art) else null
+         // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
+         // (Update 307: a pack plaque header runs across the whole sticker too.)
+-        val lr = if (head != null || frame != null) lr0 else coverPic?.let { pic ->
++        // (Update 458, D174: a Game Boy pak's sticker always fills its recess, as a real one does — its width followed the
++        // cover's shape, the plastic showing either side like a sticker that didn't fit; the cover is cut to it, below.)
++        val fullSticker = s.id in GB_FAMILY
++        val lr = if (head != null || frame != null || fullSticker) lr0 else coverPic?.let { pic ->
+             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
+             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
+             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
+@@ -973,10 +1069,17 @@ internal object CartShells {
+                         c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
+                     }
+                 } else {
++                    // (Update 458, D174: on a Game Boy pak the cover fills the sticker — cut to its shape, its upper part kept
++                    // (title and logo; a box front's rating and blurb at the foot drop off) — instead of fitted inside it with
++                    // the colour sampled off its edge round it.)
++                    if (fullSticker) {
++                        stickerCrop(pic.width, pic.height, la).let { q -> c.drawBitmap(pic, android.graphics.Rect(q[0], q[1], q[2], q[3]), artRect, p) }
++                    } else {
+                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
+                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
+                     if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
+                     c.drawBitmap(pic, null, fit, p)
++                    }
+                 }
+             }
+         } else if (!title.isNullOrBlank()) {
+@@ -999,13 +1102,16 @@ internal object CartShells {
+         // Update 422: the moulded shell lit like the photographed ones — a broad soft light from the upper left over the
+         // plastic and the sticker, falling off to the lower right; a rounded bevel along the edge (lit top / left, shaded
+         // bottom / right) instead of one flat outline. Drawn in the shell's own outline, so nothing spills outside it.
++        // (Update 458, D174: softer on the Game Boy paks — next to the photos the spot of light and the dark corner read as
++        // rendered; the photographed plastic is lit almost evenly, a little darker toward the foot.)
++        val litK = if (s.id in GB_FAMILY) 0.5f else 1f
+         p.shader = android.graphics.RadialGradient(bw * 0.22f, bh * 0.12f, maxOf(bw, bh) * 0.95f,
+-            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f)),
++            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.13f * litK), withAlpha(0xFFFFFFFF.toInt(), 0.0f), withAlpha(0xFF000000.toInt(), 0.16f * litK)),
+             floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+         c.drawRect(0f, 0f, bw.toFloat(), bh.toFloat(), p); p.shader = null
+         p.style = Paint.Style.STROKE; p.strokeWidth = 2.2f * k
+         p.shader = LinearGradient(0f, 0f, bw.toFloat(), bh.toFloat(),
+-            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f)),
++            intArrayOf(withAlpha(0xFFFFFFFF.toInt(), 0.32f * (0.4f + 0.6f * litK)), withAlpha(0xFFFFFFFF.toInt(), 0.04f), withAlpha(0xFF000000.toInt(), 0.30f * (0.4f + 0.6f * litK))),
+             floatArrayOf(0f, 0.5f, 1f), Shader.TileMode.CLAMP)
+         c.drawPath(path, p); p.shader = null; p.style = Paint.Style.FILL
+         c.restore()
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 index 0e7220a..351da84 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
@@ -1726,6 +1904,33 @@ index 0b73fb5..dd23b84 100644
 +    val fg = androidx.compose.runtime.remember(game.stableKey, state.lastPlayedAt[game.stableKey]) { viewModel.continueForeground()[game.packageName] }
 +    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
+index 145a2a2..7e0ed20 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
+@@ -1846,7 +1846,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+                     drawRect(sideTone, blendMode = BlendMode.SrcIn)
+                     drawRect(sheen, blendMode = BlendMode.SrcAtop)
+                 }
+-                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 48)
++                // (Update 458, D175: up to 72 — a big GBA cartridge side-on wanted ~80, so 48 left them ~2 px apart.)
++                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 72)
+                 if (n > 0) {
+                     // Far to near.
+                     for (k in 0..n) {
+@@ -1859,6 +1860,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+                 val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
+                 val plasticArgb = sideTone.toArgb()
+                 if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
++                // Update 458 (D175, Thor: a striped, coloured 1–2 px column down a GBA cartridge's side at 90°): the face is
++                // never drawn narrower than 1 % (PiecePose.matrix), so edge-on its label was squeezed into a line of stripes on
++                // the side. It fades out over the last few degrees now (edgeOnFade); the sides' slices fill that place.
++                val faceA = edgeOnFade(c)
++                lit.alpha = faceA
++                back.alpha = faceA
+                 if (c >= 0f) {
+                     lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))
+                     lit.record { drawLayer(face) }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt b/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt
 index d7ed69b..588d67e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt
@@ -3022,6 +3227,254 @@ index 16627b7..374e9fc 100644
                          clipModifier = Modifier
                              .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
                              .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
+index f7b2755..6002683 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
+@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
+ import androidx.compose.ui.graphics.ImageBitmap
+ import androidx.compose.ui.graphics.asAndroidBitmap
+ import androidx.compose.ui.graphics.asImageBitmap
++import androidx.compose.ui.graphics.drawscope.clipPath
+ import androidx.compose.ui.graphics.drawscope.scale
+ import androidx.compose.ui.graphics.drawscope.translate
+ import androidx.compose.ui.graphics.graphicsLayer
+@@ -473,6 +474,7 @@ internal fun Modifier.solidPiece(
+     val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
+     val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+     val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
++    val sideClip = remember { SideClip() }
+     return this.drawWithCache {
+         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
+         // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
+@@ -584,12 +586,20 @@ internal fun Modifier.solidPiece(
+             val t = Math.toRadians(yaw.toDouble())
+             val c = cos(t).toFloat()
+             val sn = sin(t).toFloat()
+-            edge.rotationY = yaw; edge.cameraDistance = cam
++            // Update 458 (D175, Thor: a GBA cartridge turned side-on vanished at 90° and showed its label squeezed into a
++            // striped column just before): the side copies are planes parallel to the face, so edge-on they had no width
++            // left. They're turned at most to EDGE_ON_MIN_COS (≈88°) — the side stays a solid wall of plastic — and the
++            // face (or back) fades out over the last few degrees instead of showing its picture squeezed to a line.
++            val sideYaw = edgeOnSafeYaw(yaw)
++            val faceA = edgeOnFade(c)
++            edge.rotationY = sideYaw; edge.cameraDistance = cam
+             lit.rotationY = yaw; lit.cameraDistance = cam
++            lit.alpha = faceA
+             // (Update 316: the plain sides and face, their light drawn in — recorded again only as the turn changes.)
+             if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
+-                edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
++                edgeLeaf.rotationY = sideYaw; edgeLeaf.cameraDistance = cam
+                 litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
++                litLeaf.alpha = faceA
+                 val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
+                 // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
+                 val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
+@@ -606,7 +616,7 @@ internal fun Modifier.solidPiece(
+             }
+             back.rotationY = yaw; back.cameraDistance = cam
+             // (Update 209: a see-through piece's back as see-through as its sides.)
+-            back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
++            back.alpha = (spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f) * faceA
+             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
+             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
+             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
+@@ -702,8 +712,10 @@ internal fun Modifier.solidPiece(
+                 val edgeL = edgeLeaf ?: edge
+                 // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
+                 // under the face, left out; see SIDE_SPREAD.)
++                // (Update 458, D175: the copies are turned as [sideYaw] — never quite edge-on — so their reach is too.)
++                val cSide = cos(Math.toRadians(sideYaw.toDouble())).toFloat()
+                 val reach = if (edgeLeaf != null && side != null && artSize != null)
+-                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
++                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(cSide)).coerceAtLeast(1.5f) else 0f
+                 val span = depthPx * abs(sn)
+                 val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+                 edgeL.alpha = if (edgeLeaf != null) {
+@@ -716,29 +728,35 @@ internal fun Modifier.solidPiece(
+                 val camPx = cam * 72f
+                 val nearV = -depthPx / 2f * abs(c)
+                 fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
+-                if (edgeLeaf != null) for (k in 0 until nLeaf) {
+-                    val f = k.toFloat() / nLeaf
+-                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+-                    val dk = depthK(z)
+-                    scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
+-                }
+-                if (n > 0 && fill > 1 && edgeLeaf == null) {
+-                    smear.record(size = buf) {
+-                        translate(m.toFloat(), m.toFloat()) {
+-                            for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
+-                        }
+-                    }
+-                }
+-                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
+-                    val f = k.toFloat() / n
+-                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+-                    // (The nearest slice alone: nothing past it to fill.)
+-                    val dk = depthK(z)
+-                    scale(dk, dk, pivot = nodeC) {
+-                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+-                        else translate(z * sn, 0f) { drawLayer(edge) }
+-                    }
++                // Update 458 (D175, Thor: "sharp, rough lines" along a GBA cartridge's side): each copy is a plane parallel to the
++                // face, so its own top edge slants (it comes nearer toward one end) — steeper the more it's turned — while the
++                // side's real top edge runs from one copy's far corner to the next. Between two copies the nearer part of the
++                // farther one stood above that edge: a saw-tooth along the side's top and bottom, worst side-on. The copies are
++                // now cut to the side's own top and bottom edge — the line through every copy's far corners (sideClip) — so
++                // the side ends in one straight edge at every angle; side-on (face faded) also at the face's plane. One clip,
++                // the same copies as before (no new render load).
++                val copiesN = if (edgeLeaf != null) nLeaf else n
++                val clipRect = if (edgeLeaf != null && artPos != null && artSize != null && side != null) {
++                    val padN = SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()
++                    androidx.compose.ui.geometry.Rect(artPos.x - padN, artPos.y.toFloat(), artPos.x + artSize.width + padN, (artPos.y + artSize.height).toFloat())
++                } else androidx.compose.ui.geometry.Rect(0f, 0f, nodeC.x * 2f, nodeC.y * 2f)
++                // (The node's own size — inside the whole-piece buffer this drawing's size is the bigger buffer's.)
++                val cut = if (copiesN > 0) sideClip.of(
++                    clipRect, nodeC.x * 2f, nodeC.y * 2f, sideYaw, cam, copiesN, depthPx, c, sn, nodeC, { z -> depthK(z) },
++                    faceGone = faceA < 1f, cSide = cSide
++                ) else null
++                // (Side-on the far copies' corners can also stand apart, leaving notches between them: the side's own face —
++                // the strip through every copy's outer corners — is filled first in the sides' plastic and light.)
++                // (Only nearly side-on, past ~81°: there a notch in the outline — the GBA pak's shoulders — is narrower than a
++                // pixel or two; turned less, the copies alone keep its step.)
++                if (cut != null && spec.clear == null && abs(c) < 0.15f) {
++                    val tone = spec.tone.copy(alpha = 1f).toArgb()
++                    val cols = List(5) { i -> Color(0xFF000000.toInt() or sideRowRgb(i / 4f, tone)) }
++                    drawPath(sideClip.wall, Brush.verticalGradient(cols, sideClip.wallTop, sideClip.wallBottom),
++                        colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
+                 }
++                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf) }
++                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf)
+                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
+                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
+                 if (clear != null) {
+@@ -889,6 +907,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
+  */
+ internal const val SIDE_SPREAD = 10
+ 
++/**
++ * Update 458 (D175): the side copies are turned no further than this from edge-on (|cos| of the turn, ≈ 88°) — planes
++ * parallel to the face, edge-on they had no width at all and the piece vanished at 90°.
++ */
++internal const val EDGE_ON_MIN_COS = 0.035f
++
++/** Update 458: [yaw] (degrees) moved, if need be, to the nearest turn whose |cos| is at least [EDGE_ON_MIN_COS] (pure, unit-tested). */
++internal fun edgeOnSafeYaw(yaw: Float): Float {
++    val c = cos(Math.toRadians(yaw.toDouble())).toFloat()
++    if (abs(c) >= EDGE_ON_MIN_COS) return yaw
++    val off = Math.toDegrees(kotlin.math.acos(EDGE_ON_MIN_COS.toDouble())).toFloat() // ≈ 88°
++    // (Which quarter it's in: the side facing you stays the same — front stays front, back stays back.)
++    val y = ((yaw % 360f) + 540f) % 360f - 180f
++    val target = if (c >= 0f) off else 180f - off
++    return yaw - y + (if (y < 0f) -target else target)
++}
++
++/** Update 458: how much of the face (or back) is drawn at a turn whose cos is [c] — gone edge-on, full by ≈ 85° (pure, unit-tested). */
++internal fun edgeOnFade(c: Float): Float = ((abs(c) - 0.02f) / 0.06f).coerceIn(0f, 1f)
++
+ /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
+ // (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
+ // steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
+@@ -934,3 +972,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
+     }
+     found
+ }.getOrNull()
++
++/** Update 458: the copies through a turned piece's thickness, far to near (moved out of solidPiece's drawing to be clipped as one). */
++private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
++    edgeLeaf: androidx.compose.ui.graphics.layer.GraphicsLayer?, nLeaf: Int, n: Int, fill: Int, c: Float, sn: Float, depthPx: Float,
++    nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float,
++    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize
++) {
++    if (edgeLeaf != null) for (k in 0 until nLeaf) {
++        val f = k.toFloat() / nLeaf
++        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
++        val dk = depthK(z)
++        scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
++    }
++    if (n > 0 && fill > 1 && edgeLeaf == null) {
++        smear.record(size = buf) {
++            translate(m.toFloat(), m.toFloat()) {
++                for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
++            }
++        }
++    }
++    if (n > 0 && edgeLeaf == null) for (k in 0..n) {
++        val f = k.toFloat() / n
++        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
++        // (The nearest slice alone: nothing past it to fill.)
++        val dk = depthK(z)
++        scale(dk, dk, pivot = nodeC) {
++            if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
++            else translate(z * sn, 0f) { drawLayer(edge) }
++        }
++    }
++}
++
++/**
++ * Update 458 (D175): the outline a turned piece's side copies are cut to — below the line through every copy's far top
++ * corner and above the line through their far bottom corners, on the side's side of the face; past the face's plane too
++ * once the face has faded (side-on). The corners are placed as the layers place them: the same Skia camera
++ * (android.graphics.Camera, [cam] inches away), turned [yaw] round the node's middle, moved [z] × sin across and scaled
++ * by the copy's depth ([depthK]). Kept per piece; its path is rebuilt in place.
++ */
++internal class SideClip {
++    private val camera = android.graphics.Camera()
++    private val matrix = android.graphics.Matrix()
++    private val pt = FloatArray(2)
++    private val path = androidx.compose.ui.graphics.Path()
++    /** The side's own face: through every copy's outer top corner, back along their outer bottom corners. */
++    val wall = androidx.compose.ui.graphics.Path()
++    var wallTop = 0f
++    var wallBottom = 1f
++    private var tops = FloatArray(0)
++    private var bots = FloatArray(0)
++
++    fun of(
++        r: androidx.compose.ui.geometry.Rect, w: Float, h: Float, yaw: Float, cam: Float, n: Int, depthPx: Float, c: Float, sn: Float,
++        nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float, faceGone: Boolean, cSide: Float
++    ): androidx.compose.ui.graphics.Path? {
++        if (n <= 0 || depthPx * abs(sn) < 1f) return null
++        camera.save(); camera.setLocation(0f, 0f, -cam); camera.rotateY(yaw); camera.getMatrix(matrix); camera.restore()
++        matrix.preTranslate(-w / 2f, -h / 2f); matrix.postTranslate(w / 2f, h / 2f)
++        // (Which side shows: the far copy's left corner further left than the face plane's — the left side; else the right.)
++        fun place(x: Float, y: Float, k: Int, out: FloatArray, i: Int) {
++            val f = k.toFloat() / n
++            val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
++            pt[0] = x; pt[1] = y; matrix.mapPoints(pt)
++            val dk = depthK(z)
++            out[i] = nodeC.x + (pt[0] + z * sn - nodeC.x) * dk
++            out[i + 1] = nodeC.y + (pt[1] - nodeC.y) * dk
++        }
++        val probe = FloatArray(4)
++        place(r.left, r.top, 0, probe, 0); place(r.left, r.top, n, probe, 2)
++        val left = probe[0] < probe[2]
++        val x = if (left) r.left else r.right
++        if (tops.size < 2 * (n + 1)) { tops = FloatArray(2 * (n + 1)); bots = FloatArray(2 * (n + 1)) }
++        for (k in 0..n) { place(x, r.top, k, tops, 2 * k); place(x, r.bottom, k, bots, 2 * k) }
++        val big = 4f * maxOf(w, h) + 4f * depthPx
++        val out = if (left) -1f else 1f
++        val lastX = tops[2 * n]
++        // (Past the face's plane: open while the face covers it; side-on, cut a little past it — a notch's step allowed.)
++        val stop = lastX - out * (if (faceGone) 1f + 0.12f * (r.right - r.left) * abs(cSide) else big)
++        path.reset()
++        path.moveTo(tops[0] + 2f * out, tops[1])
++        for (k in 0..n) path.lineTo(tops[2 * k], tops[2 * k + 1])
++        if (faceGone) { path.lineTo(stop, tops[2 * n + 1]); path.lineTo(stop, bots[2 * n + 1]) }
++        else { path.lineTo(lastX, -big); path.lineTo(stop, -big); path.lineTo(stop, big); path.lineTo(lastX, big) }
++        for (k in n downTo 0) path.lineTo(bots[2 * k], bots[2 * k + 1])
++        path.lineTo(bots[0] + 2f * out, bots[1])
++        path.close()
++        wall.reset()
++        wall.moveTo(tops[0], tops[1])
++        for (k in 1..n) wall.lineTo(tops[2 * k], tops[2 * k + 1])
++        for (k in n downTo 0) wall.lineTo(bots[2 * k], bots[2 * k + 1])
++        wall.close()
++        wallTop = tops[2 * n + 1]; wallBottom = maxOf(bots[2 * n + 1], wallTop + 1f)
++        return path
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt
 index 16f078e..476e5fa 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt
@@ -3925,6 +4378,48 @@ index 0000000..74ac78f
 +        assertTrue(s.contains("if (focused) FullText(\n            app.name"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt b/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
+new file mode 100644
+index 0000000..9137708
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
+@@ -0,0 +1,36 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/** Update 458 (D174): a drawn Game Boy pak's sticker fills its recess like a real one; moulded top panel; grain. */
++class GbPak458Test {
++    @Test fun portraitCoverKeepsItsTop() {
++        // a box front cut to its art (≈0.81 wide for 1 tall) into the 42.6 × 38.5 sticker
++        val r = CartShells.stickerCrop(810, 1000, 42.6f / 38.5f)
++        assertEquals(0, r[0]); assertEquals(810, r[2])
++        val keptH = r[3] - r[1]
++        assertEquals(810f / (42.6f / 38.5f), keptH.toFloat(), 2f)
++        // the upper part is kept: far less cut off the top than the foot
++        assertTrue(r[1] < (1000 - r[3]))
++    }
++
++    @Test fun wideCoverCutInTheMiddle() {
++        val r = CartShells.stickerCrop(2000, 1000, 1.1f)
++        assertEquals(1000, r[3] - r[1])
++        assertEquals(1100f, (r[2] - r[0]).toFloat(), 2f)
++        assertTrue(kotlin.math.abs(r[0] - (2000 - r[2])) <= 1)
++    }
++
++    @Test fun wired() {
++        val src = listOf(java.io.File("../src_copy/ui"), java.io.File("src/main/java/com/shelf/launcher/ui"), java.io.File("app/src/main/java/com/shelf/launcher/ui"))
++            .first { it.exists() }
++        val s = java.io.File(src, "CartShells.kt").readText()
++        assertTrue(s.contains("val fullSticker = s.id in GB_FAMILY"))
++        assertTrue(s.contains("mouldedTop(c, mould"))
++        assertTrue(s.contains("grain(c, bw, bh, k, p)"))
++        // a real label scan is still drawn as it is (never cropped by the pak's own fitting)
++        assertTrue(s.contains("if (scan) c.drawBitmap(art, foldCrop(s, art)"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
 new file mode 100644
 index 0000000..7d99650
@@ -4526,6 +5021,57 @@ index 0000000..6a253b6
 +            assertNotNull("Saturn $r", CaseCatalog.of("Saturn", r))
 +            assertNotNull("Dreamcast $r", CaseCatalog.of("Dreamcast", r))
 +        }
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt b/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
+new file mode 100644
+index 0000000..057c5ce
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
+@@ -0,0 +1,45 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import kotlin.math.abs
++import kotlin.math.cos
++
++/** Update 458 (D175): a turned cartridge's sides stay solid edge-on, no squeezed face, its copies cut to one straight top / bottom edge. */
++class SideEdge458Test {
++    private fun cosD(d: Float) = cos(Math.toRadians(d.toDouble())).toFloat()
++
++    @Test fun sideCopiesNeverEdgeOn() {
++        for (y in listOf(90f, -90f, 270f, 89.5f, 90.5f, 450f, -270f)) {
++            val s = edgeOnSafeYaw(y)
++            assertTrue("$y -> $s", abs(cosD(s)) >= EDGE_ON_MIN_COS - 1e-4f)
++            // the same side keeps facing you
++            assertTrue("$y -> $s", (cosD(s) >= 0f) == (cosD(y) >= 0f) || abs(cosD(y)) < 1e-6f)
++            assertTrue("$y -> $s moved little", abs(s - y) < 3f)
++        }
++        // away from edge-on: untouched
++        for (y in listOf(0f, 45f, 75f, 120f, 180f, -60f)) assertEquals(y, edgeOnSafeYaw(y), 0f)
++    }
++
++    @Test fun faceFadesOnlyEdgeOn() {
++        assertEquals(0f, edgeOnFade(0f), 0f)
++        assertEquals(1f, edgeOnFade(cosD(75f)), 0f)
++        assertEquals(1f, edgeOnFade(-1f), 0f)
++        assertTrue(edgeOnFade(cosD(87f)) in 0.01f..0.99f)
++    }
++
++    @Test fun wiredInBothRenderers() {
++        val src = listOf(java.io.File("../src_copy/ui"), java.io.File("src/main/java/com/shelf/launcher/ui"), java.io.File("app/src/main/java/com/shelf/launcher/ui"))
++            .first { it.exists() }
++        val solid = java.io.File(src, "SolidPiece.kt").readText()
++        assertTrue(solid.contains("edgeLeaf.rotationY = sideYaw"))
++        assertTrue(solid.contains("litLeaf.alpha = faceA"))
++        // the copies cut to the side's own top / bottom edge (the saw-tooth along a turned GBA cartridge's side)
++        assertTrue(solid.contains("clipPath(cut) { drawSideCopies("))
++        assertTrue(solid.contains("class SideClip"))
++        assertTrue(solid.contains("drawPath(sideClip.wall"))
++        val inspect = java.io.File(src, "MediaInspectView.kt").readText()
++        assertTrue(inspect.contains("lit.alpha = faceA"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt b/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt

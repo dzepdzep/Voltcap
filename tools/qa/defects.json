@@ -1905,9 +1905,9 @@
    "title": "Settings window's own frames are expensive on the RP Classic (~27 ms vsync-to-complete, GPU ~14 ms, cmd ~9 ms) — vertical navigation still misses ~17-20 vsyncs per 20 presses, worst gap ~200 ms",
    "rule": "PERF",
    "severity": "med",
-   "status": "fixed",
+   "status": "open",
    "found": "2026-11-02 update 456 (winpace.sh, per-window framestats)",
-   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision. Update 457b: owner clarified \"the new settings just spawn in\" — reproduced on the RP Classic (30 fps recording): focus scroll stopped with the focused row flush on the bottom edge, so the next row was never visible and popped in. Fixed in staging: SettingsLookAhead (LocalBringIntoViewSpec, 56 dp margin, max 1/4 pane). Verified RP Classic A/B (voltcap_test_lookahead) + Thor; Render457Test."
+   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision. Update 457b: owner clarified \"the new settings just spawn in\" — reproduced on the RP Classic (30 fps recording): focus scroll stopped with the focused row flush on the bottom edge, so the next row was never visible and popped in. Fixed in staging: SettingsLookAhead (LocalBringIntoViewSpec, 56 dp margin, max 1/4 pane). Verified RP Classic A/B (voltcap_test_lookahead) + Thor; Render457Test. Update 458 (RP Classic gfxinfo, Settings Home ▼x10 ▲x10): still 12-14 % janky, GPU p50 13 / p90 18-19 ms, ~20 slow UI-thread frames per 20 presses; plain panels give the same janky %. Row visibility fixed (457b); frame drops OPEN — next: what recomposes per focus move."
   },
   {
    "id": "D173",
@@ -1923,18 +1923,18 @@
    "title": "Generated cartridges for games without a retail release (Pokémon Brown) look artificial next to authentic ones",
    "rule": "ART",
    "severity": "med",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not investigated on hardware this update. Update 457 (RP Classic, Inspect, next to Mario's Picross photo cart): reproduced — flat even grey shell, empty top recess (no moulded \"Nintendo GAME BOY\"), box-front cover used as the sticker (ESRB / seal / slogan printed), sticker sized to the cover. Not changed."
+   "note": "Not investigated on hardware this update. Update 457 (RP Classic, Inspect, next to Mario's Picross photo cart): reproduced — flat even grey shell, empty top recess (no moulded \"Nintendo GAME BOY\"), box-front cover used as the sticker (ESRB / seal / slogan printed), sticker sized to the cover. Not changed. Update 458 (staging, CartShells gb/gbc_dual only): sticker fills its recess (cover cut to it, upper part kept — box-foot rating/blurb and Brown's BROWN VERSION line drop off), moulded \"Nintendo GAME BOY\" in the top panel (rebranded / Neutral as the backs), fine grain, spot light and bevel at half strength. RP Classic verified (home row next to the Dr. Mario photo cart, Inspect 0/60, generated Fire Red). Owner look pending."
   },
   {
    "id": "D175",
    "title": "GBA cartridges: rough / stepped lines along the sides when turned (SolidPiece)",
    "rule": "VISUAL",
    "severity": "med",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed."
+   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed. Update 458: causes — (1) side copies are planes parallel to the face: edge-on they had no width, the GBA cart vanished at 90 deg on the home (Thor); (2) each copy's slanted top left a step before the next: saw-tooth along the side top at 45-90; (3) Inspect drew the face at >= 1 % width edge-on: label squeezed into a striped column. Fixed in staging: copies never past ~88 deg (edgeOnSafeYaw), face/back fade edge-on (edgeOnFade, home + Inspect), copies clipped to the side's real top/bottom edge (SideClip, same Skia camera) and the side strip filled past ~81 deg; Inspect slices up to 72. Thor verified: home poses 0-180 incl. 88/90/92/-90, Inspect 45/88/90, turn + scroll recordings, GB/GBC/N64/3DS at 75/90. Left: ~1 px fine tooth at ~75; Switch and RP Classic not tested; perf not proven (Thor 1 staging run 4.3 % janky vs RC ~1.6 %)."
   },
   {
    "id": "D176",
