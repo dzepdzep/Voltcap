@@ -162,6 +162,8 @@ internal object TestHooks {
      * hidden, in Continue playing… For `voltcap_test_appinfo`.
      */
     @Volatile var appProbe: ((String) -> String)? = null
+    /** Update 452: `--es voltcap_test_winmore on` — the open game window's More opened (as its button does), for the More QA. */
+    val winMore = mutableStateOf<Boolean?>(null)
 
     /**
      * Update 451: the home screen's own state for QA snapshots — selected category (console or special list), the focused
@@ -190,6 +192,7 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }

@@ -2,6 +2,10 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 452: D156 More verified by controller keys on all 20 window types (RP Classic 26 layouts, Thor two-screen) — still needs touch tap,
+long title / missing art, physical controller; LIVE / DASH rapid A B A B leaves the window open. VoltPanel keys fix in WinScenesHomes2.kt.
+D137 experiment reverted (bottleneck = home root recomposition). D153 = QA misread (wontfix). QA hook `voltcap_test_winmore on`.
+Placeholder also PopupMore452Test (gitignored). Patch now removes ten .gitignore lines.**
 **Update 451: Continue playing visually checked (Thor) + D152/D154/D155 fixed; ALWAYS `viewstate.sh save` before and `restore` (must print OK)
 after device tests; never `voltcap_test_category <console>` blindly (use S:<list>). Game-window More (D156) in 22 layouts. D137 measured only,
 D124 not re-run. Placeholders also ChargeWake451Test, PopupMore451Test (gitignored).**

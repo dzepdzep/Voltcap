@@ -62,3 +62,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt
 /app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
+/app/src/test/java/com/shelf/launcher/ui/PopupMore452Test.kt

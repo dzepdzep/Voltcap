@@ -182,3 +182,27 @@ class ContinueApps451OpenGamesTest {
         assertTrue(o.substring(0, 1400).contains("it.stableKey in others && !_uiState.value.isContinueApp(it)"))
     }
 }
+
+/** Update 452: Clear vs the Drive last-played sync, simulated with the store's own rule; play time is never touched by Clear. */
+class ContinueApps452SyncTest {
+    @Test fun anOlderSyncedTimeStaysHiddenAfterClearANewerUseShows() {
+        val clearedAt = 1_000L
+        val hidden = mapOf("psplay.grill.com" to clearedAt)
+        // A sync round brings back the time from before the clear: still hidden.
+        assertTrue(RecentlyPlayedStore.visibleOf(mapOf("psplay.grill.com" to 900L), hidden).isEmpty())
+        // Equal time (same moment) stays hidden too.
+        assertTrue(RecentlyPlayedStore.visibleOf(mapOf("psplay.grill.com" to 1_000L), hidden).isEmpty())
+        // Used again afterwards (here or on another device): back.
+        assertEquals(mapOf("psplay.grill.com" to 1_500L), RecentlyPlayedStore.visibleOf(mapOf("psplay.grill.com" to 1_500L), hidden))
+        // Other entries are untouched.
+        assertEquals(mapOf("rom" to 5L), RecentlyPlayedStore.visibleOf(mapOf("rom" to 5L), hidden))
+    }
+
+    @Test fun clearNeverRewritesPlayTime() {
+        val vm = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
+            .map(::File).first { it.exists() }.readText()
+        val c = vm.substring(vm.indexOf("fun clearContinueHistory(")).let { it.substring(0, it.indexOf("\n    }\n")) }
+        assertFalse(c.contains("playtime"))
+        assertTrue(c.contains("recentlyPlayedStore.forget(packageName)"))
+    }
+}

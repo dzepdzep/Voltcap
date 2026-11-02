@@ -2127,6 +2127,13 @@ private fun SceneBody(
     val moreF = remember { FocusRequester() }
     val showAll = !compactMore || moreOpen
     androidx.activity.compose.BackHandler(enabled = compactMore && moreOpen) { moreOpen = false; moreRefocus(moreF) }
+    // (QA, update 452: `--es voltcap_test_winmore on` opens More as its own button does; the state is logged while tracing.)
+    val qaMore = TestHooks.winMore.value
+    LaunchedEffect(qaMore, compactMore) {
+        if (qaMore == true && compactMore && !moreOpen) { moreOpen = true; moreRefocus(optionsF) }
+        if (qaMore != null) TestHooks.winMore.value = null
+    }
+    LaunchedEffect(moreOpen, compactMore) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "win more=${if (!compactMore) "n/a" else if (moreOpen) "open" else "closed"} scene=$scene") }
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {

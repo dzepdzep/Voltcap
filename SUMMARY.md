@@ -1,3 +1,32 @@
+# Update 452 (2 Nov 2026) — popup polish (D156), Case stacks measurement (D137), Thor focus (D153), Continue playing / charging review (NOT published)
+
+**Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. Odin not contacted, no wireless ADB. Charging, profiles, artwork,
+brightness, volume, category order and hero-art fitting untouched.
+**Game windows "More" (D156, P1):** final staging build, `tools/qa/device/popverify.sh` (launches blocked, view state saved / restored):
+- RP Classic: all 26 window layouts = all 20 `MORE_SCENES` types. More opens with focus on its first action, B closes More first and focus
+  returns to More, a second B closes the window, rapid A B A B never launched. POCKET's A starts the game (no window there); the same scene is
+  covered by Pocket classic / ribbon on the Thor.
+- Found and fixed: CLASSIC (VoltPanel) cut off its keys with More open on 1240x1080 — the picture / facts row now takes only the room left
+  (`WinScenesHomes2.kt`, `weight(1f, fill = false)`), PopupMore452Test; re-verified, all keys visible. Every other layout keeps its look.
+- Thor: Twin desk / icons / showcase, Pocket classic, Hero, Tiles PASS.
+- Popup modes (Stacks): Banner, Classic, Row reveal, Row opens, Shared, Own — open, B closes, no launch; `popup_style_by_layout` restored ("").
+- Still open: a real touch tap on More, long-title / missing-art games, a physical controller; LIVE and DASH ended rapid A B A B with the window
+  still open (one more B closed it). D156 kept "fixed", not "verified". New QA hook `--es voltcap_test_winmore on`, log `win more=open|closed`.
+**Case stacks (D137, P2):** RP Classic, no recording, 3 runs each. Experiment (focus save without a UI-state write): Screen recompositions
+11/11/9 vs 9/12/9, missed frames 1/3/2 vs 0/1/0 — no gain, **reverted**. Bottleneck: the home root recomposes ~1.5–2× per move (state read
+high in LauncherScreen); fixing it needs a state-hoisting change.
+**Thor focus (D153, P3):** not an app bug — in Pocket classic the first A opens the window on the top screen, so a display-0 screenshot looked
+unchanged (mTopFocusedDisplayId=0). Marked wontfix. Physical-controller check needs someone at the Thor.
+**Continue playing (P4):** Thor probe on the final build: PXPlay playtime_ms 708610 (11.8 min) unchanged, still an app (not a game); Asobi stays
+hidden after Clear although sync brought its last_played back (D155 verified). Mocked sync timing: ContinueApps452SyncTest
+(`RecentlyPlayedStore.visibleOf`, Clear never rewrites play time).
+**Charging (P5):** code review only — wake lock released in finally / 10 s timeout, generation guard for concurrent stops, unplug / limit-off /
+bypass checks, restart adopt. No new issue; 80 % / < 77 % unchanged; AYN path untouched.
+**P6:** D136 fixed (QA scripts read the app's `voltcap_qa_screen` mark first). D124: static only (AutoTdp429Test 31 tests green).
+**Checks (final code):** testDebugUnitTest green, static checks PASS (counts unchanged), QA selftest 73 OK, patch `git apply --check` OK.
+**Restored:** RC rebuilt and installed on both; view states verified (Thor All / 007 / profile 0; RP Classic Continue playing / Mario's
+Picross X / profile 0); Thor hooks `.paused`; RP Classic hooks file left as found.
+
 # Update 451 (2 Nov 2026) — final checks: Continue playing on screen (D152/D154/D155), QA view-state restore, charging wake-lock review, game-window "More" (D156) (NOT published)
 
 **Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112. The Odin appeared on wireless ADB only — not used. Thor charging untouched.
