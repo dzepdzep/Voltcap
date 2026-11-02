@@ -2,6 +2,7 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 456: hold under drawer / Settings = `panelHold` (showAppDrawer || showMenu || showSettings) -> HomeIdle.panelHeld, calmHere() (home window only), MediaClock.hold, EffectClockDriver(hold). Settings is `showMenu` (MainMenu), not showSettings. QA: panelhold.sh, setnav.sh, winpace.sh (per-window framestats, toybox awk: no asort), settab.sh; hooks voltcap_test_panelhold / voltcap_test_tabnames. Placeholders also PanelHold456Test, PqTabs456Test (patch removes 19 lines). CRLF in git checkouts also: FocusEffects, PowerSaver, PhysicalMedia, StyleCircuit, StylePocketQuest. project_copy holds older SUMMARY / defects.json copies — write both.**
 **Update 455: Pocket Ribbon top caption (PocketRibbon.kt, RibbonTop455Test; media sized by MediaShell aspect). Background pause waits for the owner
 (drawer / Settings are not full-screen). Placeholder also RibbonTop455Test (patch removes 17 lines). Large screenshots: voltcap-adb screenshot can't take the
 Thor lower display id (number too big) — use `screencap -d 4630946482288158084`.**

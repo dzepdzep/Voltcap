@@ -1623,7 +1623,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Power saving while nobody touches the handheld (Appearance › Behind the dock › Save power when idle).
     SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
     LaunchedWhileActive { HomeIdle.watch() }
-    EffectClockDriver()
+    EffectClockDriver(hold = (showAppDrawer || showMenu || showSettings) && TestHooks.panelHold.value)
     BatterySaverDriver() // (Update 187)
     // Only while on screen: no screensaver during a game or with the display off.
     val screensaverActive = rememberIsActive()
@@ -2919,6 +2919,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             com.shelf.launcher.data.Features.discCalm.state.value
         val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
             showAppsLibrary || showAppDrawer || showFirstRun)
+        // Update 456 (owner, D64 option B): while the app drawer or Settings (the main menu, showMenu, and the older Settings
+        // window) is open the home's background — its animated
+        // scene, animated wallpaper and background clip — holds its current frame, dimmed edges included (same look, no
+        // black, no opaque scrim). Clips pause where they are and play on from there; scenes go on from the same moment.
+        // Only the background: the panel itself and the second screen keep moving. Idle behaviour is unchanged.
+        // (QA A/B: `--ez voltcap_test_panelhold false` turns it off for the session.)
+        val panelHold = (showAppDrawer || showMenu || showSettings) && TestHooks.panelHold.value
+        SideEffect { HomeIdle.panelHeld = panelHold; MediaClock.hold(panelHold) }
         // The second screen only gets the scene while the animated background is on.
         if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
         // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
@@ -3037,7 +3045,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalScenePanelHold provides panelHold,
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -3178,7 +3187,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (wantsCrt) CrtArtOverlay(glow)
             if (ambience != null) GameAmbienceLayer(
                 ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
-                covered = sceneCovered || discCalm
+                covered = sceneCovered || discCalm || panelHold
             )
         }
 
@@ -3247,7 +3256,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 val total = p.NumPossibleAchievements ?: 0
                 if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
             }
-            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered || discCalm, modifier = Modifier.fillMaxSize())
+            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered || discCalm || panelHold, modifier = Modifier.fillMaxSize())
         }
 
         // Video preview: rest on a game for two seconds and its clip fades in.
@@ -3292,7 +3301,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 !(tileLayout && TileSwitch.plain)
         }
         // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
         // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
         if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
 
@@ -3332,7 +3341,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
             )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it

@@ -1,0 +1,7 @@
+# Frozen Voltcap release candidates (tools/release/freeze_rc.py). The APKs live next to this file and are git-ignored;
+# this list is committed. Check: python tools/release/freeze_rc.py --verify
+#
+# v0.6.66 ORIGINAL signed RC — SHA-256 45c6d2ae0c2cd17c0597980a95169335386138969d618315c32b9a1640e3d01f (SUMMARY 445).
+# That file is LOST: later builds of the same name overwrote app/build/outputs/apk/release/Voltcap-0.6.66-release.apk.
+# The entry below is a REBUILD of the unchanged frozen source, NOT byte-identical to the original RC.
+1a014b2da1d0d4a15879edf58c08af5ac83cf73b7ccdf87f304232b9e8703f5a  0.6.66/Voltcap-0.6.66-rebuild1-release-1a014b2d.apk  # 2026-11-02 18:41 versionCode 73 REBUILD of the frozen 0.6.66 source (update 455), not the original RC

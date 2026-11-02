@@ -3,6 +3,19 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 456 (2 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Background hold under drawer / Settings (option B) | DONE (RP Classic measured; Thor no change) | Settings home window 60/s -> 0; drawer frames halved; same look, no black, clips/scenes resume from their place |
+| Settings choppy (RP Classic) | PARTIAL | home redraw behind it fixed (D171); Settings window's own ~27 ms frames open (D172); Thor not re-measured |
+| Pocket Quest long category names | DONE (RP Classic + Thor) | D170: real + very long + Unicode names, first/last, R2 through all; PqTabs456Test |
+| Frozen RC artefacts | DONE | D176 freeze_rc.py + release_candidates/ + SHA256SUMS.txt; original 0.6.66 file lost |
+| Pokémon Stadium / Snap packaging | OPEN | D173: cartridge + label on Ribbon look right; box/case layer not inspected |
+| Generated cartridges (Pokémon Brown) | OPEN | D174 not investigated |
+| GBA side lines when turned | OPEN | D175 code suspect, not reproduced |
+| D168 / D169 artwork mismatch | SKIPPED (owner) | unchanged |
+| D137 / AutoTDP | DEFERRED | KONKR on USB / approval |
+
 ## Update 455 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

@@ -14,6 +14,9 @@ Work top to bottom. Tick each box only after checking it on a real device.
 - [ ] Target SDK 36 / AGP 9.3 / Gradle 9.5: clean build after the update; NDK 28 installed for the Discord bridge.
 - [ ] Google Drive: OAuth consent screen published, Android clients for the release + debug SHA-1 (GITHUB_RELEASE.md).
 
+- [ ] Update 456: right after building the candidate, freeze it — `python tools/release/freeze_rc.py <version> rcN` — and test / publish
+      THAT file (release_candidates/<version>/…); `python tools/release/freeze_rc.py --verify` before publishing. Never call a rebuild the RC.
+
 ## 2. Devices to test
 | Device | Why |
 |---|---|

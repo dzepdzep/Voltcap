@@ -1,3 +1,35 @@
+# Update 456 (2 Nov 2026) — background hold under drawer + Settings (option B), Settings home redraw (D171), Pocket Quest long tab names (D170), frozen RC archive (D176); cartridge / N64 packaging items open (NOT published)
+
+**Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112 (an emulator on the PC's adb list was not used). v0.6.66 frozen; staging only.
+**Background hold (owner: option B):** while the app drawer or Settings (the main menu, `showMenu`, + the older Settings window) is open, the home's
+animated scene / wallpaper / clips hold their current frame (paused, never dropped — clips resume from their position, scenes go on from the
+same time) and — new — the home's own motion in its window only (`calmHere()`): circuit current, focused piece wobble / disc spin (shared
+`MediaClock` held, then run on in step), focus pulse (keeps its glow), sliding names, sparks, `EffectClock`. The panels are windows of their own,
+so their slides and previews keep moving. Same dimmed look, no black, no scrim. QA A/B switch `--ez voltcap_test_panelhold false` (session).
+**Measured (RP Classic):** Settings in the owner's Circuit layout — home window idle 60 frames/s -> 0; during ▼▲ navigation the home window drew
+455-463 frames -> 0 (setnav.sh). Drawer (Tile home preview) idle 157-240 -> 80 frames / 4 s; scroll 234-288 -> 116-119 frames; GPU per frame
+unchanged (~14 ms); dimmed edges pixel-identical over 1.5 s; drawer close: crossfade, no black frame. **Not improved:** the Settings window's
+own frames (~27 ms vsync-to-complete, ~17-20 late frames per 20 presses, worst gap ~200 ms, same with and without the hold — D172 open);
+drawer scroll max gap 50-99 -> 83-100 ms (not better). Thor: Pocket Ribbon draws its own background, GPU 3-7 ms, no measurable change.
+Kept: it removes a whole window of GPU work while a panel is open, with no visible change. Normal idle behaviour unchanged.
+**Settings choppiness (D171 / D172):** cause 1 found and fixed (the home kept redrawing behind Settings — D171, verified 60/s -> 0); cause 2,
+the Settings window's own cost, measured but not traced yet (D172). Thor comparison not repeated this update.
+**Pocket Quest long category names (D170):** reproduced on the RP Classic with real names (Continue playing, Game Boy Advance, Game Boy
+Color, Super Nintendo Entertainment System: no plate, cut text, "+N ›" over the tab). Fixed in `StylePocketQuest.kt` (name bounded by the
+bar's room, two lines, readable minimum, then slide). Verified RP Classic + Thor: real names, QA names (very long custom, Japanese / Unicode),
+first / last tabs, R2 through every tab. QA hook `--es voltcap_test_tabnames "GBA=…|NES=…"` (session only). PqTabs456Test.
+**Release artefacts (D176):** `tools/release/freeze_rc.py` + `release_candidates/` (read-only, versioned + sha8 names, never overwritten,
+SHA256SUMS.txt committed, APKs ignored). The original 0.6.66 RC file stays lost (its checksum recorded; no rebuild is called the original).
+**Open (not done this update):** D173 Pokémon Stadium / Snap packaging (Snap's Pocket Ribbon cartridge + USA label look right on the Thor;
+case / box layers not yet inspected), D174 generated cartridges (Pokémon Brown), D175 GBA side lines (code suspect noted, not reproduced).
+D168 / D169 skipped at the owner's request. D137 (KONKR), AutoTDP gameplay still deferred.
+**Restored:** both devices back on the RC rebuild, view state verified, RP Classic stay-awake back to off (it was switched on for the run),
+Thor hooks `.paused`, this run's QA files removed. **Checks:** testDebugUnitTest green; patch `git apply --check` OK on RC.
+**Copy (0.6.67 only):** next/0.6.67/src_copy/ui/{PowerSaver,FitText,FocusEffects,VoltUi,PhysicalMedia,StyleCircuit,ShowcaseScene,
+StylePocketQuest,LauncherScreen,TestHooks}.kt, tests PanelHold456Test, PqTabs456Test (all also in profile_picker.patch).
+
+    cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; git pull origin main
+
 # Update 455 (2 Nov 2026) — Pocket Ribbon upper screen: bigger piece + title / info line; background-pause question for the owner (NOT published)
 
 **Devices (USB):** AYN Thor 3140972f only (RP Classic, KONKR, Odin not touched). v0.6.66 frozen and unpublished; staging only.

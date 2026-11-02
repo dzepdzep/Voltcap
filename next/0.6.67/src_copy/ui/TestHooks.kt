@@ -60,6 +60,10 @@ internal object TestHooks {
     val sceneCover = mutableStateOf<Boolean?>(null)
     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
     val noVideo = mutableStateOf(false)
+    /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
+    val panelHold = mutableStateOf(true)
+    /** Update 456: `--es voltcap_test_tabnames "GBA=A very long name|All=Ünïcødé 名前"` — Pocket Quest tab names for this session (key: console or label). */
+    val tabNames = mutableStateOf<Map<String, String>>(emptyMap())
     /**
      * v0.6.67: `--es voltcap_test_pickerlook AURORA|CONSOLE|NEON|OLED|THEME|MIDNIGHT|off` — "Who's playing?" in that look for this
      * session (nothing saved).
@@ -263,6 +267,13 @@ internal object TestHooks {
                 else demoProfiles(v).let { (l, a) -> profilesDemoActive.value = a; profilesDemo.value = l }
                 android.util.Log.e("VoltcapQA", "profiles demo $v")
             }
+        }
+        intent?.getStringExtra("voltcap_test_tabnames")?.let { v ->
+            if (enabled(context)) tabNames.value = v.split('|').mapNotNull { e -> e.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1] } }.toMap()
+        }
+        if (intent?.hasExtra("voltcap_test_panelhold") == true && enabled(context)) {
+            panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
+            android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
         }
         if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
             noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)

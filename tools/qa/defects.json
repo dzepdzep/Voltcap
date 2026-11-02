@@ -1871,7 +1871,7 @@
    "severity": "low",
    "status": "suspect",
    "found": "2026-11-02 update 455 (Thor, before screenshot)",
-   "note": "Source not traced (cached artwork in app data); not changed. Check the hack's label lookup (base-game match) before 0.6.67."
+   "note": "Source not traced (cached artwork in app data); not changed. Check the hack's label lookup (base-game match) before 0.6.67. Update 456: owner asked to skip the artwork-mismatch investigation for now; nothing changed."
   },
   {
    "id": "D169",
@@ -1880,7 +1880,70 @@
    "severity": "low",
    "status": "suspect",
    "found": "2026-11-02 update 455 (Thor, Pocket Ribbon top)",
-   "note": "Seen once; not traced. Possibly a fuzzy cover match for the app name. Not changed."
+   "note": "Seen once; not traced. Possibly a fuzzy cover match for the app name. Not changed. Update 456: owner asked to skip the artwork-mismatch investigation for now; nothing changed."
+  },
+  {
+   "id": "D170",
+   "title": "Pocket Quest: long category names lose their gold plate and are cut off / covered by the '+N ›' hint (RP Classic: Continue playing, Game Boy Advance, Game Boy Color, Super Nintendo Entertainment System)",
+   "rule": "TRUNCATE",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 456 (RP Classic, reproduced with real names)",
+   "note": "Cause: each tab was measured as wide as the whole bar (maxLines 1, no wrap); the plate is drawn only when the tab fits, and WholeChipRow keeps the lit tab even when it doesn't, so the hint covered it. Fix (StylePocketQuest.kt PqTabs): the name is bounded by the bar's room (bar less hints, icon, padding; at most 168 dp / 120 dp compact), wraps onto two lines, steps down to a readable minimum, then slides (StableFullText). PqTabs456Test. Verified: RP Classic real names + QA tab names (very long custom, Japanese/Unicode), Thor real + QA names, first/last tabs, R2 through all."
+  },
+  {
+   "id": "D171",
+   "title": "Settings (main menu) / app drawer: the home behind kept redrawing at 60 fps (circuit current, focused piece wobble, focus pulse, sliding names) — both windows competing for the RP Classic's GPU",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-02 update 456 (RP Classic, QA churn + gfxinfo)",
+   "note": "Owner-approved hold (D64 option B) extended to the home's own motion in its window only (calmHere: HomeIdle.panelHeld + the home window), the shared media clock held and run on from where it stopped (MediaClock.hold), EffectClock held; showMenu (the real Settings) included — the first attempt held showSettings only (an older window). RP Classic: home window frames under Settings 60/s -> 0 (setnav.sh), drawer 158 -> 80 frames / 4 s; dimmed edges pixel-identical over 1.5 s; no black frame on close. PanelHold456Test."
+  },
+  {
+   "id": "D172",
+   "title": "Settings window's own frames are expensive on the RP Classic (~27 ms vsync-to-complete, GPU ~14 ms, cmd ~9 ms) — vertical navigation still misses ~17-20 vsyncs per 20 presses, worst gap ~200 ms",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-02 update 456 (winpace.sh, per-window framestats)",
+   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update."
+  },
+  {
+   "id": "D173",
+   "title": "Pokémon Stadium / Pokémon Snap (N64): owner reports the wrong case / packaging",
+   "rule": "ART",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-02 update 456 (owner)",
+   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed."
+  },
+  {
+   "id": "D174",
+   "title": "Generated cartridges for games without a retail release (Pokémon Brown) look artificial next to authentic ones",
+   "rule": "ART",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-02 update 456 (owner)",
+   "note": "Not investigated on hardware this update."
+  },
+  {
+   "id": "D175",
+   "title": "GBA cartridges: rough / stepped lines along the sides when turned (SolidPiece)",
+   "rule": "VISUAL",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-02 update 456 (owner)",
+   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change."
+  },
+  {
+   "id": "D176",
+   "title": "Release: the signed v0.6.66 RC APK was overwritten by later builds of the same name",
+   "rule": "RELEASE",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-11-02 update 455",
+   "note": "tools/release/freeze_rc.py freezes a candidate under release_candidates/<version>/Voltcap-<version>-<label>-<variant>-<sha8>.apk (+ .dm), read-only, never overwritten (a label is refused twice), SHA-256 in release_candidates/SHA256SUMS.txt (committed; APKs git-ignored); --verify re-checks. Tested on a mock tree. The original 0.6.66 file stays lost; its checksum and the rebuild's (reference only) are recorded."
   }
  ]
 }
