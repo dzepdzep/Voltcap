@@ -96,6 +96,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.shelf.launcher.LauncherUiState
@@ -829,7 +830,8 @@ private fun BannerHero(
                 onError = { logoFailed = true }, modifier = Modifier.fillMaxSize()
             ) else Text(
                 titles.display(g.name), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, lineHeight = 34.sp,
+                // (v0.6.66 popup polish: a fixed 34 sp line height left a wide gap between the two lines once the name shrank — GT78.)
+                overflow = TextOverflow.Ellipsis, lineHeight = 1.08.em,
                 autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 32.sp, stepSize = 1.sp),
                 style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
             )
@@ -914,16 +916,34 @@ private fun BannerRound(look: BannerLook, icon: ImageVector, label: String, size
     val sounds = LocalUiSounds.current
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
     val scale by animateFloatAsState(if (focused) 1.1f else 1f, spring(stiffness = Features.rowGlide.state.value.stiffness), label = "bannerRound")
-    Box(
-        modifier.size(size)
-            .graphicsLayer { scaleX = scale; scaleY = scale }
-            .styleFocus(focused, size / 2, 0.7f, look.glow)
-            .clip(CircleShape)
-            .background(if (focused) look.btnOn else look.btn)
-            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(icon, label, tint = if (focused) look.btnOnInk else look.btnInk, modifier = Modifier.size(size * 0.5f))
+    // v0.6.66 popup polish: four unlabelled round icons were hard to tell apart — the one you're on shows its name in a small
+    // pill just above it (right edges lined up, so it never runs off the screen's edge). It takes no room of its own: the
+    // strip's layout doesn't change and nothing is added while no round button is lit.
+    val tip by animateFloatAsState(if (focused) 1f else 0f, androidx.compose.animation.core.tween(160), label = "bannerTip")
+    Box(modifier.size(size)) {
+        Box(
+            Modifier.matchParentSize()
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .styleFocus(focused, size / 2, 0.7f, look.glow)
+                .clip(CircleShape)
+                .background(if (focused) look.btnOn else look.btn)
+                .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, label, tint = if (focused) look.btnOnInk else look.btnInk, modifier = Modifier.size(size * 0.5f))
+        }
+        // qa-ok: TRUNCATE-CLIP (one line measured with an unbounded width: always the whole name)
+        if (tip > 0.01f) Text(
+            label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+            modifier = Modifier
+                .layout { m, c ->
+                    val p = m.measure(c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity, minHeight = 0))
+                    layout(0, 0) { p.place(size.roundToPx() - p.width, -p.height - 8.dp.roundToPx()) }
+                }
+                .graphicsLayer { alpha = tip; translationY = (1f - tip) * 4.dp.toPx() }
+                .clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.78f))
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        )
     }
 }
 

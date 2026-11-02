@@ -3218,10 +3218,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         var videoReadyFor by remember { mutableStateOf<String?>(null) }
         // (Update 187: not while the battery saver rests — low battery, or a game / another app has the controller.)
         val videoRest = com.shelf.launcher.data.BatterySaver.resting
-        LaunchedEffect(focusedGame?.stableKey, state.appearance.videoPreviews, videoRest) {
+        val qaNoVideo = TestHooks.noVideo.value
+        LaunchedEffect(focusedGame?.stableKey, state.appearance.videoPreviews, videoRest, qaNoVideo) {
             videoReadyFor = null
             val game = focusedGame ?: return@LaunchedEffect
-            if (!state.appearance.videoPreviews || videoRest || com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect
+            if (!state.appearance.videoPreviews || videoRest || qaNoVideo || com.shelf.launcher.CrashGuard.safeMode) return@LaunchedEffect
             // (Update 231, #59: the clip is looked up only once you've stayed on the game 0.4 s, not on every game passed —
             // the look-up and the state change it makes cost a frame each step. Still fades in 2 s after you stop.)
             kotlinx.coroutines.delay(400)

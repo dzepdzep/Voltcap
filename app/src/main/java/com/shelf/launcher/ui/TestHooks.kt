@@ -46,6 +46,8 @@ internal object TestHooks {
     val window = mutableStateOf(false)
     /** v0.6.66 (D123): `--ez voltcap_test_scenecover false` — the scene's colours from the cover off/on for this preview only. */
     val sceneCover = mutableStateOf<Boolean?>(null)
+    /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
+    val noVideo = mutableStateOf(false)
     /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
     @Volatile var noLaunch = false
     /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
@@ -170,6 +172,10 @@ internal object TestHooks {
         if (intent?.hasExtra("voltcap_test_nolaunch") == true && enabled(context)) {
             noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
             android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
+        }
+        if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
+            noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
+            android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
         }
         if (intent?.hasExtra("voltcap_test_scenecover") == true && enabled(context)) {
             previewOnly = true; sceneCover.value = intent.getBooleanExtra("voltcap_test_scenecover", false)

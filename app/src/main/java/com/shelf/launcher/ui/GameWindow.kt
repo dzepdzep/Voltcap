@@ -1146,6 +1146,23 @@ internal fun GameWindow(
         // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
         androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
             if (QaTrace.on) android.util.Log.e("VoltcapQA", "winkey ${e.nativeKeyEvent.keyCode} ${e.type}")
+            // v0.6.66 popup polish (Odin, Twin desk, A B A B at 120 ms): the second A came down while the window flew back, but
+            // a button clicks on release and the window was gone by then — the open-again was lost and the last B fell on the
+            // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is
+            // then the home screen's orphan (HomeKeyGuard), never a Play click in the window that opens again.
+            if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {
+                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen on press")
+                return@onPreviewKeyEvent true
+            }
+            // (…and a B on its press while it still flies back takes that open-again back: its release comes after the window
+            // is gone, so it never reached anything — A B A B left the window open again, and the next A started the game.)
+            if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && closingFlag[0] &&
+                (e.key == androidx.compose.ui.input.key.Key.ButtonB || e.key == androidx.compose.ui.input.key.Key.Back)) {
+                if (GamePopup.reopenRequested && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
+                GamePopup.reopenRequested = false
+                return@onPreviewKeyEvent true
+            }
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
             false
         }) {
@@ -1316,7 +1333,7 @@ internal fun GameWindow(
                 // `grow` starts at the first layout, the flight only after the piece's slot is known and its cover is in memory
                 // (up to 450 ms), so the screen dimmed for ~8 frames before anything moved.
                 .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
-                .background(scene?.let { sceneVeil(it) } ?: look.veil)
+                .background(scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else sceneVeil(it) } ?: look.veil)
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
         ) {

@@ -2,8 +2,10 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
-Update 443: popup review done (docs/POPUP_REVIEW_443.pdf); D140 / D141 fixed + verified; D142 (Twin desk hinge, Channel Row reveal buttons) open;
-D137 improved for animated backgrounds, still open with a gameplay-video background. **Next:** D142, D137 video during glides, D124 gameplay run.
+Update 444: popup polish done (docs/POPUP_POLISH_444.pdf): D142 + D143 fixed and verified on Odin + GT78; D137 re-measured (video adds no
+dropped frames; ~1 per step from home recomposition — open, low). **RC verdict: ready for a v0.6.66 release candidate with documented
+limitations (D137 low, D124 gameplay AutoTDP run still unverified, Thor not tested). Next:** owner approval → RC build; then D137 recomposition
+refactor, D124 gameplay run, Thor smoke. Final popup QA: `sh /data/local/tmp/vqa/popfinal.sh TAG "LAYOUT:STYLE ..." [960x640] [game]`.
 Capture: `sh /data/local/tmp/vqa/popviz.sh TAG "LAYOUTS" "STYLES" [960x640]` (launches blocked). The first run after an install can hit the
 profile picker (D136) — press B first.
 Popup audit: `sh /data/local/tmp/vqa/popaudit.sh TAG "LAYOUTS" "STYLES" [960x640]` between snapshot save / restore + preview false;

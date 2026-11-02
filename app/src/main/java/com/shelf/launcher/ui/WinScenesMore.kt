@@ -427,46 +427,7 @@ internal fun IndexCard(ctx: WinSceneCtx) {
     }
 }
 
-// ───────────────────────────── Twin layouts: one window split over the hinge ─────────────────────────────
-
-@Composable
-internal fun TwinHinge(ctx: WinSceneCtx) {
-    val w = minOf(ctx.maxW, 560.dp)
-    val h = minOf(ctx.maxH, 520.dp)
-    val a = ctx.accent
-    Column(Modifier.width(w).height(h).graphicsLayer {
-        // The two halves fold open from the hinge.
-        val e = sceneEase(ctx.reveal())
-        rotationX = (1f - e) * 40f
-        cameraDistance = 12f * density
-        alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
-    }) {
-        // Upper half: what the top screen shows (the art, whole).
-        Box(Modifier.weight(if (h < 420.dp) 0.26f else 0.36f).fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(Color(0xFF101318))) {
-            val art = ctx.wide ?: ctx.backdrop
-            if (art != null) {
-                AsyncImage(rememberStyleArtRequest(art), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.35f)
-                AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
-            } else ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit) }
-        }
-        // The hinge.
-        Box(Modifier.fillMaxWidth().height(10.dp).background(Brush.verticalGradient(listOf(Color(0xFF2A2F37), Color(0xFF555C67), Color(0xFF2A2F37)))))
-        // Lower half: the touch screen's controls.
-        // (Update 423: the keys wrap onto three lines now, so the controls half is the bigger one — at 0.54 the facts were
-        // squeezed to their labels only.)
-        Column(Modifier.weight(if (h < 420.dp) 0.74f else 0.64f).fillMaxWidth().clip(RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)).background(Color(0xFF1A1E25)).padding(12.dp)) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(6.dp))
-            SceneFactsBody(ctx, Color.White.copy(alpha = 0.55f), Color.White)
-            Spacer(Modifier.height(6.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
-                SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
-                    Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp)
-            }
-        }
-    }
-}
+// (Twin layouts: TwinHinge moved to WinSceneTwin.kt — v0.6.66, D142.)
 
 // ───────────────────────────── Artwork library: the artwork grows into a gallery wall with its placard ─────────────────────────────
 

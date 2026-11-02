@@ -52,6 +52,8 @@ fun VideoBackdrop(
     val pausedNow = androidx.compose.runtime.rememberUpdatedState(hold)
     val prepared = remember(url) { java.util.concurrent.atomic.AtomicBoolean(false) }
     val alpha by animateFloatAsState(if (playing && show) 1f else 0f, tween(if (show) 700 else CLIP_FADE_OUT_MS), label = "video")
+    // (v0.6.66 D137: when a clip starts / is put away, for the frame-pacing runs.)
+    if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(playing, show) { android.util.Log.e("VoltcapQA", "clip playing=$playing show=$show") }
     // (Update 307: a clip being replaced or put away fades out over the artwork, then goes — VideoCrossfade.)
     val hidden = androidx.compose.runtime.rememberUpdatedState(onHidden)
     androidx.compose.runtime.LaunchedEffect(show) {

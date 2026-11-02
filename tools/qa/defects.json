@@ -1524,9 +1524,9 @@
    "title": "Disc station game window shows a generic blank silver disc instead of the game's disc art",
    "rule": "ARTWORK",
    "severity": "low",
-   "status": "suspect",
+   "status": "closed",
    "found": "2026-11-01 update 434 Odin P434_DISCS",
-   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on. | Update 443: EXPLAINED — the Disc station window's showcase turn shows the disc's silver underside (reading side) for part of the turn (Odin DISCS_OWN open sequence); the label side is the real art. Possible polish: rest on the label side after the turn."
+   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on. | Update 443: EXPLAINED — the Disc station window's showcase turn shows the disc's silver underside (reading side) for part of the turn (Odin DISCS_OWN open sequence); the label side is the real art. Possible polish: rest on the label side after the turn. | Update 444: confirmed on the Odin — after the showcase turn the disc rests on its label side (+5 s still, .shots/444 DISCS_OWN_2rested); the turn itself is kept. Closed: by design."
   },
   {
    "id": "D131",
@@ -1582,16 +1582,16 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 440 Odin R1 CROSS_OWN",
-   "note": "Press B and check the screen state (guard.sh screen_state) before the first run."
+   "note": "Press B and check the screen state (guard.sh screen_state) before the first run. | Update 444: the picker still appears during long QA runs on both devices; popfinal.sh / d137.sh / d137idle.sh now check for it (uiautomator dump) and press B (keep the current profile) before each step."
   },
   {
    "id": "D137",
    "title": "GT78: Case stacks moving game to game drops to ~25-30 fps (99 frames over 33 ms in 7 s, no recording running)",
    "rule": "PERF",
-   "severity": "med",
+   "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
-   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open)."
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC."
   },
   {
    "id": "D138",
@@ -1634,9 +1634,18 @@
    "title": "Twin desk hinge window (GT78): last facts line cut in half under the keys; Channel grid + Row reveal: the buttons sit over the channel tiles",
    "rule": "VISUAL",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-02 update 443 popup review",
-   "note": "A scrolling facts column was tried and reverted (collapsed to no lines on the GT78). Needs a size-aware hinge split (WinScenesMore.kt TwinHinge) and a placement for Row reveal's buttons on grids."
+   "note": "A scrolling facts column was tried and reverted (collapsed to no lines on the GT78). Needs a size-aware hinge split (WinScenesMore.kt TwinHinge) and a placement for Row reveal's buttons on grids. | Update 444: FIXED. Twin hinge rebuilt (ui/WinSceneTwin.kt): top half = the 'top screen' (picture whole, pinned on Twin desk's squared paper, beside the desk's own name strip); bottom half = facts then keys — the keys are measured first, the facts get what is left and show whole rows only (SnapRows / SnapPaging, unit-tested: never a half line, never zero rows, pages by itself, Details shows all); the window is only as tall as its content. Twin desk gets its light paper, pill keys and a pale veil; Twin icons / showcase keep the dark hinge. Channel grid + Row reveal: name, line and buttons sit together in an action panel under the game (over it in the bottom row) with a notch at the game, only where it fits (a tall Case stacks case keeps the old placement). Verified on the Odin and the GT78 (.shots/444)."
+  },
+  {
+   "id": "D143",
+   "title": "Rapid A B A B on an own-style window (Odin Twin desk): the second A was lost (window gone before its release) and the last B opened the category screen; then, with the A taken on its press, the last B was lost and the window stayed open",
+   "rule": "ONEPRESS",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 444 popfinal rapid A/B",
+   "note": "GameWindow: while the window flies back, A acts on its press (asks to open again; its release is the home screen's orphan, never a Play click) and B on its press takes that open-again back. Odin + GT78: A B A B ends closed on the same game, A B B ends closed; no launch attempted (LAUNCH lines only from the QA script's own retry, blocked). PopupPolish444Test."
   }
  ]
 }

@@ -139,7 +139,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                                             contentAlignment = Alignment.Center
                                         ) { Icon(a.icon, null, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
                                         Spacer(Modifier.height(3.dp))
-                                        Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.72f), fontSize = 10.sp, softWrap = false,
+                                        // (v0.6.66 popup polish: 10 sp at 72 % was hard to read on the GT78's small screen.)
+                                        Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.86f), fontSize = if (compact) 12.sp else 11.sp,
+                                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, softWrap = false,
                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     }
                                 }

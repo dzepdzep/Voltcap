@@ -85,11 +85,11 @@ import kotlin.math.sin
  * Touch: tap a panel to pick it, tap the one you're on to open it, swipe the list up / down.
  */
 
-private val DeskPaper = Color(0xFFF5F6F1)
-private val DeskGrid = Color(0xFFD9E1E7)
-private val DeskInk = Color(0xFF26313C)
-private val DeskMuted = Color(0xFF6A7682)
-private val DeskEdge = Color(0xFFC6CFD7)
+internal val DeskPaper = Color(0xFFF5F6F1)
+internal val DeskGrid = Color(0xFFD9E1E7)
+internal val DeskInk = Color(0xFF26313C)
+internal val DeskMuted = Color(0xFF6A7682)
+internal val DeskEdge = Color(0xFFC6CFD7)
 private val DeskSat = Color(0xFF2F74C9)
 private val DeskSun = Color(0xFFD5473F)
 private val DeskBack = listOf(Color(0xFFEEF1F4), Color(0xFFDCE2E8))
@@ -281,7 +281,7 @@ internal fun TwinDeskBackdrop(modifier: Modifier) {
 }
 
 /** Squared paper (drawn once per size). */
-private fun Modifier.deskPaper(): Modifier = this.drawWithCache {
+internal fun Modifier.deskPaper(): Modifier = this.drawWithCache {
     val step = 14.dp.toPx()
     val line = 1.dp.toPx().coerceAtLeast(1f)
     onDrawBehind {

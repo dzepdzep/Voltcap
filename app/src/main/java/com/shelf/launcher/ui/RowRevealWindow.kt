@@ -358,18 +358,39 @@ internal fun RowMotionWindow(
             var titleSize by remember { mutableStateOf(IntSize.Zero) }
             var buttonsSize by remember { mutableStateOf(IntSize.Zero) }
             val gap = with(d) { 10.dp.toPx() }
+            // v0.6.66 (D142): the Channel grid (and any whole-screen layout with no room beside the game) put the bare name and
+            // buttons over unrelated tiles. There the name, its line and the buttons sit together in an action panel of their own
+            // right under the game (over it when it's in the bottom row), a notch pointing at the game, on the panel's dark backing.
+            val sideRoom = c.right + with(d) { 24.dp.toPx() } + buttonsSize.width <= W - pad
+            val inner = with(d) { 8.dp.toPx() }
+            val panelPadPx = with(d) { 12.dp.toPx() }
+            val notchPx = with(d) { 9.dp.toPx() }
+            val panelHPx = 2 * panelPadPx + titleSize.height + inner + buttonsSize.height
+            val fitsBelow = c.bottom + gap + notchPx + panelHPx <= H - gap
+            val fitsAbove = c.top - gap - notchPx - panelHPx >= gap
+            // (Only where it fits whole above or under the game — a tall Case stacks case leaves no room: the buttons go as before.)
+            val panel = !opens && state.appearance.homeLayout.styleHome &&
+                (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CHAN || !sideRoom) && (fitsBelow || fitsAbove)
+            val panelPad = if (panel) panelPadPx else 0f
+            val notch = if (panel) notchPx else 0f
+            val panelH = panelHPx
+            val panelBelow = fitsBelow
+            val panelTop = if (panelBelow) c.bottom + gap + notch else c.top - gap - notch - panelH
             val titleFrom = if (opens) Offset(textLeft, coverEnd.top + with(d) { 30.dp.toPx() })
+                else if (panel) Offset(c.left, if (panelBelow) c.bottom - titleSize.height else c.top)
                 else Offset(c.left, (c.top - gap - titleSize.height).coerceAtLeast(topY))
-            val titleTo = if (opens) Offset(textLeft, coverEnd.top) else Offset(pad, topY)
+            val titleTo = if (opens) Offset(textLeft, coverEnd.top) else if (panel) Offset(pad + panelPad, panelTop + panelPad) else Offset(pad, topY)
             val buttonsFrom = if (opens) Offset(textLeft, coverEnd.bottom - buttonsSize.height + with(d) { 26.dp.toPx() })
                 else Offset(c.left, (c.top - gap - buttonsSize.height).coerceAtLeast(topY))
             // (v0.6.66: a short cover — a wide card's — left the wrapped buttons over the name: never above the name's line.)
             val buttonsTo = if (opens) Offset(textLeft, maxOf(coverEnd.bottom - buttonsSize.height, titleTo.y + titleSize.height + with(d) { 12.dp.toPx() }))
-                else if (c.right + with(d) { 24.dp.toPx() } + buttonsSize.width <= W - pad) Offset(c.right + with(d) { 24.dp.toPx() }, c.center.y - buttonsSize.height / 2f)
+                else if (panel) Offset(pad + panelPad, titleTo.y + titleSize.height + inner)
+                else if (sideRoom) Offset(c.right + with(d) { 24.dp.toPx() }, c.center.y - buttonsSize.height / 2f)
                 // (No room beside the game: under it, or over it when it's at the bottom edge.)
                 else Offset(pad, if (c.bottom + gap + buttonsSize.height <= H - gap) c.bottom + gap else c.top - gap - buttonsSize.height)
+            // (The panel holds the name and the buttons only: the story and facts are a press away, Details.)
             val infoTop = titleTo.y + titleSize.height + with(d) { 14.dp.toPx() }
-            val infoBottom = if (opens) buttonsTo.y - with(d) { 14.dp.toPx() }
+            val infoBottom = if (panel) infoTop else if (opens) buttonsTo.y - with(d) { 14.dp.toPx() }
                 else if (buttonsTo.y < c.top) buttonsTo.y - with(d) { 14.dp.toPx() } else c.top - with(d) { 18.dp.toPx() }
 
             // ---- the cover (The row opens up only: in Row reveal the row's own card stays where it is) ----
@@ -391,6 +412,31 @@ internal fun RowMotionWindow(
                 )
             }
 
+            // ---- (D142) the grid's action panel behind the name and buttons, with its notch at the game ----
+            if (panel && buttonsSize != IntSize.Zero) Canvas(Modifier.fillMaxSize()) {
+                val t = p.value
+                val a = part(t, 0f, 0.35f)
+                val slide = (1f - part(t, 0f, 0.6f)) * with(d) { 14.dp.toPx() } * (if (panelBelow) -1f else 1f)
+                val top = panelTop + slide
+                val bottom = panelTop + panelH + slide
+                val r = with(d) { 14.dp.toPx() }
+                val fill = Color(0xF0121519)
+                drawRoundRect(fill, topLeft = Offset(pad, top), size = Size(W - 2 * pad, bottom - top),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(r, r), alpha = a)
+                drawRoundRect(accent.copy(alpha = 0.55f), topLeft = Offset(pad, top), size = Size(W - 2 * pad, bottom - top),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(r, r), alpha = a,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f * density))
+                val nx = c.center.x.coerceIn(pad + r + notch, W - pad - r - notch)
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    if (panelBelow) { moveTo(nx - notch, top + 1f); lineTo(nx, top - notch); lineTo(nx + notch, top + 1f) }
+                    else { moveTo(nx - notch, bottom - 1f); lineTo(nx, bottom + notch); lineTo(nx + notch, bottom - 1f) }
+                    // (this.close(): a bare close() here is the window's own close — a local beats the Path's member — and shut
+                    // the window the moment the panel was drawn.)
+                    this.close()
+                }
+                drawPath(path, fill, alpha = a)
+            }
+
             // ---- the name and its line ----
             Column(
                 Modifier
@@ -403,7 +449,7 @@ internal fun RowMotionWindow(
                         // show at once at the start or the end.)
                         alpha = if (titleSize == IntSize.Zero) 0f else if (opens) part(t, 0.35f, 0.85f) else part(t, 0.12f, 0.4f)
                     }
-                    .widthIn(max = with(d) { textW.toDp() })
+                    .widthIn(max = with(d) { (if (panel) W - 2 * pad - 2 * panelPad else textW).toDp() })
             ) {
                 Text(
                     titles.display(g.name), color = Color.White, fontSize = if (narrow) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
@@ -465,7 +511,7 @@ internal fun RowMotionWindow(
             androidx.compose.foundation.layout.FlowRow(
                 Modifier
                     // (v0.6.66: the buttons wrap onto a second line inside the text column instead of running off the screen.)
-                    .widthIn(max = with(d) { (if (opens) textW else W - 2 * pad).toDp() })
+                    .widthIn(max = with(d) { (if (opens) textW else W - 2 * pad - 2 * panelPad).toDp() })
                     .onSizeChanged { buttonsSize = it }
                     .onFocusChanged { buttonsFocused.value = it.hasFocus }
                     .graphicsLayer {
@@ -493,7 +539,7 @@ internal fun RowMotionWindow(
             val badges = trophies.sortedWith(compareBy<com.shelf.launcher.data.RaAchievementDetail> { if (it.isUnlocked) 0 else 1 }.then(com.shelf.launcher.data.RA_DISPLAY_ORDER))
                 .mapNotNull { a -> com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { it to a.isUnlocked } }.take(10)
             val shots = if (badges.isEmpty()) state.screenshots[k].orEmpty().take(4) else emptyList()
-            if (buttonsSize != IntSize.Zero && (badges.isNotEmpty() || shots.isNotEmpty()) && stripTop + stripH <= H - with(d) { 12.dp.toPx() }) Row(
+            if (!panel && buttonsSize != IntSize.Zero && (badges.isNotEmpty() || shots.isNotEmpty()) && stripTop + stripH <= H - with(d) { 12.dp.toPx() }) Row(
                 Modifier
                     .graphicsLayer {
                         val t = p.value

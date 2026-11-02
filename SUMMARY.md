@@ -1,3 +1,33 @@
+# Update 444 (2 Nov 2026) — v0.6.66 popup polish: Twin desk hinge rebuilt, Channel grid action panel, rapid A/B fix, D137 re-measured (NOT published)
+
+**D142 fixed (Odin + GT78):** Twin hinge window rebuilt in `ui/WinSceneTwin.kt` (moved out of WinScenesMore.kt). Top half = the picture (whole,
+pinned on Twin desk's squared paper) beside the desk's own name strip (accent bar, name wraps then shrinks, console · year); bottom half = facts
+then keys. The keys are measured first; the facts get what is left and show whole rows / summary lines only (`SnapRows` + pure `SnapPaging`:
+never half a line, never zero rows, pages by itself, Details shows everything). The window is only as tall as its content. Twin desk: light paper,
+white touch half, pill keys (lit = accent ring), pale veil (`twinDeskVeil` in GameWindow); Twin icons / showcase keep the dark hinge.
+Channel grid + Row reveal: name, line and buttons sit together in an action panel under the game (over it in the bottom row), a notch at the game,
+only where it fits (a tall Case stacks case keeps its old placement). A bare `close()` in the notch's Path builder resolved to the window's close
+and shut the reveal on its first frame — caught on the Odin, fixed (`this.close()`), guarded by a test.
+**D143 fixed:** rapid A B A B on an own-style window (Odin Twin desk) lost the second A (the window was gone before its release) and the last B
+opened the category screen. While the window flies back, A now acts on its press (open again; its release is the home screen's orphan) and B on its
+press takes that back. A B A B ends closed on the same game on both devices.
+**Smaller:** Cinema icon captions 12 sp on small screens (were 10 sp at 72 %); Banner: the focused round key shows its name in a pill above it,
+and the title's two lines no longer have a wide gap. Shared move, Wii / Arctic / Cross own windows unchanged (re-recorded). Disc station: the turn is
+kept and the disc already rests on its label side — D130 closed.
+**D137 (open, low):** "frames over 33 ms" measured latency, not drops. New QaTrace `cadence n= missed=` line. Case stacks, 6 steps: clip playing
+6/6/6 missed vsyncs per run vs clips off 5/7/5 — the video adds none; the ~1 missed frame per step is the home screen recomposing on focus
+change (UI thread 15-20 ms + 15 ms recording). Stage-in-one-layer experiment: no gain, reverted. Video background untouched.
+**QA tools:** `tools/qa/device/popfinal.sh` (open / settle / D-pad / close / after B / rapid A/B per layout × style, launches blocked, profile picker
+dismissed), `d137.sh` (cadence, clip on/off via new `voltcap_test_novideo`), `d137idle.sh`, `tools/qa/tools/popsheet.py` (labelled sheets → PDF).
+**Evidence:** docs/POPUP_POLISH_444.pdf (29 pages: summary, D137 table, after-fix sheets for GT78 + Odin). No game started (GT78: no LAUNCH line;
+Odin: one LAUNCH blocked by the hook, caused by the script's own extra A, fixed). No crash. Snapshots restored; GT78 hooks removed / stay-awake 0;
+Odin hooks + earlier snapshot as found.
+**Checks:** testDebugUnitTest green (TwinHinge142Test 7, PopupPolish444Test 4), assembleRelease OK, installed in place on both.
+NOT TESTED: Twin window without any artwork (no such game on either device), Thor.
+**Copy:** `src_copy/ui/WinSceneTwin.kt` (new), `WinScenesMore.kt`, `TwinDesk.kt`, `GameWindow.kt`, `GameWindowBanner.kt`, `RowRevealWindow.kt`,
+`WinScenesHomes.kt`, `LauncherScreen.kt`, `TestHooks.kt`, `QaTrace.kt`, `VideoPreview.kt`; `project_copy/app/src/test/.../TwinHinge142Test.kt`,
+`PopupPolish444Test.kt`; tools/qa/device/{popfinal,d137,d137idle}.sh; tools/qa/tools/popsheet.py; defects.json; docs/POPUP_POLISH_444.pdf.
+
 # Update 443 (2 Nov 2026) — v0.6.66 popup visual & animation review: 3 layout fixes, D137 partly improved, review PDF (NOT published)
 
 **Review:** 7 layouts (Wii Channel, Case stacks, Disc station, Twin desk, Cinema, Arctic, Cross menu) × 6 popup styles on the Odin and the GT78,

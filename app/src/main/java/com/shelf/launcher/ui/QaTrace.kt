@@ -103,8 +103,33 @@ internal object QaTrace {
     }
 
     /** From FrameWatch's frame-metrics listener (its own thread). */
+    // v0.6.66 (D137): what you see is the cadence, not each frame's length — a frame can take 36 ms from its vsync and the
+    // screen still get one every 16.7 ms (frames overlap). Each second with frames: `cadence n=<frames> missed=<vsyncs with
+    // no new frame between two frames> maxgap=<ms>`. A gap counts only while frames keep coming (an idle screen draws none).
+    private var winStart = 0L
+    private var winFrames = 0
+    private var winMissed = 0
+    private var winMaxGap = 0L
+    private var lastVsyncNs = 0L
+
+    private fun cadence(vsyncNs: Long) {
+        if (lastVsyncNs > 0L) {
+            val gap = vsyncNs - lastVsyncNs
+            // (Gaps over ~0.25 s are a pause in drawing, not dropped frames.)
+            if (gap in (budgetNs * 3 / 2)..250_000_000L) { winMissed += ((gap + budgetNs / 2) / budgetNs - 1).toInt(); if (gap > winMaxGap) winMaxGap = gap }
+        }
+        lastVsyncNs = vsyncNs
+        if (winStart == 0L) winStart = vsyncNs
+        winFrames++
+        if (vsyncNs - winStart >= 1_000_000_000L) {
+            android.util.Log.e("VoltcapQA", "cadence n=$winFrames missed=$winMissed maxgap=${winMaxGap / 1_000_000}")
+            winStart = vsyncNs; winFrames = 0; winMissed = 0; winMaxGap = 0L
+        }
+    }
+
     fun frame(m: android.view.FrameMetrics) {
         if (!on || android.os.Build.VERSION.SDK_INT < 24) return
+        if (android.os.Build.VERSION.SDK_INT >= 26) cadence(m.getMetric(android.view.FrameMetrics.INTENDED_VSYNC_TIMESTAMP))
         val total = m.getMetric(android.view.FrameMetrics.TOTAL_DURATION)
         if (total <= budgetNs * 3 / 2) return
         val vsync = if (android.os.Build.VERSION.SDK_INT >= 26) m.getMetric(android.view.FrameMetrics.INTENDED_VSYNC_TIMESTAMP) / 1_000_000 else 0L
