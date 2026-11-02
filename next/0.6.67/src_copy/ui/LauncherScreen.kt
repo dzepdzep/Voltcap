@@ -3770,6 +3770,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                 when (state.appearance.categoryBarHere) {
                     com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
+                        // (Update 453: the same categories as L2 / R2 and the category screen.)
+                        keys = run {
+                            val tileVer = com.shelf.launcher.data.CategoryTileOrder.version.value
+                            remember(state.categoryOrder, state.availablePlatforms, state.collections, state.games, tileVer, com.shelf.launcher.data.PlatformOrder.version.value) {
+                                com.shelf.launcher.data.CategoryStops.keys(state)
+                            }
+                        },
                         bottomGap = state.appearance.infoSpacing.dp.dp,
                         platforms = state.availablePlatforms,
                         order = state.categoryOrder,
@@ -6284,6 +6291,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                 // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                 // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
+                // Update 453 (RP Classic, Hero, rapid A B A B): a B in the frame between the closed window and the one opening
+                // again (A pressed while it flew back) reached neither window, and the window stayed open. It takes the open back (on its press; its release is then
+                // an orphan for the guard below, never a home-screen B).
+                if (GamePopup.game == null && GamePopup.reopenGame != null && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} cancels reopen")
+                    if (event.type == KeyEventType.KeyDown) GamePopup.reopenGame = null
+                    return@onKeyEvent true
+                }
                 if (event.key == Key.ButtonB || event.key == Key.Back) {
                     if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                     else if (event.type == KeyEventType.KeyUp) {

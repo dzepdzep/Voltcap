@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -591,9 +592,11 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
         translationY = (1f - e) * size.height * 0.15f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(14.dp); clip = true
-    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))) {
-        // The charge stripe down the left edge.
-        Box(Modifier.width(6.dp).fillMaxHeight().background(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f)))))
+    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+        // The charge stripe down the left edge. (Update 453: drawn behind, no longer a fillMaxHeight box — that box made the
+        // window take its whole maximum height, so a game with few facts left half of it empty; now it fits what it shows.)
+        .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f))), size = androidx.compose.ui.geometry.Size(6.dp.toPx(), size.height)) }) {
+        Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f).padding(14.dp)) {
             // (Update 452, D156: the picture and facts give way to the keys — with More open the keys' extra lines were pushed out
             // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)

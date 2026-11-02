@@ -63,3 +63,7 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PopupMore452Test.kt
+/app/src/test/java/com/shelf/launcher/ui/PopupReopen453Test.kt
+/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt
+/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt
+/app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt

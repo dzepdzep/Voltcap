@@ -1269,7 +1269,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-10-29 update 407 sweep (Thor)",
-   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN."
+   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN. | Update 453: Thor navcheck: inside a Cross menu PREVIEW the stops change 21→20 after the first switch and ◀▶ then moves games — the preview is lost on a category switch (D164). Likely a QA artefact; a real check needs Cross set as the layout (owner setting, not changed)."
   },
   {
    "id": "D103",
@@ -1289,7 +1289,8 @@
    "status": "fixed",
    "found": "2026-10-29 owner report, fixed update 408",
    "fix": "RomScanner.isTrashedOrHiddenName skips dot-files while scanning; RomLibraryPrefetch.read drops stale indexed records (isTrashedPath). Files are never touched.",
-   "check": "TrashedRoms408Test (real temp-folder scan: trashed file skipped, real sibling kept, files unchanged; stale cache record dropped). NOT reproduced on the Thor: no .trashed file / record exists there now. The app does not use MediaStore or SAF for ROM discovery (file system only), so IS_TRASHED does not apply."
+   "check": "TrashedRoms408Test (real temp-folder scan: trashed file skipped, real sibling kept, files unchanged; stale cache record dropped). NOT reproduced on the Thor: no .trashed file / record exists there now. The app does not use MediaStore or SAF for ROM discovery (file system only), so IS_TRASHED does not apply.",
+   "note": "Update 453: Both devices: no .trashed-* / recycle folders on storage (read-only find). Folder-level trash added: D163."
   },
   {
    "id": "D105",
@@ -1472,7 +1473,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM→LIGHT→OFF in Efficient, LIGHT→OFF in Balanced)",
-   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done. | Update 451: not re-run — a real game session would change the owner's play history (last played, play time) and possibly emulator saves; the code paths are covered by AutoTdp429Test. Still fixed-unverified. | Update 452: Static only: AutoTdp429Test 31 tests incl. loading-screen / scene-cut cases pass on the final code; the restore path still needs a real PS2 session (not run without approval)."
+   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done. | Update 451: not re-run — a real game session would change the owner's play history (last played, play time) and possibly emulator saves; the code paths are covered by AutoTdp429Test. Still fixed-unverified. | Update 452: Static only: AutoTdp429Test 31 tests incl. loading-screen / scene-cut cases pass on the final code; the restore path still needs a real PS2 session (not run without approval). | Update 453: Deferred: needs the owner's approval for a controlled real-game test."
   },
   {
    "id": "D125",
@@ -1591,7 +1592,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
-   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC. | Update 451 (RP Classic, RC, d137.sh NOVIDEO): cadence missed per 6-move run 16 / 3 / 1, idle 2 / 2 / 0; the first frame after each move has anim 36-40 ms (the home screen recomposing: Screen=3-4, CarRun/CarP per move). Idle renders at 60 fps with gpu ~14-19 ms (the background). Not changed — no optimisation found within this batch; the root-level recomposition per focus move is the lead. | Update 452: RP Classic, no recording, 3 runs each: experiment (focus save without UI state) Screen recompositions 11/11/9 vs 9/12/9 before, missed frames 1/3/2 vs 0/1/0 — no gain, reverted. Bottleneck: the home-screen root recomposes ~1.5–2× per move (state read high in LauncherScreen), not the focus save; needs a state-hoisting change, not a tweak."
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC. | Update 451 (RP Classic, RC, d137.sh NOVIDEO): cadence missed per 6-move run 16 / 3 / 1, idle 2 / 2 / 0; the first frame after each move has anim 36-40 ms (the home screen recomposing: Screen=3-4, CarRun/CarP per move). Idle renders at 60 fps with gpu ~14-19 ms (the background). Not changed — no optimisation found within this batch; the root-level recomposition per focus move is the lead. | Update 452: RP Classic, no recording, 3 runs each: experiment (focus save without UI state) Screen recompositions 11/11/9 vs 9/12/9 before, missed frames 1/3/2 vs 0/1/0 — no gain, reverted. Bottleneck: the home-screen root recomposes ~1.5–2× per move (state read high in LauncherScreen), not the focus save; needs a state-hoisting change, not a tweak. | Update 453: Deferred by the owner until the KONKR Pocket Advance is on USB (no other device as a substitute)."
   },
   {
    "id": "D138",
@@ -1762,7 +1763,79 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 451 popup audit (RP Classic, all 53 layouts, own style)",
-   "note": "Audit: tools/qa/device/popscan.sh RPC (53 stills). Clean already (unchanged): Channel grid (More), Cinema, Bubbles, Cards, Memory card, Airy, Arctic, Discover, TV room and the menu-list windows (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop, Storage, Box, Orbit, Blades). Fix (GameWindow SceneBody, MORE_SCENES): Play, Details, Back, Inspect + More; More opens in place (Performance, Options, Achievements, Save sync, Manual, status lines, Less), focus to Options, B closes More first, focus back on More; an urgent save line stays visible; each layout keeps its own look. RP Classic: Cover details B closes More then the window; Thor Twin desk + Hero: same (popmore.sh). PopupMore451Test. | Update 452: Final staging build, popverify.sh: RP Classic all 26 window layouts (all 20 MORE_SCENES types) — More opens, B closes More first then the window, rapid A/B never launched; Thor TWIN_DESK/ICONS/SHOWCASE, POCKET_CLASSIC, HERO, TILES PASS. CLASSIC (VOLT_PANEL) cut off the keys with More open on 1240x1080 → fixed (WinScenesHomes2 picture row weight(1f, fill=false), PopupMore452Test) and re-verified. Popup modes on STACKS: Banner, Classic, Row reveal, Row opens, Shared, Own all open/close, no launch (popup_style_by_layout restored by snapshot). Not yet covered: a real touch tap on More, long-title / missing-art games, a physical controller; LIVE and DASH: rapid A B A B ended with the window open (one more B closed it) — not checked against 0.6.66. Kept 'fixed', not 'verified'."
+   "note": "Audit: tools/qa/device/popscan.sh RPC (53 stills). Clean already (unchanged): Channel grid (More), Cinema, Bubbles, Cards, Memory card, Airy, Arctic, Discover, TV room and the menu-list windows (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop, Storage, Box, Orbit, Blades). Fix (GameWindow SceneBody, MORE_SCENES): Play, Details, Back, Inspect + More; More opens in place (Performance, Options, Achievements, Save sync, Manual, status lines, Less), focus to Options, B closes More first, focus back on More; an urgent save line stays visible; each layout keeps its own look. RP Classic: Cover details B closes More then the window; Thor Twin desk + Hero: same (popmore.sh). PopupMore451Test. | Update 452: Final staging build, popverify.sh: RP Classic all 26 window layouts (all 20 MORE_SCENES types) — More opens, B closes More first then the window, rapid A/B never launched; Thor TWIN_DESK/ICONS/SHOWCASE, POCKET_CLASSIC, HERO, TILES PASS. CLASSIC (VOLT_PANEL) cut off the keys with More open on 1240x1080 → fixed (WinScenesHomes2 picture row weight(1f, fill=false), PopupMore452Test) and re-verified. Popup modes on STACKS: Banner, Classic, Row reveal, Row opens, Shared, Own all open/close, no launch (popup_style_by_layout restored by snapshot). Not yet covered: a real touch tap on More, long-title / missing-art games, a physical controller; LIVE and DASH: rapid A B A B ended with the window open (one more B closed it) — not checked against 0.6.66. Kept 'fixed', not 'verified'. | Update 453: Remaining 452 checks: real touch on More (Classic, Live tiles: More → Less → Back taps PASS), long titles + missing metadata (2 games x 16 layouts, collapsed + More, RP Classic: wraps / slides, no clipped key), compact screen = RP Classic 1240x1080. LIVE/DASH rapid = D157 (fixed). Physical controller: not possible remotely. Kept 'fixed': touch was checked on 2 window types only and no physical controller was used."
+  },
+  {
+   "id": "D157",
+   "title": "Rapid A B A B sometimes left the game window open (RP Classic Live tiles / Dashboard / Hero, 4 of 98 tries; 0.6.66 RC 0 of 24 in the same run)",
+   "rule": "UI",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 453 RP Classic rapid.sh",
+   "note": "Cause (VoltcapQA log): an A that reached the dying window AFTER GamePopup.closed() set the static reopenRequested with nobody left to read it, so the NEXT close (even in another layout) reopened the window; and a B in the frame between a closed window and its re-open reached neither window. Fix: GameWindow.kt GamePopup.opened/askAgain/cancelAgain (one token per window; a late A re-opens at once, a late B cancels, a new window starts with no stale request) + LauncherScreen home B cancels a pending re-open. PopupReopen453Test (5). After: RP Classic 60/60 + 48/48 closed, Thor 56/56 closed, no launch."
+  },
+  {
+   "id": "D158",
+   "title": "The pill category bar (Classic / Tiles rows, Category bar = Full) still listed tiles taken off the category screen ('Other apps' on the Thor) — 21 pills vs 20 L2/R2 stops / 20 tiles",
+   "rule": "CATEGORY",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 453 Thor Tile home preview",
+   "note": "PlatformFilterRow built its own list from availablePlatforms + categoryOrder (no CategoryTileOrder.isHidden / tile order). Now it takes data/CategoryStops.keys(state) (remembered on order, platforms, collections, games, tile-order and console-order versions). CategoryBar453Test. Thor after: All, Continue playing, Nintendo 3DS, Android games, Game Boy… — Other apps gone; L2/R2 = 20 stops = 20 tiles both ways."
+  },
+  {
+   "id": "D159",
+   "title": "App drawer opened with nothing lit: the first ▼ only lit the first app",
+   "rule": "ONEPRESS",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-02 update 453 Thor drawer",
+   "note": "AppDrawer.kt: the first app takes Modifier.initialFocus(). Thor: opens on aPS3e lit; ▼ scrolls to the last row with focus visible. DrawerFocus453Test."
+  },
+  {
+   "id": "D160",
+   "title": "Classic game window (VoltPanel) always took its full maximum height — a game with few facts left half the window empty",
+   "rule": "UI",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-02 update 453 RP Classic long-title / no-metadata stills",
+   "note": "The accent stripe was a fillMaxHeight Box in a Row capped only by heightIn(max): it stretched the window. Drawn with drawBehind now; the window fits its content, More grows it, keys never clipped (452 weight kept). VoltPanelFit453Test. Before/after stills: Pokemon TCG 2 (no description) and SMA4 (long title)."
+  },
+  {
+   "id": "D161",
+   "title": "Switch dumps showed their tags in the name: 'Donkey Kong Country Returns HD [01009D901BC56000][Base]'",
+   "rule": "LIBRARY",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-02 update 453 Thor Case stacks / Shelf",
+   "note": "GameTitles.stripRegionTags drops a square-bracket 16-digit Switch title ID (01…) and [Base] (display / matching only; the file, its stable key, art and history untouched). SwitchTitle453Test. Thor Tile home: 'Donkey Kong Country Returns HD'."
+  },
+  {
+   "id": "D162",
+   "title": "App drawer: long app names cut with '…' (rule 11)",
+   "rule": "TRUNCATE",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-02 update 453 static TRUNCATE AppDrawer.kt:212",
+   "note": "The tile you're on shows FullText (2 lines, readable shrink, slide); other tiles keep 2 lines (qa-ok, whole name on focus). No app on the two devices has a name long enough to need the slide — not seen sliding on hardware."
+  },
+  {
+   "id": "D163",
+   "title": "ROMs inside recycle / recovery folders would be indexed: Windows $RECYCLE.BIN keeps deleted ROMs as $Rxxxxxx.gba with their extension; LOST.DIR, System Volume Information",
+   "rule": "LIBRARY",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-02 update 453 code review (P5)",
+   "note": "RomScanner.isTrashFolder: exact names $RECYCLE.BIN (any case), RECYCLER, System Volume Information, LOST.DIR, .Trash, .Trashes, .Trash-<uid> — never walked; a record inside one is dropped on read (isTrashedPath). Nothing is ever touched. TrashFolders453Test (scan keeps the real ROM, leaves the bin file as it was). Neither device has such a folder (checked read-only) — unit tested only."
+  },
+  {
+   "id": "D164",
+   "title": "QA: a layout preview (voltcap_test_preview + voltcap_test_layout) is lost on the first category switch (the stored appearance comes back) — Cross menu showed 21 stops then 20, the Thor screen went back to Pocket classic",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 453 Thor navcheck",
+   "note": "Set the category first, then the layout preview (media.sh does). Explains D102's odd ◀▶ observations, which came from preview runs."
   }
  ]
 }

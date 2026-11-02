@@ -96,3 +96,16 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
 
 ## Physical QA on the Thor (standing authorization, CLAUDE.md)
 The owner's standing authorization in `CLAUDE.md` ("Standing Thor QA authorization") covers routine QA on the AYN Thor, ADB serial **3140972f** (always `adb -s 3140972f`): no per-session permission is needed. Safeguards stay: max 15 minutes physical QA per task; never clear app data or uninstall; no charging-limit changes; preserve games, saves, profiles, artwork; restore volume / DND / display; stop test processes and recorders; never touch any other device (Google TV Streamer, Odin 2 Portal). A simulated test is still not hardware verification: mark untested rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the device-free element geometry check.
+
+## Keeping the owner's home state (update 451)
+`device/viewstate.sh save` before a test and `device/viewstate.sh restore` after it: settings, category order, the selected
+category, the focused game and the profile are saved; restore puts them back and the app checks them (exit 0 only on `OK`).
+`voltcap_test_category` takes `S:<list>` for a special list (`S:RECENT` = Continue playing) and never leaves the screen on an empty
+category. Never end a run without a passing restore.
+
+## Update 453 device scripts (all save the view state first and restore + verify it)
+`rapidab.sh TAG "LAYOUTS" N` rapid A B A B N times per layout (end state, blocked launches, log per open end) ·
+`catparity.sh TAG N` category screen tiles vs N x R2 / L2 stops in the owner's layout · `longtitle.sh TAG "LAYOUTS"` long-title /
+no-metadata games' windows collapsed + More · `navcheck.sh TAG "LAYOUTS" "KEYS"` focus line per key · `media.sh TAG "LAYOUTS" "CONSOLES"`
+media stills per console. Set a test category BEFORE a layout preview (D164). Wake the device first: keys injected while it sleeps end in
+an input-timeout report.

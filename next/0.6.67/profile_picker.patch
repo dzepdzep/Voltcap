@@ -675,6 +675,38 @@ index 2912fab..ecf1125 100644
          private const val KEY = "last_played_json"
          private const val KEY_HIDDEN = "continue_hidden_json"
      }
+diff --git a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
+index afb4bc3..976dac9 100644
+--- a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
++++ b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
+@@ -335,14 +335,25 @@ object RomScanner {
+ 
+     /** Update 408: an indexed game whose file (or a folder above it) is a trash / hidden placeholder is an invalid record. */
+     fun isTrashedPath(path: String?): Boolean =
+-        path != null && path.replace('\\', '/').split('/').any { it.startsWith(".trashed-") || it.startsWith(".pending-") } ||
+-            path != null && isTrashedOrHiddenName(path.replace('\\', '/').substringAfterLast('/'))
++        path != null && path.replace('\\', '/').split('/').dropLast(1).any { it.startsWith(".trashed-") || it.startsWith(".pending-") || isTrashFolder(it) } ||
++            path != null && path.replace('\\', '/').substringAfterLast('/').let { it.startsWith(".trashed-") || it.startsWith(".pending-") || isTrashedOrHiddenName(it) }
++
++    /**
++     * Update 453: recycle / trash / recovery folders — Windows `$RECYCLE.BIN` / `RECYCLER` (an SD card formatted or cleaned on a PC:
++     * a deleted ROM sits there as `$Rxxxxxx.gba` with its real extension), `System Volume Information`, Android's `LOST.DIR`, and the
++     * desktop `.Trash` / `.Trash-1000` / `.Trashes` folders. Never walked, and a record inside one is invalid. Exact names only.
++     */
++    fun isTrashFolder(name: String): Boolean =
++        name.equals("\$RECYCLE.BIN", ignoreCase = true) || name == "RECYCLER" || name == "System Volume Information" ||
++            name == "LOST.DIR" || name == ".Trash" || name == ".Trashes" || TRASH_UID.matches(name)
++    private val TRASH_UID = Regex("^[.]Trash-\\d+$")
+ 
+     /** Folders never worth walking: hidden ones and Android's app-data trees. */
+     private fun skipFolder(dir: File, root: File): Boolean {
+         if (dir.absolutePath == root.absolutePath) return false
+         val name = dir.name
+         if (name.startsWith(".")) return true
++        if (isTrashFolder(name)) return true
+         // /storage/emulated/0/Android (data, obb, media of every app).
+         if (name == "Android" && (File(dir, "data").isDirectory || File(dir, "obb").isDirectory)) return true
+         return false
 diff --git a/app/src/main/java/com/shelf/launcher/data/SettingsScopes.kt b/app/src/main/java/com/shelf/launcher/data/SettingsScopes.kt
 index 404cf8e..a65207c 100644
 --- a/app/src/main/java/com/shelf/launcher/data/SettingsScopes.kt
@@ -981,7 +1013,7 @@ index d8fa46a..c1202f1 100644
                          else -> st.label
                      },
 diff --git a/app/src/main/java/com/shelf/launcher/ui/AppDrawer.kt b/app/src/main/java/com/shelf/launcher/ui/AppDrawer.kt
-index 78873e0..86a98ed 100644
+index 78873e0..d56e485 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/AppDrawer.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/AppDrawer.kt
 @@ -34,6 +34,7 @@ import android.provider.Settings
@@ -1007,7 +1039,15 @@ index 78873e0..86a98ed 100644
  ) {
      com.shelf.launcher.Breadcrumbs.mark("AppDrawer")
      val sorted = remember(apps) { apps.sortedBy { it.name.lowercase() } }
-@@ -96,7 +103,7 @@ internal fun AppDrawer(
+@@ -90,13 +97,14 @@ internal fun AppDrawer(
+                     verticalArrangement = Arrangement.spacedBy(6.dp)
+                 ) {
+                     items(sorted) { app ->
+-                        DrawerTile(app, look, Modifier.fillMaxWidth(), onMenu = { menuFor = app }) { onLaunch(app) }
++                        // (Update 453, Thor: the drawer opened with nothing lit — the first ▼ only lit the first app. It starts on it.)
++                        DrawerTile(app, look, Modifier.fillMaxWidth().then(if (app === sorted.first()) Modifier.initialFocus() else Modifier), onMenu = { menuFor = app }) { onLaunch(app) }
+                     }
+                 }
              }
          }
      }
@@ -1016,7 +1056,7 @@ index 78873e0..86a98ed 100644
  }
  
  /** Long-press / Start on an app: uninstall, Android's app info, hide, game or app. */
-@@ -106,7 +113,11 @@ private fun AppOptionsMenu(
+@@ -106,7 +114,11 @@ private fun AppOptionsMenu(
      isGame: (String) -> Boolean,
      onSetKind: (String, AppKind) -> Unit,
      onHide: () -> Unit,
@@ -1029,7 +1069,7 @@ index 78873e0..86a98ed 100644
  ) {
      val context = LocalContext.current
      val pkg = app.packageName ?: run { onDismiss(); return }
-@@ -126,6 +137,20 @@ private fun AppOptionsMenu(
+@@ -126,6 +138,20 @@ private fun AppOptionsMenu(
                  if (game) "Mark as app" else "Mark as game",
                  if (game) "Leaves the games row; stays in the drawer" else "Shows it with your games"
              ) { onSetKind(pkg, if (game) AppKind.APP else AppKind.GAME); onDismiss() }
@@ -1050,6 +1090,27 @@ index 78873e0..86a98ed 100644
              MenuRow(Icons.Filled.VisibilityOff, "Hide", "From the library and this drawer. Settings › Library brings it back") {
                  onHide(); onDismiss()
              }
+@@ -179,12 +205,18 @@ private fun DrawerTile(app: Game, look: DrawerLook, modifier: Modifier, onMenu:
+             Box(Modifier.size(52.dp).clip(iconShape).background(look.placeholder))
+         }
+         Spacer(Modifier.height(6.dp))
+-        Text(
++        // Update 453 (rule 11): the tile you're on shows its whole name — two lines, a readable smaller size, then a slow slide
++        // (FullText). The other tiles of the grid keep two lines (qa-ok: TRUNCATE fixed-size grid cell; whole name on focus,
++        // in the app's options and to TalkBack via the icon's description) so a page of long names never slides all at once.
++        if (focused) FullText(
++            app.name, color = look.ink, fontSize = 11.sp, maxLines = 2, textAlign = TextAlign.Center,
++            lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
++        ) else Text(
+             app.name,
+             color = look.ink, // (Update 237, #13: the panel's ink — dark on light glass / the pale Live backdrop)
+             fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+             maxLines = 2,
+-            overflow = TextOverflow.Ellipsis,
++            overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (unfocused grid cell; whole name on focus, above)
+             textAlign = TextAlign.Center,
+             lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
+         )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameOptionsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/GameOptionsDialog.kt
 index 836ed64..ae31045 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameOptionsDialog.kt
@@ -1088,8 +1149,32 @@ index 836ed64..ae31045 100644
          if (onGuide != null) {
              MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)
          }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt b/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
+index 5cf86a6..920f03a 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
+@@ -143,6 +143,8 @@ fun stripRegionTags(name: String): String =
+ private val REGION_CLEAN = android.util.LruCache<String, String>(4096)
+ private val ALL_CLEAN = android.util.LruCache<String, String>(4096)
+ private val FLAG_ONLY = Regex("^[!abhotfpc]\\d*$")
++/** Update 453: a Switch title ID as dumps carry it, "[0100…]" (16 hex digits). */
++private val SWITCH_TITLE_ID = Regex("^01[0-9A-Fa-f]{14}$")
+ 
+ private fun stripRegionTagsNow(name: String): String {
+     val cleaned = TAG.replace(name) { match ->
+@@ -154,7 +156,9 @@ private fun stripRegionTagsNow(name: String): String {
+         val isPatch = PATCH_TAG.containsMatchIn(lower)
+         val isFlag = inner.isEmpty() || inner in setOf("!", "a", "b", "h", "o", "t", "f", "p", "c") ||
+             inner.matches(FLAG_ONLY)
+-        if (isRegion || isLanguages || isPatch || (match.value.trim().startsWith("[") && isFlag)) "" else match.value
++        // Update 453 (Thor, Switch): a Switch dump's own tags — "[01009D901BC56000][Base]" — read as part of the name.
++        val isSwitchDump = match.value.trim().startsWith("[") && (SWITCH_TITLE_ID.matches(inner) || lower == "base")
++        if (isRegion || isLanguages || isPatch || isSwitchDump || (match.value.trim().startsWith("[") && isFlag)) "" else match.value
+     }
+     // Loose " - Widescreen Hack" / " + 60 FPS Patch" style suffixes too.
+     val noSuffix = cleaned.replace(PATCH_SUFFIX, "").replace(LOOSE_SUFFIX, "")
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 3ce9e16..d43f469 100644
+index 3ce9e16..7bc8b6e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -46,6 +46,8 @@ import androidx.compose.foundation.rememberScrollState
@@ -1101,7 +1186,71 @@ index 3ce9e16..d43f469 100644
  import androidx.compose.runtime.Composable
  import androidx.compose.runtime.LaunchedEffect
  import androidx.compose.runtime.CompositionLocalProvider
-@@ -2117,11 +2119,26 @@ private fun SceneBody(
+@@ -120,6 +122,26 @@ internal object GamePopup {
+         game = null
+         if (again) reopenGame = g
+     }
++
++    /**
++     * Update 453: the window on screen now (one token per opened window). An A / B that reaches a window AFTER [closed]
++     * (its dialog still takes keys for a frame) used to set [reopenRequested] with nobody left to read it, so the NEXT close —
++     * seconds later, even in another layout — opened the window again (rapid A B A B ended with it open on Live tiles /
++     * Dashboard / Hero, RP Classic). Now such a late press acts at once, and a newly opened window starts with no stale request.
++     */
++    var current: Any? = null
++    fun opened(token: Any) { current = token; reopenRequested = false }
++    /** A pressed on a closing (or just closed) window: open it again once it is gone. */
++    fun askAgain(token: Any, g: Game) {
++        if (game != null && current === token) reopenRequested = true
++        else if (game == null) { if (reopenGame == null) reopenGame = g }
++        // (a newer window is already up: this press already did its job)
++    }
++    /** B pressed on a closing (or just closed) window: take a pending open-again back. */
++    fun cancelAgain(token: Any) {
++        if (game != null && current === token) reopenRequested = false
++        else if (game == null) reopenGame = null
++    }
+ }
+ 
+ /**
+@@ -953,12 +975,15 @@ internal fun GameWindow(
+     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
+     // reached the Play button of the closing window and launched the game instead of opening the case again.
+     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
++    // (Update 453: this window's identity for late A / B presses — see [GamePopup.current].)
++    val winToken = remember(g.stableKey) { Any() }
++    DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
+     val onPlay: () -> Unit = {
+         val orphan = HomeKeyGuard.takeOrphanRelease()
+         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
+         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
+         if (orphan) Unit
+-        else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
++        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
+     }
+     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
+     val perfState = rememberGamePerf(g, perfPackage)
+@@ -1151,7 +1176,7 @@ internal fun GameWindow(
+             // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is
+             // then the home screen's orphan (HomeKeyGuard), never a Play click in the window that opens again.
+             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {
+-                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true
++                GamePopup.askAgain(winToken, g); HomeKeyGuard.aDown = true
+                 if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen on press")
+                 return@onPreviewKeyEvent true
+             }
+@@ -1159,8 +1184,8 @@ internal fun GameWindow(
+             // is gone, so it never reached anything — A B A B left the window open again, and the next A started the game.)
+             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && closingFlag[0] &&
+                 (e.key == androidx.compose.ui.input.key.Key.ButtonB || e.key == androidx.compose.ui.input.key.Key.Back)) {
+-                if (GamePopup.reopenRequested && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
+-                GamePopup.reopenRequested = false
++                if ((GamePopup.reopenRequested || GamePopup.reopenGame != null) && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
++                GamePopup.cancelAgain(winToken)
+                 return@onPreviewKeyEvent true
+             }
+             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
+@@ -2117,11 +2142,26 @@ private fun SceneBody(
          kotlinx.coroutines.delay(120)
          runCatching { f.requestFocus() }
      }
@@ -1129,7 +1278,7 @@ index 3ce9e16..d43f469 100644
                  add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
                  add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
              }
-@@ -2130,20 +2147,28 @@ private fun SceneBody(
+@@ -2130,20 +2170,28 @@ private fun SceneBody(
              WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
          }
      }
@@ -1160,7 +1309,7 @@ index 3ce9e16..d43f469 100644
      val list = state.raAchievementDetails[g.stableKey].orEmpty()
      val p = state.raProgress[g.stableKey]
      val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
-@@ -2179,6 +2204,24 @@ private fun SceneBody(
+@@ -2179,6 +2227,24 @@ private fun SceneBody(
      else DrawWinScene(scene, ctx)
  }
  
@@ -1228,8 +1377,35 @@ index e2f49d8..bcb4a5a 100644
          Spacer(Modifier.height(6.dp))
          // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.
          val rooted = com.shelf.launcher.device.RootShell.available
+diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
+index cd5b7ae..1ef0d90 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
+@@ -581,15 +581,19 @@ internal fun PlatformFilterRow(
+     /** Lines the pills up with the row: start (left end), centre or end (right). */
+     align: Alignment.Horizontal = Alignment.Start,
+     /** Where the pills start / end at the screen edge; null = where the game name starts. */
+-    edge: androidx.compose.ui.unit.Dp? = null
++    edge: androidx.compose.ui.unit.Dp? = null,
++    /** Update 453: the category keys in L2 / R2 order (CategoryStops.keys); null = built from [order] / [platforms]. */
++    keys: List<String>? = null
+ ) {
+     com.shelf.launcher.Breadcrumbs.mark("PlatformFilterRow")
+     // Every pill needs its own key: no category listed twice.
+     val orderU = remember(order) { order.distinct() }
+     val platformsU = remember(platforms) { platforms.distinct() }
+     val collectionsU = remember(collections, platformsU) { collections.distinct().filter { it !in platformsU } }
+-    val itemKeys = remember(orderU, platformsU, collectionsU) {
+-        buildList {
++    val itemKeys = remember(orderU, platformsU, collectionsU, keys) {
++        // Update 453: the categories L2 / R2 and the category screen use (data/CategoryStops.kt) — tiles taken off the
++        // category screen (the owner's "Other apps") are no pill either, in the tile order. Built here only without them.
++        keys?.distinct() ?: buildList {
+             orderU.forEach { key ->
+                 when (key) {
+                     com.shelf.launcher.data.CategorySettings.ALL -> add(key)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..10663bc 100644
+index 0b73fb5..bc5ee70 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -835,6 +835,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -1301,7 +1477,21 @@ index 0b73fb5..10663bc 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -4996,7 +5028,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3738,6 +3770,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                 if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
+                 when (state.appearance.categoryBarHere) {
+                     com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
++                        // (Update 453: the same categories as L2 / R2 and the category screen.)
++                        keys = run {
++                            val tileVer = com.shelf.launcher.data.CategoryTileOrder.version.value
++                            remember(state.categoryOrder, state.availablePlatforms, state.collections, state.games, tileVer, com.shelf.launcher.data.PlatformOrder.version.value) {
++                                com.shelf.launcher.data.CategoryStops.keys(state)
++                            }
++                        },
+                         bottomGap = state.appearance.infoSpacing.dp.dp,
+                         platforms = state.availablePlatforms,
+                         order = state.categoryOrder,
+@@ -4996,7 +5035,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -1316,7 +1506,7 @@ index 0b73fb5..10663bc 100644
          )
      }
  
-@@ -6014,7 +6052,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6059,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -1329,7 +1519,22 @@ index 0b73fb5..10663bc 100644
          )
      }
  
-@@ -7263,3 +7305,21 @@ internal object HomeKeyGuard {
+@@ -6242,6 +6291,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                 // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
+                 // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
+                 // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
++                // Update 453 (RP Classic, Hero, rapid A B A B): a B in the frame between the closed window and the one opening
++                // again (A pressed while it flew back) reached neither window, and the window stayed open. It takes the open back (on its press; its release is then
++                // an orphan for the guard below, never a home-screen B).
++                if (GamePopup.game == null && GamePopup.reopenGame != null && (event.key == Key.ButtonB || event.key == Key.Back)) {
++                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} cancels reopen")
++                    if (event.type == KeyEventType.KeyDown) GamePopup.reopenGame = null
++                    return@onKeyEvent true
++                }
+                 if (event.key == Key.ButtonB || event.key == Key.Back) {
+                     if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
+                     else if (event.type == KeyEventType.KeyUp) {
+@@ -7263,3 +7320,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -2659,12 +2864,29 @@ index 054c3eb..e6ac515 100644
  internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
      this == HomeLayout.TWIN_SHOWCASE || // Update 307
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-index a30bc6d..32afc96 100644
+index a30bc6d..c262d9a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-@@ -595,7 +595,9 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
-         // The charge stripe down the left edge.
-         Box(Modifier.width(6.dp).fillMaxHeight().background(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f)))))
+@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.draw.clip
++import androidx.compose.ui.draw.drawBehind
+ import androidx.compose.ui.geometry.Offset
+ import androidx.compose.ui.graphics.Brush
+ import androidx.compose.ui.graphics.Color
+@@ -591,11 +592,15 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+         translationY = (1f - e) * size.height * 0.15f
+         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
+         shape = RoundedCornerShape(14.dp); clip = true
+-    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))) {
+-        // The charge stripe down the left edge.
+-        Box(Modifier.width(6.dp).fillMaxHeight().background(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f)))))
++    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
++        // The charge stripe down the left edge. (Update 453: drawn behind, no longer a fillMaxHeight box — that box made the
++        // window take its whole maximum height, so a game with few facts left half of it empty; now it fits what it shows.)
++        .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f))), size = androidx.compose.ui.geometry.Size(6.dp.toPx(), size.height)) }) {
++        Spacer(Modifier.width(6.dp))
          Column(Modifier.weight(1f).padding(14.dp)) {
 -            Row(verticalAlignment = Alignment.Top) {
 +            // (Update 452, D156: the picture and facts give way to the keys — with More open the keys' extra lines were pushed out
@@ -2887,6 +3109,54 @@ index 0000000..7d456c5
 +        assertTrue(c.contains("recentlyPlayedStore.forget(packageName)"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt b/app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt
+new file mode 100644
+index 0000000..0eaad96
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt
+@@ -0,0 +1,42 @@
++package com.shelf.launcher.data
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Rule
++import org.junit.Test
++import org.junit.rules.TemporaryFolder
++import java.io.File
++
++/** Update 453 (P5): ROMs in recycle / trash / recovery folders are never games; real ROMs beside them are kept, nothing is touched. */
++class TrashFolders453Test {
++    @get:Rule val tmp = TemporaryFolder()
++
++    @Test fun trashFolderNames() {
++        listOf("\$RECYCLE.BIN", "\$Recycle.Bin", "RECYCLER", "System Volume Information", "LOST.DIR", ".Trash", ".Trashes", ".Trash-1000")
++            .forEach { assertTrue(it, RomScanner.isTrashFolder(it)) }
++        listOf("gba", "Recycle", "Recycler", "lost", "Trash", ".hack", "Trash Panic", "LOST", ".Trash-x")
++            .forEach { assertFalse(it, RomScanner.isTrashFolder(it)) }
++    }
++
++    @Test fun scanSkipsRecycleBinKeepsRealRoms() {
++        val gba = File(tmp.root, "gba").apply { mkdirs() }
++        val real = File(gba, "Advance Wars.gba").apply { writeText("a") }
++        val bin = File(tmp.root, "\$RECYCLE.BIN/S-1-5-21-1").apply { mkdirs() }
++        val deleted = File(bin, "\$RA1B2C3.gba").apply { writeText("b") }
++        val lost = File(tmp.root, "LOST.DIR").apply { mkdirs() }
++        File(lost, "1234.gba").writeText("c")
++        val res = RomScanner.scan(tmp.root.path)
++        assertEquals(listOf(real.absolutePath), res.games.map { it.romPath })
++        assertTrue("never touched", deleted.exists() && deleted.readText() == "b")
++    }
++
++    /** Old code: a record inside \$RECYCLE.BIN (indexed before this update) stayed in the library. */
++    @Test fun staleRecordInRecycleBinIsDropped() {
++        assertTrue(RomScanner.isTrashedPath("/storage/1234-ABCD/\$RECYCLE.BIN/S-1-5/\$RA1B2C3.gba"))
++        assertTrue(RomScanner.isTrashedPath("/storage/1234-ABCD/.Trash-1000/files/Advance Wars.gba"))
++        assertFalse(RomScanner.isTrashedPath("/storage/1234-ABCD/ROMs/gba/Advance Wars.gba"))
++        assertFalse(RomScanner.isTrashedPath("/storage/1234-ABCD/ROMs/ps2/.hack GU Vol 1.iso"))
++        assertFalse(RomScanner.isTrashedPath("/roms/Trash Panic/Trash Panic.iso"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt b/app/src/test/java/com/shelf/launcher/device/ChargeFastStop450Test.kt
 new file mode 100644
 index 0000000..1687ad3
@@ -2986,6 +3256,48 @@ index 0000000..e751de5
 +        assertTrue(src.contains("if (!isRetroid()) return false")) // needsAwake: never on the AYN path
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt b/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt
+new file mode 100644
+index 0000000..74ac78f
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt
+@@ -0,0 +1,36 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * Update 453 (Thor, Tile home preview): the pill category bar still listed "Other apps", a tile the owner took off the
++ * category screen — L2 / R2 and the category screen skip it (20 stops = 20 tiles), the bar showed 21. The bar now takes the
++ * same list (data/CategoryStops.kt). Behaviour of the list itself: CategoryStopsTest.
++ */
++class CategoryBar453Test {
++    private fun src(name: String): String {
++        val roots = listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/")
++        return roots.map { File(it + name) }.first { it.exists() }.readText().replace("\r\n", "\n")
++    }
++
++    @Test fun pillBarUsesTheCategoryStops() {
++        val ls = src("LauncherScreen.kt")
++        val call = ls.substring(ls.indexOf("CategoryBar.FULL -> PlatformFilterRow("), ls.indexOf("CategoryBar.FULL -> PlatformFilterRow(") + 700)
++        assertTrue(call.contains("com.shelf.launcher.data.CategoryStops.keys(state)"))
++        assertTrue("re-worked when a tile is taken off / put back", call.contains("CategoryTileOrder.version.value"))
++        val hc = src("HomeChrome.kt")
++        assertTrue(hc.contains("keys?.distinct() ?: buildList {"))
++    }
++}
++
++/** Update 453 (Thor): the app drawer starts on its first app and the app you're on shows its whole name (rule 11). */
++class DrawerFocus453Test {
++    @Test fun drawerStartsOnTheFirstAppAndShowsWholeNameOnFocus() {
++        val roots = listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/")
++        val s = roots.map { File(it + "AppDrawer.kt") }.first { it.exists() }.readText().replace("\r\n", "\n")
++        assertTrue(s.contains("if (app === sorted.first()) Modifier.initialFocus() else Modifier"))
++        assertTrue(s.contains("if (focused) FullText(\n            app.name"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
 new file mode 100644
 index 0000000..7d99650
@@ -3052,6 +3364,19 @@ index 0000000..7d99650
 +        assertTrue(GestureHint.limitNote(immersive = false, force = false, ayn = false, deviceHides = true) != null)
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt b/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt
+index f421c43..80a6d4a 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt
+@@ -16,7 +16,7 @@ class PlayWhileClosing412Test {
+ 
+     @Test fun playIsIgnoredOnceTheWindowIsClosing() {
+         val s = src()
+-        assertTrue(s.contains("else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed("))
++        assertTrue(s.contains("else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed("))  // (update 453: via askAgain)
+         // v0.6.66 (D135): the release of the home screen's own A press is never a Play press.
+         assertTrue(s.contains("val orphan = HomeKeyGuard.takeOrphanRelease()"))
+         // Update 413: the home screen routes the window's close through GamePopup.closed so a pending A reopens it
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
 new file mode 100644
 index 0000000..249059f
@@ -3115,6 +3440,101 @@ index 0000000..d9372fe
 +        val top = v.indexOf("Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top)")
 +        val keys = v.indexOf("KeyRow(sceneKeys(ctx))")
 +        assertTrue("picture + facts give way", top in 0 until keys)
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt
+index 0466c57..ba6da60 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt
+@@ -18,8 +18,8 @@ class PopupPolish444Test {
+     @Test fun aClosingWindowActsOnPressesNotReleases() {
+         val s = src("GameWindow.kt")
+         assertTrue("A while closing asks to open again on its press",
+-            s.contains("HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {\n                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true"))
+-        assertTrue("B while closing takes the open-again back", s.contains("GamePopup.reopenRequested = false\n                return@onPreviewKeyEvent true"))
++            s.contains("HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {\n                GamePopup.askAgain(winToken, g); HomeKeyGuard.aDown = true"))  // (update 453: via askAgain)
++        assertTrue("B while closing takes the open-again back", s.contains("GamePopup.cancelAgain(winToken)\n                return@onPreviewKeyEvent true"))
+     }
+ 
+     @Test fun bannerRoundKeysNameTheOneYouAreOn() {
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupReopen453Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupReopen453Test.kt
+new file mode 100644
+index 0000000..f9b5d1b
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/PopupReopen453Test.kt
+@@ -0,0 +1,74 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.Game
++import com.shelf.launcher.data.SourceType
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Before
++import org.junit.Test
++
++/**
++ * Update 453: rapid A B A B on Live tiles / Dashboard / Hero (RP Classic) sometimes ended with the window open — an A that
++ * reached the dying window after [GamePopup.closed] left a stale re-open request, and the NEXT close opened it again.
++ */
++class PopupReopen453Test {
++    private val g = Game(name = "Advance Wars", platform = "GBA", hue = 1, sourceType = SourceType.ROM, romPath = "/r/aw.gba")
++
++    @Before fun reset() { GamePopup.game = null; GamePopup.reopenGame = null; GamePopup.reopenRequested = false; GamePopup.current = null }
++
++    @Test fun lateAAfterCloseReopensOnceAndLeavesNothingStale() {
++        val w1 = Any(); GamePopup.game = g; GamePopup.opened(w1)
++        GamePopup.closed(g)                       // B: window gone
++        GamePopup.askAgain(w1, g)                 // A reaches the dying dialog after closed()
++        assertEquals(g, GamePopup.reopenGame)     // acts at once
++        assertFalse("no stale request for the next close", GamePopup.reopenRequested)
++        GamePopup.reopenGame = null; GamePopup.game = g
++        val w2 = Any(); GamePopup.opened(w2)
++        GamePopup.closed(g)                       // the final B
++        assertNull("final B leaves it closed", GamePopup.reopenGame)
++    }
++
++    @Test fun staleRequestIsClearedWhenAWindowOpens() {
++        GamePopup.reopenRequested = true          // left over by old code / any path
++        GamePopup.game = g; GamePopup.opened(Any())
++        GamePopup.closed(g)
++        assertNull(GamePopup.reopenGame)
++    }
++
++    @Test fun aWhileStillClosingStillReopens() {
++        val w = Any(); GamePopup.game = g; GamePopup.opened(w)
++        GamePopup.askAgain(w, g)                  // D108: A while it flies back
++        assertTrue(GamePopup.reopenRequested)
++        GamePopup.closed(g)
++        assertEquals(g, GamePopup.reopenGame)
++    }
++
++    @Test fun lateBCancelsAPendingReopen() {
++        val w = Any(); GamePopup.game = g; GamePopup.opened(w)
++        GamePopup.closed(g); GamePopup.askAgain(w, g)
++        GamePopup.cancelAgain(w)
++        assertNull(GamePopup.reopenGame)
++    }
++
++    @Test fun lateKeyOnAnOldWindowNeverTouchesTheNewOne() {
++        val old = Any(); GamePopup.game = g; GamePopup.opened(old); GamePopup.closed(g)
++        GamePopup.game = g; val now = Any(); GamePopup.opened(now)
++        GamePopup.askAgain(old, g)
++        assertFalse(GamePopup.reopenRequested); assertNull(GamePopup.reopenGame)
++        GamePopup.cancelAgain(old)
++        assertEquals(g, GamePopup.game)
++    }
++}
++
++/** Update 453: the Classic window (VoltPanel) fits what it shows — its stripe no longer stretches it to the maximum height. */
++class VoltPanelFit453Test {
++    @Test fun stripeDoesNotStretchTheWindow() {
++        val roots = listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/")
++        val s = roots.map { java.io.File(it + "WinScenesHomes2.kt") }.first { it.exists() }.readText().replace("\r\n", "\n")
++        val v = s.substring(s.indexOf("internal fun VoltPanel(ctx: WinSceneCtx)")).let { it.substring(0, it.indexOf("KeyRow(")) }
++        assertFalse(v.contains("fillMaxHeight()"))
++        assertTrue(v.contains(".drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f)))"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
@@ -3235,6 +3655,31 @@ index 0000000..15cb771
 +        assertTrue(!bubble.contains("TextOverflow.Ellipsis"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt b/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt
+new file mode 100644
+index 0000000..0eb2848
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt
+@@ -0,0 +1,19 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Test
++
++/** Update 453 (Thor, Case stacks): a Switch dump's tags were shown as part of its name. */
++class SwitchTitle453Test {
++    @Test fun switchDumpTagsAreNotPartOfTheName() {
++        assertEquals("Donkey Kong Country Returns HD", stripRegionTags("Donkey Kong Country Returns HD [01009D901BC56000][Base]"))
++        assertEquals("Fire Emblem Three Houses", stripRegionTags("Fire Emblem Three Houses [010055D009F78000][v0]"))
++    }
++
++    @Test fun otherTagsStayAsBefore() {
++        assertEquals("Final Fantasy VII (Disc 2)", stripRegionTags("Final Fantasy VII (Disc 2) (USA)"))
++        assertEquals("Super Mario World", stripRegionTags("Super Mario World (USA) [!]"))
++        assertEquals("Game (Base)", stripRegionTags("Game (Base)"))                 // round brackets: not a dump tag
++        assertEquals("Game [0100ABC]", stripRegionTags("Game [0100ABC]"))           // not a 16-digit title ID
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt b/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
 new file mode 100644
 index 0000000..1b27c17
@@ -3301,7 +3746,7 @@ index 0000000..1b27c17
 +    }
 +}
 diff --git a/tools/qa/README.md b/tools/qa/README.md
-index e482bd7..f52ac64 100644
+index e482bd7..e9309a9 100644
 --- a/tools/qa/README.md
 +++ b/tools/qa/README.md
 @@ -82,7 +82,7 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
@@ -3313,7 +3758,7 @@ index e482bd7..f52ac64 100644
    `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
    the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
    folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
-@@ -96,3 +96,9 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
+@@ -96,3 +96,16 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
  
  ## Physical QA on the Thor (standing authorization, CLAUDE.md)
  The owner's standing authorization in `CLAUDE.md` ("Standing Thor QA authorization") covers routine QA on the AYN Thor, ADB serial **3140972f** (always `adb -s 3140972f`): no per-session permission is needed. Safeguards stay: max 15 minutes physical QA per task; never clear app data or uninstall; no charging-limit changes; preserve games, saves, profiles, artwork; restore volume / DND / display; stop test processes and recorders; never touch any other device (Google TV Streamer, Odin 2 Portal). A simulated test is still not hardware verification: mark untested rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the device-free element geometry check.
@@ -3323,6 +3768,32 @@ index e482bd7..f52ac64 100644
 +category, the focused game and the profile are saved; restore puts them back and the app checks them (exit 0 only on `OK`).
 +`voltcap_test_category` takes `S:<list>` for a special list (`S:RECENT` = Continue playing) and never leaves the screen on an empty
 +category. Never end a run without a passing restore.
++
++## Update 453 device scripts (all save the view state first and restore + verify it)
++`rapidab.sh TAG "LAYOUTS" N` rapid A B A B N times per layout (end state, blocked launches, log per open end) ·
++`catparity.sh TAG N` category screen tiles vs N x R2 / L2 stops in the owner's layout · `longtitle.sh TAG "LAYOUTS"` long-title /
++no-metadata games' windows collapsed + More · `navcheck.sh TAG "LAYOUTS" "KEYS"` focus line per key · `media.sh TAG "LAYOUTS" "CONSOLES"`
++media stills per console. Set a test category BEFORE a layout preview (D164). Wake the device first: keys injected while it sleeps end in
++an input-timeout report.
+diff --git a/tools/qa/device/catparity.sh b/tools/qa/device/catparity.sh
+new file mode 100644
+index 0000000..f4cd20c
+--- /dev/null
++++ b/tools/qa/device/catparity.sh
+@@ -0,0 +1,13 @@
++# catparity.sh TAG N — the owner's own layout: category screen tiles vs L2/R2 stops (N x R2), then back with L2; view state
++# saved first and restored + verified after (staging build). Read-only otherwise.
++P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++A --es voltcap_test_snapshot save; sleep 2; cp $F/voltcap_test_snapshot_view.json $OUT/view_before.json
++input keyevent KEYCODE_SCROLL_LOCK; sleep 0.4; logcat -c
++input keyevent KEYCODE_BUTTON_B; sleep 2.5; screencap -p $OUT/screen.png; input keyevent KEYCODE_BUTTON_B; sleep 1.5
++for i in $(seq 1 $2); do input keyevent KEYCODE_BUTTON_R2; sleep 0.6; done
++screencap -p $OUT/after_r2.png
++for i in $(seq 1 $2); do input keyevent KEYCODE_BUTTON_L2; sleep 0.6; done
++logcat -d -s VoltcapQA | grep -E "category|tiles|stop " > $OUT/log.txt
++A --es voltcap_test_snapshot restore; sleep 3; cat $F/voltcap_test_snapshot_verify.txt > $OUT/verify.txt
++echo DONE >> $OUT/log.txt
 diff --git a/tools/qa/device/cp1.sh b/tools/qa/device/cp1.sh
 new file mode 100644
 index 0000000..3733096
@@ -3426,6 +3897,76 @@ index b433cc3..ae1ebdc 100644
  #   man_done / man_skip RUN NAME [why] / man_end RUN   done NAME | skip NAME why | end <epoch>
  # Only writes inside out/ (QA scratch); never touches app data, saves or settings.
  man_file() { echo out/$1_manifest.txt; }
+diff --git a/tools/qa/device/longtitle.sh b/tools/qa/device/longtitle.sh
+new file mode 100644
+index 0000000..a103c8b
+--- /dev/null
++++ b/tools/qa/device/longtitle.sh
+@@ -0,0 +1,23 @@
++# longtitle.sh TAG "LAYOUTS" — per test game (long titles / maybe no art) x layout: window collapsed (c) and More open (e) stills.
++# Owner's view state saved first and restored + verified at the end; preview mode; launches blocked.
++P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++A --es voltcap_test_snapshot save; sleep 2; cp $F/voltcap_test_snapshot_view.json $OUT/owner_view.json
++A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1
++n=0
++for G in "GBA@/storage/emulated/0/ROMs/gba/Super Mario Advance 4 - Super Mario Bros. 3 (USA) (Rev 1) (Switches - RetroAchievements Edition).gba" \
++         "GBC@/storage/emulated/0/ROMs/gbc/Pokemon Trading Card Game 2 - The Invasion of Team GR! (Japan) (Es) (v3.0) (Shinichi999).gbc"; do
++  n=$((n+1)); plat=${G%%@*}; path=${G#*@}
++  printf '{"platform":"%s","special":"","focus":"%s","profile":0}' "$plat" "$path" > $F/voltcap_test_snapshot_view.json
++  A --es voltcap_test_snapshot restore; sleep 3; cat $F/voltcap_test_snapshot_verify.txt >> $OUT/log.txt; echo >> $OUT/log.txt
++  for L in $2; do
++    A --es voltcap_test_layout $L; sleep 3; input keyevent KEYCODE_SCROLL_LOCK; sleep 0.3
++    input keyevent KEYCODE_BUTTON_A; sleep 1.8; screencap -p $OUT/g${n}_${L}_c.png
++    A --es voltcap_test_winmore on; sleep 1.2; screencap -p $OUT/g${n}_${L}_e.png
++    input keyevent KEYCODE_BUTTON_B; sleep 0.9; input keyevent KEYCODE_BUTTON_B; sleep 1.2
++  done
++done
++A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
++cp $OUT/owner_view.json $F/voltcap_test_snapshot_view.json
++A --es voltcap_test_snapshot restore; sleep 3; echo "owner restore: $(cat $F/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt
++echo DONE >> $OUT/log.txt
+diff --git a/tools/qa/device/media.sh b/tools/qa/device/media.sh
+new file mode 100644
+index 0000000..5a5aab8
+--- /dev/null
++++ b/tools/qa/device/media.sh
+@@ -0,0 +1,15 @@
++# media.sh TAG "LAYOUTS" "P:KEYS" — per console category (safe category hook) then each layout preview: settled still + one ▶ still.
++P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++A --es voltcap_test_snapshot save; sleep 2; A --ez voltcap_test_nolaunch true
++for C in $3; do
++  for L in $2; do
++    A --ez voltcap_test_preview false; sleep 1
++    A --es voltcap_test_category $C; sleep 2.5
++    A --ez voltcap_test_preview true; A --es voltcap_test_layout $L; sleep 4
++    n=$(echo $C | tr ':' '_'); screencap -p $OUT/${n}_${L}_0.png
++    input keyevent KEYCODE_DPAD_RIGHT; sleep 1.5; screencap -p $OUT/${n}_${L}_1.png
++  done
++done
++A --ez voltcap_test_preview false; A --ez voltcap_test_nolaunch false; sleep 1
++A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat $F/voltcap_test_snapshot_verify.txt)" > $OUT/log.txt
+diff --git a/tools/qa/device/navcheck.sh b/tools/qa/device/navcheck.sh
+new file mode 100644
+index 0000000..9c6de24
+--- /dev/null
++++ b/tools/qa/device/navcheck.sh
+@@ -0,0 +1,14 @@
++# navcheck.sh TAG "LAYOUTS" "KEYS" — preview each layout, press KEYS (0.45 s apart), log the app's focus lines per key; stills.
++# View state saved + restored (verified); preview only; launches blocked.
++P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++A --es voltcap_test_snapshot save; sleep 2
++A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1
++for L in $2; do
++  A --es voltcap_test_layout $L; sleep 3.5; input keyevent KEYCODE_SCROLL_LOCK; sleep 0.3; logcat -c; screencap -p $OUT/${L}_0.png
++  i=0; for K in $3; do i=$((i+1)); echo "KEY $K" >> $OUT/${L}.txt; input keyevent KEYCODE_$K; sleep 0.45
++    logcat -d -s VoltcapQA | grep -E " focus |category stop|win |LAUNCH|second" | cut -c19-220 >> $OUT/${L}.txt; logcat -c; done
++  screencap -p $OUT/${L}_1.png
++done
++A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
++A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat $F/voltcap_test_snapshot_verify.txt)" > $OUT/log.txt
 diff --git a/tools/qa/device/navstate.sh b/tools/qa/device/navstate.sh
 new file mode 100644
 index 0000000..3040c5a
@@ -3708,6 +4249,27 @@ index 0000000..9c76f40
 +done
 +A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false
 +echo DONE >> $OUT/log.txt
+diff --git a/tools/qa/device/rapidab.sh b/tools/qa/device/rapidab.sh
+new file mode 100644
+index 0000000..f808516
+--- /dev/null
++++ b/tools/qa/device/rapidab.sh
+@@ -0,0 +1,15 @@
++# rapid.sh TAG "LAYOUTS" N GAP — rapid A B A B (GAP s) N times per layout, preview + launches blocked; end state per try
++P=com.shelf.launcher; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT; G=${4:-0.12}
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++W() { dumpsys window | grep mCurrentFocus | grep -o "Window{[0-9a-f]*" | tail -1; }
++A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 2
++for L in $2; do
++  A --es voltcap_test_layout $L; sleep 3.5; input keyevent KEYCODE_SCROLL_LOCK; sleep 0.4; H=$(W); logcat -c; r=""; LB=0
++  for i in $(seq 1 $3); do
++    input keyevent KEYCODE_BUTTON_A; sleep $G; input keyevent KEYCODE_BUTTON_B; sleep $G; input keyevent KEYCODE_BUTTON_A; sleep $G; input keyevent KEYCODE_BUTTON_B; sleep 2.2
++    if [ "$(W)" = "$H" ]; then r="$r C"; LB=$((LB+$(logcat -d -s VoltcapQA | grep -c "LAUNCH blocked"))); logcat -c; else r="$r O"; screencap -p $OUT/${L}_$i.png; logcat -d -s VoltcapQA > $OUT/${L}_$i.log; input keyevent KEYCODE_BUTTON_B; sleep 1.5; [ "$(W)" != "$H" ] && { input keyevent KEYCODE_BUTTON_B; sleep 1.5; }; fi
++  done
++  LB=$((LB+$(logcat -d -s VoltcapQA | grep -c "LAUNCH blocked")))
++  echo "$L$r launches_blocked=$LB" >> $OUT/log.txt
++done
++A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; echo DONE >> $OUT/log.txt
 diff --git a/tools/qa/device/twinback.sh b/tools/qa/device/twinback.sh
 new file mode 100644
 index 0000000..321e9cc
@@ -3815,11 +4377,10 @@ index 1561f46..e7a7406 100644
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -51,15 +51,3 @@
- 
+@@ -52,18 +52,3 @@
  # Update 427: review sheets are regenerated by tools/themes/review_refresh.cjs (large; not committed)
  tools/themes/refresh-review/sheet-*
--
+ 
 -# v0.6.67 staging placeholders (empty files left in the 0.6.66 tree; the real ones are in next/0.6.67/ and its patch removes these lines)
 -/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
 -/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
@@ -3831,3 +4392,7 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/test/java/com/shelf/launcher/device/ChargeWake451Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PopupMore452Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/PopupReopen453Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt
+-/app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt

@@ -97,7 +97,8 @@ internal fun AppDrawer(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(sorted) { app ->
-                        DrawerTile(app, look, Modifier.fillMaxWidth(), onMenu = { menuFor = app }) { onLaunch(app) }
+                        // (Update 453, Thor: the drawer opened with nothing lit — the first ▼ only lit the first app. It starts on it.)
+                        DrawerTile(app, look, Modifier.fillMaxWidth().then(if (app === sorted.first()) Modifier.initialFocus() else Modifier), onMenu = { menuFor = app }) { onLaunch(app) }
                     }
                 }
             }
@@ -204,12 +205,18 @@ private fun DrawerTile(app: Game, look: DrawerLook, modifier: Modifier, onMenu: 
             Box(Modifier.size(52.dp).clip(iconShape).background(look.placeholder))
         }
         Spacer(Modifier.height(6.dp))
-        Text(
+        // Update 453 (rule 11): the tile you're on shows its whole name — two lines, a readable smaller size, then a slow slide
+        // (FullText). The other tiles of the grid keep two lines (qa-ok: TRUNCATE fixed-size grid cell; whole name on focus,
+        // in the app's options and to TalkBack via the icon's description) so a page of long names never slides all at once.
+        if (focused) FullText(
+            app.name, color = look.ink, fontSize = 11.sp, maxLines = 2, textAlign = TextAlign.Center,
+            lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
+        ) else Text(
             app.name,
             color = look.ink, // (Update 237, #13: the panel's ink — dark on light glass / the pale Live backdrop)
             fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (unfocused grid cell; whole name on focus, above)
             textAlign = TextAlign.Center,
             lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
         )

@@ -122,6 +122,26 @@ internal object GamePopup {
         game = null
         if (again) reopenGame = g
     }
+
+    /**
+     * Update 453: the window on screen now (one token per opened window). An A / B that reaches a window AFTER [closed]
+     * (its dialog still takes keys for a frame) used to set [reopenRequested] with nobody left to read it, so the NEXT close —
+     * seconds later, even in another layout — opened the window again (rapid A B A B ended with it open on Live tiles /
+     * Dashboard / Hero, RP Classic). Now such a late press acts at once, and a newly opened window starts with no stale request.
+     */
+    var current: Any? = null
+    fun opened(token: Any) { current = token; reopenRequested = false }
+    /** A pressed on a closing (or just closed) window: open it again once it is gone. */
+    fun askAgain(token: Any, g: Game) {
+        if (game != null && current === token) reopenRequested = true
+        else if (game == null) { if (reopenGame == null) reopenGame = g }
+        // (a newer window is already up: this press already did its job)
+    }
+    /** B pressed on a closing (or just closed) window: take a pending open-again back. */
+    fun cancelAgain(token: Any) {
+        if (game != null && current === token) reopenRequested = false
+        else if (game == null) reopenGame = null
+    }
 }
 
 /**
@@ -955,12 +975,15 @@ internal fun GameWindow(
     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
     // reached the Play button of the closing window and launched the game instead of opening the case again.
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
+    // (Update 453: this window's identity for late A / B presses — see [GamePopup.current].)
+    val winToken = remember(g.stableKey) { Any() }
+    DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
     val onPlay: () -> Unit = {
         val orphan = HomeKeyGuard.takeOrphanRelease()
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit
-        else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
+        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
     }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
@@ -1153,7 +1176,7 @@ internal fun GameWindow(
             // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is
             // then the home screen's orphan (HomeKeyGuard), never a Play click in the window that opens again.
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {
-                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true
+                GamePopup.askAgain(winToken, g); HomeKeyGuard.aDown = true
                 if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen on press")
                 return@onPreviewKeyEvent true
             }
@@ -1161,8 +1184,8 @@ internal fun GameWindow(
             // is gone, so it never reached anything — A B A B left the window open again, and the next A started the game.)
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && closingFlag[0] &&
                 (e.key == androidx.compose.ui.input.key.Key.ButtonB || e.key == androidx.compose.ui.input.key.Key.Back)) {
-                if (GamePopup.reopenRequested && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
-                GamePopup.reopenRequested = false
+                if ((GamePopup.reopenRequested || GamePopup.reopenGame != null) && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
+                GamePopup.cancelAgain(winToken)
                 return@onPreviewKeyEvent true
             }
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false

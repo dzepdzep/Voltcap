@@ -1,3 +1,37 @@
+# Update 453 (2 Nov 2026) — extended batch: rapid A/B re-open fix, category bar parity, drawer focus, Classic window fit, Switch names, trash folders (NOT published)
+
+**Devices (USB only):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. KONKR / Odin not touched; no wireless ADB. Profiles, artwork, brightness,
+volume, charging, category order and hero-art fitting untouched; every device run saved and restored the view state (verify = OK).
+**v0.6.66** frozen and unpublished; app/ restored to the RC at the end; all changes in `next/0.6.67/` (patch item 10).
+**Fixed + verified on hardware**
+- *D157 rapid A B A B left the window open* (RP Classic Live tiles / Dashboard / Hero, 4 of 98; RC 0 of 24): an A reaching the dying window after
+  `GamePopup.closed()` left a static re-open request that the NEXT close used (even in another layout), and a B landing between a closed window and
+  its re-open reached neither. `GameWindow.kt` GamePopup `opened / askAgain / cancelAgain` (one token per window), `LauncherScreen.kt` home B
+  cancels a pending re-open. After: RP Classic 108/108 + 36 (Stacks, Shelf, Channel grid, Cross, Cinema, Arctic) closed, Thor 56/56, no launch.
+- *D158 category bar parity:* the pill bar (Category bar = Full; Classic / Tiles rows) built its own list and still showed "Other apps", a tile
+  the owner took off the category screen (21 pills, 20 stops, 20 tiles). Now `CategoryStops.keys(state)` (`HomeChrome.kt`, `LauncherScreen.kt`).
+  Thor: L2 / R2 = 20 stops = 20 tiles in both directions; bar without Other apps.
+- *D159 drawer:* opened with nothing lit (first ▼ wasted) → starts on the first app (`AppDrawer.kt` initialFocus); scrolling to the last row OK.
+- *D160 Classic window:* always full height (stripe `fillMaxHeight` in a `heightIn(max)` row) — half empty for games with few facts; now fits
+  (`WinScenesHomes2.kt` drawBehind stripe). Before / after stills (RP Classic, two games, collapsed + More).
+- *D161 Switch names:* "[01009D901BC56000][Base]" shown in names → `GameTitles.stripRegionTags` drops the title ID and [Base] (display only).
+**Fixed, unit-tested:** *D162* drawer long names show whole on focus (rule 11; no long-name app on the devices). *D163* recycle / recovery
+folders ($RECYCLE.BIN, RECYCLER, System Volume Information, LOST.DIR, .Trash*) never walked, records inside dropped on read (no file touched;
+neither device has one).
+**Checked, no defect:** touch More / Less / Back (Classic, Live tiles); long titles + incomplete metadata in 16 layouts' windows (2 games,
+collapsed + More); Pocket ribbon / Tiles / Channel grid ◀▶ one press each; media per console on Case stacks + Game shelf (DS, 3DS, PSP, PS1, PS3,
+N64, Switch); app drawer scrolling; popverify regression (More, B order) on the final build.
+**QA findings:** D164 — a layout preview is lost on the first category switch (likely the source of D102's Cross ◀▶ reports). A test that
+injected keys while the Thor's screen was asleep produced an input-timeout report (dismissed; test artefact).
+**Restored:** RC rebuilt and installed on both; view states verified OK (Thor All / 007 / profile 0; RP Classic Continue playing / Mario's Picross X /
+profile 0); Thor hooks `.paused`; RP Classic hooks file left as found; QA marks and scripts removed. After the last Thor install Android showed its
+"Select a Home app" chooser: Voltcap picked with Always (as before; default home = HomeAlias again). PXPlay was open in the background — left as it was.
+**Deferred:** D137 (KONKR on USB), D124 (owner approval), physical controller, P7 performance measurements, Case stacks 13 arrangements,
+Saturn / Dreamcast media (no such games on the USB devices). Full list: `REQUESTS_CHECKLIST.md`.
+**Checks (final code):** testDebugUnitTest green (new PopupReopen453Test, VoltPanelFit453Test, CategoryBar453Test, DrawerFocus453Test,
+SwitchTitle453Test, TrashFolders453Test; PlayWhileClosing412Test / PopupPolish444Test follow the new calls), static checks PASS (TRUNCATE 297→296),
+QA selftest OK, patch `git apply --check` OK on a fresh RC checkout.
+
 # Update 452 (2 Nov 2026) — popup polish (D156), Case stacks measurement (D137), Thor focus (D153), Continue playing / charging review (NOT published)
 
 **Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. Odin not contacted, no wireless ADB. Charging, profiles, artwork,
