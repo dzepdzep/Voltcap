@@ -1,3 +1,31 @@
+# Update 455 (2 Nov 2026) — Pocket Ribbon upper screen: bigger piece + title / info line; background-pause question for the owner (NOT published)
+
+**Devices (USB):** AYN Thor 3140972f only (RP Classic, KONKR, Odin not touched). v0.6.66 frozen and unpublished; staging only.
+**Pocket Ribbon top (Thor upper screen, `PocketRibbon.kt`):** before = a small cartridge alone in a large grey panel. Now the game's own piece
+(cartridge / card / disc, sized by its real media proportions — `MediaShell.of(platform).aspect`) fills the space above a caption: the game's
+name (FullText: whole, shrinks, then slides — never cut) and one quiet line "platform · year · Played <when>"; a missing year or never-played
+simply drops out (GBA test game: "Game Boy Advance" alone). Same plain background, white frame, no blur panel / tint / buttons / new settings,
+Endless untouched. No screenshot added (no room without crowding). Lower screen unchanged. Test RibbonTop455Test.
+**Thor checks (staging build):** N64, 3DS (tall card: first try spilled over the frame and title → fixed by fitting the media to the space),
+PS1 / PS3 discs, GBA, Emulators (app, no platform year); long title (Adventure Time Finn & Jake…) slides whole; 25 rapid ▶ + 15 ◀▶ pairs + 15 ◀:
+art and caption agree, cadence settles (1 missed vsync in the burst), no crash; game window A / B x4 + ▶ A + B with nolaunch: opens on the
+focused game, closes back to the ribbon, no launch. Screenshots in `Claude outputs/qa455/` (before_top / before_bottom / after_bottom1 / win_*)
+and `screens/after_*.png`.
+**Background pause (D64):** NOT implemented — the app drawer and Settings are ~94 % wide and the home stays visible (dimmed) around them, so
+under the owner's rule ("don't pause backgrounds visible through partial panels") they don't qualify. Question sent: leave / pause anyway /
+make their scrim opaque. Nothing changes until the owner chooses.
+**Frozen RC APK:** the exact signed file (SHA-256 45c6d2ae…) is no longer on the PC (overwritten by later builds of the same name). Devices run
+a rebuild of the unchanged frozen source; a byte-identical reinstall isn't possible without the original file. No frozen source was modified.
+**Suspects logged:** D168 (TND hack shows the TWINE cartridge label), D169 (aPS3e in Emulators drawn with an unrelated C64 cover on its cartridge).
+**Restored:** Thor preview off, nolaunch off, snapshot restore verify OK (All / 007 The World Is Not Enough / profile 0); hooks `.paused`;
+QA files from this run removed (`/sdcard/pv`); RC rebuilt from the unchanged source and installed; default Home = Voltcap (HomeAlias).
+**Checks:** testDebugUnitTest green (incl. RibbonTop455Test, Ribbon401Test), staging assembleRelease OK, patch `git apply --check` OK on RC.
+**Copy:** nothing for 0.6.66. 0.6.67: `next/0.6.67/src_copy/ui/PocketRibbon.kt`, `next/0.6.67/project_copy/app/src/test/java/com/shelf/launcher/ui/RibbonTop455Test.kt`
+(also in `profile_picker.patch`; placeholder RibbonTop455Test gitignored — patch removes 17 lines).
+**Waiting:** owner choice on background pause; D137 (KONKR on USB); D124 AutoTDP (approval); Odin restore; physical controller.
+
+    cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; git pull origin main
+
 # Update 454 (2 Nov 2026) — performance measurements, D164 preview fix + D102 re-check, D83 text, popup-mode sweep, Pocket classic Classic-style launch (D167), Thor ANR analysis (NOT published)
 
 **Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. KONKR / Odin not touched. v0.6.66 frozen and unpublished; staging only.

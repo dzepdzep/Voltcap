@@ -2,6 +2,9 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 455: Pocket Ribbon top caption (PocketRibbon.kt, RibbonTop455Test; media sized by MediaShell aspect). Background pause waits for the owner
+(drawer / Settings are not full-screen). Placeholder also RibbonTop455Test (patch removes 17 lines). Large screenshots: voltcap-adb screenshot can't take the
+Thor lower display id (number too big) — use `screencap -d 4630946482288158084`.**
 **Update 454: SUMMARY top + REQUESTS_CHECKLIST.md. Previews now survive category switches (D164). perf.sh / popmodes.sh in tools/qa/device.
 D64 needs an owner decision (proposal in SUMMARY 454). Placeholders also PreviewCategory454Test, SaturnDreamcast454Test (patch removes 16 lines).**
 **Update 453: see SUMMARY top + REQUESTS_CHECKLIST.md (completed / outstanding / deferred). GamePopup now keeps one token per window

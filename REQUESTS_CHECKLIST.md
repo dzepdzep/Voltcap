@@ -3,6 +3,17 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 455 (2 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Pocket Ribbon top: bigger piece, title + platform / year / last played, graceful fallbacks | DONE (Thor) | N64, 3DS, PS1, PS3, GBA, Emulators; missing year / never played drop out; RibbonTop455Test |
+| Long names / rapid nav / reopening windows / lower screen | DONE (Thor) | long title slides whole; 70 rapid presses, art = caption; window x5 no launch; lower screen unchanged |
+| Optional screenshot on the top | NOT ADDED | no room without crowding |
+| Background pause under fully opaque full-screen panels | WAITING FOR OWNER | drawer / Settings ~94 % wide, home visible around them — rule excludes them; question sent |
+| Restore exact frozen RC APK | NOT POSSIBLE AS A FILE | original signed APK overwritten on the PC; rebuild of the unchanged RC source installed |
+| Thor test mode off / QA files removed / default Home | DONE | hooks .paused, /sdcard/pv removed, view state verify OK, HomeAlias |
+| D168 / D169 cartridge label suspects | LOGGED | TND hack shows TWINE label; aPS3e shows a C64 cover |
+
 ## Update 454 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

@@ -1863,6 +1863,24 @@
    "status": "verified",
    "found": "2026-11-02 update 454 popmodes.sh (Thor)",
    "note": "Pocket classic acts on A's PRESS; openDetails showed the inline Classic details window with A still held and that A's RELEASE clicked its focused Play ('LAUNCH blocked startGame … popup=null'). The other 59 RP Classic + 29 Thor style x layout combinations never launched. Fix: openDetails remembers a held A (HomeKeyGuard.swallowAUp) and the home screen's root swallows that release; a new press clears it. DetailsHeldA454Test. Thor re-check on the final build: Pocket classic + Classic style, 2 x A → 'details: A release from the home screen swallowed', no launch; Own style still opens its window."
+  },
+  {
+   "id": "D168",
+   "title": "Pocket Ribbon (Thor): '007 Tomorrow Never Dies (TiJayFLY)' hack shows The World Is Not Enough's cartridge label while its cover is Tomorrow Never Dies",
+   "rule": "ART",
+   "severity": "low",
+   "status": "suspect",
+   "found": "2026-11-02 update 455 (Thor, before screenshot)",
+   "note": "Source not traced (cached artwork in app data); not changed. Check the hack's label lookup (base-game match) before 0.6.67."
+  },
+  {
+   "id": "D169",
+   "title": "Emulators category: the app aPS3e is drawn as an 'android apps' cartridge carrying an unrelated Commodore 64 cover (A Bee C's)",
+   "rule": "ART",
+   "severity": "low",
+   "status": "suspect",
+   "found": "2026-11-02 update 455 (Thor, Pocket Ribbon top)",
+   "note": "Seen once; not traced. Possibly a fuzzy cover match for the app name. Not changed."
   }
  ]
 }

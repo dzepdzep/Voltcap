@@ -69,3 +69,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/data/TrashFolders453Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PreviewCategory454Test.kt
 /app/src/test/java/com/shelf/launcher/ui/SaturnDreamcast454Test.kt
+/app/src/test/java/com/shelf/launcher/ui/RibbonTop455Test.kt
