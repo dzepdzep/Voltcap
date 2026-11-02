@@ -2,6 +2,8 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 446: v0.6.67 picker looks STAGED in `next/0.6.67/` (README + patch + PDF); app/ = RC. Two empty placeholders (ProfileLooks.kt,
+ProfilePicker445Test.kt) are .gitignored — delete them before `git apply`. Open: D144 (picker.sh), owner choice of default look.**
 **Update 445: v0.6.66 RC FROZEN (commit "Update 445"), NOT published.** APK hashes / signer in SUMMARY 445. Publish only on the owner's word:
 publish_release 0.6.66 with docs/CHANGELOG_0.6.66.md. Until then keep app/ and src_copy on the RC: v0.6.67 work lives in `next/0.6.67/`
 (copy into src_copy / project_copy, build, test, then restore the RC files before any commit — git_commit_push adds everything).

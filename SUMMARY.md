@@ -1,3 +1,27 @@
+# Update 446 (2 Nov 2026) — v0.6.67 "Who's playing?" looks STAGED in next/0.6.67/ (not compiled, not in 0.6.66, NOT published)
+
+**Where:** `next/0.6.67/` — README (what / how to apply), `profile_picker.patch` (applies to this commit), full copies under `src_copy/` +
+`project_copy/`, comparison sheet `PICKER_LOOKS_446.pdf` (9 pages: before/after, six looks × GT78 / Odin, long names, PIN + editor, D-pad /
+touch, Settings). app/ and src_copy are back on the 0.6.66 RC byte-for-byte (git shows no change), except two EMPTY placeholders
+(`ui/ProfileLooks.kt`, test `ProfilePicker445Test.kt`, package line only) that the tools could not delete — listed in `.gitignore`, never
+committed, nothing compiled from them; safe to delete by hand.
+**What it does:** six looks (Aurora glass default, Console classic, Neon arcade, Minimal OLED, Follow Voltcap theme, Midnight blue = the
+0.6.66 look) chosen in Settings › Home › Animations (thumbnails, "Preview the looks" with L1 / R1, in Settings search "Who"), saved in
+`voltcap_features` (`picker_look`, backed up). Per-profile colour presets in the editor reuse `hue` (ring / glow / Playing pill / accents only).
+One row for 1–8 profiles, 76–128 dp pictures (64 compact), scrolling with edge fades when needed, names whole (break between words / after
+a hyphen, shrink to 10 sp, never "…"), lock badge, pick animation, bigger PIN pad, D-pad + touch, Lite = static backdrop + short transitions.
+Switching unchanged (`onPick(id)` → `viewModel.switchProfile(id)`); Profiles storage fields unchanged.
+**Fixed during QA (D145):** names broke inside a word and the picked card was clipped at the scrolling row's edge (GT78) — fixed, re-checked.
+**Checked (staging build installed temporarily on GT78 + Odin, RC reinstalled afterwards):** assembleRelease OK; testDebugUnitTest green
+incl. ProfilePicker445Test (sizes 1–9 on 4 screens, D-pad steps, sample ids ≥ 900, looks list, saved colour kept, switching / storage
+unchanged, whole-word names, no Ellipsis). Device: tools/qa/device/pickerlooks.sh (6 looks × 3 samples / 8 long + locked / PIN / editor /
+your profile) G3 + O3, pickerux.sh (D-pad ends, scroll, touch pick) GU2 + OU, Settings card + preview on the Odin. No Voltcap crash.
+Sample profiles only (`voltcap_test_profiles`, ids 900+); real profile "Pockeetz" never edited / switched (still Playing after every run).
+**Not tested:** Thor; real PIN entry / editing on real profiles (by design); 1 / 2 real profiles with no photo (samples cover initials).
+**Open:** D144 — picker.sh corner-colour detection would misread OLED / Console once applied. Owner choice: default look for existing
+users (Aurora now; Midnight would keep today's look until changed).
+**Copy:** nothing to copy (app/ = RC). defects.json D144 / D145.
+
 # Update 445 (2 Nov 2026) — v0.6.66 RELEASE CANDIDATE frozen (NOT published — owner approval needed)
 
 **Version:** 0.6.66 / versionCode 73 (app/build.gradle.kts). Changelog: docs/CHANGELOG_0.6.66.md (updates 438–444).

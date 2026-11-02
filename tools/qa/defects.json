@@ -1646,6 +1646,24 @@
    "status": "verified",
    "found": "2026-11-02 update 444 popfinal rapid A/B",
    "note": "GameWindow: while the window flies back, A acts on its press (asks to open again; its release is the home screen's orphan, never a Play click) and B on its press takes that open-again back. Odin + GT78: A B A B ends closed on the same game, A B B ends closed; no launch attempted (LAUNCH lines only from the QA script's own retry, blocked). PopupPolish444Test."
+  },
+  {
+   "id": "D144",
+   "title": "v0.6.67 picker looks vs tools/qa/device/picker.sh: the picker is detected by a deep-blue top-left corner; Minimal OLED (black) would read UNKNOWN and Console classic (graphite) HOME",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 446 (code review, staging only)",
+   "note": "Only matters once next/0.6.67 is applied. Fix picker.sh (detect by layout/text, or force voltcap_test_pickerlook MIDNIGHT in QA runs) before trusting it with another look."
+  },
+  {
+   "id": "D145",
+   "title": "v0.6.67 picker (staging): long names broke inside a word (\"Maximilian-Ale|xander\") and the picked profile's scaled card was clipped at the scrolling row's left/top edge",
+   "rule": "R18",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 446 pickerlooks.sh G1 (GT78)",
+   "note": "ProfileName: whole words only (break after a hyphen via U+200B, shrink to 10 sp until every word fits, 2 lines, 3rd only as a last resort, never …); scrolling row gets edge room (10 % of a slot), 22 % vertical room and edge fades. Re-checked G3 / O3 / GU2 on GT78 + Odin. ProfilePicker445Test.longNamesBreakBetweenWordsOnly. Staging only (next/0.6.67)."
   }
  ]
 }

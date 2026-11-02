@@ -1,3 +1,4 @@
+**DONE (update 446, staging only):** v0.6.67 "Who's playing?" looks built, tested on GT78 + Odin, staged in next/0.6.67/ (RC untouched). **Next:** owner approval to publish 0.6.66; then apply next/0.6.67, fix D144, Thor check.
 **DONE (update 445):** v0.6.66 RC frozen (CI green, both APKs verified, regression PASS on GT78 + Odin). **Next:** owner approval to publish; v0.6.67 profile picker looks in next/0.6.67/.
 **DONE (update 444, NOT published):** popup polish — Twin desk hinge rebuilt, Channel grid Row reveal action panel, rapid A/B (D143), Cinema / Banner details; D137 re-measured. **Next:** owner approval for the v0.6.66 RC; D137 refactor, D124, Thor.
 **DONE (update 443, NOT published):** popup visual review + PDF; D140 / D141 fixed + verified; D137 partly. **Next:** D142, D137 video, D124.

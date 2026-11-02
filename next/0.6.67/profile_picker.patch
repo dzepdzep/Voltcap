@@ -1,0 +1,1189 @@
+diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
+index 0fac442..0cf7850 100644
+--- a/app/src/main/java/com/shelf/launcher/data/Features.kt
++++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
+@@ -1406,6 +1406,14 @@ object Features {
+         CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
+     }
+     val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
++    /**
++     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332); a new
++     * install starts on Aurora glass. Saved and backed up like the other look settings.
++     */
++    enum class PickerLook(val label: String) {
++        AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue")
++    }
++    val pickerLook = EnumPref("picker_look", PickerLook.AURORA, PickerLook.values())
+     /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
+     val statusMatchesLayout = BoolPref("status_matches_layout", true)
+     val dashStatus = BoolPref("dash_status", true)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
+index 0b73fb5..257a389 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
+@@ -835,6 +835,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         }
+     }
+     LaunchedEffect(ProfilePicker.request) { if (ProfilePicker.request) { ProfilePicker.request = false; whoAtStart = false; whoAsk = true; lastInputAt = System.currentTimeMillis() } }
++    // v0.6.67 (QA): sample profiles on "Who's playing?" — a preview only: nothing is switched or saved (TestHooks.profilesDemo).
++    TestHooks.profilesDemo.value?.let { demo ->
++        ProfileSelectScreen(
++            profiles = demo, activeId = TestHooks.profilesDemoActive.value, raNames = emptyList(), steamAvatar = null, atStart = true,
++            onPick = { TestHooks.profilesDemo.value = null }, onSkip = { TestHooks.profilesDemo.value = null }, demo = true
++        )
++    }
++    // v0.6.67: Settings' live preview of the looks (your profiles, nothing switched; L1 / R1 change the look).
++    if (ProfilePicker.preview) {
++        ProfileSelectScreen(
++            profiles = com.shelf.launcher.data.Profiles.list.value, activeId = com.shelf.launcher.data.Profiles.activeId.value,
++            raNames = state.raAccounts, steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value, atStart = false,
++            onPick = { ProfilePicker.preview = false }, onSkip = { ProfilePicker.preview = false }, demo = true, lookStrip = true
++        )
++    }
+     if (whoAsk) {
+         ProfileSelectScreen(
+             profiles = com.shelf.launcher.data.Profiles.list.value,
+diff --git a/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt b/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
+new file mode 100644
+index 0000000..c3865e3
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
+@@ -0,0 +1,304 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.foundation.Canvas
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.ExperimentalLayoutApi
++import androidx.compose.foundation.layout.FlowRow
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.width
++import androidx.compose.material3.Text
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.draw.drawBehind
++import androidx.compose.ui.unit.sp
++import com.shelf.launcher.data.Features
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.mutableFloatStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.withFrameNanos
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.geometry.Offset
++import androidx.compose.ui.geometry.Size
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.Shape
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.Dp
++import androidx.compose.ui.unit.dp
++import com.shelf.launcher.data.Features.PickerLook
++import com.shelf.launcher.ui.theme.ShelfTheme
++
++/*
++ * v0.6.67: the looks of "Who's playing?" (Features.pickerLook). Each is plain Compose drawing — gradients, a few soft lights,
++ * lines and outlines; no shaders, no new libraries. What changes per look: the backdrop, the shape of the pictures, how the
++ * profile you're on is lit, the type and the button hints. A profile's own colour (Profiles.Profile.hue) lights its ring,
++ * its highlight and its accents in every look — never the rest of the app.
++ */
++
++/** Everything a look decides. */
++internal class PickerStyle(
++    val look: PickerLook,
++    /** Pictures: a circle, or a rounded square (Console classic). */
++    val avatarShape: Shape,
++    /** The title's colour, size factor, weight, letter spacing and font. */
++    val title: Color,
++    val titleWeight: FontWeight,
++    val titleSpacing: Float,
++    val titleFont: FontFamily?,
++    /** Names: the one you're on / the others. */
++    val nameOn: Color,
++    val nameOff: Color,
++    /** Hints along the bottom: text and the round button glyph's fill. */
++    val hint: Color,
++    val hintKey: Color,
++    /** A card behind each profile (glass, console tile), or none. */
++    val card: Color?,
++    val cardEdge: Color?,
++    /** The ring of the one you're on: its width; others get [ringOff]. */
++    val ringOn: Dp,
++    val ringOff: Color,
++    /** The soft light round the one you're on (0 = none: Minimal OLED). */
++    val glow: Float,
++    /** The others step back this much (alpha). */
++    val dimOthers: Float,
++    /** The ring of the one you're on: two outlines (Neon arcade). */
++    val doubleRing: Boolean = false
++) {
++    /** A profile's own colour at this look's brightness. */
++    fun accent(hue: Float): Color = when (look) {
++        PickerLook.NEON -> Color.hsv(hue.mod(360f), 0.75f, 1f)
++        PickerLook.OLED -> Color.hsv(hue.mod(360f), 0.6f, 1f)
++        PickerLook.CONSOLE -> Color.hsv(hue.mod(360f), 0.5f, 0.95f)
++        else -> Color.hsv(hue.mod(360f), 0.55f, 1f)
++    }
++    /** The fill behind an initial (no picture). */
++    fun initialFill(hue: Float): Brush = when (look) {
++        PickerLook.OLED -> Brush.linearGradient(listOf(Color(0xFF111111), Color(0xFF1C1C1C)))
++        PickerLook.NEON -> Brush.linearGradient(listOf(Color.hsv(hue.mod(360f), 0.8f, 0.30f), Color(0xFF0A0418)))
++        else -> Brush.linearGradient(listOf(Color.hsv(hue.mod(360f), 0.45f, 0.55f), Color.hsv((hue + 25f).mod(360f), 0.6f, 0.30f)))
++    }
++}
++
++@Composable
++internal fun pickerStyle(look: PickerLook): PickerStyle = when (look) {
++    PickerLook.AURORA -> PickerStyle(look, CircleShape, Color.White, FontWeight.Light, 1.5f, null, Color.White, Color.White.copy(alpha = 0.72f),
++        Color.White.copy(alpha = 0.78f), Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.14f),
++        3.dp, Color.White.copy(alpha = 0.22f), 0.6f, 0.62f)
++    PickerLook.CONSOLE -> PickerStyle(look, RoundedCornerShape(22), Color(0xFFF2F4F7), FontWeight.SemiBold, 0f, null, Color.White, Color(0xFFB5BCC6),
++        Color(0xFFD5DAE1), Color(0xFF3A414B), null, null, 4.dp, Color.White.copy(alpha = 0.10f), 0.25f, 0.7f)
++    PickerLook.NEON -> PickerStyle(look, CircleShape, Color(0xFFFF7AE6), FontWeight.Bold, 2f, FontFamily.Monospace, Color.White, Color(0xFFB9A8E8),
++        Color(0xFFE6DCFF), Color(0xFF2A1450), null, null, 3.dp, Color(0x55B07CFF), 0.8f, 0.58f, doubleRing = true)
++    PickerLook.OLED -> PickerStyle(look, CircleShape, Color.White, FontWeight.Medium, 0.5f, null, Color.White, Color(0xFFBDBDBD),
++        Color(0xFFE0E0E0), Color(0xFF262626), null, null, 3.dp, Color.White.copy(alpha = 0.18f), 0f, 0.72f)
++    PickerLook.THEME -> PickerStyle(look, CircleShape, ShelfTheme.colors.textPrimary, FontWeight.SemiBold, 0.5f, null, ShelfTheme.colors.textPrimary,
++        ShelfTheme.textMuted, ShelfTheme.colors.textPrimary.copy(alpha = 0.8f), ShelfTheme.accent.copy(alpha = 0.22f),
++        ShelfTheme.colors.textPrimary.copy(alpha = 0.05f), ShelfTheme.accent.copy(alpha = 0.25f), 3.dp, ShelfTheme.colors.textPrimary.copy(alpha = 0.22f), 0.5f, 0.64f)
++    PickerLook.MIDNIGHT -> PickerStyle(look, CircleShape, Color.White, FontWeight.SemiBold, 0f, null, Color.White, Color.White.copy(alpha = 0.7f),
++        Color.White.copy(alpha = 0.6f), Color.White.copy(alpha = 0.14f), null, null, 3.dp, Color.White.copy(alpha = 0.25f), 0.55f, 0.62f)
++}
++
++/**
++ * The look's backdrop, full screen. [accent]: the colour of the profile you're on (Aurora / Neon / Theme lean toward it).
++ * [animate]: slow drifting light (off with Lite effects, Minimal OLED and Console classic never move).
++ */
++@Composable
++internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, modifier: Modifier = Modifier) {
++    val moving = animate && look != PickerLook.OLED && look != PickerLook.CONSOLE
++    val t = remember { mutableFloatStateOf(0f) }
++    if (moving) LaunchedEffect(look) {
++        val start = withFrameNanos { it }
++        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
++    }
++    when (look) {
++        PickerLook.AURORA -> Box(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1A1036), Color(0xFF0D1638), Color(0xFF05060F))))) {
++            Canvas(Modifier.fillMaxSize()) {
++                val time = t.floatValue
++                val w = size.width; val h = size.height
++                // Three slow curtains of light: violet, blue, and the profile's own colour.
++                fun blob(c: Color, x: Float, y: Float, r: Float, a: Float) =
++                    drawCircle(Brush.radialGradient(listOf(c.copy(alpha = a), Color.Transparent), center = Offset(x, y), radius = r), radius = r, center = Offset(x, y))
++                blob(Color(0xFF8E5CFF), w * (0.22f + 0.04f * kotlin.math.sin(time * 0.13f)), h * 0.18f, w * 0.48f, 0.42f)
++                blob(Color(0xFF3D7BFF), w * (0.80f + 0.04f * kotlin.math.cos(time * 0.11f)), h * 0.28f, w * 0.44f, 0.36f)
++                blob(accent, w * 0.5f, h * (0.64f + 0.02f * kotlin.math.sin(time * 0.2f)), w * 0.36f, 0.20f)
++                // A thin horizon of light under the row.
++                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent), startY = h * 0.6f, endY = h * 0.8f))
++            }
++        }
++        PickerLook.CONSOLE -> Box(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF242A32), Color(0xFF15191E), Color(0xFF0E1013))))) {
++            Canvas(Modifier.fillMaxSize()) {
++                // A soft spotlight from above and a floor line: a console's user screen, nothing moving.
++                drawCircle(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.07f), Color.Transparent), center = Offset(size.width / 2, -size.height * 0.1f),
++                    radius = size.width * 0.7f), radius = size.width * 0.7f, center = Offset(size.width / 2, -size.height * 0.1f))
++                drawLine(Color.White.copy(alpha = 0.06f), Offset(size.width * 0.08f, size.height * 0.82f), Offset(size.width * 0.92f, size.height * 0.82f), 1.dp.toPx())
++            }
++        }
++        PickerLook.NEON -> Box(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF0B0418), Color(0xFF140726), Color(0xFF05010A))))) {
++            Canvas(Modifier.fillMaxSize()) {
++                val time = t.floatValue
++                val w = size.width; val h = size.height
++                // A perspective grid floor, gently scrolling toward you, and faint scanlines.
++                val horizon = h * 0.66f
++                val grid = Color(0xFFB04CFF)
++                val rows = 9
++                for (i in 0 until rows) {
++                    val k = ((i + (time * 0.35f) % 1f) / rows)
++                    val y = horizon + (h - horizon) * k * k
++                    drawLine(grid.copy(alpha = 0.10f + 0.22f * k), Offset(0f, y), Offset(w, y), 1.dp.toPx())
++                }
++                for (i in -8..8) {
++                    val x = w / 2 + i * w * 0.07f
++                    drawLine(grid.copy(alpha = 0.16f), Offset(w / 2 + i * w * 0.012f, horizon), Offset(x * 1f + (x - w / 2) * 1.6f, h), 1.dp.toPx())
++                }
++                drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0x55FF4FD8), Color.Transparent), startY = horizon - 2.dp.toPx(), endY = horizon + 2.dp.toPx()))
++                drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.22f), Color.Transparent), center = Offset(w / 2, horizon), radius = w * 0.35f),
++                    radius = w * 0.35f, center = Offset(w / 2, horizon))
++                var y = 0f
++                val step = 4.dp.toPx()
++                while (y < h) { drawLine(Color.Black.copy(alpha = 0.18f), Offset(0f, y), Offset(w, y), 1f); y += step }
++            }
++        }
++        PickerLook.OLED -> Box(modifier.fillMaxSize().background(Color.Black))
++        PickerLook.THEME -> Box(modifier.fillMaxSize().background(ShelfTheme.background)) {
++            val themeAccent = ShelfTheme.accent
++            Canvas(Modifier.fillMaxSize()) {
++                drawCircle(Brush.radialGradient(listOf(themeAccent.copy(alpha = 0.22f), Color.Transparent), center = Offset(size.width / 2, size.height * 0.55f),
++                    radius = size.width * 0.5f), radius = size.width * 0.5f, center = Offset(size.width / 2, size.height * 0.55f))
++                drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.14f), Color.Transparent), center = Offset(size.width / 2, size.height * 0.6f),
++                    radius = size.width * 0.3f), radius = size.width * 0.3f, center = Offset(size.width / 2, size.height * 0.6f))
++            }
++        }
++        PickerLook.MIDNIGHT -> Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF16305E), Color(0xFF0A1734), Color(0xFF03060F)), radius = 1600f))) {
++            if (animate) MidnightSparks(Modifier.fillMaxSize())
++            Box(Modifier.fillMaxSize().midnightFloor())
++        }
++    }
++}
++
++/** Midnight blue's soft floor of light under the row (as before). */
++private fun Modifier.midnightFloor(): Modifier = this.drawBehind {
++    drawOval(
++        Brush.radialGradient(listOf(Color(0x3363A8FF), Color.Transparent), center = Offset(size.width / 2, size.height * 0.62f), radius = size.width * 0.4f),
++        topLeft = Offset(size.width * 0.1f, size.height * 0.5f), size = Size(size.width * 0.8f, size.height * 0.24f)
++    )
++}
++
++/** Midnight blue's slow sparks drifting up through the dark (the update 332 look), drawn on one canvas. */
++@Composable
++private fun MidnightSparks(modifier: Modifier) {
++    val t = remember { mutableFloatStateOf(0f) }
++    LaunchedEffect(Unit) {
++        val start = withFrameNanos { it }
++        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
++    }
++    val seeds = remember { List(46) { i -> floatArrayOf(((i * 7919) % 1000) / 1000f, ((i * 104729) % 1000) / 1000f, 0.4f + ((i * 31) % 10) / 16f, ((i * 53) % 100) / 100f) } }
++    Canvas(modifier) {
++        val time = t.floatValue
++        for (s in seeds) {
++            val speed = 0.012f + 0.02f * s[3]
++            val y = (s[1] - time * speed).let { it - kotlin.math.floor(it) }
++            val x = s[0] + 0.012f * kotlin.math.sin(time * 0.6f + s[3] * 6f)
++            val a = (0.18f + 0.35f * s[3]) * kotlin.math.sin(y * Math.PI.toFloat()).coerceAtLeast(0f)
++            drawCircle(Color(0xFFBFD8FF).copy(alpha = a), radius = s[2] * 2.2f, center = Offset(x * size.width, y * size.height))
++        }
++    }
++}
++
++/**
++ * v0.6.67: how big the pictures are for [count] choices (profiles + Add, 1–9) on a [w]×[h] dp screen. One row, like a
++ * console's user screen: as big as fits (≤ 128 dp, ≤ a third of the height), never smaller than 76 dp (64 on a compact
++ * screen) — when that many don't fit across, the row scrolls and keeps the one you're on in view ([scroll]). Names get a
++ * slot 1.42 × the picture wide, 0.12 × apart, so they never run into each other. Pure maths, unit-tested.
++ */
++internal object PickerGrid {
++    /** A name's words as they may be laid out: split at spaces, and after a hyphen ("Anastasia-", "Katharina"). */
++    fun words(name: String): List<String> = name.split(' ').flatMap { w -> Regex("[^-]*-|[^-]+$").findAll(w).map { it.value }.toList() }.filter { it.isNotEmpty() }
++
++    /** The name with a zero-width break after each hyphen inside a word, so a line may end there and nowhere inside a word. */
++    fun breakable(name: String): String = name.replace(Regex("-(?=\\S)"), "-\u200B")
++
++    data class Plan(val rows: Int, val perRow: Int, val avatar: Float, val slot: Float, val gap: Float, val scroll: Boolean) {
++        /** The row's whole width (dp). */
++        val rowWidth: Float get() = perRow * slot + (perRow - 1) * gap
++    }
++
++    const val SIDE = 24f
++
++    fun plan(count: Int, w: Float, h: Float, compact: Boolean): Plan {
++        val n = count.coerceAtLeast(1)
++        val maxAvatar = if (compact) 96f else 128f
++        val minAvatar = if (compact) 64f else 76f
++        val byW = (w - 2 * SIDE) / (n * 1.42f + (n - 1) * 0.12f)
++        val byH = h * 0.34f
++        val a = minOf(maxAvatar, byH, maxOf(minAvatar, byW))
++        val scroll = byW < a - 0.01f
++        return Plan(1, n, a, a * 1.42f, a * 0.12f, scroll)
++    }
++
++    /** D-pad step inside the plan: index after pressing ◀ ▶ ▲ ▼ from [i] (clamped; ▲ ▼ keep the column as near as it can). */
++    fun step(i: Int, count: Int, perRow: Int, dx: Int, dy: Int): Int {
++        if (count <= 0) return 0
++        if (dx != 0) return (i + dx).coerceIn(0, count - 1)
++        val row = i / perRow
++        val col = i % perRow
++        val target = row + dy
++        val rows = (count + perRow - 1) / perRow
++        if (target < 0 || target >= rows) return i
++        val inTarget = if (target == rows - 1) count - target * perRow else perRow
++        return (target * perRow + col.coerceAtMost(inTarget - 1)).coerceIn(0, count - 1)
++    }
++
++    /** The colours offered in a profile's editor (hues, 0–360); the profile's own saved hue is always kept as it is. */
++    val PRESETS = listOf(210f, 250f, 280f, 320f, 350f, 15f, 28f, 50f, 90f, 140f, 170f, 195f)
++}
++
++/**
++ * v0.6.67: Settings' look picker — a small live picture of each look (its backdrop, three pictures with the middle one lit)
++ * and its name; A / tap picks it (saved at once). Wraps onto more lines on small screens.
++ */
++@Composable
++@OptIn(ExperimentalLayoutApi::class)
++internal fun PickerLookThumbs() {
++    val current = Features.pickerLook.state.value
++    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
++        PickerLook.values().forEach { look ->
++            val style = pickerStyle(look)
++            val on = look == current
++            Column(horizontalAlignment = Alignment.CenterHorizontally) {
++                Box(
++                    Modifier.width(132.dp).height(74.dp)
++                        .shelfClickable(RoundedCornerShape(10.dp)) { Features.pickerLook.value = look }
++                        .clip(RoundedCornerShape(10.dp))
++                ) {
++                    PickerBackdrop(look, style.accent(28f), animate = false)
++                    Row(
++                        Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        listOf(210f, 28f, 140f).forEachIndexed { i, h ->
++                            val lit = i == 1
++                            Box(
++                                Modifier.size(if (lit) 28.dp else 22.dp).clip(style.avatarShape).background(style.initialFill(h))
++                                    .border(if (lit) 2.dp else 1.dp, if (lit) style.accent(h) else style.ringOff, style.avatarShape)
++                            )
++                        }
++                    }
++                    if (on) Box(Modifier.fillMaxSize().border(2.dp, ShelfTheme.accent, RoundedCornerShape(10.dp)))
++                }
++                Text(look.label, color = if (on) ShelfTheme.colors.textPrimary else ShelfTheme.textMuted, fontSize = 12.sp,
++                    fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp))
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
+index 4ef188c..0d5b02f 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
+@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
+ import androidx.compose.foundation.border
+ import androidx.compose.foundation.focusable
+ import androidx.compose.foundation.gestures.detectTapGestures
++import androidx.compose.foundation.horizontalScroll
+ import androidx.compose.foundation.layout.Arrangement
+ import androidx.compose.foundation.layout.Box
+ import androidx.compose.foundation.layout.BoxWithConstraints
+@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
+ import androidx.compose.foundation.layout.padding
+ import androidx.compose.foundation.layout.size
+ import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.layout.widthIn
+ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.material.icons.Icons
+ import androidx.compose.material.icons.filled.Add
+@@ -54,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
+ import androidx.compose.ui.graphics.Brush
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.graphics.graphicsLayer
++import androidx.compose.ui.draw.drawWithContent
+ import androidx.compose.ui.input.key.Key
+ import androidx.compose.ui.input.key.KeyEventType
+ import androidx.compose.ui.input.key.key
+@@ -91,6 +94,8 @@ internal object ProfilePicker {
+     var request by mutableStateOf(false)
+     /** Update 334: an intent extra (true) that opens Voltcap on "Who's playing?" (the in-game Quick menu). */
+     const val EXTRA = "voltcap_who_is_playing"
++    /** v0.6.67: Settings' live preview of the looks (nothing is switched). */
++    var preview by mutableStateOf(false)
+ }
+ 
+ /** One choice on the selector: a profile, or the "Add" circle (null). */
+@@ -103,11 +108,18 @@ internal fun ProfileSelectScreen(
+     /** At start-up: B keeps the profile that played last. Else B closes. */
+     atStart: Boolean,
+     onPick: (Int) -> Unit,
+-    onSkip: () -> Unit
++    onSkip: () -> Unit,
++    /**
++     * v0.6.67: a preview (Settings' look preview, QA's sample profiles): nothing is saved or switched — Add does nothing, the
++     * editor and PIN only show. [onPick] / [onSkip] just close it.
++     */
++    demo: Boolean = false,
++    /** v0.6.67: L1 / R1 (or the arrows on the look strip) change the look live — Settings' preview. */
++    lookStrip: Boolean = false
+ ) {
+     val context = LocalContext.current
+     val lite = LocalLiteEffects.current
+-    val canAdd = profiles.size < Profiles.MAX
++    val canAdd = profiles.size < Profiles.MAX && !lookStrip
+     val count = profiles.size + if (canAdd) 1 else 0
+     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
+     var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
+@@ -122,11 +134,18 @@ internal fun ProfileSelectScreen(
+     LaunchedEffect(Unit) { enter.animateTo(1f, tween(if (lite) 180 else 520, easing = FastOutSlowInEasing)) }
+     val focus = remember { FocusRequester() }
+     LaunchedEffect(editing) { if (editing == null) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } } }
++    // v0.6.67: the look (ProfileLooks.kt) — QA can show one for this session only (TestHooks.pickerLook), nothing saved.
++    val look = TestHooks.pickerLook.value ?: Features.pickerLook.state.value
++    val style = pickerStyle(look)
++    val looks = Features.PickerLook.values()
++    val planPerRow = remember { intArrayOf(1) }
++    fun stepLook(d: Int) { Features.pickerLook.value = looks[(looks.indexOf(look) + d).mod(looks.size)] }
+ 
+     fun pick(i: Int) {
+         if (leaving) return
+         if (i >= profiles.size) {
+             // The Add circle: a new profile, straight into its editor.
++            if (demo) return
+             Profiles.add(context, "Player ${profiles.size + 1}")?.let { editing = it; cursor = Profiles.list.value.indexOfFirst { p -> p.id == it.id } }
+             return
+         }
+@@ -134,7 +153,7 @@ internal fun ProfileSelectScreen(
+         unlockThen(profiles[i]) {
+             leaving = true
+             scope.launch {
+-                exit.animateTo(1f, tween(if (lite) 120 else 430, easing = FastOutSlowInEasing))
++                exit.animateTo(1f, tween(if (lite) 120 else 460, easing = FastOutSlowInEasing))
+                 onPick(id)
+             }
+         }
+@@ -142,19 +161,24 @@ internal fun ProfileSelectScreen(
+ 
+     Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
+         ImmersiveDialogWindow()
++        val accentNow = profiles.getOrNull(cursor)?.let { style.accent(it.hue) } ?: style.accent(210f)
+         BoxWithConstraints(
+             Modifier.fillMaxSize()
+                 .graphicsLayer { alpha = (enter.value * (1f - exit.value * 0.9f)).coerceIn(0f, 1f) }
+-                .background(Brush.radialGradient(listOf(Color(0xFF16305E), Color(0xFF0A1734), Color(0xFF03060F)), radius = 1600f))
+                 .focusRequester(focus)
+                 .focusable()
+                 .onPreviewKeyEvent { e ->
+                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
++                    val per = planPerRow[0]
+                     when (e.key) {
+-                        Key.DirectionLeft -> { cursor = (cursor - 1).coerceAtLeast(0); true }
+-                        Key.DirectionRight -> { cursor = (cursor + 1).coerceAtMost(count - 1); true }
++                        Key.DirectionLeft -> { cursor = PickerGrid.step(cursor, count, per, -1, 0); true }
++                        Key.DirectionRight -> { cursor = PickerGrid.step(cursor, count, per, 1, 0); true }
++                        Key.DirectionUp -> { cursor = PickerGrid.step(cursor, count, per, 0, -1); true }
++                        Key.DirectionDown -> { cursor = PickerGrid.step(cursor, count, per, 0, 1); true }
++                        Key.ButtonL1 -> { if (lookStrip) stepLook(-1); lookStrip }
++                        Key.ButtonR1 -> { if (lookStrip) stepLook(1); lookStrip }
+                         Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.NumPadEnter -> { pick(cursor); true }
+-                        Key.ButtonY, Key.ButtonX -> { profiles.getOrNull(cursor)?.let { p -> unlockThen(p) { editing = p } }; true }
++                        Key.ButtonY, Key.ButtonX -> { if (!lookStrip) profiles.getOrNull(cursor)?.let { p -> unlockThen(p) { editing = p } }; true }
+                         // (Update 334: at start-up a locked profile that played last isn't kept without its PIN.)
+                         Key.ButtonB, Key.Back, Key.Escape -> {
+                             if (!leaving) {
+@@ -168,151 +192,245 @@ internal fun ProfileSelectScreen(
+                 },
+             contentAlignment = Alignment.Center
+         ) {
+-            if (!lite) Sparks(Modifier.fillMaxSize())
+-            // A soft floor of light under the row.
+-            Box(Modifier.fillMaxSize().drawBehind {
+-                drawOval(
+-                    Brush.radialGradient(listOf(Color(0x3363A8FF), Color.Transparent), center = Offset(size.width / 2, size.height * 0.62f), radius = size.width * 0.4f),
+-                    topLeft = Offset(size.width * 0.1f, size.height * 0.5f), size = androidx.compose.ui.geometry.Size(size.width * 0.8f, size.height * 0.24f)
+-                )
+-            })
++            PickerBackdrop(look, accentNow, animate = !lite)
+             val compact = maxHeight < 360.dp || maxWidth < 520.dp
+-            val avatar = (if (compact) 84.dp else 118.dp).let { a -> minOf(a, (maxWidth - 48.dp) / (count.coerceAtLeast(1) * 1.45f)) }
++            val plan = PickerGrid.plan(count, maxWidth.value, maxHeight.value, compact)
++            planPerRow[0] = plan.perRow
++            val viewport = (maxWidth - (PickerGrid.SIDE * 2).dp)
++            val avatar = plan.avatar.dp
+             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer {
+                 translationY = (1f - enter.value) * 40f
+             }) {
++                if (lookStrip) {
++                    LookStrip(style, look, onStep = { stepLook(it) })
++                    Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
++                }
+                 Text(
+-                    "Who's playing?", color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.SemiBold,
++                    "Who's playing?", color = style.title, fontSize = if (compact) 22.sp else 30.sp, fontWeight = style.titleWeight,
++                    letterSpacing = style.titleSpacing.sp, fontFamily = style.titleFont,
+                     modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }
+                 )
+-                Spacer(Modifier.height(if (compact) 18.dp else 34.dp))
+-                Row(horizontalArrangement = Arrangement.spacedBy(avatar * 0.42f), verticalAlignment = Alignment.Top) {
++                Spacer(Modifier.height(if (compact) 16.dp else 30.dp))
++                // One row; when the pictures can't all fit at a readable size it scrolls, keeping the one you're on in view.
++                val rowScroll = androidx.compose.foundation.rememberScrollState()
++                val density = LocalDensity.current
++                // Room at both ends of a scrolling row, so the one you're on (drawn a little bigger) is never cut at the edge.
++                val edge = plan.slot * 0.1f
++                LaunchedEffect(cursor, plan) {
++                    if (!plan.scroll) return@LaunchedEffect
++                    val target = with(density) { (edge + (plan.slot + plan.gap) * cursor - (viewport.value - plan.slot) / 2f).dp.roundToPx() }
++                    if (lite) rowScroll.scrollTo(target.coerceIn(0, rowScroll.maxValue)) else rowScroll.animateScrollTo(target.coerceIn(0, rowScroll.maxValue))
++                }
++                Row(
++                    horizontalArrangement = Arrangement.spacedBy(plan.gap.dp), verticalAlignment = Alignment.Top,
++                    modifier = Modifier.then(if (plan.scroll) Modifier.width(viewport).scrollFade(rowScroll).horizontalScroll(rowScroll, enabled = !leaving).padding(horizontal = edge.dp) else Modifier)
++                        .padding(vertical = avatar * 0.22f)
++                ) {
+                     for (i in 0 until count) {
+                         val p = profiles.getOrNull(i)
+                         ProfileBubble(
+-                            p, on = i == cursor, size = avatar, leaving = leaving, exit = exit.value,
++                            p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
++                            leaving = leaving, exit = exit.value,
+                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
+                             playing = p?.id == activeId,
+                             ra = p?.raSlot?.let { raNames.getOrNull(it) },
+                             onTap = { cursor = i; pick(i) },
+-                            onLong = { if (p != null) { cursor = i; unlockThen(p) { editing = p } } }
++                            onLong = { if (p != null && !lookStrip) { cursor = i; unlockThen(p) { editing = p } } }
+                         )
+                     }
+                 }
+-                Spacer(Modifier.height(if (compact) 18.dp else 30.dp))
+-                Text(
+-                    buildString {
+-                        append("Ⓐ Play"); if (cursor < profiles.size) append("   Ⓨ Edit")
+-                        append(if (atStart) "   Ⓑ Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "   Ⓑ Close")
+-                    },
+-                    color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp,
+-                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }
+-                )
++                Spacer(Modifier.height(if (compact) 14.dp else 28.dp))
++                Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically,
++                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }) {
++                    PickerHint(style, "A", if (cursor < profiles.size) "Play" else "Add")
++                    if (cursor < profiles.size && !lookStrip) PickerHint(style, "Y", "Edit")
++                    PickerHint(style, "B", if (atStart) "Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "Close")
++                    if (lookStrip) PickerHint(style, "L1 R1", "Look")
++                }
+             }
+         }
+     }
+     pinFor?.let { p ->
+-        PinPad("${p.name}'s PIN", check = { Profiles.pinOpens(p, it) }, onDone = {
++        PinPad("${p.name}'s PIN", check = { if (demo) true else Profiles.pinOpens(p, it) }, onDone = {
+             val go = afterPin; pinFor = null; afterPin = null; go?.invoke()
+-        }, onCancel = { pinFor = null; afterPin = null })
++        }, onCancel = { pinFor = null; afterPin = null }, accent = style.accent(p.hue))
+     }
+     editing?.let { p ->
+         ProfileEditDialog(p, raNames, steamAvatar, onDone = { editing = null }, onRemoved = {
+             editing = null; cursor = cursor.coerceAtMost((Profiles.list.value.size - 1).coerceAtLeast(0))
+-        })
++        }, demo = demo)
++    }
++}
++
++/** v0.6.67: Settings' live preview — the look's name between ◀ L1 and R1 ▶ (touch: tap the arrows). */
++@Composable
++private fun LookStrip(style: PickerStyle, look: Features.PickerLook, onStep: (Int) -> Unit) {
++    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
++        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.35f))
++            .border(1.dp, style.title.copy(alpha = 0.25f), androidx.compose.foundation.shape.RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 6.dp)) {
++        Text("◀ L1", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(-1) } })
++        Text(look.label, color = style.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
++        Text("R1 ▶", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(1) } })
+     }
+ }
+ 
+-/** One round picture with its name; the one you're on lifts, grows and glows in its colour. */
++/** v0.6.67: a button hint — the button in a small round key, then what it does. */
++@Composable
++private fun PickerHint(style: PickerStyle, key: String, what: String) {
++    Row(verticalAlignment = Alignment.CenterVertically) {
++        Box(
++            Modifier.height(22.dp).widthIn(min = 22.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(style.hintKey)
++                .padding(horizontal = if (key.length > 1) 7.dp else 0.dp),
++            contentAlignment = Alignment.Center
++        ) { Text(key, color = style.hint, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
++        Spacer(Modifier.width(6.dp))
++        // (Whole name of the profile kept: it wraps, never "…".)
++        Text(what, color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.widthIn(max = 220.dp))
++    }
++}
++
++/**
++ * One picture with its name, in the look's style; the one you're on lifts, grows, gets a ring and light in its own colour
++ * (Profiles.Profile.hue). The profile playing now carries a "Playing" pill; a locked one a lock badge.
++ */
+ @Composable
+ private fun ProfileBubble(
+-    p: Profiles.Profile?, on: Boolean, size: Dp, leaving: Boolean, exit: Float, model: Any?, playing: Boolean, ra: String?,
+-    onTap: () -> Unit, onLong: () -> Unit
++    p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean, exit: Float,
++    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
+ ) {
+-    val lift by animateFloatAsState(if (on) 1f else 0f, tween(260, easing = FastOutSlowInEasing), label = "bubbleLift")
++    val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (lite) 120 else 260, easing = FastOutSlowInEasing), label = "bubbleLift")
+     val hue = p?.hue ?: 210f
+-    val glow = Color.hsv(hue, 0.55f, 1f)
++    val accent = style.accent(hue)
+     val stamp = Profiles.pictureStamp.value
++    val shape = style.avatarShape
+     Column(
+         horizontalAlignment = Alignment.CenterHorizontally,
+-        modifier = Modifier.width(size * 1.3f).graphicsLayer {
++        modifier = Modifier.width(slot).graphicsLayer {
++            // Picked: it grows toward you while the others drop back and fade.
+             val pickedOut = if (leaving && !on) exit else 0f
+-            val k = 1f + 0.16f * lift + (if (leaving && on) 0.22f * exit else 0f)
++            val k = 1f + (if (lite) 0.08f else 0.14f) * lift + (if (leaving && on) 0.24f * exit else 0f)
+             scaleX = k; scaleY = k
+-            translationY = -size.toPx() * 0.08f * lift
+-            alpha = (0.62f + 0.38f * lift) * (1f - pickedOut)
++            translationY = -size.toPx() * 0.07f * lift + pickedOut * size.toPx() * 0.25f
++            alpha = (style.dimOthers + (1f - style.dimOthers) * lift) * (1f - pickedOut)
+         }.pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
+     ) {
+         Box(
+-            Modifier.size(size).drawBehind {
+-                if (lift > 0.01f) drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = 0.55f * lift), Color.Transparent), radius = this.size.minDimension * 0.85f), radius = this.size.minDimension * 0.85f)
+-            },
++            Modifier.then(if (style.card != null) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
++                .background(if (on) style.card.copy(alpha = style.card.alpha * 2.2f) else style.card)
++                .border(1.dp, if (on) accent.copy(alpha = 0.55f) else (style.cardEdge ?: Color.Transparent), androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
++                .padding(size * 0.09f) else Modifier.padding(size * 0.06f))
++                .drawBehind {
++                    if (style.glow > 0f && lift > 0.01f) {
++                        val r = this.size.minDimension * 0.82f
++                        drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = style.glow * lift), Color.Transparent), radius = r), radius = r)
++                    }
++                },
+             contentAlignment = Alignment.Center
+         ) {
+-            val ring = if (on) 3.dp else 1.5.dp
+-            Box(
+-                Modifier.size(size).clip(CircleShape)
+-                    .background(if (p == null) Color.White.copy(alpha = 0.06f) else Color.hsv(hue, 0.5f, 0.42f))
+-                    .border(ring, if (on) Color.White else Color.White.copy(alpha = 0.25f), CircleShape),
+-                contentAlignment = Alignment.Center
+-            ) {
+-                when {
+-                    p == null -> Icon(Icons.Filled.Add, "Add a profile", tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(size * 0.36f))
+-                    model != null -> AsyncImage(
+-                        coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
+-                            .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
+-                        p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape)
+-                    )
+-                    else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold)
++            Box(contentAlignment = Alignment.Center) {
++                // The ring in the profile's own colour (two outlines for Neon arcade).
++                val ring = if (on) style.ringOn else 1.5.dp
++                Box(
++                    Modifier.size(size).clip(shape)
++                        .background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
++                        .border(ring, if (on) accent else style.ringOff, shape)
++                        .then(if (on && style.doubleRing) Modifier.padding(ring + 3.dp).border(1.dp, accent.copy(alpha = 0.6f), shape) else Modifier),
++                    contentAlignment = Alignment.Center
++                ) {
++                    when {
++                        p == null -> Icon(Icons.Filled.Add, "Add a profile", tint = style.nameOff, modifier = Modifier.size(size * 0.36f))
++                        model != null -> AsyncImage(
++                            coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
++                                .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
++                            p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(ring).clip(shape)
++                        )
++                        else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold, fontFamily = style.titleFont)
++                    }
+                 }
++                if (p?.locked == true) Box(
++                    Modifier.align(Alignment.BottomEnd).size((size * 0.26f).coerceAtLeast(20.dp)).clip(CircleShape).background(Color.Black.copy(alpha = 0.72f))
++                        .border(1.dp, accent, CircleShape), contentAlignment = Alignment.Center
++                ) { Icon(Icons.Filled.Lock, "Locked", tint = Color.White, modifier = Modifier.size((size * 0.14f).coerceAtLeast(11.dp))) }
+             }
+         }
+-        Spacer(Modifier.height(10.dp))
+-        Text(
+-            p?.name ?: "Add", color = Color.White.copy(alpha = if (on) 1f else 0.7f), fontSize = if (on) 16.sp else 14.sp,
+-            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
++        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
++        // (Long names wrap onto a second line and shrink a little — never "…", never over the next name: the slot is the limit.)
++        ProfileName(
++            p?.name ?: "Add", color = if (on) style.nameOn else style.nameOff, maxSize = if (compact) 14f else 16f,
++            bold = on, modifier = Modifier.fillMaxWidth()
+         )
+-        val sub = when {
+-            p == null -> null
+-            ra != null -> "RetroAchievements · $ra"
+-            else -> null
++        if (ra != null && on) Text("RetroAchievements · $ra", color = style.nameOff.copy(alpha = 0.8f), fontSize = 10.sp, textAlign = TextAlign.Center)
++        if (playing) Row(
++            Modifier.padding(top = 5.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(accent.copy(alpha = if (style.look == Features.PickerLook.OLED) 0.25f else 0.2f))
++                .border(1.dp, accent.copy(alpha = 0.7f), androidx.compose.foundation.shape.RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp),
++            verticalAlignment = Alignment.CenterVertically
++        ) {
++            Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
++            Spacer(Modifier.width(5.dp))
++            Text("Playing", color = style.nameOn, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+         }
+-        if (sub != null) Text(sub, color = Color.White.copy(alpha = 0.45f * (0.5f + 0.5f * lift)), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+-        if (p?.locked == true) Icon(Icons.Filled.Lock, "Locked", tint = Color.White.copy(alpha = 0.55f), modifier = Modifier.padding(top = 3.dp).size(12.dp))
+-        if (playing) Box(Modifier.padding(top = 4.dp).size(6.dp).clip(CircleShape).background(glow))
+     }
+ }
+ 
+-/** Slow sparks drifting up through the dark (the PS-style user screen's), drawn on one canvas. */
+-@Composable
+-private fun Sparks(modifier: Modifier) {
+-    val t = remember { mutableFloatStateOf(0f) }
+-    LaunchedEffect(Unit) {
+-        val start = withFrameNanos { it }
+-        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
++/** A scrolling row fades out at a side that has more profiles beyond it, so a half-shown one reads as "more this way". */
++private fun Modifier.scrollFade(state: androidx.compose.foundation.ScrollState): Modifier =
++    graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.drawWithContent {
++        drawContent()
++        val f = size.width * 0.08f
++        val l = if (state.value > 0) 0f else 1f
++        val r = if (state.value < state.maxValue) 0f else 1f
++        drawRect(
++            androidx.compose.ui.graphics.Brush.horizontalGradient(
++                0f to Color.Black.copy(alpha = l), f / size.width to Color.Black, 1f - f / size.width to Color.Black, 1f to Color.Black.copy(alpha = r)
++            ), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
++        )
+     }
+-    val seeds = remember { List(46) { i -> floatArrayOf(((i * 7919) % 1000) / 1000f, ((i * 104729) % 1000) / 1000f, 0.4f + ((i * 31) % 10) / 16f, ((i * 53) % 100) / 100f) } }
+-    Canvas(modifier) {
+-        val time = t.floatValue
+-        for (s in seeds) {
+-            val speed = 0.012f + 0.02f * s[3]
+-            val y = (s[1] - time * speed).let { it - kotlin.math.floor(it) }
+-            val x = s[0] + 0.012f * kotlin.math.sin(time * 0.6f + s[3] * 6f)
+-            val a = (0.18f + 0.35f * s[3]) * kotlin.math.sin(y * Math.PI.toFloat()).coerceAtLeast(0f)
+-            drawCircle(Color(0xFFBFD8FF).copy(alpha = a), radius = s[2] * 2.2f, center = Offset(x * size.width, y * size.height))
++
++/**
++ * A profile's name under its picture: whole words only. It breaks between words or after a hyphen ("Anastasia-" /
++ * "Katharina"), never inside a word, and shrinks (down to 10 sp) until every word fits on a line and the name fits in
++ * 2 lines; a name that still doesn't fit takes a third line. Measured bold, so the selected name never grows past its slot.
++ */
++@Composable
++private fun ProfileName(name: String, color: Color, maxSize: Float, bold: Boolean, modifier: Modifier = Modifier) {
++    val text = PickerGrid.breakable(name)
++    androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.TopCenter) {
++        val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
++        val font = uiFontStyle()
++        val w = constraints.maxWidth
++        val fit = remember(text, w, maxSize, font) {
++            fun st(s: Float) = font.copy(fontSize = s.sp, lineHeight = (s * 1.18f).sp, fontWeight = FontWeight.Bold)
++            fun ok(s: Float, lines: Int): Boolean {
++                if (w <= 0 || w == androidx.compose.ui.unit.Constraints.Infinity) return true
++                val words = PickerGrid.words(name)
++                if (words.any { measurer.measure(it, st(s), softWrap = false).size.width > w }) return false
++                return measurer.measure(text, st(s), constraints = androidx.compose.ui.unit.Constraints(maxWidth = w)).lineCount <= lines
++            }
++            var s = maxSize
++            while (s > 10f && !ok(s, 2)) s = maxOf(10f, s - 0.5f)
++            s to (if (ok(s, 2)) 2 else 3)
+         }
++        Text(
++            text, color = color, fontSize = fit.first.sp, lineHeight = (fit.first * 1.18f).sp, style = font,
++            fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, textAlign = TextAlign.Center, maxLines = fit.second,
++            modifier = Modifier.fillMaxWidth()
++        )
+     }
+ }
+ 
+ /** A profile's name, picture and RetroAchievements account; remove (never the first one). */
+ @Composable
+-internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit) {
++internal fun ProfileEditDialog(
++    p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit,
++    /** v0.6.67: a preview's sample profile — changes show here only, nothing is saved (QA, Settings' preview). */
++    demo: Boolean = false
++) {
+     val context = LocalContext.current
+-    var p by remember(p0.id) { mutableStateOf(Profiles.list.value.firstOrNull { it.id == p0.id } ?: p0) }
++    var p by remember(p0.id) { mutableStateOf(if (demo) p0 else Profiles.list.value.firstOrNull { it.id == p0.id } ?: p0) }
+     var name by remember(p0.id) { mutableStateOf(p.name) }
+-    fun save(np: Profiles.Profile) { p = np; Profiles.update(context, np) }
++    fun save(np: Profiles.Profile) { p = np; if (!demo) Profiles.update(context, np) }
+     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+-        if (uri != null && Profiles.setPicture(context, p.id, uri)) p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p
++        if (uri != null && !demo && Profiles.setPicture(context, p.id, uri)) p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p
+     }
+     ShelfDialog(icon = Icons.Filled.Person, title = "Profile", subtitle = "Its own favorites, Continue playing, play time and achievements account.", onDismiss = {
+         if (name.isNotBlank() && name != p.name) save(p.copy(name = name.trim()))
+@@ -322,6 +440,10 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
+             if (name.isNotBlank()) save(p.copy(name = name.trim()))
+         })
+         Spacer(Modifier.height(10.dp))
++        // v0.6.67: the profile's own colour — its ring, its light and its "Playing" pill on Who's playing? (never the app's theme).
++        SettingsHeading("Colour")
++        ProfileColourRow(p.hue) { h -> save(p.copy(hue = h)) }
++        Spacer(Modifier.height(10.dp))
+         SettingsHeading("Picture")
+         ChipFlow {
+             Chip("Initial", accent = p.picture == Profiles.Picture.INITIAL) { save(p.copy(picture = Profiles.Picture.INITIAL)) }
+@@ -351,20 +473,41 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
+         var settingPin by remember { mutableStateOf(false) }
+         ChipFlow {
+             Chip(if (p.locked) "Change PIN…" else "Set a PIN…", accent = false) { settingPin = true }
+-            if (p.locked) Chip("Remove the PIN", accent = false) { Profiles.setPin(context, p.id, null); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p }
++            if (p.locked) Chip("Remove the PIN", accent = false) { if (demo) p = p.copy(pinHash = null) else { Profiles.setPin(context, p.id, null); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p } }
+         }
+         MutedNote(if (p.locked) "Locked: its PIN is asked before it plays or is edited." else "Optional: 4 digits asked before this profile plays or is edited.")
+         if (settingPin) PinPad("A new PIN for ${p.name}", check = null, onDone = { pin ->
+-            Profiles.setPin(context, p.id, pin); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p; settingPin = false
++            if (demo) p = p.copy(pinHash = Profiles.hashPin(p.id, pin)) else { Profiles.setPin(context, p.id, pin); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p }; settingPin = false
+         }, onCancel = { settingPin = false })
+         if (p.id != 0) {
+             Spacer(Modifier.height(10.dp))
+-            Chip("Remove this profile", accent = false) { Profiles.remove(context, p.id); onRemoved() }
++            Chip("Remove this profile", accent = false) { if (!demo) Profiles.remove(context, p.id); onRemoved() }
+             MutedNote("Its favorites, Continue playing and play time go with it; games, saves and settings stay.")
+         }
+     }
+ }
+ 
++/**
++ * v0.6.67: a profile's colour — twelve round swatches (PickerGrid.PRESETS) and the colour it has now when that is none of them
++ * (colours saved before stay exactly as they were). ◀ ▶ move, A picks; touch taps.
++ */
++@Composable
++@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
++internal fun ProfileColourRow(hue: Float, onPick: (Float) -> Unit) {
++    val choices = remember(hue) { (if (PickerGrid.PRESETS.any { kotlin.math.abs(it - hue) < 0.5f }) PickerGrid.PRESETS else listOf(hue) + PickerGrid.PRESETS) }
++    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
++        choices.forEach { h ->
++            val on = kotlin.math.abs(h - hue) < 0.5f
++            Box(
++                Modifier.size(34.dp).shelfClickable(CircleShape) { onPick(h) }.clip(CircleShape)
++                    .background(Brush.linearGradient(listOf(Color.hsv(h.mod(360f), 0.45f, 0.95f), Color.hsv(h.mod(360f), 0.6f, 0.6f))))
++                    .border(if (on) 3.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.25f), CircleShape),
++                contentAlignment = Alignment.Center
++            ) { if (on) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
++        }
++    }
++}
++
+ /**
+  * Update 332: the games coming in after "Who's playing?" — each game's art (GameCard, StyleArt, Case stacks' case) slides
+  * into its place with a little depth, left to right and top to bottom across the screen (by where it sits), in the layout
+@@ -459,7 +602,7 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
+  * last digit back, B cancels. A wrong PIN shakes the dots and clears them.
+  */
+ @Composable
+-internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (String) -> Unit, onCancel: () -> Unit) {
++internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (String) -> Unit, onCancel: () -> Unit, accent: Color = Color(0xFF8FB8FF)) {
+     var digits by remember { mutableStateOf("") }
+     var first by remember { mutableStateOf<String?>(null) }
+     var cursor by remember { mutableIntStateOf(4) }
+@@ -490,7 +633,7 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+         ImmersiveDialogWindow()
+         Box(
+-            Modifier.fillMaxSize().background(Color(0xE6030812))
++            Modifier.fillMaxSize().background(Color(0xFA030812))
+                 .focusRequester(focus).focusable()
+                 .onPreviewKeyEvent { e ->
+                     if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+@@ -513,16 +656,16 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                 Text(
+                     if (check == null && first != null) "Enter it again" else title,
+-                    color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold
++                    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold
+                 )
+-                Spacer(Modifier.height(14.dp))
++                Spacer(Modifier.height(16.dp))
+                 Row(
+                     horizontalArrangement = Arrangement.spacedBy(14.dp),
+                     modifier = Modifier.graphicsLayer { translationX = kotlin.math.sin(shake.value * 18f) * 14f * shake.value * density }
+                 ) {
+                     for (i in 0 until 4) Box(
+-                        Modifier.size(14.dp).clip(CircleShape)
+-                            .background(if (i < digits.length) Color.White else Color.White.copy(alpha = 0.18f))
++                        Modifier.size(16.dp).clip(CircleShape)
++                            .background(if (i < digits.length) accent else Color.White.copy(alpha = 0.18f))
+                             .border(1.dp, if (shake.value > 0.01f) Color(0xFFFF7A7A) else Color.White.copy(alpha = 0.5f), CircleShape)
+                     )
+                 }
+@@ -533,19 +676,19 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
+                             val i = r * 3 + c
+                             val on = i == cursor
+                             Box(
+-                                Modifier.size(52.dp).clip(CircleShape)
+-                                    .background(if (on) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.07f))
+-                                    .border(if (on) 2.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.18f), CircleShape)
++                                Modifier.size(56.dp).clip(CircleShape)
++                                    .background(if (on) accent.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.08f))
++                                    .border(if (on) 2.dp else 1.dp, if (on) accent else Color.White.copy(alpha = 0.22f), CircleShape)
+                                     .pointerInput(i) { detectTapGestures { cursor = i; press(keys[i]) } },
+                                 contentAlignment = Alignment.Center
+                             ) {
+-                                Text(keys[i], color = Color.White, fontSize = if (keys[i].length > 1) 14.sp else 20.sp, fontWeight = FontWeight.Medium)
++                                Text(keys[i], color = Color.White, fontSize = if (keys[i].length > 1) 15.sp else 22.sp, fontWeight = FontWeight.SemiBold)
+                             }
+                         }
+                     }
+                 }
+                 Spacer(Modifier.height(10.dp))
+-                Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
++                Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
+             }
+         }
+     }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
+index 8ae182c..6c93ea6 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
+@@ -904,6 +904,14 @@ private fun HomeContent(
+                     if (F.rolloutOn.state.value) RowChoice("Speed", com.shelf.launcher.data.Features.RolloutSpeed.values(), F.rolloutSpeed.state.value, { it.label }) { F.rolloutSpeed.value = it }
+                     Spacer(Modifier.height(6.dp))
+                     Chip("Who's playing? now", accent = false) { ProfilePicker.request = true }
++                    // v0.6.67: its look (ProfileLooks.kt) — a small picture of each, and a full-screen preview where L1 / R1 change it.
++                    Spacer(Modifier.height(10.dp))
++                    Text("Who's playing? look", color = ShelfTheme.textMuted, fontSize = 12.sp)
++                    Spacer(Modifier.height(6.dp))
++                    PickerLookThumbs()
++                    Spacer(Modifier.height(8.dp))
++                    Chip("Preview the looks", accent = false) { ProfilePicker.preview = true }
++                    MutedNote("The preview uses your profiles; picking one there only closes it. Each profile's own colour: Edit (Ⓨ) on Who's playing?.")
+                 } }
+             }
+             item { m -> Box(m) { ShelfCard { CapsuleRevealChoice() } } }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
+index 57b595c..dc7b881 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
+@@ -368,6 +368,8 @@ internal object SettingsIndex {
+         E("New game arrival", "Home", "Animations", null, null),
+         E("Details window grows out of the game", "Home", "Animations", null, null),
+         E("Startup intro", "Home", "Animations", null, null),
++        // v0.6.67: the profile picker's six looks (thumbnails + "Preview the looks").
++        E("Who's playing? look (profile picker style, preview)", "Home", "Animations", null, null),
+         E("Cover → wide capsule (roll out, slide, flip…)", "Home", "Animations", null, null),
+         E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
+         E("Pages slide (turn off, preview)", "Home", "Animations", null, null),
+diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
+index df68497..b00e690 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
+@@ -48,6 +48,37 @@ internal object TestHooks {
+     val sceneCover = mutableStateOf<Boolean?>(null)
+     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
+     val noVideo = mutableStateOf(false)
++    /**
++     * v0.6.67: `--es voltcap_test_pickerlook AURORA|CONSOLE|NEON|OLED|THEME|MIDNIGHT|off` — "Who's playing?" in that look for this
++     * session (nothing saved).
++     */
++    val pickerLook = mutableStateOf<com.shelf.launcher.data.Features.PickerLook?>(null)
++    /**
++     * v0.6.67: `--es voltcap_test_profiles "N[:long][:nophoto][:locked][:active=K]"` — "Who's playing?" with N sample profiles
++     * (1–8) instead of yours, as a preview: picking, editing, PIN and remove change nothing (ProfileSelectScreen demo).
++     */
++    val profilesDemo = mutableStateOf<List<com.shelf.launcher.data.Profiles.Profile>?>(null)
++    val profilesDemoActive = mutableStateOf(0)
++
++    /** The sample profiles for [profilesDemo] (pure, unit-tested): ids 900+, colours from the presets, real profiles untouched. */
++    fun demoProfiles(spec: String): Pair<List<com.shelf.launcher.data.Profiles.Profile>, Int> {
++        val parts = spec.split(":")
++        val n = parts[0].toIntOrNull()?.coerceIn(1, com.shelf.launcher.data.Profiles.MAX) ?: 3
++        val long = "long" in parts
++        val locked = "locked" in parts
++        val active = parts.firstOrNull { it.startsWith("active=") }?.substringAfter("=")?.toIntOrNull()?.coerceIn(0, n - 1) ?: 0
++        val names = listOf("Toni", "Mia", "Alexander the Great Gamer", "Kai", "Speedrunner Supreme", "Lena", "Grandpa Joe", "Sam")
++        val longNames = listOf("Maximilian-Alexander", "The Very Long Player Name", "Christopher Columbus", "Speedrunner Supreme 2000",
++            "Anastasia-Katharina", "Grandmaster Flash Gordon", "Bartholomew", "Wolfgang Amadeus")
++        val list = (0 until n).map { i ->
++            com.shelf.launcher.data.Profiles.Profile(
++                900 + i, (if (long) longNames else names)[i], com.shelf.launcher.data.Profiles.Picture.INITIAL, null,
++                PickerGrid.PRESETS[(i * 5) % PickerGrid.PRESETS.size],
++                if (locked && i == 1) "demo" else null
++            )
++        }
++        return list to (900 + active)
++    }
+     /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
+     @Volatile var noLaunch = false
+     /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
+@@ -173,6 +204,16 @@ internal object TestHooks {
+             noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
+             android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
+         }
++        intent?.getStringExtra("voltcap_test_pickerlook")?.let { v ->
++            if (enabled(context)) pickerLook.value = com.shelf.launcher.data.Features.PickerLook.values().firstOrNull { it.name == v }
++        }
++        intent?.getStringExtra("voltcap_test_profiles")?.let { v ->
++            if (enabled(context)) {
++                if (v == "off") profilesDemo.value = null
++                else demoProfiles(v).let { (l, a) -> profilesDemoActive.value = a; profilesDemo.value = l }
++                android.util.Log.e("VoltcapQA", "profiles demo $v")
++            }
++        }
+         if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
+             noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
+             android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
+diff --git a/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
+new file mode 100644
+index 0000000..b8baf8b
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
+@@ -0,0 +1,96 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.Features
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * v0.6.67 "Who's playing?" looks: picture sizes for 1–9 choices on the GT78 (640×427 dp) and the Odin 2 Portal (834×469 dp),
++ * D-pad steps, sample profiles that never touch the real ones, the looks list, and that switching / storage stay as they were.
++ */
++class ProfilePicker445Test {
++    private fun src(name: String): String {
++        val roots = listOf("src_copy/", "../src_copy/", "app/src/main/java/com/shelf/launcher/", "src/main/java/com/shelf/launcher/")
++        return roots.map { File(it + name) }.first { it.exists() }.readText().replace("\r\n", "\n")
++    }
++
++    private val screens = listOf(Triple(640f, 427f, false), Triple(834f, 469f, false), Triple(480f, 320f, true), Triple(1280f, 720f, false))
++
++    @Test fun picturesNeverTinyAndNamesNeverOverlap() {
++        for ((w, h, compact) in screens) for (n in 1..9) {
++            val p = PickerGrid.plan(n, w, h, compact)
++            val min = if (compact) 64f else 76f
++            assertTrue("$w×$h n=$n avatar ${p.avatar}", p.avatar >= min - 0.01f || p.avatar >= h * 0.34f - 0.01f)
++            assertTrue("name slot wider than the picture", p.slot > p.avatar)
++            // Either the whole row fits between the side margins, or it scrolls.
++            assertTrue("$w×$h n=$n fits or scrolls", p.scroll || p.rowWidth <= w - 2 * PickerGrid.SIDE + 0.5f)
++            assertTrue("picture fits the height", p.avatar <= h * 0.34f + 0.01f)
++        }
++    }
++
++    @Test fun fewProfilesGetBigPictures() {
++        val p = PickerGrid.plan(2, 834f, 469f, false)
++        assertEquals(128f, p.avatar, 0.01f)
++        assertTrue(!p.scroll)
++        assertTrue("8 profiles + Add on the GT78 scroll instead of shrinking", PickerGrid.plan(9, 640f, 427f, false).scroll)
++    }
++
++    @Test fun dpadSteps() {
++        assertEquals(0, PickerGrid.step(0, 5, 5, -1, 0))
++        assertEquals(4, PickerGrid.step(4, 5, 5, 1, 0))
++        assertEquals(3, PickerGrid.step(2, 5, 5, 1, 0))
++        assertEquals(2, PickerGrid.step(2, 5, 5, 0, 1)) // one row: ▼ stays
++        assertEquals(4, PickerGrid.step(1, 5, 3, 0, 1)) // two rows: same column, clamped to the shorter row
++    }
++
++    @Test fun sampleProfilesAreSeparateFromYours() {
++        val (list, active) = TestHooks.demoProfiles("8:long:locked:active=2")
++        assertEquals(8, list.size)
++        assertTrue(list.all { it.id >= 900 })
++        assertEquals(902, active)
++        assertTrue(list[1].locked && !list[0].locked)
++        assertEquals(3, TestHooks.demoProfiles("x").first.size)
++        assertEquals(1, TestHooks.demoProfiles("0").first.size)
++    }
++
++    @Test fun sixLooksIncludingTodaysMidnightBlue() {
++        val names = Features.PickerLook.values().map { it.name }
++        assertEquals(listOf("AURORA", "CONSOLE", "NEON", "OLED", "THEME", "MIDNIGHT"), names)
++        assertEquals("picker_look", Features.pickerLook.key)
++    }
++
++    @Test fun colourPresetsKeepASavedColour() {
++        val s = src("ui/ProfileSelect.kt")
++        assertTrue("a saved hue that is no preset is offered as it is", s.contains("else listOf(hue) + PickerGrid.PRESETS"))
++        assertTrue(PickerGrid.PRESETS.size == 12 && PickerGrid.PRESETS.all { it in 0f..360f })
++    }
++
++    @Test fun switchingAndStorageUnchanged() {
++        // Profile storage keeps its fields (no new ones): id, name, pic, hue, ra, pin.
++        val p = src("data/Profiles.kt")
++        assertTrue(p.contains("put(\"id\", p.id).put(\"name\", p.name).put(\"pic\", p.picture.name).put(\"hue\", p.hue.toDouble())"))
++        // The pick still only hands the id to the caller (LauncherScreen switches the profile and starts the rollout).
++        val s = src("ui/ProfileSelect.kt")
++        assertTrue(s.contains("onPick(id)") && !s.contains("Profiles.setActive("))
++        // Previews never save: Add, picture, PIN and remove are skipped in demo.
++        assertTrue(s.contains("if (demo) return") && s.contains("if (!demo) Profiles.update(context, np)") && s.contains("if (!demo) Profiles.remove(context, p.id)"))
++        val l = src("ui/LauncherScreen.kt")
++        assertTrue(l.contains("viewModel.switchProfile(id)"))
++    }
++
++    @Test fun longNamesBreakBetweenWordsOnly() {
++        assertEquals(listOf("Maximilian-", "Alexander"), PickerGrid.words("Maximilian-Alexander"))
++        assertEquals(listOf("The", "Very", "Long"), PickerGrid.words("The Very Long"))
++        assertEquals(listOf("Toni"), PickerGrid.words("Toni"))
++        assertEquals("Anastasia-\u200BKatharina", PickerGrid.breakable("Anastasia-Katharina"))
++        assertEquals("End-", PickerGrid.breakable("End-"))
++    }
++
++    @Test fun namesNeverEndInEllipsis() {
++        val s = src("ui/ProfileSelect.kt")
++        val bubble = s.substring(s.indexOf("private fun ProfileBubble("), s.indexOf("private fun ProfileBubble(") + 6000)
++        assertTrue(!bubble.contains("TextOverflow.Ellipsis"))
++    }
++}
+diff --git a/tools/qa/device/pickerlooks.sh b/tools/qa/device/pickerlooks.sh
+new file mode 100644
+index 0000000..831198b
+--- /dev/null
++++ b/tools/qa/device/pickerlooks.sh
+@@ -0,0 +1,33 @@
++# v0.6.67 "Who's playing?" looks (preview only: sample profiles via voltcap_test_profiles — your real profiles are never
++# switched, edited or removed; voltcap_test_pickerlook shows a look for this session, nothing saved).
++# usage: sh pickerlooks.sh TAG ["LOOKS"]   per look: 3 samples (active=1), ▶ moved, 8 long names + a locked one, the editor (Y), the PIN
++# pad, then your own profiles (real pictures) — B closes each. Stills in /sdcard/pp/TAG/.
++P=com.shelf.launcher; TAG=$1; LOOKS=${2:-"AURORA CONSOLE NEON OLED THEME MIDNIGHT"}
++OUT=/sdcard/pp/$TAG; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++K() { input keyevent $1; sleep ${2:-0.6}; }
++W() { dumpsys window | grep mCurrentFocus | grep -o "Window{[0-9a-f]*" ; }
++H=$(W)
++for L in $LOOKS; do
++  A --es voltcap_test_pickerlook $L; sleep 1
++  A --es voltcap_test_profiles "3:active=1"; sleep 2.5
++  screencap -p $OUT/${L}_1three.png
++  K KEYCODE_DPAD_RIGHT 0.8; screencap -p $OUT/${L}_2moved.png
++  K KEYCODE_BUTTON_B 1.2
++  A --es voltcap_test_profiles "8:long:locked"; sleep 2.5
++  screencap -p $OUT/${L}_3eight.png
++  K KEYCODE_DPAD_RIGHT 0.5; K KEYCODE_BUTTON_Y 1.2      # the locked sample asks its (sample) PIN before its editor
++  screencap -p $OUT/${L}_4pin.png
++  K KEYCODE_BUTTON_B 0.8; K KEYCODE_DPAD_LEFT 0.5; K KEYCODE_BUTTON_Y 1.2
++  screencap -p $OUT/${L}_5edit.png
++  K KEYCODE_BUTTON_B 1; K KEYCODE_BUTTON_B 1.2
++  A --ez voltcap_who_is_playing true; sleep 2.5
++  screencap -p $OUT/${L}_6yours.png
++  K KEYCODE_BUTTON_B 1.5
++  [ "$(W)" = "$H" ] || { echo "$L: something left open — B" >> $OUT/log.txt; K KEYCODE_BUTTON_B 1; }
++  echo "$L done" >> $OUT/log.txt
++done
++A --es voltcap_test_pickerlook off
++A --es voltcap_test_profiles off
++logcat -d | grep -E "FATAL|AndroidRuntime: " | grep -v uiautomator > $OUT/crash.txt
++echo done > $OUT/DONE
+diff --git a/tools/qa/device/pickerux.sh b/tools/qa/device/pickerux.sh
+new file mode 100644
+index 0000000..6bee4eb
+--- /dev/null
++++ b/tools/qa/device/pickerux.sh
+@@ -0,0 +1,20 @@
++# v0.6.67 "Who's playing?" — D-pad and touch on sample profiles (ids 900+, never yours; nothing saved).
++# usage: sh pickerux.sh TAG TAPX TAPY   (TAPX/TAPY = the 3rd sample's picture in px). Stills in /sdcard/pp/TAG/.
++P=com.shelf.launcher; TAG=$1; OUT=/sdcard/pp/$TAG; rm -rf $OUT; mkdir -p $OUT
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++K() { input keyevent $1; sleep ${2:-0.35}; }
++A --es voltcap_test_pickerlook AURORA; sleep 1
++# D-pad: ◀ on the first stays; ▶ to the end scrolls (fade on the left); ◀ back to the start.
++A --es voltcap_test_profiles "8:long:locked"; sleep 2.5
++K KEYCODE_DPAD_LEFT; K KEYCODE_DPAD_UP; screencap -p $OUT/1first.png
++for i in 1 2 3 4 5 6 7 8 9 10; do K KEYCODE_DPAD_RIGHT; done; sleep 0.6; screencap -p $OUT/2end.png
++for i in 1 2 3 4; do K KEYCODE_DPAD_LEFT; done; sleep 0.6; screencap -p $OUT/3middle.png
++K KEYCODE_BUTTON_B 1.5
++# Touch: tap the 3rd sample — the pick animation, then home (sample list cleared; your own profile stays active).
++A --es voltcap_test_profiles "3:active=1"; sleep 2.5
++input tap $2 $3; sleep 0.25; screencap -p $OUT/4tapanim.png; sleep 2; screencap -p $OUT/5after.png
++A --ez voltcap_who_is_playing true; sleep 2.5; screencap -p $OUT/6yours.png; K KEYCODE_BUTTON_B 1.5
++A --es voltcap_test_pickerlook off
++A --es voltcap_test_profiles off
++logcat -d | grep -E "FATAL|AndroidRuntime: " | grep -i shelf > $OUT/crash.txt
++echo done > $OUT/DONE
+diff --git a/.gitignore b/.gitignore
+--- a/.gitignore
++++ b/.gitignore
+@@ -51,7 +51,3 @@ shots*/
+ 
+ # Update 427: review sheets are regenerated by tools/themes/review_refresh.cjs (large; not committed)
+ tools/themes/refresh-review/sheet-*
+-
+-# v0.6.67 staging placeholders (empty files left in the 0.6.66 tree; the real ones are in next/0.6.67/ and its patch removes these lines)
+-/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
+-/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
