@@ -422,6 +422,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     fun startGame(game: com.shelf.launcher.data.Game, askIfOthersOpen: Boolean = true) {
         // Update 151: a game already being thrown in starts when its animation ends (a second tap would start it twice).
         if (LaunchThrow.plan != null) return
+        if (TestHooks.interceptLaunch("startGame", game.stableKey)) return
         val alreadyOpen = game.stableKey in com.shelf.launcher.data.RunningGames.confirmed
         if (askIfOthersOpen && !alreadyOpen) {
             val others = viewModel.otherOpenGames(game)
@@ -6158,6 +6159,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             .homeEditShield()
             .onPreviewKeyEvent { event ->
                 lastInputAt = System.currentTimeMillis()
+                // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
+                HomeKeyGuard.trackA(event.key, event.type)
+                if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                 when {
                     // Edit Home: the controller moves widgets until A / B finishes.
                     // Volume / media keys stay with the system while editing (update 91).
@@ -6237,6 +6241,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                 }
                 if (GamePopup.game != null && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} popup=${GamePopup.game?.stableKey != null} hook=${GamePopup.requestClose != null}")
                     if (event.type == KeyEventType.KeyUp) GamePopup.requestClose?.invoke() ?: run { GamePopup.game = null }
                     return@onKeyEvent true
                 }
@@ -7232,4 +7237,20 @@ internal object TileRowSpan { @JvmStatic var top = 0f; @JvmStatic var bottom = 0
 /** v0.6.66 popup audit: whether the home screen saw the press of the B whose release it gets (an orphan release is ignored). */
 internal object HomeKeyGuard {
     @Volatile var bDown = false
+    /**
+     * v0.6.66 (D135): the home screen took an A press and hasn't had its release yet. A window that A opened (on its press) gets
+     * that release once it has the focus — on the GT78 ~0.6 s later, past the window's 450 ms Play guard — and its focused Play
+     * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
+     */
+    @Volatile var aDown = false
+    fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
+        k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
+            k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
+    fun trackA(k: androidx.compose.ui.input.key.Key, t: androidx.compose.ui.input.key.KeyEventType) {
+        if (!isOpenKey(k)) return
+        if (t == androidx.compose.ui.input.key.KeyEventType.KeyDown) aDown = true
+        else if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp) aDown = false
+    }
+    /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
+    fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
 }

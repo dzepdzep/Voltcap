@@ -44,6 +44,15 @@ internal object TestHooks {
     val sort = mutableStateOf(false)
     /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
     val window = mutableStateOf(false)
+    /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
+    @Volatile var noLaunch = false
+    /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
+    fun interceptLaunch(where: String, key: String): Boolean {
+        if (!noLaunch && !QaTrace.on) return false
+        val who = Throwable().stackTrace.drop(1).take(14).joinToString(" < ") { "${it.fileName}:${it.lineNumber}" }
+        android.util.Log.e("VoltcapQA", "LAUNCH ${if (noLaunch) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
+        return noLaunch
+    }
     /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
     val shortcuts = mutableStateOf<String?>(null)
     /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
@@ -154,6 +163,12 @@ internal object TestHooks {
         // into <external files>/label_audit/ for checking the label pipeline. Only ids, never the account, are written.
         val la = intent?.getStringExtra("voltcap_test_labelaudit")
         // `--ez voltcap_test_preview true`: layouts asked for afterwards are shown for this session only (nothing saved).
+        // v0.6.66 (D135): `--ez voltcap_test_nolaunch true|false` — a game Voltcap would start is only logged (VoltcapQA "LAUNCH
+        // blocked", with who asked), never started: rapid-input popup runs without opening emulators or touching saves.
+        if (intent?.hasExtra("voltcap_test_nolaunch") == true && enabled(context)) {
+            noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
+            android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
+        }
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
         // Pass 5: `--ez voltcap_test_preview false` ends a preview: your saved appearance back on screen, saving again.
         // (QA: a run's preview lasted until Voltcap restarted — the layout tried stayed, and nothing you changed was saved.)

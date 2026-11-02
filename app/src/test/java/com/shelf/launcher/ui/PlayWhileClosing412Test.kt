@@ -16,7 +16,9 @@ class PlayWhileClosing412Test {
 
     @Test fun playIsIgnoredOnceTheWindowIsClosing() {
         val s = src()
-        assertTrue(s.contains("val onPlay: () -> Unit = { if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed("))
+        assertTrue(s.contains("else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed("))
+        // v0.6.66 (D135): the release of the home screen's own A press is never a Play press.
+        assertTrue(s.contains("val orphan = HomeKeyGuard.takeOrphanRelease()"))
         // Update 413: the home screen routes the window's close through GamePopup.closed so a pending A reopens it
         val ls = java.io.File(listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + "LauncherScreen.kt") }.first { it.exists() }.path).readText()
         assertTrue(ls.contains("onClose = { GamePopup.closed(g) }"))
@@ -31,5 +33,9 @@ class PlayWhileClosing412Test {
         val rr = java.io.File(listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + "RowRevealWindow.kt") }.first { it.exists() }.path).readText()
         assertTrue(rr.contains("live { RowReveal.reset(); onPlay() }"))
         assertTrue(rr.contains("swallowUp = e.key; reopen()"))
+        // v0.6.66 (D135): the Shared move window (GlanceWindow) follows the same rules.
+        val gw = java.io.File(listOf("src_copy/ui/", "../src_copy/ui/", "app/src/main/java/com/shelf/launcher/ui/", "src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + "GlanceWindow.kt") }.first { it.exists() }.path).readText()
+        assertTrue(gw.contains("live { RowReveal.reset(); onPlay() }"))
+        assertTrue(gw.contains("swallowUp = e.key; reopen()"))
     }
 }

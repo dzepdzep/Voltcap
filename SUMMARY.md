@@ -1,3 +1,29 @@
+# Update 440 (2 Nov 2026) — v0.6.66: D135 root cause fixed and verified (Shared move window), QA launch interception, Android 12 scenes for 4 themes (NOT published)
+
+**D135 (fixed + verified).** New QA hook `--ez voltcap_test_nolaunch true|false` (hooks file only): a launch Voltcap would make is logged
+(`VoltcapQA LAUNCH blocked <where> <game> by <stack>`) and not performed — no emulator starts, no saves / memory cards touched; popaudit.sh
+turns it on for its runs and lists attempts in launch.txt. Key / window logs (homekey, winkey, glancekey, win play, win close) under QaTrace.
+**Root cause:** Shared move is GlanceWindow.kt, which D132 never covered: while it flew back it kept the focus on ▶ Continue, so the A of
+A B A B (logged `glancekey 96 KeyDown closing=true`) pressed Play. **Fix:** GlanceWindow follows the row-window rules (no presses while
+closing, A re-opens and its release is swallowed, a release without its press clicks nothing); all window paths also ignore the release of
+the A that opened them on the home screen (HomeKeyGuard key ownership, cleared by any A pressed inside a window). Not a delay.
+**Verified (launches blocked):** GT78 Cross + Shared 5/5 clean (before: 3/3 attempts); regression R1 — GT78 Cross / Case stacks / Channel /
+Disc station × Own / Banner / Opens / Reveal / Shared / Classic and Odin Cross / Case stacks / Channel / Twin desk × the same: 0 launch
+attempts, window closed, same game focused (GT78 Cross backdrop video stops after the window — focus unchanged; one Odin run started on the
+profile picker: D136 INFRA). No real game was launched this update.
+**D123:** Android 12 Canvas scenes for Manga beat, Magical, Blue sky, Pixel sky (no paintings exist for them); shaders untouched. GT78 shows the
+new scenes but faint under the home screen's dim / game-colour tint — fidelity not confirmed (fixed-unverified).
+**Not done (session budget):** batch 4 controller / L2-R2 / shortcut-focus QA beyond the popup runs; D124 AutoTDP gameplay re-run (needs a
+real CPU-heavy game section — not run, no battery claims); Odin frame-drop separation (QaTrace slow-frame lines during GT78 Cross transitions
+show 25-50 ms frames with 15-30 ms GPU command time — real app jank on that device, not recording overhead; Odin Cinema not re-measured).
+**Devices:** Dolphin (Odin) had only its game list open → force-closed (no emulation, nothing to save); no emulator running at the end on
+either device. Last-played changes from update 439 stay (Donkey Konga 2, Pokemon Silver, Advance Wars ~2 min). Settings snapshot restored,
+previews ended, GT78 hooks removed / stay-awake 0, Odin hooks + earlier snapshot as found; no crash in the crash buffers.
+**Checks:** testDebugUnitTest green (RapidPlayD135Test 5 new, PlayWhileClosing412Test), assembleRelease OK, installed in place on both.
+**Copy:** `src_copy/ui/GlanceWindow.kt`, `GameWindow.kt`, `GameWindowBanner.kt`, `RowRevealWindow.kt`, `LauncherScreen.kt`, `TestHooks.kt`,
+`ThemeSceneLegacy.kt`, `src_copy/LauncherViewModel.kt`; `project_copy/app/src/test/.../RapidPlayD135Test.kt`, `PlayWhileClosing412Test.kt`;
+`tools/qa/device/popaudit.sh`; defects.json.
+
 # Update 439 (2 Nov 2026) — v0.6.66 batches 2 + 3: popup audit with recordings (2 launch bugs fixed), D125 + D128 fixed, D130 not reproduced (NOT published)
 
 **Popup audit (batch 2)** — new `tools/qa/device/popaudit.sh` (preview only; `popup_style_by_layout` inside voltcap_test_snapshot

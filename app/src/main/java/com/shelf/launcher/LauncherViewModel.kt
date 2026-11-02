@@ -5384,6 +5384,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * nothing changes under the emulator.
      */
     fun launch(game: Game) {
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
         com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
         val check = preparedCheck?.second
         if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()

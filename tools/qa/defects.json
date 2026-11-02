@@ -1461,9 +1461,9 @@
    "title": "Android 12 (GT78): several shader scenes fall back to a near-black legacy frame (Manga beat, Magical, Blue sky, Pixel sky) while Meadow / Waterfall have a picture",
    "rule": "VISUAL",
    "severity": "low",
-   "status": "open",
+   "status": "fixed-unverified",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval)."
+   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval). | Update 440 (owner decision: painting where it exists, else a better legacy scene): none of the four has a painting (ScenePainting); ThemeSceneLegacy now draws Manga beat (screentone, speed lines, panel borders, impact burst), Magical (pastel light, four-point glints, sparkle dust, light ring), Blue sky (sky + sea in its blues, sun flare, drifting clouds, glitter), Pixel sky (stepped sky bands, pixel sun rays, pixel clouds, birds) — Android 12 only, shaders untouched. GT78 (.shots/440 thG): the scenes draw (sea glitter, light ring, pixel clouds, speed lines visible) but under the home screen's dim / game-colour tint they read faint and greenish; colour fidelity and contrast NOT confirmed — next: capture with the theme set for real (not previewed) and the dim off."
   },
   {
    "id": "D124",
@@ -1570,9 +1570,19 @@
    "title": "GT78 Cross menu + Shared move: rapid A B A B at the GT78's slow key timing still starts the game (cartridge throw from the home screen) after the window has closed",
    "rule": "ONEPRESS",
    "severity": "high",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-02 update 439 GT78 popup runs G3, G4, G5 CROSS_SHARED (Advance Wars / Pokemon Silver started in RetroArch; closed at the title screen with force-stop, no save written)",
-   "note": "Reproducible on the GT78 only (Odin O4 / O5 CROSS_SHARED clean). Not the row window (D132 guards in place): the launch is the GameWindow playNow throw after the window closed and re-opened — check the D108 reopen path (GamePopup.reopenGame) with a pending A release, the 450 ms PLAY_GUARD_MS against the re-opened window's openedAt, and whether Cross marks GameOrigin on the GT78 (Shared falls back to the scene window). Next: run popaudit.sh G CROSS SHARED with the VoltcapQA focus log + a logcat line in playNow (who called it)."
+   "note": "Reproducible on the GT78 only (Odin O4 / O5 CROSS_SHARED clean). Not the row window (D132 guards in place): the launch is the GameWindow playNow throw after the window closed and re-opened — check the D108 reopen path (GamePopup.reopenGame) with a pending A release, the 450 ms PLAY_GUARD_MS against the re-opened window's openedAt, and whether Cross marks GameOrigin on the GT78 (Shared falls back to the scene window). Next: run popaudit.sh G CROSS SHARED with the VoltcapQA focus log + a logcat line in playNow (who called it). | Update 440 ROOT CAUSE: Shared move is drawn by GlanceWindow.kt (not the row window D132 fixed). While it flew back the window still had the focus on ▶ Continue, so the A of A B A B (glancekey 96 KeyDown closing=true) pressed it — QA launch interception logged it as 'win play closing=false' from the closing Glance window. FIX: GlanceWindow takes no button presses while closing, an A re-opens it and its release is swallowed, an A release whose press it never saw clicks nothing; GameWindow / Banner / row windows also ignore the release of the A that opened them on the home screen (HomeKeyGuard key ownership). Tests: RapidPlayD135Test (5), PlayWhileClosing412Test extended. VERIFIED with launches blocked (voltcap_test_nolaunch): GT78 Cross + Shared 5/5 clean (was 3/3 attempts), GT78 Cross / Case stacks / Channel / Disc station × 6 styles and Odin Cross / Case stacks / Channel / Twin desk × 6 styles: 0 launch attempts, windows closed, same game focused (one Odin run hit the profile picker: INFRA).",
+   "fixed": "2026-11-02 update 440"
+  },
+  {
+   "id": "D136",
+   "title": "QA harness: popaudit's first run after an install can land on the 'Who's playing?' picker (A = Play there), spoiling that run",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 440 Odin R1 CROSS_OWN",
+   "note": "Press B and check the screen state (guard.sh screen_state) before the first run."
   }
  ]
 }

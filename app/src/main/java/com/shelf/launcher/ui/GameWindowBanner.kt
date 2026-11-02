@@ -257,6 +257,11 @@ internal fun BannerGameWindow(
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         ImmersiveDialogWindow()
+        // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
+        androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
+            if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
+            false
+        }) {
         val scope = rememberCoroutineScope()
         val playFocus = remember { FocusRequester() }
         // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
@@ -755,6 +760,7 @@ internal fun BannerGameWindow(
                 }
             )
         }
+    }
     }
 }
 

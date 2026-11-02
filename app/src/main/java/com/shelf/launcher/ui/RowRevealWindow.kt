@@ -183,7 +183,8 @@ internal fun RowMotionWindow(
         if ((GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) && GameOrigin.rect != null &&
             (GameOrigin.displayId == here || GameOrigin.displayId < 0)) GameOrigin.rect else null
     }
-    if (origin == null || origin.width < 4f || origin.height < 4f) return false
+    if (origin == null || origin.width < 4f || origin.height < 4f) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "row window: no origin, scene window instead"); return false }
+    if (QaTrace.on) android.util.Log.e("VoltcapQA", "row window open $style")
 
     val k = g.stableKey
     val titles = LocalTitleOptions.current
@@ -208,6 +209,7 @@ internal fun RowMotionWindow(
     var closeJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val closeNow by rememberUpdatedState(onClose)
     val close: () -> Unit = {
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "row close closing=$closing")
         if (!closing) {
             closing = true
             closeJob = scope.launch {
@@ -281,7 +283,7 @@ internal fun RowMotionWindow(
             // (…and the release of the A that opened this window on the home screen: its press went to the home screen,
             // only the release arrives here — a button clicks on release, so it started the game the moment it opened.)
             if (rowWindowOpenKey(e.key)) {
-                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) openKeyDown = true
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) { openKeyDown = true; HomeKeyGuard.aDown = false }
                 else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp && !openKeyDown) return@onPreviewKeyEvent true
                 else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) openKeyDown = false
             }

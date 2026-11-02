@@ -59,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -113,6 +115,7 @@ internal object GamePopup {
     /** The window finished closing: with a pending A, hand the same game back to be opened again. */
     fun closed(g: Game) {
         val again = reopenRequested
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win closed reopen=$again")
         reopenRequested = false
         game = null
         if (again) reopenGame = g
@@ -950,7 +953,13 @@ internal fun GameWindow(
     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
     // reached the Play button of the closing window and launched the game instead of opening the case again.
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
-    val onPlay: () -> Unit = { if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow() }
+    val onPlay: () -> Unit = {
+        val orphan = HomeKeyGuard.takeOrphanRelease()
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
+        // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
+        if (orphan) Unit
+        else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
+    }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
     val syncView = rememberGameSyncView(g, syncOn)
@@ -1089,6 +1098,7 @@ internal fun GameWindow(
         // v0.6.66 popup audit (GT78, Case stacks, A B A B at 250 ms): the A while it flew back asked for it to open again
         // (D108), but the B after it fell on the closing window and was lost, so it opened again and stayed open — the next
         // A then started the game. A close asked for while it is already closing now takes the pending re-open back.
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win close again=${closingFlag[0]}")
         if (closingFlag[0]) GamePopup.reopenRequested = false
         closingFlag[0] = true
         if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
@@ -1133,6 +1143,12 @@ internal fun GameWindow(
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         ImmersiveDialogWindow()
+        // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
+        androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
+            if (QaTrace.on) android.util.Log.e("VoltcapQA", "winkey ${e.nativeKeyEvent.keyCode} ${e.type}")
+            if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
+            false
+        }) {
         val playFocus = remember { FocusRequester() }
         // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
         // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
@@ -1372,6 +1388,7 @@ internal fun GameWindow(
             if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
         }
         }
+    }
     }
 }
 

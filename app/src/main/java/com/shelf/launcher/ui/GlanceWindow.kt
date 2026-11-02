@@ -74,6 +74,9 @@ import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 
 /*
  * Update 250 (#119, approved): "Shared move" — the game window as Game Glance 3.1.1 opens its game page. The art behind
@@ -148,11 +151,13 @@ internal fun GlanceWindow(
     val leave = remember(k) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var closing by remember { mutableStateOf(false) }
+    var closeJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val closeNow by rememberUpdatedState(onClose)
     val close: () -> Unit = {
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "glance close closing=$closing")
         if (!closing) {
             closing = true
-            scope.launch {
+            closeJob = scope.launch {
                 if (anim) {
                     launch { delay((MOVE_MS - LEAVE_MS).toLong()); leave.animateTo(0f, tween(LEAVE_MS, easing = LinearEasing)) }
                     p.animateTo(0f, tween(MOVE_MS, easing = GlanceEase))
@@ -163,6 +168,21 @@ internal fun GlanceWindow(
             }
         }
     }
+    // v0.6.66 (D135, GT78 Cross menu + Shared move started the game on A B A B): the same rules as the row windows (D132) —
+    // while it goes back it takes no button presses, an A opens it again and that A's release is its own, and a release whose
+    // press it never saw (the A that opened it on the home screen) clicks nothing.
+    val reopen: () -> Unit = {
+        if (closing) {
+            closeJob?.cancel(); closeJob = null; closing = false
+            scope.launch {
+                if (anim) { launch { leave.animateTo(1f, tween(LEAVE_MS, easing = LinearEasing)) }; p.animateTo(1f, tween(MOVE_MS, easing = GlanceEase)) }
+                else { leave.snapTo(1f); p.snapTo(1f) }
+            }
+        }
+    }
+    val live: (() -> Unit) -> Unit = { f -> if (!closing) f() }
+    var swallowUp by remember { mutableStateOf<androidx.compose.ui.input.key.Key?>(null) }
+    var openKeyDown by remember { mutableStateOf(false) }
     LaunchedEffect(leave) {
         androidx.compose.runtime.snapshotFlow { leave.value }.collect { v ->
             RowReveal.rowAll.value = true
@@ -184,6 +204,19 @@ internal fun GlanceWindow(
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         ImmersiveDialogWindow()
+        androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
+            val t = e.type
+            if (QaTrace.on) android.util.Log.e("VoltcapQA", "glancekey ${e.nativeKeyEvent.keyCode} $t closing=$closing")
+            if (swallowUp != null && e.key == swallowUp && t == androidx.compose.ui.input.key.KeyEventType.KeyUp) { swallowUp = null; return@onPreviewKeyEvent true }
+            if (HomeKeyGuard.isOpenKey(e.key)) {
+                if (t == androidx.compose.ui.input.key.KeyEventType.KeyDown) { openKeyDown = true; HomeKeyGuard.aDown = false }
+                else if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp && !openKeyDown) return@onPreviewKeyEvent true
+                else if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp) openKeyDown = false
+            }
+            if (!closing) return@onPreviewKeyEvent false
+            if (t == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) { swallowUp = e.key; reopen() }
+            true
+        }) {
         val dlgView = LocalView.current
         DisposableEffect(dlgView) {
             (dlgView.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window?.let { w ->
@@ -358,11 +391,11 @@ internal fun GlanceWindow(
                     },
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
             ) {
-                GlancePill(if (resumed) "Continue" else "Play", accent, onAccent, Modifier.focusRequester(playFocus)) { RowReveal.reset(); onPlay() }
-                GlanceRound(Icons.Filled.Info, "Details", accent) { RowReveal.reset(); onFullDetails() }
-                if (g.raGameId != null || g.platform == "Steam") GlanceRound(Icons.Filled.EmojiEvents, "Achievements", accent) { RowReveal.reset(); onAchievements() }
-                if (onInspect != null) GlanceRound(InspectIcon.vector, "Inspect", accent) { RowReveal.reset(); onInspect() }
-                GlanceRound(Icons.Filled.MoreHoriz, "Options", accent) { RowReveal.reset(); onOptions() }
+                GlancePill(if (resumed) "Continue" else "Play", accent, onAccent, Modifier.focusRequester(playFocus)) { live { RowReveal.reset(); onPlay() } }
+                GlanceRound(Icons.Filled.Info, "Details", accent) { live { RowReveal.reset(); onFullDetails() } }
+                if (g.raGameId != null || g.platform == "Steam") GlanceRound(Icons.Filled.EmojiEvents, "Achievements", accent) { live { RowReveal.reset(); onAchievements() } }
+                if (onInspect != null) GlanceRound(InspectIcon.vector, "Inspect", accent) { live { RowReveal.reset(); onInspect() } }
+                GlanceRound(Icons.Filled.MoreHoriz, "Options", accent) { live { RowReveal.reset(); onOptions() } }
             }
 
             // ---- the facts and the description (the page's own: in over the last 250 ms) ----
@@ -391,6 +424,7 @@ internal fun GlanceWindow(
                 }
             }
         }
+    }
     }
 }
 
