@@ -2,10 +2,9 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
-Update 441: batch 4 QA done (catswitch + one-press PASS on both devices; frame drops separated: Odin recording overhead, GT78 Case
-stacks real jank D137). **Next:** (1) D137 GT78 Case stacks frame pacing; (2) D124 AutoTDP gameplay re-run on the Odin (owner-supervised game
-section; plugged only); (3) D123 colour check with 'scene colours from the cover' off; (4) D136 / D138 QA-tool fixes. D130 suspect; D128 GT78
-limitation; Thor pending. Release: RC candidate once the owner accepts D137 / D124 / D123 as known limitations.
+Update 442: D123 verified; D137 still open (theme-colour recomposition fixed; idle continuous redraw from the background under Case stacks
+remains — find the 30 fps draw ticker, gate the clip while moving); D139 = Android 11 HWUI abort triggered by `dumpsys gfxinfo reset` (don't use
+it on the GT78). **Next:** D137, D124 gameplay run (owner-supervised), D136 / D138 tools. Thor pending. Release: RC if the owner accepts D137 / D124.
 Popup audit: `sh /data/local/tmp/vqa/popaudit.sh TAG "LAYOUTS" "STYLES" [960x640]` between snapshot save / restore + preview false;
 the GT78 needs `usekey`; it stops when a game starts — close the emulator WITHOUT saving (Dolphin: Exit Emulation; RetroArch: Close
 Content / force-stop at the title screen). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both

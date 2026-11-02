@@ -516,7 +516,7 @@ private fun ScaledScope.mangaBeat(t: Float, c: ShelfColors) = draw {
         var x = step / 2f + if (((y / step).toInt() % 2) == 1) step / 2f else 0f
         while (x < size.width) {
             val d = kotlin.math.hypot(x - cx, y - cy) / maxD
-            if (d > 0.35f) drawCircle(Color.White.copy(alpha = 0.10f), 1.5f + 5f * (d - 0.35f), Offset(x, y))
+            if (d > 0.35f) drawCircle(Color.White.copy(alpha = 0.16f), 1.5f + 5f * (d - 0.35f), Offset(x, y))
             x += step
         }
         y += step
@@ -527,7 +527,7 @@ private fun ScaledScope.mangaBeat(t: Float, c: ShelfColors) = draw {
         val a = (i / 56f) * 2f * PI.toFloat() + h(i) * 0.05f
         val inner = maxD * (0.42f + 0.12f * h(i, 1) - 0.06f * pulse)
         val dx = cos(a); val dy = sin(a)
-        drawLine(Color.White.copy(alpha = 0.09f + 0.07f * h(i, 2)), Offset(cx + dx * inner, cy + dy * inner),
+        drawLine(Color.White.copy(alpha = 0.15f + 0.10f * h(i, 2)), Offset(cx + dx * inner, cy + dy * inner),
             Offset(cx + dx * maxD * 1.2f, cy + dy * maxD * 1.2f), 2f + 5f * h(i, 3))
     }
     // An impact burst in the accent, every few seconds, fading out.
@@ -542,11 +542,11 @@ private fun ScaledScope.mangaBeat(t: Float, c: ShelfColors) = draw {
             if (j == 0) p.moveTo(bx + cos(a) * rr, by + sin(a) * rr) else p.lineTo(bx + cos(a) * rr, by + sin(a) * rr)
         }
         p.close()
-        drawPath(p, c.accent.copy(alpha = 0.35f * (1f - k)))
+        drawPath(p, c.accent.copy(alpha = 0.5f * (1f - k)))
         drawPath(p, Color.White.copy(alpha = 0.5f * (1f - k)), style = Stroke(3f))
     }
     // Panel borders: the page's frames.
-    val ink = Color.White.copy(alpha = 0.16f)
+    val ink = Color.White.copy(alpha = 0.26f)
     drawRect(ink, Offset(24f, 24f), Size(size.width - 48f, size.height - 48f), style = Stroke(6f))
     drawLine(ink, Offset(size.width * 0.62f, 24f), Offset(size.width * 0.56f, size.height * 0.34f), 6f)
     drawLine(ink, Offset(24f, size.height * 0.34f), Offset(size.width - 24f, size.height * 0.30f), 6f)
@@ -555,13 +555,13 @@ private fun ScaledScope.mangaBeat(t: Float, c: ShelfColors) = draw {
 /** Magical sparkle: soft pastel light, four-point star glints, falling sparkle dust and a ring of light now and then. */
 private fun ScaledScope.magical(t: Float, c: ShelfColors) = draw {
     val size = this@magical.size
-    glowDot(c.accent, Offset(size.width * 0.25f, size.height * 0.25f), size.minDimension * 0.7f, 0.16f)
-    glowDot(c.secondary, Offset(size.width * 0.8f, size.height * 0.7f), size.minDimension * 0.6f, 0.14f)
+    glowDot(c.accent, Offset(size.width * 0.25f, size.height * 0.25f), size.minDimension * 0.7f, 0.24f)
+    glowDot(c.secondary, Offset(size.width * 0.8f, size.height * 0.7f), size.minDimension * 0.6f, 0.22f)
     // Sparkle dust drifting down.
     for (i in 0 until 50) {
         val x = h(i, 11) * size.width + sin(t * 0.7f + i) * 14f
         val yy = (h(i, 12) * size.height + t * (18f + 26f * h(i, 13))) % size.height
-        drawCircle((if (i % 3 == 0) c.secondary else Color.White).copy(alpha = 0.35f + 0.35f * abs(sin(t * 2f + i))), 1.5f + 2f * h(i, 14), Offset(x, yy))
+        drawCircle((if (i % 3 == 0) c.secondary else Color.White).copy(alpha = 0.5f + 0.4f * abs(sin(t * 2f + i))), 1.5f + 2f * h(i, 14), Offset(x, yy))
     }
     // Four-point star glints.
     for (i in 0 until 12) {
@@ -573,14 +573,14 @@ private fun ScaledScope.magical(t: Float, c: ShelfColors) = draw {
             moveTo(x, yy - r); quadraticTo(x, yy, x + r, yy); quadraticTo(x, yy, x, yy + r)
             quadraticTo(x, yy, x - r, yy); quadraticTo(x, yy, x, yy - r); close()
         }
-        drawPath(p, col.copy(alpha = 0.55f * tw))
+        drawPath(p, col.copy(alpha = 0.8f * tw))
         drawCircle(Color.White.copy(alpha = 0.8f * tw), r * 0.12f, Offset(x, yy))
     }
     // A ring of light bursting from the middle every few seconds.
     val ph = (t / 5f) % 1f
     if (ph < 0.45f) {
         val k = ph / 0.45f
-        drawCircle(c.accent.copy(alpha = 0.3f * (1f - k)), size.minDimension * (0.1f + 0.6f * k), Offset(size.width / 2f, size.height / 2f), style = Stroke(6f))
+        drawCircle(c.accent.copy(alpha = 0.45f * (1f - k)), size.minDimension * (0.1f + 0.6f * k), Offset(size.width / 2f, size.height / 2f), style = Stroke(6f))
     }
 }
 
@@ -594,7 +594,7 @@ private fun ScaledScope.blueSky(t: Float, c: ShelfColors) = draw {
         Offset(0f, horizon), Size(size.width, size.height - horizon))
     // The sun and its flare.
     val sun = Offset(size.width * 0.78f, size.height * 0.2f)
-    glowDot(c.accent, sun, 260f, 0.35f)
+    glowDot(c.accent, sun, 260f, 0.5f)
     drawCircle(lerp(c.accent, Color.White, 0.6f).copy(alpha = 0.85f), 38f, sun)
     // Clouds drifting by (two layers).
     for (i in 0 until 7) {
@@ -603,7 +603,7 @@ private fun ScaledScope.blueSky(t: Float, c: ShelfColors) = draw {
         val w = (if (far) 160f else 260f) * (0.8f + 0.4f * h(i, 21))
         val x = ((h(i, 22) * (size.width + w * 2) - t * speed) % (size.width + w * 2) + size.width + w * 2) % (size.width + w * 2) - w
         val yy = size.height * (if (far) 0.36f + 0.16f * h(i, 23) else 0.1f + 0.3f * h(i, 23))
-        val a = if (far) 0.28f else 0.42f
+        val a = if (far) 0.4f else 0.6f
         drawOval(Color.White.copy(alpha = a), Offset(x, yy), Size(w, w * 0.3f))
         drawOval(Color.White.copy(alpha = a), Offset(x + w * 0.2f, yy - w * 0.12f), Size(w * 0.5f, w * 0.3f))
     }
@@ -612,7 +612,7 @@ private fun ScaledScope.blueSky(t: Float, c: ShelfColors) = draw {
         val yy = horizon + 8f + (size.height - horizon) * h(i, 24) * h(i, 24)
         val x = sun.x + (h(i, 25) - 0.5f) * (60f + (yy - horizon) * 1.6f)
         val tw = abs(sin(t * 3f + i * 2.3f))
-        drawLine(Color.White.copy(alpha = 0.5f * tw), Offset(x - 10f, yy), Offset(x + 10f, yy), 2.5f)
+        drawLine(Color.White.copy(alpha = 0.75f * tw), Offset(x - 10f, yy), Offset(x + 10f, yy), 2.5f)
     }
     drawLine(lerp(c.secondary, Color.White, 0.4f).copy(alpha = 0.5f), Offset(0f, horizon), Offset(size.width, horizon), 2f)
 }
@@ -631,7 +631,7 @@ private fun ScaledScope.pixelSky(t: Float, c: ShelfColors) = draw {
     val sun = Offset(snap(size.width * 0.18f), snap(size.height * 0.2f))
     for (r in 0 until 12) {
         val a = r / 12f * 2f * PI.toFloat() + t * 0.15f
-        for (k in 5 until 9) drawRect(c.accent.copy(alpha = 0.45f), Offset(snap(sun.x + cos(a) * k * px * 1.6f), snap(sun.y + sin(a) * k * px * 1.6f)), Size(px, px))
+        for (k in 5 until 9) drawRect(c.accent.copy(alpha = 0.6f), Offset(snap(sun.x + cos(a) * k * px * 1.6f), snap(sun.y + sin(a) * k * px * 1.6f)), Size(px, px))
     }
     for (yy in -4..4) for (xx in -4..4) if (xx * xx + yy * yy <= 17) drawRect(lerp(c.accent, Color.White, 0.35f), Offset(sun.x + xx * px, sun.y + yy * px), Size(px, px))
     // Pixel clouds: blocky rows of cells, two parallax layers.
@@ -642,7 +642,7 @@ private fun ScaledScope.pixelSky(t: Float, c: ShelfColors) = draw {
         val span = size.width + cw * px * 2
         val x0 = snap(((h(i, 32) * span - t * speed) % span + span) % span - cw * px)
         val y0 = snap(size.height * (if (far) 0.42f + 0.15f * h(i, 33) else 0.12f + 0.3f * h(i, 33)))
-        val col = Color.White.copy(alpha = if (far) 0.3f else 0.5f)
+        val col = Color.White.copy(alpha = if (far) 0.45f else 0.7f)
         for (row in 0 until 4) {
             val inset = when (row) { 0 -> cw / 3; 1 -> cw / 6; else -> 0 }
             val len = cw - inset * 2 - (if (row == 3) 2 else 0)

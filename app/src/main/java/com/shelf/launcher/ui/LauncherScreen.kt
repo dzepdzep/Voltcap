@@ -1098,6 +1098,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             showStatusBar = statusTest, dockPosition = dockTest))
         TestHooks.shortcuts.value = null
     }
+    // (v0.6.66, D123 QA: the scene's colours from the cover off / on, preview only — nothing saved.)
+    val testSceneCover = TestHooks.sceneCover.value
+    LaunchedEffect(testSceneCover) {
+        val on = testSceneCover ?: return@LaunchedEffect
+        android.util.Log.e("VoltcapTest", "scenecover was ${state.appearance.sceneFromCover} -> $on")
+        viewModel.previewAppearance(state.appearance.copy(sceneFromCover = on))
+        TestHooks.sceneCover.value = null
+    }
     // (Update 261: a Settings page asked for by a test walk.)
     val testSettings = TestHooks.settings.value
     LaunchedEffect(testSettings) {
@@ -2358,7 +2366,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     {
                         CornerVisualizers(
                             playing = state.nowPlaying?.isPlaying == true,
-                            colors = musicSceneColors(),
+                            colorsOf = { musicSceneColors() },
                             topInset = 52.dp,
                             bottomInset = if (state.appearance.secondDock) 84.dp else 12.dp
                         )
@@ -3364,7 +3372,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // With the second screen up they play there instead (Settings › Screens › Music effects).
         if (!(state.appearance.musicFxSecond && SecondScreenShown.value)) CornerVisualizers(
             playing = state.nowPlaying?.isPlaying == true,
-            colors = musicSceneColors(),
+            colorsOf = { musicSceneColors() },
             topInset = if (state.appearance.statusOn && state.appearance.dockHere != com.shelf.launcher.data.DockPosition.TOP) maxOf(48.dp, statusBarDp + 6.dp) else 10.dp,
             bottomInset = if (state.appearance.legendOn) 34.dp else 10.dp,
             busy = buildSet {

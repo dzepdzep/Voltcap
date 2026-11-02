@@ -1,3 +1,4 @@
+**DONE (update 442, NOT published):** D123 colour check verified; D137 partly (colour recomposition fixed, idle redraw remains); D139 crash = Android framework + QA tool. **Next:** D137, D124.
 **DONE (update 441, NOT published):** batch 4 controller / category-switch QA PASS on GT78 + Odin; frame drops separated (D137 GT78 Case stacks). **Next:** D137, D124 gameplay run, D123 colour check.
 **DONE (update 440, v0.6.66, NOT published):** D135 fixed + verified on GT78 + Odin (Shared move GlanceWindow; QA launch interception), D123 Android 12 scenes (unverified colours). **Next:** batch 4 controller QA + frame drops, D124 gameplay re-run, D123 colour check.
 **DONE (update 439, v0.6.66, NOT published):** popup audit with recordings — D132 / D133 (rapid input started games) fixed + verified on Odin + GT78; D125 / D128 fixed + verified; D130 not reproduced. **Next:** D135 (GT78 Cross + Shared still launches), batch 4 controller QA + D124, D123 owner decision.

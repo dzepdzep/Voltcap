@@ -1,3 +1,21 @@
+# Update 442 (2 Nov 2026) — v0.6.66: D123 colour check done, D137 investigated (one cause fixed, not solved), QA crash explained (NOT published)
+
+**D123 (verified):** colour check on the GT78 with the theme's original colours (theme_look_default switched for the check, restored after) and the
+scene's cover colours off (new preview hook `voltcap_test_scenecover`). The four Android 12 scenes show their own palettes and subjects; element
+contrast raised ~1.5x (alphas only). They stay subdued under the home screen's shade — by design. The green / purple look in earlier captures was
+the owner's "Current game" colour source, not the scenes.
+**D137 (open):** the corner visualizers read the gliding theme colours at the home-screen level, recomposing the screen on every move — fixed
+(CornerVisualizers read them themselves). An offscreen layer for the stage was tried and reverted (no measurable gain). The remaining cost: Case
+stacks often redraws continuously while idle (~60 frames/s at ~20 ms on the GT78) from the background clip / animation under the 3D stage; numbers
+swing 0-300 slow frames per 5 s, so no fix is claimed. QA: CtxK_ counters (which key rebuilt the carousel: none seen), tools/qa/device/d137.sh.
+**Crash (D139, framework):** at 07:18 Voltcap aborted on the GT78 inside Android 11's own renderer (libhwui JankTracker "Impossible totalDuration
+0") while QA reset frame stats with `dumpsys gfxinfo reset` — an Android bug triggered by the test tool, no Voltcap code on the stack. QA no longer
+uses gfxinfo reset there.
+**Checks:** testDebugUnitTest green, assembleRelease OK, installed in place on the GT78 (Odin not touched this update). GT78: settings snapshot
+restored (home back to Hub with the owner's game colours), hooks / snapshot removed, stay-awake 0.
+**Copy:** `src_copy/ui/CornerVisualizer.kt`, `LauncherScreen.kt`, `TestHooks.kt`, `Carousel.kt` (QA counters), `ThemeSceneLegacy.kt`;
+`tools/qa/device/d137.sh`; defects.json.
+
 # Update 441 (2 Nov 2026) — v0.6.66 batch 4: controller / category-switch QA, frame-drop separation (no code change; NOT published)
 
 **Category switching (R24, catswitch.sh: repeated L2 / R2, 150 ms reversals, double step):** PASS on the GT78 (Classic, Cross menu, Disc

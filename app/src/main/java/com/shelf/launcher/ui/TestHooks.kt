@@ -44,6 +44,8 @@ internal object TestHooks {
     val sort = mutableStateOf(false)
     /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
     val window = mutableStateOf(false)
+    /** v0.6.66 (D123): `--ez voltcap_test_scenecover false` — the scene's colours from the cover off/on for this preview only. */
+    val sceneCover = mutableStateOf<Boolean?>(null)
     /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
     @Volatile var noLaunch = false
     /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
@@ -168,6 +170,9 @@ internal object TestHooks {
         if (intent?.hasExtra("voltcap_test_nolaunch") == true && enabled(context)) {
             noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
             android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
+        }
+        if (intent?.hasExtra("voltcap_test_scenecover") == true && enabled(context)) {
+            previewOnly = true; sceneCover.value = intent.getBooleanExtra("voltcap_test_scenecover", false)
         }
         val pv = intent?.getBooleanExtra("voltcap_test_preview", false) == true
         // Pass 5: `--ez voltcap_test_preview false` ends a preview: your saved appearance back on screen, saving again.

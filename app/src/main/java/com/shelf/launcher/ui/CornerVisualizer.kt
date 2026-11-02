@@ -41,7 +41,11 @@ import kotlin.math.sin
 @Composable
 internal fun BoxScope.CornerVisualizers(
     playing: Boolean,
-    colors: com.shelf.launcher.ui.theme.ShelfColors,
+    /**
+     * v0.6.66 (D137): read here, not by the caller — with the game's colours on, the theme colours glide on every game move, and
+     * read at the home screen's level they recomposed the whole screen every frame (GT78 Case stacks ~25-30 fps).
+     */
+    colorsOf: @Composable () -> com.shelf.launcher.ui.theme.ShelfColors,
     topInset: androidx.compose.ui.unit.Dp,
     bottomInset: androidx.compose.ui.unit.Dp,
     /** Corners already holding something (the round shortcuts' ☰, a music player there): step past it. */
@@ -52,6 +56,7 @@ internal fun BoxScope.CornerVisualizers(
     if (Features.cornerVizOnlyMusic.state.value && !playing) return
     // Only hidden when nothing plays: while music plays it never stops (long idle, a window on top).
     if (!playing && (LocalSceneCovered.current || HomeIdle.still)) return
+    val colors = colorsOf()
     val size = Features.cornerVizSize.state.value.dp
     val corner = Features.cornerVizCorner.state.value
     val zone = safeZone()

@@ -1079,6 +1079,16 @@ internal fun GameCarousel(
         // (Update 231, #59: the accent is no longer a reason for a new ctx — while the colours glide to the focused game's
         // it changed every frame and rebuilt every game in the carousel; only the focused frame reads it now, via accentOf.)
         val accentNow = rememberUpdatedState(ShelfTheme.accent)
+        // (v0.6.66, D137 QA: which key rebuilt the ctx — and with it every game in the row — counted as CtxK_<key>.)
+        if (QaTrace.on) {
+            val prevK = remember { arrayOfNulls<Any?>(24) }
+            val nowK = arrayOf<Any?>(view, side, bigW, bigH, recede, recedeLeft, maxWidth, unitState, cases3d, modelLook, spines, spinesAside, spinesRight,
+                reflectOn, dens, cardArtType, art, overrides, screenshots, mixed, realRef, hidden, look.focusBorder, pulseOn)
+            val nm = arrayOf("view", "side", "bigW", "bigH", "recede", "recedeLeft", "maxWidth", "unit", "cases3d", "model", "spines", "aside", "right",
+                "reflect", "dens", "artType", "art", "overrides", "shots", "mixed", "realRef", "hidden", "border", "pulse")
+            for (k in nowK.indices) if (prevK[k] != null && prevK[k] != nowK[k]) QaTrace.count("CtxK_" + nm[k])
+            for (k in nowK.indices) prevK[k] = nowK[k]
+        }
         val ctx = remember(
             view, side, bigW, bigH, recede, recedeLeft, maxWidth, unitState, cases3d, modelLook, spines, spinesAside, spinesRight,
             // (Update 208: not the scans' map — each scan looked up made a new one and rebuilt every game in the row; each
