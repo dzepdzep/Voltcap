@@ -1,3 +1,23 @@
+# Update 445 (2 Nov 2026) — v0.6.66 RELEASE CANDIDATE frozen (NOT published — owner approval needed)
+
+**Version:** 0.6.66 / versionCode 73 (app/build.gradle.kts). Changelog: docs/CHANGELOG_0.6.66.md (updates 438–444).
+**CI:** GitHub Actions "QA tooling checks" green on 60fe5dc (run #95) and every update since 438.
+**APKs (built on the PC, read back with tools/release/apkinfo.py — binary manifest + v2 signing block):**
+- `Voltcap-0.6.66-release.apk` — com.shelf.launcher / 73 / 0.6.66, notification listener yes, signer SHA-256 88ce4b67…f344197 (= 0.6.63–0.6.65),
+  file SHA-256 45c6d2ae0c2cd17c0597980a95169335386138969d618315c32b9a1640e3d01f.
+- `Voltcap-0.6.66-compat.apk` — same package / version / signer, notification listener no,
+  file SHA-256 ab4c56f49d9e07f4e59c8fda98c16fc26c4cb5e5ddc8930b5adc60091ec316fc.
+(release.ps1 / publish_release rebuild both from this commit; the hashes identify these RC builds, a rebuild gives new ones.)
+**Checks:** testDebugUnitTest green; static checks PASS; QA self-test 71 OK. Release APK installed in place on the GT78 and the Odin
+(versionCode 73 read back). Focused regression with launches blocked (tools/qa/device/popfinal.sh): Twin desk own, Channel grid Row reveal,
+Cinema Banner, Cross menu Shared move, Case stacks own, Disc station Row opens up — both devices: window opens, D-pad, B back to the same game,
+rapid A B A B ends closed; no LAUNCH line, no crash. (GT78's first run hit the profile picker on the first combo; re-run R2 clean.)
+**Unverified / known:** D137 low (~1 dropped frame per step, GT78 Case stacks); D124 AutoTDP in real gameplay not validated; Thor not tested;
+Twin window without any artwork not seen on a device. Settings / data: snapshots saved before and restored after; profiles untouched.
+**Freeze:** this commit is the v0.6.66 RC. New development (v0.6.67, profile picker looks) is kept in `next/0.6.67/` (not compiled) until the
+owner approves publishing; app/ and src_copy stay on the RC.
+**Copy:** project_copy/app/build.gradle.kts; docs/CHANGELOG_0.6.66.md; tools/release/apkinfo.py.
+
 # Update 444 (2 Nov 2026) — v0.6.66 popup polish: Twin desk hinge rebuilt, Channel grid action panel, rapid A/B fix, D137 re-measured (NOT published)
 
 **D142 fixed (Odin + GT78):** Twin hinge window rebuilt in `ui/WinSceneTwin.kt` (moved out of WinScenesMore.kt). Top half = the picture (whole,
