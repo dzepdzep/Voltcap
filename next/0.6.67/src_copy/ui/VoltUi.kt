@@ -92,6 +92,11 @@ internal fun Modifier.voltSurface(
     alpha: Float = 1f,
     edge: Color? = null
 ): Modifier {
+    // (QA only, update 457: `--ei voltcap_test_surfaceprobe 1|2` — plain clipped / unclipped panels, to measure their GPU cost.)
+    when (TestHooks.surfaceProbe.value) {
+        1 -> return this.clip(shape).background(base.copy(alpha = base.alpha * alpha))
+        2 -> return this.background(base.copy(alpha = base.alpha * alpha), shape)
+    }
     if (!VoltUi.on) return this.clip(shape).background(base.copy(alpha = base.alpha * alpha))
     when (Features.uiStyle.state.value) {
         Features.UiStyle.CAPSULE -> return capsuleSurface(shape, base, alpha, edge, ShelfTheme.accent)
@@ -594,3 +599,4 @@ internal fun VoltHeading(text: String, modifier: Modifier = Modifier) {
         }
     }
 }
+

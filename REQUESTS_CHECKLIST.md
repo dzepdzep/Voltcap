@@ -3,6 +3,16 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 457 (2 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| D172 Settings choppy (RP Classic) | PARTIAL | perfetto: UI thread fine; GPU-bound. Window flat (GPU 11.0 -> 10.2 ms). Panel gradient/sheen/rim = ~3-4 ms GPU per frame — owner decision (plain panels on slow devices?) |
+| D172 Thor regression | DONE | Settings GPU 4 ms, 5 % jank |
+| D173 Stadium / Snap packaging | NOT REPRODUCED | real US boxes front + back, cardboard open, cart separate (Case flow, Game shelf, Inspect) — which layout? |
+| D174 Pokémon Brown generated cart | REPRODUCED, OPEN | flat grey shell, blank top recess, box cover used as sticker |
+| D175 GBA side lines | REPRODUCED, OPEN | ~90°: striped column from the side picture; edge-on-face fix tried, no effect, reverted |
+| D137 / AutoTDP / D168-D169 | DEFERRED | unchanged |
+
 ## Update 456 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

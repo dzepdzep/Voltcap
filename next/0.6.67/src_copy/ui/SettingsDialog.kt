@@ -341,6 +341,7 @@ fun SettingsDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         ImmersiveDialogWindow()
+        SettingsWindowFlat()
         // Small screens (Retroid Pocket Classic and the like): the dialog fills
         // nearly the whole screen, the side list becomes a row of category pills
         // along the top, and paddings shrink — so every option stays reachable.
@@ -6228,4 +6229,23 @@ private fun HandheldControllerStyle() {
         if (hs != null) Chip("Handheld Settings", accent = false) { runCatching { context.startActivity(hs) } }
     }
     Spacer(Modifier.height(12.dp))
+}
+
+
+/**
+ * Update 457 (D172, RP Classic perfetto trace: every Settings frame drew a 1368 x 1160 buffer on a 1240 x 1080 screen): the
+ * dialog window kept the dialog theme's elevation, so Android gave it surface insets for a drop shadow and rendered that
+ * shadow round the window — which covers the whole screen, so the shadow was never seen, yet it was redrawn with every
+ * scroll frame. The Settings window is flat now (elevation 0, no insets): same picture, fewer pixels and no shadow pass.
+ * QA A/B: `--ez voltcap_test_settingsflat false` (session).
+ */
+@Composable
+private fun SettingsWindowFlat() {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val flat = TestHooks.settingsFlat.value
+    androidx.compose.runtime.DisposableEffect(view, flat) {
+        val window = (view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+        if (window != null && flat) runCatching { window.setElevation(0f); window.decorView.elevation = 0f }
+        onDispose { }
+    }
 }

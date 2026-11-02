@@ -1,3 +1,33 @@
+# Update 457 (2 Nov 2026) — D172 Settings profiled (perfetto) + window fix; D173 not reproduced; D174 / D175 reproduced, causes narrowed (NOT published)
+
+**Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. v0.6.66 frozen; staging only. D137, AutoTDP, D168/D169 untouched.
+**D172 Settings (RP Classic) — measured with perfetto (gfx/view/sched, 8-9 s, ▼x10 ▲x10, Settings › Home), parsed per frame:**
+- RC: UI thread doFrame median 5.6 ms; RenderThread DrawFrames median 8.4 ms (p90 15.9); GPU completion median 10.7 ms; ~10 % of frames
+  over 16.7 ms. The UI thread is not the problem (long frames = waiting for the RenderThread / GPU). The "200 ms stalls" in update 456 were
+  my metric counting the idle gap between key presses — not stalls.
+- The Settings window drew a 1368 x 1160 buffer on the 1240 x 1080 screen: the dialog theme's elevation gave it surface insets for a drop
+  shadow that is never seen (the window covers the screen). **Fixed:** the Settings window is flat (elevation 0) — buffer 1240 x 1032,
+  GPU median 11.0 -> 10.2 ms, RenderThread 7.5 -> 7.0 ms (warm A/B, `--ez voltcap_test_settingsflat`). Small but real; no visual change.
+- **Root cause of the rest found (QA probe `--ei voltcap_test_surfaceprobe`):** the panels' default surface (vertical gradient + sheen
+  line + hairline rim on every card) costs ~3-4 ms GPU per frame: plain panels -> GPU 6.4-8.0 ms, RenderThread 6.1 ms, frames over
+  budget 33 -> 12. NOT applied — it changes the Settings look (owner: keep designs). Replacing the rim's `Modifier.border` with a plain
+  stroke removed ~50 path ops/frame but gave no measurable gain — reverted. Needs an owner decision (see REQUESTS_CHECKLIST).
+- Thor: Settings GPU 4 ms, jank 5 % — no regression.
+**D173 Pokémon Stadium / Snap (Thor):** not reproduced. Case flow, Game shelf and the game window's Inspect all show the real US N64
+retail boxes (front + real back scans), the box opens as cardboard and the cartridge (real label) is separate media. No generated case,
+no plastic case. Needs the layout / device where the wrong packaging was seen.
+**D174 Pokémon Brown (RP Classic, Inspect):** reproduced next to an authentic cart photo — the generated GB shell is flat even grey with an
+empty top recess (no moulded "Nintendo GAME BOY™"), and the sticker is the box-front cover (ESRB / Nintendo seal / "Gotta catch 'em all"
+printed on it) sized to the cover. Not changed this update.
+**D175 GBA side lines (Thor, Inspect 0/45/75/90/120/160/180°):** reproduced at ~90°: a 1-2 px striped / coloured column runs down the
+side's edge. Tried leaving out the edge-on face — no change (the face is not it), reverted. Narrowed to the side picture being built from
+the face's edge pixels (grooves + label colours). Not fixed.
+**Restored:** both devices on the RC rebuild, Thor view verified (All / 007 TWINE / 0), RP Classic view unchanged, hwui overdraw prop
+back to unset, perfetto traces / QA scripts removed, Thor hooks `.paused`. **Checks:** Render457Test assertions match the staging SettingsDialog.kt; patch `git apply --check` OK; full unit-test run on the 0.6.67 tree NOT done (staging is not in app/).
+**Copy (0.6.67):** next/0.6.67/src_copy/ui/{SettingsDialog,TestHooks,VoltUi}.kt, Render457Test (also in the patch).
+
+    cd C:\Users\User\AndroidStudioProjects\ShelfLauncher; git pull origin main
+
 # Update 456 (2 Nov 2026) — background hold under drawer + Settings (option B), Settings home redraw (D171), Pocket Quest long tab names (D170), frozen RC archive (D176); cartridge / N64 packaging items open (NOT published)
 
 **Devices (USB):** AYN Thor 3140972f, RP Classic MC94516AQF091001112 (an emulator on the PC's adb list was not used). v0.6.66 frozen; staging only.

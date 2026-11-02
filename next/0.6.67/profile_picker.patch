@@ -1,7 +1,7 @@
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,23 +55,3 @@
+@@ -55,24 +55,3 @@
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -25,6 +25,7 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/test/java/com/shelf/launcher/ui/RibbonTop455Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PqTabs456Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 index c29e9a0..4acd436 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
@@ -2878,10 +2879,18 @@ index 5dd75e0..55c73a8 100644
              // Update 200: the pages slide in the direction of travel instead of just appearing.
              Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index 8ae182c..6c93ea6 100644
+index 8ae182c..fe71813 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-@@ -904,6 +904,14 @@ private fun HomeContent(
+@@ -341,6 +341,7 @@ fun SettingsDialog(
+         properties = DialogProperties(usePlatformDefaultWidth = false)
+     ) {
+         ImmersiveDialogWindow()
++        SettingsWindowFlat()
+         // Small screens (Retroid Pocket Classic and the like): the dialog fills
+         // nearly the whole screen, the side list becomes a row of category pills
+         // along the top, and paddings shrink — so every option stays reachable.
+@@ -904,6 +905,14 @@ private fun HomeContent(
                      if (F.rolloutOn.state.value) RowChoice("Speed", com.shelf.launcher.data.Features.RolloutSpeed.values(), F.rolloutSpeed.state.value, { it.label }) { F.rolloutSpeed.value = it }
                      Spacer(Modifier.height(6.dp))
                      Chip("Who's playing? now", accent = false) { ProfilePicker.request = true }
@@ -2896,6 +2905,29 @@ index 8ae182c..6c93ea6 100644
                  } }
              }
              item { m -> Box(m) { ShelfCard { CapsuleRevealChoice() } } }
+@@ -6221,3 +6230,22 @@ private fun HandheldControllerStyle() {
+     }
+     Spacer(Modifier.height(12.dp))
+ }
++
++
++/**
++ * Update 457 (D172, RP Classic perfetto trace: every Settings frame drew a 1368 x 1160 buffer on a 1240 x 1080 screen): the
++ * dialog window kept the dialog theme's elevation, so Android gave it surface insets for a drop shadow and rendered that
++ * shadow round the window — which covers the whole screen, so the shadow was never seen, yet it was redrawn with every
++ * scroll frame. The Settings window is flat now (elevation 0, no insets): same picture, fewer pixels and no shadow pass.
++ * QA A/B: `--ez voltcap_test_settingsflat false` (session).
++ */
++@Composable
++private fun SettingsWindowFlat() {
++    val view = androidx.compose.ui.platform.LocalView.current
++    val flat = TestHooks.settingsFlat.value
++    androidx.compose.runtime.DisposableEffect(view, flat) {
++        val window = (view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
++        if (window != null && flat) runCatching { window.setElevation(0f); window.decorView.elevation = 0f }
++        onDispose { }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
 index 57b595c..dc7b881 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
@@ -3053,7 +3085,7 @@ index 55ac6bf..f9fadad 100644
          for (wait in longArrayOf(120, 350, 800)) {
              kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..6e1c075 100644
+index df68497..39235c3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -27,6 +27,18 @@ internal object TestHooks {
@@ -3075,12 +3107,16 @@ index df68497..6e1c075 100644
      fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
          java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
      }.getOrDefault(false).also { enabledCache = it }
-@@ -48,6 +60,41 @@ internal object TestHooks {
+@@ -48,6 +60,45 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
 +    /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
 +    val panelHold = mutableStateOf(true)
++    /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
++    val settingsFlat = mutableStateOf(true)
++    /** Update 457 (QA measurement only): `--ei voltcap_test_surfaceprobe 0|1|2` — panels drawn plain (1) or plain without a clip (2). */
++    val surfaceProbe = androidx.compose.runtime.mutableIntStateOf(0)
 +    /** Update 456: `--es voltcap_test_tabnames "GBA=A very long name|All=Ünïcødé 名前"` — Pocket Quest tab names for this session (key: console or label). */
 +    val tabNames = mutableStateOf<Map<String, String>>(emptyMap())
 +    /**
@@ -3117,7 +3153,7 @@ index df68497..6e1c075 100644
      /** v0.6.66 (D135): launches are recorded, not performed (`voltcap_test_nolaunch`). */
      @Volatile var noLaunch = false
      /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
-@@ -114,7 +161,45 @@ internal object TestHooks {
+@@ -114,7 +165,45 @@ internal object TestHooks {
      private fun com.shelf.launcher.device.tune.TuneProfile.summaryForQa() =
          "tier=$tier uc=$underclock auto=$autoTdp ${if (autoTdp) "$autoMode target=$targetFps" else ""}"
  
@@ -3163,7 +3199,7 @@ index df68497..6e1c075 100644
          val want = intent?.getStringExtra("voltcap_test_layout")
          val g = intent?.getStringExtra("voltcap_test_game")
          val st = intent?.getStringExtra("voltcap_test_settings")
-@@ -173,6 +258,23 @@ internal object TestHooks {
+@@ -173,6 +262,28 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -3180,6 +3216,11 @@ index df68497..6e1c075 100644
 +        intent?.getStringExtra("voltcap_test_tabnames")?.let { v ->
 +            if (enabled(context)) tabNames.value = v.split('|').mapNotNull { e -> e.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1] } }.toMap()
 +        }
++        if (intent?.hasExtra("voltcap_test_surfaceprobe") == true && enabled(context)) surfaceProbe.intValue = intent.getIntExtra("voltcap_test_surfaceprobe", 0)
++        if (intent?.hasExtra("voltcap_test_settingsflat") == true && enabled(context)) {
++            settingsFlat.value = intent.getBooleanExtra("voltcap_test_settingsflat", true)
++            android.util.Log.e("VoltcapQA", "settingsflat=${settingsFlat.value}")
++        }
 +        if (intent?.hasExtra("voltcap_test_panelhold") == true && enabled(context)) {
 +            panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
 +            android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
@@ -3187,7 +3228,7 @@ index df68497..6e1c075 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -205,6 +307,9 @@ internal object TestHooks {
+@@ -205,6 +316,9 @@ internal object TestHooks {
              previewOnly = true
              tileWalk.value = tw
          }
@@ -3197,7 +3238,7 @@ index df68497..6e1c075 100644
          if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
-@@ -215,8 +320,13 @@ internal object TestHooks {
+@@ -215,8 +329,13 @@ internal object TestHooks {
          if (rs != null) { previewOnly = true; shortcuts.value = rs }
          if (snap != null) runCatching {
              val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
@@ -3211,7 +3252,7 @@ index df68497..6e1c075 100644
                  // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
                  val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                  java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
-@@ -234,6 +344,11 @@ internal object TestHooks {
+@@ -234,6 +353,11 @@ internal object TestHooks {
                      if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
                      e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
                  }
@@ -3341,10 +3382,22 @@ index 054c3eb..e6ac515 100644
  internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
      this == HomeLayout.TWIN_SHOWCASE || // Update 307
 diff --git a/app/src/main/java/com/shelf/launcher/ui/VoltUi.kt b/app/src/main/java/com/shelf/launcher/ui/VoltUi.kt
-index 5918eb7..684d9dd 100644
+index 5918eb7..adfc57f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/VoltUi.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/VoltUi.kt
-@@ -415,7 +415,7 @@ private const val VOLT_SPARK_RUN = 1_600L
+@@ -92,6 +92,11 @@ internal fun Modifier.voltSurface(
+     alpha: Float = 1f,
+     edge: Color? = null
+ ): Modifier {
++    // (QA only, update 457: `--ei voltcap_test_surfaceprobe 1|2` — plain clipped / unclipped panels, to measure their GPU cost.)
++    when (TestHooks.surfaceProbe.value) {
++        1 -> return this.clip(shape).background(base.copy(alpha = base.alpha * alpha))
++        2 -> return this.background(base.copy(alpha = base.alpha * alpha), shape)
++    }
+     if (!VoltUi.on) return this.clip(shape).background(base.copy(alpha = base.alpha * alpha))
+     when (Features.uiStyle.state.value) {
+         Features.UiStyle.CAPSULE -> return capsuleSurface(shape, base, alpha, edge, ShelfTheme.accent)
+@@ -415,7 +420,7 @@ private const val VOLT_SPARK_RUN = 1_600L
  internal fun VoltageLine(modifier: Modifier = Modifier, vertical: Boolean = false, color: Color = ShelfTheme.accent, thickness: Dp = 1.dp) {
      val color2 = lerpColor(color, ShelfTheme.colors.secondary, 0.7f)
      val pixel = VoltUi.pixel
@@ -3353,6 +3406,11 @@ index 5918eb7..684d9dd 100644
      // The spark crosses in 1.6 s, then the line rests 2.4 s with no frames drawn at all.
      val spark = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(1f) }
      androidx.compose.runtime.LaunchedEffect(animate) {
+@@ -594,3 +599,4 @@ internal fun VoltHeading(text: String, modifier: Modifier = Modifier) {
+         }
+     }
+ }
++
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt b/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt
 index 791a4b3..02997cf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt
@@ -4289,6 +4347,33 @@ index 0000000..15cb771
 +        assertTrue(!bubble.contains("TextOverflow.Ellipsis"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt b/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
+new file mode 100644
+index 0000000..adfb1dc
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
+@@ -0,0 +1,21 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * Update 457: D172 (the Settings window's unseen shadow insets).
++ */
++class Render457Test {
++    private fun src(name: String): String = listOf(
++        File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
++    ).first { it.exists() }.readText()
++
++    @Test fun settingsWindowIsFlat() {
++        val s = src("SettingsDialog.kt")
++        assertTrue(s.contains("SettingsWindowFlat()"))
++        assertTrue(s.contains("window.setElevation(0f)"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/RibbonTop455Test.kt b/app/src/test/java/com/shelf/launcher/ui/RibbonTop455Test.kt
 new file mode 100644
 index 0000000..81a8d24
@@ -4686,6 +4771,41 @@ index 0000000..3040c5a
 +echo "focus: $(dumpsys window | grep -m1 mCurrentFocus | sed 's/.*{[0-9a-f]* u0 //; s/}//')"
 +dumpsys window windows | awk '/Window #[0-9]+ Window\{/{n=$0; sub(/.*u0 /,"",n); sub(/\}:/,"",n)} /mDisplayId=/{d=$0; sub(/.*mDisplayId=/,"",d); sub(/ .*/,"",d)} /isVisible=/{v=$0; sub(/.*isVisible=/,"",v); if (n ~ /NavigationBar|HomeHandle|Gesture|NavBar|nav_bar|Taskbar/) print "  d" d " " n " visible=" v}'
 +dumpsys window | grep -E "InsetsSource.*type=navigationBars" | sed 's/^ *//' | cut -c1-140 | sort -u | head -6
+diff --git a/tools/qa/device/panelhold.sh b/tools/qa/device/panelhold.sh
+new file mode 100644
+index 0000000..74e0318
+--- /dev/null
++++ b/tools/qa/device/panelhold.sh
+@@ -0,0 +1,29 @@
++# panelhold.sh TAG REPS — update 456 A/B: the home background held under the app drawer and Settings (voltcap_test_panelhold).
++# Per mode (off = before, on = after): drawer open + idle 4 s, drawer scroll ▼x8 ▲x8, Settings open + idle 4 s, Settings ▼x6 ▲x6.
++# Prints frames / missed vsyncs / max gap (QaTrace cadence) and gfxinfo GPU 50th/90th percentile + janky % per phase.
++# The drawer is reached through a Tile home PREVIEW (dock ▼ A), as in perf.sh; nothing is saved; view state restored at the end.
++P=com.shelf.launcher; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT; R=${2:-3}
++A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
++k() { input keyevent KEYCODE_$1; sleep ${2:-0.6}; }
++g0() { dumpsys gfxinfo $P reset > /dev/null 2>&1; logcat -c; }
++m() { c=$(logcat -d -s VoltcapQA | grep -o "cadence n=[0-9]* missed=[0-9]* maxgap=[0-9]*" | awk '{split($2,n,"=");split($3,x,"=");split($4,g,"=");N+=n[2];M+=x[2];if(g[2]>G)G=g[2]} END{printf "frames=%d missed=%d maxgap=%d",N,M,G}')
++      gi=$(dumpsys gfxinfo $P | grep -E "Janky frames:|50th gpu percentile|90th gpu percentile" | head -3 | sed 's/  */ /g' | tr '\n' ' ')
++      echo "$1 $c | $gi" >> $OUT/log.txt; }
++input keyevent KEYCODE_WAKEUP; sleep 1
++A --es voltcap_test_snapshot save; sleep 2; A --ez voltcap_test_nolaunch true; sleep 1
++for mode in false true; do
++  A --ez voltcap_test_panelhold $mode; sleep 1
++  for i in $(seq 1 $R); do
++    A --ez voltcap_test_preview true; A --es voltcap_test_layout TILES; sleep 4; k DPAD_DOWN 0.5; k BUTTON_A 1.5
++    g0; sleep 4; m "hold=$mode drawer_idle"
++    g0; for j in 1 2 3 4 5 6 7 8; do k DPAD_DOWN 0.25; done; for j in 1 2 3 4 5 6 7 8; do k DPAD_UP 0.25; done; sleep 0.5; m "hold=$mode drawer_scroll"
++    k BUTTON_B 1.2; A --ez voltcap_test_preview false; sleep 2
++    A --es voltcap_test_settings Game_look; sleep 2.5
++    g0; sleep 4; m "hold=$mode settings_idle"
++    g0; for j in 1 2 3 4 5 6; do k DPAD_DOWN 0.3; done; for j in 1 2 3 4 5 6; do k DPAD_UP 0.3; done; sleep 0.5; m "hold=$mode settings_nav"
++    k BUTTON_B 0.8; k BUTTON_B 1.4
++    g0; sleep 3; m "hold=$mode home_idle"
++  done
++done
++A --ez voltcap_test_panelhold true; A --ez voltcap_test_nolaunch false; sleep 1
++A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat /sdcard/Android/data/$P/files/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt; echo DONE >> $OUT/log.txt
 diff --git a/tools/qa/device/perf.sh b/tools/qa/device/perf.sh
 new file mode 100644
 index 0000000..48aa664

@@ -62,6 +62,10 @@ internal object TestHooks {
     val noVideo = mutableStateOf(false)
     /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
     val panelHold = mutableStateOf(true)
+    /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
+    val settingsFlat = mutableStateOf(true)
+    /** Update 457 (QA measurement only): `--ei voltcap_test_surfaceprobe 0|1|2` — panels drawn plain (1) or plain without a clip (2). */
+    val surfaceProbe = androidx.compose.runtime.mutableIntStateOf(0)
     /** Update 456: `--es voltcap_test_tabnames "GBA=A very long name|All=Ünïcødé 名前"` — Pocket Quest tab names for this session (key: console or label). */
     val tabNames = mutableStateOf<Map<String, String>>(emptyMap())
     /**
@@ -270,6 +274,11 @@ internal object TestHooks {
         }
         intent?.getStringExtra("voltcap_test_tabnames")?.let { v ->
             if (enabled(context)) tabNames.value = v.split('|').mapNotNull { e -> e.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1] } }.toMap()
+        }
+        if (intent?.hasExtra("voltcap_test_surfaceprobe") == true && enabled(context)) surfaceProbe.intValue = intent.getIntExtra("voltcap_test_surfaceprobe", 0)
+        if (intent?.hasExtra("voltcap_test_settingsflat") == true && enabled(context)) {
+            settingsFlat.value = intent.getBooleanExtra("voltcap_test_settingsflat", true)
+            android.util.Log.e("VoltcapQA", "settingsflat=${settingsFlat.value}")
         }
         if (intent?.hasExtra("voltcap_test_panelhold") == true && enabled(context)) {
             panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)

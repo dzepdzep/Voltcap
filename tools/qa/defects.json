@@ -1907,16 +1907,16 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-02 update 456 (winpace.sh, per-window framestats)",
-   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update."
+   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision."
   },
   {
    "id": "D173",
    "title": "Pokémon Stadium / Pokémon Snap (N64): owner reports the wrong case / packaging",
    "rule": "ART",
    "severity": "med",
-   "status": "open",
+   "status": "suspect",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed."
+   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen."
   },
   {
    "id": "D174",
@@ -1925,7 +1925,7 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not investigated on hardware this update."
+   "note": "Not investigated on hardware this update. Update 457 (RP Classic, Inspect, next to Mario's Picross photo cart): reproduced — flat even grey shell, empty top recess (no moulded \"Nintendo GAME BOY\"), box-front cover used as the sticker (ESRB / seal / slogan printed), sticker sized to the cover. Not changed."
   },
   {
    "id": "D175",
@@ -1934,7 +1934,7 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change."
+   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed."
   },
   {
    "id": "D176",
