@@ -116,7 +116,9 @@ internal val TWIN_BACK_VISIBLE = 32.dp
 
 @Composable
 internal fun TwinBackButton(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
-    val back = { TwinScreens.dashboard = false }
+    // (Update 448: the controller comes back to the main screen with the layout — the dashboard's controls it was on are gone —
+    // so the layout's own keys carry on from the game you were on.)
+    val back = { TwinScreens.dashboard = false; SecondPad.leave() }
     val lit = SecondPad.active && SecondPad.focused == "twin-back"
     val accent = ShelfTheme.accent
     val ink = Color(0xFF26313C)

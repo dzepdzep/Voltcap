@@ -1,3 +1,4 @@
+**DONE (update 448, staging only):** D147 controller path to the dashboard on all five two-screen layouts (Thor); profile check; RP Classic battery diagnosis (D148). **Next:** owner approval to publish 0.6.66; D148 decision; apply next/0.6.67.
 **DONE (update 447, staging only):** dual-screen return button (D146) + picker default / D144 tested on Thor + GT78; RC re-verified. **Next:** owner approval to publish 0.6.66 (publish_release 0.6.66); then apply next/0.6.67, D147, Odin restore check.
 **DONE (update 446, staging only):** v0.6.67 "Who's playing?" looks built, tested on GT78 + Odin, staged in next/0.6.67/ (RC untouched). **Next:** owner approval to publish 0.6.66; then apply next/0.6.67, fix D144, Thor check.
 **DONE (update 445):** v0.6.66 RC frozen (CI green, both APKs verified, regression PASS on GT78 + Odin). **Next:** owner approval to publish; v0.6.67 profile picker looks in next/0.6.67/.

@@ -36,4 +36,24 @@ class TwinBack447Test {
         assertTrue(l.contains("headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard)"))
         assertTrue("no overlay over the dock any more", !l.contains("TwinBackPill("))
     }
+
+    @Test fun downReachesTheDashboardOnTwinLayouts() {
+        // D147 (update 448): with the dashboard open, ▼ on every two-screen layout goes past its hidden lower part.
+        val h = src("ui/StyleHomes.kt")
+        val i = h.indexOf("Update 448 (D147)")
+        assertTrue(i > 0)
+        val block = h.substring(i, i + 1200)
+        assertTrue(block.contains("event.key == Key.DirectionDown && TwinScreens.dashboard && layout.isTwin"))
+        assertTrue(block.contains("reach(false)"))
+        // Before the Pocket layouts take every key themselves, so all five two-screen layouts get it.
+        assertTrue(h.indexOf("if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey") > i)
+        // All five layouts are two-screen layouts.
+        listOf(com.shelf.launcher.data.HomeLayout.TWIN_DESK, com.shelf.launcher.data.HomeLayout.TWIN_ICONS, com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE,
+            com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC, com.shelf.launcher.data.HomeLayout.POCKET_RIBBON).forEach { assertTrue(it.isTwin) }
+    }
+
+    @Test fun returningHandsTheControllerBack() {
+        val t = src("ui/TwinScreens.kt")
+        assertTrue(t.contains("val back = { TwinScreens.dashboard = false; SecondPad.leave() }"))
+    }
 }

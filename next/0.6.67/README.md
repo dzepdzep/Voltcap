@@ -22,6 +22,10 @@ Kept outside `app/` so it can never be built into the frozen 0.6.66 release cand
    (`twin-back`), same action (`TwinScreens.dashboard = false`), no setting changed. QA hook `--es voltcap_test_twindash on|off`;
    device check `twinback.sh`.
 
+4. **D147 — controller onto the dashboard (update 448).** With the dashboard open, ▼ on any two-screen layout goes past its hidden
+   lower part (HomeReach, then the dashboard); the return button hands the controller back to the layout (`SecondPad.leave()`).
+   `StyleHomes.kt` + `TwinScreens.kt`; TwinBack447Test.
+
 ## Placeholders in the 0.6.66 tree
 `app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt`, `app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt` and
 `TwinBack447Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,

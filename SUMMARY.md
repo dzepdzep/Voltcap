@@ -1,3 +1,27 @@
+# Update 448 (2 Nov 2026) — v0.6.67 staging: D147 D-pad onto the dashboard on all five two-screen layouts; profile check; RP Classic battery diagnosis (NOT published)
+
+**Devices (USB, `adb devices`):** AYN Thor 3140972f (dual-screen QA), Retroid Pocket Classic MC94516AQF091001112 (battery, read-only). KONKR,
+GT78 and Odin not connected and not contacted.
+**D147 fixed (staging, `next/0.6.67/`, patch updated):** with the second-screen dashboard open, every two-screen layout's lower part (list,
+grid, spots, buttons) is hidden, but ▼ still walked it. Now ▼ goes past it (HomeReach, then the dashboard) — StyleHomes, only while
+`TwinScreens.dashboard` is open on an `isTwin` layout; other keys and normal navigation unchanged. The return button also hands the controller
+back to the main screen (`SecondPad.leave()`). Thor, controller only, all five layouts: opened with their own control (Twin desk ▶ round button,
+Twin icons ▲ tools, Twin showcase ▲ Dashboard chip, Pocket classic / ribbon dash spot), ▼ reaches the dashboard, the return button lights and A
+returns with the same game (and Pocket spot) selected; ▲ ▼ ◀ ▶ move normally after. No crash; launches blocked. Touch / no overlap: update 447.
+Tests: TwinBack447Test (+2). Not re-run on the final build: Twin icons and Twin showcase (same code path as Twin desk, which was).
+**Profiles:** only "Pockeetz" (photo, RetroAchievements) on the Thor and on the RP Classic ("Who's playing?" opened read-only, closed with B).
+QA sample profiles (ids 900+) were never saved (in-memory `voltcap_test_profiles`; the app was restarted). Nothing removed; selection unchanged.
+**RP Classic battery (read-only):** Voltcap 0.6.65's **80 % charge limit is on** ("80 % charge limit · Limiting" notification, ChargeLimitService).
+History: AC charge from 43 %, fast (~1 %/38 s, max 42 °C), reached 80 % then 83 % within 2 min, then held at 83 % until unplugged — the limit
+with a 3 % overshoot on fast charge (D148, low, open). Live on the PC port (SDP, 500 mA): 77→80 % slowly, at 80 % Voltcap set restrict_chg=1 /
+restrict_cur=0, input 0 mA, battery -216 mA (the driver still says "Charging"). Health Good, 10 cycles, full 5128 mAh vs design 5097, 23 °C,
+thermal status 0, no charging faults; Retroid's own settings show no charge limit. No action needed unless you want 100 %: switch the limit off
+in R1 (nothing was changed). Physical check of the overshoot: wall charger, limit on, from ~70 %, read the level when charging stops.
+**Thor restored:** RC 0.6.66 installed again, preview / nolaunch off, hooks back to `.paused`, earlier snapshot files back, your Pocket layout
+showing. The final snapshot restore did not log; only previews were used in this run (no saved setting changed).
+**RC:** app/ = 02d1475 (git clean); RC rebuilt from cache, installed on the Thor.
+**Copy:** nothing (app/ = RC). next/0.6.67 + defects D147 / D148.
+
 # Update 447 (2 Nov 2026) — v0.6.67 staging: dual-screen return button (D146), picker default + QA detection (D144); v0.6.66 RC re-verified (NOT published)
 
 **Owner decisions applied (staging only, `next/0.6.67/`, patch `profile_picker.patch`, sheet `TWIN_BACK_447.pdf`):**

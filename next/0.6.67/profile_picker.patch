@@ -1066,6 +1066,30 @@ index 57b595c..dc7b881 100644
          E("Cover → wide capsule (roll out, slide, flip…)", "Home", "Animations", null, null),
          E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
          E("Pages slide (turn off, preview)", "Home", "Animations", null, null),
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
+index 2fb8a39..5b9b923 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
+@@ -186,6 +186,19 @@ internal fun styleHomeKey(
+     /** Past the layout's last menu / bar at the top ([Boolean] true) or the bottom: what lies there (HomeReach). */
+     reach: (Boolean) -> Boolean = { false }
+ ): Boolean {
++    // Update 448 (D147): a two-screen layout (Twin desk / icons / showcase, Pocket classic / ribbon) with the second screen's
++    // own dashboard open: its game list, grid, spots and buttons are on the lower screen, hidden under the dashboard, so ▼
++    // goes past them — to what lies under the games on the main screen (HomeReach) and then onto the dashboard (SecondPad) —
++    // instead of walking controls you can't see. The other keys work as before. Nothing changes while the dashboard is closed.
++    if (event.key == Key.DirectionDown && TwinScreens.dashboard && layout.isTwin) {
++        val dCode = event.nativeKeyEvent.keyCode
++        if (event.type == KeyEventType.KeyUp) { StyleNav.keysDown.remove(dCode); return true }
++        if (event.type == KeyEventType.KeyDown) {
++            StyleNav.keysDown += dCode
++            if (event.nativeKeyEvent.repeatCount == 0 && reach(false)) StyleNav.reset()
++        }
++        return true
++    }
+     // Update 181: the Pocket layouts take every key themselves (their panels, pages and ribbon).
+     if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
+     if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 index df68497..08b52cf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
@@ -1155,7 +1179,7 @@ index df68497..08b52cf 100644
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt b/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
-index 054c3eb..71641bf 100644
+index 054c3eb..e6ac515 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TwinScreens.kt
 @@ -1,6 +1,9 @@
@@ -1168,7 +1192,7 @@ index 054c3eb..71641bf 100644
  import androidx.compose.material.icons.filled.OpenInFull
  import androidx.compose.material.icons.filled.Dashboard
  import androidx.compose.foundation.layout.fillMaxWidth
-@@ -103,65 +106,62 @@ internal fun TwinCommonControls() {
+@@ -103,65 +106,64 @@ internal fun TwinCommonControls() {
  
  /**
   * Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back.
@@ -1184,8 +1208,11 @@ index 054c3eb..71641bf 100644
 +
  @Composable
 -internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
+-    val back = { TwinScreens.dashboard = false }
 +internal fun TwinBackButton(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
-     val back = { TwinScreens.dashboard = false }
++    // (Update 448: the controller comes back to the main screen with the layout — the dashboard's controls it was on are gone —
++    // so the layout's own keys carry on from the game you were on.)
++    val back = { TwinScreens.dashboard = false; SecondPad.leave() }
      val lit = SecondPad.active && SecondPad.focused == "twin-back"
      val accent = ShelfTheme.accent
      val ink = Color(0xFF26313C)
@@ -1388,10 +1415,10 @@ index 0000000..15cb771
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt b/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
 new file mode 100644
-index 0000000..94f1006
+index 0000000..1b27c17
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,59 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertEquals
@@ -1429,6 +1456,26 @@ index 0000000..94f1006
 +        val l = src("ui/LauncherScreen.kt")
 +        assertTrue(l.contains("headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard)"))
 +        assertTrue("no overlay over the dock any more", !l.contains("TwinBackPill("))
++    }
++
++    @Test fun downReachesTheDashboardOnTwinLayouts() {
++        // D147 (update 448): with the dashboard open, ▼ on every two-screen layout goes past its hidden lower part.
++        val h = src("ui/StyleHomes.kt")
++        val i = h.indexOf("Update 448 (D147)")
++        assertTrue(i > 0)
++        val block = h.substring(i, i + 1200)
++        assertTrue(block.contains("event.key == Key.DirectionDown && TwinScreens.dashboard && layout.isTwin"))
++        assertTrue(block.contains("reach(false)"))
++        // Before the Pocket layouts take every key themselves, so all five two-screen layouts get it.
++        assertTrue(h.indexOf("if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey") > i)
++        // All five layouts are two-screen layouts.
++        listOf(com.shelf.launcher.data.HomeLayout.TWIN_DESK, com.shelf.launcher.data.HomeLayout.TWIN_ICONS, com.shelf.launcher.data.HomeLayout.TWIN_SHOWCASE,
++            com.shelf.launcher.data.HomeLayout.POCKET_CLASSIC, com.shelf.launcher.data.HomeLayout.POCKET_RIBBON).forEach { assertTrue(it.isTwin) }
++    }
++
++    @Test fun returningHandsTheControllerBack() {
++        val t = src("ui/TwinScreens.kt")
++        assertTrue(t.contains("val back = { TwinScreens.dashboard = false; SecondPad.leave() }"))
 +    }
 +}
 diff --git a/tools/qa/README.md b/tools/qa/README.md

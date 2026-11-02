@@ -2,6 +2,9 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 448: D147 fixed in staging (▼ onto the dashboard on all five two-screen layouts, Thor-verified with the controller); profiles = only
+Pockeetz (Thor, RP Classic); RP Classic 83 % = Voltcap's 80 % limit + 3 % fast-charge overshoot (D148 open, diagnosis only). RP Classic serial
+MC94516AQF091001112. Open: D148, Odin restore check. RC unchanged.**
 **Update 447: v0.6.67 staging = picker looks + Midnight default for existing installs + D144 (QA mark) + D146 (compact dual-screen
 return button), patch `next/0.6.67/profile_picker.patch`. RC re-verified (both APKs, tests). Thor 3140972f is the dual-screen QA device (hooks file
 kept as `voltcap_test_hooks.paused` — rename to enable, rename back after). Open: D147 (Twin ▼ onto dashboard, low, pre-existing), Odin restore

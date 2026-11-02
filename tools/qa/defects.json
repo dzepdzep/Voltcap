@@ -1676,12 +1676,21 @@
   },
   {
    "id": "D147",
-   "title": "Twin desk / Twin icons with the second-screen dashboard open: ▼ past the bottom of the main screen does not move the controller onto the dashboard (Pocket classic does)",
+   "title": "Two-screen layouts with the second-screen dashboard open: ▼ walked the layout's hidden lower-screen list / grid / spots instead of reaching the dashboard (Twin desk, Twin icons; Pocket layouts needed many presses)",
    "rule": "ONEPRESS",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 447 Thor D-pad check",
+   "note": "Staged in next/0.6.67 (update 448): StyleHomes styleKey — with TwinScreens.dashboard open on any two-screen layout (isTwin), ▼ goes past the hidden lower part: HomeReach, then SecondPad (the dashboard); other keys unchanged, nothing changes with the dashboard closed. TwinBackButton also hands the controller back (SecondPad.leave) so the layout's own keys carry on. AYN Thor 3140972f, D-pad only: Twin desk (▶ to its Second screen button, A, ▼ → dashboard, ▲▲ to ←, A → same game 66/282, ▼ ▲ move normally), Twin icons (▲ to tools, ▶ to Second screen, A, ▼ lands on ←, A → same game, ▼ next row), Twin showcase (▲ ▶ to Dashboard chip, A, ▼ → ←, A → same game 4/282, ▼▼ normal), Pocket classic (▼ to the dash spot, A, ▼ → ←, A → spot + game kept, ▲ normal), Pocket ribbon (▼ ◀ to dash, A, ▼ → ←, A → dash spot + 6/282 kept, ▲ ▶ next game). No crash, launches blocked. TwinBack447Test (downReachesTheDashboardOnTwinLayouts, returningHandsTheControllerBack)."
+  },
+  {
+   "id": "D148",
+   "title": "Retroid Pocket Classic: with Voltcap's 80 % charge limit on, a fast (AC) charge went 80 → 83 % before charging stopped",
+   "rule": "DEVICE",
    "severity": "low",
    "status": "open",
-   "found": "2026-11-02 update 447 Thor D-pad check",
-   "note": "Pre-existing: same on the 0.6.66 RC (old pill) — the Twin layouts' own StyleNav keeps ▼ on the main screen. The return button stays reachable by touch on every layout and by D-pad where the controller reaches the dashboard (Pocket classic verified). Not changed in the RC; candidate for 0.6.67."
+   "found": "2026-11-02 update 448 battery diagnosis (owner: 'charged only to 83 %')",
+   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh."
   }
  ]
 }
