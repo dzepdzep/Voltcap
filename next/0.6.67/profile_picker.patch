@@ -1,5 +1,5 @@
 diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
-index 18e08fc..a13a546 100644
+index 18e08fc..1f7697a 100644
 --- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
 +++ b/app/src/main/java/com/shelf/launcher/MainActivity.kt
 @@ -146,6 +146,8 @@ class MainActivity : ComponentActivity() {
@@ -11,6 +11,17 @@ index 18e08fc..a13a546 100644
          com.shelf.launcher.ui.TestHooks.fromIntent(this, intent)
          com.shelf.launcher.data.QrTransfer.fromIntent(intent)
          // Sleep mode for Wi-Fi / Bluetooth (Settings › Device): listens for screen off only when on.
+@@ -194,7 +196,9 @@ class MainActivity : ComponentActivity() {
+         setContent {
+             // "Hide navigation bar" switched: the window follows at once.
+             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
+-            androidx.compose.runtime.LaunchedEffect(immersive) {
++            // Update 449: and when the handheld's own hide_nav_bar changes (Retroid: the window asks only while it's off).
++            val deviceHides = com.shelf.launcher.data.GestureHint.deviceNavHidden.value
++            androidx.compose.runtime.LaunchedEffect(immersive, deviceHides) {
+                 hideSystemBars()
+                 // Android ignores a hide that comes while the bar is still sliding in (Off → On): ask again once it settled.
+                 for (wait in longArrayOf(120, 350, 800)) { kotlinx.coroutines.delay(wait); hideSystemBars() }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
 index 0fac442..91e3440 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
@@ -44,6 +55,147 @@ index 0fac442..91e3440 100644
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
      val dashStatus = BoolPref("dash_status", true)
+diff --git a/app/src/main/java/com/shelf/launcher/data/GestureHint.kt b/app/src/main/java/com/shelf/launcher/data/GestureHint.kt
+index ae616d0..7f84091 100644
+--- a/app/src/main/java/com/shelf/launcher/data/GestureHint.kt
++++ b/app/src/main/java/com/shelf/launcher/data/GestureHint.kt
+@@ -76,10 +76,21 @@ object GestureHint {
+         loaded = true
+         val p = prefs(c)
+         immersiveState.value = p.getBoolean("immersive", true)
++        // Update 449: the device's own setting, followed as it changes (Voltcap's force-hide, the handheld's own Settings).
++        deviceNavHidden.value = readDeviceNavHidden(c)
++        if (observer == null) runCatching {
++            val app0 = c.applicationContext
++            val o = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
++                override fun onChange(selfChange: Boolean) { deviceNavHidden.value = readDeviceNavHidden(app0) }
++            }
++            app0.contentResolver.registerContentObserver(Settings.Global.getUriFor("hide_nav_bar"), false, o)
++            observer = o
++        }
+         // Older choice (Off / While Voltcap is open / Everywhere) → the force-hide switch.
+         if (!p.contains("force") && p.contains("scope")) {
+             p.edit().putBoolean("force", p.getString("scope", "OFF") != "OFF").remove("scope").apply()
+         }
++        forceState.value = forceOn(c)
+         // The older version saved the value as a number for navigation_bar_gesture_hint.
+         (p.all["previous"] as? Int)?.let { p.edit().putString("previous", it.toString()).putString("previous_key", "navigation_bar_gesture_hint").apply() }
+         // Left hidden by a crash or a killed process with the option off: give the hint back.
+@@ -102,14 +113,61 @@ object GestureHint {
+         (android.os.Build.MODEL.contains("Retroid", true) || android.os.Build.MANUFACTURER.contains("Retroid", true)) && RootShell.available
+     }
+ 
+-    /** Whether Voltcap's windows themselves ask Android to hide the navigation bar. */
+-    fun windowHidesNav(immersive: Boolean = immersiveState.value): Boolean = immersive && !systemOwnsNav
++    /**
++     * Update 449: the device's own "hide_nav_bar" setting is on right now (AYN / Retroid). Kept current by a
++     * [ContentObserver][android.database.ContentObserver] (no polling) registered in [init], so the windows can follow it.
++     */
++    val deviceNavHidden = mutableStateOf(false)
++
++    /**
++     * Whether Voltcap's windows themselves ask Android to hide the navigation bar.
++     * Update 449: on a Retroid the window stays out of it only while the device's own setting is hiding the bar (asking
++     * then brought the pill back, update 155). With that setting off — Force-hide off, or given back — "Hide navigation bar"
++     * on used to do nothing there and the white pill showed while the switch said on; now the window asks, as anywhere else.
++     */
++    fun windowHidesNav(immersive: Boolean = immersiveState.value): Boolean =
++        immersive && !(systemOwnsNav && deviceNavHidden.value)
++
++    /**
++     * Update 449: an AYN handheld (Thor, Odin): its ROM keeps drawing the gesture pill on the main screen while its own
++     * hide_nav_bar is 0, even with Voltcap's window in immersive mode and focused (checked on the Thor: NavigationBar0
++     * visible, Voltcap focused on display 0). There only the device setting — Force-hide — removes it.
++     */
++    val aynHandle: Boolean by lazy {
++        (android.os.Build.MANUFACTURER.contains("AYN", true) || android.os.Build.MODEL.contains("AYN", true)) && RootShell.available
++    }
++
++    /** Update 449: what the settings card says under the two switches when they can't do what they say on this device. */
++    internal fun limitNote(immersive: Boolean, force: Boolean, ayn: Boolean, deviceHides: Boolean): String? = when {
++        immersive && !force && ayn && !deviceHides ->
++            "On this handheld the pill is drawn by the device itself: with Force-hide off it can stay visible while Hide navigation bar is on."
++        !immersive && deviceHides ->
++            "The handheld's own setting is hiding the bar (its own Settings, or Force-hide below)."
++        else -> null
++    }
++
++    /** Update 449: for testing [windowHidesNav]'s rule without a device. */
++    internal fun windowHidesNavRule(immersive: Boolean, systemOwns: Boolean, deviceHides: Boolean): Boolean =
++        immersive && !(systemOwns && deviceHides)
++
++    /**
++     * Update 449: the Force-hide switch as the screens show it. With no choice saved it follows "Hide navigation bar" on a
++     * handheld with a root service ([forceOn]); the settings card used to read it once, so after the R1 tile switched
++     * Hide navigation bar the card showed the old Force-hide state. Updated by [setImmersive], [setForce] and [init].
++     */
++    val forceState = mutableStateOf(false)
++
++    private var observer: android.database.ContentObserver? = null
++
++    private fun readDeviceNavHidden(c: Context): Boolean =
++        runCatching { Settings.Global.getString(c.contentResolver, "hide_nav_bar")?.trim() == "1" }.getOrDefault(false)
+ 
+     fun immersive(c: Context): Boolean = prefs(c).getBoolean("immersive", true)
+ 
+     fun setImmersive(c: Context, on: Boolean) {
+         prefs(c).edit().putBoolean("immersive", on).apply()
+         immersiveState.value = on
++        forceState.value = forceOn(c)
+         // (Update 137: where the force-hide follows this switch, the handle goes / comes back with it.)
+         // Update 202: also from the R1 tile over a game (Voltcap not in front): on hides it there too, off gives it back.
+         // With the force-hide set by hand, off only gives it back where it was held for a game / as the home app.
+@@ -138,6 +196,7 @@ object GestureHint {
+     fun setForce(c: Context, on: Boolean) {
+         val app = c.applicationContext
+         prefs(app).edit().putBoolean("force", on).apply()
++        forceState.value = on
+         worker.execute {
+             runCatching {
+                 // On a handheld with a root service: the permission for good, once (no other app needed).
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt b/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
+index e2f49d8..bcb4a5a 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GestureHintCard.kt
+@@ -29,7 +29,8 @@ import kotlinx.coroutines.withContext
+ internal fun GestureHintCard() {
+     val context = LocalContext.current
+     val immersive = GestureHint.immersiveState.value
+-    var force by remember { mutableStateOf(GestureHint.forceOn(context)) }
++    // (Update 449: the live state — Hide navigation bar switched from the R1 tile changes it when no choice is saved.)
++    val force = GestureHint.forceState.value
+     var status by remember { mutableStateOf("…") }
+     var needsAdb by remember { mutableStateOf(false) }
+     // Bumped to re-check after a change (the checks may ask the root service: off the main thread).
+@@ -50,7 +51,7 @@ internal fun GestureHintCard() {
+             Icons.Filled.Gesture, "Hide navigation bar",
+             "Android's immersive mode. A swipe from the edge shows it for a moment; it hides again by itself. Popups and the keyboard keep it hidden too.",
+             checked = immersive,
+-            onChange = { GestureHint.setImmersive(context, it) }
++            onChange = { GestureHint.setImmersive(context, it); refresh++ }
+         )
+         Spacer(Modifier.height(8.dp))
+         SwitchRow(
+@@ -61,7 +62,6 @@ internal fun GestureHintCard() {
+                 "and puts it back when you leave Voltcap for another app or turn this off. No other app has to run.",
+             checked = force,
+             onChange = {
+-                force = it
+                 GestureHint.setForce(context, it)
+                 refresh++
+             }
+@@ -82,6 +82,11 @@ internal fun GestureHintCard() {
+                 Chip("Check again") { refresh++ }
+             }
+         }
++        // Update 449: when the two switches can't do what they say on this handheld, say so (no guessing at the bar).
++        GestureHint.limitNote(immersive, force, GestureHint.aynHandle, GestureHint.deviceNavHidden.value)?.let {
++            Spacer(Modifier.height(6.dp))
++            MutedNote(it)
++        }
+         Spacer(Modifier.height(6.dp))
+         // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.
+         val rooted = com.shelf.launcher.device.RootShell.available
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 index 0b73fb5..78745a1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
@@ -986,6 +1138,20 @@ index 4ef188c..a1c672c 100644
              }
          }
      }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt b/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt
+index f4f13f4..9b554af 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt
+@@ -360,7 +360,8 @@ fun SecondScreenHost(
+     // focus; so where an activity sits under it (the stock second-screen launcher on the AYN Thor) that activity
+     // decides, and the handheld's own setting (GestureHint, force-hide) is what hides the bar there.
+     val hideNavBar = com.shelf.launcher.data.GestureHint.immersiveState.value
+-    LaunchedEffect(showing, hideNavBar) {
++    val deviceHidesNav = com.shelf.launcher.data.GestureHint.deviceNavHidden.value // (Update 449)
++    LaunchedEffect(showing, hideNavBar, deviceHidesNav) {
+         val window = presentationHolder[0]?.window ?: return@LaunchedEffect
+         for (wait in longArrayOf(0, 350, 1200)) {
+             kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt b/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
 index 5dd75e0..55c73a8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
@@ -1090,6 +1256,29 @@ index 2fb8a39..5b9b923 100644
      // Update 181: the Pocket layouts take every key themselves (their panels, pages and ribbon).
      if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
      if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt b/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
+index 55ac6bf..f9fadad 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
+@@ -74,7 +74,8 @@ internal object SystemBars {
+ internal fun ImmersiveDialogWindow() {
+     val view: View = LocalView.current
+     val immersive = GestureHint.immersiveState.value
+-    DisposableEffect(view, immersive) {
++    val deviceHides = GestureHint.deviceNavHidden.value // (Update 449)
++    DisposableEffect(view, immersive, deviceHides) {
+         val window = (view.parent as? DialogWindowProvider)?.window
+         if (window != null) {
+             runCatching { SystemBars.apply(window, immersive); SystemBars.watchKeyboard(window) }
+@@ -83,7 +84,7 @@ internal fun ImmersiveDialogWindow() {
+     }
+     // Switching "Hide navigation bar" back on right after it was off: Android ignores a hide that comes while the bar is
+     // still sliding in, so the bar stayed. Ask again once it has settled.
+-    androidx.compose.runtime.LaunchedEffect(view, immersive) {
++    androidx.compose.runtime.LaunchedEffect(view, immersive, deviceHides) {
+         val window = (view.parent as? DialogWindowProvider)?.window ?: return@LaunchedEffect
+         for (wait in longArrayOf(120, 350, 800)) {
+             kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 index df68497..08b52cf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
@@ -1295,6 +1484,72 @@ index 054c3eb..e6ac515 100644
  /** Update 158: one of the two-screen layouts. */
  internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||
      this == HomeLayout.TWIN_SHOWCASE || // Update 307
+diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
+new file mode 100644
+index 0000000..7d99650
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt
+@@ -0,0 +1,60 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.GestureHint
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * Update 449: "Hide navigation bar" and "Force-hide gesture hint" — what Voltcap's windows ask for, and that the screens show
++ * the live state. Retroid (the device's own hide_nav_bar owns the bar): the window asks only while that setting is off.
++ */
++class NavBar449Test {
++    private fun src(name: String): String {
++        val roots = listOf("src_copy/", "../src_copy/", "app/src/main/java/com/shelf/launcher/", "src/main/java/com/shelf/launcher/")
++        return roots.map { File(it + name) }.first { it.exists() }.readText().replace("\r\n", "\n")
++    }
++
++    @Test fun windowRequestTruthTable() {
++        // Hide navigation bar off: never asks.
++        assertEquals(false, GestureHint.windowHidesNavRule(immersive = false, systemOwns = false, deviceHides = false))
++        assertEquals(false, GestureHint.windowHidesNavRule(immersive = false, systemOwns = true, deviceHides = true))
++        // On, any device but a Retroid with its own setting hiding the bar: asks.
++        assertEquals(true, GestureHint.windowHidesNavRule(immersive = true, systemOwns = false, deviceHides = false))
++        assertEquals(true, GestureHint.windowHidesNavRule(immersive = true, systemOwns = false, deviceHides = true))  // AYN: both
++        assertEquals(true, GestureHint.windowHidesNavRule(immersive = true, systemOwns = true, deviceHides = false))  // Retroid, setting off: was false (pill showed)
++        // Retroid with its own setting hiding the bar: stays out of it (update 155: asking brought the pill back).
++        assertEquals(false, GestureHint.windowHidesNavRule(immersive = true, systemOwns = true, deviceHides = true))
++    }
++
++    @Test fun followsTheDeviceSettingWithoutPolling() {
++        val g = src("data/GestureHint.kt")
++        assertTrue(g.contains("registerContentObserver(Settings.Global.getUriFor(\"hide_nav_bar\")"))
++        assertTrue(g.contains("immersive && !(systemOwnsNav && deviceNavHidden.value)"))
++        // The windows re-apply when it changes.
++        assertTrue(src("MainActivity.kt").contains("LaunchedEffect(immersive, deviceHides)"))
++        assertTrue(src("ui/SystemBars.kt").contains("DisposableEffect(view, immersive, deviceHides)"))
++        assertTrue(src("ui/SecondScreen.kt").contains("LaunchedEffect(showing, hideNavBar, deviceHidesNav)"))
++    }
++
++    @Test fun settingsCardShowsTheLiveForceState() {
++        val c = src("ui/GestureHintCard.kt")
++        assertTrue(c.contains("val force = GestureHint.forceState.value"))
++        assertTrue(!c.contains("remember { mutableStateOf(GestureHint.forceOn(context)) }"))
++        val g = src("data/GestureHint.kt")
++        assertTrue(g.contains("immersiveState.value = on\n        forceState.value = forceOn(c)"))
++        assertTrue(g.contains("forceState.value = on"))
++    }
++
++    @Test fun limitNotesOnlyWhenTheSwitchesCantDoIt() {
++        // AYN, Hide on, Force-hide off, device setting not hiding: the pill can stay — say so.
++        assertTrue(GestureHint.limitNote(immersive = true, force = false, ayn = true, deviceHides = false) != null)
++        // Everything consistent: nothing to say.
++        assertEquals(null, GestureHint.limitNote(immersive = true, force = true, ayn = true, deviceHides = true))
++        assertEquals(null, GestureHint.limitNote(immersive = true, force = false, ayn = false, deviceHides = false))
++        assertEquals(null, GestureHint.limitNote(immersive = false, force = false, ayn = true, deviceHides = false))
++        // Hide off while the device's own setting hides it: explained.
++        assertTrue(GestureHint.limitNote(immersive = false, force = false, ayn = false, deviceHides = true) != null)
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt b/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
 new file mode 100644
 index 0000000..15cb771
@@ -1491,6 +1746,26 @@ index e482bd7..6c1b6cf 100644
    `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
    the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
    folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
+diff --git a/tools/qa/device/d147.sh b/tools/qa/device/d147.sh
+new file mode 100644
+index 0000000..8ab1075
+--- /dev/null
++++ b/tools/qa/device/d147.sh
+@@ -0,0 +1,14 @@
++# d147.sh TAG LAYOUT "OPEN KEYS" "AFTER KEYS" — D147 check on the Thor: preview LAYOUT, press OPEN KEYS (the layout's own way to its
++# dashboard button), A, ▼ (onto the dashboard: the return button should light), A (back), then AFTER KEYS. Both screens captured.
++P=com.shelf.launcher/.MainActivity; D=/sdcard/pp/$1; mkdir -p $D
++cap() { screencap -d 4630946441858561667 -p $D/${1}_top.png; screencap -d 4630946482288158084 -p $D/${1}_bot.png; }
++k() { for x in $1; do input keyevent KEYCODE_$x; sleep 0.35; done; }
++am start -n $P --es voltcap_test_twindash off >/dev/null 2>&1; sleep 0.5
++am start -n $P --es voltcap_test_layout $2 >/dev/null 2>&1; sleep 3.5
++cap ${2}_0start
++k "$3"; sleep 0.5; cap ${2}_1onbutton
++k BUTTON_A; sleep 2; cap ${2}_2dashboard
++k DPAD_DOWN; sleep 0.8; cap ${2}_3backlit
++k BUTTON_A; sleep 1.5; cap ${2}_4returned
++k "$4"; sleep 0.6; cap ${2}_5after
++echo "$2 done" >> $D/log.txt
 diff --git a/tools/qa/device/guard.sh b/tools/qa/device/guard.sh
 index b433cc3..ae1ebdc 100644
 --- a/tools/qa/device/guard.sh
@@ -1504,6 +1779,17 @@ index b433cc3..ae1ebdc 100644
  #   man_done / man_skip RUN NAME [why] / man_end RUN   done NAME | skip NAME why | end <epoch>
  # Only writes inside out/ (QA scratch); never touches app data, saves or settings.
  man_file() { echo out/$1_manifest.txt; }
+diff --git a/tools/qa/device/navstate.sh b/tools/qa/device/navstate.sh
+new file mode 100644
+index 0000000..3040c5a
+--- /dev/null
++++ b/tools/qa/device/navstate.sh
+@@ -0,0 +1,5 @@
++# navstate.sh LABEL — which bar / handle windows are visible now, per display, and the device's own setting (read-only).
++echo "== $1  $(date +%T)  hide_nav_bar=$(settings get global hide_nav_bar) nav_mode=$(settings get secure navigation_mode)"
++echo "focus: $(dumpsys window | grep -m1 mCurrentFocus | sed 's/.*{[0-9a-f]* u0 //; s/}//')"
++dumpsys window windows | awk '/Window #[0-9]+ Window\{/{n=$0; sub(/.*u0 /,"",n); sub(/\}:/,"",n)} /mDisplayId=/{d=$0; sub(/.*mDisplayId=/,"",d); sub(/ .*/,"",d)} /isVisible=/{v=$0; sub(/.*isVisible=/,"",v); if (n ~ /NavigationBar|HomeHandle|Gesture|NavBar|nav_bar|Taskbar/) print "  d" d " " n " visible=" v}'
++dumpsys window | grep -E "InsetsSource.*type=navigationBars" | sed 's/^ *//' | cut -c1-140 | sort -u | head -6
 diff --git a/tools/qa/device/pickdetect.sh b/tools/qa/device/pickdetect.sh
 new file mode 100644
 index 0000000..723003b
@@ -1750,7 +2036,7 @@ index 1561f46..e7a7406 100644
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -51,8 +51,3 @@ shots*/
+@@ -51,9 +51,3 @@ shots*/
  
  # Update 427: review sheets are regenerated by tools/themes/review_refresh.cjs (large; not committed)
  tools/themes/refresh-review/sheet-*
@@ -1759,3 +2045,4 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
 -/app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt

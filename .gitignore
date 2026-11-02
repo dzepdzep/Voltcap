@@ -56,3 +56,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt
 /app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt
 /app/src/test/java/com/shelf/launcher/ui/TwinBack447Test.kt
+/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt

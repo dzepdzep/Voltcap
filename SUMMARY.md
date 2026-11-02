@@ -1,3 +1,30 @@
+# Update 449 (2 Nov 2026) — D147 verified on the final build; navigation bar / gesture pill (D149, D150, AYN limit); D148 unchanged (NOT published)
+
+**Devices (USB):** AYN Thor 3140972f, Retroid Pocket Classic MC94516AQF091001112. Nothing else contacted.
+**D147 final-build verification (Thor):** unit tests after the last code change: TwinBack447Test 4/4, NavBar449Test 4/4,
+ProfilePicker445Test 11/11, whole testDebugUnitTest green; static checks PASS, QA selftest OK. `d147.sh` on the Thor (controller only): Twin icons,
+Twin showcase, Twin desk, Pocket classic, Pocket ribbon — the layout's own control opens the dashboard, ▼ reaches it and lights the return
+button, A returns with the same game (Pocket: same spot) selected, the next key moves normally. Twin icons repeated on the very last APK.
+**Navigation bar (what shows, where):** the white bar is Android's own `NavigationBar0` window (gesture pill), not AYN's `SecondaryHomeHandle`
+(stayed invisible on both devices, both displays).
+- *Retroid (D149, fixed in staging):* Voltcap never asked to hide the bar there (update 155), relying on Retroid's `hide_nav_bar`; with that 0 the
+  pill showed while "Hide navigation bar" said on (RC: screenshot with the white pill). Now the window asks whenever the device setting is off
+  (ContentObserver, no polling) and stays out of it while it's on. Staging build: setting 0 → bar hidden, no pill — also with R1 open and after
+  returning from another app (Force-hide then puts 1 back); setting 1 → no pill. Device setting restored to 1.
+- *Thor:* `hide_nav_bar`=1 (Force-hide, on by default with the root service) hides both displays' bars — checked with R1 open, closed, after
+  another app. With it 0 the main display's pill stays even though Voltcap is focused there in immersive mode (firmware: only AYN's own
+  setting removes it, update 136); display 4 doesn't change until that screen restarts (update 202). The card now says so (D150 note).
+- *D150 (fixed):* the Force-hide switch in Settings read its state once; it follows the live state now.
+**What each combination does:** Hide on + Force on (default on AYN / Retroid): device setting hidden while Voltcap is in front (and held for
+games / as home app), window asks too except on a Retroid whose setting already hides it — no pill. Hide on + Force off: window immersive only —
+works on Retroid (now) and stock Android; on AYN the pill can stay (noted in the card). Hide off + Force on: the device setting still hides the
+hint while in front (explained in the card). Both off: the bar shows; the device's own value is given back.
+**D148:** unchanged, low; no threshold change. Options for later (approval): show the real level when stopped above 80 %, or stop 1 % early on fast charge.
+**Restored:** RC installed again on the Thor and the RP Classic (the RP Classic was on 0.6.65 before; now the 0.6.66 RC). Thor: preview /
+nolaunch off, snapshot restored, hooks back to `.paused`. RP Classic: hide_nav_bar back to 1; its test-hooks file and snapshot from 30 Oct were already there and are left as found (only the new voltcap_qa_screen mark removed). Thor: the restore did not show in the log; only previews were used (no saved setting changed). Profiles untouched.
+**Copy:** nothing (app/ = RC). next/0.6.67 (patch + copies incl. GestureHint, SystemBars, SecondScreen, GestureHintCard, NavBar449Test, d147.sh,
+navstate.sh), defects D147 / D148 / D149 / D150.
+
 # Update 448 (2 Nov 2026) — v0.6.67 staging: D147 D-pad onto the dashboard on all five two-screen layouts; profile check; RP Classic battery diagnosis (NOT published)
 
 **Devices (USB, `adb devices`):** AYN Thor 3140972f (dual-screen QA), Retroid Pocket Classic MC94516AQF091001112 (battery, read-only). KONKR,

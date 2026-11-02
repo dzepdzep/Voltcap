@@ -1681,7 +1681,7 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 447 Thor D-pad check",
-   "note": "Staged in next/0.6.67 (update 448): StyleHomes styleKey — with TwinScreens.dashboard open on any two-screen layout (isTwin), ▼ goes past the hidden lower part: HomeReach, then SecondPad (the dashboard); other keys unchanged, nothing changes with the dashboard closed. TwinBackButton also hands the controller back (SecondPad.leave) so the layout's own keys carry on. AYN Thor 3140972f, D-pad only: Twin desk (▶ to its Second screen button, A, ▼ → dashboard, ▲▲ to ←, A → same game 66/282, ▼ ▲ move normally), Twin icons (▲ to tools, ▶ to Second screen, A, ▼ lands on ←, A → same game, ▼ next row), Twin showcase (▲ ▶ to Dashboard chip, A, ▼ → ←, A → same game 4/282, ▼▼ normal), Pocket classic (▼ to the dash spot, A, ▼ → ←, A → spot + game kept, ▲ normal), Pocket ribbon (▼ ◀ to dash, A, ▼ → ←, A → dash spot + 6/282 kept, ▲ ▶ next game). No crash, launches blocked. TwinBack447Test (downReachesTheDashboardOnTwinLayouts, returningHandsTheControllerBack)."
+   "note": "Staged in next/0.6.67 (update 448): StyleHomes styleKey — with TwinScreens.dashboard open on any two-screen layout (isTwin), ▼ goes past the hidden lower part: HomeReach, then SecondPad (the dashboard); other keys unchanged, nothing changes with the dashboard closed. TwinBackButton also hands the controller back (SecondPad.leave) so the layout's own keys carry on. AYN Thor 3140972f, D-pad only: Twin desk (▶ to its Second screen button, A, ▼ → dashboard, ▲▲ to ←, A → same game 66/282, ▼ ▲ move normally), Twin icons (▲ to tools, ▶ to Second screen, A, ▼ lands on ←, A → same game, ▼ next row), Twin showcase (▲ ▶ to Dashboard chip, A, ▼ → ←, A → same game 4/282, ▼▼ normal), Pocket classic (▼ to the dash spot, A, ▼ → ←, A → spot + game kept, ▲ normal), Pocket ribbon (▼ ◀ to dash, A, ▼ → ←, A → dash spot + 6/282 kept, ▲ ▶ next game). No crash, launches blocked. TwinBack447Test (downReachesTheDashboardOnTwinLayouts, returningHandsTheControllerBack). Update 449, exact final build (also carries D149/D150): TwinBack447Test 4/4 + NavBar449Test + ProfilePicker445Test pass; Thor d147.sh — Twin icons (▲ to tools, ▶ Second screen, A, ▼ → ← lit, A → 50 Cent kept, ▼ next row), Twin showcase (Dashboard chip, A, ▼ → ← lit, A → 7/282 kept, ▼▼ → 9/282), Twin desk, Pocket classic, Pocket ribbon all the same; Twin icons repeated on the very last APK."
   },
   {
    "id": "D148",
@@ -1690,7 +1690,25 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 448 battery diagnosis (owner: 'charged only to 83 %')",
-   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh."
+   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh. Update 449: left as is (owner: no threshold change). The R1 chip already says 'Stopped at 80 %'. Possible later, with approval: show the real level when it stopped above 80 % ('Stopped at 83 %, limit 80 %'), or stop one percent early while the charge rate is high."
+  },
+  {
+   "id": "D149",
+   "title": "Retroid Pocket Classic: with 'Hide navigation bar' on, the white gesture pill showed inside Voltcap whenever the device's own hide_nav_bar was 0 (Force-hide off / given back)",
+   "rule": "SYSTEM-BARS",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 449 (owner video: white gesture bar at the bottom of Voltcap)",
+   "note": "Cause: update 155 made Voltcap's windows never ask Android to hide the bar on a Retroid (asking while the device's own hide_nav_bar=1 brought the pill back), so with that setting 0 nothing hid it. Fix (staging): windowHidesNav = immersive && !(Retroid && device hide_nav_bar==1), the setting followed by a ContentObserver (no polling); main window, popups and the second-screen window re-apply when it changes. RP Classic MC94516AQF091001112: RC/0.6.65 with hide_nav_bar=0 → NavigationBar0 visible + white pill in the screenshot; staging build → NavigationBar0 hidden, no pill; also with R1 open; with 1 the device hides it (no pill) as before; leaving for Settings and returning: Force-hide put 1 back. Device setting restored to 1. NavBar449Test."
+  },
+  {
+   "id": "D150",
+   "title": "Settings › Gesture hint: the Force-hide switch read its state once; after 'Hide navigation bar' was switched from the R1 tile (Force-hide following it by default) the card showed the old state",
+   "rule": "SETTINGS",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-02 update 449 code review",
+   "note": "GestureHint.forceState (updated by setImmersive / setForce / init) drives the card; the card also explains when the switches can't do what they say (AYN: pill drawn by the device while its own hide_nav_bar is 0 — Force-hide needed; Hide off while the device's own setting hides it). Unit-tested (NavBar449Test); the card itself not opened on hardware."
   }
  ]
 }

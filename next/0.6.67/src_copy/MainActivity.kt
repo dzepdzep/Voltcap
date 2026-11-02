@@ -196,7 +196,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             // "Hide navigation bar" switched: the window follows at once.
             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
-            androidx.compose.runtime.LaunchedEffect(immersive) {
+            // Update 449: and when the handheld's own hide_nav_bar changes (Retroid: the window asks only while it's off).
+            val deviceHides = com.shelf.launcher.data.GestureHint.deviceNavHidden.value
+            androidx.compose.runtime.LaunchedEffect(immersive, deviceHides) {
                 hideSystemBars()
                 // Android ignores a hide that comes while the bar is still sliding in (Off → On): ask again once it settled.
                 for (wait in longArrayOf(120, 350, 800)) { kotlinx.coroutines.delay(wait); hideSystemBars() }

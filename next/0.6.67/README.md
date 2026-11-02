@@ -26,16 +26,20 @@ Kept outside `app/` so it can never be built into the frozen 0.6.66 release cand
    lower part (HomeReach, then the dashboard); the return button hands the controller back to the layout (`SecondPad.leave()`).
    `StyleHomes.kt` + `TwinScreens.kt`; TwinBack447Test.
 
+5. **Gesture pill (update 449, D149 / D150).** Retroid: the window asks Android to hide the bar whenever the device's own
+   hide_nav_bar is 0 (ContentObserver, no polling) — the white pill showed there before; AYN: note in the card that the pill needs
+   Force-hide; the Force-hide switch shows the live state. GestureHint, SystemBars, SecondScreen, MainActivity, GestureHintCard; NavBar449Test.
+
 ## Placeholders in the 0.6.66 tree
 `app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt`, `app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt` and
-`TwinBack447Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,
+`TwinBack447Test.kt`, `NavBar449Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,
 never committed, and add nothing to a 0.6.66 build. Safe to delete by hand.
 
 ## Apply when 0.6.67 starts (after 0.6.66 is published)
     cd C:\Users\User\AndroidStudioProjects\ShelfLauncher
-    del app\src\main\java\com\shelf\launcher\ui\ProfileLooks.kt, app\src\test\java\com\shelf\launcher\ui\ProfilePicker445Test.kt, app\src\test\java\com\shelf\launcher\ui\TwinBack447Test.kt
+    del app\src\main\java\com\shelf\launcher\ui\ProfileLooks.kt, app\src\test\java\com\shelf\launcher\ui\ProfilePicker445Test.kt, app\src\test\java\com\shelf\launcher\ui\TwinBack447Test.kt, app\src\test\java\com\shelf\launcher\ui\NavBar449Test.kt
     git apply --ignore-whitespace next/0.6.67/profile_picker.patch
-(the patch also removes the three `.gitignore` lines). Or copy `next/0.6.67/src_copy/*` over `src_copy/` and
+(the patch also removes the four `.gitignore` lines; SecondScreen / SecondScreenHome / TwinScreens are CRLF in git — `--ignore-whitespace` handles them). Or copy `next/0.6.67/src_copy/*` over `src_copy/` and
 `next/0.6.67/project_copy/*` over `project_copy/`, then sync. **Also copy the same files into `project_copy/` (or delete the stale
 `project_copy` copies of SUMMARY.md / .gitignore / defects.json): `sync_sources` copies project_copy over the root and put older
 docs back once (update 447).** Then: testDebugUnitTest (ProfilePicker445Test, TwinBack447Test), `python3 tools/qa/selftest/test_qa.py`,
