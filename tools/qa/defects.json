@@ -1463,7 +1463,7 @@
    "severity": "low",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval). | Update 440 (owner decision: painting where it exists, else a better legacy scene): none of the four has a painting (ScenePainting); ThemeSceneLegacy now draws Manga beat (screentone, speed lines, panel borders, impact burst), Magical (pastel light, four-point glints, sparkle dust, light ring), Blue sky (sky + sea in its blues, sun flare, drifting clouds, glitter), Pixel sky (stepped sky bands, pixel sun rays, pixel clouds, birds) — Android 12 only, shaders untouched. GT78 (.shots/440 thG): the scenes draw (sea glitter, light ring, pixel clouds, speed lines visible) but under the home screen's dim / game-colour tint they read faint and greenish; colour fidelity and contrast NOT confirmed — next: capture with the theme set for real (not previewed) and the dim off."
+   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval). | Update 440 (owner decision: painting where it exists, else a better legacy scene): none of the four has a painting (ScenePainting); ThemeSceneLegacy now draws Manga beat (screentone, speed lines, panel borders, impact burst), Magical (pastel light, four-point glints, sparkle dust, light ring), Blue sky (sky + sea in its blues, sun flare, drifting clouds, glitter), Pixel sky (stepped sky bands, pixel sun rays, pixel clouds, birds) — Android 12 only, shaders untouched. GT78 (.shots/440 thG): the scenes draw (sea glitter, light ring, pixel clouds, speed lines visible) but under the home screen's dim / game-colour tint they read faint and greenish; colour fidelity and contrast NOT confirmed — next: capture with the theme set for real (not previewed) and the dim off. | Update 441: the greenish look on the GT78 is the home screen's 'scene colours from the cover' choice (sceneColors = the focused game's cover colours, Advance Wars green) plus the dim — not the new scenes. Colour check with the cover colours off still to do (no hook for that setting; needs Settings)."
   },
   {
    "id": "D124",
@@ -1583,6 +1583,24 @@
    "status": "open",
    "found": "2026-11-02 update 440 Odin R1 CROSS_OWN",
    "note": "Press B and check the screen state (guard.sh screen_state) before the first run."
+  },
+  {
+   "id": "D137",
+   "title": "GT78: Case stacks moving game to game drops to ~25-30 fps (99 frames over 33 ms in 7 s, no recording running)",
+   "rule": "PERF",
+   "severity": "med",
+   "status": "open",
+   "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead."
+  },
+  {
+   "id": "D138",
+   "title": "QA tool: focuscheck.py expects linear focus indices — Arctic's recents row (global indices 1, 0, 164, 26) reads as wrong-direction moves",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 441 GT78 B4G_ARCTIC_op",
+   "note": "Navigation itself is correct (the row order matches the moves). Teach focuscheck the row's own order (log the row position) before trusting it on multi-row layouts."
   }
  ]
 }

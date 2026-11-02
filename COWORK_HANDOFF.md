@@ -2,11 +2,10 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
-Update 440: D135 FIXED + verified (GlanceWindow = Shared move; launches blocked in QA with voltcap_test_nolaunch). D123 scenes added
-(fixed-unverified: faint under the dim / tint). **Next, in order:** (1) batch 4 — controller / L2-R2 category switching / shortcut focus after
-D131 / rapid input during transitions; Odin Cinema Banner + Shared frame drops with QaTrace slow-frame lines (app-side timing) vs recording;
-(2) D124 AutoTDP re-run in real CPU-heavy gameplay on the Odin (plugged only); (3) D123 colour check with the theme set for real and the dim off;
-(4) D136 popaudit picker guard. D130 stays suspect; D128 GT78 has no 1-3 game category (limitation, Odin verified); Thor pending.
+Update 441: batch 4 QA done (catswitch + one-press PASS on both devices; frame drops separated: Odin recording overhead, GT78 Case
+stacks real jank D137). **Next:** (1) D137 GT78 Case stacks frame pacing; (2) D124 AutoTDP gameplay re-run on the Odin (owner-supervised game
+section; plugged only); (3) D123 colour check with 'scene colours from the cover' off; (4) D136 / D138 QA-tool fixes. D130 suspect; D128 GT78
+limitation; Thor pending. Release: RC candidate once the owner accepts D137 / D124 / D123 as known limitations.
 Popup audit: `sh /data/local/tmp/vqa/popaudit.sh TAG "LAYOUTS" "STYLES" [960x640]` between snapshot save / restore + preview false;
 the GT78 needs `usekey`; it stops when a game starts — close the emulator WITHOUT saving (Dolphin: Exit Emulation; RetroArch: Close
 Content / force-stop at the title screen). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both

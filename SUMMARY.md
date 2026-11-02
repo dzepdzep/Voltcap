@@ -1,3 +1,22 @@
+# Update 441 (2 Nov 2026) — v0.6.66 batch 4: controller / category-switch QA, frame-drop separation (no code change; NOT published)
+
+**Category switching (R24, catswitch.sh: repeated L2 / R2, 150 ms reversals, double step):** PASS on the GT78 (Classic, Cross menu, Disc
+station, Arctic, Case stacks) and the Odin (Classic, Cross menu, Disc station, Arctic, Cinema) — no blank, white or dip frame, no shell reload.
+**One-press D-pad (R23, onepress_all.sh + focuscheck.py, R R R L L L):** 0 problems on Classic / Disc station / Case stacks (GT78) and Classic /
+Disc station / Arctic / Cinema (Odin). Cross menu (both): one focus change without a key at the start = the category hook's setFocus(0) (test
+harness). GT78 Arctic: the tool flags its recents row (global indices 1, 0, 164, 26) — the moves follow the row's real order; tool limitation D138.
+**Shortcut focus after D131** was covered in update 438 (▲ / ► / ▼ on both devices); rapid input during transitions in 439 / 440 (popup runs).
+**Frame drops — app vs recording (QaTrace slow-frame lines):** Odin with recording: ≤4 frames over 33 ms per layout (Classic 4, Cinema 0) →
+the recorded Cinema / Banner hitches are screenrecord overhead, not the app. GT78 WITHOUT recording (6 game moves, 7 s): Disc station 19,
+Classic 6, **Case stacks 99 frames over 33 ms → real jank (D137)**; while recording the GT78 numbers balloon (Disc station 603), so GT78 pacing must
+be judged without screenrecord.
+**Not done:** D124 AutoTDP gameplay re-run — needs a real CPU-heavy game section played on the Odin; not run (no game was launched this session;
+plugged-in only, no battery claims). D123 colour check: the GT78's green tint is the 'scene colours from the cover' setting (D123 note) — a
+check with it off needs Settings.
+**Devices:** settings snapshot restored, previews ended; GT78 hooks / snapshot removed, stay-awake 0; Odin hooks re-enabled as found (the QA
+scripts pause them), its earlier snapshot put back; no emulator running; QA outputs deleted from the devices.
+**Copy:** defects.json, SUMMARY / handoff only (no app code).
+
 # Update 440 (2 Nov 2026) — v0.6.66: D135 root cause fixed and verified (Shared move window), QA launch interception, Android 12 scenes for 4 themes (NOT published)
 
 **D135 (fixed + verified).** New QA hook `--ez voltcap_test_nolaunch true|false` (hooks file only): a launch Voltcap would make is logged
