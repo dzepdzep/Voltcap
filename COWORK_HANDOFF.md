@@ -2,12 +2,13 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
-Batches to do, in order: (2) popup audit — five R1 popup modes on the priority layouts (Wii channel, Case stacks, Disc station, Twin desk,
-Cinema, Arctic, Cross menu) with `screenrecord` clips (vqa.sh rec), rapid input and focus restoration (onepress focus logs), Odin first, then
-GT78 (NOCAT=1); fix confirmed defects; (3) D130 Disc station window disc art, D125 Hero small-screen "…", D123 Android 12 legacy scenes, D128
-two-game Box — verify on both screen sizes; (4) controller / navigation QA, category-switch focus; (5) D124 hardware re-run (Odin,
-voltcap_test_tune auto:EFFICIENT, a CPU-heavy game section — ARMSX2 pause menu needs a tap on Resume at 860,300); no unplugged-battery claims
-from plugged runs. QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both
+Update 439: batches 2 + 3 DONE except D135 — popup audit with recordings (popaudit.sh), D132 / D133 launch bugs fixed + verified,
+D125 / D128 fixed + verified, D130 not reproduced, D123 waiting for an owner decision. **Next, in order:** (1) D135 GT78 Cross menu +
+Shared move still starts the game on rapid A B A B (see defects.json for where to look); (2) batch 4 — controller / navigation QA,
+category-switch focus, D124 AutoTDP re-run on the Odin (plugged only; no battery claims); (3) D123 per the owner's choice.
+Popup audit: `sh /data/local/tmp/vqa/popaudit.sh TAG "LAYOUTS" "STYLES" [960x640]` between snapshot save / restore + preview false;
+the GT78 needs `usekey`; it stops when a game starts — close the emulator WITHOUT saving (Dolphin: Exit Emulation; RetroArch: Close
+Content / force-stop at the title screen). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both
 devices show "Who's playing?" or the category screen first — press B before a matrix (an Odin run was INFRA because of it); use a NEW staging
 folder for every device_commit; never run commit + sync in the same parallel batch. Corner-shortcut matrix: `sh /data/local/tmp/vqa/d131.sh TAG
 "DISCS ARCTIC" ["|dock=TOP"]` between `voltcap_test_snapshot save` / `restore` and `voltcap_test_preview false`.

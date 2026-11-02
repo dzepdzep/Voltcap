@@ -1463,7 +1463,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture."
+   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval)."
   },
   {
    "id": "D124",
@@ -1479,9 +1479,9 @@
    "title": "GT78 960x640: Hero layout side list and overview end names / summary with '…' (Pokemon Silver Version (GB Compati…)",
    "rule": "TRUNCATE",
    "severity": "med",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_HERO",
-   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11. | 433: still present on the GT78 (G433_HERO); not fixed this session."
+   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11. | 433: still present on the GT78 (G433_HERO); not fixed this session. | v0.6.66 update 439: FIXED — HeroCarousel PageText: one line = FullText (shrinks, then slides); a paragraph keeps its lines of room and pans slowly to its end and back (HeroParagraph; rests with HomeIdle.calm, once per game on Lite); ScrollingName: the focused name slides on Lite too (3 runs). GT78 .shots/439 h0/h5/h10: the Advance Wars summary scrolls to its last line, no '…'; Odin Hero summary whole. Unfocused wheel names still end in '…' (full name reachable on focus — rule 11 allows it)."
   },
   {
    "id": "D126",
@@ -1506,9 +1506,9 @@
    "title": "Cardboard box with a 2-game category: two small cases in the box's top-left corner, the rest of the box empty",
    "rule": "VISUAL",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_BOX (Continue playing, 2 games)",
-   "note": "Box 1-3 games item of the backlog; reproduced on hardware."
+   "note": "Box 1-3 games item of the backlog; reproduced on hardware. | v0.6.66 update 439: FIXED — packBoxesFull: a category that fills only part of one row stands in the middle of the box (centred across, mid-floor of a 2/3-row box); full boxes unchanged. BoxFewD128Test (3). Odin: N64 (1 game) and Xbox 360 (1 game) centred; Switch (2 rows) unchanged. GT78: no 1-3 game category on that library (N64 8 games, packed from the wall as before)."
   },
   {
    "id": "D129",
@@ -1524,9 +1524,9 @@
    "title": "Disc station game window shows a generic blank silver disc instead of the game's disc art",
    "rule": "ARTWORK",
    "severity": "low",
-   "status": "open",
+   "status": "suspect",
    "found": "2026-11-01 update 434 Odin P434_DISCS",
-   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic."
+   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on."
   },
   {
    "id": "D131",
@@ -1537,6 +1537,42 @@
    "found": "2026-11-01 update 436 (.shots/436, voltcap_test_shortcuts + shortcuts_open with snapshot save / restore)",
    "note": "Cause (LauncherScreen.kt, generic corner path): the corner was flipped by the game-row setting (row Top → top corners to the bottom, row Bottom → bottom corners to the top) on every layout, but whole-screen layouts (style homes, Grid, TV room) don't draw that row — GT78 (row Top) put all four corners on Disc station's bottom panel, the Odin (row Bottom) put all four in the status bar. Fix (update 438, ui/ShortcutCorner.kt): a layout with the game row at an edge still steps off that edge (unchanged); a whole-screen layout keeps the side picked and uses the top band — the status bar's ☰ room (intentional slot, kept) when the bar is on, the top corner when it's off, with the style home starting 56 dp down (like below the status bar) so the ☰ never lies on its panel / title. The open row stays in the band: up to the bar's clock cluster / music player (measured), one line that scrolls (swipe; follows the D-pad) instead of wrapping onto the layout. Tests ShortcutCornerD131Test (9; wholeScreenLayoutWithTheRowSettingAtTheTopKeepsTheTopBand fails on f0f71bc). Verified (release build, .shots/438): GT78 960x640 Disc station + Arctic + Classic (row Top), Odin 1080p Disc station + Arctic + Classic and Classic / Disc station with row Top — 4 corners × open / closed × status bar on / off, no overlap of DISC LOADED, title, artwork, action buttons, game row or status bar; Classic unchanged (row-layout flip). D-pad: ▲ from the game folds the row out with the first button ringed, ► scrolls to the last button, ▼ folds it and returns to the layout (GT78 TOP_LEFT, BOTTOM_RIGHT; Odin BOTTOM_LEFT); touch tap opens, swipe scrolls (GT78). Settings: Features snapshot saved / restored on both, layouts previewed only.",
    "fixed": "2026-11-02 update 438"
+  },
+  {
+   "id": "D132",
+   "title": "Row-move game windows (The row opens up / Row reveal / Shared move): an A pressed while the window closed — or the release of the A that opened it — pressed ▶ Continue and started the game",
+   "rule": "ONEPRESS",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-02 update 439 popup audit: Odin Channel grid + Row opens, A B A B at 250 ms started Donkey Konga 2 (Dolphin); GT78 Cross menu + Shared move started Pokemon Silver (RetroArch)",
+   "note": "RowRevealWindow: a closing window takes no button presses; an A while it closes opens it again (D108 rule) and its release is swallowed; an A release whose press the window never saw is ignored. PlayWhileClosing412Test extended. Verified: Odin O4/O5 and GT78 G5 popup runs, no game started (.shots/439). Emulators were closed without saving (Dolphin: memory-card prompt left unanswered, Exit Emulation; RetroArch: title screen, Close Content / force-stop, no save state)."
+  },
+  {
+   "id": "D133",
+   "title": "Game window (layout's own / Banner / Classic): a B after a re-opening A was lost and a B while the window flew out reached the home screen and was dropped, so the window stayed open and the next A started the game; an orphan B release on the Channel grid then opened the category screen",
+   "rule": "ONEPRESS",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-02 update 439 popup audit: GT78 Case stacks (OWN left open, BANNER's A started Pokemon Silver)",
+   "note": "GameWindow: a close while already closing takes the pending re-open back; GamePopup.requestClose lets the home screen's B close a window that is still flying out; LauncherScreen ignores a B release whose press it didn't see (HomeKeyGuard). Verified: GT78 G4/G5 Case stacks all styles and Odin O4 Channel grid (window closed, same game focused, before/after diff 0-1)."
+  },
+  {
+   "id": "D134",
+   "title": "Odin, Shared move with rapid A/B: Dolphin's main screen slid in for ~0.4 s after the last B (its process was left in the background by the D132 launch)",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "suspect",
+   "found": "2026-11-02 update 439 Odin TWIN_DESK_SHARED (also CINEMA / ARCTIC SHARED transients)",
+   "note": "Not reproduced after D133's orphan-B guard (O4 runs clean). Watch for a B at home bringing a background emulator forward."
+  },
+  {
+   "id": "D135",
+   "title": "GT78 Cross menu + Shared move: rapid A B A B at the GT78's slow key timing still starts the game (cartridge throw from the home screen) after the window has closed",
+   "rule": "ONEPRESS",
+   "severity": "high",
+   "status": "open",
+   "found": "2026-11-02 update 439 GT78 popup runs G3, G4, G5 CROSS_SHARED (Advance Wars / Pokemon Silver started in RetroArch; closed at the title screen with force-stop, no save written)",
+   "note": "Reproducible on the GT78 only (Odin O4 / O5 CROSS_SHARED clean). Not the row window (D132 guards in place): the launch is the GameWindow playNow throw after the window closed and re-opened — check the D108 reopen path (GamePopup.reopenGame) with a pending A release, the 450 ms PLAY_GUARD_MS against the re-opened window's openedAt, and whether Cross marks GameOrigin on the GT78 (Shared falls back to the scene window). Next: run popaudit.sh G CROSS SHARED with the VoltcapQA focus log + a logcat line in playNow (who called it)."
   }
  ]
 }

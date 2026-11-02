@@ -38,6 +38,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -655,14 +657,39 @@ private fun infoTextAlign(): TextAlign = if (LocalInfoOnLeft.current) TextAlign.
 // ---- Pages (one clean region each: text and thin rules, no stacks of cards) ----
 
 @Composable
-private fun PageText(text: String, muted: Boolean = false, size: Int = 13, maxLines: Int = 4) =
-    Text(
-        text, color = if (muted) Color.White.copy(alpha = 0.62f) else Color.White.copy(alpha = 0.92f),
-        // (Update 136: a paragraph is never shrunk to fit — it ends in "…" — and its line height follows its font:
-        // the shrunk text kept the full size's spacing, with the "…" alone on a line of its own.)
-        fontSize = size.sp, autoSize = if (maxLines <= 2) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (size.sp) * 0.75f, maxFontSize = size.sp) else null,
-        lineHeight = androidx.compose.ui.unit.TextUnit(1.38f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = maxLines, overflow = TextOverflow.Ellipsis, textAlign = infoTextAlign()
-    )
+private fun PageText(text: String, muted: Boolean = false, size: Int = 13, maxLines: Int = 4) {
+    val color = if (muted) Color.White.copy(alpha = 0.62f) else Color.White.copy(alpha = 0.92f)
+    // v0.6.66 (D125, CLAUDE.md rule 11): nothing ends in "…" any more. One line shrinks readably, then slides (FullText);
+    // a paragraph keeps its size and its [maxLines] lines of room and, when it's longer, pans slowly down to its end and
+    // back (HeroParagraph) — the GT78's 960×640 screen cut the summary and names short (Update 136's "…").
+    if (maxLines <= 1) FullText(text, color = color, fontSize = size.sp, maxLines = 1, textAlign = infoTextAlign())
+    else HeroParagraph(text, color, size, maxLines)
+}
+
+/** v0.6.66 (D125): a paragraph [maxLines] lines high that shows all of [text] — it scrolls (swipe, or slowly on its own) when longer. */
+@Composable
+private fun HeroParagraph(text: String, color: Color, size: Int, maxLines: Int) {
+    val lineH = androidx.compose.ui.unit.TextUnit(1.38f, androidx.compose.ui.unit.TextUnitType.Em)
+    val boxH = with(androidx.compose.ui.platform.LocalDensity.current) { (size.sp * 1.38f).toDp() } * maxLines
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    val lite = LocalLiteEffects.current
+    // (Rests with the home screen — HomeIdle.calm — and on Lite pans once per game: no endless redraw.)
+    LaunchedEffect(text, scroll.maxValue, lite) {
+        scroll.scrollTo(0)
+        if (scroll.maxValue <= 0) return@LaunchedEffect
+        var runs = if (lite) 1 else Int.MAX_VALUE
+        while (runs-- > 0) {
+            kotlinx.coroutines.delay(2500)
+            if (HomeIdle.calm) break
+            scroll.animateScrollTo(scroll.maxValue, tween((scroll.maxValue * 28).coerceIn(1200, 9000), easing = androidx.compose.animation.core.LinearEasing))
+            kotlinx.coroutines.delay(2000)
+            scroll.animateScrollTo(0, tween(600))
+        }
+    }
+    Box(Modifier.fillMaxWidth().heightIn(max = boxH).verticalScroll(scroll)) {
+        Text(text, color = color, fontSize = size.sp, lineHeight = lineH, textAlign = infoTextAlign(), modifier = Modifier.fillMaxWidth())
+    }
+}
 
 @Composable
 private fun OverviewPage(info: HeroInfo) {

@@ -41,11 +41,14 @@ internal fun ScrollingName(
     val h = with(LocalDensity.current) { lineHeight.toDp() } * lines
     // (propagateMinConstraints: the name keeps the width the caller gives it — filled, or just its own — as before.)
     Box(modifier.height(h), contentAlignment = Alignment.TopStart, propagateMinConstraints = true) {
-        if (scrolling && overflows && !LocalLiteEffects.current) {
+        // (v0.6.66, D125: on Lite too — there it slides a few times and stops, instead of never, so the name you're on is
+        // always readable in full; the GT78 showed "Pokemon Silver Version (GB Compati…".)
+        if (scrolling && overflows) {
+            val lite = LocalLiteEffects.current
             Text(
                 text, color = color, fontSize = fontSize, lineHeight = lineHeight, fontWeight = fontWeight, textAlign = textAlign, style = style,
                 maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
-                modifier = Modifier.fillMaxWidth().basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 700, repeatDelayMillis = 900, velocity = 36.dp)
+                modifier = Modifier.fillMaxWidth().basicMarquee(iterations = if (lite) 3 else Int.MAX_VALUE, initialDelayMillis = 700, repeatDelayMillis = 900, velocity = 36.dp)
             )
         } else {
             Text(

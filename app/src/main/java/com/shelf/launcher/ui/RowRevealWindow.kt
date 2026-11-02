@@ -71,6 +71,9 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlinx.coroutines.launch
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import kotlin.math.roundToInt
 
 /*
@@ -148,6 +151,11 @@ internal object GlanceOrigin {
 private val RevealEase = CubicBezierEasing(0.22f, 0.8f, 0.24f, 1f)
 
 private fun lerpF(a: Float, b: Float, t: Float) = a + (b - a) * t
+
+/** v0.6.66: the keys that open (A / Enter / centre) — while the window closes they open it again instead of pressing a button. */
+internal fun rowWindowOpenKey(k: androidx.compose.ui.input.key.Key): Boolean =
+    k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
+        k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
 private fun part(p: Float, from: Float, to: Float) = ((p - from) / (to - from)).coerceIn(0f, 1f)
 
 /**
@@ -197,17 +205,30 @@ internal fun RowMotionWindow(
     val p = remember(k) { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var closing by remember { mutableStateOf(false) }
+    var closeJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val closeNow by rememberUpdatedState(onClose)
     val close: () -> Unit = {
         if (!closing) {
             closing = true
-            scope.launch {
+            closeJob = scope.launch {
                 if (anim) p.animateTo(0f, tween(if (opens) 380 else 340, easing = RevealEase)) else p.snapTo(0f)
                 RowReveal.reset()
                 closeNow()
             }
         }
     }
+    // v0.6.66 popup audit (Odin, Channel grid + The row opens up, A B A B at 250 ms started Donkey Konga 2): while the move
+    // went back, the closing window still had the focus on ▶ Continue, so an A meant for the home screen pressed it. Now a
+    // closing window takes no button presses; an A while it closes opens it again (the D108 rule of the other windows).
+    val reopen: () -> Unit = {
+        if (closing) {
+            closeJob?.cancel(); closeJob = null; closing = false
+            scope.launch { if (anim) p.animateTo(1f, tween(if (opens) 420 else 380, easing = RevealEase)) else p.snapTo(1f) }
+        }
+    }
+    val live: (() -> Unit) -> Unit = { f -> if (!closing) f() }
+    var swallowUp by remember { mutableStateOf<androidx.compose.ui.input.key.Key?>(null) }
+    var openKeyDown by remember { mutableStateOf(false) }
     // The row's cards follow the move while it draws.
     LaunchedEffect(p) {
         androidx.compose.runtime.snapshotFlow { p.value }.collect { v ->
@@ -253,7 +274,21 @@ internal fun RowMotionWindow(
             if (windowInfo.isWindowFocused) { kotlinx.coroutines.delay(30); if (!buttonsFocused.value) runCatching { playFocus.requestFocus() } }
         }
         val d = LocalDensity.current
-        BoxWithConstraints(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { close() } }) {
+        BoxWithConstraints(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
+            // (The release of the A that opened it again is that A's too: a button clicks on release, so it pressed
+            // ▶ Continue right after re-opening — GT78 Cross menu, Shared move, started the game.)
+            if (swallowUp != null && e.key == swallowUp && e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { swallowUp = null; return@onPreviewKeyEvent true }
+            // (…and the release of the A that opened this window on the home screen: its press went to the home screen,
+            // only the release arrives here — a button clicks on release, so it started the game the moment it opened.)
+            if (rowWindowOpenKey(e.key)) {
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) openKeyDown = true
+                else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp && !openKeyDown) return@onPreviewKeyEvent true
+                else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) openKeyDown = false
+            }
+            if (!closing) return@onPreviewKeyEvent false
+            if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && rowWindowOpenKey(e.key)) { swallowUp = e.key; reopen() }
+            true
+        }.pointerInput(Unit) { detectTapGestures { if (closing) reopen() else close() } }) {
             val W = constraints.maxWidth.toFloat()
             val H = constraints.maxHeight.toFloat()
             val pad = with(d) { 24.dp.toPx() }
@@ -422,12 +457,12 @@ internal fun RowMotionWindow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 RevealButton(if (resumed) "▶  Continue" else "▶  Play", main = true, accent = accent, onAccent = onAccent, modifier = Modifier.focusRequester(playFocus)) {
-                    RowReveal.reset(); onPlay()
+                    live { RowReveal.reset(); onPlay() }
                 }
-                RevealButton("Details", accent = accent, onAccent = onAccent) { RowReveal.reset(); onFullDetails() }
-                if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { RowReveal.reset(); onAchievements() }
-                RevealButton("Options", accent = accent, onAccent = onAccent) { RowReveal.reset(); onOptions() }
-                if (onInspect != null) RevealButton("◧  Inspect", accent = accent, onAccent = onAccent) { RowReveal.reset(); onInspect() }
+                RevealButton("Details", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onFullDetails() } }
+                if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onAchievements() } }
+                RevealButton("Options", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onOptions() } }
+                if (onInspect != null) RevealButton("◧  Inspect", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onInspect() } }
             }
 
             // ---- Update 325 (Toni: "add some stuff underneath there so it isn't so empty — achievements or something"):

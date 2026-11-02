@@ -107,6 +107,8 @@ internal object GamePopup {
     var reopenRequested = false
     /** The game to open again (set when the closing window finishes with [reopenRequested]). */
     var reopenGame by mutableStateOf<Game?>(null)
+    /** v0.6.66: the open window's own close (its flight back), for a B the home screen gets while the window flies out. */
+    var requestClose: (() -> Unit)? = null
 
     /** The window finished closing: with a pending A, hand the same game back to be opened again. */
     fun closed(g: Game) {
@@ -1084,6 +1086,10 @@ internal fun GameWindow(
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
     val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
     val close: () -> Unit = {
+        // v0.6.66 popup audit (GT78, Case stacks, A B A B at 250 ms): the A while it flew back asked for it to open again
+        // (D108), but the B after it fell on the closing window and was lost, so it opened again and stayed open — the next
+        // A then started the game. A close asked for while it is already closing now takes the pending re-open back.
+        if (closingFlag[0]) GamePopup.reopenRequested = false
         closingFlag[0] = true
         if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
             if (!shrinking) {
@@ -1103,6 +1109,13 @@ internal fun GameWindow(
                 closeNow()
             }
         }
+    }
+    // (v0.6.66: the home screen's B reaches this close while the window isn't taking keys yet.)
+    val closeLatest by rememberUpdatedState(close)
+    DisposableEffect(g.stableKey) {
+        val hook: () -> Unit = { closeLatest() }
+        GamePopup.requestClose = hook
+        onDispose { if (GamePopup.requestClose === hook) GamePopup.requestClose = null }
     }
     // (However it closes — Play, Details, the options… — the carousel gets its games back.)
     val mySeq = remember(g.stableKey) { MediaInspect.forceSeq }

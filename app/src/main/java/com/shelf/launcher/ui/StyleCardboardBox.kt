@@ -441,7 +441,21 @@ internal fun packBoxesFull(games: List<Game>, cam: BoxCam, gapMm: Float, messy: 
         x += extra + thick + gapMm
         prev = g; prevSlot = sl
     }
-    return BoxPack(slots.map { it!! }, divs, order)
+    val packed = slots.map { it!! }
+    // v0.6.66 (D128): a category that fills only part of one row (1-3 games, a short category) stood in the box's back-left
+    // corner with the rest of the floor bare. Such a lone row now stands in the middle of the box — centred across, and in
+    // the middle of the floor of a deeper box — as cases put into an empty box would. Rows, order and D-pad steps unchanged.
+    if (packed.isNotEmpty() && packed.all { it.box == 0 && it.row == 0 }) {
+        val dx = ((usable - (x - gapMm)) / 2f).coerceAtLeast(0f)
+        val longest = packed.maxOf { it.len }
+        val dy = if (rows > 1) ((cam.dMm - longest) / 2f - BOX_MARGIN).coerceAtLeast(0f) else 0f
+        if (dx > 0f || dy > 0f) return BoxPack(
+            packed.map { BoxSlot(it.box, it.row, it.x0 + dx, it.thick, it.y0 + dy, it.len, it.stand) },
+            divs.map { BoxDivider(it.box, it.row, it.x0 + dx, it.y0 + dy, it.len, it.stand) },
+            order
+        )
+    }
+    return BoxPack(packed, divs, order)
 }
 
 /** The cardboard's own surfaces (generated, tools/box/gen_cardboard.py): its face, its fluted walls, its cut edge. */

@@ -1,3 +1,40 @@
+# Update 439 (2 Nov 2026) — v0.6.66 batches 2 + 3: popup audit with recordings (2 launch bugs fixed), D125 + D128 fixed, D130 not reproduced (NOT published)
+
+**Popup audit (batch 2)** — new `tools/qa/device/popaudit.sh` (preview only; `popup_style_by_layout` inside voltcap_test_snapshot
+save / restore): per layout × R1 popup style a recording of A (open) → B (close) → rapid A B A B at 250 ms, before / open / after
+stills, the VoltcapQA log and the app in front (stops if a game started). Layouts Channel grid (Wii), Case stacks, Disc station, Twin desk,
+Cinema, Arctic, Cross menu × Own / Banner / Row opens / Row reveal / Shared / Classic. Analysis: tools/qa/tools/frames.py per clip +
+before/after difference (focus restored on the same game, window closed).
+**Defects found and fixed (both started a game from rapid input):**
+- **D132** row-move windows (`RowRevealWindow.kt`): an A while the window closed pressed ▶ Continue on the closing window (Odin Channel
+  grid + Row opens started Donkey Konga 2); the release of an A that opened / re-opened the window clicked Continue. Now: no button
+  presses while closing, A re-opens it (D108 rule) and its release is swallowed, an A release whose press the window never saw is ignored.
+- **D133** game window (`GameWindow.kt`, `LauncherScreen.kt`): a B after a re-opening A was lost, and a B while the window was still
+  flying out reached the home screen and was dropped — the window stayed open and the next A started the game (GT78 Case stacks);
+  an orphan B release then opened the Channel grid's category screen. Now: a second close cancels the pending re-open,
+  `GamePopup.requestClose` lets the home screen's B close a window on its way, `HomeKeyGuard` ignores a B release without its press.
+**Result (final build):** Odin — all 42 runs of the first pass, then O4 (Cross / Channel / Twin desk / Case stacks × 6 styles) and O5
+(Cross / Disc station / Cinema / Arctic × Own / Row opens / Shared) with no game started, window closed and the same game focused
+(before/after difference 0-1 on static layouts; Cinema / Cross / Stacks differ only by their moving backdrops, checked by eye). GT78 —
+Channel grid, Case stacks, Disc station, Twin desk, Cinema, Arctic all styles clean after the fixes; **Cross menu + Shared move still
+starts the game on the GT78 (D135, OPEN, reproducible 3×)**. Frame pacing: 30-90 ms hitches during Banner / Shared transitions on the
+Odin (Cinema worst) — recorded, not fixed. D134 (a background Dolphin screen slid in once on the Odin) not seen after D133.
+**Batch 3:** **D125** fixed + verified (Hero: one-line texts shrink then slide, paragraphs pan to their end — GT78 h0/h5/h10 show the
+Advance Wars summary scrolling to its last line; the focused wheel name slides on Lite too). **D128** fixed + verified on the Odin
+(1-game N64 / Xbox 360 boxes: the case stands in the middle; multi-row boxes unchanged; the GT78 library has no 1-3 game console, N64 8
+games unchanged). **D130** not reproduced (Odin Disc station window shows the real disc for a GameCube and a PS2 game) → suspect.
+**D123** needs an owner decision (no Android 12 thumbnail to fall back to; options in defects.json) — not changed.
+**Not done (batch 4):** controller / category-switch QA and the D124 AutoTDP re-run — not started this session (time); still plugged-in
+only, no battery claims.
+**Side effects to know:** the launches started Donkey Konga 2 (Dolphin, Odin; memory-card prompt left unanswered, Exit Emulation),
+Pokemon Silver and Advance Wars (RetroArch, GT78; closed at the title / intro with Close Content or force-stop, no save state, nothing
+played) — their "last played" / short play sessions may show in Voltcap. Dolphin's main screen is still running in the background on the Odin.
+**Checks:** testDebugUnitTest green (BoxFewD128Test 3, PlayWhileClosing412Test extended), assembleRelease OK (installed in place on
+both, no crash in the crash buffer), static_checks PASS (TRUNCATE 301→300), QA self-test 71 OK. Devices: settings snapshot restored,
+previews ended; GT78 hooks / snapshot removed, stay-awake 0; Odin hooks file and its earlier snapshot as found; /sdcard/pa removed.
+**Copy:** `src_copy/ui/RowRevealWindow.kt`, `GameWindow.kt`, `LauncherScreen.kt`, `HeroCarousel.kt`, `ScrollingName.kt`,
+`StyleCardboardBox.kt`; `project_copy/app/src/test/.../BoxFewD128Test.kt`, `PlayWhileClosing412Test.kt`; `tools/qa/device/popaudit.sh`; defects.json.
+
 # Update 438 (2 Nov 2026) — v0.6.66 batch 1: D131 fixed and verified on the Odin 2 Portal and GT78 (NOT published)
 
 **Cause (replaces the 0.6.66-start notes):** LauncherScreen's generic corner ☰ path flipped the corner by the game-row setting on EVERY

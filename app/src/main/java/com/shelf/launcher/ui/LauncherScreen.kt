@@ -6224,6 +6224,22 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
             }
             .onKeyEvent { event ->
+                // v0.6.66 popup audit (GT78, Case stacks): a B pressed while the game window was still flying out (its
+                // window not yet taking keys) reached the home screen and was dropped — the window then opened and stayed
+                // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
+                // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
+                // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
+                if (event.key == Key.ButtonB || event.key == Key.Back) {
+                    if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
+                    else if (event.type == KeyEventType.KeyUp) {
+                        if (!HomeKeyGuard.bDown) return@onKeyEvent true
+                        HomeKeyGuard.bDown = false
+                    }
+                }
+                if (GamePopup.game != null && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (event.type == KeyEventType.KeyUp) GamePopup.requestClose?.invoke() ?: run { GamePopup.game = null }
+                    return@onKeyEvent true
+                }
                 // Update 177: the controller on the second screen (▼ past the bottom of this one), SecondPad.kt.
                 if (SecondPad.active) {
                     if (aDialogIsOpen) SecondPad.leave()
@@ -7212,3 +7228,8 @@ private fun ProvideNameColors(cat: com.shelf.launcher.ui.theme.ShelfColors?, con
 
 /** QA pass 4 (D39): the Tile home tiles' top and bottom on the screen, in dp (written as they're placed). */
 internal object TileRowSpan { @JvmStatic var top = 0f; @JvmStatic var bottom = 0f }
+
+/** v0.6.66 popup audit: whether the home screen saw the press of the B whose release it gets (an orphan release is ignored). */
+internal object HomeKeyGuard {
+    @Volatile var bDown = false
+}
