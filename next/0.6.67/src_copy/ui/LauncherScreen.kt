@@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Every way of opening the window goes through here so it always starts
     // on Play, scrolled to the top.
     val openDetails = {
+        // Update 454 (Thor, Pocket classic + popup style Classic): a layout that opens on A's PRESS (Pocket classic) opened this
+        // window with A still held, and that A's release clicked the window's focused Play — one press started the game.
+        // The release of an A held while it opened is the home screen's, never this window's (HomeKeyGuard.swallowAUp).
+        if (HomeKeyGuard.aDown) HomeKeyGuard.swallowAUp = true
         detailsAction = DetailsAction.PLAY
         galleryIndex = 0
         summaryExpanded = false
@@ -6218,6 +6222,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             .onPreviewKeyEvent { event ->
                 lastInputAt = System.currentTimeMillis()
                 // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
+                // (Update 454: …and the release of the A that opened the Details window on its press goes nowhere.)
+                if (HomeKeyGuard.isOpenKey(event.key) && event.type == KeyEventType.KeyDown) HomeKeyGuard.swallowAUp = false
+                if (HomeKeyGuard.swallowAUp && HomeKeyGuard.isOpenKey(event.key) && event.type == KeyEventType.KeyUp) {
+                    HomeKeyGuard.swallowAUp = false
+                    HomeKeyGuard.trackA(event.key, event.type)
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "details: A release from the home screen swallowed")
+                    return@onPreviewKeyEvent true
+                }
                 HomeKeyGuard.trackA(event.key, event.type)
                 if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                 when {
@@ -7309,6 +7321,8 @@ internal object HomeKeyGuard {
      * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
      */
     @Volatile var aDown = false
+    /** Update 454: the Details window opened while A was held — that A's release is swallowed (see openDetails). */
+    @Volatile var swallowAUp = false
     fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
         k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
             k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter

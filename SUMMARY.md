@@ -1,3 +1,38 @@
+# Update 454 (2 Nov 2026) — performance measurements, D164 preview fix + D102 re-check, D83 text, popup-mode sweep, Pocket classic Classic-style launch (D167), Thor ANR analysis (NOT published)
+
+**Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. KONKR / Odin not touched. v0.6.66 frozen and unpublished; staging only.
+**Performance (perf.sh, frame cadence, 3 reps, RC = before):** RP Classic — R1 open/close ≤ 9-14 missed vsyncs, max gap 66-83 ms; Settings open
+24-28 missed, max gap 166-233 ms; L2/R2 x8 2-4 missed, 33 ms; game window A/B 5-8 missed, 83-99 ms; return from Android Settings 5-11 missed,
+49-66 ms; app drawer scroll ~150 missed of ~250 frames (≈30 fps). Thor — similar; drawer every frame missed (≈30 fps); Settings / popup max gap
+116-200 ms. Causes found: (1) D64 — the idle home redraws continuously with the owner's background (own layout 61 fps; Tile home 31 fps; a
+session-only BLACK background: 0 frames), so the drawer and everything over the home is GPU-bound (gpu 14.6 + cmd 7.9 ms per frame). Not changed:
+the owner keeps the selected background; proposal below. (2) D165 — opening Settings: one ~177 ms frame spent before drawing (creating the
+dialog's window) + one ~50 ms composition frame; same on the RC; needs a hosting change, not attempted. No speculative optimisation made.
+**Proposal for approval (D64):** hold the background clip / animated scene while a full panel (drawer, Settings) covers the home, and / or after the
+idle timeout on the RP Classic only — nothing changes unless you approve.
+**D164 fixed + verified:** a layout preview kept getting replaced by the category's / default layout on every category switch
+(`LauncherViewModel.categoryLayoutFor`; nothing was ever saved). Previews now keep their layout (PreviewCategory454Test).
+**D102 re-checked with the fix (Thor, Cross menu):** ◀▶ = categories, one press each, symmetric, wraps both ends; L2/R2 the same; ▲▼ one game.
+Not a bug — the earlier reports were the preview artefact. Closed.
+**D83:** R1 Now Playing title / artist and the Widget Board editor's name use FullText (whole, readable shrink, slide); static TRUNCATE 296 → 293.
+Settings header subtitle seen whole on the Thor. Now Playing / Widget Board not seen on hardware (no music playing, board not opened).
+**Popup modes (popmodes.sh):** 6 R1 styles x 10 layouts on the RP Classic (Classic, Tiles, Hero, Channel grid, Cross, Live, Dashboard, Shelf,
+Disc station, Cinema) + 5 on the Thor (Twin desk, Pocket classic, Pocket ribbon, Twin showcase, Arctic): every combination opens its own style, B
+closes it, layout windows unchanged — except **D167**: Pocket classic + Classic style started the game with one A (its press opened the Details
+window, its release clicked Play). Fixed: the release of an A held while Details opens is swallowed (`LauncherScreen.kt`, DetailsHeldA454Test);
+Thor re-check on the final build: 2 x A, no launch; Own style unchanged.
+**Icons (P2):** code audit — app icons are in their own colours everywhere; one-colour icons only where switched on (L1 shortcuts "themed",
+second-screen dock "mono"); the grey filters are locked achievements / uninstalled items. Drawer seen in colour on the Thor (453). No change.
+**Thor error report (D166):** the "Voltcap closed unexpectedly" after update 453 = Android input-dispatch ANR ("no focused window") from QA keys
+injected while the screen slept; main thread idle in nativePollOnce; not an app crash. Default Home: still Voltcap (HomeAlias), not changed.
+**Saturn / Dreamcast:** static only (SaturnDreamcast454Test: folders recognised, disc media, a case per region); no such games on the devices.
+**Waiting:** D137 + Case stacks work (KONKR on USB), D124 (approval), Odin restore (Odin on USB), physical controller.
+**Restored:** the Thor's focused game had moved to "8 Eyes" during perf.sh (which kept no snapshot of its own) and was put back to the recorded
+original (All / 007 The World Is Not Enough / profile 0, verify OK); RP Classic Continue playing / Mario's Picross X / profile 0 (unchanged).
+perf.sh now saves and restores the view state itself. RC rebuilt and installed on both; Thor hooks `.paused`; QA scripts removed; Thor default Home
+checked. The PC link dropped once during the update (nothing lost).
+**Checks:** testDebugUnitTest green, static checks PASS, QA selftest OK, patch `git apply --check` OK on a fresh RC checkout, staging mirror = final tree.
+
 # Update 453 (2 Nov 2026) — extended batch: rapid A/B re-open fix, category bar parity, drawer focus, Classic window fit, Switch names, trash folders (NOT published)
 
 **Devices (USB only):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. KONKR / Odin not touched; no wireless ADB. Profiles, artwork, brightness,

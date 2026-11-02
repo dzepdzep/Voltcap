@@ -109,3 +109,8 @@ category. Never end a run without a passing restore.
 no-metadata games' windows collapsed + More · `navcheck.sh TAG "LAYOUTS" "KEYS"` focus line per key · `media.sh TAG "LAYOUTS" "CONSOLES"`
 media stills per console. Set a test category BEFORE a layout preview (D164). Wake the device first: keys injected while it sleeps end in
 an input-timeout report.
+
+## Update 454 device scripts
+`perf.sh TAG REPS` frame cadence per action (R1, Settings, L2/R2, game window, return from an Android app, app drawer scroll) from the
+app's `cadence n= missed= maxgap=` lines · `popmodes.sh TAG "LAYOUTS"` every R1 popup style x layout: A opens, B closes, no launch
+(writes popup_style_by_layout during the run; snapshot saved first and restored + verified). Layout previews now survive category switches (D164).

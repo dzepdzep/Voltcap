@@ -2253,6 +2253,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * in the same update as the new category, so no frame has the new category in the old layout (or the reverse).
      */
     private fun categoryLayoutFor(next: LauncherUiState): AppearanceSettings? {
+        // Update 453/454 (D164): during a test-hook preview the layout on screen is the one under test — a category switch
+        // used to bring the category's (or the default) layout back, so a Cross menu preview became Pocket classic after the
+        // first L2 / R2 and every later key was judged on the wrong layout. Nothing is saved in a preview either way.
+        if (com.shelf.launcher.ui.TestHooks.previewOnly) return null
         val old = savedOf(_uiState.value.appearance)
         val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(next)) ?: return null
         if (want == old.homeLayout) return null

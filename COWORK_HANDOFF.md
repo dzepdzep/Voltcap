@@ -2,6 +2,8 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
+**Update 454: SUMMARY top + REQUESTS_CHECKLIST.md. Previews now survive category switches (D164). perf.sh / popmodes.sh in tools/qa/device.
+D64 needs an owner decision (proposal in SUMMARY 454). Placeholders also PreviewCategory454Test, SaturnDreamcast454Test (patch removes 16 lines).**
 **Update 453: see SUMMARY top + REQUESTS_CHECKLIST.md (completed / outstanding / deferred). GamePopup now keeps one token per window
 (askAgain / cancelAgain) — never write GamePopup.reopenRequested directly. Category pills come from CategoryStops. Set a test category BEFORE a
 layout preview (D164: a preview is lost on a category switch). Wake the device before injecting keys (asleep → input-timeout report).

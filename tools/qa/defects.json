@@ -873,7 +873,7 @@
    "severity": "medium",
    "status": "open",
    "found": "RP Classic, Dash layout, Game art background with a scraped clip: gfxinfo idle 5 min after the last press: 241 frames / 8 s, 85 % janky.",
-   "note": "By design since update 307 (clips loop while the home screen rests; only a low battery or the long rest holds them). Update 221 had paused them after 30 s for exactly this reason on the RP. Option for Toni: hold the clip after the 30 s idle on weak GPUs, or a setting."
+   "note": "By design since update 307 (clips loop while the home screen rests; only a low battery or the long rest holds them). Update 221 had paused them after 30 s for exactly this reason on the RP. Option for Toni: hold the clip after the 30 s idle on weak GPUs, or a setting. | Update 454: Measured (RP Classic, staging/RC identical): the idle home redraws continuously — owner's own layout 61 fps (0 missed), Tile home preview with the owner's background 31 fps; with a session-only BLACK background (voltcap_test_bg) 0 frames. So the cost is the selected animated / clip background, by design. It also makes the app drawer scroll GPU-bound (gpu 14.6 + cmd 7.9 ms per frame → ~30 fps; Thor the same). Not changed (owner: keep the selected background). Proposal for approval: hold the background clip / scene while a full panel (drawer, Settings) covers the home, and/or after the idle timeout on the RP Classic only."
   },
   {
    "id": "D65",
@@ -1046,9 +1046,9 @@
    "title": "More '...' truncation seen on the Thor: R1 panel Now Playing artist, Settings header subtitle, Widget Board editor name",
    "rule": "R18 TRUNCATE (CLAUDE.md rule 11)",
    "severity": "low",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-10-29 update 386 (R1 quick panel player 'Future & Young...', Settings Screens header 'what goes on each screen w...', WidgetBoard.kt editor name TextOverflow.Ellipsis)",
-   "note": "Seen while testing, NOT fixed (outside the scope of this task). 371 static TRUNCATE findings remain app-wide."
+   "note": "Seen while testing, NOT fixed (outside the scope of this task). 371 static TRUNCATE findings remain app-wide. | Update 454: R1 Now Playing title + artist (NotificationsPanel.kt) and the Widget Board editor's widget name (WidgetBoard.kt) now use FullText (wrap / readable shrink / slide, never '…'); static TRUNCATE 296 → 293. Settings header subtitle on the Thor (Game look): shown whole, wraps to 3 lines — no cut seen. Now Playing / Widget Board not seen on hardware (no music playing; the owner's widget board not opened)."
   },
   {
    "id": "D84",
@@ -1267,9 +1267,9 @@
    "title": "CROSS layout: L/R behaviour asymmetric / unclear (R first press ignored at game 0, L wraps, R at last does nothing)",
    "rule": "ONEPRESS",
    "severity": "low",
-   "status": "open",
+   "status": "wontfix",
    "found": "2026-10-29 update 407 sweep (Thor)",
-   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN. | Update 453: Thor navcheck: inside a Cross menu PREVIEW the stops change 21→20 after the first switch and ◀▶ then moves games — the preview is lost on a category switch (D164). Likely a QA artefact; a real check needs Cross set as the layout (owner setting, not changed)."
+   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN. | Update 453: Thor navcheck: inside a Cross menu PREVIEW the stops change 21→20 after the first switch and ◀▶ then moves games — the preview is lost on a category switch (D164). Likely a QA artefact; a real check needs Cross set as the layout (owner setting, not changed). | Update 454: Re-run with the preview fixed (Thor, Cross menu): ◀▶ = category axis, one press = one category both ways, wraps both ends (◀ at All → Smart continue 21/21, ▶ at the last → All), L2/R2 identical, ▲▼ one game each. No asymmetry: the earlier reports came from the preview artefact (D164)."
   },
   {
    "id": "D103",
@@ -1833,9 +1833,36 @@
    "title": "QA: a layout preview (voltcap_test_preview + voltcap_test_layout) is lost on the first category switch (the stored appearance comes back) — Cross menu showed 21 stops then 20, the Thor screen went back to Pocket classic",
    "rule": "INFRA",
    "severity": "low",
-   "status": "open",
+   "status": "verified",
    "found": "2026-11-02 update 453 Thor navcheck",
-   "note": "Set the category first, then the layout preview (media.sh does). Explains D102's odd ◀▶ observations, which came from preview runs."
+   "note": "Set the category first, then the layout preview (media.sh does). Explains D102's odd ◀▶ observations, which came from preview runs. | Update 454: Cause: LauncherViewModel.categoryLayoutFor applied CategoryLayouts.effective() (the category's own or the DEFAULT layout) on every category switch, replacing the previewed layout (nothing was saved: persistAppearance returns early in previews). Now a preview keeps its layout across categories (PreviewCategory454Test). Thor Cross menu preview: 21 stops before and after 4 x ◀▶ + 2 x L2/R2, layout stayed Cross."
+  },
+  {
+   "id": "D165",
+   "title": "Opening Settings stalls ~170-230 ms on the RP Classic (one long frame before the dialog's first frame, then a ~50 ms composition frame)",
+   "rule": "PERF",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 454 perf.sh (RC and staging alike)",
+   "note": "FrameMetrics: total 177 ms with small measured phases (anim 2, layout 5, gpu 12) = time before the frame starts — creating the dialog's own window; next frame anim ≈ 50 ms = composing the Settings content. Same on the 0.6.66 RC. Thor: maxgap 83-183 ms. A fix means restructuring how Settings is hosted (e.g. composed in the home window or prewarmed) — not attempted without a design decision."
+  },
+  {
+   "id": "D166",
+   "title": "Thor 'Voltcap closed unexpectedly' report after update 453 = input-dispatch ANR from QA keys injected while the screen was asleep",
+   "rule": "INFRA",
+   "severity": "low",
+   "status": "wontfix",
+   "found": "2026-11-02 update 453 / analysed 454",
+   "note": "dropbox data_app_anr 2026-11-02 16:06:19 + 16:06:29: 'Input dispatching timed out (Application does not have a focused window)', Foreground yes, main thread idle in MessageQueue.nativePollOnce (not blocked, no app work in progress); the display was Asleep (mWakefulness=Asleep, mCurrentFocus=null) while catparity.sh injected R2 keys. Six earlier ANRs on 1 Nov 14:44-14:46 (0.6.64, Voltcap in the background) have the same reason (no focused window); their trigger was not analysed. Not an app crash; QA scripts now wake the device first. Default Home re-checked: HomeAlias."
+  },
+  {
+   "id": "D167",
+   "title": "Pocket classic with the R1 popup style 'Classic': one A press started the game (blocked by the QA hook) instead of opening the Classic details window",
+   "rule": "INPUT",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 454 popmodes.sh (Thor)",
+   "note": "Pocket classic acts on A's PRESS; openDetails showed the inline Classic details window with A still held and that A's RELEASE clicked its focused Play ('LAUNCH blocked startGame … popup=null'). The other 59 RP Classic + 29 Thor style x layout combinations never launched. Fix: openDetails remembers a held A (HomeKeyGuard.swallowAUp) and the home screen's root swallows that release; a new press clears it. DetailsHeldA454Test. Thor re-check on the final build: Pocket classic + Classic style, 2 x A → 'details: A release from the home screen swallowed', no launch; Own style still opens its window."
   }
  ]
 }
