@@ -1526,7 +1526,7 @@
    "severity": "low",
    "status": "suspect",
    "found": "2026-11-01 update 434 Odin P434_DISCS",
-   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on."
+   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on. | Update 443: EXPLAINED — the Disc station window's showcase turn shows the disc's silver underside (reading side) for part of the turn (Odin DISCS_OWN open sequence); the label side is the real art. Possible polish: rest on the label side after the turn."
   },
   {
    "id": "D131",
@@ -1591,7 +1591,7 @@
    "severity": "med",
    "status": "open",
    "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
-   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker)."
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open)."
   },
   {
    "id": "D138",
@@ -1610,6 +1610,33 @@
    "status": "wontfix",
    "found": "2026-11-02 update 442 GT78 07:18 (native SIGABRT on a Binder thread in libhwui JankTracker::finishFrame)",
    "note": "Android framework bug triggered by the frame-stats reset from adb — no Voltcap code on the stack; not seen in normal use. QA scripts no longer use gfxinfo reset on the GT78 (d137.sh uses QaTrace). Voltcap's crash screen appeared on the next start; Continue dismissed it, no data lost."
+  },
+  {
+   "id": "D140",
+   "title": "Row opens up: wide cards (Cinema, Channel grid) grew a cover over half the screen; title text and buttons ran off the right edge (both devices)",
+   "rule": "LAYOUT",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 443 popup review",
+   "note": "RowRevealWindow: cover ≤ 42 % of the width (aspect kept), text column never wider than the room left, buttons in a FlowRow below the name. PopupReview443Test. Verified Odin + GT78 Cinema / Arctic / Cross / Disc station (.shots/443 G3 / O3)."
+  },
+  {
+   "id": "D141",
+   "title": "Row reveal / Shared move on whole-screen layouts (Cinema, Arctic, Cross menu, Disc station): the layout's own title showed under the window's (the name twice), Shared's story ran off the GT78's bottom edge with '…'",
+   "rule": "VISUAL",
+   "severity": "med",
+   "status": "verified",
+   "found": "2026-11-02 update 443 popup review",
+   "note": "80 % shade over the layout except the game's card (Row reveal) / over the whole layout (Shared); Shared's story pans in the room left (no ellipsis). A faint ghost of the title remains on the GT78 Cinema — acceptable. PopupReview443Test."
+  },
+  {
+   "id": "D142",
+   "title": "Twin desk hinge window (GT78): last facts line cut in half under the keys; Channel grid + Row reveal: the buttons sit over the channel tiles",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-02 update 443 popup review",
+   "note": "A scrolling facts column was tried and reverted (collapsed to no lines on the GT78). Needs a size-aware hinge split (WinScenesMore.kt TwinHinge) and a placement for Row reveal's buttons on grids."
   }
  ]
 }

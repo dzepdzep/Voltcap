@@ -1,3 +1,21 @@
+# Update 443 (2 Nov 2026) — v0.6.66 popup visual & animation review: 3 layout fixes, D137 partly improved, review PDF (NOT published)
+
+**Review:** 7 layouts (Wii Channel, Case stacks, Disc station, Twin desk, Cinema, Arctic, Cross menu) × 6 popup styles on the Odin and the GT78,
+recorded with launches blocked (`tools/qa/device/popviz.sh`: home, open at +0.15/+0.3/+0.6 s, settled, closing, after B). Portable report with
+ratings and labelled contact sheets: **docs/POPUP_REVIEW_443.pdf** (19 pages). Ratings: Excellent — Wii Channel, Arctic, Cross menu own windows;
+Good — Disc station, Case stacks, Cinema own, Banner, Classic; Needs improvement — Twin desk hinge (D142); Broken → fixed — Row opens up (D140);
+Needs improvement → fixed — Row reveal / Shared move on whole-screen layouts (D141).
+**Fixes:** RowRevealWindow (cover ≤ 42 % width with its shape kept, buttons wrap below the name, 80 % shade except the game's card on whole-screen
+layouts); GlanceWindow (80 % shade on whole-screen layouts, story pans instead of running off the screen with "…"). Verified on both devices
+(.shots/443 G3 / O3). D130 explained (the disc's underside during the showcase turn). A Twin desk hinge change was tried and reverted.
+**D137:** idle redraws come only from the background. Carousel focus pulse now read while drawing; the animated theme scene holds while the 3D row
+glides (BackdropHold). Animated background moves 52-79 frames over 33 ms per run (was 65-130); with the owner's gameplay-video background unchanged
+(120-160) — video not paused, open.
+**Checks:** testDebugUnitTest green (PopupReview443Test 4 new), assembleRelease OK, installed in place on both; no launch attempted in any capture;
+no crash in the crash buffers. Devices: settings snapshot restored, previews ended, GT78 hooks removed / stay-awake 0, Odin hooks + snapshot as found.
+**Copy:** `src_copy/ui/RowRevealWindow.kt`, `GlanceWindow.kt`, `Carousel.kt`, `ThemeScene.kt`; `project_copy/app/src/test/.../PopupReview443Test.kt`;
+`tools/qa/device/popviz.sh`; docs/POPUP_REVIEW_443.pdf; defects.json.
+
 # Update 442 (2 Nov 2026) — v0.6.66: D123 colour check done, D137 investigated (one cause fixed, not solved), QA crash explained (NOT published)
 
 **D123 (verified):** colour check on the GT78 with the theme's original colours (theme_look_default switched for the check, restored after) and the

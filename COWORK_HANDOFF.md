@@ -2,9 +2,10 @@
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.
-Update 442: D123 verified; D137 still open (theme-colour recomposition fixed; idle continuous redraw from the background under Case stacks
-remains — find the 30 fps draw ticker, gate the clip while moving); D139 = Android 11 HWUI abort triggered by `dumpsys gfxinfo reset` (don't use
-it on the GT78). **Next:** D137, D124 gameplay run (owner-supervised), D136 / D138 tools. Thor pending. Release: RC if the owner accepts D137 / D124.
+Update 443: popup review done (docs/POPUP_REVIEW_443.pdf); D140 / D141 fixed + verified; D142 (Twin desk hinge, Channel Row reveal buttons) open;
+D137 improved for animated backgrounds, still open with a gameplay-video background. **Next:** D142, D137 video during glides, D124 gameplay run.
+Capture: `sh /data/local/tmp/vqa/popviz.sh TAG "LAYOUTS" "STYLES" [960x640]` (launches blocked). The first run after an install can hit the
+profile picker (D136) — press B first.
 Popup audit: `sh /data/local/tmp/vqa/popaudit.sh TAG "LAYOUTS" "STYLES" [960x640]` between snapshot save / restore + preview false;
 the GT78 needs `usekey`; it stops when a game starts — close the emulator WITHOUT saving (Dolphin: Exit Emulation; RetroArch: Close
 Content / force-stop at the title screen). QA traps: stills.sh / layouts.sh end with `hooks off`; the GT78 needs `usekey` and NOCAT=1; after an install / restart both

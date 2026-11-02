@@ -74,6 +74,9 @@ import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
@@ -239,6 +242,10 @@ internal fun GlanceWindow(
         // The window's own corner on the screen: the row's places are kept in screen terms (GlanceOrigin.onScreen).
         var rootAt by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
         BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { rootAt = it.positionOnScreen() }.pointerInput(Unit) { detectTapGestures { close() } }) {
+            // (v0.6.66 popup review: on the whole-screen layouts — Disc station, Cinema, Arctic, Cross menu… — nothing of the
+            // layout steps aside, so its own title and panels showed through the window's words, the title twice. A shade
+            // over the layout, as deep as the move, keeps the window readable; the classic rows still step aside as before.)
+            if (state.appearance.homeLayout.styleHome) Spacer(Modifier.fillMaxSize().drawBehind { drawRect(Color.Black.copy(alpha = 0.8f * leave.value)) })
             val shift = rootAt ?: androidx.compose.ui.geometry.Offset.Zero
             val srcName = srcName0?.let { if (fromRow) it.translate(-shift.x, -shift.y) else it }
             val srcChip = srcChip0?.translate(-shift.x, -shift.y)
@@ -416,11 +423,26 @@ internal fun GlanceWindow(
                 if (facts.isNotEmpty()) Text(facts.joinToString("  ·  "), color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 meta?.summary?.takeIf { it.isNotBlank() }?.let {
                     Spacer(Modifier.height(8.dp))
-                    val room = H - restY - with(d) { 40.dp.toPx() }
-                    Text(
-                        it, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 1.45.em,
-                        maxLines = (room / with(d) { 19.dp.toPx() }).toInt().coerceIn(1, 5), overflow = TextOverflow.Ellipsis
-                    )
+                    // (v0.6.66 popup review: on the GT78 the "max lines" guess ignored the facts line above, so the story ran
+                    // off the bottom of the screen, and it ended in "…" (rule 11). It now has exactly the room left — at most
+                    // 5 lines — and pans slowly through the rest, as Hero's paragraphs do.)
+                    val room = (H - restY - with(d) { 64.dp.toPx() }).coerceAtLeast(with(d) { 19.dp.toPx() })
+                    val boxH = with(d) { minOf(room, 5 * 19.dp.toPx()).toDp() }
+                    val story = androidx.compose.foundation.rememberScrollState()
+                    LaunchedEffect(it, story.maxValue) {
+                        story.scrollTo(0)
+                        if (story.maxValue <= 0) return@LaunchedEffect
+                        while (true) {
+                            delay(2800)
+                            if (HomeIdle.calm) break
+                            story.animateScrollTo(story.maxValue, tween((story.maxValue * 28).coerceIn(1200, 9000), easing = LinearEasing))
+                            delay(2200)
+                            story.animateScrollTo(0, tween(600))
+                        }
+                    }
+                    Box(Modifier.heightIn(max = boxH).verticalScroll(story)) {
+                        Text(it, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 1.45.em)
+                    }
                 }
             }
         }

@@ -162,6 +162,7 @@ private fun part(p: Float, from: Float, to: Float) = ((p - from) / (to - from)).
  * The game window as a move of the home screen ([style]); false when it can't be drawn here (no place for the game on
  * this screen), so the caller shows the usual window.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 internal fun RowMotionWindow(
     style: Features.WinMotion,
@@ -317,6 +318,14 @@ internal fun RowMotionWindow(
             } else {
                 // The art stays; the home screen deepens its own shade under its rows (RowRevealShade), so the game you're
                 // on stays bright over it. Here only a little more behind the words, never reaching the game.
+                // (v0.6.66 popup review: a whole-screen layout draws no RowRevealShade and its own title sat under the window's —
+                // the name twice on Cinema / Arctic / Cross menu / Disc station. There the shade covers everything but the game.)
+                if (state.appearance.homeLayout.styleHome) Canvas(Modifier.fillMaxSize()) {
+                    val t = p.value
+                    clipRect(c.left - 6f, c.top - 6f, c.right + 6f, c.bottom + 6f, clipOp = androidx.compose.ui.graphics.ClipOp.Difference) {
+                        drawRect(Color.Black.copy(alpha = 0.8f * t))
+                    }
+                }
                 Canvas(Modifier.fillMaxSize()) {
                     val t = p.value
                     val keep = with(d) { 10.dp.toPx() }
@@ -333,12 +342,18 @@ internal fun RowMotionWindow(
             // Row reveal: the cover doesn't move; the name rises from above it to the top, the buttons slide down into
             // the row beside it.
             val coverEnd: Rect = if (opens) {
-                val h = (H * if (narrow) 0.42f else 0.56f)
-                val w = h * (c.width / c.height)
+                // (v0.6.66 popup review: a wide card — Cinema's, the Channel grid's — grew into a cover wider than half the screen
+                // and pushed the text and buttons off its right edge. At most 42 % of the width now, its own shape kept.)
+                var h = (H * if (narrow) 0.42f else 0.56f)
+                val aspect = c.width / c.height
+                var w = h * aspect
+                val maxW = W * 0.42f
+                if (w > maxW) { w = maxW; h = w / aspect }
                 Rect(pad, topY + with(d) { 8.dp.toPx() }, pad + w, topY + with(d) { 8.dp.toPx() } + h)
             } else c
             val textLeft = if (opens) coverEnd.right + with(d) { 28.dp.toPx() } else pad
-            val textW = (W - textLeft - pad).coerceAtLeast(with(d) { 200.dp.toPx() })
+            // (v0.6.66: never wider than the room that is really left — the 200 dp floor ran the text off a small screen.)
+            val textW = (W - textLeft - pad).coerceAtLeast(with(d) { 120.dp.toPx() })
 
             var titleSize by remember { mutableStateOf(IntSize.Zero) }
             var buttonsSize by remember { mutableStateOf(IntSize.Zero) }
@@ -348,7 +363,8 @@ internal fun RowMotionWindow(
             val titleTo = if (opens) Offset(textLeft, coverEnd.top) else Offset(pad, topY)
             val buttonsFrom = if (opens) Offset(textLeft, coverEnd.bottom - buttonsSize.height + with(d) { 26.dp.toPx() })
                 else Offset(c.left, (c.top - gap - buttonsSize.height).coerceAtLeast(topY))
-            val buttonsTo = if (opens) Offset(textLeft, coverEnd.bottom - buttonsSize.height)
+            // (v0.6.66: a short cover — a wide card's — left the wrapped buttons over the name: never above the name's line.)
+            val buttonsTo = if (opens) Offset(textLeft, maxOf(coverEnd.bottom - buttonsSize.height, titleTo.y + titleSize.height + with(d) { 12.dp.toPx() }))
                 else if (c.right + with(d) { 24.dp.toPx() } + buttonsSize.width <= W - pad) Offset(c.right + with(d) { 24.dp.toPx() }, c.center.y - buttonsSize.height / 2f)
                 // (No room beside the game: under it, or over it when it's at the bottom edge.)
                 else Offset(pad, if (c.bottom + gap + buttonsSize.height <= H - gap) c.bottom + gap else c.top - gap - buttonsSize.height)
@@ -446,8 +462,10 @@ internal fun RowMotionWindow(
             }
 
             // ---- Play / Continue and the buttons ----
-            Row(
+            androidx.compose.foundation.layout.FlowRow(
                 Modifier
+                    // (v0.6.66: the buttons wrap onto a second line inside the text column instead of running off the screen.)
+                    .widthIn(max = with(d) { (if (opens) textW else W - 2 * pad).toDp() })
                     .onSizeChanged { buttonsSize = it }
                     .onFocusChanged { buttonsFocused.value = it.hasFocus }
                     .graphicsLayer {
@@ -456,7 +474,7 @@ internal fun RowMotionWindow(
                         translationY = lerpF(buttonsFrom.y, buttonsTo.y, t)
                         alpha = if (buttonsSize == IntSize.Zero) 0f else if (opens) part(t, 0.4f, 0.9f) else part(t, 0f, 0.35f)
                     },
-                horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 RevealButton(if (resumed) "▶  Continue" else "▶  Play", main = true, accent = accent, onAccent = onAccent, modifier = Modifier.focusRequester(playFocus)) {
                     live { RowReveal.reset(); onPlay() }

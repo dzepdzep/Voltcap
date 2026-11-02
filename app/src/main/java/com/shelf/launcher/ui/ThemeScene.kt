@@ -109,7 +109,9 @@ internal fun CodeScene(motif: ThemeMotif, colors: ShelfColors, modifier: Modifie
     // Static themes are one still picture: drawn once, no clock at all. (Update 126: calm ones run at the full rate too.)
     // A music-reactive scene keeps moving the whole time music plays (never frozen by Lite / a window on top).
     val musicOn = motif.reactive && MusicTheme.nowPlaying?.isPlaying == true
-    val active = !motif.still && rememberIsActive() && (musicOn || (rememberAnimationsEnabled() && !liteStill && !LocalSceneCovered.current))
+    // (v0.6.66, D137: the scene holds its frame while a 3D carousel glides — BackdropHold — so each frame of the move redraws the
+    // stage only, not the scene and the stage; it goes on from where it was the moment the glide stops. Music scenes never hold.)
+    val active = !motif.still && rememberIsActive() && (musicOn || (rememberAnimationsEnabled() && !liteStill && !LocalSceneCovered.current && !BackdropHold.gliding.value))
     val time = remember { mutableFloatStateOf(STILL_FRAME_TIME) }
     val tuning = LocalSceneTuning.current
     // A custom theme pack runs at up to ~60 fps (30 once it proved heavy) and is watched by PackGuard.

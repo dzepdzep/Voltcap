@@ -99,8 +99,11 @@ internal fun ShelfGameArt(
     g: Game, on: Boolean, cardArtType: com.shelf.launcher.data.CardArtType,
     art: Map<String, GameArt>, overrides: Map<String, ArtOverride>,
     physicalMedia: Map<String, List<Pair<String, String>>>, screenshots: Map<String, List<String>>,
-    spines: Boolean, mixed: Boolean, realRef: RealCaseRef?, pulse: Float, modifier: Modifier
+    spines: Boolean, mixed: Boolean, realRef: RealCaseRef?, pulse: Float, modifier: Modifier,
+    /** v0.6.66 (D137): the pulse as a state, read only while drawing the glow (a Float re-composed the card 20×/s). */
+    pulseState: androidx.compose.runtime.State<Float>? = null
 ) {
+    val glowK: () -> Float = if (pulseState != null) ({ 0.5f + 0.5f * pulseState.value }) else ({ 0.5f + 0.5f * pulse })
     val look = LocalCardLook.current
     EnsureUserCovers() // (Update 235, #24: the covers you picked, for typedArtFor / CaseArt)
     val frameOn = on && look.focusBorder
@@ -108,7 +111,7 @@ internal fun ShelfGameArt(
     val cover = overrides[g.stableKey]?.cover ?: art[g.stableKey]?.gridUrl
     val gArt = artForGame(cardArtType, g.platform, LocalHiddenMedia.current, mixed, gameKey = g.stableKey)
     val frame = Modifier
-        .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 2.dp, 0.5f + 0.5f * pulse) else Modifier)
+        .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 2.dp, glowK) else Modifier)
         .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, RoundedCornerShape(2.dp)) else Modifier)
     val cov = MediaCovers.used(g.platform, mixed)
     if (isFreeMedia(gArt, g.platform)) {
@@ -155,7 +158,7 @@ internal fun ShelfGameArt(
         val shape = RoundedCornerShape(6.dp)
         Box(
             modifier
-                .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 6.dp, 0.5f + 0.5f * pulse) else Modifier)
+                .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 6.dp, glowK) else Modifier)
                 .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, shape) else Modifier)
                 .clip(shape)
                 .background(placeholderBrush(g.hue))
@@ -185,7 +188,7 @@ internal fun ShelfGameArt(
         Box(
             // Plain cover filling the slot (the same size for every game).
             modifier
-                .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 4.dp, 0.5f + 0.5f * pulse) else Modifier)
+                .then(if (glowOn) Modifier.softGlow(ShelfTheme.accent, 4.dp, glowK) else Modifier)
                 .then(if (frameOn) Modifier.border(2.5.dp, ShelfTheme.accent, shape) else Modifier)
                 .clip(shape)
                 .background(placeholderBrush(g.hue))
@@ -908,6 +911,12 @@ internal fun GameCarousel(
     val curPos: () -> Float = remember { { val v = glide.pos.value; if (swap.snapPending) swap.snapTo else v } }
     // (Update 317: whether the row is gliding — the turned cartridges draw their sides lighter meanwhile, PieceTurn.movingOf.)
     val movingNow: () -> Boolean = remember { { glide.pos.isRunning } }
+    // (v0.6.66, D137: the background scene holds still while the 3D row glides — BackdropHold, read by ThemeScene.)
+    val glidingNow = glide.pos.isRunning
+    androidx.compose.runtime.DisposableEffect(glidingNow) {
+        BackdropHold.gliding.value = glidingNow
+        onDispose { if (glidingNow) BackdropHold.gliding.value = false }
+    }
     val kNow: () -> Float = remember { { val v = swap.k.value; if (swap.kPending) 0f else v } }
     // Which games are near enough to draw changes only once per game passed (not every frame).
     val posFloor by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(curPos()).toInt() } }
@@ -1893,7 +1902,9 @@ private fun CarouselArt(
     pieceTurn: PieceTurn? = null
 ) {
     // Update 162: the focus pulse only for the game you're on (it used to recompose the whole carousel).
-    val pulse = if (on) rememberFocusPulse(animate = pulseOn) else 0f
+    // (v0.6.66, D137: as a state read while drawing — read here it re-composed the focused game 20 times a second, and with it
+    // a redraw of the whole 3D carousel on the GT78, idle or not.)
+    val pulseSt = if (on) rememberFocusPulseState(animate = pulseOn) else null
     // Update 162: the shade follows the moving place while drawing; only whether there is one is decided here.
     val shadeNow = rememberUpdatedState(shadeOf)
     val shaded by remember { androidx.compose.runtime.derivedStateOf { shadeNow.value() > 0.01f } }
@@ -1916,7 +1927,7 @@ private fun CarouselArt(
             )
         ) {
             if (spineHere) GameSpine(g, physicalMedia[g.stableKey], Modifier.fillMaxSize())
-            else ShelfGameArt(g, on, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = pulse, modifier = Modifier.fillMaxSize())
+            else ShelfGameArt(g, on, cardArtType, art, overrides, physicalMedia, screenshots, spines = false, mixed = mixed, realRef = realRef, pulse = 0.75f, modifier = Modifier.fillMaxSize(), pulseState = pulseSt)
         }
         // A reflection on a glossy floor under it (update 104, Settings › Carousel look).
         // (Update 325, Thor recording with it on: still ~240 ms a frame — each game's reflection faded out through a buffer of
@@ -1934,4 +1945,9 @@ private fun CarouselArt(
             }
         }
     }
+}
+
+/** v0.6.66 (D137): a 3D carousel is gliding — the animated background scene holds its frame meanwhile (ThemeScene). */
+internal object BackdropHold {
+    val gliding = androidx.compose.runtime.mutableStateOf(false)
 }
