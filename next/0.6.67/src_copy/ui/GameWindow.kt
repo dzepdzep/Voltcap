@@ -997,7 +997,7 @@ internal fun GameWindow(
     // From the banner page and Game Glance it opens this window with the piece out.
     var askedInspect by remember(g.stableKey) { mutableStateOf(false) }
     val inspectOther: (() -> Unit)? = if (g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
-        MediaInspect.testShell = null; MediaInspect.testPose = null
+        MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
         MediaInspect.force = g.stableKey
         askedInspect = true
     }) else null
@@ -1160,7 +1160,7 @@ internal fun GameWindow(
             if (motion.started) { MediaInspect.amount.floatValue = 0f; MediaInspect.hold.value = false }
             if (MediaInspect.key == k) MediaInspect.key = null
             // (Update 274: the menu's Inspect… is for this opening only — unless a newer one was asked for meanwhile.)
-            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null }
+            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null }
         }
     }
     androidx.compose.ui.window.Dialog(
@@ -1251,7 +1251,7 @@ internal fun GameWindow(
             onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null,
             // (Update 285: only while no piece is out — not for apps, nor on the TV room's set / from the other screen.)
             onInspect = if (piece == null && tvRect == null && g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
-                MediaInspect.testShell = null; MediaInspect.testPose = null
+                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
                 MediaInspect.force = g.stableKey
                 askedInspect = true
             }) else null

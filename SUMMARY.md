@@ -1,3 +1,30 @@
+# Update 462b (3 Nov 2026) — PhotoShells verified on the real home screen, turned pieces now match the real photo's sides and back, comparison sheet with Brown
+
+**Device:** KONKR Pocket GT78 (USB), v0.6.67 staging installed for the tests only (devices were on the RC), back on the RC at the end.
+Settings untouched: preview / session-only hooks, snapshot saved and restored.
+**1. Is PhotoShells really used? (new QA trace `VoltcapQA mediasrc`, src462.sh, Pocket Quest home, cartridge look):** yes —
+Fool's Gold, Prism, Crystal Kaizo, Gold 97 Reforged = PHOTOSHELL on the clear Color-only pak (an official clear pak photo from the
+library); Silver, Crystal, Gold and the other official games = their REAL photo; Crystal Clear / BW3 Genesis (hacks with their own
+ScreenScraper cartridge photo) = REAL photo; no custom models on these games. Only fallback seen: PROCEDURAL in the first seconds
+after the very first start ("photos still being looked at") — the findings are now remembered across starts (prefs `photo_shells`,
+checked against the photo list). Table: tools/qa/MEDIA_SOURCES_462b.md; KONKR Pocket Quest shots qa462/qa462b_pocketquest.png.
+**2./3. Turned:** the photo-made pieces' sides and back were the drawn shell's grey / material (Silver's back light and shiny,
+the real one grey) → now read off the photo's edge exactly as the real photo's are and tinted like the front (PhotoShells.sideTone,
+rememberShellSolid + Inspect). KONKR: Silver real vs Silver PhotoShells identical at front / 45 / 75 / 90 / back. Continuous rotation
+and the D175 GBA side fixes untouched (same solidPiece / Inspect drawing). Still approximate for real AND made pieces alike: 90° is a
+slab of the shell's thickness, the back is the researched drawn back in the photo's plastic (no side / back photos exist).
+**4. Sheet (KONKR, Inspect, identical crops, front / 45 / 75 / 90 / back):** qa462/qa462b_cart_sheet.png — Silver real, Silver
+PhotoShells, Fool's Gold (clear Color pak, own label), Pokémon Brown (grey Game Boy pak, own label; Brown is not on the devices: its art
+and name put on another game for the shot with a new session-only Inspect hook field, nothing saved), Prism (clear Color pak), Crystal
+real as the clear-pak reference. Clear paks: all use the one colourless clear photo found (a real clear game keeps its own tint).
+**5. Other systems:** not extended (waiting for your OK on this sheet). The mechanism needs only the shell's sticker place; the
+libraries scanned earlier have official cartridge photos for N64, SNES, NES, Mega Drive, DS, 3DS, Switch. Custom-design systems
+(no real cartridge) stay as they are.
+**Tests:** testDebugUnitTest green (PC); assembleRelease OK. **Files:** PhotoShells.kt (why, sideTone, MediaTrace, saved findings),
+CartShells.kt (trace), PhysicalMedia.kt (trace), SolidPiece.kt (photo sides / back), MediaInspectView.kt (photo sides / back, QA
+art + name), MediaInspect.kt, LauncherScreen.kt (Inspect hook fields 5 / 6), GameWindow.kt + StyleCardboardBox.kt (clear them).
+QA: device/src462.sh, sheet462b.sh, MEDIA_SOURCES_462b.md.
+
 # Update 462 (3 Nov 2026) — global controller contract (53 layouts), themed category pickers, photo-made Game Boy paks from your own cartridge photos
 
 **Devices (USB):** KONKR Pocket GT78 BW0306N230000845 (all hardware checks below), Odin 2 Portal b92036fb (identified only). Thor / RP

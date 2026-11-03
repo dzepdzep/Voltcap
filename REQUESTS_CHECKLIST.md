@@ -3,6 +3,16 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 462b (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Verify PhotoShells is used in staging (not the RC) | DONE (KONKR) | mediasrc trace + Pocket Quest shots; table MEDIA_SOURCES_462b.md |
+| Record real scan / PhotoShells / procedural / custom model + fallback reason | DONE | trace reasons; only fallback = first-start analysis, now remembered |
+| Same plastic, lettering, texture, ridges, recess, edges, shading; only sticker changes | DONE for GB / GBC / GBA fronts | Silver real vs PhotoShells identical |
+| Rotation mismatch (drawn back / sides) | FIXED where it differed | sides + back now from the photo's plastic; 90° slab + drawn back approximate for real and made alike |
+| Sheet: Silver real, Silver PhotoShells, Fool's Gold, Brown, Prism; front/45/75/90/back | DONE | qa462b_cart_sheet.png (Brown via session-only art override, not on devices) |
+| Extend to N64 / SNES / NES / Sega / DS / 3DS / Switch | WAITING for your OK | not changed |
+
 ## Update 462 (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

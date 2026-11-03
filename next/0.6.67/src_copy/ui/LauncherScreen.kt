@@ -1000,6 +1000,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         kotlinx.coroutines.delay(400)
         MediaInspect.testShell = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
         MediaInspect.testPose = floatArrayOf(parts.getOrNull(2)?.toFloatOrNull() ?: 0f, parts.getOrNull(3)?.toFloatOrNull() ?: 0f)
+        // (Update 462b: "…|/sdcard/art.png|Shown name" — that picture as its cover and that name, this time only, nothing saved.)
+        MediaInspect.testArt = parts.getOrNull(4)?.takeIf { it.isNotBlank() }?.let { java.io.File(it).takeIf { f -> f.exists() }?.toURI()?.toString() }
+        MediaInspect.testTitle = parts.getOrNull(5)?.takeIf { it.isNotBlank() }?.replace('_', ' ')
         MediaInspect.forceSeq++
         MediaInspect.force = g.stableKey
         GamePopup.game = g
@@ -1323,7 +1326,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // the look draws — as the menu's Inspect….)
             DetailsAction.INSPECT -> if (game.sourceType != com.shelf.launcher.data.SourceType.APP) {
                 showDetails = false
-                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
+                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
                 GamePopup.game = game
             }
             DetailsAction.CLOSE -> showDetails = false
@@ -5048,7 +5051,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
             onDsCase = if (game.platform == "NDS") ({ optionsForGame = null; dsCaseForGame = game }) else null,
             onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
-                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
+                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
             onShowDetails = {
                 optionsForGame = null
                 if (!showDetails) openDetails()

@@ -1109,12 +1109,15 @@ internal object CartShells {
         packColourParts(key)?.let { (look, clear, con) ->
             val colour = colourOf(s, key)
             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+            MediaTrace.note(title, "CUSTOM MODEL pack ${look.key} on ${s.id}")
             CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
         }
         val colour = colourOf(s, key)
         val drawn = front(s, colour, art, brand, title, maxPx, scan)
         // (Update 462: the same label on a real cartridge photo of this shell, when your library has one — PhotoShells.)
-        return photoFront(s, colour, drawn) ?: drawn
+        val photo = photoFront(s, colour, drawn)
+        MediaTrace.note(title, "drawn shell ${s.id}~${colour.key} ${if (photo != null) "PHOTOSHELL " + PhotoShells.why(s, colour) else "PROCEDURAL " + PhotoShells.why(s, colour)}${if (scan) " label=scan" else ""}")
+        return photo ?: drawn
     }
 
     private val photoCache = android.util.LruCache<Bitmap, Bitmap>(12)
@@ -1663,6 +1666,7 @@ internal fun CartShellArt(
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
     if (packLook != null) {
+        MediaTrace.note(title, "CUSTOM MODEL pack shape ${packLook.key}")
         // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
         // its finished front, as the drawn shells do.)
         PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)

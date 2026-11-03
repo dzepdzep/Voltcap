@@ -31,6 +31,10 @@ class PhotoShells462Test {
 
     @Test fun wiredIntoTheDrawnShells() {
         val s = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, "CartShells.kt").exists() }, "CartShells.kt").readText()
-        assertTrue(s.contains("return photoFront(s, colour, drawn) ?: drawn"))
+        assertTrue(s.contains("val photo = photoFront(s, colour, drawn)") && s.contains("return photo ?: drawn"))
+        // (462b: turned, a photo-made piece's sides and back come from its photo's plastic, as the real photo's do.)
+        fun ui(n: String) = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, n).exists() }, n).readText()
+        assertTrue(ui("SolidPiece.kt").contains("PhotoShells.sideTone(sh, colour)"))
+        assertTrue(ui("MediaInspectView.kt").contains("PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey))"))
     }
 }

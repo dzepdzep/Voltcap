@@ -143,7 +143,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
     // (Update 228, #36: a pack shape picked in the shell picker turned with the pack picture's own plastic on its sides
     // and back — it was grey, whatever its colour.)
     val packTone = rememberCustomPieceTone(pickPlatform)
-    return remember(pickPlatform, backStyle, packTone) {
+    // (Update 462b: a photo-made front's sides and back in its photo's plastic — PhotoShells.sideTone.)
+    val photoV = PhotoShells.version.intValue
+    return remember(pickPlatform, backStyle, packTone, photoV) {
         val (choice, console) = CartShells.split(pickPlatform)
         val sh = choice?.shell
         when {
@@ -159,6 +161,15 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
             } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
+                // (Update 462b: made from a real photo — turned exactly as the real photo is: opaque sides in the photo's own
+                // edge plastic, the researched back in that plastic, cut to the face — rememberPhotoSolid.)
+                val photoTone = if (choice.pack == null) PhotoShells.sideTone(sh, colour) else null
+                if (photoTone != null) {
+                    val pc = ShellColour("photo:$photoTone", colour.name, photoTone, colour.opacity)
+                    return@remember SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(photoTone), back = {
+                        runCatching { CartShells.backFor(sh, pc, 480, console, backStyle).asImageBitmap() }.getOrNull()
+                    }, fitBackToFace = true)
+                }
                 // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
                 // (Update 306: another console's game on this shell has its own console's name on the back — backFor.)
                 SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {

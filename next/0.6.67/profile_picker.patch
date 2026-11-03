@@ -1652,7 +1652,7 @@ index 2784a37..b9286ca 100644
              Canvas(Modifier.fillMaxSize()) {
                  drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..242c4d3 100644
+index fad25ce..25d8776 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 @@ -635,6 +635,67 @@ internal object CartShells {
@@ -1800,15 +1800,20 @@ index fad25ce..242c4d3 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -1023,7 +1111,19 @@ internal object CartShells {
+@@ -1021,9 +1109,24 @@ internal object CartShells {
+         packColourParts(key)?.let { (look, clear, con) ->
+             val colour = colourOf(s, key)
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
++            MediaTrace.note(title, "CUSTOM MODEL pack ${look.key} on ${s.id}")
              CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
          }
 -        return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
 +        val colour = colourOf(s, key)
 +        val drawn = front(s, colour, art, brand, title, maxPx, scan)
 +        // (Update 462: the same label on a real cartridge photo of this shell, when your library has one — PhotoShells.)
-+        return photoFront(s, colour, drawn) ?: drawn
++        val photo = photoFront(s, colour, drawn)
++        MediaTrace.note(title, "drawn shell ${s.id}~${colour.key} ${if (photo != null) "PHOTOSHELL " + PhotoShells.why(s, colour) else "PROCEDURAL " + PhotoShells.why(s, colour)}${if (scan) " label=scan" else ""}")
++        return photo ?: drawn
 +    }
 +
 +    private val photoCache = android.util.LruCache<Bitmap, Bitmap>(12)
@@ -1821,7 +1826,7 @@ index fad25ce..242c4d3 100644
      }
  
      /**
-@@ -1036,7 +1136,10 @@ internal object CartShells {
+@@ -1036,7 +1139,10 @@ internal object CartShells {
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
              return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
          }
@@ -1833,7 +1838,7 @@ index fad25ce..242c4d3 100644
      }
  
      /**
-@@ -1159,27 +1262,6 @@ internal object CartShells {
+@@ -1159,27 +1265,6 @@ internal object CartShells {
          return b
      }
  
@@ -1861,7 +1866,15 @@ index fad25ce..242c4d3 100644
  
      /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
      private fun paperStrip(brand: String): Bitmap {
-@@ -1606,16 +1688,18 @@ internal fun CartShellArt(
+@@ -1581,6 +1666,7 @@ internal fun CartShellArt(
+     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
+     // pre-rendered pictures.)
+     if (packLook != null) {
++        MediaTrace.note(title, "CUSTOM MODEL pack shape ${packLook.key}")
+         // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
+         // its finished front, as the drawn shells do.)
+         PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)
+@@ -1606,16 +1692,18 @@ internal fun CartShellArt(
          // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
          // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
          // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
@@ -2299,7 +2312,7 @@ index 5cf86a6..920f03a 100644
      // Loose " - Widescreen Hack" / " + 60 FPS Patch" style suffixes too.
      val noSuffix = cleaned.replace(PATCH_SUFFIX, "").replace(LOOSE_SUFFIX, "")
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 3ce9e16..7bc8b6e 100644
+index 3ce9e16..48dcbf1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -46,6 +46,8 @@ import androidx.compose.foundation.rememberScrollState
@@ -2355,6 +2368,24 @@ index 3ce9e16..7bc8b6e 100644
      }
      // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
      val perfState = rememberGamePerf(g, perfPackage)
+@@ -972,7 +997,7 @@ internal fun GameWindow(
+     // From the banner page and Game Glance it opens this window with the piece out.
+     var askedInspect by remember(g.stableKey) { mutableStateOf(false) }
+     val inspectOther: (() -> Unit)? = if (g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
+-        MediaInspect.testShell = null; MediaInspect.testPose = null
++        MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
+         MediaInspect.force = g.stableKey
+         askedInspect = true
+     }) else null
+@@ -1135,7 +1160,7 @@ internal fun GameWindow(
+             if (motion.started) { MediaInspect.amount.floatValue = 0f; MediaInspect.hold.value = false }
+             if (MediaInspect.key == k) MediaInspect.key = null
+             // (Update 274: the menu's Inspect… is for this opening only — unless a newer one was asked for meanwhile.)
+-            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null }
++            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null }
+         }
+     }
+     androidx.compose.ui.window.Dialog(
 @@ -1151,7 +1176,7 @@ internal fun GameWindow(
              // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is
              // then the home screen's orphan (HomeKeyGuard), never a Play click in the window that opens again.
@@ -2375,6 +2406,15 @@ index 3ce9e16..7bc8b6e 100644
                  return@onPreviewKeyEvent true
              }
              if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
+@@ -1226,7 +1251,7 @@ internal fun GameWindow(
+             onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null,
+             // (Update 285: only while no piece is out — not for apps, nor on the TV room's set / from the other screen.)
+             onInspect = if (piece == null && tvRect == null && g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
+-                MediaInspect.testShell = null; MediaInspect.testPose = null
++                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
+                 MediaInspect.force = g.stableKey
+                 askedInspect = true
+             }) else null
 @@ -2117,11 +2142,26 @@ private fun SceneBody(
          kotlinx.coroutines.delay(120)
          runCatching { f.requestFocus() }
@@ -3052,7 +3092,7 @@ index 0000000..8e4cf6e
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..c953556 100644
+index 0b73fb5..e98ba56 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -3125,7 +3165,17 @@ index 0b73fb5..c953556 100644
      // Update 274 (testing): a game's piece out on a given shell, held at an angle (TestHooks.inspect).
      val testInspect = TestHooks.inspect.value
      LaunchedEffect(testInspect, state.games.size) {
-@@ -1018,14 +1067,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -951,6 +1000,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         kotlinx.coroutines.delay(400)
+         MediaInspect.testShell = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+         MediaInspect.testPose = floatArrayOf(parts.getOrNull(2)?.toFloatOrNull() ?: 0f, parts.getOrNull(3)?.toFloatOrNull() ?: 0f)
++        // (Update 462b: "…|/sdcard/art.png|Shown name" — that picture as its cover and that name, this time only, nothing saved.)
++        MediaInspect.testArt = parts.getOrNull(4)?.takeIf { it.isNotBlank() }?.let { java.io.File(it).takeIf { f -> f.exists() }?.toURI()?.toString() }
++        MediaInspect.testTitle = parts.getOrNull(5)?.takeIf { it.isNotBlank() }?.replace('_', ' ')
+         MediaInspect.forceSeq++
+         MediaInspect.force = g.stableKey
+         GamePopup.game = g
+@@ -1018,14 +1070,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          }
      }
      // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
@@ -3153,7 +3203,16 @@ index 0b73fb5..c953556 100644
          TestHooks.category.value = null
      }
      // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
-@@ -1372,6 +1432,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1263,7 +1326,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+             // the look draws — as the menu's Inspect….)
+             DetailsAction.INSPECT -> if (game.sourceType != com.shelf.launcher.data.SourceType.APP) {
+                 showDetails = false
+-                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
++                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
+                 GamePopup.game = game
+             }
+             DetailsAction.CLOSE -> showDetails = false
+@@ -1372,6 +1435,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          else -> "ALL"
      }
      fun openCategoryScreen() {
@@ -3162,7 +3221,7 @@ index 0b73fb5..c953556 100644
          val current = currentCategoryKey
          categoryIndex = categoryTiles.indexOfFirst { it.key == current }.coerceAtLeast(0)
          categoryScreenOpen = true
-@@ -1433,6 +1495,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1433,6 +1498,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
      }
      LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) { CategoryReorder.stop(); CategoryHeader.leave() } }
@@ -3174,7 +3233,7 @@ index 0b73fb5..c953556 100644
  
      // The random-game button: go to that category, then pick from it once the games are showing.
      fun randomFromBrowser() {
-@@ -1596,7 +1663,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1596,7 +1666,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // Power saving while nobody touches the handheld (Appearance › Behind the dock › Save power when idle).
      SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
      LaunchedWhileActive { HomeIdle.watch() }
@@ -3183,7 +3242,7 @@ index 0b73fb5..c953556 100644
      BatterySaverDriver() // (Update 187)
      // Only while on screen: no screensaver during a game or with the display off.
      val screensaverActive = rememberIsActive()
-@@ -2340,6 +2407,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2340,6 +2410,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      menuStartCategory = e?.section ?: "Screens"; showMenu = true
                  },
                  onShortcut = dockShortcut,
@@ -3194,7 +3253,7 @@ index 0b73fb5..c953556 100644
                  options = SecondScreenOptions(
                      artType = state.appearance.secondArtType,
                      artBlur = state.appearance.secondArtBlur,
-@@ -2397,8 +2468,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2397,8 +2471,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      ) {
          Box(Modifier.fillMaxSize()) {
              SecondScreenContent()
@@ -3210,7 +3269,7 @@ index 0b73fb5..c953556 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -2883,6 +2959,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2883,6 +2962,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              com.shelf.launcher.data.Features.discCalm.state.value
          val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
              showAppsLibrary || showAppDrawer || showFirstRun)
@@ -3225,7 +3284,7 @@ index 0b73fb5..c953556 100644
          // The second screen only gets the scene while the animated background is on.
          if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
          // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
-@@ -3001,7 +3085,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3001,7 +3088,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      }
                      androidx.compose.runtime.CompositionLocalProvider(
                          LocalSceneAvoid provides sceneAvoid,
@@ -3235,7 +3294,7 @@ index 0b73fb5..c953556 100644
                          LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                          // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                          LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
-@@ -3142,7 +3227,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3142,7 +3230,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              if (wantsCrt) CrtArtOverlay(glow)
              if (ambience != null) GameAmbienceLayer(
                  ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
@@ -3244,7 +3303,7 @@ index 0b73fb5..c953556 100644
              )
          }
  
-@@ -3211,7 +3296,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3211,7 +3299,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  val total = p.NumPossibleAchievements ?: 0
                  if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
              }
@@ -3253,7 +3312,7 @@ index 0b73fb5..c953556 100644
          }
  
          // Video preview: rest on a game for two seconds and its clip fades in.
-@@ -3256,7 +3341,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3256,7 +3344,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -3262,7 +3321,7 @@ index 0b73fb5..c953556 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3296,7 +3381,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3296,7 +3384,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -3271,7 +3330,7 @@ index 0b73fb5..c953556 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -3738,6 +3823,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3738,6 +3826,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                  when (state.appearance.categoryBarHere) {
                      com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
@@ -3285,7 +3344,16 @@ index 0b73fb5..c953556 100644
                          bottomGap = state.appearance.infoSpacing.dp.dp,
                          platforms = state.availablePlatforms,
                          order = state.categoryOrder,
-@@ -4996,7 +5088,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4956,7 +5051,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+             // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
+             onDsCase = if (game.platform == "NDS") ({ optionsForGame = null; dsCaseForGame = game }) else null,
+             onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
+-                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
++                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
+             onShowDetails = {
+                 optionsForGame = null
+                 if (!showDetails) openDetails()
+@@ -4996,7 +5091,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -3300,7 +3368,7 @@ index 0b73fb5..c953556 100644
          )
      }
  
-@@ -6014,7 +6112,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6115,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -3313,7 +3381,7 @@ index 0b73fb5..c953556 100644
          )
      }
  
-@@ -6169,6 +6271,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6169,6 +6274,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              .onPreviewKeyEvent { event ->
                  lastInputAt = System.currentTimeMillis()
                  // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
@@ -3328,7 +3396,7 @@ index 0b73fb5..c953556 100644
                  HomeKeyGuard.trackA(event.key, event.type)
                  if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                  when {
-@@ -6242,6 +6352,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6242,6 +6355,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                  // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                  // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
@@ -3343,7 +3411,7 @@ index 0b73fb5..c953556 100644
                  if (event.key == Key.ButtonB || event.key == Key.Back) {
                      if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                      else if (event.type == KeyEventType.KeyUp) {
-@@ -7252,6 +7370,8 @@ internal object HomeKeyGuard {
+@@ -7252,6 +7373,8 @@ internal object HomeKeyGuard {
       * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
       */
      @Volatile var aDown = false
@@ -3352,7 +3420,7 @@ index 0b73fb5..c953556 100644
      fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
          k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
              k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
-@@ -7263,3 +7383,21 @@ internal object HomeKeyGuard {
+@@ -7263,3 +7386,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -3374,8 +3442,22 @@ index 0b73fb5..c953556 100644
 +    val fg = androidx.compose.runtime.remember(game.stableKey, state.lastPlayedAt[game.stableKey]) { viewModel.continueForeground()[game.packageName] }
 +    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspect.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspect.kt
+index eac242c..e923f28 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/MediaInspect.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspect.kt
+@@ -51,6 +51,9 @@ internal object MediaInspect {
+ 
+     /** Update 274, testing only (TestHooks `voltcap_test_inspect`): the forced piece on this library shell, held at [testPose]. */
+     @Volatile var testShell: String? = null
++    /** Update 462b, testing only: a picture file used as the forced piece's cover and the name printed on it (nothing saved). */
++    @Volatile var testArt: String? = null
++    @Volatile var testTitle: String? = null
+     /** Update 274, testing only: yaw, pitch (degrees) to hold the piece at — no turn once round, no sway. */
+     @Volatile var testPose: FloatArray? = null
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..549ee6f 100644
+index 145a2a2..410437a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 @@ -470,6 +470,13 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
@@ -3392,7 +3474,7 @@ index 145a2a2..549ee6f 100644
          // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
          if (id.startsWith("pack:") || id.startsWith("cc:")) {
              val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
-@@ -480,10 +487,14 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+@@ -480,10 +487,17 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
              return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
                  CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
          }
@@ -3404,12 +3486,55 @@ index 145a2a2..549ee6f 100644
 -        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
 +        // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
 +        // only, so update 459's comparison sheets showed covers where the game had its real label.)
-+        val scan = drawnLabelScan(physical, g.platform)
-+        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cover, scan != null, null, cover, null, null, physical, null, shellTone(ms), false)
++        val testArt = MediaInspect.testArt
++        val scan = if (testArt != null) null else drawnLabelScan(physical, g.platform)
++        val cv: Any? = testArt ?: cover
++        val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
++        return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)
      }
      val small = Features.bigGcDiscs.state.value.not()
      val mixed = mixedConsoles(state.visibleGames)
-@@ -1846,7 +1857,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1691,7 +1705,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+     // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
+     // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
+     val backStyle = Features.cartBackStyle.state.value
+-    val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
++    // (Update 462b: a photo-made piece turned as the real photo is — its sides and back in its photo's plastic, PhotoShells.)
++    val photoV = PhotoShells.version.intValue
++    val photoTone: Int? = remember(p.pick?.platform, photoV) {
++        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
++            CartShells.split(pp).first?.takeIf { it.pack == null }?.let { ch -> ch.shell?.let { sh -> PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey)) } }
++        }
++    }
++    val shellBack = remember(p.pick?.platform, p.realScan, backStyle, photoTone) {
+         // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
+         // was a plain silhouette, so the new backs never showed for the many games with a photo).
+         if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
+@@ -1705,7 +1726,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+             val (ch, console) = CartShells.split(pp)
+             // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
+             ch?.shell?.let { sh ->
+-                runCatching { CartShells.backFor(sh, CartShells.colourOf(sh, ch.colourKey), 640, console, backStyle).asImageBitmap() }.getOrNull()
++                val own = CartShells.colourOf(sh, ch.colourKey)
++                val colour = photoTone?.let { t -> ShellColour("photo:$t", own.name, t, own.opacity) } ?: own
++                runCatching { CartShells.backFor(sh, colour, 640, console, backStyle).asImageBitmap() }.getOrNull()
+             }
+         }
+     }
+@@ -1778,10 +1801,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+     // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
+     // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
+     val ctxTone = androidx.compose.ui.platform.LocalContext.current
+-    LaunchedEffect(p) {
++    LaunchedEffect(p, photoTone) {
+         val pp = p.pick?.platform
+         shell = when {
+             pp == null -> null
++            pp.startsWith(SHELL_PREFIX) && photoTone != null -> Color(photoTone)
+             pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
+             isCustomPiece(pp) -> null
+             else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->
+@@ -1846,7 +1870,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                      drawRect(sideTone, blendMode = BlendMode.SrcIn)
                      drawRect(sheen, blendMode = BlendMode.SrcAtop)
                  }
@@ -3419,7 +3544,7 @@ index 145a2a2..549ee6f 100644
                  if (n > 0) {
                      // Far to near.
                      for (k in 0..n) {
-@@ -1859,6 +1871,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1859,6 +1884,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                  val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                  val plasticArgb = sideTone.toArgb()
                  if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
@@ -3452,10 +3577,10 @@ index d7ed69b..588d67e 100644
          RoundStep(Icons.Filled.SkipPrevious, "Previous", onPrevious)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
 new file mode 100644
-index 0000000..5d1dbbf
+index 0000000..6864e76
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
-@@ -0,0 +1,316 @@
+@@ -0,0 +1,382 @@
 +package com.shelf.launcher.ui
 +
 +import android.graphics.Bitmap
@@ -3477,7 +3602,10 @@ index 0000000..5d1dbbf
 + */
 +internal object PhotoShells {
 +    /** A shell's template: the photo cropped to the shell and scaled to its shape, where its sticker is, its plastic. */
-+    class Template(val bmp: Bitmap, val label: RectF, val plastic: Int, val source: String)
++    class Template(val bmp: Bitmap, val label: RectF, val plastic: Int, val source: String) {
++        /** The photo's edge plastic, read as a real photo's is (SolidPiece.photoShellTone). */
++        val edge: Int? by lazy { photoShellTone(bmp)?.let { c -> android.graphics.Color.argb(255, (c.red * 255).toInt(), (c.green * 255).toInt(), (c.blue * 255).toInt()) } }
++    }
 +
 +    /** Which shells can be photo-made: the shell id → the ScreenScraper system ids whose cartridge photos show it. */
 +    private val SYSTEMS = mapOf("gb" to setOf("9", "10"), "gbc_dual" to setOf("10"), "gbc" to setOf("10"), "gba" to setOf("12"))
@@ -3577,6 +3705,17 @@ index 0000000..5d1dbbf
 +            .sortedByDescending { (k, _) -> EDITION_WORDS.count { w -> k.contains(w, ignoreCase = true) } }
 +            .map { it.second }
 +        if (urls.isEmpty()) { metas[shell.id] = emptyList(); return }
++        // (Update 462b: what was found last time, kept with the list it came from — no drawn shell for the first seconds of
++        // every start while the photos are looked at again.)
++        val prefs = ctx.getSharedPreferences("photo_shells", android.content.Context.MODE_PRIVATE)
++        val sig = urls.take(24).hashCode().toString()
++        prefs.getString(shell.id, null)?.let { saved ->
++            val lines = saved.split('\n')
++            if (lines.firstOrNull() == sig) {
++                metas[shell.id] = lines.drop(1).mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Meta(it[0], it[1].toLongOrNull()?.toInt() ?: return@let null, it[2] == "1") } }
++                return
++            }
++        }
 +        if (!loading.add("meta|" + shell.id)) return
 +        Thread {
 +            try {
@@ -3590,14 +3729,52 @@ index 0000000..5d1dbbf
 +                    t.bmp.recycle()
 +                }
 +                metas[shell.id] = out
++                prefs.edit().putString(shell.id, (listOf(sig) + out.map { "${it.url}\t${it.plastic.toLong() and 0xFFFFFFFFL}\t${if (it.clear) 1 else 0}" }).joinToString("\n")).apply()
 +                QaTrace.event("photoshell", "${shell.id} ${out.size} of ${urls.size} photos fit, ${out.count { it.clear }} see-through")
 +                android.os.Handler(android.os.Looper.getMainLooper()).post { version.intValue++ }
 +            } finally { loading.remove("meta|" + shell.id) }
 +        }.apply { priority = Thread.MIN_PRIORITY; name = "photoshell" }.start()
 +    }
 +
++    /** Why [shell] in [colour] is (not) photo-made right now — for the QA trace (MediaTrace). */
++    fun why(shell: CartShell, colour: ShellColour): String {
++        if (!com.shelf.launcher.data.Features.photoShells.value) return "fallback: setting off"
++        if (!supports(shell.id)) return "fallback: no photo shells for ${shell.id}"
++        val list = metas[shell.id] ?: return "fallback: photos still being looked at"
++        if (list.isEmpty()) return "fallback: no official ${shell.id} cartridge photo in the library"
++        val clear = colour.opacity < 0.85f
++        val same = list.filter { it.clear == clear }
++        if (same.isEmpty()) return "fallback: no ${if (clear) "see-through" else "solid"} ${shell.id} photo"
++        val best = same.minByOrNull { colourDistance(it.plastic, colour.argb) }!!
++        val d = colourDistance(best.plastic, colour.argb)
++        if (!clear && d >= 120f) return "fallback: nearest photo plastic too far from ${colour.key} (${d.toInt()})"
++        val key = shell.id + "|" + best.url
++        return when {
++            templates[key] != null -> "photoshell jeu ${JEU.find(best.url)?.groupValues?.get(1)} (colour distance ${d.toInt()})"
++            key in failed -> "fallback: photo unusable"
++            else -> "fallback: photo loading"
++        }
++    }
++
++    /**
++     * Update 462b: the plastic a photo-made piece's sides and back are drawn in — read off the photo's edge exactly as the
++     * real cartridge photo's are (photoShellTone), tinted as its front is — so turned, the two pieces have the same sides
++     * and back (they were the drawn shell's grey: an opaque grey slab behind a see-through front). Null: no template.
++     */
++    fun sideTone(shell: CartShell, colour: ShellColour): Int? {
++        val t = template(shell, colour) ?: return null
++        val edge = t.edge ?: return null
++        if (colour.opacity < 0.85f || colourDistance(colour.argb, t.plastic) <= 10f) return edge
++        fun ch(sh: Int): Int {
++            val f = (((colour.argb shr sh) and 255).toFloat() / ((t.plastic shr sh) and 255).coerceAtLeast(8)).coerceIn(0.35f, 2.2f)
++            return (((edge shr sh) and 255) * f).toInt().coerceIn(0, 255)
++        }
++        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
++    }
++
 +    /** Forget the templates (a new library / its scans changed). */
 +    fun reset() { templates.clear(); metas.clear(); failed.clear(); version.intValue++ }
++    // (The saved findings stay: they are checked against the photo list they came from — analyse.)
 +
 +    // (Not kept in the picture memory: a shell's photos are looked at once — kept there, 96 photos held ~330 MB on the
 +    // KONKR. The disk cache still has them.)
@@ -3772,11 +3949,49 @@ index 0000000..5d1dbbf
 +        }
 +    }
 +}
++
++/**
++ * Update 462b (QA, test hooks only): what each game's piece is drawn from — the real photo, the photo-made shell, the
++ * procedural shell (and why), the template pack's picture or a custom model — once per game and source, as
++ * `VoltcapQA mediasrc <name> | <source>`.
++ */
++internal object MediaTrace {
++    private val seen = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
++    fun note(name: String?, what: String) {
++        if (!QaTrace.on) return
++        val line = "${name ?: "?"} | $what"
++        if (seen.size < 4000 && seen.add(line)) QaTrace.event("mediasrc", line)
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt b/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt
-index 5aca151..958f058 100644
+index 5aca151..759b845 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt
-@@ -1092,13 +1092,29 @@ internal fun RealMediaPicture(
+@@ -662,6 +662,7 @@ internal fun PhysicalMedia(
+     }
+     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
+     if (platform != null && platform.startsWith(CUSTOM_CART)) {
++        MediaTrace.note(title, "CUSTOM MODEL cartridge pack ${platform.removePrefix(CUSTOM_CART)}")
+         // (Update 203: your pack's cartridge solid when turned.)
+         // (Update 214: a disc console's game on your optical-system pack is a cartridge-shaped shell too — solid at that
+         // shell's own shape, and moving as a cartridge does: rocking slowly left and right. Update 203 gave it the disc's
+@@ -686,6 +687,7 @@ internal fun PhysicalMedia(
+         return
+     }
+     val tpl = MediaTemplates.of(platform)
++    MediaTrace.note(title, if (tpl != null) "TEMPLATE PACK picture $platform" else "plain drawn ${shell.name}")
+     // "Disc in its case": the case with the disc half out of it, spinning (disc games only).
+     if (tpl != null && discCaseOn(tpl, platform) && !noCase) {
+         val front = caseCover ?: label.takeIf { !labelIsScan }
+@@ -1048,6 +1050,7 @@ internal fun RealMediaPicture(
+         if (t != null) { PhotoTones.put(model, t); tone = t }
+     }
+     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
++    MediaTrace.note(gameKey?.substringAfterLast('/'), "REAL ${if (round) "disc" else "cartridge"} photo")
+     // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
+     // (Update 317: the photo, fitted in the middle as the AsyncImage below draws it, is the piece's front — no picture of
+     // the screen taken for it.)
+@@ -1092,13 +1095,29 @@ internal fun RealMediaPicture(
  internal object MediaClock {
      @Composable
      fun rememberFrameTime(running: Boolean = true): androidx.compose.runtime.MutableLongState {
@@ -5404,7 +5619,7 @@ index 16627b7..374e9fc 100644
                              .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
                              .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
-index f7b2755..6002683 100644
+index f7b2755..e807d2a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
 @@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
@@ -5415,7 +5630,34 @@ index f7b2755..6002683 100644
  import androidx.compose.ui.graphics.drawscope.scale
  import androidx.compose.ui.graphics.drawscope.translate
  import androidx.compose.ui.graphics.graphicsLayer
-@@ -473,6 +474,7 @@ internal fun Modifier.solidPiece(
+@@ -142,7 +143,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
+     // (Update 228, #36: a pack shape picked in the shell picker turned with the pack picture's own plastic on its sides
+     // and back — it was grey, whatever its colour.)
+     val packTone = rememberCustomPieceTone(pickPlatform)
+-    return remember(pickPlatform, backStyle, packTone) {
++    // (Update 462b: a photo-made front's sides and back in its photo's plastic — PhotoShells.sideTone.)
++    val photoV = PhotoShells.version.intValue
++    return remember(pickPlatform, backStyle, packTone, photoV) {
+         val (choice, console) = CartShells.split(pickPlatform)
+         val sh = choice?.shell
+         when {
+@@ -158,6 +161,15 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
+             } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
+             else -> {
+                 val colour = CartShells.colourOf(sh, choice.colourKey)
++                // (Update 462b: made from a real photo — turned exactly as the real photo is: opaque sides in the photo's own
++                // edge plastic, the researched back in that plastic, cut to the face — rememberPhotoSolid.)
++                val photoTone = if (choice.pack == null) PhotoShells.sideTone(sh, colour) else null
++                if (photoTone != null) {
++                    val pc = ShellColour("photo:$photoTone", colour.name, photoTone, colour.opacity)
++                    return@remember SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(photoTone), back = {
++                        runCatching { CartShells.backFor(sh, pc, 480, console, backStyle).asImageBitmap() }.getOrNull()
++                    }, fitBackToFace = true)
++                }
+                 // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
+                 // (Update 306: another console's game on this shell has its own console's name on the back — backFor.)
+                 SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {
+@@ -473,6 +485,7 @@ internal fun Modifier.solidPiece(
      val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
      val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
      val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
@@ -5423,7 +5665,7 @@ index f7b2755..6002683 100644
      return this.drawWithCache {
          // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
          // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
-@@ -584,12 +586,20 @@ internal fun Modifier.solidPiece(
+@@ -584,12 +597,20 @@ internal fun Modifier.solidPiece(
              val t = Math.toRadians(yaw.toDouble())
              val c = cos(t).toFloat()
              val sn = sin(t).toFloat()
@@ -5446,7 +5688,7 @@ index f7b2755..6002683 100644
                  val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
                  // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
                  val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
-@@ -606,7 +616,7 @@ internal fun Modifier.solidPiece(
+@@ -606,7 +627,7 @@ internal fun Modifier.solidPiece(
              }
              back.rotationY = yaw; back.cameraDistance = cam
              // (Update 209: a see-through piece's back as see-through as its sides.)
@@ -5455,7 +5697,7 @@ index f7b2755..6002683 100644
              // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
              // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
              // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
-@@ -702,8 +712,10 @@ internal fun Modifier.solidPiece(
+@@ -702,8 +723,10 @@ internal fun Modifier.solidPiece(
                  val edgeL = edgeLeaf ?: edge
                  // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
                  // under the face, left out; see SIDE_SPREAD.)
@@ -5467,7 +5709,7 @@ index f7b2755..6002683 100644
                  val span = depthPx * abs(sn)
                  val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                  edgeL.alpha = if (edgeLeaf != null) {
-@@ -716,29 +728,35 @@ internal fun Modifier.solidPiece(
+@@ -716,29 +739,35 @@ internal fun Modifier.solidPiece(
                  val camPx = cam * 72f
                  val nearV = -depthPx / 2f * abs(c)
                  fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
@@ -5525,7 +5767,7 @@ index f7b2755..6002683 100644
                  val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                  // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
                  if (clear != null) {
-@@ -889,6 +907,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
+@@ -889,6 +918,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
   */
  internal const val SIDE_SPREAD = 10
  
@@ -5552,7 +5794,7 @@ index f7b2755..6002683 100644
  /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
  // (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
  // steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
-@@ -934,3 +972,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
+@@ -934,3 +983,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
      }
      found
  }.getOrNull()
@@ -5731,6 +5973,19 @@ index 1c80b3a..417c3c9 100644
      val view = BubbleNav.view
      val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
      if (isA) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt
+index a2481a5..c6fe26a 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt
+@@ -684,7 +684,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
+         kotlinx.coroutines.yield()
+         if (c.games.none { it.stableKey == k }) { BoxNav.pull = null; return@LaunchedEffect }
+         // The window shows the case itself, whatever the look (MediaInspect.force — cleared when the window closes).
+-        MediaInspect.testShell = null; MediaInspect.testPose = null
++        MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
+         MediaInspect.forceSeq++; MediaInspect.force = k
+         open()
+         // (A game set to start at once opens no window: back down it goes.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
 index 5b82476..8a5b3f5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
@@ -7436,10 +7691,10 @@ index 0000000..1d69321
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
 new file mode 100644
-index 0000000..6c00b19
+index 0000000..b92f464
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,40 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertEquals
@@ -7473,7 +7728,11 @@ index 0000000..6c00b19
 +
 +    @Test fun wiredIntoTheDrawnShells() {
 +        val s = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, "CartShells.kt").exists() }, "CartShells.kt").readText()
-+        assertTrue(s.contains("return photoFront(s, colour, drawn) ?: drawn"))
++        assertTrue(s.contains("val photo = photoFront(s, colour, drawn)") && s.contains("return photo ?: drawn"))
++        // (462b: turned, a photo-made piece's sides and back come from its photo's plastic, as the real photo's do.)
++        fun ui(n: String) = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, n).exists() }, n).readText()
++        assertTrue(ui("SolidPiece.kt").contains("PhotoShells.sideTone(sh, colour)"))
++        assertTrue(ui("MediaInspectView.kt").contains("PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey))"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt b/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt

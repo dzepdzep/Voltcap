@@ -493,8 +493,11 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
         // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
         // only, so update 459's comparison sheets showed covers where the game had its real label.)
-        val scan = drawnLabelScan(physical, g.platform)
-        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cover, scan != null, null, cover, null, null, physical, null, shellTone(ms), false)
+        val testArt = MediaInspect.testArt
+        val scan = if (testArt != null) null else drawnLabelScan(physical, g.platform)
+        val cv: Any? = testArt ?: cover
+        val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
+        return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)
     }
     val small = Features.bigGcDiscs.state.value.not()
     val mixed = mixedConsoles(state.visibleGames)
@@ -1702,7 +1705,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
     // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
     val backStyle = Features.cartBackStyle.state.value
-    val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
+    // (Update 462b: a photo-made piece turned as the real photo is — its sides and back in its photo's plastic, PhotoShells.)
+    val photoV = PhotoShells.version.intValue
+    val photoTone: Int? = remember(p.pick?.platform, photoV) {
+        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
+            CartShells.split(pp).first?.takeIf { it.pack == null }?.let { ch -> ch.shell?.let { sh -> PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey)) } }
+        }
+    }
+    val shellBack = remember(p.pick?.platform, p.realScan, backStyle, photoTone) {
         // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
         // was a plain silhouette, so the new backs never showed for the many games with a photo).
         if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
@@ -1716,7 +1726,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             val (ch, console) = CartShells.split(pp)
             // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
             ch?.shell?.let { sh ->
-                runCatching { CartShells.backFor(sh, CartShells.colourOf(sh, ch.colourKey), 640, console, backStyle).asImageBitmap() }.getOrNull()
+                val own = CartShells.colourOf(sh, ch.colourKey)
+                val colour = photoTone?.let { t -> ShellColour("photo:$t", own.name, t, own.opacity) } ?: own
+                runCatching { CartShells.backFor(sh, colour, 640, console, backStyle).asImageBitmap() }.getOrNull()
             }
         }
     }
@@ -1789,10 +1801,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
     // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
     val ctxTone = androidx.compose.ui.platform.LocalContext.current
-    LaunchedEffect(p) {
+    LaunchedEffect(p, photoTone) {
         val pp = p.pick?.platform
         shell = when {
             pp == null -> null
+            pp.startsWith(SHELL_PREFIX) && photoTone != null -> Color(photoTone)
             pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
             isCustomPiece(pp) -> null
             else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->

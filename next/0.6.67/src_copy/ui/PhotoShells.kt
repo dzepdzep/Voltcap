@@ -19,7 +19,10 @@ import android.graphics.RectF
  */
 internal object PhotoShells {
     /** A shell's template: the photo cropped to the shell and scaled to its shape, where its sticker is, its plastic. */
-    class Template(val bmp: Bitmap, val label: RectF, val plastic: Int, val source: String)
+    class Template(val bmp: Bitmap, val label: RectF, val plastic: Int, val source: String) {
+        /** The photo's edge plastic, read as a real photo's is (SolidPiece.photoShellTone). */
+        val edge: Int? by lazy { photoShellTone(bmp)?.let { c -> android.graphics.Color.argb(255, (c.red * 255).toInt(), (c.green * 255).toInt(), (c.blue * 255).toInt()) } }
+    }
 
     /** Which shells can be photo-made: the shell id → the ScreenScraper system ids whose cartridge photos show it. */
     private val SYSTEMS = mapOf("gb" to setOf("9", "10"), "gbc_dual" to setOf("10"), "gbc" to setOf("10"), "gba" to setOf("12"))
@@ -119,6 +122,17 @@ internal object PhotoShells {
             .sortedByDescending { (k, _) -> EDITION_WORDS.count { w -> k.contains(w, ignoreCase = true) } }
             .map { it.second }
         if (urls.isEmpty()) { metas[shell.id] = emptyList(); return }
+        // (Update 462b: what was found last time, kept with the list it came from — no drawn shell for the first seconds of
+        // every start while the photos are looked at again.)
+        val prefs = ctx.getSharedPreferences("photo_shells", android.content.Context.MODE_PRIVATE)
+        val sig = urls.take(24).hashCode().toString()
+        prefs.getString(shell.id, null)?.let { saved ->
+            val lines = saved.split('\n')
+            if (lines.firstOrNull() == sig) {
+                metas[shell.id] = lines.drop(1).mapNotNull { l -> l.split('\t').takeIf { it.size == 3 }?.let { Meta(it[0], it[1].toLongOrNull()?.toInt() ?: return@let null, it[2] == "1") } }
+                return
+            }
+        }
         if (!loading.add("meta|" + shell.id)) return
         Thread {
             try {
@@ -132,14 +146,52 @@ internal object PhotoShells {
                     t.bmp.recycle()
                 }
                 metas[shell.id] = out
+                prefs.edit().putString(shell.id, (listOf(sig) + out.map { "${it.url}\t${it.plastic.toLong() and 0xFFFFFFFFL}\t${if (it.clear) 1 else 0}" }).joinToString("\n")).apply()
                 QaTrace.event("photoshell", "${shell.id} ${out.size} of ${urls.size} photos fit, ${out.count { it.clear }} see-through")
                 android.os.Handler(android.os.Looper.getMainLooper()).post { version.intValue++ }
             } finally { loading.remove("meta|" + shell.id) }
         }.apply { priority = Thread.MIN_PRIORITY; name = "photoshell" }.start()
     }
 
+    /** Why [shell] in [colour] is (not) photo-made right now — for the QA trace (MediaTrace). */
+    fun why(shell: CartShell, colour: ShellColour): String {
+        if (!com.shelf.launcher.data.Features.photoShells.value) return "fallback: setting off"
+        if (!supports(shell.id)) return "fallback: no photo shells for ${shell.id}"
+        val list = metas[shell.id] ?: return "fallback: photos still being looked at"
+        if (list.isEmpty()) return "fallback: no official ${shell.id} cartridge photo in the library"
+        val clear = colour.opacity < 0.85f
+        val same = list.filter { it.clear == clear }
+        if (same.isEmpty()) return "fallback: no ${if (clear) "see-through" else "solid"} ${shell.id} photo"
+        val best = same.minByOrNull { colourDistance(it.plastic, colour.argb) }!!
+        val d = colourDistance(best.plastic, colour.argb)
+        if (!clear && d >= 120f) return "fallback: nearest photo plastic too far from ${colour.key} (${d.toInt()})"
+        val key = shell.id + "|" + best.url
+        return when {
+            templates[key] != null -> "photoshell jeu ${JEU.find(best.url)?.groupValues?.get(1)} (colour distance ${d.toInt()})"
+            key in failed -> "fallback: photo unusable"
+            else -> "fallback: photo loading"
+        }
+    }
+
+    /**
+     * Update 462b: the plastic a photo-made piece's sides and back are drawn in — read off the photo's edge exactly as the
+     * real cartridge photo's are (photoShellTone), tinted as its front is — so turned, the two pieces have the same sides
+     * and back (they were the drawn shell's grey: an opaque grey slab behind a see-through front). Null: no template.
+     */
+    fun sideTone(shell: CartShell, colour: ShellColour): Int? {
+        val t = template(shell, colour) ?: return null
+        val edge = t.edge ?: return null
+        if (colour.opacity < 0.85f || colourDistance(colour.argb, t.plastic) <= 10f) return edge
+        fun ch(sh: Int): Int {
+            val f = (((colour.argb shr sh) and 255).toFloat() / ((t.plastic shr sh) and 255).coerceAtLeast(8)).coerceIn(0.35f, 2.2f)
+            return (((edge shr sh) and 255) * f).toInt().coerceIn(0, 255)
+        }
+        return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
+    }
+
     /** Forget the templates (a new library / its scans changed). */
     fun reset() { templates.clear(); metas.clear(); failed.clear(); version.intValue++ }
+    // (The saved findings stay: they are checked against the photo list they came from — analyse.)
 
     // (Not kept in the picture memory: a shell's photos are looked at once — kept there, 96 photos held ~330 MB on the
     // KONKR. The disk cache still has them.)
@@ -312,5 +364,19 @@ internal object PhotoShells {
             java.io.File(dir, "$id.png").outputStream().use { t.bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
             java.io.File(dir, "$id.txt").writeText("source=${t.source}\nlabel=${t.label}\nplastic=${Integer.toHexString(t.plastic)}\n")
         }
+    }
+}
+
+/**
+ * Update 462b (QA, test hooks only): what each game's piece is drawn from — the real photo, the photo-made shell, the
+ * procedural shell (and why), the template pack's picture or a custom model — once per game and source, as
+ * `VoltcapQA mediasrc <name> | <source>`.
+ */
+internal object MediaTrace {
+    private val seen = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    fun note(name: String?, what: String) {
+        if (!QaTrace.on) return
+        val line = "${name ?: "?"} | $what"
+        if (seen.size < 4000 && seen.add(line)) QaTrace.event("mediasrc", line)
     }
 }
