@@ -3,6 +3,18 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 464 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Real cartridge photos visually unchanged | DONE (KONKR) | Silver / Crystal / Gold, RC vs staging pixel diffs (REAL_SCANS_464.md) |
+| Front art, proportions, light, colours preserved | DONE | Inspect front 0.000-0.76 % (edge resampling only); home 0° identical |
+| Side and back not regressed | DONE | home 45 / 75 / 180° identical; 90° = the D175 fix (RC vanished edge-on) |
+| User-selected real scans take priority | DONE | RealScans464Test: picture choice + PhysicalOverrides never consult PhotoShells |
+| PhotoShells only replaces the drawn fallback | DONE | RealScans464Test: PhotoShells only in the drawn-shell path |
+| Missing / failed template can't damage real path | DONE | RealScans464Test: photo ?: drawn, failures remembered, setting off |
+| Inspect, animation, home layouts show authentic carts | DONE | Inspect (case › cartridge) + Pocket Quest home at 5 angles |
+| Extend only after the checks | DONE | checks pass; 463 extension kept (it only touches drawn shells) |
+
 ## Update 463 (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

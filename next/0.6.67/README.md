@@ -134,6 +134,8 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
     `ui/TestHooks.kt` (photoshells hook: analyseAll + inventory); `ui/MediaInspectView.kt` (QA `lab_` art as label scan);
     tests PhotoShells463Test (new), PhotoShells462Test (updated). Matrix: tools/qa/PHOTOSHELLS_463.md.
 
+23. **Update 464.** Real-scan guard test `RealScans464Test` (project_copy test, new). No app code change. Evidence: tools/qa/REAL_SCANS_464.md.
+
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there
   (a saved choice is kept). If you want Midnight there, pick it in Settings (or QA: `--es voltcap_test_pref picker_look=MIDNIGHT`).

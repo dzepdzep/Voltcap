@@ -1,3 +1,24 @@
+# Update 464 (3 Nov 2026) — real cartridge scans proven unchanged (RC vs staging), guard tests; PhotoShells stays drawn-shell only
+
+**Owner:** "Do not change the appearance of my existing real cartridge scans … only after these checks pass should you extend".
+**Device:** KONKR GT78 (USB). RC v0.6.66 first, then staging, same session-only hooks; back on the RC at the end, view restored,
+QA files removed. Settings, profiles, artwork untouched.
+**Pixel comparison, Silver / Crystal / Gold (their own cartridge photos):** Inspect as you open it (case › cartridge out) — Silver
+0.000 %, Gold 0.006 %, Crystal 0.76 % changed pixels (sub-pixel edge resampling only, median 1/255); home screen held at 0 / 45 / 75 /
+180° (voltcap_test_pose, both builds) — the cartridge pixel-identical (0.093 % = the same few top-bar pixels in every shot); 90° differs
+on purpose: on the RC the real cartridge vanishes edge-on (D175), staging shows its side wall (update 458 fix). RC repeat run = 0.000 %.
+Table + method: tools/qa/REAL_SCANS_464.md; sheet Claude outputs/qa464/qa464_real_rc_vs_staging.png.
+**Guard tests (RealScans464Test, 5, green):** picture choice (typedArtFor / realScanOf / drawnLabelScan / PhysicalOverrides — your
+picks) and real-photo drawing (RealMediaPicture / rememberPhotoSolid / RealMedia / LaunchThrow) never touch PhotoShells; PhotoShells
+only in the drawn-shell path (frontFor / cachedFrontFor / photoFront, rememberShellSolid, Inspect `~sh:` picks only); no / failed
+template → the drawn shell (`photo ?: drawn`, failed photos remembered, loading caught off-thread, setting off = none); pack / custom
+picks first; hacks' photos never make templates.
+**Code review RC → staging of the real path:** GameCard.kt picture choice unchanged; RealMediaPicture only a QA trace line; real-photo
+turning only the D175 edge-on change; PhysicalOverrides only labels (hack strip, Labels folder).
+**Result:** the checks pass — the 463 extension (N64 / SNES / SFC / Famicom / DS / 3DS / Switch, Sega etc. wired) only replaces the
+drawn fallback and is kept. **Files:** test RealScans464Test.kt (new; next/0.6.67/project_copy + patch, placeholder in the RC tree);
+QA tools/qa/device/real464.sh, home464.sh. App code unchanged this update. RC (v0.6.66) unchanged, NOT published.
+
 # Update 463 (3 Nov 2026) — photo-made cartridges extended to every console with a real cartridge / card (staging)
 
 **Devices:** KONKR Pocket GT78 BW0306N230000845 (USB) — v0.6.67 staging installed for the tests only, back on the RC at the end,
@@ -21,6 +42,12 @@ ScreenScraper id, shapes too close); special shells; PS Vita (no authentic model
 DS, 3DS, Switch generated pieces next to their real library photo (QA label stand-ins: these consoles' games aren't on the devices —
 labels cut from other real photos, session only). Sheets: Claude outputs/qa463/qa463_sheet_a.png, qa463_sheet_b.png; matrix
 tools/qa/PHOTOSHELLS_463.md. Fallbacks traced per colour in photoshells/inventory.tsv (QA hook).
+**Owner audit (same update): front duplicates** — found on the 3DS (photo's own code strip left under the laid label: two code
+lines) and fixed with the DS / 3DS whole-paper cover above (re-run: one code); DS, Switch, GB family, N64, SNES, SFC, Famicom: none.
+The drawn label path adds header / band / code only for covers, never on a real label scan. **Backs:** acceptable — GB / GBC black /
+GBA, N64, SNES NA, DS, 3DS, Switch; need improvement — clear GBC (schematic green board, opaque rim), Super Famicom / PAL (plain slab,
+wrong corners), Famicom (plain slab); not changed this update (no back photos; would be new drawn work — owner decision). Table in
+PHOTOSHELLS_463.md.
 **Limitations (real and generated alike):** 90° = slab of the shell's thickness; backs drawn in the photo's plastic; Super Famicom back
 uses the drawn round-cornered outline; clear GBC paks share one clear photo.
 **QA hook changes:** `voltcap_test_photoshells` analyses every shell + writes inventory.tsv (ids only); Inspect hook art named `lab_…`

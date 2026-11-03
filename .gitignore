@@ -78,6 +78,7 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
 /app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PhotoShells463Test.kt
+/app/src/test/java/com/shelf/launcher/ui/RealScans464Test.kt
 /app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
 /app/src/main/java/com/shelf/launcher/data/LabelIds.kt
 /app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
