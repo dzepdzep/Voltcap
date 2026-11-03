@@ -1,3 +1,35 @@
+# Update 460 (3 Nov 2026) — real cartridge labels first (459's generated designs off), Cube hub name jump, KONKR Cube crash, case layouts decoded ahead, D173 narrowed (NOT published)
+
+**Devices (USB):** KONKR Pocket = ARBOR GT78 BW0306N230000845, Odin 2 Portal b92036fb (its wireless twin ignored). Thor and RP Classic were NOT connected —
+nothing re-checked on them. v0.6.66 frozen; staging only (next/0.6.67).
+**Real label first (owner: "REAL LABEL FIRST. EXISTING CUSTOM LABEL SECOND"):** update 459's generated designs (grey GB strips, GBA title panel, N64 footer,
+title panels, FAN-MADE down the side) are OFF (`GeneratedLabels.enabled`, QA hook `voltcap_test_genlabels` only). The DS paper band prints only a real
+ROM-header code. Finding: ScreenScraper's label scans ("Disc label") are already the right source — on the KONKR they are the real stickers for official
+games (Silver DMG-AAXE-USA, Advance Wars, Emerald…) AND fan-made labels for ROM hacks (Crystal Clear, Unbound, Odyssey). They were missing from the 459
+sheets because the QA Inspect hook (`voltcap_test_inspect` with a shell) drew the COVER on the forced shell — fixed (`MediaInspectView.kt`: the game's label
+scan on that shell). Order: your label pick → real / fan label scan → **new Labels folder** (`data/LabelFolder.kt`: picture files in `Voltcap/Labels`,
+matched by file name; for a ROM hack it wins over the scraped scan) → the cover (RC fallback, unchanged). No fan label set is bundled or downloaded
+(julius1504 / Ddaretrogamer collections carry no licence; Dinierto templates are CC0, not used yet).
+Sheet: `Claude outputs/qa460/evidence/labels_460_gb_gbc_gba.png` (label scan / 459 / 460 front / 3/4, KONKR). Brown has no label scan on the KONKR and is
+not on it; its look stays the cover fallback until the owner picks a direction.
+**Cube hub jump (owner):** the name (1-2 lines) and the line under it changed height, so the cover row moved. Both keep two lines' height now
+(`CubeHub.kt`, `FitText.kt reservedLinesHeight`); and every `FullText` keeps its full maxLines height (`reserve = true`, 64 call sites; off for the 8 placeholder
+texts centred on a missing cover). Odin: cover row, title, info and buttons at the same place over 5 games. Not checked on hardware for the other 63 sites.
+**KONKR crash (0.6.66 RC too):** `IndexOutOfBounds 6/6` in the Cube hub's tabs when the category list got shorter (safe-mode → normal start). `WholeChipRow`
+never asks for a gone chip; Cube hub tabs use getOrNull. (Seen as "Voltcap has stopped" on the KONKR during QA.)
+**Blocks while scrolling (owner: case layouts, KONKR):** Case flow / Case stacks / Rental shop never decoded their 3D cases ahead (the carousel did) —
+`WarmCaseNeighbours` (RealMedia.kt). KONKR Case flow, All games, 25 fast moves: every case printed in the sampled frames (could not reproduce the blocks on the
+RC either in this session — not proven).
+**D173 (KONKR):** Pokémon Snap / Stadium have the real US box, back, spine, full scan and label scans (label audit), and no picked cover, but Case flow / Inspect
+show a cream Snap / Mewtwo Stadium front and Voltcap's plain spine. The back is the real one. Cause not found yet (likely a per-game real-media pick
+in Artwork & details overriding Box / Spine, or the full-scan cut) — needs a log build; not changed.
+**D175 (KONKR, staging):** Advance Wars 2 at 45 / 75 / 90 / 120 / 180: clean sides, no layered silhouettes at 960×640. Thor / RP not re-checked.
+**Settings slide on the RP (D178):** NOT measured (RP not connected).
+**QA incident:** `voltcap_test_layout` without `--ez voltcap_test_preview true` SAVES the layout — Odin (Voltcap row) and KONKR (Case flow) were switched to Cube and
+put back (screens compared with the before shots). Injected keys while the KONKR slept caused the known input ANR (D166).
+**Tests:** Labels460Test (folder matching, precedence, folder scan, generated designs off, Cube lines, chip-row guard, case warm-up); testDebugUnitTest green.
+**RC restored** on the KONKR and the Odin after testing; views restored; KONKR hooks file removed; label_audit / q460 removed.
+
 # Update 459 (2 Nov 2026) — generated cartridge labels per platform on the existing shells (real codes only, FAN-MADE / HOMEBREW), RP Classic Settings category slide (NOT published)
 
 **Devices (USB):** RP Classic MC94516AQF091001112, AYN Thor 3140972f. v0.6.66 frozen; staging only (next/0.6.67). D173 / D137 (KONKR), D124 (approval) untouched.

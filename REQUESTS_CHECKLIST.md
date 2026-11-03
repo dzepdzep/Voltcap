@@ -3,6 +3,24 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 460 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Real label first, existing custom label second | DONE (staging), HARDWARE KONKR | ScreenScraper label scans = real stickers + fan labels for hacks; 459 designs off; qa460/evidence sheet |
+| 459 generated designs removed as default | DONE | `GeneratedLabels.enabled` false (QA hook only); no FAN-MADE print |
+| Fan-made label collections (julius1504, Ddaretrogamer, vgmoose) | NOT BUNDLED | no licence / permission found; Labels folder lets you add your own |
+| Labels folder (your own / fan labels) | DONE (code + tests) | `Voltcap/Labels`, name-matched; not tried on hardware with a file |
+| Dimension references (ConsoleMods, Dinierto CC0) | RESEARCHED, NOT APPLIED | shell geometry unchanged; GB 42×37 vs CartShells 42.6×38.5 etc. to review |
+| Brown proposal | WAITING OWNER | no label scan; not on the KONKR |
+| Comparisons N64 / SNES / SFC / DS and other consoles | NOT DONE | waits for GB/GBC/GBA approval |
+| Cube layout jumps with name length | FIXED (staging), HARDWARE Odin | names keep 2 lines' height; FullText reserves its lines everywhere |
+| Blocks before artwork in case layouts (KONKR) | FIXED (staging), KONKR sampled OK | cases decoded ahead; not reproduced on the RC in this session |
+| KONKR crash (Cube hub tabs) | FIXED (staging) | crash log IndexOutOfBounds 6/6; RC 0.6.66 has it |
+| D173 Snap / Stadium packaging | NARROWED | real scans present, case shows another front + plain spine; needs a log build |
+| D175 GBA sides 45-180 | OK on KONKR | Thor / RP not connected |
+| Settings slide RP / controller L1-R1 | NOT TESTED | RP not connected |
+| D137 Case stacks (KONKR) | NOT DONE | time; KONKR now connected |
+
 ## Update 459 (2 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

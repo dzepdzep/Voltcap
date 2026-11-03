@@ -24,6 +24,9 @@ import android.text.TextPaint
  * Pure drawing on a bitmap, deterministic for the same inputs, cached by the shell's front (CartShells.front).
  */
 internal object GeneratedLabels {
+    /** Update 460: off by default — the owner rejected generated label designs; QA only (`voltcap_test_genlabels`). */
+    @Volatile var enabled = false
+
     enum class Kind { DMG, CGB, AGB, N64, NES, FAMICOM, SNES, SFC, VB, MEGA_DRIVE, MASTER_SYSTEM, GAME_GEAR, SEGA_32X, ATARI, CARD, PLAIN }
 
     /** The label design for a drawn shell, or null where the shell keeps its own (DS / 3DS / Switch cards — SwitchLabel). */

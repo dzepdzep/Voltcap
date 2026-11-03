@@ -1,7 +1,7 @@
 diff --git a/.gitignore b/.gitignore
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,29 +55,3 @@
+@@ -55,31 +55,3 @@
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -31,6 +31,8 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
 -/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
 -/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
+-/app/src/main/java/com/shelf/launcher/data/LabelFolder.kt
+-/app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 index c29e9a0..4acd436 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
@@ -62,7 +64,7 @@ index c29e9a0..4acd436 100644
              specialFilter == SpecialFilter.MOST_PLAYED ->
                  library.filter { (playtime[it.stableKey] ?: 0L) > 0L }
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
-index a6aad66..551cb25 100644
+index a6aad66..2916f37 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 +++ b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 @@ -86,6 +86,7 @@ import com.shelf.launcher.data.mergeArt
@@ -73,7 +75,36 @@ index a6aad66..551cb25 100644
  import com.shelf.launcher.data.SteamGameEntry
  import com.shelf.launcher.data.SteamGamesStore
  import com.shelf.launcher.data.SteamGridDbRepository
-@@ -1892,6 +1893,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -1147,6 +1148,28 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+         }
+     }
+ 
++    /**
++     * Update 460: reads the Labels folder (LabelFolder) and gives the games with a label there that label as their
++     * "Disc label" (where they have no real label scan, or always for a ROM hack). Once per library change, off the main thread.
++     */
++    private var folderLabelsFor = -1
++    fun refreshFolderLabels(games: List<Game>) {
++        val tag = games.size * 31 + (games.firstOrNull()?.stableKey?.hashCode() ?: 0)
++        if (tag == folderLabelsFor) return
++        folderLabelsFor = tag
++        viewModelScope.launch(Dispatchers.IO) {
++            runCatching { com.shelf.launcher.data.LabelFolder.index() }
++            val upd = HashMap<String, List<Pair<String, String>>>()
++            for (g in games) {
++                if (g.sourceType != com.shelf.launcher.data.SourceType.ROM) continue
++                val k = g.stableKey
++                if (com.shelf.launcher.data.LabelFolder.forKey(k) == null) continue
++                upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, physicalRaw[k].orEmpty()) }.getOrNull() ?: continue
++            }
++            if (upd.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + upd) }
++        }
++    }
++
+     /** Update 137: your pick for one of [game]'s real-media pictures ([label] as in the scraped list; null: back to the scan). */
+     fun setPhysicalOverride(game: Game, label: String, url: String?) {
+         val key = game.stableKey
+@@ -1892,6 +1915,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          // installed/removed while away are picked up.
          com.shelf.launcher.ui.SecondScreenGate.release()
          refreshAppsIfChanged()
@@ -81,7 +112,7 @@ index a6aad66..551cb25 100644
          // Back on the home screen: the game is over, so whatever Voltcap put on
          // the other screen for it goes (the home screen's own second-screen
          // view takes over again). Not in the moment right after a launch,
-@@ -2006,13 +2008,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -2006,13 +2030,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
  
      /** Other games open in the background (a different app than [game]'s): ask before starting [game]. */
      fun otherOpenGames(game: Game): List<Game> {
@@ -100,7 +131,7 @@ index a6aad66..551cb25 100644
      }
  
      /** X on a game that's still open: close it. */
-@@ -2247,6 +2253,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -2247,6 +2275,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       * in the same update as the new category, so no frame has the new category in the old layout (or the reverse).
       */
      private fun categoryLayoutFor(next: LauncherUiState): AppearanceSettings? {
@@ -111,7 +142,7 @@ index a6aad66..551cb25 100644
          val old = savedOf(_uiState.value.appearance)
          val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(next)) ?: return null
          if (want == old.homeLayout) return null
-@@ -3567,12 +3577,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3567,12 +3599,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          // task forward there. A second instance is only safe for ordinary
          // apps — never emulators, whose two copies would fight over saves.
          val previous = lastAppDisplay[pkg]
@@ -133,7 +164,7 @@ index a6aad66..551cb25 100644
                  noteOwnLaunch(null)
                  // The second-screen home is a window above every app on its
                  // display; step aside so the app can be seen.
-@@ -3983,6 +4001,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3983,6 +4023,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          recombineGames()
      }
  
@@ -233,7 +264,7 @@ index a6aad66..551cb25 100644
      fun toggleFavorite(game: Game) {
          val updated = favoritesStore.toggle(game.stableKey)
          _uiState.update { it.copy(favorites = updated) }
-@@ -4706,6 +4817,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -4706,6 +4839,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       */
      fun switchProfile(id: Int) {
          val app = getApplication<Application>()
@@ -242,7 +273,7 @@ index a6aad66..551cb25 100644
          val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
          val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
          if (slot != null) switchRaAccount(slot)
-@@ -5385,6 +5498,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -5385,6 +5520,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       */
      fun launch(game: Game) {
          if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
@@ -252,7 +283,7 @@ index a6aad66..551cb25 100644
          com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
          val check = preparedCheck?.second
          if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
-@@ -6650,6 +6766,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -6650,6 +6788,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      }
  
      init {
@@ -645,6 +676,95 @@ index ae616d0..7f84091 100644
          worker.execute {
              runCatching {
                  // On a handheld with a root service: the permission for good, once (no other app needed).
+diff --git a/app/src/main/java/com/shelf/launcher/data/LabelFolder.kt b/app/src/main/java/com/shelf/launcher/data/LabelFolder.kt
+new file mode 100644
+index 0000000..3338fd4
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/data/LabelFolder.kt
+@@ -0,0 +1,83 @@
++package com.shelf.launcher.data
++
++/**
++ * Update 460: your own cartridge / disc labels, dropped as picture files into the **Voltcap/Labels** folder on the device's
++ * storage (sub-folders per console are fine): `Pokemon Brown.png`, `Pokemon - Crystal Clear (Hack).jpg`… A file is matched
++ * to a game by its name — the file name without its extension against the game's ROM file name and its shown name, with
++ * region tags, punctuation and case ignored.
++ *
++ * This is where a printable fan-made label for a ROM hack (or a label you scanned yourself) goes: Voltcap bundles and
++ * downloads none — the label collections found for ROM hacks carry no licence for redistribution. A label found here is
++ * worn as the game's label scan ("Disc label"): the drawn cartridge prints it on its whole sticker.
++ *
++ * Order (PhysicalOverrides.apply): the label you picked for the game (Artwork & details) → the real label scan
++ * (ScreenScraper) → this folder → the cover. For a ROM hack this folder comes before the scraped scan, since a hack is
++ * matched to its base game and that scan is the base game's label.
++ *
++ * Read once in the background ([index]); nothing is written.
++ */
++object LabelFolder {
++    private val EXT = setOf("png", "jpg", "jpeg", "webp")
++    @Volatile private var byName: Map<String, String> = emptyMap()
++    @Volatile private var indexed = false
++    /** Bumped when the folder has been read (so the games' lists are made again with what it holds). */
++    val version = androidx.compose.runtime.mutableIntStateOf(0)
++
++    private val NON = Regex("[^a-z0-9]+")
++    private val TAGS = Regex("""\s*[(\[][^)\]]*[)\]]""")
++
++    /** The name a label file or a game is matched by (pure — unit-tested). */
++    fun norm(name: String): String = NON.replace(TAGS.replace(name.substringBeforeLast('.').let { if ('/' in it) it.substringAfterLast('/') else it }, "").lowercase(), "")
++
++    /** The folders looked in. */
++    fun roots(): List<java.io.File> = listOf(java.io.File(android.os.Environment.getExternalStorageDirectory(), "Voltcap/Labels"))
++
++    /** Builds the name → file table from [dirs] (two folder levels; pure apart from reading the folders — unit-tested). */
++    fun scan(dirs: List<java.io.File>): Map<String, String> {
++        val out = HashMap<String, String>()
++        fun walk(d: java.io.File, depth: Int) {
++            val list = runCatching { d.listFiles() }.getOrNull() ?: return
++            for (f in list.sortedBy { it.name.lowercase() }) {
++                if (f.isDirectory) { if (depth < 2) walk(f, depth + 1); continue }
++                if (f.extension.lowercase() !in EXT || f.length() <= 0L) continue
++                val k = norm(f.name)
++                if (k.isNotEmpty()) out.putIfAbsent(k, f.absolutePath)
++            }
++        }
++        for (d in dirs) if (d.isDirectory) walk(d, 0)
++        return out
++    }
++
++    /** Reads the folder (off the main thread). */
++    fun index() {
++        byName = scan(roots())
++        indexed = true
++        version.intValue++
++    }
++
++    /** For tests: the table to use. */
++    fun setForTest(map: Map<String, String>) { byName = map; indexed = true }
++
++    /** The label file (as a file:// address) for the game kept under [key] (its ROM path), or null. */
++    fun forKey(key: String, shownName: String? = null): String? {
++        if (!indexed || byName.isEmpty()) return null
++        val path = byName[norm(key)] ?: shownName?.let { byName[norm(it)] } ?: return null
++        return "file://$path"
++    }
++
++    /** Whether [url] is a label from this folder (for where a picture came from). */
++    fun isFolderLabel(url: String?): Boolean = url != null && roots().any { url.startsWith("file://" + it.absolutePath) }
++
++    /**
++     * [list] (a game's scraped real-media pictures) with the folder's label for [key] worn as its "Disc label": where it
++     * has no label scan, or always for a ROM hack ([hack]) — whose scraped label and cartridge photo are its base game's
++     * (pure — unit-tested). A label you picked yourself is applied after this and still wins.
++     */
++    fun merge(list: List<Pair<String, String>>, folderLabel: String?, hack: Boolean): List<Pair<String, String>> {
++        if (folderLabel == null) return list
++        val hasReal = list.any { it.first == "Disc label" }
++        if (hasReal && !hack) return list
++        val drop = if (hack) setOf("Disc label", "Disc / cartridge") else setOf("Disc label")
++        return list.filter { it.first !in drop } + ("Disc label" to folderLabel)
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/data/LabelIds.kt b/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
 new file mode 100644
 index 0000000..eead7ba
@@ -814,6 +934,22 @@ index e27ce09..56e53ad 100644
 +        .putStringSet("continue_apps", s.continueApps)
          .apply()
  }
+diff --git a/app/src/main/java/com/shelf/launcher/data/PhysicalOverrides.kt b/app/src/main/java/com/shelf/launcher/data/PhysicalOverrides.kt
+index 248aa58..57d777f 100644
+--- a/app/src/main/java/com/shelf/launcher/data/PhysicalOverrides.kt
++++ b/app/src/main/java/com/shelf/launcher/data/PhysicalOverrides.kt
+@@ -85,7 +85,10 @@ object PhysicalOverrides {
+         // its title — no longer shows that game's RA box and title screen saved with its scans.)
+         // (Update 302: TheGamesDB's back where the game has none of its own — TgdbBacks.)
+         val scrapedPlus = TgdbBacks.fill(key, scraped)
+-        val list = if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus
++        val list0 = if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus
++        // (Update 460: a label from your Labels folder — LabelFolder — where the game has no real label scan, and always for
++        // a ROM hack, whose scraped label is its base game's. Your own pick below still wins.)
++        val list = LabelFolder.forKey(key)?.let { folder -> LabelFolder.merge(list0, folder, RomHacks.isModified(null, key)) } ?: list0
+         var own = inUse(key)
+         if (own.isEmpty()) return list
+         // Update 301: your own full case scan stands for the front, back and spine (cut out of it — automatically, or
 diff --git a/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt b/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt
 index 2912fab..ecf1125 100644
 --- a/app/src/main/java/com/shelf/launcher/data/RecentlyPlayedStore.kt
@@ -1289,8 +1425,30 @@ index 78873e0..d56e485 100644
              textAlign = TextAlign.Center,
              lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
          )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
+index 2784a37..b9286ca 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
+@@ -165,7 +165,7 @@ internal fun ShelfGameArt(
+         ) {
+             // (Update 202: the cover, when it stands in for missing wide art, with its file's flat strips trimmed.)
+             if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
+-            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp))
++            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp), reserve = false)
+             ConsoleBadge(g.platform, packageName = g.packageName)
+         }
+     } else if (cov != null) {
+@@ -203,7 +203,7 @@ internal fun ShelfGameArt(
+                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
+             )
+             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(10.dp))
+-            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp))
++            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp), reserve = false)
+             // Case gloss.
+             Canvas(Modifier.fillMaxSize()) {
+                 drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..82c5687 100644
+index fad25ce..5a76115 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 @@ -635,6 +635,67 @@ internal object CartShells {
@@ -1361,7 +1519,7 @@ index fad25ce..82c5687 100644
      private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
          val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
          val a = art.width.toFloat() / art.height.coerceAtLeast(1)
-@@ -823,7 +884,12 @@ internal object CartShells {
+@@ -823,7 +884,16 @@ internal object CartShells {
          val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
          val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
          val head = plaque ?: switchHeader ?: paperHead
@@ -1370,12 +1528,16 @@ index fad25ce..82c5687 100644
 +        // LabelIds: the real product code from the ROM header, or that it's fan-made / homebrew, and the region.)
 +        val mould = gbTopText(s.id, brand)
 +        val ids = if (!scan) com.shelf.launcher.data.LabelIds.of(title) else null
-+        val labelKind = if (!scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
++        // (Update 460, owner: "I don't want another collection of invented cartridge labels" — update 459's generated
++        // designs (grey strips, GBA title panel, N64 footer, FAN-MADE down the side) are off; they stay only behind the QA
++        // switch GeneratedLabels.enabled for side-by-side comparisons. Real label scans, your own label and a label from
++        // your Labels folder (LabelFolder) come first, as before; a cover is the simple fallback.)
++        val labelKind = if (GeneratedLabels.enabled && !scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
 +        val key = "f11|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
          cache.get(key)?.let { return it }
          if (peek) return null
          val k = maxPx / maxOf(s.w, s.h)
-@@ -880,6 +946,9 @@ internal object CartShells {
+@@ -880,6 +950,9 @@ internal object CartShells {
              }
          }
          for (e in s.extras) drawExtra(c, e, k, base, p)
@@ -1385,7 +1547,7 @@ index fad25ce..82c5687 100644
          s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
          // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
          val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-@@ -890,7 +959,9 @@ internal object CartShells {
+@@ -890,7 +963,9 @@ internal object CartShells {
          val coverPic = if (art != null && !scan) labelArt(s, art) else null
          // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
          // (Update 307: a pack plaque header runs across the whole sticker too.)
@@ -1396,7 +1558,7 @@ index fad25ce..82c5687 100644
              val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
              val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
              if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
-@@ -962,21 +1033,30 @@ internal object CartShells {
+@@ -962,21 +1037,31 @@ internal object CartShells {
                          p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                      }
                      // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
@@ -1405,7 +1567,8 @@ index fad25ce..82c5687 100644
 +                    // code, or FAN-MADE / HOMEBREW (LabelIds); the made-up NTR-codes from the title are gone.)
                      val bandH = lr.bottom - artRect.bottom
 -                    if (bandH > 0.8f * k) {
-+                    val idText = GeneratedLabels.idLine(ids)
++                    // (Update 460: only a real product code from the ROM header; ROM-hack status is metadata, never printed on the label.)
++                    val idText = ids?.code
 +                    if (bandH > 0.8f * k && idText != null) {
                          val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                              color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f
@@ -1430,7 +1593,7 @@ index fad25ce..82c5687 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -1159,27 +1239,6 @@ internal object CartShells {
+@@ -1159,27 +1244,6 @@ internal object CartShells {
          return b
      }
  
@@ -1458,7 +1621,7 @@ index fad25ce..82c5687 100644
  
      /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
      private fun paperStrip(brand: String): Bitmap {
-@@ -1606,16 +1665,18 @@ internal fun CartShellArt(
+@@ -1606,16 +1670,18 @@ internal fun CartShellArt(
          // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
          // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
          // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
@@ -1480,11 +1643,74 @@ index fad25ce..82c5687 100644
              if (shell == null) { madeFront.value = null; return@LaunchedEffect }
              if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
              val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
+index 83b4b47..eeed844 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
+@@ -472,7 +472,7 @@ internal fun BladesLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
+                     FullText(
+                         tile.label, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                         modifier = Modifier.align(Alignment.Center).requiredWidth(bladeH * 0.8f).graphicsLayer { rotationZ = -90f }, textAlign = TextAlign.Center
+-                    )
++                    , reserve = false)
+                 }
+             }
+         }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
+index e346abb..0bc1e0d 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
+@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
+ import androidx.compose.foundation.layout.Box
+ import androidx.compose.foundation.layout.BoxWithConstraints
+ import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.heightIn
+ import androidx.compose.foundation.layout.Row
+ import androidx.compose.foundation.layout.Spacer
+ import androidx.compose.foundation.layout.fillMaxSize
+@@ -485,7 +486,10 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier)
+                     titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                     autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 19.sp),
+                     textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
+-                    modifier = Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
++                    // (Update 460, owner: the cover flow jumped up and down with one- or two-line names — the name and the line
++                    // under it always keep two lines' height now.)
++                    modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW), lines = 2))
++                        .riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
+                 )
+                 val meta = c.state.metadata[g.stableKey]
+                 val line = buildList {
+@@ -494,7 +498,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier)
+                     meta?.genres?.firstOrNull()?.let { add(it) }
+                     add(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
+                 }.joinToString("  ·  ")
+-                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
++                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(12.sp, lines = 2)))
+                 Spacer(Modifier.height(8.dp))
+                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                     HubHint("A", "Open") { live.actions.open() }
+@@ -530,7 +534,7 @@ private fun HubTabs(c: StyleCtx, tint: Color, on: Boolean) {
+     // (Update 294, Toni: the last tab ("App") was cut off at the right edge: whole tabs only, "+N ›" for the rest —
+     // WholeChipRow.)
+     WholeChipRow(count = c.stops.size, focused = stop, modifier = Modifier.fillMaxWidth().height(30.dp), spacing = 6.dp) { i ->
+-        val st = c.stops[i]
++        val st = c.stops.getOrNull(i) ?: return@WholeChipRow
+         val here = i == stop
+         val shape = RoundedCornerShape(8.dp)
+         Box(
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
-index 0e7220a..351da84 100644
+index 0e7220a..fdd67a5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
-@@ -116,7 +116,7 @@ private fun FullTextMarquee(
+@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
+ 
+ import androidx.compose.foundation.layout.BoxWithConstraints
+ import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.heightIn
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.remember
+@@ -116,7 +117,7 @@ private fun FullTextMarquee(
          lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
          // (RP Classic QA: a slide never stops, so a home screen with long names redrew forever. It rests with the home
          // screen — 30 s without input, HomeIdle.calm — and starts again with the first press.)
@@ -1493,6 +1719,60 @@ index 0e7220a..351da84 100644
      )
  }
  
+@@ -135,19 +136,50 @@ internal fun FullText(
+     textAlign: TextAlign? = null,
+     style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
+     /** Shrink (to [fitMin]) before sliding; off where a size that changes while the screen moves would flicker. */
+-    autoFit: Boolean = true
++    autoFit: Boolean = true,
++    /**
++     * Update 460 (owner: "the cube layout jumps up and down depending on how big the text under the games is — never do
++     * this"): the text always takes the height of [maxLines] lines at its full size, whether the name needs one line or
++     * two, shrinks or slides — so whatever sits above or below it never moves with the name. Off only where the text is
++     * centred over a picture by itself (a missing-cover placeholder), which nothing else is laid out around.
++     */
++    reserve: Boolean = true
+ ) {
+     var slide by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableStateOf(false) }
+-    if (slide) FullTextMarquee(text, color, fontSize, modifier, fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
++    val reserveMod = if (reserve) Modifier.heightIn(min = reservedLinesHeight(fontSize, lineHeight, fontWeight, fontFamily, letterSpacing, style, maxLines)) else Modifier
++    if (slide) FullTextMarquee(text, color, fontSize, modifier.then(reserveMod), fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
+     else Text(
+         text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
+         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = maxLines, overflow = TextOverflow.Clip,
+         autoSize = if (autoFit) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(fontSize), maxFontSize = fontSize) else null,
+         onTextLayout = { if (it.hasVisualOverflow) slide = true },
+-        modifier = modifier
++        modifier = modifier.then(reserveMod)
+     )
+ }
+ 
++/**
++ * Update 460: the height [lines] lines of text take at [fontSize] (measured once per size and style, not per frame) — what
++ * [FullText] keeps for a name however many lines it really needs, and what a plain `Text` under a game row can be given
++ * (`Modifier.heightIn(min = reservedLinesHeight(…))`) for the same reason.
++ */
++@Composable
++internal fun reservedLinesHeight(
++    fontSize: TextUnit, lineHeight: TextUnit = TextUnit.Unspecified, fontWeight: FontWeight? = null,
++    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, letterSpacing: TextUnit = TextUnit.Unspecified,
++    style: TextStyle = androidx.compose.material3.LocalTextStyle.current, lines: Int = 1
++): androidx.compose.ui.unit.Dp {
++    val measurer = rememberTextMeasurer(cacheSize = 4)
++    val density = androidx.compose.ui.platform.LocalDensity.current
++    return remember(fontSize, lineHeight, fontWeight, fontFamily, letterSpacing, style, lines, density) {
++        val probe = List(lines.coerceAtLeast(1)) { "Ag" }.joinToString("\n")
++        val r = measurer.measure(
++            probe, style.merge(TextStyle(fontSize = fontSize, lineHeight = lineHeight, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing)),
++            maxLines = lines.coerceAtLeast(1), softWrap = false
++        )
++        with(density) { r.size.height.toDp() }
++    }
++}
++
+ /**
+  * Update 363 (Cinema / Arctic hub, Thor): [FullText] whose size that fits is worked out in the same layout pass as the room it
+  * gets — [FullText]'s own auto-size draws nothing for a few frames after each change while it fits itself, so a name in a
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt b/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt
 index 84be836..49ee8e4 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt
@@ -1731,10 +2011,10 @@ index 3ce9e16..7bc8b6e 100644
      WinPage.DETAILS -> "Details"
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
 new file mode 100644
-index 0000000..d658f4d
+index 0000000..abda3df
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
-@@ -0,0 +1,295 @@
+@@ -0,0 +1,298 @@
 +package com.shelf.launcher.ui
 +
 +import android.graphics.Bitmap
@@ -1761,6 +2041,9 @@ index 0000000..d658f4d
 + * Pure drawing on a bitmap, deterministic for the same inputs, cached by the shell's front (CartShells.front).
 + */
 +internal object GeneratedLabels {
++    /** Update 460: off by default — the owner rejected generated label designs; QA only (`voltcap_test_genlabels`). */
++    @Volatile var enabled = false
++
 +    enum class Kind { DMG, CGB, AGB, N64, NES, FAMICOM, SNES, SFC, VB, MEGA_DRIVE, MASTER_SYSTEM, GAME_GEAR, SEGA_32X, ATARI, CARD, PLAIN }
 +
 +    /** The label design for a drawn shell, or null where the shell keeps its own (DS / 3DS / Switch cards — SwitchLabel). */
@@ -2073,6 +2356,19 @@ index e2f49d8..bcb4a5a 100644
          Spacer(Modifier.height(6.dp))
          // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.
          val rooted = com.shelf.launcher.device.RootShell.available
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GridHome.kt b/app/src/main/java/com/shelf/launcher/ui/GridHome.kt
+index f619fa6..087819e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GridHome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GridHome.kt
+@@ -289,7 +289,7 @@ internal fun HomeGameGrid(
+                             // (TrimMargins.kt); other pictures as before.
+                             url != null -> AsyncImage(if (!realScan && url == cover) rememberStyleArtRequest(url, trim = true) else url, g.name, contentScale = if (realScan) ContentScale.Fit else ContentScale.Crop, modifier = Modifier.fillMaxSize().then(if (realScan) Modifier.padding(6.dp) else Modifier).pixelArtwork())
+                             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = gridAspect(cardArtType, tiles) > 1f, modifier = Modifier.fillMaxSize())
+-                            else -> FullText(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp))
++                            else -> FullText(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
+                         }
+                         // Update 115: the console's badge (update 141: on every look; too narrow a slot skips it).
+                         ConsoleBadge(g.platform, packageName = g.packageName)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
 index cd5b7ae..1ef0d90 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
@@ -2101,7 +2397,7 @@ index cd5b7ae..1ef0d90 100644
                  when (key) {
                      com.shelf.launcher.data.CategorySettings.ALL -> add(key)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..174dc6c 100644
+index 0b73fb5..ea003aa 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -2143,7 +2439,7 @@ index 0b73fb5..174dc6c 100644
      // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
 +    // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
 +    // once per library in the background — LabelIds.
-+    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games) }
++    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games); viewModel.refreshFolderLabels(uiState.games) }
      val testCategory = TestHooks.category.value
      LaunchedEffect(testCategory) {
          val c = testCategory ?: return@LaunchedEffect
@@ -2366,10 +2662,22 @@ index 0b73fb5..174dc6c 100644
 +    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..7e0ed20 100644
+index 145a2a2..2a1954c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-@@ -1846,7 +1846,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -483,7 +483,10 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+         val sh = CartShells.of(id) ?: return@let
+         val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
+         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
+-        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
++        // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
++        // only, so update 459's comparison sheets showed covers where the game had its real label.)
++        val scan = drawnLabelScan(physical, g.platform)
++        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cover, scan != null, null, cover, null, null, physical, null, shellTone(ms), false)
+     }
+     val small = Features.bigGcDiscs.state.value.not()
+     val mixed = mixedConsoles(state.visibleGames)
+@@ -1846,7 +1849,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                      drawRect(sideTone, blendMode = BlendMode.SrcIn)
                      drawRect(sheen, blendMode = BlendMode.SrcAtop)
                  }
@@ -2379,7 +2687,7 @@ index 145a2a2..7e0ed20 100644
                  if (n > 0) {
                      // Far to near.
                      for (k in 0..n) {
-@@ -1859,6 +1860,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1859,6 +1863,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                  val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                  val plasticArgb = sideTone.toArgb()
                  if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
@@ -3482,6 +3790,39 @@ index 4ef188c..a1c672c 100644
              }
          }
      }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
+index d3b5c22..12519d0 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
+@@ -434,6 +434,28 @@ internal fun warmCase3d(context: android.content.Context, models: List<Triple<St
+     if (!com.shelf.launcher.device.MemoryBudget.small(context)) warmSoft(context, models.mapNotNull { it.third }.distinct(), 480)
+ }
+ 
++/**
++ * Update 460 (owner, KONKR Pocket: "when scrolling, first the games appear as blocks and then as games with the right
++ * artwork" in the case layouts): Case flow, Case stacks and Rental shop drew their 3D cases without decoding the cases
++ * ahead — each case sliding in stood as bare plastic until its front and spine were read. The cases [reach] either side of
++ * [focus] are decoded ahead now, as the carousel's Box flow does ([warmCase3d]); worked out away from the screen's thread,
++ * a moment after the move so the move's own frame comes first.
++ */
++@androidx.compose.runtime.Composable
++internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boolean, realFront: Boolean) {
++    val context = LocalContext.current
++    val games = c.games
++    androidx.compose.runtime.LaunchedEffect(focus, games, realFront) {
++        if (games.isEmpty()) return@LaunchedEffect
++        kotlinx.coroutines.delay(40)
++        val near = ((focus - reach)..(focus + reach)).mapNotNull { i -> games.getOrNull(if (loop) i.mod(games.size) else i) }.distinct()
++        val models = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
++            near.map { g -> case3dModels(g, c.cover(g), c.state.physicalMedia[g.stableKey], realFront && c.state.artOverrides[g.stableKey]?.cover == null) }
++        }
++        warmCase3d(context, models)
++    }
++}
++
+ /** Update 202: the memory key of a [rememberSoftBitmap] / [warmSoft] picture (a trimmed cover has its own). */
+ private fun softKey(maxSide: Int, url: String, trim: Boolean): String =
+     "soft|$maxSide|" + (if (trim) TrimUniformMargins.KEY + "|" else "") + url
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt b/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt
 index f4f13f4..9b554af 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SecondScreen.kt
@@ -4045,6 +4386,58 @@ index f7b2755..6002683 100644
 +        return path
 +    }
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleArctic.kt b/app/src/main/java/com/shelf/launcher/ui/StyleArctic.kt
+index 941198e..8164d7b 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleArctic.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleArctic.kt
+@@ -366,7 +366,7 @@ private fun ArcticRow(c: StyleCtx, r: HomeRow, here: Boolean, tileH: Dp, wide: B
+                     ) {
+                         val url = if (wide) c.wide(game) else c.cover(game)
+                         if (url != null) AsyncImage(rememberStyleArtRequest(url), titles.display(game.name), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+-                        else FullText(titles.display(game.name), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp))
++                        else FullText(titles.display(game.name), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
+                         if (game.stableKey in c.state.favorites) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(8.dp).clip(CircleShape).background(accent))
+                     }
+                 }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
+index 5b82476..8a5b3f5 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
+@@ -153,6 +153,8 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
+     val centre by remember { derivedStateOf { pos.value.roundToInt() } }
+     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
+     val nSide = if (loop) min(5, (count - 1) / 2).coerceAtLeast(1) else 5
++    // (Update 460: the cases coming in decoded ahead — no bare plastic blocks while scrolling.)
++    WarmCaseNeighbours(c, vFocus, nSide + 4, loop, realFront = true)
+     val density = LocalDensity.current
+ 
+     BoxWithConstraints(modifier.fillMaxSize()) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
+index f06df0b..a16a74c 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
+@@ -125,6 +125,8 @@ private const val STACKS_CASE_YAW = 24f
+ @Composable
+ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
+     val g0 = c.game
++    // (Update 460: the 3D middle cases of the games either side decoded ahead — no bare block while moving.)
++    if (stacksCaseLook(c.type) && !spinesOn(c.type) && Features.stacks3d.state.value) WarmCaseNeighbours(c, c.focus, 3, loopRowOn(c), realFront = false)
+     // A button bar hidden in Edit Home (or switched off) drops out of the D-pad's way: ▼ then reaches what lies below.
+     val barOn = Features.stacksBar.state.value && !LayoutParts.off(HomeLayout.STACKS, "bar")
+     val toolsOn = Features.stacksToolbar.state.value && !LayoutParts.off(HomeLayout.STACKS, "tools") && c.shortcuts.isNotEmpty()
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCinema.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCinema.kt
+index 169f89c..329eb11 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCinema.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCinema.kt
+@@ -366,7 +366,7 @@ private fun CinemaRow(
+                     ) {
+                         val url = if (poster) c.cover(game) else c.wide(game)
+                         if (url != null) AsyncImage(rememberStyleArtRequest(url), titles(game), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+-                        else FullText(titles(game), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp))
++                        else FullText(titles(game), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
+                         // A thin progress line for games you've played, like the rows' "keep watching" bar.
+                         c.progress(game)?.let { (e, t) ->
+                             if (e in 1 until t) Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(3.dp).background(Color.White.copy(alpha = 0.25f))) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt
 index 16f078e..476e5fa 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCircuit.kt
@@ -4083,7 +4476,7 @@ index 2fb8a39..5b9b923 100644
      if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
      if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
-index f42176b..505c4a9 100644
+index f42176b..a133a5a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
 @@ -332,9 +332,13 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
@@ -4143,6 +4536,41 @@ index f42176b..505c4a9 100644
      val p = st.platform ?: return st.label
      if (com.shelf.launcher.data.isCollectionKey(p)) return st.label
      return com.shelf.launcher.data.ConsoleNames.label(p)
+@@ -589,7 +607,7 @@ private fun PqCover(c: StyleCtx, g: Game, modifier: Modifier) {
+             else -> FullText(
+                 titles.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, textAlign = TextAlign.Center,
+                 maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp)
+-            )
++            , reserve = false)
+         }
+         ConsoleBadge(g.platform, packageName = g.packageName)
+     }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt
+index 489323b..86c7124 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt
+@@ -519,7 +519,7 @@ private fun CrateSleeve(c: StyleCtx, g: Game, focused: Boolean, centre: Boolean,
+                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,
+                 textAlign = TextAlign.Center, maxLines = 4,
+                 modifier = Modifier.align(Alignment.Center).padding(8.dp)
+-            )
++            , reserve = false)
+         }
+         // The sleeve's paper: light from the top left, and the ring the record has worn into it (drawn once per size).
+         Box(
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
+index b8eafd3..852a724 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
+@@ -230,6 +230,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
+         StyleLoop.on = loopRowOn(c)
+     }
+     rememberLayoutKit(LayoutKit.SHOP, Features.rsSounds.state.value, c.state.appearance.soundsEnabled)
++    // (Update 460: the cases around the one you're on decoded ahead — no bare blocks while scrolling.)
++    WarmCaseNeighbours(c, c.focus, 10, loopRowOn(c), realFront = true)
+     DisposableEffect(Unit) { onDispose { ShopNav.keysDown.clear(); ShopNav.map = false } }
+     androidx.activity.compose.BackHandler(enabled = ShopNav.map && GamePopup.game == null) { ShopNav.map = false }
+     if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native(null)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt b/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
 index 55ac6bf..f9fadad 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
@@ -4167,7 +4595,7 @@ index 55ac6bf..f9fadad 100644
          for (wait in longArrayOf(120, 350, 800)) {
              kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..35d5a64 100644
+index df68497..1d37af5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -27,6 +27,18 @@ internal object TestHooks {
@@ -4283,7 +4711,16 @@ index df68497..35d5a64 100644
          val want = intent?.getStringExtra("voltcap_test_layout")
          val g = intent?.getStringExtra("voltcap_test_game")
          val st = intent?.getStringExtra("voltcap_test_settings")
-@@ -173,6 +264,32 @@ internal object TestHooks {
+@@ -157,6 +248,8 @@ internal object TestHooks {
+         if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
+         // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
+         if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
++        // Update 460: `--ez voltcap_test_genlabels true|false` — update 459's generated label designs back on for this session (comparison sheets only).
++        if (intent?.hasExtra("voltcap_test_genlabels") == true && enabled(context)) GeneratedLabels.enabled = intent.getBooleanExtra("voltcap_test_genlabels", false)
+         if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
+         // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
+         intent?.getStringExtra("voltcap_test_fault")?.let { f ->
+@@ -173,6 +266,32 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -4316,7 +4753,7 @@ index df68497..35d5a64 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -205,6 +322,9 @@ internal object TestHooks {
+@@ -205,6 +324,9 @@ internal object TestHooks {
              previewOnly = true
              tileWalk.value = tw
          }
@@ -4326,7 +4763,7 @@ index df68497..35d5a64 100644
          if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
-@@ -215,8 +335,13 @@ internal object TestHooks {
+@@ -215,8 +337,13 @@ internal object TestHooks {
          if (rs != null) { previewOnly = true; shortcuts.value = rs }
          if (snap != null) runCatching {
              val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
@@ -4340,7 +4777,7 @@ index df68497..35d5a64 100644
                  // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
                  val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                  java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
-@@ -234,6 +359,11 @@ internal object TestHooks {
+@@ -234,6 +361,11 @@ internal object TestHooks {
                      if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
                      e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
                  }
@@ -4499,6 +4936,30 @@ index 5918eb7..adfc57f 100644
      }
  }
 +
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt b/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
+index 6d9b8e3..66a779e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
+@@ -63,6 +63,10 @@ internal fun WholeChipRow(
+     chip: @Composable (Int) -> Unit
+ ) {
+     val win = remember { ChipWindow() }
++    // Update 460 (KONKR Pocket crash in 0.6.66: IndexOutOfBounds 6 / 6 in the Cube hub's tabs): when the list gets
++    // shorter, an old chip's slot can still be recomposed once before it is dropped — it then draws nothing instead of
++    // asking its caller for an item that no longer exists.
++    val liveCount = androidx.compose.runtime.rememberUpdatedState(count)
+     val tick = remember { mutableIntStateOf(0) }
+     val focusIdx = remember { mutableIntStateOf(-1) }
+     val stepPx = with(LocalDensity.current) { 40.dp.toPx() }
+@@ -94,7 +98,7 @@ internal fun WholeChipRow(
+         val ps: List<Placeable> = (0 until count).map { i ->
+             subcompose("c$i") {
+                 val bring = remember(i) { { win.keep = i; win.manual = false; tick.intValue++; Unit } }
+-                Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { chip(i) }
++                Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { if (i < liveCount.value) chip(i) }
+             }.first().measure(childCs)
+         }
+         val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt b/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt
 index 791a4b3..02997cf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt
@@ -5039,6 +5500,91 @@ index 0000000..d7d70ac
 +        assertEquals(0, slideDirection(order, "Theme", "Theme"))
 +        val src = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it).exists() }, "SettingsDialog.kt").readText()
 +        assertTrue(src.contains("SettingsPageSlide(category, CATEGORIES, paneWeight)"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt b/app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt
+new file mode 100644
+index 0000000..c1f25c6
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt
+@@ -0,0 +1,79 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.LabelFolder
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Update 460: real label first, your own / fan-made label second, no invented generated designs by default; plus the
++ * Cube hub's steady name lines, the chip row crash and the case layouts' decoding ahead.
++ */
++class Labels460Test {
++    private fun src(name: String, dir: String = "ui"): String =
++        java.io.File(listOf("../src_copy/$dir", "src/main/java/com/shelf/launcher/$dir", "app/src/main/java/com/shelf/launcher/$dir").first { java.io.File(it).exists() }, name).readText()
++
++    @Test fun folderNamesMatchGames() {
++        assertEquals(LabelFolder.norm("Pokemon Brown.png"), LabelFolder.norm("/storage/1234/ROMs/gbc/Pokemon Brown (Hack).gbc"))
++        assertEquals(LabelFolder.norm("Pokemon - Crystal Clear.jpg"), LabelFolder.norm("/r/gbc/Pokemon - Crystal Clear (v2.2) [Hack].gbc"))
++        assertTrue(LabelFolder.norm("Pokemon Silver.png") != LabelFolder.norm("Pokemon Gold.png"))
++    }
++
++    @Test fun precedence() {
++        val scraped = listOf("Box" to "b", "Disc label" to "real", "Disc / cartridge" to "photo")
++        // an official game keeps its real label scan
++        assertEquals(scraped, LabelFolder.merge(scraped, "file://mine", hack = false))
++        // a ROM hack: its scraped label and photo are the base game's — your folder's label instead
++        val hack = LabelFolder.merge(scraped, "file://mine", hack = true)
++        assertEquals("file://mine", hack.first { it.first == "Disc label" }.second)
++        assertTrue(hack.none { it.first == "Disc / cartridge" })
++        assertEquals("b", hack.first { it.first == "Box" }.second)
++        // no real label: the folder's
++        assertEquals("file://mine", LabelFolder.merge(listOf("Box" to "b"), "file://mine", hack = false).last().second)
++        // nothing in the folder: unchanged
++        assertEquals(scraped, LabelFolder.merge(scraped, null, hack = true))
++    }
++
++    @Test fun folderScan() {
++        val root = kotlin.io.path.createTempDirectory("labels").toFile()
++        java.io.File(root, "Pokemon Brown.png").writeBytes(byteArrayOf(1, 2, 3))
++        java.io.File(root, "notes.txt").writeText("x")
++        java.io.File(root, "empty.png").createNewFile()
++        java.io.File(root, "GBA").mkdirs(); java.io.File(root, "GBA/Advance Wars 2.jpg").writeBytes(byteArrayOf(1))
++        val map = LabelFolder.scan(listOf(root))
++        assertEquals(setOf("pokemonbrown", "advancewars2"), map.keys)
++        LabelFolder.setForTest(map)
++        assertTrue(LabelFolder.forKey("/r/gb/Pokemon Brown (Hack).gb")!!.startsWith("file://"))
++        assertNull(LabelFolder.forKey("/r/gb/Pokemon Red.gb"))
++        LabelFolder.setForTest(emptyMap())
++        root.deleteRecursively()
++    }
++
++    @Test fun generatedDesignsOffByDefault() {
++        assertFalse(GeneratedLabels.enabled)
++        val cs = src("CartShells.kt")
++        assertTrue(cs.contains("val labelKind = if (GeneratedLabels.enabled &&"))
++        // ROM-hack status is never printed on a label; only a real header code
++        assertTrue(cs.contains("val idText = ids?.code"))
++        assertFalse(cs.contains("GeneratedLabels.idLine(ids)"))
++    }
++
++    @Test fun cubeHubLinesKeepTheirHeight() {
++        val hub = src("CubeHub.kt")
++        assertTrue(hub.contains("reservedLinesHeight(19.sp"))
++        assertTrue(hub.contains("reservedLinesHeight(12.sp, lines = 2)"))
++        val fit = src("FitText.kt")
++        assertTrue(fit.contains("reserve: Boolean = true"))
++    }
++
++    @Test fun chipRowNeverAsksForAGoneItem() {
++        assertTrue(src("WholeChipRow.kt").contains("if (i < liveCount.value) chip(i)"))
++        assertTrue(src("CubeHub.kt").contains("c.stops.getOrNull(i) ?: return@WholeChipRow"))
++    }
++
++    @Test fun caseLayoutsDecodeAhead() {
++        for (f in listOf("StyleCaseFlow.kt", "StyleCaseStacks.kt", "StyleRentalShop.kt")) assertTrue(f, src(f).contains("WarmCaseNeighbours("))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt b/app/src/test/java/com/shelf/launcher/ui/NavBar449Test.kt

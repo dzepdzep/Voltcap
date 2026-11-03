@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -135,17 +136,48 @@ internal fun FullText(
     textAlign: TextAlign? = null,
     style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
     /** Shrink (to [fitMin]) before sliding; off where a size that changes while the screen moves would flicker. */
-    autoFit: Boolean = true
+    autoFit: Boolean = true,
+    /**
+     * Update 460 (owner: "the cube layout jumps up and down depending on how big the text under the games is — never do
+     * this"): the text always takes the height of [maxLines] lines at its full size, whether the name needs one line or
+     * two, shrinks or slides — so whatever sits above or below it never moves with the name. Off only where the text is
+     * centred over a picture by itself (a missing-cover placeholder), which nothing else is laid out around.
+     */
+    reserve: Boolean = true
 ) {
     var slide by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableStateOf(false) }
-    if (slide) FullTextMarquee(text, color, fontSize, modifier, fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
+    val reserveMod = if (reserve) Modifier.heightIn(min = reservedLinesHeight(fontSize, lineHeight, fontWeight, fontFamily, letterSpacing, style, maxLines)) else Modifier
+    if (slide) FullTextMarquee(text, color, fontSize, modifier.then(reserveMod), fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
     else Text(
         text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = maxLines, overflow = TextOverflow.Clip,
         autoSize = if (autoFit) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(fontSize), maxFontSize = fontSize) else null,
         onTextLayout = { if (it.hasVisualOverflow) slide = true },
-        modifier = modifier
+        modifier = modifier.then(reserveMod)
     )
+}
+
+/**
+ * Update 460: the height [lines] lines of text take at [fontSize] (measured once per size and style, not per frame) — what
+ * [FullText] keeps for a name however many lines it really needs, and what a plain `Text` under a game row can be given
+ * (`Modifier.heightIn(min = reservedLinesHeight(…))`) for the same reason.
+ */
+@Composable
+internal fun reservedLinesHeight(
+    fontSize: TextUnit, lineHeight: TextUnit = TextUnit.Unspecified, fontWeight: FontWeight? = null,
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, letterSpacing: TextUnit = TextUnit.Unspecified,
+    style: TextStyle = androidx.compose.material3.LocalTextStyle.current, lines: Int = 1
+): androidx.compose.ui.unit.Dp {
+    val measurer = rememberTextMeasurer(cacheSize = 4)
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    return remember(fontSize, lineHeight, fontWeight, fontFamily, letterSpacing, style, lines, density) {
+        val probe = List(lines.coerceAtLeast(1)) { "Ag" }.joinToString("\n")
+        val r = measurer.measure(
+            probe, style.merge(TextStyle(fontSize = fontSize, lineHeight = lineHeight, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing)),
+            maxLines = lines.coerceAtLeast(1), softWrap = false
+        )
+        with(density) { r.size.height.toDp() }
+    }
 }
 
 /**

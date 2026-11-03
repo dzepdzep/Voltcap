@@ -483,7 +483,10 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         val sh = CartShells.of(id) ?: return@let
         val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
-        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
+        // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
+        // only, so update 459's comparison sheets showed covers where the game had its real label.)
+        val scan = drawnLabelScan(physical, g.platform)
+        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cover, scan != null, null, cover, null, null, physical, null, shellTone(ms), false)
     }
     val small = Features.bigGcDiscs.state.value.not()
     val mixed = mixedConsoles(state.visibleGames)

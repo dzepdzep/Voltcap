@@ -607,7 +607,7 @@ private fun PqCover(c: StyleCtx, g: Game, modifier: Modifier) {
             else -> FullText(
                 titles.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, textAlign = TextAlign.Center,
                 maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp)
-            )
+            , reserve = false)
         }
         ConsoleBadge(g.platform, packageName = g.packageName)
     }

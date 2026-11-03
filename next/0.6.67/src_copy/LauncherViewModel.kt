@@ -1148,6 +1148,28 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Update 460: reads the Labels folder (LabelFolder) and gives the games with a label there that label as their
+     * "Disc label" (where they have no real label scan, or always for a ROM hack). Once per library change, off the main thread.
+     */
+    private var folderLabelsFor = -1
+    fun refreshFolderLabels(games: List<Game>) {
+        val tag = games.size * 31 + (games.firstOrNull()?.stableKey?.hashCode() ?: 0)
+        if (tag == folderLabelsFor) return
+        folderLabelsFor = tag
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { com.shelf.launcher.data.LabelFolder.index() }
+            val upd = HashMap<String, List<Pair<String, String>>>()
+            for (g in games) {
+                if (g.sourceType != com.shelf.launcher.data.SourceType.ROM) continue
+                val k = g.stableKey
+                if (com.shelf.launcher.data.LabelFolder.forKey(k) == null) continue
+                upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, physicalRaw[k].orEmpty()) }.getOrNull() ?: continue
+            }
+            if (upd.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + upd) }
+        }
+    }
+
     /** Update 137: your pick for one of [game]'s real-media pictures ([label] as in the scraped list; null: back to the scan). */
     fun setPhysicalOverride(game: Game, label: String, url: String?) {
         val key = game.stableKey

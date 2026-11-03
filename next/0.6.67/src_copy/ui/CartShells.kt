@@ -888,7 +888,11 @@ internal object CartShells {
         // LabelIds: the real product code from the ROM header, or that it's fan-made / homebrew, and the region.)
         val mould = gbTopText(s.id, brand)
         val ids = if (!scan) com.shelf.launcher.data.LabelIds.of(title) else null
-        val labelKind = if (!scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
+        // (Update 460, owner: "I don't want another collection of invented cartridge labels" — update 459's generated
+        // designs (grey strips, GBA title panel, N64 footer, FAN-MADE down the side) are off; they stay only behind the QA
+        // switch GeneratedLabels.enabled for side-by-side comparisons. Real label scans, your own label and a label from
+        // your Labels folder (LabelFolder) come first, as before; a cover is the simple fallback.)
+        val labelKind = if (GeneratedLabels.enabled && !scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
         val key = "f11|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
@@ -1036,7 +1040,8 @@ internal object CartShells {
                     // the left of the band under the art, past the cut corner. Update 459: only a true one — the ROM header's
                     // code, or FAN-MADE / HOMEBREW (LabelIds); the made-up NTR-codes from the title are gone.)
                     val bandH = lr.bottom - artRect.bottom
-                    val idText = GeneratedLabels.idLine(ids)
+                    // (Update 460: only a real product code from the ROM header; ROM-hack status is metadata, never printed on the label.)
+                    val idText = ids?.code
                     if (bandH > 0.8f * k && idText != null) {
                         val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f

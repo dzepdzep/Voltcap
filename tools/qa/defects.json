@@ -1914,9 +1914,9 @@
    "title": "Pokémon Stadium / Pokémon Snap (N64): owner reports the wrong case / packaging",
    "rule": "ART",
    "severity": "med",
-   "status": "blocked",
+   "status": "open",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen. Owner (457): seen on the KONKR Pocket — not connected; test there when it is plugged in via USB."
+   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen. Owner (457): seen on the KONKR Pocket — not connected; test there when it is plugged in via USB. Update 460 (KONKR, label audit + Inspect): the real US box, back, spine, full scan and label scans are saved and no cover is picked, yet Case flow / Inspect show a cream Snap / Mewtwo Stadium front and Voltcap's plain spine (the back is real). Cause not found; next: a log build of Case3D's front / spine pick."
   },
   {
    "id": "D174",
@@ -1934,7 +1934,7 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed. Update 458: causes — (1) side copies are planes parallel to the face: edge-on they had no width, the GBA cart vanished at 90 deg on the home (Thor); (2) each copy's slanted top left a step before the next: saw-tooth along the side top at 45-90; (3) Inspect drew the face at >= 1 % width edge-on: label squeezed into a striped column. Fixed in staging: copies never past ~88 deg (edgeOnSafeYaw), face/back fade edge-on (edgeOnFade, home + Inspect), copies clipped to the side's real top/bottom edge (SideClip, same Skia camera) and the side strip filled past ~81 deg; Inspect slices up to 72. Thor verified: home poses 0-180 incl. 88/90/92/-90, Inspect 45/88/90, turn + scroll recordings, GB/GBC/N64/3DS at 75/90. Left: ~1 px fine tooth at ~75; Switch and RP Classic not tested; perf not proven (Thor 1 staging run 4.3 % janky vs RC ~1.6 %). Update 459: performance re-measured on the Thor GBA row (staging, 16 moves x3): 7.3 % cold, then 0.98 % / 1.21 % janky = RC (~1.6 %). Fix kept."
+   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed. Update 458: causes — (1) side copies are planes parallel to the face: edge-on they had no width, the GBA cart vanished at 90 deg on the home (Thor); (2) each copy's slanted top left a step before the next: saw-tooth along the side top at 45-90; (3) Inspect drew the face at >= 1 % width edge-on: label squeezed into a striped column. Fixed in staging: copies never past ~88 deg (edgeOnSafeYaw), face/back fade edge-on (edgeOnFade, home + Inspect), copies clipped to the side's real top/bottom edge (SideClip, same Skia camera) and the side strip filled past ~81 deg; Inspect slices up to 72. Thor verified: home poses 0-180 incl. 88/90/92/-90, Inspect 45/88/90, turn + scroll recordings, GB/GBC/N64/3DS at 75/90. Left: ~1 px fine tooth at ~75; Switch and RP Classic not tested; perf not proven (Thor 1 staging run 4.3 % janky vs RC ~1.6 %). Update 459: performance re-measured on the Thor GBA row (staging, 16 moves x3): 7.3 % cold, then 0.98 % / 1.21 % janky = RC (~1.6 %). Fix kept. Update 460: KONKR (staging) Advance Wars 2 at 45/75/90/120/180 clean."
   },
   {
    "id": "D176",
@@ -1952,7 +1952,7 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 459 (owner)",
-   "note": "Fixed in staging: GeneratedLabels.kt (per-platform designs, cover whole at its aspect), LabelIds.kt (ROM-header codes only, FAN-MADE / HOMEBREW). Verified on hardware: GB family, GBA, N64, SFC, DS. Not verified: 3DS, Switch, Vita, NES / Famicom, Sega, Atari, CustomCarts. Labels459Test."
+   "note": "Fixed in staging: GeneratedLabels.kt (per-platform designs, cover whole at its aspect), LabelIds.kt (ROM-header codes only, FAN-MADE / HOMEBREW). Verified on hardware: GB family, GBA, N64, SFC, DS. Not verified: 3DS, Switch, Vita, NES / Famicom, Sega, Atari, CustomCarts. Labels459Test. Update 460 (owner rejected the 459 designs): designs OFF by default; real / fan label scans (ScreenScraper) shown first — they were hidden in 459's QA sheets by the Inspect hook drawing the cover (fixed); Labels folder added. KONKR sheet qa460/evidence."
   },
   {
    "id": "D178",
@@ -1961,7 +1961,43 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-02 update 459 (owner)",
-   "note": "Fixed in staging: SettingsPageSlide (directional slide, old page focus / touch blocked, per-category scroll + subpage kept). RP: directional but steppy (31 % janky frames); Thor smooth. Controller L1 / R1 path not recorded on the RP (injected keyevents did not switch)."
+   "note": "Fixed in staging: SettingsPageSlide (directional slide, old page focus / touch blocked, per-category scroll + subpage kept). RP: directional but steppy (31 % janky frames); Thor smooth. Controller L1 / R1 path not recorded on the RP (injected keyevents did not switch). Update 460: RP not connected — not re-measured."
+  },
+  {
+   "id": "D179",
+   "title": "Cube hub: the cover row moves up and down with one- or two-line names / info",
+   "rule": "VISUAL",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-03 update 460 (owner)",
+   "note": "CubeHub title / info lines reserve 2 lines (reservedLinesHeight); FullText reserves its maxLines everywhere (reserve=true, off for centred placeholders). Odin hub: steady over 5 games."
+  },
+  {
+   "id": "D180",
+   "title": "KONKR crash: IndexOutOfBounds 6/6 in the Cube hub's tabs (WholeChipRow) when the category list shrinks",
+   "rule": "CRASH",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-11-03 update 460 (QA, 0.6.66 RC)",
+   "note": "WholeChipRow skips a stale slot (liveCount), CubeHub uses getOrNull. In the frozen 0.6.66 RC as well."
+  },
+  {
+   "id": "D181",
+   "title": "Case layouts show bare blocks before the artwork while scrolling (KONKR)",
+   "rule": "VISUAL",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-03 update 460 (owner)",
+   "note": "Case flow / Case stacks / Rental shop decode their 3D cases ahead (WarmCaseNeighbours). KONKR Case flow sampled frames OK; the owner's case not reproduced on the RC in this session."
+  },
+  {
+   "id": "D182",
+   "title": "QA Inspect hook (voltcap_test_inspect with a shell) drew the cover instead of the game's label scan",
+   "rule": "INFRA",
+   "severity": "med",
+   "status": "fixed",
+   "found": "2026-11-03 update 460",
+   "note": "Update 459's comparison sheets were wrong for games with a label scan (Silver, Crystal Clear…). MediaInspectView forced shell now wears drawnLabelScan."
   }
  ]
 }
