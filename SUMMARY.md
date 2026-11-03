@@ -1,3 +1,25 @@
+# Update 460b (3 Nov 2026) — D173 fixed: Pokémon Snap / Stadium real US boxes and spines (KONKR), Case stacks measured, Brown fallback options (NOT published)
+
+**Devices (USB):** KONKR Pocket GT78 BW0306N230000845 only (Odin not used; Thor / RP Classic not connected). v0.6.66 frozen; staging only.
+**Owner decisions recorded:** real label first approved for GB / GBC / GBA (order: your label → matched real / fan label scan → Voltcap/Labels →
+fallback; never a base game's label for a hack); 459 designs stay off.
+**D173 root cause (traced with a new QA dump, `--es voltcap_test_mediadump "<name>"` → media_dump.txt):** the KONKR has Pokémon Snap, Stadium and Stadium 2
+twice — on the internal storage and on the SD card. Their real ScreenScraper scans (box, back, spine, full scan, label) were saved under the SD-card copy's
+key only; the library shows the internal copy, whose key had no scans (state=null, known=false), so its case got the SteamGridDB cover and Voltcap's plain
+title spine. No cover pick, override, flat-art filter, region or cache was involved. Fix (`data/GameCopies.kt`, `LauncherViewModel.shareScansAcrossCopies`): a
+game with no scans of its own uses the scans saved for another copy of the same file (same file name in a same-named folder; never another region,
+revision or hack), in memory, your picks for that copy still on top. KONKR: 11 games got their scans this way; Case flow shows the real US Snap / Stadium /
+Stadium 2 boxes, Inspect shows the real fronts and spines (qa460/d173b). Harvest Moon 64, Kirby 64, Mario Kart 64, Paper Mario, WWF No Mercy, Smash Bros were
+already fine (own scans). The first open after the fix drew the case blank while the scans downloaded (network), then correct.
+**N64 labels (KONKR, real label scans):** Super Smash Bros., Mario Kart 64 — real stickers on the N64 shell. SNES / SFC / NES / DS / 3DS captures failed
+(hook name matches) — still NOT verified.
+**D137 Case stacks (KONKR, staging, GBA category, 20 moves at 150 ms, 3 runs):** 39 / 34 / 29 % janky, 90th 42-48 ms; slow frames are render-bound
+(cmd 11.7 ms + gpu 7.3 ms on average, layout 0); PSS ~650-680 MB. **RC, same script:** 51 / 28 / 25 % janky, 90th 61 / 42 / 42 ms, PSS ~490-570 MB. So staging's decoding ahead makes the first pass smoother (39 vs 51 %) but holds ~90-110 MB more memory, and later passes are the same; Case stacks is still render-bound in both. NOT fixed; the decode-ahead memory cost is a finding to fix before 0.6.67 (cap it / drop on leave).
+**Brown:** no label scan exists for it (not on the KONKR; RP not connected). Fallback options shown to the owner (qa460/evidence/brown_fallback_options.png,
+mock from the RP capture): A soft-blurred art extension, B plain printed grey card without text, C dark printed field. Waiting for the owner's pick.
+**Popup audit (all layouts × R1 modes):** still OPEN — not done this update. **Settings slide (RP):** OPEN until the RP Classic is connected.
+**Tests:** GameCopies460Test (copy matching; never another region / hack / folder).
+
 # Update 460 (3 Nov 2026) — real cartridge labels first (459's generated designs off), Cube hub name jump, KONKR Cube crash, case layouts decoded ahead, D173 narrowed (NOT published)
 
 **Devices (USB):** KONKR Pocket = ARBOR GT78 BW0306N230000845, Odin 2 Portal b92036fb (its wireless twin ignored). Thor and RP Classic were NOT connected —

@@ -83,3 +83,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
 /app/src/main/java/com/shelf/launcher/data/LabelFolder.kt
 /app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt
+/app/src/main/java/com/shelf/launcher/data/GameCopies.kt
+/app/src/test/java/com/shelf/launcher/data/GameCopies460Test.kt

@@ -3,6 +3,18 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 460b (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Real-label-first for GB / GBC / GBA | APPROVED (owner), in staging | order: your label → matched scan → Voltcap/Labels → fallback |
+| D173 Snap / Stadium real packaging | FIXED, HARDWARE KONKR | root cause: duplicate copies (internal + SD); scans saved under the SD copy only; GameCopies shares them |
+| Other N64 games | CHECKED KONKR | 6 games had own scans and were fine; 11 games gained scans from their copy |
+| Brown label | WAITING OWNER | no scan; options A/B/C (brown_fallback_options.png) |
+| Other systems' label audit | PARTLY | N64 real labels OK (2 games); SNES / SFC / NES / DS / 3DS / Switch / Vita / Sega / CustomCarts NOT verified |
+| D137 Case stacks | MEASURED, NOT FIXED | staging 39/34/29 % vs RC 51/28/25 % janky; staging +90-110 MB PSS (decode ahead) — to cap |
+| Popup audit, all layouts × R1 modes | OPEN | not done; matrix still to build |
+| Settings slide RP | OPEN | RP not connected |
+
 ## Update 460 (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

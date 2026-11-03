@@ -1145,6 +1145,35 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             // (What was looked up meanwhile wins over the saved list.)
             if (loaded.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = loaded + st.physicalMedia) }
+            // (Update 460b: copies of one game file without scans of their own — GameCopies.)
+            shareScansAcrossCopies(_uiState.value.games)
+        }
+    }
+
+    /**
+     * Update 460b (D173): a game with no saved scans of its own takes the ones saved for another copy of the same file
+     * (internal storage and SD card — GameCopies). In memory only; your picks for this copy still apply.
+     */
+    fun shareScansAcrossCopies(games: List<Game>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (physicalRaw.isEmpty()) return@launch
+            val keys = physicalRaw.keys.toList()
+            val byCopy = HashMap<String, String>()
+            for (k in keys) com.shelf.launcher.data.GameCopies.copyKey(k)?.let { byCopy.putIfAbsent(it, k) }
+            val now = _uiState.value.physicalMedia
+            val upd = HashMap<String, List<Pair<String, String>>>()
+            for (g in games) {
+                if (g.sourceType != com.shelf.launcher.data.SourceType.ROM) continue
+                val k = g.stableKey
+                if (physicalRaw.containsKey(k) || now[k] != null) continue
+                val sib = com.shelf.launcher.data.GameCopies.copyKey(k)?.let { byCopy[it] }?.takeIf { it != k } ?: continue
+                val raw = physicalRaw[sib] ?: continue
+                upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, raw) }.getOrNull() ?: continue
+            }
+            if (upd.isNotEmpty()) {
+                android.util.Log.i("Voltcap", "scans shared across copies: ${upd.size}")
+                _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + upd.filterKeys { st.physicalMedia[it] == null }) }
+            }
         }
     }
 

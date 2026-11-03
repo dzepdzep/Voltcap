@@ -123,6 +123,8 @@ internal object TestHooks {
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
      */
     val inspect = mutableStateOf<String?>(null)
+    /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
+    val mediaDump = mutableStateOf<String?>(null)
     /** Update 301: `--es voltcap_test_artwork "Game name"` — that game's Artwork & details (for checking the full-scan slot). */
     val artwork = mutableStateOf<String?>(null)
     /**
@@ -217,6 +219,7 @@ internal object TestHooks {
         val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
+        intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
         val aw = intent?.getStringExtra("voltcap_test_artwork")
         val tf = intent?.getStringExtra("voltcap_test_facts")
         val tp = intent?.getStringExtra("voltcap_test_pick")

@@ -960,6 +960,36 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         perfForGame = null
     }
     // (Update 261: the game a test walk starts from — its console's category, focused on it.)
+    // Update 460b (testing, D173): what a game's case is drawn from — saved scans, your picks, what reaches the renderer.
+    val testDump = TestHooks.mediaDump.value
+    val dumpContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(testDump, state.games.size) {
+        val v = testDump ?: return@LaunchedEffect
+        val ctxD = dumpContext
+        val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val raw = runCatching { ctxD.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE).all }.getOrNull().orEmpty()
+            buildString {
+                append("originalCases=${com.shelf.launcher.data.Features.originalCases.state.value} spinesOwn=${com.shelf.launcher.data.Features.spinesOwn.state.value} spineCuts=${com.shelf.launcher.data.Features.spineCuts.state.value} coverTemplates=${com.shelf.launcher.data.Features.coverTemplates.state.value} caseForAll=${LookStyles.caseForAll()} spineForAll=${LookStyles.spineForAll()} type=${state.appearance.cardArtType}\n")
+                for (g in state.games.filter { it.name.contains(v, ignoreCase = true) }.take(12)) {
+                    val k = g.stableKey
+                    append("== ${g.name} | ${g.platform} | $k\n")
+                    append("artOverride.cover=${state.artOverrides[k]?.cover}\nart.grid=${state.art[k]?.gridUrl}\nuserCover=${UserCovers.of(k)}\n")
+                    append("overrides=${com.shelf.launcher.data.PhysicalOverrides.inUse(k)}\n")
+                    append("refusedRA=${k in com.shelf.launcher.data.RaMatchStore.refusedKeys}\n")
+                    append("raw=${(raw[k] as? String)?.replace("\n", " ;; ")}\n")
+                    val st = state.physicalMedia[k]
+                    append("state=${st?.joinToString(" ;; ") { it.first + "=" + it.second }}\n")
+                    append("stateNoFlat=${st.withoutFlat()?.map { it.first }}\n")
+                    append("homeScans=${HomeScans.of(k)?.map { it.first }} known=${HomeScans.knownHere(k)}\n")
+                    append("front=${BoxTexture.front(st.withoutFlat(), g.platform)}\nuserSpine=${BoxTexture.userSpine(st.withoutFlat(), g.platform)}\n")
+                    append("flat=${st?.filter { FlatArt.isKnown(it.second) }?.map { it.first }}\n")
+                }
+            }
+        }
+        runCatching { java.io.File(ctxD.getExternalFilesDir(null), "media_dump.txt").writeText(text) }
+        android.util.Log.e("VoltcapTest", "mediadump: ${text.length} chars")
+        TestHooks.mediaDump.value = null
+    }
     // Update 274 (testing): a game's piece out on a given shell, held at an angle (TestHooks.inspect).
     val testInspect = TestHooks.inspect.value
     LaunchedEffect(testInspect, state.games.size) {
@@ -1039,7 +1069,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
     // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
     // once per library in the background — LabelIds.
-    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games); viewModel.refreshFolderLabels(uiState.games) }
+    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games); viewModel.refreshFolderLabels(uiState.games); viewModel.shareScansAcrossCopies(uiState.games) }
     val testCategory = TestHooks.category.value
     LaunchedEffect(testCategory) {
         val c = testCategory ?: return@LaunchedEffect
