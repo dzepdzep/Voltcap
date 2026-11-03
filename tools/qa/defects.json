@@ -2034,6 +2034,51 @@
    "status": "deliberate",
    "found": "2026-11-03 update 461 popup audit",
    "note": "By design: the hint bar shows A = Play; details via Turn over / Info. The test's A was a blocked launch. R1 style n/a for CARDS, POCKET, GREENCORE, BUBBLES."
+  },
+  {
+   "id": "D187",
+   "title": "Pocket Quest: Select opened Select a System instead of Settings",
+   "rule": "INPUT_CONTRACT",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-11-03 update 462 (owner report, reproduced on the KONKR)",
+   "note": "InputContract gate in styleHomeKey: Select = Settings on every layout. Select a System opens with B / the Category screen hotkey (ThemedPicker) and the top bar button. KONKR contract462: Select=OK, B=themed."
+  },
+  {
+   "id": "D188",
+   "title": "Blades, Magazine, Panels, Pocket camera, Terminal, Rental shop, Green Core, Bubble home: Select sorted, Start opened the quick menu",
+   "rule": "INPUT_CONTRACT",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-03 update 462 audit",
+   "note": "Now Settings / game options as everywhere; Sort & filter stays in the R1 quick menu and in game options. Hints and layout help texts updated."
+  },
+  {
+   "id": "D189",
+   "title": "Pocket ribbon: Start / A during the launch moment could start the game a second time",
+   "rule": "RAPID",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-03 update 462 audit",
+   "note": "Buttons held while PocketNav.launching; reserved buttons HOLD during the Pocket layouts' launch animations (InputContract.Route.HOLD)."
+  },
+  {
+   "id": "D190",
+   "title": "Cube: B on its own menu goes back inside the cube, not to the category picker",
+   "rule": "INPUT_CONTRACT",
+   "severity": "low",
+   "status": "deliberate",
+   "found": "2026-11-03 update 462 contract462",
+   "note": "Owned navigation (B = back inside the cube's pages); L2 / R2, the docked cube and the Category screen hotkey still switch categories."
+  },
+  {
+   "id": "D191",
+   "title": "Drawn Game Boy family paks look computer-drawn next to a real cartridge photo",
+   "rule": "VISUAL",
+   "severity": "medium",
+   "status": "in progress",
+   "found": "2026-11-03 update 462 (owner)",
+   "note": "PhotoShells: the front made from a real cartridge photo of the same shell from the user's own library, the label laid into the recess; contact sheet qa462. Other systems not yet."
   }
  ]
 }

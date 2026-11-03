@@ -541,6 +541,8 @@ internal fun pocketRibbonKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
     if (!down) return false
     val first = event.nativeKeyEvent.repeatCount == 0
     fun take(): Boolean { PocketNav.keysDown += code; return true }
+    // (Update 462: while the launch moment plays, a second A / Start doesn't start the game again.)
+    if (PocketNav.launching && android.view.KeyEvent.isGamepadButton(code)) return take()
     // Update 182: below the row, the small tools and the home strip (PocketNav.ribbonSpot; −1 = the row).
     val spot = PocketNav.ribbonSpot
     val tools = pocketTools(c, ribbon = true)

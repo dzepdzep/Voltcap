@@ -278,8 +278,8 @@ private fun LookTitle(tile: CategoryTile, size: Int, color: Color = Color.White,
 internal enum class LookNav { ROW, COLUMN, GRID }
 
 internal fun lookNavOf(v: Features.PlatformView): LookNav = when (v) {
-    Features.PlatformView.VAULT, Features.PlatformView.CHANNEL -> LookNav.COLUMN
-    Features.PlatformView.DRAWERS -> LookNav.GRID
+    Features.PlatformView.VAULT, Features.PlatformView.CHANNEL, Features.PlatformView.ARCTIC -> LookNav.COLUMN
+    Features.PlatformView.DRAWERS, Features.PlatformView.WIICHAN -> LookNav.GRID
     else -> LookNav.ROW
 }
 

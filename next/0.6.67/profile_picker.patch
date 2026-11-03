@@ -1,7 +1,8 @@
 diff --git a/.gitignore b/.gitignore
+index a7fef4d..d56ccc5 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,38 +55,3 @@
+@@ -55,43 +55,3 @@ tools/themes/refresh-review/sheet-*
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -40,6 +41,11 @@ diff --git a/.gitignore b/.gitignore
 -/app/src/test/java/com/shelf/launcher/ui/WarmWindow461Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PrintedGameBoy461Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/PopupShade461Test.kt
+-/app/src/main/java/com/shelf/launcher/ui/InputContract.kt
+-/app/src/main/java/com/shelf/launcher/ui/CategoryLooks462.kt
+-/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
+-/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 index c29e9a0..4acd436 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
@@ -71,7 +77,7 @@ index c29e9a0..4acd436 100644
              specialFilter == SpecialFilter.MOST_PLAYED ->
                  library.filter { (playtime[it.stableKey] ?: 0L) > 0L }
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
-index a6aad66..bf55d21 100644
+index a6aad66..4e2bb89 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 +++ b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 @@ -86,6 +86,7 @@ import com.shelf.launcher.data.mergeArt
@@ -98,31 +104,36 @@ index a6aad66..bf55d21 100644
              // (Update 232, #60: the state left as it is when the look again found the list it already has — no new map.)
              val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
              _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
-@@ -1082,6 +1085,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -1082,6 +1085,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      /** Update 137: what ScreenScraper found for each game, before your picks (PhysicalOverrides). */
      private val physicalRaw = java.util.concurrent.ConcurrentHashMap<String, List<Pair<String, String>>>()
  
 +    /** Update 461: which ROM hacks' saved scans are their base game's (HackLabels), after a game's scans change. */
 +    private fun refreshHackLabels() {
 +        com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
++        // (Update 462: the official games' cartridge photos — what the photo-made shells are made from.)
++        com.shelf.launcher.ui.PhotoShells.app = getApplication<Application>()
++        val photos = com.shelf.launcher.ui.PhotoShells.photosOf(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
++        if (photos != com.shelf.launcher.ui.PhotoShells.photos) { com.shelf.launcher.ui.PhotoShells.photos = photos; com.shelf.launcher.ui.PhotoShells.reset() }
 +    }
 +
      /**
       * Update 205: the games whose scans were asked for or shown this run — the ones whose pictures "Save art on the
       * device" keeps, as before 205 (every game's saved scans are in the state from the start now, see
-@@ -1135,8 +1143,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -1135,8 +1147,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                  }
                  if (list.isEmpty()) continue
                  physicalRaw.putIfAbsent(k, list)
 -                loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
              }
 +            // (Update 461: ROM hacks matched to their base game don't wear that game's label — HackLabels.)
-+            com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
++            // (Update 462: and the official games' cartridge photos for the photo-made shells — refreshHackLabels.)
++            refreshHackLabels()
 +            for ((k, list) in physicalRaw) loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
              // (Update 305: a game with your own pictures but nothing scraped — no saved list — gets them too; they showed
              // only once its scans had been looked up again.)
              for (k in com.shelf.launcher.data.PhysicalOverrides.keys()) {
-@@ -1144,6 +1154,58 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -1144,6 +1159,58 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
              }
              // (What was looked up meanwhile wins over the saved list.)
              if (loaded.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = loaded + st.physicalMedia) }
@@ -181,7 +192,7 @@ index a6aad66..bf55d21 100644
          }
      }
  
-@@ -1892,6 +1954,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -1892,6 +1959,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          // installed/removed while away are picked up.
          com.shelf.launcher.ui.SecondScreenGate.release()
          refreshAppsIfChanged()
@@ -189,7 +200,7 @@ index a6aad66..bf55d21 100644
          // Back on the home screen: the game is over, so whatever Voltcap put on
          // the other screen for it goes (the home screen's own second-screen
          // view takes over again). Not in the moment right after a launch,
-@@ -2006,13 +2069,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -2006,13 +2074,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
  
      /** Other games open in the background (a different app than [game]'s): ask before starting [game]. */
      fun otherOpenGames(game: Game): List<Game> {
@@ -208,7 +219,7 @@ index a6aad66..bf55d21 100644
      }
  
      /** X on a game that's still open: close it. */
-@@ -2247,6 +2314,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -2247,6 +2319,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       * in the same update as the new category, so no frame has the new category in the old layout (or the reverse).
       */
      private fun categoryLayoutFor(next: LauncherUiState): AppearanceSettings? {
@@ -219,7 +230,7 @@ index a6aad66..bf55d21 100644
          val old = savedOf(_uiState.value.appearance)
          val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(next)) ?: return null
          if (want == old.homeLayout) return null
-@@ -3567,12 +3638,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3567,12 +3643,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          // task forward there. A second instance is only safe for ordinary
          // apps — never emulators, whose two copies would fight over saves.
          val previous = lastAppDisplay[pkg]
@@ -241,7 +252,7 @@ index a6aad66..bf55d21 100644
                  noteOwnLaunch(null)
                  // The second-screen home is a window above every app on its
                  // display; step aside so the app can be seen.
-@@ -3983,6 +4062,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3983,6 +4067,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
          recombineGames()
      }
  
@@ -341,7 +352,7 @@ index a6aad66..bf55d21 100644
      fun toggleFavorite(game: Game) {
          val updated = favoritesStore.toggle(game.stableKey)
          _uiState.update { it.copy(favorites = updated) }
-@@ -4706,6 +4878,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -4706,6 +4883,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       */
      fun switchProfile(id: Int) {
          val app = getApplication<Application>()
@@ -350,7 +361,7 @@ index a6aad66..bf55d21 100644
          val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
          val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
          if (slot != null) switchRaAccount(slot)
-@@ -5385,6 +5559,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -5385,6 +5564,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
       */
      fun launch(game: Game) {
          if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
@@ -360,7 +371,7 @@ index a6aad66..bf55d21 100644
          com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
          val check = preparedCheck?.second
          if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
-@@ -6650,6 +6827,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -6650,6 +6832,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      }
  
      init {
@@ -623,7 +634,7 @@ index 0000000..543fe89
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 0fac442..91e3440 100644
+index 0fac442..bf8b6ca 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -116,6 +116,9 @@ object Features {
@@ -655,6 +666,37 @@ index 0fac442..91e3440 100644
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
      val dashStatus = BoolPref("dash_status", true)
+@@ -2130,11 +2145,17 @@ object Features {
+         // Pass 4 (ui/CategoryLooks.kt).
+         STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
+         ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
+-        VAULT("System Vault"), DASHBOARD("Pocket Dashboard")
++        VAULT("System Vault"), DASHBOARD("Pocket Dashboard"),
++        // Update 462: the themed pickers of Channel grid, Cinema and Arctic hub (ui/CategoryLooks462.kt).
++        WIICHAN("Channel Menu"), CINEMA("Cinema"), ARCTIC("Arctic Panes")
+     }
+     val platformView = EnumPref("pb_view", PlatformView.TILES, PlatformView.values())
+     /** Pass 4: the category screen's look follows the home layout of the category you open it from (followLookFor). */
+     val pbFollowHome = BoolPref("pb_follow_home", false)
++    /** Update 462: Pocket Quest, Green Core, Pocket classic, Channel grid, Cinema and Arctic hub open their own themed category picker. */
++    val pbThemed = BoolPref("pb_themed_pickers", true)
++    /** Update 462: drawn Game Boy family paks made from a real cartridge photo in your library (ui/PhotoShells.kt). */
++    val photoShells = BoolPref("photo_shells", true)
+ 
+     /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
+     fun followLookFor(l: HomeLayout): PlatformView = when (l) {
+@@ -2143,7 +2164,10 @@ object Features {
+         HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
+         HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
+         HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
+-        HomeLayout.TV, HomeLayout.CHAN -> PlatformView.CHANNEL
++        HomeLayout.TV -> PlatformView.CHANNEL
++        HomeLayout.CHAN -> PlatformView.WIICHAN
++        HomeLayout.CINEMA -> PlatformView.CINEMA
++        HomeLayout.ARCTIC -> PlatformView.ARCTIC
+         HomeLayout.TIMELINE, HomeLayout.CONSOLES -> PlatformView.GENERATIONS
+         HomeLayout.ORBIT, HomeLayout.CIRCUIT, HomeLayout.CUBE, HomeLayout.BUBBLES -> PlatformView.CONSTELLATION
+         HomeLayout.MEMCARD, HomeLayout.FILESELECT, HomeLayout.DISCS -> PlatformView.VAULT
 diff --git a/app/src/main/java/com/shelf/launcher/data/GameCopies.kt b/app/src/main/java/com/shelf/launcher/data/GameCopies.kt
 new file mode 100644
 index 0000000..d992b83
@@ -1610,7 +1652,7 @@ index 2784a37..b9286ca 100644
              Canvas(Modifier.fillMaxSize()) {
                  drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..65d07fe 100644
+index fad25ce..242c4d3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 @@ -635,6 +635,67 @@ internal object CartShells {
@@ -1758,7 +1800,40 @@ index fad25ce..65d07fe 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -1159,27 +1247,6 @@ internal object CartShells {
+@@ -1023,7 +1111,19 @@ internal object CartShells {
+             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+             CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
+         }
+-        return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
++        val colour = colourOf(s, key)
++        val drawn = front(s, colour, art, brand, title, maxPx, scan)
++        // (Update 462: the same label on a real cartridge photo of this shell, when your library has one — PhotoShells.)
++        return photoFront(s, colour, drawn) ?: drawn
++    }
++
++    private val photoCache = android.util.LruCache<Bitmap, Bitmap>(12)
++
++    /** Update 462: [drawn] (CartShells.front) on its photo-made shell, or null (none for this shell / not made yet). */
++    private fun photoFront(s: CartShell, colour: ShellColour, drawn: Bitmap): Bitmap? {
++        if (PhotoShells.template(s, colour) == null) return null
++        synchronized(photoCache) { photoCache.get(drawn)?.let { return it } }
++        return PhotoShells.front(s, colour, drawn)?.also { synchronized(photoCache) { photoCache.put(drawn, it) } }
+     }
+ 
+     /**
+@@ -1036,7 +1136,10 @@ internal object CartShells {
+             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+             return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
+         }
+-        return frontOrNull(s, colourOf(s, key), art, brand, title, maxPx, scan, null, peek = true)
++        val colour = colourOf(s, key)
++        val drawn = frontOrNull(s, colour, art, brand, title, maxPx, scan, null, peek = true) ?: return null
++        if (PhotoShells.template(s, colour) == null) return drawn
++        return synchronized(photoCache) { photoCache.get(drawn) }
+     }
+ 
+     /**
+@@ -1159,27 +1262,6 @@ internal object CartShells {
          return b
      }
  
@@ -1786,13 +1861,13 @@ index fad25ce..65d07fe 100644
  
      /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
      private fun paperStrip(brand: String): Bitmap {
-@@ -1606,16 +1673,18 @@ internal fun CartShellArt(
+@@ -1606,16 +1688,18 @@ internal fun CartShellArt(
          // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
          // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
          // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
 -        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
 +        // (Update 459: drawn again once the library's label facts are read — LabelIds: a real code / FAN-MADE on the sticker.)
-+        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
++        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue + 10000 * PhotoShells.version.intValue
 +        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan|$labelsV"
          val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
          val prior = madeFront.value
@@ -1809,9 +1884,20 @@ index fad25ce..65d07fe 100644
              if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
              val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
-index 83b4b47..eeed844 100644
+index 83b4b47..fac7bea 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
+@@ -278,8 +278,8 @@ private fun LookTitle(tile: CategoryTile, size: Int, color: Color = Color.White,
+ internal enum class LookNav { ROW, COLUMN, GRID }
+ 
+ internal fun lookNavOf(v: Features.PlatformView): LookNav = when (v) {
+-    Features.PlatformView.VAULT, Features.PlatformView.CHANNEL -> LookNav.COLUMN
+-    Features.PlatformView.DRAWERS -> LookNav.GRID
++    Features.PlatformView.VAULT, Features.PlatformView.CHANNEL, Features.PlatformView.ARCTIC -> LookNav.COLUMN
++    Features.PlatformView.DRAWERS, Features.PlatformView.WIICHAN -> LookNav.GRID
+     else -> LookNav.ROW
+ }
+ 
 @@ -472,7 +472,7 @@ internal fun BladesLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
                      FullText(
                          tile.label, color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
@@ -1821,6 +1907,205 @@ index 83b4b47..eeed844 100644
                  }
              }
          }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks462.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks462.kt
+new file mode 100644
+index 0000000..64349a2
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks462.kt
+@@ -0,0 +1,193 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.animation.core.animateFloatAsState
++import androidx.compose.animation.core.tween
++import androidx.compose.foundation.Canvas
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.foundation.gestures.detectTapGestures
++import androidx.compose.foundation.layout.Arrangement
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.BoxWithConstraints
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Row
++import androidx.compose.foundation.layout.Spacer
++import androidx.compose.foundation.layout.fillMaxHeight
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.offset
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.layout.size
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.draw.clipToBounds
++import androidx.compose.ui.geometry.Offset
++import androidx.compose.ui.geometry.Size
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.graphicsLayer
++import androidx.compose.ui.input.pointer.pointerInput
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.text.style.TextAlign
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.unit.sp
++import androidx.compose.ui.zIndex
++import com.shelf.launcher.data.Features
++import com.shelf.launcher.data.HomeLayout
++
++/*
++ * Update 462: the themed category pickers of Channel grid, Cinema and Arctic hub (Pocket Quest, Green Core and Pocket
++ * classic use their own pages; ThemedPicker). Each is a look of the one category screen (PlatformBrowser): the same tiles
++ * (visible categories, hidden ones left out, the saved order), the same focus, A / B / D-pad / touch handling and the same
++ * pick (applyCategory: steps there, never writes a category's own layout). Text is shown whole (FullText).
++ */
++
++/** The look a layout's own category picker uses (Settings › Category screen › Themed pickers), or null: the usual one. */
++internal fun themedLookFor(l: HomeLayout): Features.PlatformView? = when (l) {
++    HomeLayout.CHAN -> Features.PlatformView.WIICHAN
++    HomeLayout.CINEMA -> Features.PlatformView.CINEMA
++    HomeLayout.ARCTIC -> Features.PlatformView.ARCTIC
++    else -> null
++}
++
++private fun Modifier.tapPick(index: Int, selected: Int, onFocus: (Int) -> Unit, onPick: (Int) -> Unit): Modifier =
++    pointerInput(index, selected) { detectTapGestures { if (index == selected) onPick(index) else onFocus(index) } }
++
++/** Channel grid: white rounded channels on the pinstriped grey, four across, a page of twelve; the lit one in blue. */
++@Composable
++internal fun WiiChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
++    val per = DRAWER_COLS * 3
++    val page = (selected.coerceAtLeast(0)) / per
++    val pages = (tiles.size + per - 1) / per
++    Box(Modifier.fillMaxSize().background(Color(0xFFE9EAEC))) {
++        Canvas(Modifier.fillMaxSize()) {
++            val step = 6.dp.toPx(); var y = 0f
++            while (y < size.height) { drawRect(Color(0xFFDADCDF), Offset(0f, y), Size(size.width, 1.dp.toPx())); y += step }
++        }
++        Column(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 66.dp, bottom = 58.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
++            for (r in 0 until 3) Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
++                for (cIdx in 0 until DRAWER_COLS) {
++                    val i = page * per + r * DRAWER_COLS + cIdx
++                    val t = tiles.getOrNull(i)
++                    val lit = i == selected
++                    val grow by animateFloatAsState(if (lit) 1.05f else 1f, tween(if (animate) 140 else 0), label = "chan")
++                    Box(
++                        Modifier.weight(1f).fillMaxHeight().zIndex(if (lit) 1f else 0f).graphicsLayer { scaleX = grow; scaleY = grow }
++                            .clip(RoundedCornerShape(18.dp))
++                            .background(if (t == null) Color(0xFFD3D5D8) else Color.White)
++                            .border(if (lit) 4.dp else 1.dp, if (lit) Color(0xFF34BEED) else Color(0xFFC4C7CB), RoundedCornerShape(18.dp))
++                            .then(if (t != null) Modifier.tapPick(i, selected, onFocus, onPick) else Modifier)
++                    ) {
++                        if (t != null) {
++                            CategoryArt(t, CardShape.WIDE, Modifier.fillMaxSize().padding(6.dp).clip(RoundedCornerShape(13.dp)))
++                            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.White.copy(alpha = 0.88f)).padding(horizontal = 6.dp, vertical = 3.dp)) {
++                                FullText(t.label, color = Color(0xFF3A3F45), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.fillMaxWidth())
++                            }
++                        }
++                    }
++                }
++            }
++        }
++        // (The browser's white header and legend need a dark ground: the channel menu's grey bars top and bottom.)
++        Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(56.dp).background(Brush.verticalGradient(listOf(Color(0xFF5B626B), Color(0xFF727982)))))
++        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(44.dp).background(Brush.verticalGradient(listOf(Color(0xFF727982), Color(0xFF5B626B)))))
++        // The page dots (more than twelve categories), over the legend.
++        if (pages > 1) Row(Modifier.align(Alignment.BottomCenter).padding(bottom = 46.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++            repeat(pages) { p -> Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(if (p == page) Color(0xFF34BEED) else Color(0xFFAEB3B8))) }
++        }
++    }
++}
++
++/** Cinema: the dark theatre — the lit category big as a title card, the others as a row of posters along the bottom. */
++@Composable
++internal fun CinemaLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
++    val red = if (Features.cnAccent.state.value == Features.CnAccent.CINEMA) Color(0xFFE50914) else com.shelf.launcher.ui.theme.ShelfTheme.accent
++    val pos = rememberLookGlide(selected, animate)
++    val t0 = tiles.getOrNull(selected) ?: return
++    BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFF0B0B0D))) {
++        val w = maxWidth
++        // The title card: the art on the right, faded into the dark, the name and count on the left.
++        Box(Modifier.fillMaxWidth().fillMaxHeight(0.62f).tapPick(selected, selected, onFocus, onPick)) {
++            CategoryArt(t0, CardShape.WIDE, Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(w * 0.62f))
++            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF0B0B0D), 0.42f to Color(0xFF0B0B0D).copy(alpha = 0.7f), 0.75f to Color.Transparent)))
++            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color(0xFF0B0B0D))))
++            Column(Modifier.align(Alignment.CenterStart).padding(start = 32.dp, top = 56.dp).width(w * 0.46f)) {
++                FullText("CATEGORY", color = red, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
++                FullText(t0.label, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black, maxLines = 2)
++                Spacer(Modifier.height(6.dp))
++                FullText(listOfNotNull(lookCount(t0), lookFacts(t0)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
++            }
++        }
++        // The row: posters 2:3, the lit one outlined white and a little larger, gliding with the D-pad.
++        val pw = 86.dp; val gap = 12.dp
++        Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(186.dp).padding(bottom = 40.dp).clipToBounds()) {
++            val window = lookWindow(selected, pos, 8, tiles.lastIndex)
++            for (i in window) {
++                val t = tiles[i]
++                val lit = i == selected
++                Box(
++                    Modifier.offset(x = 32.dp + (pw + gap) * (i - pos.value)).align(Alignment.BottomStart).size(pw, 128.dp)
++                        .graphicsLayer { val s = if (lit) 1.08f else 1f; scaleX = s; scaleY = s; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f) }
++                        .clip(RoundedCornerShape(6.dp)).background(Color(0xFF222226))
++                        .border(if (lit) 3.dp else 0.dp, if (lit) Color.White else Color.Transparent, RoundedCornerShape(6.dp))
++                        .tapPick(i, selected, onFocus, onPick)
++                ) {
++                    CategoryArt(t, CardShape.TALL, Modifier.fillMaxSize())
++                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))).padding(4.dp)) {
++                        FullText(t.label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.fillMaxWidth())
++                    }
++                }
++            }
++        }
++    }
++}
++
++/** Arctic hub: frosted panes down the left on the deep slate, the lit one bright with an ice-blue edge; its art beside them. */
++@Composable
++internal fun ArcticLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
++    val ice = Color(0xFF9BD8FF)
++    val pos = rememberLookGlide(selected, animate)
++    val t0 = tiles.getOrNull(selected) ?: return
++    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF15202D), Color(0xFF0D141D), Color(0xFF080C12))))) {
++        val w = maxWidth; val h = maxHeight
++        // The art of the lit category, in a pane on the right.
++        Box(Modifier.align(Alignment.CenterEnd).padding(end = 28.dp, top = 66.dp, bottom = 50.dp).width(w * 0.5f).fillMaxHeight()
++            .clip(RoundedCornerShape(16.dp)).background(Color(0xFF1B2633)).border(1.dp, ice.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
++            .tapPick(selected, selected, onFocus, onPick)) {
++            CategoryArt(t0, CardShape.WIDE, Modifier.fillMaxSize())
++            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xE60A1018)))).padding(14.dp)) {
++                FullText(t0.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
++                FullText(listOfNotNull(lookCount(t0), lookFacts(t0)).joinToString("  ·  "), color = ice, fontSize = 12.sp)
++            }
++        }
++        // The panes: a column that glides, the lit one in the middle third.
++        val rowH = 54.dp; val gap = 8.dp
++        val listW = w * 0.5f - 56.dp
++        Box(Modifier.padding(start = 28.dp, top = 62.dp, bottom = 46.dp).width(listW).fillMaxHeight().clipToBounds()) {
++            val window = lookWindow(selected, pos, 6, tiles.lastIndex)
++            for (i in window) {
++                val t = tiles[i]
++                val lit = i == selected
++                Row(
++                    Modifier.offset(y = (h - 108.dp) * 0.5f - rowH / 2 + (rowH + gap) * (i - pos.value)).width(listW).height(rowH)
++                        .clip(RoundedCornerShape(12.dp))
++                        .background(if (lit) Color(0x33E8F6FF) else Color(0x14E8F6FF))
++                        .border(if (lit) 2.dp else 1.dp, if (lit) ice else Color(0x22E8F6FF), RoundedCornerShape(12.dp))
++                        .tapPick(i, selected, onFocus, onPick).padding(horizontal = 12.dp),
++                    verticalAlignment = Alignment.CenterVertically
++                ) {
++                    Box(Modifier.width(4.dp).height(26.dp).clip(RoundedCornerShape(2.dp)).background(if (lit) ice else lookHue(t, 0.5f, 0.45f)))
++                    Spacer(Modifier.width(10.dp))
++                    FullText(t.label, color = if (lit) Color.White else Color.White.copy(alpha = 0.72f), fontSize = 15.sp, fontWeight = if (lit) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f))
++                    FullText(t.count.toString(), color = if (lit) ice else Color.White.copy(alpha = 0.5f), fontSize = 13.sp)
++                }
++            }
++        }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
 index e346abb..0bc1e0d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
@@ -2176,10 +2461,10 @@ index 3ce9e16..7bc8b6e 100644
      WinPage.DETAILS -> "Details"
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
 new file mode 100644
-index 0000000..939dbf5
+index 0000000..dee5af3
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,369 @@
 +package com.shelf.launcher.ui
 +
 +import android.graphics.Bitmap
@@ -2316,15 +2601,17 @@ index 0000000..939dbf5
 +        val c = Canvas(b)
 +        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 +        val W = b.width.toFloat(); val H = b.height.toFloat()
-+        // The printed grey (a touch lighter on the Color paks), lit a little from the top as the paper is.
-+        val top = if (colour) 0xFFB9B9BE.toInt() else 0xFFB0B0B4.toInt()
-+        val bottom = if (colour) 0xFFA9A9AE.toInt() else 0xFFA0A0A5.toInt()
++        // (Update 462, owner: no "grey plastic side strips": the borders are printed in the art's own edge colour — Silver's
++        // lavender, Crystal's blue — so they read as part of the sticker, never as the shell's grey plastic showing.)
++        val edge = edgeColour(art)
++        val top = shadeOf(edge, 0.92f)
++        val bottom = shadeOf(edge, 0.82f)
 +        p.shader = LinearGradient(0f, 0f, 0f, H, top, bottom, Shader.TileMode.CLAMP)
 +        c.drawRect(0f, 0f, W, H, p); p.shader = null
 +        fine(c, p, W, H, 0x0A000000)
 +        val r = printedArtRect(W, H, art.width.toFloat() / art.height.coerceAtLeast(1), mm).let { RectF(it[0], it[1], it[2], it[3]) }
 +        c.drawBitmap(art, null, r, p)
-+        val ink = 0xFF2A2A2D.toInt()
++        val ink = if (lumOf(top) > 150) 0xFF2A2A2D.toInt() else 0xFFF1F1F3.toInt()
 +        val size = minOf(1.3f * mm, r.left * 0.42f)
 +        if (r.left > 1.8f * mm) {
 +            vertical(c, "THIS SIDE OUT", RectF(r.right, 0f, W, H), size, ink, up = false, bold = true)
@@ -2333,6 +2620,23 @@ index 0000000..939dbf5
 +        }
 +        return b
 +    }
++
++    /** The average colour of [art]'s left and right edge columns (its outer 4 %). */
++    fun edgeColour(art: Bitmap): Int {
++        var r = 0L; var g = 0L; var b = 0L; var n = 0L
++        val cw = (art.width * 0.04f).toInt().coerceAtLeast(1)
++        for (y in 0 until art.height step 3) for (x in (0 until cw) + ((art.width - cw) until art.width)) {
++            val c = art.getPixel(x, y); if ((c ushr 24) < 128) continue
++            r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
++        }
++        if (n == 0L) return 0xFFB0B0B4.toInt()
++        return (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (b / n).toInt()
++    }
++
++    private fun shadeOf(c: Int, k: Float): Int =
++        (0xFF shl 24) or (((((c shr 16) and 255) * k).toInt().coerceIn(0, 255)) shl 16) or (((((c shr 8) and 255) * k).toInt().coerceIn(0, 255)) shl 8) or (((c and 255) * k).toInt().coerceIn(0, 255))
++
++    private fun lumOf(c: Int): Int = (((c shr 16) and 255) * 3 + ((c shr 8) and 255) * 6 + (c and 255)) / 10
 +
 +    /** What is printed to identify the game: the real code, else "FAN-MADE" / "HOMEBREW", else nothing (pure). */
 +    fun idLine(id: com.shelf.launcher.data.LabelIds.Id?): String? = id?.unofficial ?: id?.code
@@ -2587,6 +2891,19 @@ index e7c614c..1267582 100644
              val shift = rootAt ?: androidx.compose.ui.geometry.Offset.Zero
              val srcName = srcName0?.let { if (fromRow) it.translate(-shift.x, -shift.y) else it }
              val srcChip = srcChip0?.translate(-shift.x, -shift.y)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GreenCoreSettings.kt b/app/src/main/java/com/shelf/launcher/ui/GreenCoreSettings.kt
+index e60fae6..0991b83 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GreenCoreSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GreenCoreSettings.kt
+@@ -22,7 +22,7 @@ internal fun GreenCoreSettings() {
+     MutedNote(
+         "A dark green machine dashboard: a living sphere of light on the left, angled menu panels on the right — Games, " +
+             "Systems, Apps, Save Vault, Music and Settings. ▲ ▼ move, A opens, B goes back to the menu. On the games: A opens " +
+-            "the game, X favourite, Y achievements, L2 / R2 another category. Start: the quick menu; Select: sort & filter."
++            "the game, X favourite, Y achievements, L2 / R2 another category. B on the menu: Systems. Start: the game's options; R1: the quick menu (sort & filter is there); Select: Settings."
+     )
+     Spacer(Modifier.height(10.dp))
+     PercentSlider(
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GridHome.kt b/app/src/main/java/com/shelf/launcher/ui/GridHome.kt
 index f619fa6..087819e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GridHome.kt
@@ -2627,8 +2944,115 @@ index cd5b7ae..1ef0d90 100644
              orderU.forEach { key ->
                  when (key) {
                      com.shelf.launcher.data.CategorySettings.ALL -> add(key)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/InputContract.kt b/app/src/main/java/com/shelf/launcher/ui/InputContract.kt
+new file mode 100644
+index 0000000..8e4cf6e
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/InputContract.kt
+@@ -0,0 +1,101 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.Features
++import com.shelf.launcher.data.HomeLayout
++
++/**
++ * Update 462: the controller contract shared by every home layout (tools/qa/INPUT_CONTRACT.md).
++ *
++ * The home screen owns a few buttons on every layout: Select opens Settings, Start the focused game's options, R1 the
++ * quick menu, L1 the shortcuts (and L2 / R2 switch the category, B on the home opens the category picker). A layout can
++ * draw and move things its own way, but it doesn't take one of these buttons for something else unless it is in a
++ * context of its own at that moment (a page of its own that uses the bumpers to jump, a launch animation playing, or an
++ * option the user switched on). Before this, Pocket Quest's Select opened Select a System and eight layouts' Select sorted,
++ * so Settings couldn't be reached from the controller there.
++ *
++ * Precedence (highest first): the system / a game's overlay, then an open popup (aDialogIsOpen: styleHomeKey isn't
++ * called at all), then these global buttons, then the layout's own navigation. Select + another button (the hotkey combos)
++ * never reaches a layout: LauncherScreen takes it first.
++ */
++internal object InputContract {
++    const val SELECT = android.view.KeyEvent.KEYCODE_BUTTON_SELECT // 109
++    const val START = android.view.KeyEvent.KEYCODE_BUTTON_START // 108
++    const val MENU = android.view.KeyEvent.KEYCODE_MENU // 82 (what Android sends for an unclaimed Select)
++    const val L1 = android.view.KeyEvent.KEYCODE_BUTTON_L1 // 102
++    const val R1 = android.view.KeyEvent.KEYCODE_BUTTON_R1 // 103
++
++    /** The buttons the home screen keeps on every layout. */
++    val RESERVED = setOf(SELECT, START, MENU, L1, R1)
++
++    /** What a layout is doing right now that may own a reserved button. */
++    data class Ctx(
++        /** Pocket classic: on its Games / Categories page (L1 / R1 jump 15 there). */
++        val pocketPage: Boolean = false,
++        /** Pocket Quest: "L1 / R1 change the console" switched on by the user (Features.pqBumpers). */
++        val pqBumpers: Boolean = false,
++        /** The layout's own launch animation is playing: it holds every button for that moment. */
++        val launching: Boolean = false
++    )
++
++    /** Who gets a key: the layout's own handler, the home screen (the global action), or nobody (held for a moment). */
++    enum class Route { LAYOUT, HOME, HOLD }
++
++    fun route(code: Int, layout: HomeLayout, ctx: Ctx): Route {
++        if (code !in RESERVED) return Route.LAYOUT
++        // A launch animation is playing: nothing else opens over the game that's starting (rapid presses).
++        if (ctx.launching && (layout == HomeLayout.POCKET || layout == HomeLayout.POCKET_CLASSIC || layout == HomeLayout.POCKET_RIBBON)) return Route.HOLD
++        if (code == L1 || code == R1) {
++            if (layout == HomeLayout.POCKET_CLASSIC && ctx.pocketPage) return Route.LAYOUT
++            if (layout == HomeLayout.POCKET && ctx.pqBumpers) return Route.LAYOUT
++        }
++        return Route.HOME
++    }
++
++    /** True when [code] belongs to the home screen right now: the layout's handler must leave it (return false). */
++    fun leaveToHome(code: Int, layout: HomeLayout, ctx: Ctx): Boolean = route(code, layout, ctx) == Route.HOME
++
++    /** The live context (read on each key). */
++    fun live(): Ctx = Ctx(
++        pocketPage = PocketNav.page != PocketNav.Page.HOME,
++        pqBumpers = Features.pqBumpers.value,
++        launching = PqNav.launching != null || PocketNav.launching
++    )
++}
++
++/**
++ * Update 462: the category picker of a layout that has its own (Pocket Quest's Select a System, Green Core's Systems,
++ * Pocket classic's Categories page). B on the home screen and the Category screen hotkey open it instead of the plain
++ * category screen. Same data as L2 / R2 (StyleCtx.stops: the visible categories in their saved order); picking one steps
++ * there like L2 / R2 do, so a category's own layout setting is never written; B closes it on the same game.
++ * False = this layout has none (or isn't drawn yet): the plain category screen opens.
++ */
++internal object ThemedPicker {
++    fun has(layout: HomeLayout): Boolean =
++        layout == HomeLayout.POCKET || layout == HomeLayout.GREENCORE || layout == HomeLayout.POCKET_CLASSIC
++
++    fun open(layout: HomeLayout): Boolean {
++        if (!Features.pbThemed.value) return false
++        when (layout) {
++            HomeLayout.POCKET -> {
++                val c = PqNav.ctx ?: return false
++                if (PqNav.page != PqNav.Page.SYSTEMS) pqOpenSystems(c)
++                return true
++            }
++            HomeLayout.GREENCORE -> {
++                val c = GreenCoreNav.ctx ?: return false
++                if (GreenCoreNav.page != GreenCoreNav.Page.SYSTEMS) gcActivate(c, GcItem.SYSTEMS.ordinal)
++                return true
++            }
++            HomeLayout.POCKET_CLASSIC -> {
++                val c = PocketNav.ctx ?: return false
++                if (PocketNav.page != PocketNav.Page.CATEGORIES) {
++                    PocketSounds.play?.invoke(UiSound.OPEN)
++                    PocketNav.cursor = c.stop.coerceAtLeast(0)
++                    PocketNav.page = PocketNav.Page.CATEGORIES
++                }
++                return true
++            }
++            else -> return false
++        }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..f065c05 100644
+index 0b73fb5..c953556 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -2729,7 +3153,28 @@ index 0b73fb5..f065c05 100644
          TestHooks.category.value = null
      }
      // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
-@@ -1596,7 +1656,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1372,6 +1432,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         else -> "ALL"
+     }
+     fun openCategoryScreen() {
++        // Update 462: a layout with its own category picker (Pocket Quest, Green Core, Pocket classic) opens that one.
++        if (state.appearance.homeLayout.styleHome && ThemedPicker.open(state.appearance.homeLayout)) return
+         val current = currentCategoryKey
+         categoryIndex = categoryTiles.indexOfFirst { it.key == current }.coerceAtLeast(0)
+         categoryScreenOpen = true
+@@ -1433,6 +1495,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
+     }
+     LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) { CategoryReorder.stop(); CategoryHeader.leave() } }
++    // Update 462: what is open, for tools/qa/device/contract462.sh (VoltcapQA, test hooks only).
++    LaunchedEffect(showMenu, showNotifications, optionsForGame, showShortcuts, categoryScreenOpen, showSortDialog, PqNav.page, GreenCoreNav.page, PocketNav.page, currentCategoryKey) {
++        QaTrace.event("overlay", "menu=$showMenu quick=$showNotifications opts=${optionsForGame != null} short=$showShortcuts cat=$categoryScreenOpen " +
++            "sort=$showSortDialog pq=${PqNav.page} gc=${GreenCoreNav.page} pc=${PocketNav.page} cat_key=$currentCategoryKey")
++    }
+ 
+     // The random-game button: go to that category, then pick from it once the games are showing.
+     fun randomFromBrowser() {
+@@ -1596,7 +1663,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // Power saving while nobody touches the handheld (Appearance › Behind the dock › Save power when idle).
      SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
      LaunchedWhileActive { HomeIdle.watch() }
@@ -2738,7 +3183,7 @@ index 0b73fb5..f065c05 100644
      BatterySaverDriver() // (Update 187)
      // Only while on screen: no screensaver during a game or with the display off.
      val screensaverActive = rememberIsActive()
-@@ -2340,6 +2400,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2340,6 +2407,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      menuStartCategory = e?.section ?: "Screens"; showMenu = true
                  },
                  onShortcut = dockShortcut,
@@ -2749,7 +3194,7 @@ index 0b73fb5..f065c05 100644
                  options = SecondScreenOptions(
                      artType = state.appearance.secondArtType,
                      artBlur = state.appearance.secondArtBlur,
-@@ -2397,8 +2461,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2397,8 +2468,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      ) {
          Box(Modifier.fillMaxSize()) {
              SecondScreenContent()
@@ -2765,7 +3210,7 @@ index 0b73fb5..f065c05 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -2883,6 +2952,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2883,6 +2959,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              com.shelf.launcher.data.Features.discCalm.state.value
          val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
              showAppsLibrary || showAppDrawer || showFirstRun)
@@ -2780,7 +3225,7 @@ index 0b73fb5..f065c05 100644
          // The second screen only gets the scene while the animated background is on.
          if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
          // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
-@@ -3001,7 +3078,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3001,7 +3085,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      }
                      androidx.compose.runtime.CompositionLocalProvider(
                          LocalSceneAvoid provides sceneAvoid,
@@ -2790,7 +3235,7 @@ index 0b73fb5..f065c05 100644
                          LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                          // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                          LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
-@@ -3142,7 +3220,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3142,7 +3227,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              if (wantsCrt) CrtArtOverlay(glow)
              if (ambience != null) GameAmbienceLayer(
                  ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
@@ -2799,7 +3244,7 @@ index 0b73fb5..f065c05 100644
              )
          }
  
-@@ -3211,7 +3289,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3211,7 +3296,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  val total = p.NumPossibleAchievements ?: 0
                  if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
              }
@@ -2808,7 +3253,7 @@ index 0b73fb5..f065c05 100644
          }
  
          // Video preview: rest on a game for two seconds and its clip fades in.
-@@ -3256,7 +3334,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3256,7 +3341,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -2817,7 +3262,7 @@ index 0b73fb5..f065c05 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3296,7 +3374,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3296,7 +3381,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -2826,7 +3271,7 @@ index 0b73fb5..f065c05 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -3738,6 +3816,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3738,6 +3823,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                  when (state.appearance.categoryBarHere) {
                      com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
@@ -2840,7 +3285,7 @@ index 0b73fb5..f065c05 100644
                          bottomGap = state.appearance.infoSpacing.dp.dp,
                          platforms = state.availablePlatforms,
                          order = state.categoryOrder,
-@@ -4996,7 +5081,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4996,7 +5088,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -2855,7 +3300,7 @@ index 0b73fb5..f065c05 100644
          )
      }
  
-@@ -6014,7 +6105,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6112,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -2868,7 +3313,7 @@ index 0b73fb5..f065c05 100644
          )
      }
  
-@@ -6169,6 +6264,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6169,6 +6271,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              .onPreviewKeyEvent { event ->
                  lastInputAt = System.currentTimeMillis()
                  // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
@@ -2883,7 +3328,7 @@ index 0b73fb5..f065c05 100644
                  HomeKeyGuard.trackA(event.key, event.type)
                  if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                  when {
-@@ -6242,6 +6345,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6242,6 +6352,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                  // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                  // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
@@ -2898,7 +3343,7 @@ index 0b73fb5..f065c05 100644
                  if (event.key == Key.ButtonB || event.key == Key.Back) {
                      if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                      else if (event.type == KeyEventType.KeyUp) {
-@@ -7252,6 +7363,8 @@ internal object HomeKeyGuard {
+@@ -7252,6 +7370,8 @@ internal object HomeKeyGuard {
       * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
       */
      @Volatile var aDown = false
@@ -2907,7 +3352,7 @@ index 0b73fb5..f065c05 100644
      fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
          k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
              k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
-@@ -7263,3 +7376,21 @@ internal object HomeKeyGuard {
+@@ -7263,3 +7383,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -2930,11 +3375,30 @@ index 0b73fb5..f065c05 100644
 +    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..2a1954c 100644
+index 145a2a2..549ee6f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-@@ -483,7 +483,10 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
-         val sh = CartShells.of(id) ?: return@let
+@@ -470,6 +470,13 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+         // (Update 286, testing only: "case" — the game's case as the case looks draw it, whatever the look; for checking
+         // every face of the cases and boxes at set angles.)
+         if (id == "case") return casePiece(g, physical, cover, false)
++        // (Update 462, testing only: "media" — the piece the cartridge-and-disc look draws (the real cartridge photo when it
++        // has one), for the real-vs-drawn contact sheet.)
++        if (id == "media") physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.let { real ->
++            val shell = MediaShell.of(g.platform)
++            return InspectPiece(g, InspectKind.SLAB, (CoverAspects.rawOf(real) ?: shell?.aspect ?: 1f).coerceIn(0.3f, 3f), slabDepth(shell), null, null, false, real, cover, null, null,
++                physical, null, shellTone(shell), false)
++        }
+         // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
+         if (id.startsWith("pack:") || id.startsWith("cc:")) {
+             val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
+@@ -480,10 +487,14 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+             return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
+                 CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
+         }
+-        val sh = CartShells.of(id) ?: return@let
++        // (Update 462: "id~colour" — a shell in one of its colours / materials, e.g. "gbc_dual~m:pkmn_silver".)
++        val sh = CartShells.of(id.substringBefore('~')) ?: return@let
          val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
          val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
 -        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
@@ -2945,7 +3409,7 @@ index 145a2a2..2a1954c 100644
      }
      val small = Features.bigGcDiscs.state.value.not()
      val mixed = mixedConsoles(state.visibleGames)
-@@ -1846,7 +1849,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1846,7 +1857,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                      drawRect(sideTone, blendMode = BlendMode.SrcIn)
                      drawRect(sheen, blendMode = BlendMode.SrcAtop)
                  }
@@ -2955,7 +3419,7 @@ index 145a2a2..2a1954c 100644
                  if (n > 0) {
                      // Far to near.
                      for (k in 0..n) {
-@@ -1859,6 +1863,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1859,6 +1871,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                  val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                  val plasticArgb = sideTone.toArgb()
                  if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
@@ -2986,6 +3450,328 @@ index d7ed69b..588d67e 100644
              }
          }
          RoundStep(Icons.Filled.SkipPrevious, "Previous", onPrevious)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
+new file mode 100644
+index 0000000..5d1dbbf
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
+@@ -0,0 +1,316 @@
++package com.shelf.launcher.ui
++
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.graphics.Paint
++import android.graphics.RectF
++
++/**
++ * Update 462 (owner: "the generated carts look computer-drawn next to the real Silver cartridge photo"): a drawn cartridge
++ * front made from a REAL cartridge photo of the same shell — taken from your own library's scans (ScreenScraper's
++ * "Disc / cartridge" picture of an official game you have, e.g. Pokémon Silver's), never a bundled picture. The photo
++ * keeps the real plastic, the moulded Nintendo GAME BOY lettering, the grip ridges, the light and the edges; the sticker
++ * recess is found in it and the game's own label (your pick › its real label scan › your Labels folder › the printed label
++ * from its artwork — exactly what the drawn shell would print, CartShells.front) is laid into the recess over the photo's
++ * sticker, which is covered whole. The plastic is tinted to the shell colour you picked. The turned piece's sides come from
++ * this front (sideArtOf), so they are the photo's plastic too; the back stays the drawn one in the same colour.
++ *
++ * No photo of that shell in the library (or it doesn't fit: another shape, an odd crop): the drawn shell, as before.
++ */
++internal object PhotoShells {
++    /** A shell's template: the photo cropped to the shell and scaled to its shape, where its sticker is, its plastic. */
++    class Template(val bmp: Bitmap, val label: RectF, val plastic: Int, val source: String)
++
++    /** Which shells can be photo-made: the shell id → the ScreenScraper system ids whose cartridge photos show it. */
++    private val SYSTEMS = mapOf("gb" to setOf("9", "10"), "gbc_dual" to setOf("10"), "gbc" to setOf("10"), "gba" to setOf("12"))
++
++    fun supports(shellId: String): Boolean = shellId in SYSTEMS
++
++    /** Official games' cartridge photos (game key → photo) by ScreenScraper system id (set by the view model with the scans). */
++    @Volatile var photos: Map<String, List<Pair<String, String>>> = emptyMap()
++
++    /** Bumped when a template is made, so the cartridges drawn before draw again. */
++    val version = androidx.compose.runtime.mutableIntStateOf(0)
++
++    private val templates = java.util.concurrent.ConcurrentHashMap<String, Template>()
++    private val failed = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
++    private val loading = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
++    @Volatile var app: android.content.Context? = null
++
++    private val SYS = Regex("""[?&]systemeid=(\d+)""")
++
++    /** The cartridge photos of the official games in [raw] by system id (pure — unit-tested). */
++    fun photosOf(raw: Map<String, List<Pair<String, String>>>, isHack: (String) -> Boolean): Map<String, List<Pair<String, String>>> {
++        val out = HashMap<String, MutableList<Pair<String, String>>>()
++        for ((key, list) in raw) {
++            if (isHack(key)) continue
++            val url = list.firstOrNull { it.first == "Disc / cartridge" }?.second ?: continue
++            val sys = SYS.find(url)?.groupValues?.get(1) ?: continue
++            if (SYSTEMS.values.none { sys in it }) continue
++            out.getOrPut(sys) { mutableListOf() } += key to url
++        }
++        return out.mapValues { e -> e.value.distinctBy { it.second }.sortedBy { it.first } }
++    }
++
++    /** One analysed photo: where it's from, its plastic, whether it's see-through. */
++    private class Meta(val url: String, val plastic: Int, val clear: Boolean)
++    private val metas = java.util.concurrent.ConcurrentHashMap<String, List<Meta>>()
++
++    /**
++     * The template for [shell] in [colour] once made (null: none / still being made — the drawn shell is used meanwhile).
++     * The photo whose plastic is nearest that colour (and see-through for a see-through one): a black dual-mode pak's
++     * photo can't be tinted to Silver's plastic, Silver's own can.
++     */
++    fun template(shell: CartShell, colour: ShellColour = shell.colours.first()): Template? {
++        if (!com.shelf.launcher.data.Features.photoShells.value || !supports(shell.id)) return null
++        val list = metas[shell.id]
++        if (list == null) { analyse(shell); return null }
++        val clear = colour.opacity < 0.85f
++        val pick = list.filter { it.clear == clear }.minByOrNull { colourDistance(it.plastic, colour.argb) }
++            // (A see-through pak's plastic is mostly the board behind it: any clear photo will do, the nearest first.)
++            ?.takeIf { clear || colourDistance(it.plastic, colour.argb) < 120f } ?: return null
++        val key = shell.id + "|" + pick.url
++        templates[key]?.let { return it }
++        if (key in failed || !loading.add(key)) return null
++        val ctx = app ?: return null
++        Thread {
++            try {
++                val src = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { load(ctx, pick.url) }
++                val t = src?.let { fromPhoto(it, shell, pick.url) }
++                src?.recycle()
++                if (t != null) { templates[key] = t; android.os.Handler(android.os.Looper.getMainLooper()).post { version.intValue++ } } else failed += key
++                QaTrace.event("photoshell", "${shell.id} ${colour.key} ${if (t != null) "jeu " + JEU.find(pick.url)?.groupValues?.get(1) else "none"}")
++            } finally { loading.remove(key) }
++        }.apply { priority = Thread.MIN_PRIORITY; name = "photoshell" }.start()
++        return null
++    }
++
++    /**
++     * Where the sticker is on a real pak's photo when it isn't where the drawn shell has it (mm): the Color-only pak's sits
++     * lower, under its taller GAME BOY COLOR panel (measured off two cartridge photos, Crystalis and Crystal: 14 % in from
++     * either side, 34.5 % to 92 % down).
++     */
++    private val STICKER = mapOf("gbc" to floatArrayOf(8.0f, 22.6f, 42.4f, 37.7f))
++
++    private val JEU = Regex("""[?&]jeuid=(\d+)""")
++
++    /** Edition plastics people have (ShellMaterials): their games' photos are looked at first. */
++    private val EDITION_WORDS = listOf("silver", "gold", "crystal", "yellow")
++
++    /** Which pak [key]'s game came on (ScreenScraper system [sys]): the ROM header, else the file name's tag. */
++    fun shellOfGame(key: String, sys: String): String? = when (sys) {
++        "12" -> "gba"
++        "9" -> "gb"
++        "10" -> when (com.shelf.launcher.data.RomHeaders.gb(key, "GBC")) {
++            com.shelf.launcher.data.RomHeaders.Gb.CGB_DUAL -> "gbc_dual"
++            com.shelf.launcher.data.RomHeaders.Gb.CGB_ONLY -> "gbc"
++            com.shelf.launcher.data.RomHeaders.Gb.DMG -> "gb"
++            null -> if (key.contains("GB Compatible", ignoreCase = true)) "gbc_dual" else "gbc"
++        }
++        else -> null
++    }
++
++    /** Every photo of [shell]'s consoles looked at once (small): its plastic and see-through-ness, kept as [metas]. */
++    private fun analyse(shell: CartShell) {
++        val ctx = app ?: return
++        // Only games that came on this very shell (the ROM header: grey Game Boy, black dual-mode or clear Color-only pak),
++        // an edition's own game first (Pokémon Silver's photo for the silver pak).
++        val urls = SYSTEMS[shell.id]!!.flatMap { sys -> photos[sys].orEmpty().filter { (k, _) -> shellOfGame(k, sys) == shell.id } }
++            .sortedByDescending { (k, _) -> EDITION_WORDS.count { w -> k.contains(w, ignoreCase = true) } }
++            .map { it.second }
++        if (urls.isEmpty()) { metas[shell.id] = emptyList(); return }
++        if (!loading.add("meta|" + shell.id)) return
++        Thread {
++            try {
++                val out = ArrayList<Meta>()
++                for (u in urls.take(24)) {
++                    val src = kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { load(ctx, u, 320) } ?: continue
++                    val t = fromPhoto(src, shell, u, px = 240)
++                    src.recycle()
++                    if (t == null) continue
++                    out += Meta(u, t.plastic, t.source.endsWith("#clear"))
++                    t.bmp.recycle()
++                }
++                metas[shell.id] = out
++                QaTrace.event("photoshell", "${shell.id} ${out.size} of ${urls.size} photos fit, ${out.count { it.clear }} see-through")
++                android.os.Handler(android.os.Looper.getMainLooper()).post { version.intValue++ }
++            } finally { loading.remove("meta|" + shell.id) }
++        }.apply { priority = Thread.MIN_PRIORITY; name = "photoshell" }.start()
++    }
++
++    /** Forget the templates (a new library / its scans changed). */
++    fun reset() { templates.clear(); metas.clear(); failed.clear(); version.intValue++ }
++
++    // (Not kept in the picture memory: a shell's photos are looked at once — kept there, 96 photos held ~330 MB on the
++    // KONKR. The disk cache still has them.)
++    private suspend fun load(ctx: android.content.Context, url: String, side: Int = 900): Bitmap? = runCatching {
++        val req = coil.request.ImageRequest.Builder(ctx).data(url).size(side, side).allowHardware(false)
++            .memoryCachePolicy(coil.request.CachePolicy.DISABLED).build()
++        val d = (coil.Coil.imageLoader(ctx).execute(req) as? coil.request.SuccessResult)?.drawable ?: return null
++        (d as? android.graphics.drawable.BitmapDrawable)?.bitmap
++    }.getOrNull()
++
++    /** RGB distance (0…441). */
++    fun colourDistance(a: Int, b: Int): Float {
++        val dr = ((a shr 16) and 255) - ((b shr 16) and 255); val dg = ((a shr 8) and 255) - ((b shr 8) and 255); val db = (a and 255) - (b and 255)
++        return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toFloat())
++    }
++
++    /**
++     * Pure apart from Bitmap: [src] cut to the cartridge (its see-through surroundings, or the flat colour round it),
++     * checked against [shell]'s shape (±9 %), scaled to it, its sticker found near where the shell has it.
++     */
++    fun fromPhoto(src: Bitmap, shell: CartShell, source: String, px: Int = 720): Template? {
++        val w0 = src.width; val h0 = src.height
++        if (w0 < 60 || h0 < 60) return null
++        val pix = IntArray(w0 * h0); src.getPixels(pix, 0, w0, 0, 0, w0, h0)
++        val bg = pix[0]
++        val alphaBg = (bg ushr 24) < 40
++        fun isPiece(c: Int): Boolean = if (alphaBg) (c ushr 24) > 60 else colourDistance(c, bg) > 38f
++        var l = w0; var t = h0; var r = -1; var b = -1
++        for (y in 0 until h0) for (x in 0 until w0) if (isPiece(pix[y * w0 + x])) { if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > b) b = y }
++        if (r - l < w0 * 0.4f || b - t < h0 * 0.4f) return null
++        val bw = r - l + 1; val bh = b - t + 1
++        val aspect = shell.w / shell.h
++        if (kotlin.math.abs(bw.toFloat() / bh / aspect - 1f) > 0.09f) return null
++        val tw = if (aspect >= 1f) px else (px * aspect).toInt()
++        val th = (tw / aspect).toInt()
++        val out = Bitmap.createBitmap(tw, th, Bitmap.Config.ARGB_8888)
++        val c = Canvas(out)
++        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
++        c.drawBitmap(src, android.graphics.Rect(l, t, r + 1, b + 1), android.graphics.Rect(0, 0, tw, th), paint)
++        if (!alphaBg) {
++            // A photo on a flat background: the background made see-through (the outline is the shell's).
++            val o = IntArray(tw * th); out.getPixels(o, 0, tw, 0, 0, tw, th)
++            for (i in o.indices) if (colourDistance(o[i], bg) <= 38f) o[i] = 0
++            out.setPixels(o, 0, tw, 0, 0, tw, th)
++        }
++        val k = tw / shell.w
++        val lb = STICKER[shell.id] ?: shell.label
++        val est = RectF(lb[0] * k, lb[1] * k, (lb[0] + lb[2]) * k, (lb[1] + lb[3]) * k)
++        val plastic = plasticOf(out, est)
++        val clear = boardShows(out, est, plastic)
++        // (Through a see-through pak the board is everywhere round the sticker: its measured place is used, not looked for.)
++        val label = if (clear) est else findSticker(out, est, plastic)
++        return Template(out, label, plastic, if (clear) "$source#clear" else source)
++    }
++
++    private fun lum(c: Int): Int = (((c shr 16) and 255) * 3 + ((c shr 8) and 255) * 6 + (c and 255)) / 10
++
++    /**
++     * The sticker's edges: from inside the sticker outwards, the first line (column / row) where most samples are the
++     * plastic's colour — so a frame printed inside the label (its art's border, "THIS SIDE OUT") is passed over.
++     */
++    fun findSticker(b: Bitmap, est: RectF, plastic: Int): RectF {
++        val w = b.width; val h = b.height
++        val px = IntArray(w * h); b.getPixels(px, 0, w, 0, 0, w, h)
++        fun plasticAt(x: Int, y: Int): Boolean {
++            if (x !in 0 until w || y !in 0 until h) return true
++            val c = px[y * w + x]
++            return (c ushr 24) < 120 || colourDistance(c, plastic) < 30f
++        }
++        val reach = (maxOf(w, h) * 0.09f).toInt().coerceAtLeast(3)
++        // A line counts as plastic when 70 % of its samples are (the recess's shadow and a sticker's worn edge aside).
++        fun columnPlastic(x: Int): Boolean { var n = 0; var p = 0; var y = (est.top + est.height() * 0.15f).toInt(); while (y < est.bottom - est.height() * 0.15f) { n++; if (plasticAt(x, y)) p++; y += 3 }; return n > 0 && p >= n * 0.7f }
++        fun rowPlastic(y: Int): Boolean { var n = 0; var p = 0; var x = (est.left + est.width() * 0.15f).toInt(); while (x < est.right - est.width() * 0.15f) { n++; if (plasticAt(x, y)) p++; x += 3 }; return n > 0 && p >= n * 0.7f }
++        fun scan(from: Float, step: Int, test: (Int) -> Boolean): Float? {
++            var v = from.toInt()
++            repeat(reach * 2) { if (test(v)) return (v - step).toFloat(); v += step }
++            return null
++        }
++        // From a little inside the expected edge (the sticker's own border may be plastic-coloured grey) outwards.
++        val inset = minOf(est.width(), est.height()) * 0.12f
++        val left = scan(est.left + inset, -1, ::columnPlastic) ?: est.left
++        val right = scan(est.right - inset, 1, ::columnPlastic) ?: est.right
++        val top = scan(est.top + inset, -1, ::rowPlastic) ?: est.top
++        val bottom = scan(est.bottom - inset, 1, ::rowPlastic) ?: est.bottom
++        val r = RectF(left, top, right, bottom)
++        // An implausible find (the sticker more than 14 % off its expected size): the expected place.
++        return if (r.width() < est.width() * 0.86f || r.width() > est.width() * 1.14f || r.height() < est.height() * 0.86f || r.height() > est.height() * 1.14f) est else r
++    }
++
++    /** The plastic's colour: the median of the bands either side of the sticker. */
++    fun plasticOf(b: Bitmap, label: RectF): Int {
++        val w = b.width; val h = b.height
++        val rs = ArrayList<Int>(); val gs = ArrayList<Int>(); val bs = ArrayList<Int>()
++        val y0 = (label.top + label.height() * 0.3f).toInt(); val y1 = (label.bottom - label.height() * 0.15f).toInt()
++        // (The strips at the outer edges: the expected sticker may sit a little off in a photo.)
++        val bands = listOf((w * 0.035f).toInt() to (minOf(label.left - w * 0.03f, w * 0.09f)).toInt(), (maxOf(label.right + w * 0.03f, w * 0.91f)).toInt() to (w * 0.965f).toInt())
++        for ((x0, x1) in bands) for (y in y0 until y1 step 2) for (x in x0 until x1 step 2) {
++            if (x !in 0 until w || y !in 0 until h) continue
++            val c = b.getPixel(x, y)
++            if ((c ushr 24) < 200) continue
++            rs += (c shr 16) and 255; gs += (c shr 8) and 255; bs += c and 255
++        }
++        if (rs.isEmpty()) return 0xFF888888.toInt()
++        rs.sort(); gs.sort(); bs.sort()
++        return (0xFF shl 24) or (rs[rs.size / 2] shl 16) or (gs[gs.size / 2] shl 8) or bs[bs.size / 2]
++    }
++
++    /**
++     * A see-through shell: the board shows round the sticker — many pixels far from the plastic's own colour below it and
++     * beside it (a solid pak, even a gold or yellow one, is its one colour there).
++     */
++    private fun boardShows(b: Bitmap, label: RectF, plastic: Int): Boolean {
++        var n = 0; var off = 0
++        fun look(x0: Int, x1: Int, y0: Int, y1: Int) {
++            for (y in y0 until y1 step 2) for (x in x0 until x1 step 2) {
++                if (x !in 0 until b.width || y !in 0 until b.height) continue
++                val c = b.getPixel(x, y); if ((c ushr 24) < 200) continue
++                n++; if (colourDistance(c, plastic) > 45f) off++
++            }
++        }
++        look((b.width * 0.12f).toInt(), (b.width * 0.88f).toInt(), (label.bottom + 3).toInt(), (b.height * 0.96f).toInt())
++        look((b.width * 0.03f).toInt(), (label.left - 3).toInt(), (label.top + label.height() * 0.3f).toInt(), label.bottom.toInt())
++        return n > 0 && off > n * 0.3f
++    }
++
++    /**
++     * The photo front for [shell] wearing the label [drawn] has ([drawn] is CartShells.front's picture of the same shell at
++     * the same size: its sticker is copied into the photo's recess), the plastic tinted to [colour]. Null: no template.
++     */
++    fun front(shell: CartShell, colour: ShellColour, drawn: Bitmap): Bitmap? {
++        val t = template(shell, colour) ?: return null
++        val w = drawn.width; val h = drawn.height
++        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
++        val c = Canvas(out)
++        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
++        // The plastic in the colour picked: each channel scaled by want / photo (its texture and light kept).
++        val want = colour.argb
++        fun f(sh: Int) = (((want shr sh) and 255).toFloat() / ((t.plastic shr sh) and 255).coerceAtLeast(8)).coerceIn(0.35f, 2.2f)
++        val tint = android.graphics.ColorMatrix(floatArrayOf(f(16), 0f, 0f, 0f, 0f, 0f, f(8), 0f, 0f, 0f, 0f, 0f, f(0), 0f, 0f, 0f, 0f, 0f, 1f, 0f))
++        // (A see-through pak isn't tinted: what shows through it is the board, not a plastic colour.)
++        paint.colorFilter = if (colour.opacity >= 0.85f && colourDistance(want, t.plastic) > 10f) android.graphics.ColorMatrixColorFilter(tint) else null
++        c.drawBitmap(t.bmp, null, android.graphics.Rect(0, 0, w, h), paint)
++        paint.colorFilter = null
++        // The sticker: the drawn one's, into the photo's recess (a little past its edge, so none of the photo's own shows).
++        val sx = w.toFloat() / t.bmp.width; val sy = h.toFloat() / t.bmp.height
++        val dst = RectF(t.label.left * sx, t.label.top * sy, t.label.right * sx, t.label.bottom * sy)
++        val pad = w * 0.006f
++        dst.inset(-pad, -pad)
++        val k = w / shell.w
++        val src = android.graphics.Rect((shell.label[0] * k).toInt(), (shell.label[1] * k).toInt(), ((shell.label[0] + shell.label[2]) * k).toInt(), ((shell.label[1] + shell.label[3]) * k).toInt())
++        val rad = shell.labelRadius * k
++        c.save()
++        c.clipPath(android.graphics.Path().apply { addRoundRect(dst, rad, rad, android.graphics.Path.Direction.CW) })
++        c.drawBitmap(drawn, src, dst, paint)
++        // The paper sits in a recess: a soft shade under its top edge, the photo's light falling from above.
++        val shade = Paint(Paint.ANTI_ALIAS_FLAG)
++        shade.shader = android.graphics.LinearGradient(0f, dst.top, 0f, dst.top + 1.2f * k, 0x38000000, 0x00000000, android.graphics.Shader.TileMode.CLAMP)
++        c.drawRect(dst.left, dst.top, dst.right, dst.top + 1.2f * k, shade)
++        c.restore()
++        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = maxOf(1f, 0.25f * k); color = 0x40000000 }
++        c.drawRoundRect(dst, rad, rad, edge)
++        return out
++    }
++
++    /** QA (test hooks): the templates as PNGs into <external files>/photoshells. */
++    fun dump(ctx: android.content.Context) {
++        val dir = java.io.File(ctx.getExternalFilesDir(null), "photoshells").apply { mkdirs() }
++        for ((id0, t) in templates) runCatching {
++            val id = id0.substringBefore('|') + "_" + (JEU.find(id0)?.groupValues?.get(1) ?: "x")
++            java.io.File(dir, "$id.png").outputStream().use { t.bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
++            java.io.File(dir, "$id.txt").writeText("source=${t.source}\nlabel=${t.label}\nplastic=${Integer.toHexString(t.plastic)}\n")
++        }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt b/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt
 index 5aca151..958f058 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PhysicalMedia.kt
@@ -3024,8 +3810,62 @@ index 5aca151..958f058 100644
  }
  
  /** Update 205: the plastic colour read off each cartridge photo (its address), so it's read once per run. */
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt b/app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt
+index 963ce69..feb9596 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt
+@@ -417,6 +417,9 @@ fun PlatformBrowser(
+             Features.PlatformView.CONSTELLATION -> ConstellationLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+             Features.PlatformView.VAULT -> VaultLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+             Features.PlatformView.DASHBOARD -> DashboardLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
++            Features.PlatformView.WIICHAN -> WiiChannelLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
++            Features.PlatformView.CINEMA -> CinemaLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
++            Features.PlatformView.ARCTIC -> ArcticLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+             else -> Unit
+         }
+         // Action bar: the platform's name, the game count and the random-game button; it animates between views.
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt b/app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt
+index 429d1a8..5add2da 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt
+@@ -57,6 +57,9 @@ internal fun categoryLookNote(v: Features.PlatformView): String = when (v) {
+     Features.PlatformView.CONSTELLATION -> "Constellation: the systems as nodes round a glowing core; the one you're on turns to the front. ◀ ▶."
+     Features.PlatformView.VAULT -> "System Vault: storage modules in a rack; the one you're on slides into the reader, which shows its games. ▲ ▼."
+     Features.PlatformView.DASHBOARD -> "Pocket Dashboard: a compact list, a big preview of the system you're on and its information panels. ▲ ▼."
++    Features.PlatformView.WIICHAN -> "Channel Menu: Channel grid's own picker — white rounded channels on pinstriped grey, four across, a page of twelve."
++    Features.PlatformView.CINEMA -> "Cinema: the category big as a title card, the others as a row of posters along the bottom."
++    Features.PlatformView.ARCTIC -> "Arctic Panes: frosted panes down the left on the deep slate, the art of the one you're on beside them."
+ }
+ 
+ /** Settings › Categories › Category screen: the options of the look in use (only that look's). */
+@@ -170,7 +173,9 @@ internal object CategoryLookNow {
+     private var held: Features.PlatformView? = null
+ 
+     fun resolve(open: Boolean, layout: com.shelf.launcher.data.HomeLayout): Features.PlatformView {
+-        if (open && !wasOpen) held = if (Features.pbFollowHome.value) Features.followLookFor(layout) else null
++        // (Update 462: a layout with a themed picker uses it — Settings › Category screen › Themed pickers.)
++        if (open && !wasOpen) held = (if (Features.pbThemed.value) themedLookFor(layout) else null)
++            ?: if (Features.pbFollowHome.value) Features.followLookFor(layout) else null
+         wasOpen = open
+         return current()
+     }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PocketQuestSettings.kt b/app/src/main/java/com/shelf/launcher/ui/PocketQuestSettings.kt
+index 081c791..a83ac74 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/PocketQuestSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/PocketQuestSettings.kt
+@@ -45,8 +45,8 @@ internal fun PocketQuestSettings() {
+         "A full-screen game menu in the style of the great 32-bit handheld RPGs: the game you're on big in the middle with its " +
+             "details and Play, your games along the bottom, consoles as tabs on top, pixel-art scenery behind. " +
+             "◀ ▶ move · ▲ the panel and the top bar · A " + (if (Features.pqAPlays.state.value) "plays" else "opens the game window") +
+-            " · Y details · X favourite · " + (if (Features.pqBumpers.state.value) "L1 / R1 (or L2 / R2) console · Start quick settings" else "L2 / R2 console · R1 (or Start) quick settings · L1 shortcuts") +
+-            " · Select systems (hold: sort & filter). The top bar's slider button opens the quick settings too."
++            " · Y details · X favourite · " + (if (Features.pqBumpers.state.value) "L1 / R1 (or L2 / R2) console" else "L2 / R2 console · R1 quick settings · L1 shortcuts") +
++            " · B Select a System · Start game options · Select Settings. The top bar's buttons open Select a System, search, sort & filter and the quick settings too."
+     )
+     Spacer(Modifier.height(12.dp))
+     // The four themes as small pictures (the chips under them pick).
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
-index a557c71..fd8a776 100644
+index a557c71..897cce8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
 @@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
@@ -3093,6 +3933,15 @@ index a557c71..fd8a776 100644
              }
          }
      }
+@@ -517,6 +541,8 @@ internal fun pocketRibbonKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
+     if (!down) return false
+     val first = event.nativeKeyEvent.repeatCount == 0
+     fun take(): Boolean { PocketNav.keysDown += code; return true }
++    // (Update 462: while the launch moment plays, a second A / Start doesn't start the game again.)
++    if (PocketNav.launching && android.view.KeyEvent.isGamepadButton(code)) return take()
+     // Update 182: below the row, the small tools and the home strip (PocketNav.ribbonSpot; −1 = the row).
+     val spot = PocketNav.ribbonSpot
+     val tools = pocketTools(c, ribbon = true)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PowerSaver.kt b/app/src/main/java/com/shelf/launcher/ui/PowerSaver.kt
 index e58130f..abdc684 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PowerSaver.kt
@@ -4274,7 +5123,7 @@ index 5dd75e0..55c73a8 100644
              // Update 200: the pages slide in the direction of travel instead of just appearing.
              Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index 8ae182c..3b27d17 100644
+index 8ae182c..cd43e2e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 @@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
@@ -4372,7 +5221,35 @@ index 8ae182c..3b27d17 100644
      when (open) {
          null -> {
              val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-@@ -6221,3 +6245,118 @@ private fun HandheldControllerStyle() {
+@@ -3986,6 +4010,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
+             com.shelf.launcher.data.Features.cartBackStyle.state.value, { it.label }
+         ) { com.shelf.launcher.data.Features.cartBackStyle.value = it }
+         MutedNote("Turn a drawn cartridge round to see its back: its screws, connector and panels as on the real one, with the maker's moulded text and stickers — or plain, without any console's branding (a game on another console's shell is plain by default).")
++        // Update 462: the photo-made shells (PhotoShells).
++        SwitchRow(
++            icon = Icons.Filled.ViewWeek,
++            title = "Photo-real Game Boy paks",
++            subtitle = "On (default): a drawn Game Boy / Game Boy Color / Game Boy Advance pak is made from a real cartridge photo of the same shell from your own library (an official game's cartridge picture, e.g. Pokémon Silver's) — its real plastic, moulded lettering, ridges and light — with the game's own label laid into the sticker recess. Without such a photo in your library: the drawn shell.",
++            checked = com.shelf.launcher.data.Features.photoShells.state.value,
++            onChange = { com.shelf.launcher.data.Features.photoShells.value = it; PhotoShells.reset() }
++        )
+         // Update 210: real special editions (MediaEditions).
+         SwitchRow(
+             icon = Icons.Filled.ViewWeek,
+@@ -5977,6 +6009,12 @@ private fun CategoriesContent(
+                         F.followLookFor(appearance.homeLayout).label + ". Off: the look picked above.",
+                     F.pbFollowHome.state.value, { F.pbFollowHome.value = it }
+                 )
++                // Update 462: the themed pickers (ThemedPicker / themedLookFor).
++                SwitchRow(
++                    Icons.Filled.SwapHoriz, "Themed pickers",
++                    "Pocket Quest, Green Core and Pocket classic open their own systems page; Channel grid, Cinema and Arctic hub a picker in their style. Same categories, order and controls. Off: the look above.",
++                    F.pbThemed.state.value, { F.pbThemed.value = it }
++                )
+                 Spacer(Modifier.height(14.dp))
+                 Text("Cards show", color = ShelfTheme.textMuted, fontSize = 12.sp)
+                 Spacer(Modifier.height(6.dp))
+@@ -6221,3 +6259,118 @@ private fun HandheldControllerStyle() {
      }
      Spacer(Modifier.height(12.dp))
  }
@@ -4787,6 +5664,73 @@ index 941198e..8164d7b 100644
                          if (game.stableKey in c.state.favorites) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(8.dp).clip(CircleShape).background(accent))
                      }
                  }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt b/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
+index 89785bc..865f678 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
+@@ -112,7 +112,7 @@ import kotlin.math.roundToInt
+  * - SYSTEMS: your consoles with their logos, counts and pictures; A opens one's games on the Games blade (B back).
+  * - SPOTLIGHT: the games you played last, your achievements and statistics, search; a gamer card on the right.
+  * - MEDIA: music, Save Vault, apps, the screensaver. SETTINGS: Settings, the quick menu, sort & filter, search, profile.
+- * Start: the quick menu (R1's panel); Select: sort & filter. Touch: tap a blade's edge to open it, swipe across to slide,
++ * Start: game options; Select: Settings; R1: the quick menu. Touch: tap a blade's edge to open it, swipe across to slide,
+  * tap a row to pick it, again to open it, drag the list. Options: Settings › Home › Layout options (Blades).
+  */
+ 
+@@ -238,7 +238,7 @@ private fun blRowCount(b: Int): Int = if (b == BladesNav.SYSTEMS) BladesNav.syst
+  * Update 344: Blades' keys (all of them while it's on, before the home screen's own). True = handled.
+  * ◀ ▶ the blades; ▲ ▼ down the list (Games: the game; Endless goes round); A acts on a menu blade's row (on the Games
+  * blade it's the home screen's own: the game window); B back (Games from Systems → Systems, another blade → Games; on
+- * Games it's the home screen's own); X / Y the home screen's own on Games. Start: quick menu; Select: sort & filter.
++ * Games it's the home screen's own); X / Y the home screen's own on Games. Start: game options; Select: Settings (update 462).
+  */
+ internal fun bladesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val c = BladesNav.ctx ?: return false
+@@ -247,11 +247,7 @@ internal fun bladesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val up = event.type == KeyEventType.KeyUp
+     if (up && BladesNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) {
+-        if (up) c.actions.quickMenu()
+-        return up
+-    }
+-    if (k == Key.ButtonSelect) return up && blHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val b = BladesNav.blade
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     if (isA && b != BladesNav.GAMES) {
+@@ -930,7 +926,7 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
+ internal fun BladesSettings() {
+     MutedNote(
+         "Five overlapping blades — Spotlight, Games, Systems, Media, Settings. ◀ ▶ slide the next blade open, ▲ ▼ move down " +
+-            "its list, A opens, B goes back. L2 / R2 change the category, Start the quick menu, Select sort & filter. Tap a " +
++            "its list, A opens, B goes back. L2 / R2 change the category, Start the game's options, R1 the quick menu (sort & filter), Select Settings. Tap a " +
+             "blade's edge to open it, swipe across to slide."
+     )
+     Spacer(Modifier.height(10.dp))
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt b/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
+index 1c80b3a..417c3c9 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
+@@ -224,7 +224,7 @@ private fun bubbleStep(c: StyleCtx, to: Int, page: Boolean) {
+  * BUBBLES: ◀ ▶ along (Endless round), ▲ ▼ between rows and pages, A the LiveArea, B the folders (Folders on; else the
+  * home screen's own), X / Y the home screen's own. FOLDERS: the same moves, A opens, B the home screen's own.
+  * LIVE: ◀ ▶ the next game's page (on Start) or along the round buttons, ▲ ▼ between Start and them, A, B back, X favourite,
+- * Y achievements. Start: the quick menu; Select: sort & filter.
++ * Y achievements. Start: game options; Select: Settings.
+  */
+ internal fun bubblesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val c = BubbleNav.ctx ?: return false
+@@ -233,8 +233,7 @@ internal fun bubblesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val up = event.type == KeyEventType.KeyUp
+     if (up && BubbleNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && bubbleHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val view = BubbleNav.view
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     if (isA) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
 index 5b82476..8a5b3f5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseFlow.kt
@@ -4839,14 +5783,78 @@ index 16f078e..476e5fa 100644
      val clock = MediaClock.rememberFrameTime(running = moving)
      val labels = Features.circuitLabels.state.value
      val pulse = rememberFocusPulse(animate = !LocalLiteEffects.current && LocalCardLook.current.focusEffect != com.shelf.launcher.data.FocusEffect.NONE)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt b/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
+index 197f20e..e9a9ac9 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
+@@ -96,8 +96,8 @@ import kotlin.math.sin
+  *   its console, play time, last played and achievements. A opens the game window (or starts it) like everywhere,
+  *   X favourite, Y achievements (Voltcap's own buttons), B back to the menu.
+  * - SYSTEMS: your consoles as panels with their logos and game counts; A opens one's games.
+- * The sphere slides and shrinks between the pages, the panels slide in. Start: the quick menu (R1's panel); Select: sort
+- * & filter. L2 / R2 change the category, L1 / R1 as everywhere. Touch: tap / drag everything; the back gesture goes back.
++ * The sphere slides and shrinks between the pages, the panels slide in. Start: game options; Select: Settings; R1: the quick menu.
++ * L2 / R2 change the category, L1 / R1 as everywhere. Touch: tap / drag everything; the back gesture goes back.
+  * Options: Settings › Home › Layout options (GreenCoreSettings.kt).
+  */
+ 
+@@ -126,7 +126,7 @@ internal object GreenCoreHooks {
+     @Volatile var hotkey: ((HotkeyAction) -> Unit)? = null
+ }
+ 
+-private enum class GcItem(val label: String) {
++internal enum class GcItem(val label: String) {
+     GAMES("GAMES"), SYSTEMS("SYSTEMS"), APPS("APPS"), SAVES("SAVE VAULT"), MUSIC("MUSIC"), SETTINGS("SETTINGS")
+ }
+ 
+@@ -252,7 +252,7 @@ private fun gcStepGame(c: StyleCtx, d: Int, jump: Boolean = false): Boolean {
+  * GAMES: ▲ ▼ (◀ ▶ on the carousel) the game, ◀ ▶ (▲ ▼) six at a time; A / X / Y / L / R are the home screen's own (the
+  * game window, favourite, achievements, categories…); B back.
+  * SYSTEMS: ▲ ▼ the system, ◀ ▶ five at a time, A its games, B back.
+- * Start (on release): the quick menu; Select (on release, not as a combo): sort & filter.
++ * Start / Select / R1: the home screen's (game options, Settings, the quick menu; update 462, InputContract).
+  */
+ internal fun greenCoreKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val c = GreenCoreNav.ctx ?: return false
+@@ -261,13 +261,7 @@ internal fun greenCoreKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean
+     val up = event.type == KeyEventType.KeyUp
+     if (up && GreenCoreNav.keysDown.remove(code)) return true
+     val k = event.key
+-    // Start: the R1 quick menu. Select: sort & filter (the Sort hotkey). Both on release; their presses are claimed by
+-    // the home screen (Select is also the combo key: a combo never reaches here).
+-    if (k == Key.ButtonStart || k == Key.Menu) {
+-        if (up) c.actions.quickMenu()
+-        return up
+-    }
+-    if (k == Key.ButtonSelect) return up && gcHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val page = GreenCoreNav.page
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     // A on the menu / systems acts on release (what it opens never gets the release).
+@@ -471,7 +465,7 @@ private fun GcMenu(c: StyleCtx, systemCount: Int, compact: Boolean, reduced: Boo
+             }
+         }
+         Text(
+-            "Ⓐ SELECT   START QUICK MENU   SELECT SORT", color = accent.copy(alpha = 0.55f), fontSize = 9.sp,
++            "Ⓐ SELECT   START OPTIONS   R1 QUICK MENU   SELECT SETTINGS", color = accent.copy(alpha = 0.55f), fontSize = 9.sp,
+             fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false,
+             modifier = Modifier.align(Alignment.BottomStart).padding(start = 4.dp, bottom = 2.dp)
+         )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
-index 2fb8a39..5b9b923 100644
+index 2fb8a39..672cfd1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
-@@ -186,6 +186,19 @@ internal fun styleHomeKey(
+@@ -186,6 +186,26 @@ internal fun styleHomeKey(
      /** Past the layout's last menu / bar at the top ([Boolean] true) or the bottom: what lies there (HomeReach). */
      reach: (Boolean) -> Boolean = { false }
  ): Boolean {
++    // Update 462: Select (Settings), Start (game options), R1 (quick menu) and L1 (shortcuts) are the home screen's on every
++    // layout, unless the layout owns that button right now (InputContract). Its handler never sees them otherwise.
++    when (InputContract.route(event.nativeKeyEvent.keyCode, layout, InputContract.live())) {
++        InputContract.Route.HOME -> return false
++        InputContract.Route.HOLD -> return true
++        InputContract.Route.LAYOUT -> Unit
++    }
 +    // Update 448 (D147): a two-screen layout (Twin desk / icons / showcase, Pocket classic / ribbon) with the second screen's
 +    // own dashboard open: its game list, grid, spots and buttons are on the lower screen, hidden under the dashboard, so ▼
 +    // goes past them — to what lies under the games on the main screen (HomeReach) and then onto the dashboard (SecondPad) —
@@ -4863,8 +5871,68 @@ index 2fb8a39..5b9b923 100644
      // Update 181: the Pocket layouts take every key themselves (their panels, pages and ribbon).
      if (layout == HomeLayout.POCKET_CLASSIC) return pocketClassicKey(event, reach)
      if (layout == HomeLayout.POCKET_RIBBON) return pocketRibbonKey(event, reach)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt b/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
+index ad97f59..dd8bcea 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
+@@ -137,8 +137,7 @@ internal fun magazineKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean
+     val up = event.type == KeyEventType.KeyUp
+     if (up && MagNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && mgHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     val n = c.games.size
+     if (MagNav.contents) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt b/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
+index 011eab0..8982b8f 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
+@@ -90,7 +90,7 @@ import kotlin.math.roundToInt
+  * game look), Systems (your consoles), Media, Settings.
+  * ▲ ▼ change the channel (they slide up / down), ◀ ▶ along its panels. A opens (a game: its window — the detail panel
+  * swinging in, WinScenesConsole.kt), B back (Games opened from Systems → Systems, another channel → Games), X / Y / L2 /
+- * R2 as everywhere. Start: the quick menu, Select: sort & filter. Touch: tap a panel, swipe along, swipe up / down.
++ * R2 as everywhere. Start: game options, Select: Settings, R1: the quick menu. Touch: tap a panel, swipe along, swipe up / down.
+  */
+ 
+ /** Update 344: where the controller is in Panel dashboard. */
+@@ -191,8 +191,7 @@ internal fun panelsKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val up = event.type == KeyEventType.KeyUp
+     if (up && PanelNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && pdHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val ch = PanelNav.channel
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     if (isA && ch != PanelNav.GAMES) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePocketCamera.kt b/app/src/main/java/com/shelf/launcher/ui/StylePocketCamera.kt
+index 401e3d8..b7c3362 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StylePocketCamera.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StylePocketCamera.kt
+@@ -97,7 +97,7 @@ private fun pcHotkey(a: HotkeyAction): Boolean {
+ 
+ /**
+  * Update 344: Pocket camera's keys. ◀ ▶ the games (Endless round), ▲ ▼ which picture the photo shows (cover, screenshot,
+- * art), A / B / X / Y / L / R the home screen's own. Start: quick menu; Select: sort & filter.
++ * art), A / B / X / Y / L / R the home screen's own. Start: game options; Select: Settings.
+  */
+ internal fun pocketCameraKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
+     val c = CameraNav.ctx ?: return false
+@@ -106,8 +106,7 @@ internal fun pocketCameraKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
+     val up = event.type == KeyEventType.KeyUp
+     if (up && CameraNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && pcHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     if (!down) return false
+     val first = event.nativeKeyEvent.repeatCount == 0
+     fun take(): Boolean { CameraNav.keysDown += code; return true }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
-index f42176b..a133a5a 100644
+index f42176b..b49603d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
 @@ -332,9 +332,13 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
@@ -4933,6 +6001,37 @@ index f42176b..a133a5a 100644
          }
          ConsoleBadge(g.platform, packageName = g.packageName)
      }
+@@ -1028,7 +1046,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
+                 }
+             }
+         }
+-        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Sort & filter", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
++        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Settings", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
+     }
+ }
+ 
+@@ -1310,18 +1328,9 @@ internal fun pocketQuestKey(event: KeyEvent, reach: (Boolean) -> Boolean, sound:
+     val first = native.repeatCount == 0
+     val k = event.key
+     fun beep(s: UiSound) { if (!PqSynth.play(s)) sound(s) }
+-    // Select: a short press opens Select a System (on it: sort & filter); held half a second, sort & filter straight away.
+-    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) {
+-        if (down && first) PqNav.selectArmed = true
+-        if (up && PqNav.selectArmed) {
+-            PqNav.selectArmed = false
+-            if (PqNav.launching == null) {
+-                val held = native.eventTime - native.downTime >= 450L
+-                if (held || PqNav.page == PqNav.Page.SYSTEMS) c.actions.sort() else pqOpenSystems(c)
+-            }
+-        }
+-        return true
+-    }
++    // Update 462: Select is Settings, as on every layout (InputContract) — it only reaches here during the launch flash,
++    // which holds it. Select a System opens from B (the category picker, ThemedPicker), L2 / R2 and the top bar's button.
++    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) return true
+     if (up && PqNav.keysDown.remove(code)) return true
+     if (!down) return false
+     fun take(): Boolean { PqNav.keysDown += code; return true }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt
 index 489323b..86c7124 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleRecordCrate.kt
@@ -4947,10 +6046,20 @@ index 489323b..86c7124 100644
          // The sleeve's paper: light from the top left, and the ring the record has worn into it (drawn once per size).
          Box(
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
-index b8eafd3..852a724 100644
+index b8eafd3..762f07a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
-@@ -230,6 +230,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
+@@ -122,8 +122,7 @@ internal fun rentalShopKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolea
+     val up = event.type == KeyEventType.KeyUp
+     if (up && ShopNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && rsHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     if (ShopNav.map) {
+         val n = ShopNav.systems.size
+@@ -230,6 +229,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
          StyleLoop.on = loopRowOn(c)
      }
      rememberLayoutKit(LayoutKit.SHOP, Features.rsSounds.state.value, c.state.appearance.soundsEnabled)
@@ -4959,6 +6068,20 @@ index b8eafd3..852a724 100644
      DisposableEffect(Unit) { onDispose { ShopNav.keysDown.clear(); ShopNav.map = false } }
      androidx.activity.compose.BackHandler(enabled = ShopNav.map && GamePopup.game == null) { ShopNav.map = false }
      if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native(null)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
+index 8183965..977fe34 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
+@@ -166,8 +166,7 @@ internal fun terminalKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean
+     val up = event.type == KeyEventType.KeyUp
+     if (up && TermNav.keysDown.remove(code)) return true
+     val k = event.key
+-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
+-    if (k == Key.ButtonSelect) return up && tmHotkey(HotkeyAction.SORT)
++    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
+     val dir = TermNav.dir
+     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
+     if (isA && dir != TermNav.Dir.GAMES) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt b/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
 index 55ac6bf..f9fadad 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SystemBars.kt
@@ -4983,7 +6106,7 @@ index 55ac6bf..f9fadad 100644
          for (wait in longArrayOf(120, 350, 800)) {
              kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..4c25a49 100644
+index df68497..b829783 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -27,6 +27,18 @@ internal object TestHooks {
@@ -5110,16 +6233,18 @@ index df68497..4c25a49 100644
          val want = intent?.getStringExtra("voltcap_test_layout")
          val g = intent?.getStringExtra("voltcap_test_game")
          val st = intent?.getStringExtra("voltcap_test_settings")
-@@ -126,6 +221,8 @@ internal object TestHooks {
+@@ -126,6 +221,10 @@ internal object TestHooks {
          val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
          val rs = intent?.getStringExtra("voltcap_test_shortcuts")
          val ins = intent?.getStringExtra("voltcap_test_inspect")
 +        intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
 +        intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
++        // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells.
++        if (intent?.getBooleanExtra("voltcap_test_photoshells", false) == true && enabled(context)) { val c = context.applicationContext; Thread { PhotoShells.dump(c) }.start() }
          val aw = intent?.getStringExtra("voltcap_test_artwork")
          val tf = intent?.getStringExtra("voltcap_test_facts")
          val tp = intent?.getStringExtra("voltcap_test_pick")
-@@ -157,6 +254,8 @@ internal object TestHooks {
+@@ -157,6 +256,8 @@ internal object TestHooks {
          if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
          // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
          if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
@@ -5128,7 +6253,7 @@ index df68497..4c25a49 100644
          if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
          // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
          intent?.getStringExtra("voltcap_test_fault")?.let { f ->
-@@ -173,6 +272,32 @@ internal object TestHooks {
+@@ -173,6 +274,32 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -5161,7 +6286,7 @@ index df68497..4c25a49 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -205,6 +330,9 @@ internal object TestHooks {
+@@ -205,6 +332,9 @@ internal object TestHooks {
              previewOnly = true
              tileWalk.value = tw
          }
@@ -5171,7 +6296,7 @@ index df68497..4c25a49 100644
          if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
-@@ -215,8 +343,13 @@ internal object TestHooks {
+@@ -215,8 +345,13 @@ internal object TestHooks {
          if (rs != null) { previewOnly = true; shortcuts.value = rs }
          if (snap != null) runCatching {
              val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
@@ -5185,7 +6310,7 @@ index df68497..4c25a49 100644
                  // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
                  val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                  java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
-@@ -234,6 +367,11 @@ internal object TestHooks {
+@@ -234,6 +369,11 @@ internal object TestHooks {
                      if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
                      e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
                  }
@@ -5926,6 +7051,86 @@ index 0000000..74ac78f
 +        assertTrue(s.contains("if (focused) FullText(\n            app.name"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt b/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
+new file mode 100644
+index 0000000..4fa3302
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
+@@ -0,0 +1,74 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.HomeLayout
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Update 462: the controller contract (tools/qa/INPUT_CONTRACT.md). Select = Settings, Start = game options, R1 = quick
++ * menu, L1 = shortcuts on every layout; a layout keeps one only in a context of its own.
++ */
++class InputContract462Test {
++    private val none = InputContract.Ctx()
++
++    @Test fun everyLayoutLeavesTheGlobalButtons() {
++        for (l in HomeLayout.values()) for (code in InputContract.RESERVED)
++            assertEquals("${l.name} key $code", InputContract.Route.HOME, InputContract.route(code, l, none))
++    }
++
++    @Test fun pocketQuestSelectIsSettings() {
++        // The reported bug: Select on Pocket Quest opened Select a System.
++        assertTrue(InputContract.leaveToHome(InputContract.SELECT, HomeLayout.POCKET, none))
++        assertTrue(InputContract.leaveToHome(InputContract.SELECT, HomeLayout.POCKET, InputContract.Ctx(pqBumpers = true)))
++        assertTrue(InputContract.leaveToHome(InputContract.SELECT, HomeLayout.POCKET_CLASSIC, InputContract.Ctx(pocketPage = true)))
++    }
++
++    @Test fun ownedContextsKeepTheirKeys() {
++        // Pocket classic's pages jump 15 with L1 / R1; Pocket Quest's L1 / R1 console switch is the user's own option.
++        assertEquals(InputContract.Route.LAYOUT, InputContract.route(InputContract.R1, HomeLayout.POCKET_CLASSIC, InputContract.Ctx(pocketPage = true)))
++        assertEquals(InputContract.Route.LAYOUT, InputContract.route(InputContract.L1, HomeLayout.POCKET, InputContract.Ctx(pqBumpers = true)))
++        // ...but not elsewhere
++        assertEquals(InputContract.Route.HOME, InputContract.route(InputContract.R1, HomeLayout.POCKET, InputContract.Ctx(pocketPage = true)))
++        assertEquals(InputContract.Route.HOME, InputContract.route(InputContract.R1, HomeLayout.BLADES, InputContract.Ctx(pqBumpers = true)))
++        // A launch animation holds every global button (rapid presses open nothing over the starting game).
++        for (l in listOf(HomeLayout.POCKET, HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON))
++            assertEquals(InputContract.Route.HOLD, InputContract.route(InputContract.SELECT, l, InputContract.Ctx(launching = true)))
++        assertEquals(InputContract.Route.HOME, InputContract.route(InputContract.SELECT, HomeLayout.GREENCORE, InputContract.Ctx(launching = true)))
++    }
++
++    @Test fun otherKeysStayTheLayouts() {
++        for (code in listOf(96, 97, 99, 100, 104, 105, 19, 20, 21, 22)) // A B X Y L2 R2 D-pad
++            assertEquals(InputContract.Route.LAYOUT, InputContract.route(code, HomeLayout.POCKET, none))
++    }
++
++    private fun src(n: String) = java.io.File(
++        listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, n).exists() }, n
++    ).readText()
++
++    @Test fun theGateComesBeforeEveryLayoutHandler() {
++        val s = src("StyleHomes.kt")
++        val gate = s.indexOf("InputContract.route(event.nativeKeyEvent.keyCode, layout, InputContract.live())")
++        assertTrue("gate missing", gate > 0)
++        for (h in listOf("pocketClassicKey(", "pocketRibbonKey(", "greenCoreKey(", "pocketQuestKey(", "cubeKey(", "bladesKey(", "bubblesKey(",
++            "pocketCameraKey(", "panelsKey(", "magazineKey(", "rentalShopKey(", "terminalKey(", "cinemaKey(", "arcticKey(", "artLibKey(", "twinCatsKey("))
++            assertTrue("$h before the gate", s.indexOf("return $h") > gate)
++    }
++
++    @Test fun noLayoutRebindsSelectOrStart() {
++        // Select used to sort (8 layouts) and open Select a System (Pocket Quest); Start opened the quick menu.
++        for (f in listOf("StyleBlades.kt", "StyleMagazine.kt", "StylePanels.kt", "StylePocketCamera.kt", "StyleTerminal.kt", "StyleRentalShop.kt",
++            "StyleGreenCore.kt", "StyleBubbles.kt")) {
++            val s = src(f)
++            assertTrue("$f Select", !s.contains("Key.ButtonSelect) return up"))
++            assertTrue("$f Start", !s.contains("k == Key.ButtonStart || k == Key.Menu"))
++        }
++        assertTrue(!src("StylePocketQuest.kt").contains("pqOpenSystems(c)\n            }\n        }\n        return true"))
++    }
++
++    @Test fun themedPickerRoutesFromTheGlobalCategoryScreen() {
++        assertTrue(ThemedPicker.has(HomeLayout.POCKET) && ThemedPicker.has(HomeLayout.GREENCORE) && ThemedPicker.has(HomeLayout.POCKET_CLASSIC))
++        assertTrue(!ThemedPicker.has(HomeLayout.CLASSIC))
++        assertTrue(src("LauncherScreen.kt").contains("ThemedPicker.open(state.appearance.homeLayout)) return"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt b/app/src/test/java/com/shelf/launcher/ui/Labels459Test.kt
 new file mode 100644
 index 0000000..d7d70ac
@@ -6227,6 +7432,48 @@ index 0000000..1d69321
 +    @Test fun sceneClockGoesOnFromItsFrame() {
 +        // A held scene's clock restarts from the time it stopped at (no jump back to the still frame).
 +        assertTrue(src("ThemeScene.kt").contains("val base = time.floatValue"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
+new file mode 100644
+index 0000000..6c00b19
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
+@@ -0,0 +1,36 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/** Update 462: the photo-made shells take only official games' own cartridge photos, by console. */
++class PhotoShells462Test {
++    @Test fun officialPhotosBySystem() {
++        val raw = mapOf(
++            "silver.gbc" to listOf("Disc / cartridge" to "https://x/mediaJeu.php?systemeid=10&jeuid=1&media=support-2D", "Box" to "https://x/b?systemeid=10"),
++            "brown.gb" to listOf("Disc / cartridge" to "https://x/mediaJeu.php?systemeid=9&jeuid=2&media=support-2D"),
++            "tetris.gb" to listOf("Disc / cartridge" to "https://x/mediaJeu.php?systemeid=9&jeuid=3&media=support-2D"),
++            "nocart.gba" to listOf("Box" to "https://x/b?systemeid=12"),
++            "mario.n64" to listOf("Disc / cartridge" to "https://x/m?systemeid=14&media=support-2D")
++        )
++        val p = PhotoShells.photosOf(raw) { it.startsWith("brown") }
++        assertEquals(setOf("9", "10"), p.keys)
++        assertEquals(listOf("tetris.gb" to "https://x/mediaJeu.php?systemeid=9&jeuid=3&media=support-2D"), p["9"])
++        assertEquals(1, p["10"]!!.size)
++    }
++
++    @Test fun shellsCovered() {
++        for (id in listOf("gb", "gbc_dual", "gbc", "gba")) assertTrue(id, PhotoShells.supports(id))
++        assertTrue(!PhotoShells.supports("n64"))
++        assertEquals("gba", PhotoShells.shellOfGame("x.gba", "12"))
++        assertEquals("gb", PhotoShells.shellOfGame("x.gb", "9"))
++        assertEquals(0f, PhotoShells.colourDistance(0xFFA3A2A8.toInt(), 0xFFA3A2A8.toInt()), 0.01f)
++        assertTrue(PhotoShells.colourDistance(0xFFA3A2A8.toInt(), 0xFFD4AF37.toInt()) > 80f) // grey vs a gold pak
++    }
++
++    @Test fun wiredIntoTheDrawnShells() {
++        val s = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, "CartShells.kt").exists() }, "CartShells.kt").readText()
++        assertTrue(s.contains("return photoFront(s, colour, drawn) ?: drawn"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt b/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt

@@ -1111,7 +1111,19 @@ internal object CartShells {
             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
             CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
         }
-        return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
+        val colour = colourOf(s, key)
+        val drawn = front(s, colour, art, brand, title, maxPx, scan)
+        // (Update 462: the same label on a real cartridge photo of this shell, when your library has one — PhotoShells.)
+        return photoFront(s, colour, drawn) ?: drawn
+    }
+
+    private val photoCache = android.util.LruCache<Bitmap, Bitmap>(12)
+
+    /** Update 462: [drawn] (CartShells.front) on its photo-made shell, or null (none for this shell / not made yet). */
+    private fun photoFront(s: CartShell, colour: ShellColour, drawn: Bitmap): Bitmap? {
+        if (PhotoShells.template(s, colour) == null) return null
+        synchronized(photoCache) { photoCache.get(drawn)?.let { return it } }
+        return PhotoShells.front(s, colour, drawn)?.also { synchronized(photoCache) { photoCache.put(drawn, it) } }
     }
 
     /**
@@ -1124,7 +1136,10 @@ internal object CartShells {
             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
             return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
         }
-        return frontOrNull(s, colourOf(s, key), art, brand, title, maxPx, scan, null, peek = true)
+        val colour = colourOf(s, key)
+        val drawn = frontOrNull(s, colour, art, brand, title, maxPx, scan, null, peek = true) ?: return null
+        if (PhotoShells.template(s, colour) == null) return drawn
+        return synchronized(photoCache) { photoCache.get(drawn) }
     }
 
     /**
@@ -1674,7 +1689,7 @@ internal fun CartShellArt(
         // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
         // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
         // (Update 459: drawn again once the library's label facts are read — LabelIds: a real code / FAN-MADE on the sticker.)
-        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
+        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue + 10000 * PhotoShells.version.intValue
         val identity = "$pickPlatform|$title|$maxPx|$labelIsScan|$labelsV"
         val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
         val prior = madeFront.value

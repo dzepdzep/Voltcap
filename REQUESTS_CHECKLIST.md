@@ -3,6 +3,23 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 462 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Pocket Quest: Select opens Categories instead of Settings | FIXED + verified (KONKR, simulated input) | reproduced first (pq462_select.png); InputContract gate; contract462 POCKET Select=OK, B=themed |
+| Audit all 53 layouts + document the global contract | DONE | tools/qa/INPUT_CONTRACT.md; 8 more layouts re-bound Select / Start (D188) |
+| Select / L2 / R2 / R1 / L1 / A / B / rapid presses on hardware | DONE 53/53 (KONKR, adb input keyevent) | qa462 contract result; physical controller NOT tested |
+| Layout consumes input only in its own context; precedence | DONE | Route LAYOUT / HOME / HOLD; owned: Pocket classic pages, PQ bumpers option, launch animations |
+| Automated regression tests | DONE | InputContract462Test (every layout × every reserved key) |
+| Themed category picker (PQ, Wii Channel, Cinema, Arctic; standard elsewhere) | IMPLEMENTED, partly verified | PQ / Green Core / Pocket classic own pages (hardware B=themed); Channel / Cinema / Arctic looks shown on KONKR, layout padding fixed after, final look NOT re-photographed |
+| Picker: one data source, hidden / order, L2/R2 match, focus restore, no per-category layout write | DONE (code) | same tiles / stops; pick = applyCategory / L2-R2 steps |
+| Real vs generated cartridges: photo-based shell templates (GB family) | IMPLEMENTED, verified on KONKR | PhotoShells from your library's own cartridge photos; qa462_cart_sheet.png |
+| Silver real / Silver new / Fool's Gold / Prism on GBC / front-45-75-90-rear-Inspect | DONE except Brown (not on devices: mock) | differences left: drawn rear, flat 90° side, GBA hack label — NOT finished |
+| No grey plastic side strips, full title, no fake codes | FIXED | printed borders take the art's edge colour |
+| Other systems (GBA done; N64, NES, SNES, Sega, DS, 3DS, Switch) | OPEN | same mechanism, sticker places needed per shell |
+| Performance | MEASURED | KONKR PSS 452-454 MB off vs 465-466 MB on; frames unchanged (first build was +330 MB: fixed) |
+| Popup animation audit, D137, RP Classic Settings slide, label verification | OPEN | not worked on in 462 |
+
 ## Update 461 (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

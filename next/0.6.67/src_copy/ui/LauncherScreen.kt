@@ -1432,6 +1432,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         else -> "ALL"
     }
     fun openCategoryScreen() {
+        // Update 462: a layout with its own category picker (Pocket Quest, Green Core, Pocket classic) opens that one.
+        if (state.appearance.homeLayout.styleHome && ThemedPicker.open(state.appearance.homeLayout)) return
         val current = currentCategoryKey
         categoryIndex = categoryTiles.indexOfFirst { it.key == current }.coerceAtLeast(0)
         categoryScreenOpen = true
@@ -1493,6 +1495,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
     }
     LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) { CategoryReorder.stop(); CategoryHeader.leave() } }
+    // Update 462: what is open, for tools/qa/device/contract462.sh (VoltcapQA, test hooks only).
+    LaunchedEffect(showMenu, showNotifications, optionsForGame, showShortcuts, categoryScreenOpen, showSortDialog, PqNav.page, GreenCoreNav.page, PocketNav.page, currentCategoryKey) {
+        QaTrace.event("overlay", "menu=$showMenu quick=$showNotifications opts=${optionsForGame != null} short=$showShortcuts cat=$categoryScreenOpen " +
+            "sort=$showSortDialog pq=${PqNav.page} gc=${GreenCoreNav.page} pc=${PocketNav.page} cat_key=$currentCategoryKey")
+    }
 
     // The random-game button: go to that category, then pick from it once the games are showing.
     fun randomFromBrowser() {

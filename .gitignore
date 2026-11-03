@@ -90,3 +90,8 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/WarmWindow461Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PrintedGameBoy461Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PopupShade461Test.kt
+/app/src/main/java/com/shelf/launcher/ui/InputContract.kt
+/app/src/main/java/com/shelf/launcher/ui/CategoryLooks462.kt
+/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
+/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
+/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt

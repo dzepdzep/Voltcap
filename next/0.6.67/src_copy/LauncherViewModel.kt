@@ -1088,6 +1088,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     /** Update 461: which ROM hacks' saved scans are their base game's (HackLabels), after a game's scans change. */
     private fun refreshHackLabels() {
         com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+        // (Update 462: the official games' cartridge photos — what the photo-made shells are made from.)
+        com.shelf.launcher.ui.PhotoShells.app = getApplication<Application>()
+        val photos = com.shelf.launcher.ui.PhotoShells.photosOf(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+        if (photos != com.shelf.launcher.ui.PhotoShells.photos) { com.shelf.launcher.ui.PhotoShells.photos = photos; com.shelf.launcher.ui.PhotoShells.reset() }
     }
 
     /**
@@ -1145,7 +1149,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 physicalRaw.putIfAbsent(k, list)
             }
             // (Update 461: ROM hacks matched to their base game don't wear that game's label — HackLabels.)
-            com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+            // (Update 462: and the official games' cartridge photos for the photo-made shells — refreshHackLabels.)
+            refreshHackLabels()
             for ((k, list) in physicalRaw) loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
             // (Update 305: a game with your own pictures but nothing scraped — no saved list — gets them too; they showed
             // only once its scans had been looked up again.)

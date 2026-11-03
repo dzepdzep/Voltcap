@@ -1046,7 +1046,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
                 }
             }
         }
-        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Sort & filter", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
+        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Settings", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
     }
 }
 
@@ -1328,18 +1328,9 @@ internal fun pocketQuestKey(event: KeyEvent, reach: (Boolean) -> Boolean, sound:
     val first = native.repeatCount == 0
     val k = event.key
     fun beep(s: UiSound) { if (!PqSynth.play(s)) sound(s) }
-    // Select: a short press opens Select a System (on it: sort & filter); held half a second, sort & filter straight away.
-    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) {
-        if (down && first) PqNav.selectArmed = true
-        if (up && PqNav.selectArmed) {
-            PqNav.selectArmed = false
-            if (PqNav.launching == null) {
-                val held = native.eventTime - native.downTime >= 450L
-                if (held || PqNav.page == PqNav.Page.SYSTEMS) c.actions.sort() else pqOpenSystems(c)
-            }
-        }
-        return true
-    }
+    // Update 462: Select is Settings, as on every layout (InputContract) — it only reaches here during the launch flash,
+    // which holds it. Select a System opens from B (the category picker, ThemedPicker), L2 / R2 and the top bar's button.
+    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) return true
     if (up && PqNav.keysDown.remove(code)) return true
     if (!down) return false
     fun take(): Boolean { PqNav.keysDown += code; return true }

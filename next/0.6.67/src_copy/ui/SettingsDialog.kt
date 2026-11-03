@@ -4010,6 +4010,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             com.shelf.launcher.data.Features.cartBackStyle.state.value, { it.label }
         ) { com.shelf.launcher.data.Features.cartBackStyle.value = it }
         MutedNote("Turn a drawn cartridge round to see its back: its screws, connector and panels as on the real one, with the maker's moulded text and stickers — or plain, without any console's branding (a game on another console's shell is plain by default).")
+        // Update 462: the photo-made shells (PhotoShells).
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Photo-real Game Boy paks",
+            subtitle = "On (default): a drawn Game Boy / Game Boy Color / Game Boy Advance pak is made from a real cartridge photo of the same shell from your own library (an official game's cartridge picture, e.g. Pokémon Silver's) — its real plastic, moulded lettering, ridges and light — with the game's own label laid into the sticker recess. Without such a photo in your library: the drawn shell.",
+            checked = com.shelf.launcher.data.Features.photoShells.state.value,
+            onChange = { com.shelf.launcher.data.Features.photoShells.value = it; PhotoShells.reset() }
+        )
         // Update 210: real special editions (MediaEditions).
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
@@ -6000,6 +6008,12 @@ private fun CategoriesContent(
                     "The look goes with the home layout of the category you open it from (Case stacks → System Stage, TV room → Channel Surf…). Now: " +
                         F.followLookFor(appearance.homeLayout).label + ". Off: the look picked above.",
                     F.pbFollowHome.state.value, { F.pbFollowHome.value = it }
+                )
+                // Update 462: the themed pickers (ThemedPicker / themedLookFor).
+                SwitchRow(
+                    Icons.Filled.SwapHoriz, "Themed pickers",
+                    "Pocket Quest, Green Core and Pocket classic open their own systems page; Channel grid, Cinema and Arctic hub a picker in their style. Same categories, order and controls. Off: the look above.",
+                    F.pbThemed.state.value, { F.pbThemed.value = it }
                 )
                 Spacer(Modifier.height(14.dp))
                 Text("Cards show", color = ShelfTheme.textMuted, fontSize = 12.sp)

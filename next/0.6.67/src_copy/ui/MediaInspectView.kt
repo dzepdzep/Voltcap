@@ -470,6 +470,13 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         // (Update 286, testing only: "case" — the game's case as the case looks draw it, whatever the look; for checking
         // every face of the cases and boxes at set angles.)
         if (id == "case") return casePiece(g, physical, cover, false)
+        // (Update 462, testing only: "media" — the piece the cartridge-and-disc look draws (the real cartridge photo when it
+        // has one), for the real-vs-drawn contact sheet.)
+        if (id == "media") physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.let { real ->
+            val shell = MediaShell.of(g.platform)
+            return InspectPiece(g, InspectKind.SLAB, (CoverAspects.rawOf(real) ?: shell?.aspect ?: 1f).coerceIn(0.3f, 3f), slabDepth(shell), null, null, false, real, cover, null, null,
+                physical, null, shellTone(shell), false)
+        }
         // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
         if (id.startsWith("pack:") || id.startsWith("cc:")) {
             val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
@@ -480,7 +487,8 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
             return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
                 CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
         }
-        val sh = CartShells.of(id) ?: return@let
+        // (Update 462: "id~colour" — a shell in one of its colours / materials, e.g. "gbc_dual~m:pkmn_silver".)
+        val sh = CartShells.of(id.substringBefore('~')) ?: return@let
         val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
         // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover

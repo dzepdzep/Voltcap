@@ -2145,11 +2145,17 @@ object Features {
         // Pass 4 (ui/CategoryLooks.kt).
         STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
         ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
-        VAULT("System Vault"), DASHBOARD("Pocket Dashboard")
+        VAULT("System Vault"), DASHBOARD("Pocket Dashboard"),
+        // Update 462: the themed pickers of Channel grid, Cinema and Arctic hub (ui/CategoryLooks462.kt).
+        WIICHAN("Channel Menu"), CINEMA("Cinema"), ARCTIC("Arctic Panes")
     }
     val platformView = EnumPref("pb_view", PlatformView.TILES, PlatformView.values())
     /** Pass 4: the category screen's look follows the home layout of the category you open it from (followLookFor). */
     val pbFollowHome = BoolPref("pb_follow_home", false)
+    /** Update 462: Pocket Quest, Green Core, Pocket classic, Channel grid, Cinema and Arctic hub open their own themed category picker. */
+    val pbThemed = BoolPref("pb_themed_pickers", true)
+    /** Update 462: drawn Game Boy family paks made from a real cartridge photo in your library (ui/PhotoShells.kt). */
+    val photoShells = BoolPref("photo_shells", true)
 
     /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
     fun followLookFor(l: HomeLayout): PlatformView = when (l) {
@@ -2158,7 +2164,10 @@ object Features {
         HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
         HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
         HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
-        HomeLayout.TV, HomeLayout.CHAN -> PlatformView.CHANNEL
+        HomeLayout.TV -> PlatformView.CHANNEL
+        HomeLayout.CHAN -> PlatformView.WIICHAN
+        HomeLayout.CINEMA -> PlatformView.CINEMA
+        HomeLayout.ARCTIC -> PlatformView.ARCTIC
         HomeLayout.TIMELINE, HomeLayout.CONSOLES -> PlatformView.GENERATIONS
         HomeLayout.ORBIT, HomeLayout.CIRCUIT, HomeLayout.CUBE, HomeLayout.BUBBLES -> PlatformView.CONSTELLATION
         HomeLayout.MEMCARD, HomeLayout.FILESELECT, HomeLayout.DISCS -> PlatformView.VAULT

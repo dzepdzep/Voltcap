@@ -223,6 +223,8 @@ internal object TestHooks {
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
         intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
+        // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells.
+        if (intent?.getBooleanExtra("voltcap_test_photoshells", false) == true && enabled(context)) { val c = context.applicationContext; Thread { PhotoShells.dump(c) }.start() }
         val aw = intent?.getStringExtra("voltcap_test_artwork")
         val tf = intent?.getStringExtra("voltcap_test_facts")
         val tp = intent?.getStringExtra("voltcap_test_pick")

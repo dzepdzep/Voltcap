@@ -1,3 +1,55 @@
+# Update 462 (3 Nov 2026) — global controller contract (53 layouts), themed category pickers, photo-made Game Boy paks from your own cartridge photos
+
+**Devices (USB):** KONKR Pocket GT78 BW0306N230000845 (all hardware checks below), Odin 2 Portal b92036fb (identified only). Thor / RP
+Classic not connected. Input on hardware is SIMULATED (adb `input keyevent` over USB); no physical controller was pressed. v0.6.66
+frozen; all work in v0.6.67 staging. KONKR back on the RC at the end.
+**Pocket Quest Select (D187, reproduced on the KONKR):** Select opened "Select a System". Now Select = Settings on every layout.
+`ui/InputContract.kt` gate at the top of `styleHomeKey`: Select, Start / Menu, R1, L1 are the home screen's (Settings, game options,
+quick menu, shortcuts) unless the layout owns that button right then (Pocket classic's pages: L1 / R1 jump 15; Pocket Quest with
+"L1 / R1 change the console" switched on; the Pocket layouts' launch animation HOLDS them). Precedence: system / game overlay >
+open popup > global buttons > layout navigation. Contract: `tools/qa/INPUT_CONTRACT.md`.
+**Same fix in 8 more layouts (D188):** Blades, Magazine, Panels, Pocket camera, Terminal, Rental shop, Green Core, Bubble home used
+Select = sort and Start = quick menu. Now Settings / game options; Sort & filter stays in the R1 quick menu and game options. Hints
+and layout help texts updated. Pocket ribbon: a second Start / A during the launch moment no longer starts the game twice (D189).
+**Hardware (KONKR, `tools/qa/device/contract462.sh`, all 53 layouts, preview only, launches blocked):** Select=Settings, Start=game
+options, R1=quick menu, L1=shortcuts, R2/L2 next/back category, rapid Select Select B B Start B R1 B (nothing launched, Voltcap stayed
+in front): **53/53 PASS**. B on the home: plain category screen on 44, the layout's own picker on Pocket Quest / Green Core / Pocket
+classic; B goes back inside their own pages on Cube, Bubble home, Terminal, Pocket ribbon (deliberate, D190).
+**Themed category pickers:** one data source (the category tiles / StyleCtx.stops — hidden ones out, saved order, same as L2 / R2) and
+one pick (applyCategory / L2-R2 steps — a category's own layout is never written). B and the Category screen hotkey open: Pocket
+Quest's Select a System (retro), Green Core's Systems, Pocket classic's Categories (`ThemedPicker`); Channel grid → new Channel Menu
+look, Cinema → Cinema look, Arctic hub → Arctic Panes look (`ui/CategoryLooks462.kt`, looks of the one PlatformBrowser: D-pad, A, B,
+touch, focus back on the same game, FullText names). Settings › Category screen › "Themed pickers" (on). KONKR: qa462/pickers462.png
+(Channel Menu / Cinema / Arctic Panes / Pocket Quest). Channel Menu's grey top / bottom bars (for the white header and legend) added
+after that photo: compiled, NOT re-photographed.
+**Real vs generated cartridges (D191) — `ui/PhotoShells.kt`:** a drawn GB / GBC / GBA pak is now made from a REAL cartridge photo of
+the same shell from your own library (an official game's ScreenScraper "Disc / cartridge" picture: only games whose ROM header says
+they came on that pak — grey DMG, black dual-mode, clear Color-only, GBA — an edition's own game first), nothing bundled. The photo
+keeps the real plastic, moulded Nintendo GAME BOY™, ridges, light and edge; the sticker recess is found in the photo (first plastic-
+coloured line outward from inside the sticker) and the game's own label (your pick › real label scan › Labels folder › printed label
+from its art — exactly what the drawn shell prints) is laid into it, covering the photo's own sticker. Plastic tinted to the shell
+colour picked (not on clear paks). Turned sides come from that front (sideArtOf); the back stays drawn (no back photos). Printed GB
+label borders are now the art's own edge colour, not grey (no "grey plastic side strips"). Settings › "Photo-real Game Boy paks" (on).
+**Contact sheet (KONKR, Inspect, identical crops, front / 45 / 75 / 90 / rear / Inspect):** qa462/qa462_cart_sheet.png (before:
+qa462_cart_sheet_BEFORE.png). Silver real photo vs Silver on the new shell: near identical (same photo). Fool's Gold on a real grey pak
+photo; Prism on a real clear Color-only pak photo; Advance Wars 2 real vs Emerald Kaizo on a real GBA photo. Brown is not on the
+devices: **brown_mock462.png is a MOCK** (the KONKR's template + the same printed-label layout in Python). **Remaining differences —
+not finished:** rear = drawn back on both (no back photos); 90° side = flat slab; the clear pak's back is a drawn board; GBA hacks
+still the narrow cover sticker (GBA printed design needs approval, D185); other systems (N64, NES, SNES, Sega, DS, 3DS, Switch) NOT
+started — same mechanism needs their sticker places.
+**Performance (KONKR, `perf462.sh`, cold start + 4 Inspect pieces, on/off/on/off):** first build held every analysed photo in Coil's
+memory: PSS 455-463 MB off vs 784-812 MB on → photos now decoded small and outside the memory cache; re-measured on the final staging: **PSS 452-454 MB off vs 465-466 MB on (+12-13 MB)**; frames ~2780 per run, missed 29-67 off vs 36-38 on (no
+regression beyond run-to-run spread).
+**Tests:** InputContract462Test (7), PhotoShells462Test (3); testDebugUnitTest green on the PC; assembleRelease OK.
+**Files (staging, src_copy / project_copy):** new ui/InputContract.kt, ui/CategoryLooks462.kt, ui/PhotoShells.kt, tests
+InputContract462Test, PhotoShells462Test; changed StyleHomes, StylePocketQuest, StyleGreenCore, StyleBlades, StyleMagazine,
+StylePanels, StylePocketCamera, StyleTerminal, StyleRentalShop, StyleBubbles, PocketRibbon, PocketQuestSettings, GreenCoreSettings,
+LauncherScreen (themed picker routing + QA overlay log), PlatformBrowser, PlatformBrowserSettings, CategoryLooks, SettingsDialog,
+data/Features (pbThemed, photoShells, 3 looks), CartShells, GeneratedLabels, MediaInspectView (QA "media" / "id~colour"), TestHooks,
+LauncherViewModel. QA: tools/qa/INPUT_CONTRACT.md, device/contract462.sh, photo462.sh, warm462.sh, perf462.sh, tools/sheet462.py.
+**Still open:** popup animation / More audit; D137 render cost; RP Classic Settings slide; label checks for SNES / NES / Sega / DS / 3DS
+/ Switch (not on devices); physical-controller check by the owner.
+
 # Update 461 (3 Nov 2026) — D173 hardened + compiled, Case stacks decoding ahead removed (measured), full popup audit 318/318 on hardware + shade fix, Pokémon Brown option D printed Game Boy label, ROM hacks no longer wear their base game's label (NOT published)
 
 **Devices (USB):** KONKR Pocket GT78 BW0306N230000845, Odin 2 Portal b92036fb (wireless twin ignored). Thor / RP Classic not

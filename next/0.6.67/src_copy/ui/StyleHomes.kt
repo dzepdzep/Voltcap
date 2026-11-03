@@ -186,6 +186,13 @@ internal fun styleHomeKey(
     /** Past the layout's last menu / bar at the top ([Boolean] true) or the bottom: what lies there (HomeReach). */
     reach: (Boolean) -> Boolean = { false }
 ): Boolean {
+    // Update 462: Select (Settings), Start (game options), R1 (quick menu) and L1 (shortcuts) are the home screen's on every
+    // layout, unless the layout owns that button right now (InputContract). Its handler never sees them otherwise.
+    when (InputContract.route(event.nativeKeyEvent.keyCode, layout, InputContract.live())) {
+        InputContract.Route.HOME -> return false
+        InputContract.Route.HOLD -> return true
+        InputContract.Route.LAYOUT -> Unit
+    }
     // Update 448 (D147): a two-screen layout (Twin desk / icons / showcase, Pocket classic / ribbon) with the second screen's
     // own dashboard open: its game list, grid, spots and buttons are on the lower screen, hidden under the dashboard, so ▼
     // goes past them — to what lies under the games on the main screen (HomeReach) and then onto the dashboard (SecondPad) —

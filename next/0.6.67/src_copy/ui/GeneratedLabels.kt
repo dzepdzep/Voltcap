@@ -134,15 +134,17 @@ internal object GeneratedLabels {
         val c = Canvas(b)
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         val W = b.width.toFloat(); val H = b.height.toFloat()
-        // The printed grey (a touch lighter on the Color paks), lit a little from the top as the paper is.
-        val top = if (colour) 0xFFB9B9BE.toInt() else 0xFFB0B0B4.toInt()
-        val bottom = if (colour) 0xFFA9A9AE.toInt() else 0xFFA0A0A5.toInt()
+        // (Update 462, owner: no "grey plastic side strips": the borders are printed in the art's own edge colour — Silver's
+        // lavender, Crystal's blue — so they read as part of the sticker, never as the shell's grey plastic showing.)
+        val edge = edgeColour(art)
+        val top = shadeOf(edge, 0.92f)
+        val bottom = shadeOf(edge, 0.82f)
         p.shader = LinearGradient(0f, 0f, 0f, H, top, bottom, Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, W, H, p); p.shader = null
         fine(c, p, W, H, 0x0A000000)
         val r = printedArtRect(W, H, art.width.toFloat() / art.height.coerceAtLeast(1), mm).let { RectF(it[0], it[1], it[2], it[3]) }
         c.drawBitmap(art, null, r, p)
-        val ink = 0xFF2A2A2D.toInt()
+        val ink = if (lumOf(top) > 150) 0xFF2A2A2D.toInt() else 0xFFF1F1F3.toInt()
         val size = minOf(1.3f * mm, r.left * 0.42f)
         if (r.left > 1.8f * mm) {
             vertical(c, "THIS SIDE OUT", RectF(r.right, 0f, W, H), size, ink, up = false, bold = true)
@@ -151,6 +153,23 @@ internal object GeneratedLabels {
         }
         return b
     }
+
+    /** The average colour of [art]'s left and right edge columns (its outer 4 %). */
+    fun edgeColour(art: Bitmap): Int {
+        var r = 0L; var g = 0L; var b = 0L; var n = 0L
+        val cw = (art.width * 0.04f).toInt().coerceAtLeast(1)
+        for (y in 0 until art.height step 3) for (x in (0 until cw) + ((art.width - cw) until art.width)) {
+            val c = art.getPixel(x, y); if ((c ushr 24) < 128) continue
+            r += (c shr 16) and 255; g += (c shr 8) and 255; b += c and 255; n++
+        }
+        if (n == 0L) return 0xFFB0B0B4.toInt()
+        return (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (b / n).toInt()
+    }
+
+    private fun shadeOf(c: Int, k: Float): Int =
+        (0xFF shl 24) or (((((c shr 16) and 255) * k).toInt().coerceIn(0, 255)) shl 16) or (((((c shr 8) and 255) * k).toInt().coerceIn(0, 255)) shl 8) or (((c and 255) * k).toInt().coerceIn(0, 255))
+
+    private fun lumOf(c: Int): Int = (((c shr 16) and 255) * 3 + ((c shr 8) and 255) * 6 + (c and 255)) / 10
 
     /** What is printed to identify the game: the real code, else "FAN-MADE" / "HOMEBREW", else nothing (pure). */
     fun idLine(id: com.shelf.launcher.data.LabelIds.Id?): String? = id?.unofficial ?: id?.code

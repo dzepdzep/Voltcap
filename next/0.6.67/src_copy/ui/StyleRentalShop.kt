@@ -122,8 +122,7 @@ internal fun rentalShopKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolea
     val up = event.type == KeyEventType.KeyUp
     if (up && ShopNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
-    if (k == Key.ButtonSelect) return up && rsHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     if (ShopNav.map) {
         val n = ShopNav.systems.size
