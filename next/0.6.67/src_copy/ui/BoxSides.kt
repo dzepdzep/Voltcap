@@ -108,25 +108,36 @@ internal object BoxSides {
         val sx = ((x1 - x0) / 64).coerceAtLeast(1); val sy = ((y1 - y0) / 64).coerceAtLeast(1)
         val count = FloatArray(4096); val rs = LongArray(4096); val gs = LongArray(4096); val bs = LongArray(4096); val ns = IntArray(4096)
         var total = 0; var extremes = 0
-        var y = y0
-        while (y < y1) {
-            var x = x0
-            while (x < x1) {
-                val c = f.getPixel(x, y)
-                if ((c ushr 24) > 200) {
-                    val r = (c shr 16) and 255; val g = (c shr 8) and 255; val b = c and 255
-                    val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
-                    val sat = if (mx == 0) 0f else (mx - mn).toFloat() / mx
-                    total++
-                    val extreme = (mx > 232 && sat < 0.12f) || mx < 24
-                    if (extreme) extremes++
-                    val k = ((r shr 4) shl 8) or ((g shr 4) shl 4) or (b shr 4)
-                    count[k] += if (extreme) 0.15f else 1f + 0.3f * sat
-                    rs[k] += r.toLong(); gs[k] += g.toLong(); bs[k] += b.toLong(); ns[k]++
+        // (Update 466: the samples on their grid first, so a dark pixel can be checked against its neighbours — see below.)
+        val gw = (x1 - x0 + sx - 1) / sx; val gh = (y1 - y0 + sy - 1) / sy
+        val grid = IntArray(gw * gh)
+        for (j in 0 until gh) for (i in 0 until gw) grid[j * gw + i] = f.getPixel((x0 + i * sx).coerceAtMost(x1 - 1), (y0 + j * sy).coerceAtMost(y1 - 1))
+        fun dist(a: Int, b: Int) = kotlin.math.abs(((a shr 16) and 255) - ((b shr 16) and 255)) + kotlin.math.abs(((a shr 8) and 255) - ((b shr 8) and 255)) + kotlin.math.abs((a and 255) - (b and 255))
+        for (j in 0 until gh) for (i in 0 until gw) {
+            val c = grid[j * gw + i]
+            if ((c ushr 24) > 200) {
+                val r = (c shr 16) and 255; val g = (c shr 8) and 255; val b = c and 255
+                val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
+                val sat = if (mx == 0) 0f else (mx - mn).toFloat() / mx
+                total++
+                val extreme = (mx > 232 && sat < 0.12f) || mx < 24
+                if (extreme) extremes++
+                // (Update 466, owner: "without accidentally selecting … logos": a dark pixel counts only as much as its 3×3
+                // neighbours share its colour — the black outlines and strokes round drawn characters and lettering are thin,
+                // a dark background is not. Paper Mario's sides were the near-black of its outlines.)
+                var flat = 1f
+                if (mx < 64) {
+                    var same = 0; var all = 0
+                    for (dj in -1..1) for (di in -1..1) {
+                        val ii = i + di; val jj = j + dj
+                        if (ii in 0 until gw && jj in 0 until gh) { all++; if (dist(c, grid[jj * gw + ii]) < 40) same++ }
+                    }
+                    flat = same.toFloat() / all
                 }
-                x += sx
+                val k = ((r shr 4) shl 8) or ((g shr 4) shl 4) or (b shr 4)
+                count[k] += (if (extreme) 0.15f else 1f + 0.3f * sat) * flat
+                rs[k] += r.toLong(); gs[k] += g.toLong(); bs[k] += b.toLong(); ns[k]++
             }
-            y += sy
         }
         if (total == 0) return@runCatching null
         // (A cover that's mostly white or black — a white Nintendo 64 Kirby box — is that colour.)
@@ -341,6 +352,7 @@ internal fun rememberBoxSides(
                         DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
                     } else if (oneColour && front != null) {
                         val col = DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
+        BoxColourQa.dump(g.name, front, col)
                         col?.let { c -> DerivedArt.named("sidecard|$i|$w|$h|$c") { BoxSides.card(side, w, h, c) } }
                     } else if (side.name in colorSides && front != null) {
                         val edge = DerivedArt.of(front, "edge|$i") { BoxSides.edgeColor(front, side) ?: 0 }.takeIf { it != 0 }
@@ -364,3 +376,26 @@ internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
 private val PRINT_TAGS = Regex("\\s*[(\\[][^)\\]]*[)\\]]")
 private val PRINT_SPACES = Regex("\\s+")
 private val printTitles = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+/**
+ * Update 466 (QA only, test hooks on): the box's front picture as the 3D box gets it and the side colour taken from it,
+ * once per game, into <external files>/qa_boxcolour/ (PNG + colours.tsv) — so the colour choice and the front's fit can be
+ * checked against the real cover. Nothing is written without the hooks flag.
+ */
+internal object BoxColourQa {
+    private val done = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    fun dump(name: String, front: Bitmap, col: Int?) {
+        if (!QaTrace.on) return
+        val d = QaTrace.dir ?: return
+        if (!done.add(name)) return
+        Thread {
+            runCatching {
+                val o = java.io.File(d, "qa_boxcolour").apply { mkdirs() }
+                val safe = name.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)
+                val b = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+                java.io.FileOutputStream(java.io.File(o, "$safe.png")).use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                java.io.File(o, "colours.tsv").appendText("$name\t${b.width}x${b.height}\t" + (col?.let { "#%06x".format(it and 0xffffff) } ?: "none") + "\n")
+            }
+        }.start()
+    }
+}

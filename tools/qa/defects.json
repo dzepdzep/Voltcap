@@ -2085,9 +2085,45 @@
    "title": "Generated N64 box right side / top look printed (red band + title) next to authentic scans",
    "rule": "VISUAL",
    "severity": "low",
-   "status": "in progress",
+   "status": "fixed (default changed by owner)",
    "found": "2026-11-03 update 465 (owner)",
-   "note": "Cause: no side scans exist; FILL print. Plain-colour option BoxSides.COLOUR added (default unchanged), owner to choose the default from qa465_box_sides_v2."
+   "note": "Cause: no side scans exist; FILL print. Plain-colour option BoxSides.COLOUR added (default unchanged), owner to choose the default from qa465_box_sides_v2. Update 466: Plain colour is the default; picked styles kept."
+  },
+  {
+   "id": "D193",
+   "title": "Plain-colour sides took Paper Mario's black outlines",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-03 update 466",
+   "note": "Dark thin strokes no longer count (3x3 check); now red. Other 21 covers unchanged."
+  },
+  {
+   "id": "D194",
+   "title": "Famicom shell had no connector tab and invented grip lines; blank back",
+   "rule": "VISUAL",
+   "severity": "medium",
+   "status": "fixed (one maker)",
+   "found": "2026-11-03 update 466",
+   "note": "Measured off CC BY-SA photos (Nintendo front, Jaleco back). Other makers' shells not verified."
+  },
+  {
+   "id": "D195",
+   "title": "Super Famicom / PAL drawn back unverified",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "blocked",
+   "found": "2026-11-03 update 466",
+   "note": "No straight-on rear photo; the screws are on the front (PD photo)."
+  },
+  {
+   "id": "D196",
+   "title": "Clear GBC photo-made piece: side walls opaque grey at 90 deg",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-03 update 466",
+   "note": "Photo path keeps opaque sides (462b); back and front now show the board."
   }
  ]
 }

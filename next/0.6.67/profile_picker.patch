@@ -644,10 +644,17 @@ index 0000000..543fe89
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 0fac442..bcabda1 100644
+index 0fac442..0e7ea80 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
-@@ -116,6 +116,9 @@ object Features {
+@@ -110,12 +110,16 @@ object Features {
+         runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
+         migrate158(p) // Update 158
+         migrate166(p) // Update 166
++        migrate466(p) // Update 466
+         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
+         run {
+             val existing = FirstRun.isDone(context.applicationContext)
              if (!p.contains("twin_desk_play_icon")) twinDeskPlayIcon.value = existing
              if (!p.contains("twin_desk_handles")) twinDeskHandles.value = existing
          }
@@ -657,20 +664,44 @@ index 0fac442..bcabda1 100644
          // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
          // default; it now starts on the games' own art (still pickable).
          if (!p.contains("category_art")) {
-@@ -1125,7 +1128,11 @@ object Features {
+@@ -158,6 +162,14 @@ object Features {
+      * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
+      * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
+      */
++    /** Update 466: a saved "Fill missing sides" that was never picked in Settings follows the new default (Plain colour). */
++    internal fun migrate466(p: android.content.SharedPreferences) {
++        if (!boxSidesChosen.value && p.getString("box_sides", null) == BoxSides.FILL.name) {
++            p.edit().remove("box_sides").apply()
++            boxSides.state.value = boxSides.default
++        }
++    }
++
+     private fun migrate166(p: android.content.SharedPreferences) {
+         if (p.getBoolean("m166_face_done", false)) return
+         p.edit().putBoolean("m166_face_done", true).apply()
+@@ -1125,9 +1137,19 @@ object Features {
       * real packaging scan (no scraper has those sides, so mostly your own scans), else plain card. PLAIN: plain card.
       */
      enum class BoxSides(val label: String) {
 -        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard")
 +        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard"),
 +        // (Update 465, owner: "the generated sides can look too busy … a plain colour naturally derived from the box art":
-+        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print. The
-+        // default stays "Fill missing sides" until the owner picks.)
++        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print.)
 +        COLOUR("Plain colour from the box art")
      }
-     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
+-    val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
++    /** Update 466 (owner: "make Plain colour from the box art the new default … preserve any explicitly saved preference"). */
++    val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())
++    /**
++     * Update 466: true once a box-sides style was picked in Settings. Before 0.6.67 a saved "FILL" can't be told apart from
++     * the old default written back by a settings snapshot / backup, so a saved FILL without this mark follows the new default
++     * ([migrate466]); every other saved style (Authentic only, Plain cardboard) is a choice and stays.
++     */
++    val boxSidesChosen = BoolPref("box_sides_chosen", false)
      /**
-@@ -1406,6 +1413,18 @@ object Features {
+      * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
+      * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to
+@@ -1406,6 +1428,18 @@ object Features {
          CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
      }
      val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
@@ -689,7 +720,7 @@ index 0fac442..bcabda1 100644
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
      val dashStatus = BoolPref("dash_status", true)
-@@ -2130,11 +2149,17 @@ object Features {
+@@ -2130,11 +2164,17 @@ object Features {
          // Pass 4 (ui/CategoryLooks.kt).
          STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
          ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
@@ -708,7 +739,7 @@ index 0fac442..bcabda1 100644
  
      /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
      fun followLookFor(l: HomeLayout): PlatformView = when (l) {
-@@ -2143,7 +2168,10 @@ object Features {
+@@ -2143,7 +2183,10 @@ object Features {
          HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
          HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
          HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
@@ -1653,10 +1684,10 @@ index 78873e0..d56e485 100644
              lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
          )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt b/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
-index a04ec9e..4e86943 100644
+index a04ec9e..3e28fcc 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
-@@ -85,6 +85,101 @@ internal object BoxSides {
+@@ -85,6 +85,112 @@ internal object BoxSides {
          return out
      }
  
@@ -1683,25 +1714,36 @@ index a04ec9e..4e86943 100644
 +        val sx = ((x1 - x0) / 64).coerceAtLeast(1); val sy = ((y1 - y0) / 64).coerceAtLeast(1)
 +        val count = FloatArray(4096); val rs = LongArray(4096); val gs = LongArray(4096); val bs = LongArray(4096); val ns = IntArray(4096)
 +        var total = 0; var extremes = 0
-+        var y = y0
-+        while (y < y1) {
-+            var x = x0
-+            while (x < x1) {
-+                val c = f.getPixel(x, y)
-+                if ((c ushr 24) > 200) {
-+                    val r = (c shr 16) and 255; val g = (c shr 8) and 255; val b = c and 255
-+                    val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
-+                    val sat = if (mx == 0) 0f else (mx - mn).toFloat() / mx
-+                    total++
-+                    val extreme = (mx > 232 && sat < 0.12f) || mx < 24
-+                    if (extreme) extremes++
-+                    val k = ((r shr 4) shl 8) or ((g shr 4) shl 4) or (b shr 4)
-+                    count[k] += if (extreme) 0.15f else 1f + 0.3f * sat
-+                    rs[k] += r.toLong(); gs[k] += g.toLong(); bs[k] += b.toLong(); ns[k]++
++        // (Update 466: the samples on their grid first, so a dark pixel can be checked against its neighbours — see below.)
++        val gw = (x1 - x0 + sx - 1) / sx; val gh = (y1 - y0 + sy - 1) / sy
++        val grid = IntArray(gw * gh)
++        for (j in 0 until gh) for (i in 0 until gw) grid[j * gw + i] = f.getPixel((x0 + i * sx).coerceAtMost(x1 - 1), (y0 + j * sy).coerceAtMost(y1 - 1))
++        fun dist(a: Int, b: Int) = kotlin.math.abs(((a shr 16) and 255) - ((b shr 16) and 255)) + kotlin.math.abs(((a shr 8) and 255) - ((b shr 8) and 255)) + kotlin.math.abs((a and 255) - (b and 255))
++        for (j in 0 until gh) for (i in 0 until gw) {
++            val c = grid[j * gw + i]
++            if ((c ushr 24) > 200) {
++                val r = (c shr 16) and 255; val g = (c shr 8) and 255; val b = c and 255
++                val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
++                val sat = if (mx == 0) 0f else (mx - mn).toFloat() / mx
++                total++
++                val extreme = (mx > 232 && sat < 0.12f) || mx < 24
++                if (extreme) extremes++
++                // (Update 466, owner: "without accidentally selecting … logos": a dark pixel counts only as much as its 3×3
++                // neighbours share its colour — the black outlines and strokes round drawn characters and lettering are thin,
++                // a dark background is not. Paper Mario's sides were the near-black of its outlines.)
++                var flat = 1f
++                if (mx < 64) {
++                    var same = 0; var all = 0
++                    for (dj in -1..1) for (di in -1..1) {
++                        val ii = i + di; val jj = j + dj
++                        if (ii in 0 until gw && jj in 0 until gh) { all++; if (dist(c, grid[jj * gw + ii]) < 40) same++ }
++                    }
++                    flat = same.toFloat() / all
 +                }
-+                x += sx
++                val k = ((r shr 4) shl 8) or ((g shr 4) shl 4) or (b shr 4)
++                count[k] += (if (extreme) 0.15f else 1f + 0.3f * sat) * flat
++                rs[k] += r.toLong(); gs[k] += g.toLong(); bs[k] += b.toLong(); ns[k]++
 +            }
-+            y += sy
 +        }
 +        if (total == 0) return@runCatching null
 +        // (A cover that's mostly white or black — a white Nintendo 64 Kirby box — is that colour.)
@@ -1758,7 +1800,7 @@ index a04ec9e..4e86943 100644
      /** Update 319: the average colour of [front]'s edge that meets [side] (its outer 6 %), or null. */
      fun edgeColor(front: Bitmap, side: BoxSide): Int? = runCatching {
          val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
-@@ -213,7 +308,7 @@ internal fun rememberBoxSides(
+@@ -213,7 +319,7 @@ internal fun rememberBoxSides(
      val mode = com.shelf.launcher.data.Features.boxSides.state.value
      val provVersion = com.shelf.launcher.data.ArtProvenance.version.intValue
      fun pick(s: BoxSide): String? = scans?.firstOrNull { it.first == s.label }?.second
@@ -1767,7 +1809,7 @@ index a04ec9e..4e86943 100644
      val plain = mode == com.shelf.launcher.data.Features.BoxSides.PLAIN
      val u0 = if (plain) null else pick(BoxSide.RIGHT)
      // (Update 317: no picture of its top — a landscape box's top cut from its full case scan lying on its side, BoxPart.TOP.)
-@@ -227,6 +322,9 @@ internal fun rememberBoxSides(
+@@ -227,6 +333,9 @@ internal fun rememberBoxSides(
      val title = printTitle(g.name)
      val platform = LookStyles.casePlatform(g.platform)
      val fill = mode == com.shelf.launcher.data.Features.BoxSides.FILL
@@ -1777,16 +1819,44 @@ index a04ec9e..4e86943 100644
      // (Update 319: with the print off, these sides take the cover's edge colour instead of plain card.)
      val colorSides = com.shelf.launcher.data.Features.boxSideColors.state.value
      val made by produceKeyed<Array<Bitmap?>?>(null, title to platform, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
-@@ -241,6 +339,9 @@ internal fun rememberBoxSides(
+@@ -241,6 +350,10 @@ internal fun rememberBoxSides(
                      else if (fill) {
                          val base = if (side == BoxSide.RIGHT) look.edge else look.top
                          DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
 +                    } else if (oneColour && front != null) {
 +                        val col = DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
++        BoxColourQa.dump(g.name, front, col)
 +                        col?.let { c -> DerivedArt.named("sidecard|$i|$w|$h|$c") { BoxSides.card(side, w, h, c) } }
                      } else if (side.name in colorSides && front != null) {
                          val edge = DerivedArt.of(front, "edge|$i") { BoxSides.edgeColor(front, side) ?: 0 }.takeIf { it != 0 }
                          edge?.let { col -> DerivedArt.named("sidecolor|$i|$w|$h|$col") { BoxSides.colored(side, w, h, col) } }
+@@ -263,3 +376,26 @@ internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
+ private val PRINT_TAGS = Regex("\\s*[(\\[][^)\\]]*[)\\]]")
+ private val PRINT_SPACES = Regex("\\s+")
+ private val printTitles = java.util.concurrent.ConcurrentHashMap<String, String>()
++
++/**
++ * Update 466 (QA only, test hooks on): the box's front picture as the 3D box gets it and the side colour taken from it,
++ * once per game, into <external files>/qa_boxcolour/ (PNG + colours.tsv) — so the colour choice and the front's fit can be
++ * checked against the real cover. Nothing is written without the hooks flag.
++ */
++internal object BoxColourQa {
++    private val done = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
++    fun dump(name: String, front: Bitmap, col: Int?) {
++        if (!QaTrace.on) return
++        val d = QaTrace.dir ?: return
++        if (!done.add(name)) return
++        Thread {
++            runCatching {
++                val o = java.io.File(d, "qa_boxcolour").apply { mkdirs() }
++                val safe = name.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)
++                val b = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
++                java.io.FileOutputStream(java.io.File(o, "$safe.png")).use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
++                java.io.File(o, "colours.tsv").appendText("$name\t${b.width}x${b.height}\t" + (col?.let { "#%06x".format(it and 0xffffff) } ?: "none") + "\n")
++            }
++        }.start()
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 index 2784a37..b9286ca 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
@@ -1809,11 +1879,106 @@ index 2784a37..b9286ca 100644
              // Case gloss.
              Canvas(Modifier.fillMaxSize()) {
                  drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CartBacks.kt b/app/src/main/java/com/shelf/launcher/ui/CartBacks.kt
+index d920dd0..cbd5d0a 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CartBacks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CartBacks.kt
+@@ -29,7 +29,13 @@ internal class CartBack(
+     /** Other parts: kind (0 notch, 1 grip, 2 tab, 3 hole, 4 window, 5 compartment, 6 flap, 7 port, 8 battery door, 9 lens), x, y, w, h. */
+     val extras: FloatArray,
+     /** False when the back makes no sense without its maker's markings (the neutral back keeps them then). */
+-    val neutralOk: Boolean
++    val neutralOk: Boolean,
++    /**
++     * Update 466: a see-through shell's board as it shows through the plastic — x, y, w, h (mm, seen from behind) —
++     * measured from a photo of the real one (null: the old estimate). Only the board's back shows from behind: no chips
++     * (they sit on its front, under the label).
++     */
++    val board: FloatArray? = null
+ )
+ 
+ internal object CartBacks {
+@@ -84,16 +90,23 @@ internal object CartBacks {
+             fa(0f, 0f, 0f, 5f, 3f, 1f, 0f, 5f, 0.8f, 10f, 1f, 56.2f, 5f, 0.8f, 10f), true),
+         CartBack("gbc", "photo",
+             fa(28.3f, 49f, 3.8f, 5.5f, 2f),
+-            fa(28.5f, 4f, 1.8f, 0f, 1f, 28.5f, 8f, 1.5f, 0f, 1f), arrayOf("MADE IN JAPAN", "PAT. PEND."),
++            // (Update 466, measured off a rear photo of a clear Color-only Game Pak — Wikimedia Commons "GBCartridges Back.jpg",
++            // PiaCarrot, CC BY-SA 3.0 — tools/qa/BACKS_466.md: the "Nintendo" oval moulded near the top, "PAT.PEND." and
++            // "MADE IN JAPAN" below it, the dimple and the one screw as before. It had the black pak's text box at the top,
++            // which the clear pak doesn't have. A "MODEL NO." line above "PAT.PEND." is too blurred to read — left off.)
++            fa(28.8f, 8.8f, 2.1f, 0f, 1f, 28.5f, 20.3f, 1.1f, 0f, 1f, 28.5f, 22.9f, 1.1f, 0f, 1f), arrayOf("Nintendo", "PAT. PEND.", "MADE IN JAPAN"),
+             fa(26.3f, 31.5f, 4f, 4f, 2f, 0.5f),
+-            fa(),
++            fa(19.1f, 7.1f, 19.5f, 3.4f, 1.7f),
+             fa(), ia(),
+             fa(0f, 55f, 57f, 55f),
+             fa(4f, 60.5f, 49f, 4.5f, 0f, 32f, 0f),
+             // (Update 240, #90: no power-lock notch — the Color-only clear Game Pak lacks the top notch the original Game
+             // Boy's lock tab slides into (Wikipedia, Game Boy Game Pak); it was the grey Game Boy's notch copied over. The
+             // black dual-mode Game Pak, which runs on a Game Boy, keeps it.)
+-            fa(), true),
++            fa(), true,
++            // (Update 466: the board fills the shell — 2.6 mm in from each side, from 3 mm below the top down to the
++            // contacts at the bottom edge — same photo.)
++            board = fa(2.6f, 3f, 51.8f, 62.5f)),
+         CartBack("gba", "photo",
+             fa(30.5f, 3.8f, 3f, 4.2f, 1f),
+             fa(30.5f, 10.5f, 2f, 0f, 1f, 30.5f, 14.5f, 1.6f, 0f, 1f, 30.5f, 17f, 1.6f, 0f, 1f), arrayOf("Nintendo", "MODEL NO. AGB-002", "MADE IN JAPAN"),
+@@ -238,15 +251,24 @@ internal object CartBacks {
+             fa(16f, 73f, 66f, 73f),
+             fa(3f, 78f, 75f, 9f, 0f, 0f, 0f),
+             fa(1f, 3.8f, 7.1f, 3.5f, 12.5f, 1f, 73.7f, 7.1f, 3.5f, 12.5f, 0f, 0f, 5f, 3.8f, 14.6f, 0f, 77.2f, 5f, 3.8f, 14.6f), true),
+-        CartBack("famicom", "unverified",
++        // (Update 466, tools/qa/BACKS_466.md: the Famicom back from a rear photo of a Jaleco cassette — Flickr bochalla
++        // 24084609544 "Back of City Connection cartridge (Famicom)", CC BY-SA 2.0 — the game's how-to-play sticker over most of
++        // it (about 4.5 mm in from the sides, 3 mm from the top, 52 mm tall), "MADE IN JAPAN" moulded under it, no screws
++        // (the halves clip together), the narrower connector tab at the bottom. One maker's cassette: other makers'
++        // (Konami, Namco, Hudson…) backs aren't verified and use this one. Sticker print is a stand-in (it's the game's own).)
++        CartBack("famicom", "partial",
+             fa(),
+-            fa(), arrayOf(),
++            fa(54f, 57.8f, 1.6f, 0f, 0f), arrayOf("MADE IN JAPAN"),
+             fa(),
+             fa(),
+-            fa(), ia(),
++            fa(4.5f, 3f, 99f, 52f, 1f), ia(0xFFDDE8EE.toInt(), 0xFF2A3440.toInt()),
+             fa(),
+-            fa(9f, 61f, 90f, 10f, 0f, 0f, 0f),
++            fa(8.2f, 70.2f, 91.6f, 0.8f, 0f, 0f, 0f),
+             fa(), true),
++        // (Update 466: NOT changed — tools/qa/BACKS_466.md. A straight-on front photo (Wikimedia Commons
++        // "Super-Famicom-Angelique-1994-Cartridge.jpg", public domain) shows the two screws on the FRONT's bottom corners,
++        // so the low-angle photo that seemed to show screws and a sticker on the back may show the front; no straight-on
++        // rear photo was found. Kept as it was until one is.)
+         CartBack("sfc", "unverified",
+             fa(),
+             fa(), arrayOf(),
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..25d8776 100644
+index fad25ce..0403abb 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-@@ -635,6 +635,67 @@ internal object CartShells {
+@@ -135,10 +135,16 @@ internal object CartShells {
+             // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
+             labelFold = 7f,
+             note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
+-        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f, rect(108f, 71f, 3f, 1f), lab(9f, 5f, 90f, 45.5f),
+-            listOf(rid(3f, 52f, 102f, 14f, 5)), emptyList(),
++        // (Update 466, tools/qa/BACKS_466.md: the real cassette's narrower connector tab — measured off a straight-on front
++        // photo, Wikimedia Commons "Famicom 'Devil World' cartridge (5158740395).jpg", Bryan Ochalla, CC BY-SA 2.0, and the
++        // Jaleco back photo: the body 62 mm tall, the tab 7.1 mm in from each side and 9 mm tall. The shell was a plain
++        // rectangle with five grip lines across its foot, which neither photo shows; they're gone.)
++        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f,
++            o(0f, 0f, 2f, 108f, 0f, 2f, 108f, 62f, 1f, 100.9f, 62f, 0.6f, 100.9f, 71f, 0.8f, 7.1f, 71f, 0.8f, 7.1f, 62f, 0.6f, 0f, 62f, 1f),
++            lab(9f, 5f, 90f, 45.5f),
++            emptyList(), emptyList(),
+             listOf(c("Grey", 0xFFC8C8C8), c("Black", BLACK), c("Red", 0xFFB3262E), c("Yellow", 0xFFE8C51E), c("Blue", 0xFF2D4FA0)),
+-            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; outline estimated. Shell colours vary by game."),
++            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; connector tab measured off photos (update 466). Shell colours vary by game."),
+         CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f),
+             // (Update 240, #90: the sticker as ConsoleMods' Cart Labels table gives it, test-fitted on an OEM cartridge —
+             // 82.5 × 44 mm with 7 mm folded over the top and 3 mm corners: 82.5 × 37 on the front from the top edge,
+@@ -635,6 +641,67 @@ internal object CartShells {
          if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
      }.getOrDefault(0xFFE9E6DF.toInt())
  
@@ -1881,7 +2046,7 @@ index fad25ce..25d8776 100644
      private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
          val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
          val a = art.width.toFloat() / art.height.coerceAtLeast(1)
-@@ -823,7 +884,19 @@ internal object CartShells {
+@@ -823,7 +890,19 @@ internal object CartShells {
          val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
          val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
          val head = plaque ?: switchHeader ?: paperHead
@@ -1902,7 +2067,19 @@ index fad25ce..25d8776 100644
          cache.get(key)?.let { return it }
          if (peek) return null
          val k = maxPx / maxOf(s.w, s.h)
-@@ -880,6 +953,9 @@ internal object CartShells {
+@@ -840,7 +919,10 @@ internal object CartShells {
+         c.save(); c.clipPath(path)
+         // A see-through shell shows its board (green PCB, a chip) inside.
+         if (op < 0.85f) {
+-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
++            // (Update 466: where it was measured, the board where the real one is — CartBack.board, the same board seen
++            // from the front, so front, sides and back agree.)
++            val board = CartBacks.of(s.id)?.board?.let { m -> RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k) }
++                ?: RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+             p.color = withAlpha(0xFF1E5F3A.toInt(), 0.55f * (1f - op))
+             c.drawRect(board, p)
+             p.color = withAlpha(0xFF111111.toInt(), 0.6f * (1f - op))
+@@ -880,6 +962,9 @@ internal object CartShells {
              }
          }
          for (e in s.extras) drawExtra(c, e, k, base, p)
@@ -1912,7 +2089,7 @@ index fad25ce..25d8776 100644
          s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
          // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
          val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-@@ -890,7 +966,9 @@ internal object CartShells {
+@@ -890,7 +975,9 @@ internal object CartShells {
          val coverPic = if (art != null && !scan) labelArt(s, art) else null
          // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
          // (Update 307: a pack plaque header runs across the whole sticker too.)
@@ -1923,7 +2100,7 @@ index fad25ce..25d8776 100644
              val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
              val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
              if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
-@@ -962,21 +1040,31 @@ internal object CartShells {
+@@ -962,21 +1049,31 @@ internal object CartShells {
                          p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                      }
                      // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
@@ -1958,7 +2135,7 @@ index fad25ce..25d8776 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -1021,9 +1109,24 @@ internal object CartShells {
+@@ -1021,9 +1118,24 @@ internal object CartShells {
          packColourParts(key)?.let { (look, clear, con) ->
              val colour = colourOf(s, key)
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
@@ -1984,7 +2161,7 @@ index fad25ce..25d8776 100644
      }
  
      /**
-@@ -1036,7 +1139,10 @@ internal object CartShells {
+@@ -1036,7 +1148,10 @@ internal object CartShells {
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
              return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
          }
@@ -1996,7 +2173,40 @@ index fad25ce..25d8776 100644
      }
  
      /**
-@@ -1159,27 +1265,6 @@ internal object CartShells {
+@@ -1073,10 +1188,19 @@ internal object CartShells {
+         if (op < 0.85f) {
+             c.save(); c.clipPath(path)
+             p.color = withAlpha(shade(base, -0.62f), 1f); c.drawPath(path, p)
+-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+-            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+-            p.color = withAlpha(0xFF111111.toInt(), 0.92f)
+-            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
++            // (Update 466: a measured board — CartBack.board — where the real one is, seen from behind: only its back, no
++            // chip (the chips are on its front, under the label); else the old estimate with its chip.)
++            val m = data?.board
++            if (m != null) {
++                // (In the back's own millimetres, seen from behind, like everything drawBack draws — the canvas mirrors it.)
++                val board = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
++                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
++            } else {
++                val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
++                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
++                p.color = withAlpha(0xFF111111.toInt(), 0.92f)
++                c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
++            }
+             c.restore()
+         }
+         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
+@@ -1123,7 +1247,7 @@ internal object CartShells {
+             if (keep != null) { for (j in 0 until 5) pos += d.textPos[at + j]; texts += keep }
+         }
+         return CartBack(d.id, d.verified, d.screws, pos.toFloatArray(), texts.toTypedArray(), d.recesses, d.raised, d.stickers,
+-            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk)
++            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk, d.board)
+     }
+ 
+     /**
+@@ -1159,27 +1283,6 @@ internal object CartShells {
          return b
      }
  
@@ -2024,7 +2234,7 @@ index fad25ce..25d8776 100644
  
      /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
      private fun paperStrip(brand: String): Bitmap {
-@@ -1581,6 +1666,7 @@ internal fun CartShellArt(
+@@ -1581,6 +1684,7 @@ internal fun CartShellArt(
      // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
      // pre-rendered pictures.)
      if (packLook != null) {
@@ -2032,7 +2242,7 @@ index fad25ce..25d8776 100644
          // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
          // its finished front, as the drawn shells do.)
          PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)
-@@ -1606,16 +1692,18 @@ internal fun CartShellArt(
+@@ -1606,16 +1710,18 @@ internal fun CartShellArt(
          // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
          // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
          // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
@@ -5439,6 +5649,25 @@ index 4ef188c..a1c672c 100644
              }
          }
      }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/QaTrace.kt b/app/src/main/java/com/shelf/launcher/ui/QaTrace.kt
+index b6e8eae..9510697 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/QaTrace.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/QaTrace.kt
+@@ -16,9 +16,14 @@ internal object QaTrace {
+         private set
+     @Volatile private var budgetNs = 16_666_667L
+ 
++    /** Update 466: Voltcap's external files folder while QA is on (QA picture dumps), else null. */
++    @Volatile var dir: java.io.File? = null
++        private set
++
+     fun init(activity: android.app.Activity) {
+         on = TestHooks.enabled(activity)
+         if (!on) return
++        dir = runCatching { activity.getExternalFilesDir(null) }.getOrNull()
+         val hz = runCatching {
+             if (android.os.Build.VERSION.SDK_INT >= 30) activity.display?.refreshRate else @Suppress("DEPRECATION") activity.windowManager.defaultDisplay.refreshRate
+         }.getOrNull() ?: 60f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 index d3b5c22..8ea7122 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
@@ -5655,7 +5884,7 @@ index 5dd75e0..55c73a8 100644
              // Update 200: the pages slide in the direction of travel instead of just appearing.
              Box(Modifier.fillMaxWidth().weight(1f)) { SecondPageSlide(page, gameOpen, visiblePages, pageTravel) { p, inGame -> pageBody(p, inGame) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index 8ae182c..3278b79 100644
+index 8ae182c..f580972 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 @@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
@@ -5753,12 +5982,14 @@ index 8ae182c..3278b79 100644
      when (open) {
          null -> {
              val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-@@ -3963,9 +3987,9 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
+@@ -3962,10 +3986,10 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
+         RowChoice(
              "Box sides (cardboard boxes)", com.shelf.launcher.data.Features.BoxSides.values(),
              com.shelf.launcher.data.Features.boxSides.state.value, { it.label }
-         ) { com.shelf.launcher.data.Features.boxSides.value = it }
+-        ) { com.shelf.launcher.data.Features.boxSides.value = it }
 -        MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
-+        MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. Plain colour from the box art: every side without a picture of its own in one colour taken from the cover's artwork, on card, nothing printed. The box's size and shape never change.")
++        ) { com.shelf.launcher.data.Features.boxSides.value = it; com.shelf.launcher.data.Features.boxSidesChosen.value = true }
++        MutedNote("A cardboard box's right side, top and bottom — a real scan of that side or your own picture of it (Artwork & details › Box right side / top / bottom) always comes first. Plain colour from the box art (default): every other side in one colour taken from the cover's artwork, on card, nothing printed. Fill missing sides: a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
          // (Update 319, Toni: the printed sides on or off, and when off each side in the cover's colours, or not.)
 -        if (com.shelf.launcher.data.Features.boxSides.state.value != com.shelf.launcher.data.Features.BoxSides.FILL) {
 +        if (com.shelf.launcher.data.Features.boxSides.state.value.let { it != com.shelf.launcher.data.Features.BoxSides.FILL && it != com.shelf.launcher.data.Features.BoxSides.COLOUR }) {
@@ -7597,10 +7828,10 @@ index 0000000..e751de5
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt b/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt
 new file mode 100644
-index 0000000..f0784fe
+index 0000000..d37460f
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt
-@@ -0,0 +1,53 @@
+@@ -0,0 +1,101 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertEquals
@@ -7609,18 +7840,66 @@ index 0000000..f0784fe
 +import java.io.File
 +
 +/**
-+ * Update 465: (1) the plain-colour box sides are a separate choice — the default stays "Fill missing sides", and a real scan
++ * Update 465: (1) the plain-colour box sides (the default since update 466; a style picked in Settings stays), and a real scan
 + * or your picture of a side still wins; (2) no doubled print on a cartridge label: a real label scan gets no generated
 + * header, footer or code, and a photo-made DS / 3DS card covers the photo's whole sticker (its own code strip included).
 + */
 +class BoxSidesLabels465Test {
 +    private fun src(n: String) = File("src/main/java/com/shelf/launcher/$n").readText()
 +
-+    @Test fun plainColourIsAnOptionNotTheDefault() {
++    @Test fun plainColourIsTheDefaultAndAPickedStyleStays() {
++        // Update 466 (owner): Plain colour became the default; a style picked in Settings is marked and kept.
 +        val f = src("data/Features.kt")
 +        assertTrue(f.contains("""COLOUR("Plain colour from the box art")"""))
-+        assertTrue(f.contains("""val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())"""))
-+        assertEquals("FILL", com.shelf.launcher.data.Features.BoxSides.values().first().name)
++        assertTrue(f.contains("""val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())"""))
++        assertTrue(f.contains("""val boxSidesChosen = BoolPref("box_sides_chosen", false)"""))
++        assertTrue(src("ui/SettingsDialog.kt").contains("Features.boxSides.value = it; com.shelf.launcher.data.Features.boxSidesChosen.value = true"))
++        // FILL, AUTHENTIC, PLAIN keep their names (saved values stay readable).
++        assertEquals(listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR"), com.shelf.launcher.data.Features.BoxSides.values().map { it.name })
++    }
++
++    @Test fun migrationOnlyMovesAnUnpickedFill() {
++        val F = com.shelf.launcher.data.Features
++        fun run(saved: String?, chosen: Boolean): String? {
++            val p = FakePrefs(saved?.let { mutableMapOf<String, Any?>("box_sides" to it) } ?: mutableMapOf())
++            F.boxSidesChosen.state.value = chosen
++            F.boxSides.state.value = saved?.let { n -> com.shelf.launcher.data.Features.BoxSides.values().first { it.name == n } } ?: F.boxSides.default
++            F.migrate466(p)
++            return p.m["box_sides"] as String?
++        }
++        assertEquals(null, run("FILL", chosen = false))          // never picked → the new default
++        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
++        assertEquals("FILL", run("FILL", chosen = true))         // picked in Settings → kept
++        assertEquals(com.shelf.launcher.data.Features.BoxSides.FILL, F.boxSides.state.value)
++        assertEquals("PLAIN", run("PLAIN", chosen = false))      // any other saved style is a choice → kept
++        assertEquals("AUTHENTIC", run("AUTHENTIC", chosen = false))
++        assertEquals(null, run(null, chosen = false))            // new install → default, nothing written
++        F.boxSidesChosen.state.value = false; F.boxSides.state.value = F.boxSides.default
++    }
++
++    private class FakePrefs(val m: MutableMap<String, Any?>) : android.content.SharedPreferences {
++        override fun getAll(): MutableMap<String, *> = m
++        override fun getString(k: String?, d: String?) = (m[k] as String?) ?: d
++        override fun getStringSet(k: String?, d: MutableSet<String>?) = d
++        override fun getInt(k: String?, d: Int) = d
++        override fun getLong(k: String?, d: Long) = d
++        override fun getFloat(k: String?, d: Float) = d
++        override fun getBoolean(k: String?, d: Boolean) = (m[k] as Boolean?) ?: d
++        override fun contains(k: String?) = m.containsKey(k)
++        override fun registerOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) {}
++        override fun unregisterOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) {}
++        override fun edit(): android.content.SharedPreferences.Editor = object : android.content.SharedPreferences.Editor {
++            override fun putString(k: String?, v: String?): android.content.SharedPreferences.Editor { m[k!!] = v; return this }
++            override fun putStringSet(k: String?, v: MutableSet<String>?): android.content.SharedPreferences.Editor = this
++            override fun putInt(k: String?, v: Int): android.content.SharedPreferences.Editor = this
++            override fun putLong(k: String?, v: Long): android.content.SharedPreferences.Editor = this
++            override fun putFloat(k: String?, v: Float): android.content.SharedPreferences.Editor = this
++            override fun putBoolean(k: String?, v: Boolean): android.content.SharedPreferences.Editor { m[k!!] = v; return this }
++            override fun remove(k: String?): android.content.SharedPreferences.Editor { m.remove(k); return this }
++            override fun clear(): android.content.SharedPreferences.Editor { m.clear(); return this }
++            override fun commit() = true
++            override fun apply() {}
++        }
 +    }
 +
 +    @Test fun realSideScansAndYourPicturesWinOverTheColour() {

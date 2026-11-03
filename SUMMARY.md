@@ -1,3 +1,31 @@
+# Update 466 (3 Nov 2026) — Plain-colour box sides default, Snap front checked, batch 3 backs (clear GBC, Famicom; SFC blocked)
+
+**Owner decisions:** box sides option C then "make Plain colour the new default … preserve any explicitly saved preference";
+Sega B (drawn models, no Sega library copied — hardware NOT verified); batch 3 approved (photos for measuring only).
+**Device:** KONKR GT78 (USB). Staging installed for the tests (it showed Plain colour on its own: the saved FILL there was never
+picked in Settings), RC v0.6.66 back at the end, snapshot restored, view Case flow / N64 / Pokémon Snap, QA files removed.
+**Default (data/Features.kt, ui/SettingsDialog.kt):** `box_sides` default COLOUR; new `box_sides_chosen` set when a style is picked in
+Settings; `migrate466`: a saved FILL without that mark (old default written back by snapshots / backups) follows the new default;
+Authentic only / Plain cardboard / a FILL picked in Settings stay. Settings text updated.
+**Box colours (ui/BoxSides.kt):** checked against the actual front pictures (QA dump `qa_boxcolour/`, BoxColourQa): Snap and Stadium
+red = their own backgrounds (kept); Stadium 2 red = mostly the logo, its background is near-black indigo (owner choice, not forced);
+Paper Mario took its black outlines (near-black) — fixed: dark thin strokes don't count (3×3 check), now red. Only Paper Mario
+changed of 22 covers. Sheet Claude outputs/qa466/qa466_box_colours.png.
+**Pokémon Snap front:** the beige was the RC's generated cover (portrait art letterboxed in the N64 template, D173 — the RC
+doesn't pick the real scan); staging shows the real US ScreenScraper scan, same as the owner's GameFAQs reference (whole scan,
+no crop; ~5 % narrower to the real box's 1.37 proportion). No fit bug. Sheet qa466_snap_front.png.
+**Batch 3 (tools/qa/BACKS_466.md, references + licences, nothing bundled):** clear GBC back from a CC BY-SA rear photo — the
+clear pak's own markings (Nintendo oval, PAT.PEND., MADE IN JAPAN), board where the real one is on back and front, no chip on the
+back (ui/CartBacks.kt board, ui/CartShells.kt). Famicom: real connector tab (front / sides / back), foot grip lines removed, back =
+how-to-play sticker + MADE IN JAPAN, no screws (Jaleco photo; other makers NOT verified). Super Famicom / PAL back NOT changed:
+the screws are on the front (PD photo), no straight rear photo found (BLOCKED). Pokémon Crystal's real front unchanged; its drawn
+back gets the clear-pak back. Sheet qa466_backs.png (RC vs staging, 0/45/75/90/180, references beside).
+**Remaining:** clear GBC side walls stay opaque grey in the photo-made path (90° view); board traces not drawn; Famicom maker
+variants; SFC back; Stadium 2 colour choice; NES (batch 4).
+**Files:** src_copy data/Features.kt, ui/BoxSides.kt, ui/SettingsDialog.kt, ui/CartBacks.kt, ui/CartShells.kt, ui/QaTrace.kt;
+project_copy test BoxSidesLabels465Test.kt (+ migration tests). next/0.6.67 + patch. Unit tests green, static checks PASS, QA
+self-tests 73 OK. RC (v0.6.66) unchanged, NOT published.
+
 # Update 465 (3 Nov 2026) — physical media master update, batches 1-2: box-face trace + "Plain colour" box sides option (staging)
 
 **Owner:** master physical media quality update (5 batches); this entry = batch 1 (reference audit, N64 cardboard boxes) and batch 2

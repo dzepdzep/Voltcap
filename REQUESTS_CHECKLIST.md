@@ -3,6 +3,20 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 466 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Plain colour = default, saved choices kept | FIXED (KONKR: staging showed COLOUR) | migrate466 + BoxSidesLabels465Test migration tests |
+| Snap / Stadium / Stadium 2 / Paper Mario colours checked | DONE | BACKS_466.md table; only Paper Mario was wrong (outlines) — fixed; Stadium 2 red is logo (owner choice) |
+| Snap front vs GameFAQs scan | DONE | RC = generated cover (D173); staging = real scan, no fit error; qa466_snap_front.png |
+| Sega: drawn models, no library copied | DEFERRED (owner) | hardware not verified |
+| Clear GBC back / board / front consistency | FIXED, owner to judge | qa466_backs.png; sides at 90° still opaque (open) |
+| Super Famicom / PAL back | BLOCKED | no straight rear photo; screws are on the front |
+| Famicom back + shell | FIXED (one maker) | tab, sticker, no screws; other makers BLOCKED |
+| Real scans / custom models preserved | DONE | Silver / Gold / Crystal fronts untouched; Crystal's drawn back changes (shown) |
+| Reference-vs-render front/45/75/90/back | DONE | qa466_backs.png |
+| NES (batch 4) | WAITING | after owner review |
+
 ## Update 465 (3 Nov 2026) — master physical media update
 | Request | Status | Evidence / note |
 |---|---|---|

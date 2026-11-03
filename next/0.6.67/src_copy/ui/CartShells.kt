@@ -135,10 +135,16 @@ internal object CartShells {
             // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
             labelFold = 7f,
             note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
-        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f, rect(108f, 71f, 3f, 1f), lab(9f, 5f, 90f, 45.5f),
-            listOf(rid(3f, 52f, 102f, 14f, 5)), emptyList(),
+        // (Update 466, tools/qa/BACKS_466.md: the real cassette's narrower connector tab — measured off a straight-on front
+        // photo, Wikimedia Commons "Famicom 'Devil World' cartridge (5158740395).jpg", Bryan Ochalla, CC BY-SA 2.0, and the
+        // Jaleco back photo: the body 62 mm tall, the tab 7.1 mm in from each side and 9 mm tall. The shell was a plain
+        // rectangle with five grip lines across its foot, which neither photo shows; they're gone.)
+        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f,
+            o(0f, 0f, 2f, 108f, 0f, 2f, 108f, 62f, 1f, 100.9f, 62f, 0.6f, 100.9f, 71f, 0.8f, 7.1f, 71f, 0.8f, 7.1f, 62f, 0.6f, 0f, 62f, 1f),
+            lab(9f, 5f, 90f, 45.5f),
+            emptyList(), emptyList(),
             listOf(c("Grey", 0xFFC8C8C8), c("Black", BLACK), c("Red", 0xFFB3262E), c("Yellow", 0xFFE8C51E), c("Blue", 0xFF2D4FA0)),
-            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; outline estimated. Shell colours vary by game."),
+            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; connector tab measured off photos (update 466). Shell colours vary by game."),
         CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f),
             // (Update 240, #90: the sticker as ConsoleMods' Cart Labels table gives it, test-fitted on an OEM cartridge —
             // 82.5 × 44 mm with 7 mm folded over the top and 3 mm corners: 82.5 × 37 on the front from the top edge,
@@ -913,7 +919,10 @@ internal object CartShells {
         c.save(); c.clipPath(path)
         // A see-through shell shows its board (green PCB, a chip) inside.
         if (op < 0.85f) {
-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+            // (Update 466: where it was measured, the board where the real one is — CartBack.board, the same board seen
+            // from the front, so front, sides and back agree.)
+            val board = CartBacks.of(s.id)?.board?.let { m -> RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k) }
+                ?: RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
             p.color = withAlpha(0xFF1E5F3A.toInt(), 0.55f * (1f - op))
             c.drawRect(board, p)
             p.color = withAlpha(0xFF111111.toInt(), 0.6f * (1f - op))
@@ -1179,10 +1188,19 @@ internal object CartShells {
         if (op < 0.85f) {
             c.save(); c.clipPath(path)
             p.color = withAlpha(shade(base, -0.62f), 1f); c.drawPath(path, p)
-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
-            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
-            p.color = withAlpha(0xFF111111.toInt(), 0.92f)
-            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+            // (Update 466: a measured board — CartBack.board — where the real one is, seen from behind: only its back, no
+            // chip (the chips are on its front, under the label); else the old estimate with its chip.)
+            val m = data?.board
+            if (m != null) {
+                // (In the back's own millimetres, seen from behind, like everything drawBack draws — the canvas mirrors it.)
+                val board = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
+                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+            } else {
+                val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+                p.color = withAlpha(0xFF111111.toInt(), 0.92f)
+                c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+            }
             c.restore()
         }
         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
@@ -1229,7 +1247,7 @@ internal object CartShells {
             if (keep != null) { for (j in 0 until 5) pos += d.textPos[at + j]; texts += keep }
         }
         return CartBack(d.id, d.verified, d.screws, pos.toFloatArray(), texts.toTypedArray(), d.recesses, d.raised, d.stickers,
-            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk)
+            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk, d.board)
     }
 
     /**

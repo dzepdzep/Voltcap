@@ -1,4 +1,5 @@
 **v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here. NOT published (owner approval needed).**
+**Update 466: box sides default = Plain colour (migrate466 keeps picked styles); batch 3 done for clear GBC + Famicom, SFC back BLOCKED (screws are on the front — need a straight rear photo); refs in tools/qa/BACKS_466.md. Batch 4 (NES) waits for the owner to look at qa466_backs.png. QA dump of box fronts: <files>/qa_boxcolour (hooks on).**
 **Update 465: batches 1-2 of the physical media master update done (BOX_SIDES_465.md). Box sides option COLOUR exists, default FILL until the owner picks. Next: batch 3 (clear GBC / SFC-PAL / Famicom backs from licensed photo references, R25), batch 4 NES geometry, batch 5 regression sweep. Open owner questions: default box sides; Sega library scan.**
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:

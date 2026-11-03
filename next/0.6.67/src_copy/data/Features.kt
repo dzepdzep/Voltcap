@@ -110,6 +110,7 @@ object Features {
         runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
+        migrate466(p) // Update 466
         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
         run {
             val existing = FirstRun.isDone(context.applicationContext)
@@ -161,6 +162,14 @@ object Features {
      * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
      * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
      */
+    /** Update 466: a saved "Fill missing sides" that was never picked in Settings follows the new default (Plain colour). */
+    internal fun migrate466(p: android.content.SharedPreferences) {
+        if (!boxSidesChosen.value && p.getString("box_sides", null) == BoxSides.FILL.name) {
+            p.edit().remove("box_sides").apply()
+            boxSides.state.value = boxSides.default
+        }
+    }
+
     private fun migrate166(p: android.content.SharedPreferences) {
         if (p.getBoolean("m166_face_done", false)) return
         p.edit().putBoolean("m166_face_done", true).apply()
@@ -1130,11 +1139,17 @@ object Features {
     enum class BoxSides(val label: String) {
         FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard"),
         // (Update 465, owner: "the generated sides can look too busy … a plain colour naturally derived from the box art":
-        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print. The
-        // default stays "Fill missing sides" until the owner picks.)
+        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print.)
         COLOUR("Plain colour from the box art")
     }
-    val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
+    /** Update 466 (owner: "make Plain colour from the box art the new default … preserve any explicitly saved preference"). */
+    val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())
+    /**
+     * Update 466: true once a box-sides style was picked in Settings. Before 0.6.67 a saved "FILL" can't be told apart from
+     * the old default written back by a settings snapshot / backup, so a saved FILL without this mark follows the new default
+     * ([migrate466]); every other saved style (Authentic only, Plain cardboard) is a choice and stays.
+     */
+    val boxSidesChosen = BoolPref("box_sides_chosen", false)
     /**
      * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
      * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to

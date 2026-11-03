@@ -140,6 +140,10 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
     rememberBoxSides branch, `ui/SettingsDialog.kt` note / chips), mediadump FACES / SIDES trace (`ui/LauncherScreen.kt`); test
     BoxSidesLabels465Test (project_copy, new). Evidence tools/qa/BOX_SIDES_465.md.
 
+25. **Update 466.** Plain colour box sides default + migrate466 / box_sides_chosen (`data/Features.kt`, `ui/SettingsDialog.kt`), dark-stroke
+    check in the colour pick + QA dump BoxColourQa (`ui/BoxSides.kt`, `ui/QaTrace.kt` dir), clear GBC back / board, Famicom tab and
+    back (`ui/CartBacks.kt`, `ui/CartShells.kt`); test BoxSidesLabels465Test updated. Evidence tools/qa/BACKS_466.md.
+
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there
   (a saved choice is kept). If you want Midnight there, pick it in Settings (or QA: `--es voltcap_test_pref picker_look=MIDNIGHT`).

@@ -6,18 +6,66 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Update 465: (1) the plain-colour box sides are a separate choice — the default stays "Fill missing sides", and a real scan
+ * Update 465: (1) the plain-colour box sides (the default since update 466; a style picked in Settings stays), and a real scan
  * or your picture of a side still wins; (2) no doubled print on a cartridge label: a real label scan gets no generated
  * header, footer or code, and a photo-made DS / 3DS card covers the photo's whole sticker (its own code strip included).
  */
 class BoxSidesLabels465Test {
     private fun src(n: String) = File("src/main/java/com/shelf/launcher/$n").readText()
 
-    @Test fun plainColourIsAnOptionNotTheDefault() {
+    @Test fun plainColourIsTheDefaultAndAPickedStyleStays() {
+        // Update 466 (owner): Plain colour became the default; a style picked in Settings is marked and kept.
         val f = src("data/Features.kt")
         assertTrue(f.contains("""COLOUR("Plain colour from the box art")"""))
-        assertTrue(f.contains("""val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())"""))
-        assertEquals("FILL", com.shelf.launcher.data.Features.BoxSides.values().first().name)
+        assertTrue(f.contains("""val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())"""))
+        assertTrue(f.contains("""val boxSidesChosen = BoolPref("box_sides_chosen", false)"""))
+        assertTrue(src("ui/SettingsDialog.kt").contains("Features.boxSides.value = it; com.shelf.launcher.data.Features.boxSidesChosen.value = true"))
+        // FILL, AUTHENTIC, PLAIN keep their names (saved values stay readable).
+        assertEquals(listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR"), com.shelf.launcher.data.Features.BoxSides.values().map { it.name })
+    }
+
+    @Test fun migrationOnlyMovesAnUnpickedFill() {
+        val F = com.shelf.launcher.data.Features
+        fun run(saved: String?, chosen: Boolean): String? {
+            val p = FakePrefs(saved?.let { mutableMapOf<String, Any?>("box_sides" to it) } ?: mutableMapOf())
+            F.boxSidesChosen.state.value = chosen
+            F.boxSides.state.value = saved?.let { n -> com.shelf.launcher.data.Features.BoxSides.values().first { it.name == n } } ?: F.boxSides.default
+            F.migrate466(p)
+            return p.m["box_sides"] as String?
+        }
+        assertEquals(null, run("FILL", chosen = false))          // never picked → the new default
+        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
+        assertEquals("FILL", run("FILL", chosen = true))         // picked in Settings → kept
+        assertEquals(com.shelf.launcher.data.Features.BoxSides.FILL, F.boxSides.state.value)
+        assertEquals("PLAIN", run("PLAIN", chosen = false))      // any other saved style is a choice → kept
+        assertEquals("AUTHENTIC", run("AUTHENTIC", chosen = false))
+        assertEquals(null, run(null, chosen = false))            // new install → default, nothing written
+        F.boxSidesChosen.state.value = false; F.boxSides.state.value = F.boxSides.default
+    }
+
+    private class FakePrefs(val m: MutableMap<String, Any?>) : android.content.SharedPreferences {
+        override fun getAll(): MutableMap<String, *> = m
+        override fun getString(k: String?, d: String?) = (m[k] as String?) ?: d
+        override fun getStringSet(k: String?, d: MutableSet<String>?) = d
+        override fun getInt(k: String?, d: Int) = d
+        override fun getLong(k: String?, d: Long) = d
+        override fun getFloat(k: String?, d: Float) = d
+        override fun getBoolean(k: String?, d: Boolean) = (m[k] as Boolean?) ?: d
+        override fun contains(k: String?) = m.containsKey(k)
+        override fun registerOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) {}
+        override fun unregisterOnSharedPreferenceChangeListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener?) {}
+        override fun edit(): android.content.SharedPreferences.Editor = object : android.content.SharedPreferences.Editor {
+            override fun putString(k: String?, v: String?): android.content.SharedPreferences.Editor { m[k!!] = v; return this }
+            override fun putStringSet(k: String?, v: MutableSet<String>?): android.content.SharedPreferences.Editor = this
+            override fun putInt(k: String?, v: Int): android.content.SharedPreferences.Editor = this
+            override fun putLong(k: String?, v: Long): android.content.SharedPreferences.Editor = this
+            override fun putFloat(k: String?, v: Float): android.content.SharedPreferences.Editor = this
+            override fun putBoolean(k: String?, v: Boolean): android.content.SharedPreferences.Editor { m[k!!] = v; return this }
+            override fun remove(k: String?): android.content.SharedPreferences.Editor { m.remove(k); return this }
+            override fun clear(): android.content.SharedPreferences.Editor { m.clear(); return this }
+            override fun commit() = true
+            override fun apply() {}
+        }
     }
 
     @Test fun realSideScansAndYourPicturesWinOverTheColour() {

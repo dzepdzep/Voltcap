@@ -3986,8 +3986,8 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
         RowChoice(
             "Box sides (cardboard boxes)", com.shelf.launcher.data.Features.BoxSides.values(),
             com.shelf.launcher.data.Features.boxSides.state.value, { it.label }
-        ) { com.shelf.launcher.data.Features.boxSides.value = it }
-        MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. Plain colour from the box art: every side without a picture of its own in one colour taken from the cover's artwork, on card, nothing printed. The box's size and shape never change.")
+        ) { com.shelf.launcher.data.Features.boxSides.value = it; com.shelf.launcher.data.Features.boxSidesChosen.value = true }
+        MutedNote("A cardboard box's right side, top and bottom — a real scan of that side or your own picture of it (Artwork & details › Box right side / top / bottom) always comes first. Plain colour from the box art (default): every other side in one colour taken from the cover's artwork, on card, nothing printed. Fill missing sides: a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
         // (Update 319, Toni: the printed sides on or off, and when off each side in the cover's colours, or not.)
         if (com.shelf.launcher.data.Features.boxSides.state.value.let { it != com.shelf.launcher.data.Features.BoxSides.FILL && it != com.shelf.launcher.data.Features.BoxSides.COLOUR }) {
             val colored = com.shelf.launcher.data.Features.boxSideColors.state.value
