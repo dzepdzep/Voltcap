@@ -15,14 +15,14 @@ class PhotoShells462Test {
             "mario.n64" to listOf("Disc / cartridge" to "https://x/m?systemeid=14&media=support-2D")
         )
         val p = PhotoShells.photosOf(raw) { it.startsWith("brown") }
-        assertEquals(setOf("9", "10"), p.keys)
+        assertEquals(setOf("9", "10", "14"), p.keys) // (update 463: N64 photos are used too)
         assertEquals(listOf("tetris.gb" to "https://x/mediaJeu.php?systemeid=9&jeuid=3&media=support-2D"), p["9"])
         assertEquals(1, p["10"]!!.size)
     }
 
     @Test fun shellsCovered() {
         for (id in listOf("gb", "gbc_dual", "gbc", "gba")) assertTrue(id, PhotoShells.supports(id))
-        assertTrue(!PhotoShells.supports("n64"))
+        assertTrue(!PhotoShells.supports("neogeo_aes")) // (update 463: n64 and the other real cartridges now are)
         assertEquals("gba", PhotoShells.shellOfGame("x.gba", "12"))
         assertEquals("gb", PhotoShells.shellOfGame("x.gb", "9"))
         assertEquals(0f, PhotoShells.colourDistance(0xFFA3A2A8.toInt(), 0xFFA3A2A8.toInt()), 0.01f)

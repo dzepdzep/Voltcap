@@ -3,6 +3,20 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 463 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| Extend PhotoShells to all real cartridge / card systems | FIXED (wired for 28 shells) | PHOTOSHELLS_463.md matrix |
+| Authentic model + regional variants per platform | DONE | photo's own game → CartShells.authenticIdFor (console + photo region); shape ±9 % |
+| Real photo from the library per platform | DONE where the library has one | GB/GBC/GBA, N64, SNES NA, SFC/PAL, Famicom, NES, DS, 3DS, Switch; none for Sega / Atari / NEC / SNK / Bandai / VB |
+| No recolouring, no stretching another regional shell | DONE | no tint outside GB family; same-plastic photo only; region from the photo's game |
+| Exact game label; hacks / homebrew own label; never base ROM's | DONE (unchanged pipeline) | label = what the drawn shell prints (461 D184) |
+| Rotation, sides / back, performance | DONE (KONKR) | sheets qa463_sheet_a/b; 90° slab + drawn back approximate (same for real pieces) |
+| Safe fallback | DONE | per-colour reasons in inventory.tsv; NES excluded (sticker geometry mismatch) |
+| Custom models untouched | DONE | pack / custom path runs first |
+| N64, SNES/SFC, NES/Famicom, DS/3DS, Sega first | N64 / SNES / SFC / Famicom / DS / 3DS / Switch DONE; NES OPEN (re-measure); Sega DEFERRED (no photos) | |
+| Hardware test | KONKR only; non-local consoles via QA label stand-ins | no NES/SNES/DS/3DS/Switch/Sega games on the connected devices |
+
 ## Update 462b (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

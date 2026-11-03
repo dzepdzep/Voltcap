@@ -494,7 +494,8 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
         // only, so update 459's comparison sheets showed covers where the game had its real label.)
         val testArt = MediaInspect.testArt
-        val scan = if (testArt != null) null else drawnLabelScan(physical, g.platform)
+        // (Update 463: a test picture named "lab_…" is a label scan — laid on the sticker as a real one is — not a cover.)
+        val scan = if (testArt != null) testArt.takeIf { it.substringAfterLast('/').startsWith("lab_") } else drawnLabelScan(physical, g.platform)
         val cv: Any? = testArt ?: cover
         val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
         return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)

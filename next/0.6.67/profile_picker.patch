@@ -1,8 +1,8 @@
 diff --git a/.gitignore b/.gitignore
-index a7fef4d..d56ccc5 100644
+index 73e3f71..d56ccc5 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -55,43 +55,3 @@ tools/themes/refresh-review/sheet-*
+@@ -55,44 +55,3 @@ tools/themes/refresh-review/sheet-*
  # Update 456: frozen release candidates (tools/release/freeze_rc.py) — the APKs / profiles stay out of git, SHA256SUMS.txt is committed
  /release_candidates/**/*.apk
  /release_candidates/**/*.dm
@@ -28,6 +28,7 @@ index a7fef4d..d56ccc5 100644
 -/app/src/test/java/com/shelf/launcher/ui/PqTabs456Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/Render457Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/SideEdge458Test.kt
+-/app/src/test/java/com/shelf/launcher/ui/PhotoShells463Test.kt
 -/app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
 -/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
 -/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
@@ -3457,7 +3458,7 @@ index eac242c..e923f28 100644
      @Volatile var testPose: FloatArray? = null
  }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..410437a 100644
+index 145a2a2..6153087 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 @@ -470,6 +470,13 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
@@ -3474,7 +3475,7 @@ index 145a2a2..410437a 100644
          // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
          if (id.startsWith("pack:") || id.startsWith("cc:")) {
              val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
-@@ -480,10 +487,17 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
+@@ -480,10 +487,18 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
              return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
                  CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
          }
@@ -3487,14 +3488,15 @@ index 145a2a2..410437a 100644
 +        // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
 +        // only, so update 459's comparison sheets showed covers where the game had its real label.)
 +        val testArt = MediaInspect.testArt
-+        val scan = if (testArt != null) null else drawnLabelScan(physical, g.platform)
++        // (Update 463: a test picture named "lab_…" is a label scan — laid on the sticker as a real one is — not a cover.)
++        val scan = if (testArt != null) testArt.takeIf { it.substringAfterLast('/').startsWith("lab_") } else drawnLabelScan(physical, g.platform)
 +        val cv: Any? = testArt ?: cover
 +        val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
 +        return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)
      }
      val small = Features.bigGcDiscs.state.value.not()
      val mixed = mixedConsoles(state.visibleGames)
-@@ -1691,7 +1705,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1691,7 +1706,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
      // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
      // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
      val backStyle = Features.cartBackStyle.state.value
@@ -3510,7 +3512,7 @@ index 145a2a2..410437a 100644
          // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
          // was a plain silhouette, so the new backs never showed for the many games with a photo).
          if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
-@@ -1705,7 +1726,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1705,7 +1727,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
              val (ch, console) = CartShells.split(pp)
              // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
              ch?.shell?.let { sh ->
@@ -3521,7 +3523,7 @@ index 145a2a2..410437a 100644
              }
          }
      }
-@@ -1778,10 +1801,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1778,10 +1802,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
      // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
      // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
      val ctxTone = androidx.compose.ui.platform.LocalContext.current
@@ -3534,7 +3536,7 @@ index 145a2a2..410437a 100644
              pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
              isCustomPiece(pp) -> null
              else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->
-@@ -1846,7 +1870,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1846,7 +1871,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                      drawRect(sideTone, blendMode = BlendMode.SrcIn)
                      drawRect(sheen, blendMode = BlendMode.SrcAtop)
                  }
@@ -3544,7 +3546,7 @@ index 145a2a2..410437a 100644
                  if (n > 0) {
                      // Far to near.
                      for (k in 0..n) {
-@@ -1859,6 +1884,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1859,6 +1885,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                  val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                  val plasticArgb = sideTone.toArgb()
                  if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
@@ -3577,10 +3579,10 @@ index d7ed69b..588d67e 100644
          RoundStep(Icons.Filled.SkipPrevious, "Previous", onPrevious)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
 new file mode 100644
-index 0000000..6864e76
+index 0000000..c9a0908
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
-@@ -0,0 +1,382 @@
+@@ -0,0 +1,525 @@
 +package com.shelf.launcher.ui
 +
 +import android.graphics.Bitmap
@@ -3608,7 +3610,58 @@ index 0000000..6864e76
 +    }
 +
 +    /** Which shells can be photo-made: the shell id → the ScreenScraper system ids whose cartridge photos show it. */
-+    private val SYSTEMS = mapOf("gb" to setOf("9", "10"), "gbc_dual" to setOf("10"), "gbc" to setOf("10"), "gba" to setOf("12"))
++    // (Update 463, owner: "extend the same approach to every supported platform with genuine physical cartridges or game
++    // cards". Each shell only from photos of games that came on that very shell — the photo game's console and region
++    // through CartShells.authenticIdFor, exactly as a game's own shell is picked — and only when the photo's outline has
++    // the shell's shape (fromPhoto, ±9 %). Not here: shells whose photos can't be told apart from another shell of the same
++    // console by region and shape (Neo Geo AES / MVS under one id), Switch 2 (no ScreenScraper id of its own here yet),
++    // the special-edition shells (Game Boy Camera, Pinball, EA, lock-on …) and anything without a real cartridge.)
++    private val SYSTEMS = mapOf(
++        "gb" to setOf("9", "10"), "gbc_dual" to setOf("10"), "gbc" to setOf("10"), "gba" to setOf("12"),
++        // (Update 463: not the NES Game Pak — every NES cartridge photo in the library shows its sticker upright down the right
++        // half beside the grip ridges, where the drawn shell has it across the top: a label laid over the photo there would
++        // cover ridges and leave half the photo's own sticker showing. Until the shell's sticker is re-measured, drawn.)
++        "famicom" to setOf("3"), "snes_na" to setOf("4"), "sfc" to setOf("4"), "n64" to setOf("14"),
++        "vb" to setOf("11"), "ds" to setOf("15"), "3ds" to setOf("17"), "switch" to setOf("225"),
++        "genesis" to setOf("1"), "megadrive_jp" to setOf("1"), "sms" to setOf("2"), "sms_jp" to setOf("2"),
++        "game_gear" to setOf("21"), "32x" to setOf("19"), "sg1000" to setOf("109"),
++        "atari2600" to setOf("26"), "atari5200" to setOf("40"), "atari7800" to setOf("41"), "lynx" to setOf("28"), "jaguar" to setOf("27"),
++        "hucard" to setOf("31"), "ngp" to setOf("25", "82"), "wonderswan" to setOf("45", "46")
++    )
++
++    /** ScreenScraper system id → the console name CartShells.authenticId knows (update 463). */
++    private val CONSOLE = mapOf(
++        "3" to "NES", "4" to "SNES", "14" to "N64", "11" to "VirtualBoy", "15" to "NDS", "17" to "3DS", "225" to "Switch",
++        "1" to "Genesis", "2" to "MasterSystem", "21" to "GameGear", "19" to "32X", "109" to "SG1000", "26" to "Atari2600",
++        "40" to "Atari5200", "41" to "Atari7800", "28" to "Lynx", "27" to "Jaguar", "31" to "PCEngine", "25" to "NeoGeoPocket",
++        "82" to "NeoGeoPocketColor", "45" to "WonderSwan", "46" to "WonderSwanColor"
++    )
++
++    /**
++     * How far the nearest photo's plastic may be from the colour wanted before it's tinted to it (RGB distance). The Game
++     * Boy paks keep 462's (verified: Silver's photo for the silver pak); every other shell only takes a photo of the same
++     * plastic — a grey N64 photo is never dyed gold, a grey Famicom never red (update 463, owner: "do not recolour an
++     * incompatible cartridge photo") — and is shown in the photo's own plastic, never tinted ([tinted]).
++     */
++    private fun tolerance(shellId: String): Float = if (shellId in GB_FAMILY) 120f else 90f
++    private val GB_FAMILY = setOf("gb", "gbc_dual", "gbc", "gba")
++
++    /**
++     * Update 463: the same kind of plastic — both greys / blacks (little colour), or both coloured within 35° of hue: a green
++     * Army Men N64 pak's photo is no black pak, however near the numbers are.
++     */
++    fun sameKind(a: Int, b: Int): Boolean {
++        val ha = FloatArray(3); val hb = FloatArray(3)
++        android.graphics.Color.colorToHSV(a, ha); android.graphics.Color.colorToHSV(b, hb)
++        fun chroma(c: Int): Int { val r = (c shr 16) and 255; val g = (c shr 8) and 255; val bl = c and 255; return maxOf(r, g, bl) - minOf(r, g, bl) }
++        val na = chroma(a) < 30; val nb = chroma(b) < 30
++        if (na || nb) return na && nb
++        val dh = kotlin.math.abs(ha[0] - hb[0]).let { minOf(it, 360f - it) }
++        return dh < 35f
++    }
++
++    /** Whether a photo-made [shellId] is tinted to the colour picked (only the Game Boy paks, as verified in 462 / 462b). */
++    fun tinted(shellId: String): Boolean = shellId in GB_FAMILY
 +
 +    fun supports(shellId: String): Boolean = shellId in SYSTEMS
 +
@@ -3654,7 +3707,7 @@ index 0000000..6864e76
 +        val clear = colour.opacity < 0.85f
 +        val pick = list.filter { it.clear == clear }.minByOrNull { colourDistance(it.plastic, colour.argb) }
 +            // (A see-through pak's plastic is mostly the board behind it: any clear photo will do, the nearest first.)
-+            ?.takeIf { clear || colourDistance(it.plastic, colour.argb) < 120f } ?: return null
++            ?.takeIf { clear || (colourDistance(it.plastic, colour.argb) < tolerance(shell.id) && (tinted(shell.id) || sameKind(it.plastic, colour.argb))) } ?: return null
 +        val key = shell.id + "|" + pick.url
 +        templates[key]?.let { return it }
 +        if (key in failed || !loading.add(key)) return null
@@ -3676,7 +3729,17 @@ index 0000000..6864e76
 +     * lower, under its taller GAME BOY COLOR panel (measured off two cartridge photos, Crystalis and Crystal: 14 % in from
 +     * either side, 34.5 % to 92 % down).
 +     */
-+    private val STICKER = mapOf("gbc" to floatArrayOf(8.0f, 22.6f, 42.4f, 37.7f))
++    private val STICKER = mapOf("gbc" to floatArrayOf(8.0f, 22.6f, 42.4f, 37.7f),
++        // (Update 463: the Super Famicom / PAL SNES sticker on a real cassette's photo (Astérix & Obélix, PAL): 60 % of the
++        // width, centred, from the top edge (it folds over it) to 43 % down — not the drawn shell's 96 × 52 from 8 mm.)
++        "sfc" to floatArrayOf(26f, 0f, 78f, 37f),
++        // (Update 463: the DS / 3DS sticker runs on under the art to the product-code strip — NTR-… / CTR-… — 93 % down; the
++        // drawn shell's sticker stops above it, so a photo's own code (another game's) showed under the label. The whole
++        // paper is covered, with what the drawn front has there: [WHOLE].)
++        "ds" to floatArrayOf(2.9f, 1.6f, 27f, 31f), "3ds" to floatArrayOf(2.9f, 1.6f, 27f, 31f))
++
++    /** Shells whose photo sticker is covered at [STICKER] exactly (not looked for), copying that same place of the drawn front. */
++    private val WHOLE = setOf("ds", "3ds")
 +
 +    private val JEU = Regex("""[?&]jeuid=(\d+)""")
 +
@@ -3684,7 +3747,7 @@ index 0000000..6864e76
 +    private val EDITION_WORDS = listOf("silver", "gold", "crystal", "yellow")
 +
 +    /** Which pak [key]'s game came on (ScreenScraper system [sys]): the ROM header, else the file name's tag. */
-+    fun shellOfGame(key: String, sys: String): String? = when (sys) {
++    fun shellOfGame(key: String, sys: String, url: String? = null): String? = when (sys) {
 +        "12" -> "gba"
 +        "9" -> "gb"
 +        "10" -> when (com.shelf.launcher.data.RomHeaders.gb(key, "GBC")) {
@@ -3693,6 +3756,19 @@ index 0000000..6864e76
 +            com.shelf.launcher.data.RomHeaders.Gb.DMG -> "gb"
 +            null -> if (key.contains("GB Compatible", ignoreCase = true)) "gbc_dual" else "gbc"
 +        }
++        // (Update 463: every other console — its region from the photo's own region when ScreenScraper gives one (the
++        // cartridge pictured is that region's), else the game's file name; never the region setting, which is a preference
++        // for your games, not a fact about the photo.)
++        else -> CONSOLE[sys]?.let { con -> CartShells.authenticIdFor(con, photoRegion(url) ?: CaseCatalog.regionOf(key, com.shelf.launcher.data.Features.CaseRegionChoice.AUTO_US), key) }
++    }
++
++    private val REGION = Regex("""[?&]region=([a-z]+)""")
++
++    /** The region a ScreenScraper picture is of (null: world-wide / unknown). */
++    fun photoRegion(url: String?): CaseRegion? = when (url?.let { REGION.find(it)?.groupValues?.get(1) }) {
++        "us", "ca" -> CaseRegion.US
++        "jp" -> CaseRegion.JP
++        "eu", "fr", "de", "uk", "es", "it", "nl", "se", "dk", "fi", "no", "pt", "au", "pl" -> CaseRegion.EU
 +        else -> null
 +    }
 +
@@ -3701,14 +3777,15 @@ index 0000000..6864e76
 +        val ctx = app ?: return
 +        // Only games that came on this very shell (the ROM header: grey Game Boy, black dual-mode or clear Color-only pak),
 +        // an edition's own game first (Pokémon Silver's photo for the silver pak).
-+        val urls = SYSTEMS[shell.id]!!.flatMap { sys -> photos[sys].orEmpty().filter { (k, _) -> shellOfGame(k, sys) == shell.id } }
++        val urls = SYSTEMS[shell.id]!!.flatMap { sys -> photos[sys].orEmpty().filter { (k, u) -> shellOfGame(k, sys, u) == shell.id } }
 +            .sortedByDescending { (k, _) -> EDITION_WORDS.count { w -> k.contains(w, ignoreCase = true) } }
 +            .map { it.second }
 +        if (urls.isEmpty()) { metas[shell.id] = emptyList(); return }
 +        // (Update 462b: what was found last time, kept with the list it came from — no drawn shell for the first seconds of
 +        // every start while the photos are looked at again.)
 +        val prefs = ctx.getSharedPreferences("photo_shells", android.content.Context.MODE_PRIVATE)
-+        val sig = urls.take(24).hashCode().toString()
++        // (Update 463: "v463" — what fits changed (the sticker must be found, see fromPhoto): findings saved before are looked at again.)
++        val sig = "v463b:" + urls.take(24).hashCode()
 +        prefs.getString(shell.id, null)?.let { saved ->
 +            val lines = saved.split('\n')
 +            if (lines.firstOrNull() == sig) {
@@ -3747,7 +3824,8 @@ index 0000000..6864e76
 +        if (same.isEmpty()) return "fallback: no ${if (clear) "see-through" else "solid"} ${shell.id} photo"
 +        val best = same.minByOrNull { colourDistance(it.plastic, colour.argb) }!!
 +        val d = colourDistance(best.plastic, colour.argb)
-+        if (!clear && d >= 120f) return "fallback: nearest photo plastic too far from ${colour.key} (${d.toInt()})"
++        if (!clear && !tinted(shell.id) && !sameKind(best.plastic, colour.argb)) return "fallback: no photo in ${colour.key}'s plastic (nearest is another colour)"
++        if (!clear && d >= tolerance(shell.id)) return "fallback: nearest photo plastic too far from ${colour.key} (${d.toInt()})"
 +        val key = shell.id + "|" + best.url
 +        return when {
 +            templates[key] != null -> "photoshell jeu ${JEU.find(best.url)?.groupValues?.get(1)} (colour distance ${d.toInt()})"
@@ -3764,7 +3842,7 @@ index 0000000..6864e76
 +    fun sideTone(shell: CartShell, colour: ShellColour): Int? {
 +        val t = template(shell, colour) ?: return null
 +        val edge = t.edge ?: return null
-+        if (colour.opacity < 0.85f || colourDistance(colour.argb, t.plastic) <= 10f) return edge
++        if (!tinted(shell.id) || colour.opacity < 0.85f || colourDistance(colour.argb, t.plastic) <= 10f) return edge
 +        fun ch(sh: Int): Int {
 +            val f = (((colour.argb shr sh) and 255).toFloat() / ((t.plastic shr sh) and 255).coerceAtLeast(8)).coerceIn(0.35f, 2.2f)
 +            return (((edge shr sh) and 255) * f).toInt().coerceIn(0, 255)
@@ -3824,9 +3902,17 @@ index 0000000..6864e76
 +        val lb = STICKER[shell.id] ?: shell.label
 +        val est = RectF(lb[0] * k, lb[1] * k, (lb[0] + lb[2]) * k, (lb[1] + lb[3]) * k)
 +        val plastic = plasticOf(out, est)
-+        val clear = boardShows(out, est, plastic)
++        // (Update 463: only a shell that came in see-through plastic is looked at for it — the NES's grip ridges and the Super
++        // Famicom's lower recess read as "board showing" and made 17 of 24 NES photos see-through.)
++        val clear = shell.colours.any { it.opacity < 0.85f } && boardShows(out, est, plastic)
 +        // (Through a see-through pak the board is everywhere round the sticker: its measured place is used, not looked for.)
-+        val label = if (clear) est else findSticker(out, est, plastic)
++        val label = if (clear || shell.id in WHOLE) est else findSticker(out, est, plastic) ?: if (shell.id in GB_FAMILY || lb !== shell.label) est else {
++            // (Update 463: a photo whose sticker isn't where this shell's is — another side shown, an odd crop, a label of
++            // another shape — isn't used: a sticker laid over the wrong place would show the photo's own one round it.)
++            out.recycle(); return null
++        }
++        // (Update 463: and the sticker must be paper, not plastic: a recess found on bare plastic is a wrong find.)
++        if (shell.id !in GB_FAMILY && !clear && plasticShare(out, label, plastic) > 0.3f) { out.recycle(); return null }
 +        return Template(out, label, plastic, if (clear) "$source#clear" else source)
 +    }
 +
@@ -3836,7 +3922,7 @@ index 0000000..6864e76
 +     * The sticker's edges: from inside the sticker outwards, the first line (column / row) where most samples are the
 +     * plastic's colour — so a frame printed inside the label (its art's border, "THIS SIDE OUT") is passed over.
 +     */
-+    fun findSticker(b: Bitmap, est: RectF, plastic: Int): RectF {
++    fun findSticker(b: Bitmap, est: RectF, plastic: Int): RectF? {
 +        val w = b.width; val h = b.height
 +        val px = IntArray(w * h); b.getPixels(px, 0, w, 0, 0, w, h)
 +        fun plasticAt(x: Int, y: Int): Boolean {
@@ -3860,8 +3946,22 @@ index 0000000..6864e76
 +        val top = scan(est.top + inset, -1, ::rowPlastic) ?: est.top
 +        val bottom = scan(est.bottom - inset, 1, ::rowPlastic) ?: est.bottom
 +        val r = RectF(left, top, right, bottom)
-+        // An implausible find (the sticker more than 14 % off its expected size): the expected place.
-+        return if (r.width() < est.width() * 0.86f || r.width() > est.width() * 1.14f || r.height() < est.height() * 0.86f || r.height() > est.height() * 1.14f) est else r
++        // An implausible find (the sticker more than 14 % off its expected size): null (update 463 — the caller decides; the
++        // Game Boy paks keep the expected place, as before).
++        return if (r.width() < est.width() * 0.86f || r.width() > est.width() * 1.14f || r.height() < est.height() * 0.86f || r.height() > est.height() * 1.14f) null else r
++    }
++
++    /** How much of [r]'s middle is the plastic's own colour (0…1). */
++    private fun plasticShare(b: Bitmap, r: RectF, plastic: Int): Float {
++        var n = 0; var p = 0
++        val x0 = (r.left + r.width() * 0.1f).toInt(); val x1 = (r.right - r.width() * 0.1f).toInt()
++        val y0 = (r.top + r.height() * 0.1f).toInt(); val y1 = (r.bottom - r.height() * 0.1f).toInt()
++        for (y in y0 until y1 step 3) for (x in x0 until x1 step 3) {
++            if (x !in 0 until b.width || y !in 0 until b.height) continue
++            val c = b.getPixel(x, y); if ((c ushr 24) < 200) continue
++            n++; if (colourDistance(c, plastic) < 30f) p++
++        }
++        return if (n == 0) 1f else p.toFloat() / n
 +    }
 +
 +    /** The plastic's colour: the median of the bands either side of the sticker. */
@@ -3876,6 +3976,19 @@ index 0000000..6864e76
 +            val c = b.getPixel(x, y)
 +            if ((c ushr 24) < 200) continue
 +            rs += (c shr 16) and 255; gs += (c shr 8) and 255; bs += c and 255
++        }
++        // (Update 463: a card whose sticker nearly fills its front — DS, 3DS, Switch — has no plastic beside it: the band
++        // above it, else below it.)
++        if (rs.size < 24) {
++            val x0 = (w * 0.2f).toInt(); val x1 = (w * 0.8f).toInt()
++            val rowsAbove = (h * 0.025f).toInt() until (label.top - h * 0.015f).toInt()
++            val rowsBelow = (label.bottom + h * 0.015f).toInt() until (h * 0.975f).toInt()
++            for (ys in listOf(rowsAbove, rowsBelow)) for (y in ys step 2) for (x in x0 until x1 step 2) {
++                if (x !in 0 until w || y !in 0 until h) continue
++                val c = b.getPixel(x, y)
++                if ((c ushr 24) < 200) continue
++                rs += (c shr 16) and 255; gs += (c shr 8) and 255; bs += c and 255
++            }
 +        }
 +        if (rs.isEmpty()) return 0xFF888888.toInt()
 +        rs.sort(); gs.sort(); bs.sort()
@@ -3915,7 +4028,7 @@ index 0000000..6864e76
 +        fun f(sh: Int) = (((want shr sh) and 255).toFloat() / ((t.plastic shr sh) and 255).coerceAtLeast(8)).coerceIn(0.35f, 2.2f)
 +        val tint = android.graphics.ColorMatrix(floatArrayOf(f(16), 0f, 0f, 0f, 0f, 0f, f(8), 0f, 0f, 0f, 0f, 0f, f(0), 0f, 0f, 0f, 0f, 0f, 1f, 0f))
 +        // (A see-through pak isn't tinted: what shows through it is the board, not a plastic colour.)
-+        paint.colorFilter = if (colour.opacity >= 0.85f && colourDistance(want, t.plastic) > 10f) android.graphics.ColorMatrixColorFilter(tint) else null
++        paint.colorFilter = if (tinted(shell.id) && colour.opacity >= 0.85f && colourDistance(want, t.plastic) > 10f) android.graphics.ColorMatrixColorFilter(tint) else null
 +        c.drawBitmap(t.bmp, null, android.graphics.Rect(0, 0, w, h), paint)
 +        paint.colorFilter = null
 +        // The sticker: the drawn one's, into the photo's recess (a little past its edge, so none of the photo's own shows).
@@ -3924,7 +4037,8 @@ index 0000000..6864e76
 +        val pad = w * 0.006f
 +        dst.inset(-pad, -pad)
 +        val k = w / shell.w
-+        val src = android.graphics.Rect((shell.label[0] * k).toInt(), (shell.label[1] * k).toInt(), ((shell.label[0] + shell.label[2]) * k).toInt(), ((shell.label[1] + shell.label[3]) * k).toInt())
++        val sl = if (shell.id in WHOLE) STICKER[shell.id]!! else shell.label
++        val src = android.graphics.Rect((sl[0] * k).toInt(), (sl[1] * k).toInt(), ((sl[0] + sl[2]) * k).toInt(), ((sl[1] + sl[3]) * k).toInt())
 +        val rad = shell.labelRadius * k
 +        c.save()
 +        c.clipPath(android.graphics.Path().apply { addRoundRect(dst, rad, rad, android.graphics.Path.Direction.CW) })
@@ -3937,6 +4051,37 @@ index 0000000..6864e76
 +        val edge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = maxOf(1f, 0.25f * k); color = 0x40000000 }
 +        c.drawRoundRect(dst, rad, rad, edge)
 +        return out
++    }
++
++    /** QA (update 463): every supported shell's photos looked at now, and each shell colour's template asked for. */
++    fun analyseAll() {
++        for (id in SYSTEMS.keys) {
++            val sh = CartShells.of(id) ?: continue
++            if (metas[id] == null) analyse(sh)
++            for (c in sh.colours) template(sh, c)
++        }
++    }
++
++    /**
++     * QA (update 463): the coverage — per shell, how many of your library's cartridge photos are of it, how many fit its
++     * shape, which colours got a template (and why not) — into photoshells/inventory.tsv. Game ids and regions only,
++     * never an address (they carry the account).
++     */
++    fun inventory(ctx: android.content.Context) {
++        val dir = java.io.File(ctx.getExternalFilesDir(null), "photoshells").apply { mkdirs() }
++        val sb = StringBuilder("shell\tsystem_photos\tof_this_shell\tfit\tclear\tcolour\tresult\n")
++        for ((id, syss) in SYSTEMS) {
++            val sh = CartShells.of(id) ?: continue
++            val all = syss.sumOf { photos[it].orEmpty().size }
++            val mine = syss.sumOf { sys -> photos[sys].orEmpty().count { (k, u) -> shellOfGame(k, sys, u) == id } }
++            val m = metas[id]
++            for (c in sh.colours) sb.append("$id\t$all\t$mine\t${m?.size ?: "-"}\t${m?.count { it.clear } ?: "-"}\t${c.key}\t${why(sh, c)}\n")
++        }
++        sb.append("\n# photos: shell\tjeu\tregion\tgame region\n")
++        for ((sys, list) in photos) for ((k, u) in list) {
++            sb.append("${shellOfGame(k, sys, u) ?: "?"}\t${JEU.find(u)?.groupValues?.get(1)}\t${REGION.find(u)?.groupValues?.get(1) ?: "-"}\t${CaseCatalog.regionOf(k, com.shelf.launcher.data.Features.CaseRegionChoice.AUTO_US)}\tsys$sys\t${k.substringAfterLast('/')}\n")
++        }
++        java.io.File(dir, "inventory.tsv").writeText(sb.toString())
 +    }
 +
 +    /** QA (test hooks): the templates as PNGs into <external files>/photoshells. */
@@ -6361,7 +6506,7 @@ index 55ac6bf..f9fadad 100644
          for (wait in longArrayOf(120, 350, 800)) {
              kotlinx.coroutines.delay(wait)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index df68497..b829783 100644
+index df68497..8d0126a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -27,6 +27,18 @@ internal object TestHooks {
@@ -6488,18 +6633,20 @@ index df68497..b829783 100644
          val want = intent?.getStringExtra("voltcap_test_layout")
          val g = intent?.getStringExtra("voltcap_test_game")
          val st = intent?.getStringExtra("voltcap_test_settings")
-@@ -126,6 +221,10 @@ internal object TestHooks {
+@@ -126,6 +221,12 @@ internal object TestHooks {
          val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
          val rs = intent?.getStringExtra("voltcap_test_shortcuts")
          val ins = intent?.getStringExtra("voltcap_test_inspect")
 +        intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
 +        intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
-+        // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells.
-+        if (intent?.getBooleanExtra("voltcap_test_photoshells", false) == true && enabled(context)) { val c = context.applicationContext; Thread { PhotoShells.dump(c) }.start() }
++        // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells
++        // (update 463: every supported shell looked at first, and the coverage into photoshells/inventory.tsv; send it again once
++        // the photos are analysed).
++        if (intent?.getBooleanExtra("voltcap_test_photoshells", false) == true && enabled(context)) { val c = context.applicationContext; Thread { PhotoShells.analyseAll(); PhotoShells.inventory(c); PhotoShells.dump(c) }.start() }
          val aw = intent?.getStringExtra("voltcap_test_artwork")
          val tf = intent?.getStringExtra("voltcap_test_facts")
          val tp = intent?.getStringExtra("voltcap_test_pick")
-@@ -157,6 +256,8 @@ internal object TestHooks {
+@@ -157,6 +258,8 @@ internal object TestHooks {
          if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
          // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
          if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
@@ -6508,7 +6655,7 @@ index df68497..b829783 100644
          if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
          // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
          intent?.getStringExtra("voltcap_test_fault")?.let { f ->
-@@ -173,6 +274,32 @@ internal object TestHooks {
+@@ -173,6 +276,32 @@ internal object TestHooks {
              noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
              android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
          }
@@ -6541,7 +6688,7 @@ index df68497..b829783 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -205,6 +332,9 @@ internal object TestHooks {
+@@ -205,6 +334,9 @@ internal object TestHooks {
              previewOnly = true
              tileWalk.value = tw
          }
@@ -6551,7 +6698,7 @@ index df68497..b829783 100644
          if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
          val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
          if (!on) return
-@@ -215,8 +345,13 @@ internal object TestHooks {
+@@ -215,8 +347,13 @@ internal object TestHooks {
          if (rs != null) { previewOnly = true; shortcuts.value = rs }
          if (snap != null) runCatching {
              val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot.json")
@@ -6565,7 +6712,7 @@ index df68497..b829783 100644
                  // QA pass 3: the category order / hidden list too (a walk once pressed A on a ▼ in Settings › Categories).
                  val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                  java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
-@@ -234,6 +369,11 @@ internal object TestHooks {
+@@ -234,6 +371,11 @@ internal object TestHooks {
                      if (h == null || h == "\u0000") e.remove("hidden") else e.putStringSet("hidden", h.split(',').filter { it.isNotBlank() }.toSet())
                      e.commit()   // (the walk then restarts Voltcap — vqa.sh hooks off — so the screen reads it again)
                  }
@@ -7691,7 +7838,7 @@ index 0000000..1d69321
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
 new file mode 100644
-index 0000000..b92f464
+index 0000000..aa3513c
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
 @@ -0,0 +1,40 @@
@@ -7712,14 +7859,14 @@ index 0000000..b92f464
 +            "mario.n64" to listOf("Disc / cartridge" to "https://x/m?systemeid=14&media=support-2D")
 +        )
 +        val p = PhotoShells.photosOf(raw) { it.startsWith("brown") }
-+        assertEquals(setOf("9", "10"), p.keys)
++        assertEquals(setOf("9", "10", "14"), p.keys) // (update 463: N64 photos are used too)
 +        assertEquals(listOf("tetris.gb" to "https://x/mediaJeu.php?systemeid=9&jeuid=3&media=support-2D"), p["9"])
 +        assertEquals(1, p["10"]!!.size)
 +    }
 +
 +    @Test fun shellsCovered() {
 +        for (id in listOf("gb", "gbc_dual", "gbc", "gba")) assertTrue(id, PhotoShells.supports(id))
-+        assertTrue(!PhotoShells.supports("n64"))
++        assertTrue(!PhotoShells.supports("neogeo_aes")) // (update 463: n64 and the other real cartridges now are)
 +        assertEquals("gba", PhotoShells.shellOfGame("x.gba", "12"))
 +        assertEquals("gb", PhotoShells.shellOfGame("x.gb", "9"))
 +        assertEquals(0f, PhotoShells.colourDistance(0xFFA3A2A8.toInt(), 0xFFA3A2A8.toInt()), 0.01f)
@@ -7733,6 +7880,64 @@ index 0000000..b92f464
 +        fun ui(n: String) = java.io.File(listOf("../src_copy/ui", "src/main/java/com/shelf/launcher/ui", "app/src/main/java/com/shelf/launcher/ui").first { java.io.File(it, n).exists() }, n).readText()
 +        assertTrue(ui("SolidPiece.kt").contains("PhotoShells.sideTone(sh, colour)"))
 +        assertTrue(ui("MediaInspectView.kt").contains("PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey))"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PhotoShells463Test.kt b/app/src/test/java/com/shelf/launcher/ui/PhotoShells463Test.kt
+new file mode 100644
+index 0000000..f03554a
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/PhotoShells463Test.kt
+@@ -0,0 +1,52 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 463: photo-made shells for every console with a real cartridge or card — only from photos of that very shell. */
++class PhotoShells463Test {
++    private fun src(n: String) = File("src/main/java/com/shelf/launcher/ui/$n").readText()
++
++    @Test fun realCartridgeShellsSupported() {
++        for (id in listOf("famicom", "snes_na", "sfc", "n64", "ds", "3ds", "switch", "genesis", "megadrive_jp", "sms", "sms_jp",
++                "game_gear", "32x", "hucard", "ngp", "wonderswan", "atari2600", "lynx")) assertTrue(id, PhotoShells.supports(id))
++        // Shells a photo can't be told apart for, or with no source of their own: the drawn shell stays.
++        for (id in listOf("nes", "neogeo_aes", "neogeo_mvs", "switch2", "switch2_key", "genesis_ea", "gb_camera", "pokemon_pinball", "sonic_knuckles"))
++            assertFalse(id, PhotoShells.supports(id))
++    }
++
++    @Test fun photoRegionFromItsOwnAddress() {
++        assertEquals(CaseRegion.US, PhotoShells.photoRegion("https://x/m?systemeid=4&region=us&media=support-2D"))
++        assertEquals(CaseRegion.JP, PhotoShells.photoRegion("https://x/m?systemeid=4&region=jp"))
++        assertEquals(CaseRegion.EU, PhotoShells.photoRegion("https://x/m?systemeid=4&region=eu"))
++        assertNull(PhotoShells.photoRegion("https://x/m?systemeid=4&region=wor"))
++        assertNull(PhotoShells.photoRegion(null))
++    }
++
++    @Test fun regionalShellsFromThePhoto() {
++        // A US SNES photo is the North American pak; a Japanese / PAL one the Super Famicom shape — never the other's.
++        assertEquals("snes_na", PhotoShells.shellOfGame("Super Metroid (Japan, USA).sfc", "4", "https://x/m?systemeid=4&region=us"))
++        assertEquals("sfc", PhotoShells.shellOfGame("Super Metroid (Japan, USA).sfc", "4", "https://x/m?systemeid=4&region=jp"))
++        assertEquals("sfc", PhotoShells.shellOfGame("Zelda (Europe).sfc", "4", "https://x/m?systemeid=4&region=wor"))
++        assertEquals("famicom", PhotoShells.shellOfGame("Mario (Japan).nes", "3", "https://x/m?systemeid=3&region=jp"))
++        assertEquals("nes", PhotoShells.shellOfGame("Mario (USA).nes", "3", "https://x/m?systemeid=3&region=us"))
++        assertEquals("megadrive_jp", PhotoShells.shellOfGame("Sonic (Japan).md", "1", "https://x/m?systemeid=1&region=jp"))
++        assertEquals("genesis", PhotoShells.shellOfGame("Sonic (USA).md", "1", "https://x/m?systemeid=1&region=us"))
++        assertEquals("n64", PhotoShells.shellOfGame("Mario (USA).z64", "14", "https://x/m?systemeid=14&region=us"))
++        assertNull(PhotoShells.shellOfGame("x.bin", "999", null))
++    }
++
++    @Test fun noRecolouringOutsideGameBoy() {
++        val s = src("PhotoShells.kt")
++        assertTrue(s.contains("if (shellId in GB_FAMILY) 120f else 90f"))
++        assertTrue(s.contains("fun tinted(shellId: String): Boolean = shellId in GB_FAMILY"))
++        assertTrue(s.contains("shell.colours.any { it.opacity < 0.85f } && boardShows(out, est, plastic)"))
++        assertTrue(s.contains("colourDistance(it.plastic, colour.argb) < tolerance(shell.id) && (tinted(shell.id) || sameKind(it.plastic, colour.argb))"))
++        // The photo game's own shell decides (authenticIdFor), not the region setting.
++        assertTrue(s.contains("CartShells.authenticIdFor(con, photoRegion(url) ?: CaseCatalog.regionOf(key, com.shelf.launcher.data.Features.CaseRegionChoice.AUTO_US), key)"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt b/app/src/test/java/com/shelf/launcher/ui/PlayWhileClosing412Test.kt

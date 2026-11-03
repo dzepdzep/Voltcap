@@ -1,3 +1,36 @@
+# Update 463 (3 Nov 2026) — photo-made cartridges extended to every console with a real cartridge / card (staging)
+
+**Devices:** KONKR Pocket GT78 BW0306N230000845 (USB) — v0.6.67 staging installed for the tests only, back on the RC at the end,
+view restored, QA files removed. Odin 2 Portal b92036fb (USB) checked: no cartridge library on it, so not used. Settings, profiles,
+saved artwork untouched (session-only hooks).
+**What changed (PhotoShells.kt):** every console with a real cartridge / card is wired (NES-family Famicom, SNES North America, Super
+Famicom / PAL, N64, Virtual Boy, DS, 3DS, Switch, Mega Drive / Genesis + Japan, Master System + Japan, Game Gear, 32X, SG-1000,
+Atari 2600 / 5200 / 7800, Lynx, Jaguar, HuCard, Neo Geo Pocket, WonderSwan). A photo is only used for the shell its own game came on
+(console + region of the PHOTO's game via CartShells.authenticIdFor, never the region setting) and only when its outline has the
+shell's proportions. Outside the Game Boy family: no tinting at all (a colour variant needs a photo of that same plastic — "same
+kind" check: grey with grey, coloured within 35° of hue), the sticker must be found where the shell's is and be paper (else the
+photo isn't used), see-through detection only for shells that came see-through. Measured sticker places: Super Famicom / PAL (real
+sticker 60 % wide from the top edge), DS / 3DS (whole paper incl. the NTR- / CTR- product-code strip covered, copied from the drawn
+front's same place, so no other game's code shows). Saved findings re-checked ("v463b"). GB / GBC / GBA behaviour unchanged.
+**Not photo-made, and why:** NES (every NES photo has the sticker upright down the right half beside the grip ridges; the drawn shell
+has it across the top — the drawn NES shell needs re-measuring, owner decision); Switch 2 (no photos); Neo Geo AES / MVS (one
+ScreenScraper id, shapes too close); special shells; PS Vita (no authentic model). Consoles with no cartridge photo in the library
+(all Sega, Atari, NEC / SNK, Bandai, Virtual Boy) fall back to the drawn shell — wired, not verifiable yet.
+**Verified (KONKR, Inspect, identical crops, front / 45 / 75 / 90 / back):** GBA Circle of the Moon real vs generated (Golden Sun photo
++ own label) and N64 Pokémon Snap real vs generated (GoldenEye photo + Snap label) match; SNES NA, Super Famicom / PAL, Famicom (black),
+DS, 3DS, Switch generated pieces next to their real library photo (QA label stand-ins: these consoles' games aren't on the devices —
+labels cut from other real photos, session only). Sheets: Claude outputs/qa463/qa463_sheet_a.png, qa463_sheet_b.png; matrix
+tools/qa/PHOTOSHELLS_463.md. Fallbacks traced per colour in photoshells/inventory.tsv (QA hook).
+**Limitations (real and generated alike):** 90° = slab of the shell's thickness; backs drawn in the photo's plastic; Super Famicom back
+uses the drawn round-cornered outline; clear GBC paks share one clear photo.
+**QA hook changes:** `voltcap_test_photoshells` analyses every shell + writes inventory.tsv (ids only); Inspect hook art named `lab_…`
+is laid as a label scan (session only). New device script tools/qa/device/one463.sh (one subject per call; nohup'd adb input fails
+on the KONKR with "Failed transaction").
+**Tests:** testDebugUnitTest green (PhotoShells463Test new, PhotoShells462Test updated); assembleRelease OK (staging, then RC).
+**Files:** ui/PhotoShells.kt, ui/TestHooks.kt, ui/MediaInspectView.kt; test PhotoShells462Test.kt, PhotoShells463Test.kt (new).
+Copied into next/0.6.67 (src_copy / project_copy) + profile_picker.patch regenerated (APPLY_OK on the RC). RC (v0.6.66) unchanged,
+NOT published.
+
 # Update 462b (3 Nov 2026) — PhotoShells verified on the real home screen, turned pieces now match the real photo's sides and back, comparison sheet with Brown
 
 **Device:** KONKR Pocket GT78 (USB), v0.6.67 staging installed for the tests only (devices were on the RC), back on the RC at the end.
