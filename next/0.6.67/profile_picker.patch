@@ -598,14 +598,14 @@ index 0000000..543fe89
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 0fac442..0e7ea80 100644
+index 0fac442..55c357d 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -110,12 +110,16 @@ object Features {
          runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
          migrate158(p) // Update 158
          migrate166(p) // Update 166
-+        migrate466(p) // Update 466
++        migrate467(p, FirstRun.isDone(context.applicationContext)) // Update 467 (replaces 466's)
          // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
          run {
              val existing = FirstRun.isDone(context.applicationContext)
@@ -618,22 +618,31 @@ index 0fac442..0e7ea80 100644
          // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
          // default; it now starts on the games' own art (still pickable).
          if (!p.contains("category_art")) {
-@@ -158,6 +162,14 @@ object Features {
+@@ -158,6 +162,23 @@ object Features {
       * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
       * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
       */
-+    /** Update 466: a saved "Fill missing sides" that was never picked in Settings follows the new default (Plain colour). */
-+    internal fun migrate466(p: android.content.SharedPreferences) {
-+        if (!boxSidesChosen.value && p.getString("box_sides", null) == BoxSides.FILL.name) {
-+            p.edit().remove("box_sides").apply()
-+            boxSides.state.value = boxSides.default
++    /**
++     * Update 467 (owner: "if historical explicit choices cannot be distinguished from an old saved default, preserve
++     * existing installations' stored value and use Plain for new installations"): Plain colour is the default only for a new
++     * installation. A saved box-sides value is never changed; an installation from before 0.6.67 that never saved one keeps
++     * what it showed — Fill missing sides, the old default — written once so it no longer follows the new default.
++     * (Update 466's version turned a saved Fill into Plain colour; that could overwrite a real choice, so it is gone.)
++     */
++    internal fun migrate467(p: android.content.SharedPreferences, existingInstall: Boolean) {
++        if (p.getBoolean("m467_box_sides_done", false)) return
++        val e = p.edit().putBoolean("m467_box_sides_done", true)
++        if (existingInstall && !p.contains("box_sides")) {
++            e.putString("box_sides", BoxSides.FILL.name)
++            boxSides.state.value = BoxSides.FILL
 +        }
++        e.apply()
 +    }
 +
      private fun migrate166(p: android.content.SharedPreferences) {
          if (p.getBoolean("m166_face_done", false)) return
          p.edit().putBoolean("m166_face_done", true).apply()
-@@ -1125,9 +1137,19 @@ object Features {
+@@ -1125,9 +1146,18 @@ object Features {
       * real packaging scan (no scraper has those sides, so mostly your own scans), else plain card. PLAIN: plain card.
       */
      enum class BoxSides(val label: String) {
@@ -647,15 +656,14 @@ index 0fac442..0e7ea80 100644
 +    /** Update 466 (owner: "make Plain colour from the box art the new default … preserve any explicitly saved preference"). */
 +    val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())
 +    /**
-+     * Update 466: true once a box-sides style was picked in Settings. Before 0.6.67 a saved "FILL" can't be told apart from
-+     * the old default written back by a settings snapshot / backup, so a saved FILL without this mark follows the new default
-+     * ([migrate466]); every other saved style (Authentic only, Plain cardboard) is a choice and stays.
++     * Update 466: true once a box-sides style was picked in Settings (kept for later decisions; since update 467 no saved
++     * value is ever changed because of it — [migrate467]).
 +     */
 +    val boxSidesChosen = BoolPref("box_sides_chosen", false)
      /**
       * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
       * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to
-@@ -1406,6 +1428,18 @@ object Features {
+@@ -1406,6 +1436,18 @@ object Features {
          CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
      }
      val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
@@ -674,7 +682,7 @@ index 0fac442..0e7ea80 100644
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
      val dashStatus = BoolPref("dash_status", true)
-@@ -2130,11 +2164,17 @@ object Features {
+@@ -2130,11 +2172,17 @@ object Features {
          // Pass 4 (ui/CategoryLooks.kt).
          STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
          ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
@@ -693,7 +701,7 @@ index 0fac442..0e7ea80 100644
  
      /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
      fun followLookFor(l: HomeLayout): PlatformView = when (l) {
-@@ -2143,7 +2183,10 @@ object Features {
+@@ -2143,7 +2191,10 @@ object Features {
          HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
          HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
          HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
@@ -979,10 +987,10 @@ index 0000000..3338fd4
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/data/LabelIds.kt b/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
 new file mode 100644
-index 0000000..eead7ba
+index 0000000..a18f3b6
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/data/LabelIds.kt
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,141 @@
 +package com.shelf.launcher.data
 +
 +/**
@@ -999,7 +1007,9 @@ index 0000000..eead7ba
 + * ([version]). Nothing is written anywhere.
 + */
 +object LabelIds {
-+    data class Id(val code: String?, val unofficial: String?, val region: String?)
++    data class Id(val code: String?, val unofficial: String?, val region: String?,
++        /** Update 468: a Game Boy / Color ROM's cartridge type byte (0x0147, Pan Docs) — which parts its board has (GbBoard). */
++        val cartType: Int? = null)
 +
 +    private val map = java.util.concurrent.ConcurrentHashMap<String, Id>()
 +    /** Bumped when header codes come in, so generated labels are drawn again with them. */
@@ -1079,6 +1089,15 @@ index 0000000..eead7ba
 +        }
 +    }.getOrNull()
 +
++    /** Update 468: the cartridge type byte of a Game Boy [head], when its header checksum matches (pure — unit-tested). */
++    fun gbCartType(head: ByteArray): Int? {
++        if (head.size < 0x150) return null
++        var x = 0
++        for (i in 0x134..0x14C) x = (x - (head[i].toInt() and 0xFF) - 1) and 0xFF
++        if (x != (head[0x14D].toInt() and 0xFF)) return null
++        return head[0x147].toInt() and 0xFF
++    }
++
 +    /** Reads what the labels need for [games], once per library, in the background. */
 +    suspend fun index(games: List<Game>) {
 +        val tag = games.size * 31 + (games.firstOrNull()?.romPath?.hashCode() ?: 0)
@@ -1092,8 +1111,10 @@ index 0000000..eead7ba
 +                val region = regionOf(path?.substringAfterLast('/') ?: g.name) ?: regionOf(g.name)
 +                val ext = path?.substringAfterLast('.', "")?.lowercase().orEmpty()
 +                val code = if (un != null || path == null || ext !in HEADER_EXT) null else readHead(path)?.let { codeFromHeader(ext, it) }
-+                val id = Id(code, un, region ?: code?.substringAfterLast('-')?.takeIf { it.length == 3 })
-+                if (id.code != null || id.unofficial != null || id.region != null) {
++                val head = if (path != null && (ext == "gb" || ext == "gbc")) readHead(path) else null
++                val type = head?.let { gbCartType(it) }
++                val id = Id(code, un, region ?: code?.substringAfterLast('-')?.takeIf { it.length == 3 }, type)
++                if (id.code != null || id.unofficial != null || id.region != null || id.cartType != null) {
 +                    map[norm(g.name)] = id
 +                    map[norm(com.shelf.launcher.ui.gameDisplayName(g.name))] = id
 +                }
@@ -1638,10 +1659,10 @@ index 78873e0..d56e485 100644
              lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
          )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt b/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
-index a04ec9e..3e28fcc 100644
+index a04ec9e..08d71bb 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/BoxSides.kt
-@@ -85,6 +85,112 @@ internal object BoxSides {
+@@ -85,6 +85,124 @@ internal object BoxSides {
          return out
      }
  
@@ -1654,6 +1675,18 @@ index a04ec9e..3e28fcc 100644
 +     * beat its blue). The winning bucket's own pixels are averaged; a touch muted, as
 +     * card takes ink. Null: unreadable.
 +     */
++    /**
++     * Update 467 (owner: "use the genuine near-black indigo background instead of logo-derived red"): covers whose own
++     * background colour the reading above misses because a big logo out-counts it — the colour measured from the real
++     * cover (Pokémon Stadium 2: its dark indigo background, the average of those pixels in the US scan as shown on the
++     * KONKR, 18 / 1 / 35). Keyed by the printed title and the console; nothing else changes.
++     */
++    private val measured = mapOf(
++        "pokemon stadium 2|n64" to 0xFF120123.toInt()
++    )
++    fun measuredColour(title: String, platform: String?): Int? =
++        measured["${title.lowercase().replace("é", "e").trim()}|${platform?.lowercase()}"]
++
 +    fun boxColour(front: Bitmap, platform: String? = null): Int? = runCatching {
 +        val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
 +        val w = f.width; val h = f.height
@@ -1754,7 +1787,7 @@ index a04ec9e..3e28fcc 100644
      /** Update 319: the average colour of [front]'s edge that meets [side] (its outer 6 %), or null. */
      fun edgeColor(front: Bitmap, side: BoxSide): Int? = runCatching {
          val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
-@@ -213,7 +319,7 @@ internal fun rememberBoxSides(
+@@ -213,7 +331,7 @@ internal fun rememberBoxSides(
      val mode = com.shelf.launcher.data.Features.boxSides.state.value
      val provVersion = com.shelf.launcher.data.ArtProvenance.version.intValue
      fun pick(s: BoxSide): String? = scans?.firstOrNull { it.first == s.label }?.second
@@ -1763,7 +1796,7 @@ index a04ec9e..3e28fcc 100644
      val plain = mode == com.shelf.launcher.data.Features.BoxSides.PLAIN
      val u0 = if (plain) null else pick(BoxSide.RIGHT)
      // (Update 317: no picture of its top — a landscape box's top cut from its full case scan lying on its side, BoxPart.TOP.)
-@@ -227,6 +333,9 @@ internal fun rememberBoxSides(
+@@ -227,6 +345,9 @@ internal fun rememberBoxSides(
      val title = printTitle(g.name)
      val platform = LookStyles.casePlatform(g.platform)
      val fill = mode == com.shelf.launcher.data.Features.BoxSides.FILL
@@ -1773,18 +1806,19 @@ index a04ec9e..3e28fcc 100644
      // (Update 319: with the print off, these sides take the cover's edge colour instead of plain card.)
      val colorSides = com.shelf.launcher.data.Features.boxSideColors.state.value
      val made by produceKeyed<Array<Bitmap?>?>(null, title to platform, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
-@@ -241,6 +350,10 @@ internal fun rememberBoxSides(
+@@ -241,6 +362,11 @@ internal fun rememberBoxSides(
                      else if (fill) {
                          val base = if (side == BoxSide.RIGHT) look.edge else look.top
                          DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
 +                    } else if (oneColour && front != null) {
-+                        val col = DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
++                        val col = BoxSides.measuredColour(title, platform)
++                            ?: DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
 +        BoxColourQa.dump(g.name, front, col)
 +                        col?.let { c -> DerivedArt.named("sidecard|$i|$w|$h|$c") { BoxSides.card(side, w, h, c) } }
                      } else if (side.name in colorSides && front != null) {
                          val edge = DerivedArt.of(front, "edge|$i") { BoxSides.edgeColor(front, side) ?: 0 }.takeIf { it != 0 }
                          edge?.let { col -> DerivedArt.named("sidecolor|$i|$w|$h|$col") { BoxSides.colored(side, w, h, col) } }
-@@ -263,3 +376,26 @@ internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
+@@ -263,3 +389,26 @@ internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
  private val PRINT_TAGS = Regex("\\s*[(\\[][^)\\]]*[)\\]]")
  private val PRINT_SPACES = Regex("\\s+")
  private val printTitles = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -1909,15 +1943,35 @@ index d920dd0..cbd5d0a 100644
              fa(),
              fa(), arrayOf(),
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-index fad25ce..0403abb 100644
+index fad25ce..24ed44d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CartShells.kt
-@@ -135,10 +135,16 @@ internal object CartShells {
+@@ -127,18 +127,32 @@ internal object CartShells {
+ 
+     val all: List<CartShell> = listOf(
+         // ── Nintendo ──
+-        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f, rect(120f, 134f, 2f, 1f), lab(11.5f, 1f, 97f, 48f),
+-            listOf(rid(8f, 70f, 104f, 58f, 12)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
+-            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), check = CaseCheck.ESTIMATED,
++        // (Update 468, batch 4 — measured off https://commons.wikimedia.org/wiki/File:NES-Cartridge.jpg (Evan-Amos, public
++        // domain, straight-on front, no label): the sticker stands upright down the right half (its recess 47.8 mm in from
++        // the left, 56.8 mm wide, from the top edge down 90.7 mm — the 55 × 97 mm sticker, 7 mm over the top), the grip
++        // grooves are a column on the left (18.4 – 44.5 mm, ~24 grooves top to foot), a moulded arrow under the sticker points
++        // in, and the foot narrows to the connector from 109 mm down (6.9 mm in each side). It was drawn with the sticker
++        // across the top and the grooves across the bottom half — what 463 found in every NES cartridge photo.)
++        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f,
++            o(0f, 0f, 1f, 120f, 0f, 1f, 120f, 109.2f, 0.5f, 113.3f, 109.2f, 0.5f, 113.3f, 134f, 0.8f, 6.9f, 134f, 0.8f, 6.9f, 109.2f, 0.5f, 0f, 109.2f, 0.5f),
++            lab(48.7f, 0.5f, 55f, 90f),
++            listOf(rid(18.4f, 1f, 26.1f, 118f, 24)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
++            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), extras = listOf(ShellExtra(ShellExtra.ARROW, 55.1f, 98.9f, 9.4f, 9.3f)), check = CaseCheck.ESTIMATED,
+             // (Update 240, #90: checked, not an axis bug — the 55 × 97 sticker is 97 wide and 55 tall, 7 mm of it over the
+             // top edge, so 97 × 48 on the front, centred ((120 − 97) / 2 = 11.5). Only the fold is new: a scan of the whole
              // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
              labelFold = 7f,
-             note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
+-            note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
 -        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f, rect(108f, 71f, 3f, 1f), lab(9f, 5f, 90f, 45.5f),
 -            listOf(rid(3f, 52f, 102f, 14f, 5)), emptyList(),
++            note = "Size and label (55×97 mm upright, 7 mm over the top) measured (NESdev, ConsoleMods; front layout from Evan-Amos's photo, update 468); back screw places and radii estimated."),
 +        // (Update 466, tools/qa/BACKS_466.md: the real cassette's narrower connector tab — measured off a straight-on front
 +        // photo, Wikimedia Commons "Famicom 'Devil World' cartridge (5158740395).jpg", Bryan Ochalla, CC BY-SA 2.0, and the
 +        // Jaleco back photo: the body 62 mm tall, the tab 7.1 mm in from each side and 9 mm tall. The shell was a plain
@@ -1932,7 +1986,19 @@ index fad25ce..0403abb 100644
          CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f),
              // (Update 240, #90: the sticker as ConsoleMods' Cart Labels table gives it, test-fitted on an OEM cartridge —
              // 82.5 × 44 mm with 7 mm folded over the top and 3 mm corners: 82.5 × 37 on the front from the top edge,
-@@ -635,6 +641,67 @@ internal object CartShells {
+@@ -192,9 +206,9 @@ internal object CartShells {
+         CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), GB_LABEL,
+             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)), extras = GB_EXTRAS,
+             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
+-        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
++        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 7.8f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
+             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)), extras = GB_EXTRAS,
+-            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured, layout estimated."),
++            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured (update 468: 7.8 mm thick, the GBC Game Pak side photos — it was 9), layout estimated."),
+         CartShell("gba", "Game Boy Advance Game Pak", ShellGroup.NINTENDO, 60f, 35f, 8f,
+             o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f),
+             // (Update 240, #90: the sticker 43 × 22 mm with 1 mm corners — ConsoleMods' Cart Labels table, test-fitted on an
+@@ -635,6 +649,67 @@ internal object CartShells {
          if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
      }.getOrDefault(0xFFE9E6DF.toInt())
  
@@ -2000,7 +2066,7 @@ index fad25ce..0403abb 100644
      private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
          val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
          val a = art.width.toFloat() / art.height.coerceAtLeast(1)
-@@ -823,7 +890,19 @@ internal object CartShells {
+@@ -823,7 +898,21 @@ internal object CartShells {
          val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
          val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
          val head = plaque ?: switchHeader ?: paperHead
@@ -2017,23 +2083,44 @@ index fad25ce..0403abb 100644
 +        // printed Game Boy sticker — GeneratedLabels.printed — on the same shell; your own label or a scan still comes first.)
 +        val kindNow = GeneratedLabels.kindOf(s.id)
 +        val labelKind = if ((GeneratedLabels.enabled || GeneratedLabels.printed(kindNow)) && !scan && art != null && head == null && frame == null && !paperOn) kindNow else null
-+        val key = "f12|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
++        // (Update 468: which parts the clear pak's board has — its ROM header's cartridge type, GbBoard.)
++        val boardType = if (colour.opacity < 0.85f && CartBacks.of(s.id)?.board != null) com.shelf.launcher.data.LabelIds.of(title)?.cartType else null
++        val key = "f13|${boardType ?: ""}|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
          cache.get(key)?.let { return it }
          if (peek) return null
          val k = maxPx / maxOf(s.w, s.h)
-@@ -840,7 +919,10 @@ internal object CartShells {
+@@ -834,12 +923,28 @@ internal object CartShells {
+         val path = outlinePath(s, k)
+         val base = colour.argb
+         val op = colour.opacity
+-        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), op), withAlpha(shade(base, -0.12f), op), Shader.TileMode.CLAMP)
++        // (Update 468: a measured clear pak's board — GbBoard, drawn from the Pokémon Silver board photos — under the plastic,
++        // the plastic's tint over it; it was a flat green rectangle with a grey block on top.)
++        val measuredBoard = if (op < 0.85f) CartBacks.of(s.id)?.board else null
++        if (measuredBoard != null) {
++            val m = measuredBoard
++            c.save(); c.clipPath(path)
++            p.color = withAlpha(shade(base, -0.55f), 0.55f); c.drawPath(path, p)
++            val rb = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
++            // (The back's millimetres are seen from behind: from the front the board sits mirrored across the shell.)
++            val rf = RectF(bw - rb.right, rb.top, bw - rb.left, rb.bottom)
++            val pcb = GbBoard.chipSide(boardType, rf.width().toInt(), rf.height().toInt())
++            p.alpha = 235; c.drawBitmap(pcb, null, rf, p); p.alpha = 255
++            c.restore()
++        }
++        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), if (measuredBoard != null) op * 0.5f else op), withAlpha(shade(base, -0.12f), if (measuredBoard != null) op * 0.5f else op), Shader.TileMode.CLAMP)
+         c.drawPath(path, p)
+         p.shader = null
          c.save(); c.clipPath(path)
          // A see-through shell shows its board (green PCB, a chip) inside.
-         if (op < 0.85f) {
--            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+-        if (op < 0.85f) {
++        if (op < 0.85f && measuredBoard == null) {
 +            // (Update 466: where it was measured, the board where the real one is — CartBack.board, the same board seen
 +            // from the front, so front, sides and back agree.)
-+            val board = CartBacks.of(s.id)?.board?.let { m -> RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k) }
-+                ?: RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+             val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
              p.color = withAlpha(0xFF1E5F3A.toInt(), 0.55f * (1f - op))
              c.drawRect(board, p)
-             p.color = withAlpha(0xFF111111.toInt(), 0.6f * (1f - op))
-@@ -880,6 +962,9 @@ internal object CartShells {
+@@ -880,6 +985,9 @@ internal object CartShells {
              }
          }
          for (e in s.extras) drawExtra(c, e, k, base, p)
@@ -2043,7 +2130,7 @@ index fad25ce..0403abb 100644
          s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
          // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
          val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
-@@ -890,7 +975,9 @@ internal object CartShells {
+@@ -890,7 +998,9 @@ internal object CartShells {
          val coverPic = if (art != null && !scan) labelArt(s, art) else null
          // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
          // (Update 307: a pack plaque header runs across the whole sticker too.)
@@ -2054,7 +2141,7 @@ index fad25ce..0403abb 100644
              val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
              val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
              if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
-@@ -962,21 +1049,31 @@ internal object CartShells {
+@@ -962,21 +1072,31 @@ internal object CartShells {
                          p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                      }
                      // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
@@ -2089,7 +2176,7 @@ index fad25ce..0403abb 100644
                  }
              }
          } else if (!title.isNullOrBlank()) {
-@@ -1021,9 +1118,24 @@ internal object CartShells {
+@@ -1021,9 +1141,24 @@ internal object CartShells {
          packColourParts(key)?.let { (look, clear, con) ->
              val colour = colourOf(s, key)
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
@@ -2115,7 +2202,7 @@ index fad25ce..0403abb 100644
      }
  
      /**
-@@ -1036,7 +1148,10 @@ internal object CartShells {
+@@ -1036,7 +1171,10 @@ internal object CartShells {
              val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
              return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
          }
@@ -2127,7 +2214,25 @@ index fad25ce..0403abb 100644
      }
  
      /**
-@@ -1073,10 +1188,19 @@ internal object CartShells {
+@@ -1048,13 +1186,15 @@ internal object CartShells {
+      * the same shape, screws, panels and contacts without the maker's text and stickers (a game on another console's
+      * shell). Shells without researched backs keep the plain one. The front is never touched.
+      */
+-    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null): Bitmap {
++    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null,
++        /** Update 468: a clear pak's board parts — its ROM header's cartridge type (GbBoard); null: the photographed board's. */
++        boardType: Int? = null): Bitmap {
+         val data = CartBacks.of(s.id)
+         val plainText = neutral && data?.neutralOk != false
+         // (Update 306: [brand] — the game's own console, on another console's shell: the maker's name and model numbers
+         // moulded on the back become that console's name; the rest of the shell — screws, panels, stickers — stays.)
+         val rebrand = brand?.takeIf { !plainText && data != null && !belongsTo(s.id, it) }
+-        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}"
++        val key = "b2|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}|${boardType ?: ""}"
+         cache.get(key)?.let { return it }
+         val k = maxPx / maxOf(s.w, s.h)
+         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
+@@ -1073,10 +1213,21 @@ internal object CartShells {
          if (op < 0.85f) {
              c.save(); c.clipPath(path)
              p.color = withAlpha(shade(base, -0.62f), 1f); c.drawPath(path, p)
@@ -2141,7 +2246,9 @@ index fad25ce..0403abb 100644
 +            if (m != null) {
 +                // (In the back's own millimetres, seen from behind, like everything drawBack draws — the canvas mirrors it.)
 +                val board = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
-+                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
++                // (Update 468: its solder side — traces, vias, test pads, finger stubs — GbBoard, from the photo of the
++                // Silver board's back; drawn reading right from behind, like everything drawBack draws.)
++                c.drawBitmap(GbBoard.solderSide(boardType, board.width().toInt(), board.height().toInt()), null, board, p)
 +            } else {
 +                val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
 +                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
@@ -2151,7 +2258,7 @@ index fad25ce..0403abb 100644
              c.restore()
          }
          p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
-@@ -1123,7 +1247,7 @@ internal object CartShells {
+@@ -1123,7 +1274,7 @@ internal object CartShells {
              if (keep != null) { for (j in 0 until 5) pos += d.textPos[at + j]; texts += keep }
          }
          return CartBack(d.id, d.verified, d.screws, pos.toFloatArray(), texts.toTypedArray(), d.recesses, d.raised, d.stickers,
@@ -2160,7 +2267,24 @@ index fad25ce..0403abb 100644
      }
  
      /**
-@@ -1159,27 +1283,6 @@ internal object CartShells {
+@@ -1132,11 +1283,11 @@ internal object CartShells {
+      * console's name in place of the maker's (Auto used to leave the markings off there; Authentic left Nintendo's on a
+      * PlayStation game). [console] null: not known — Authentic keeps the markings, Auto leaves them off.
+      */
+-    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle): Bitmap = when {
+-        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true)
+-        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO)
+-        belongsTo(s.id, console) -> back(s, colour, maxPx)
+-        else -> back(s, colour, maxPx, brand = console)
++    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle, boardType: Int? = null): Bitmap = when {
++        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true, boardType = boardType)
++        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO, boardType = boardType)
++        belongsTo(s.id, console) -> back(s, colour, maxPx, boardType = boardType)
++        else -> back(s, colour, maxPx, brand = console, boardType = boardType)
+     }
+ 
+     /** Update 306: a strip the Switch header's shape in dark plastic grey with [brand] (a console's name) on it. */
+@@ -1159,27 +1310,6 @@ internal object CartShells {
          return b
      }
  
@@ -2188,7 +2312,7 @@ index fad25ce..0403abb 100644
  
      /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
      private fun paperStrip(brand: String): Bitmap {
-@@ -1581,6 +1684,7 @@ internal fun CartShellArt(
+@@ -1581,6 +1711,7 @@ internal fun CartShellArt(
      // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
      // pre-rendered pictures.)
      if (packLook != null) {
@@ -2196,7 +2320,7 @@ index fad25ce..0403abb 100644
          // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
          // its finished front, as the drawn shells do.)
          PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)
-@@ -1606,16 +1710,18 @@ internal fun CartShellArt(
+@@ -1606,16 +1737,18 @@ internal fun CartShellArt(
          // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
          // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
          // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
@@ -2871,6 +2995,303 @@ index 3ce9e16..2a3fc82 100644
  internal fun winPageTitle(page: WinPage): String = when (page) {
      WinPage.MAIN -> ""
      WinPage.DETAILS -> "Details"
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GbBoard.kt b/app/src/main/java/com/shelf/launcher/ui/GbBoard.kt
+new file mode 100644
+index 0000000..47c1109
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/GbBoard.kt
+@@ -0,0 +1,291 @@
++package com.shelf.launcher.ui
++
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.graphics.Paint
++import android.graphics.Path
++import android.graphics.RectF
++
++/**
++ * Update 468 (owner, Update 466 review: "the plain green rectangle must become a convincing PCB built from genuine photos"):
++ * the board inside a clear Game Boy / Game Boy Color Game Pak, drawn — no photo is bundled (R25: photos are used to measure
++ * only). Measured from:
++ *  - chip side: https://commons.wikimedia.org/wiki/File:PokemonSilverBoard.jpg (Simon A. Eugster, CC BY-SA 3.0) —
++ *    board DMG-KGDU-10 in its clear shell half: MBC3 (QFP) upper left, the CR2025 battery upper right, SRAM lower left,
++ *    mask ROM lower right, the reset IC (MM1134) top middle, the 32 kHz crystal top left, 32 gold fingers along the foot,
++ *    the screw hole between the two big chips, the corner notch top right (the shell's);
++ *  - solder side: https://commons.wikimedia.org/wiki/File:PokemonSilverBoardBackside.jpg (same author, CC BY-SA 3.0) —
++ *    no chips, a dense bundle of traces from the chips to the fingers, vias in rows, test pads TP1–TP4 down one edge,
++ *    the finger stubs, the screw hole;
++ *  - in the shell: https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Color-Cartridge.jpg (Evan-Amos, public
++ *    domain) and https://commons.wikimedia.org/wiki/File:GBCartridges_Back.jpg (PiaCarrot, CC BY-SA 3.0).
++ * Which parts are fitted follows the game's own ROM header (its cartridge type, 0x0147 — Pan Docs): a game without save
++ * RAM has no SRAM and no battery, only MBC3 + timer games have the crystal, a ROM-only game no mapper. The positions are
++ * the photographed board's (verified for MBC3 + timer + RAM + battery, e.g. Pokémon Gold / Silver / Crystal); for other
++ * types the same places with parts left out — APPROXIMATE (their own boards — MBC1 / MBC5 layouts — not photographed).
++ * Traces and vias are drawn as the photos show them in kind and density, not copied line by line.
++ * All fractions are of the board (x right, y down) as seen from the label side.
++ */
++internal object GbBoard {
++    /** What the header says is on the board. */
++    data class Parts(val mapper: Boolean, val ram: Boolean, val battery: Boolean, val crystal: Boolean) {
++        val key: String get() = "${if (mapper) "m" else ""}${if (ram) "r" else ""}${if (battery) "b" else ""}${if (crystal) "c" else ""}"
++    }
++
++    /** Parts for a Game Boy cartridge type byte (Pan Docs, "0147 — Cartridge Type"); null type: the photographed board's. */
++    fun partsOf(type: Int?): Parts {
++        if (type == null) return Parts(mapper = true, ram = true, battery = true, crystal = false)
++        val ram = type in setOf(0x02, 0x03, 0x08, 0x09, 0x0C, 0x0D, 0x10, 0x12, 0x13, 0x1A, 0x1B, 0x1D, 0x1E, 0x22, 0xFF)
++        val battery = type in setOf(0x03, 0x06, 0x09, 0x0D, 0x0F, 0x10, 0x13, 0x1B, 0x1E, 0x22, 0xFF)
++        return Parts(mapper = type !in setOf(0x00, 0x08, 0x09), ram = ram, battery = battery, crystal = type == 0x0F || type == 0x10)
++    }
++
++    // ---- measured places (fractions of the board, label side) ----
++    /** The shell's corner notch, cut out of the board's top right. */
++    const val NOTCH_W = 0.065f; const val NOTCH_H = 0.04f
++    val MAPPER = floatArrayOf(0.174f, 0.306f, 0.178f, 0.167f)
++    val RAM = floatArrayOf(0.157f, 0.523f, 0.250f, 0.306f)
++    val ROM = floatArrayOf(0.608f, 0.505f, 0.243f, 0.315f)
++    val RESET = floatArrayOf(0.357f, 0.158f, 0.100f, 0.059f)
++    val CRYSTAL = floatArrayOf(0.189f, 0.098f, 0.146f, 0.067f)
++    /** The battery: centre x, y and radius (of the board's width). */
++    val BATTERY = floatArrayOf(0.739f, 0.291f, 0.191f)
++    /** The screw hole: centre x, y, ring radius, hole radius (of the width). */
++    val SCREW = floatArrayOf(0.496f, 0.751f, 0.065f, 0.040f)
++    val SMALL_HOLE = floatArrayOf(0.496f, 0.343f, 0.022f)
++    /** The gold fingers' band (y from, y to) and their count. */
++    const val FINGERS_TOP = 0.876f; const val FINGERS = 32
++    const val FINGERS_L = 0.026f; const val FINGERS_R = 0.965f
++    /** Small parts (capacitors / resistors) seen on the chip side: x, y, w, h. */
++    private val PASSIVES = listOf(
++        floatArrayOf(0.233f, 0.200f, 0.03f, 0.016f), floatArrayOf(0.298f, 0.200f, 0.03f, 0.016f), floatArrayOf(0.135f, 0.250f, 0.03f, 0.016f),
++        floatArrayOf(0.465f, 0.208f, 0.018f, 0.03f), floatArrayOf(0.413f, 0.495f, 0.03f, 0.016f), floatArrayOf(0.472f, 0.523f, 0.018f, 0.03f),
++        floatArrayOf(0.903f, 0.786f, 0.018f, 0.03f)
++    )
++    /** Test pads TP1–TP4 on the solder side (seen from behind): x, y, w, h. */
++    private val TEST_PADS = listOf(
++        floatArrayOf(0.925f, 0.500f, 0.035f, 0.055f), floatArrayOf(0.925f, 0.595f, 0.035f, 0.055f),
++        floatArrayOf(0.925f, 0.690f, 0.035f, 0.055f), floatArrayOf(0.925f, 0.770f, 0.035f, 0.045f)
++    )
++
++    private const val MASK = 0xFF1E6A45.toInt()        // solder mask over bare board (green, as photographed)
++    private const val MASK_DARK = 0xFF17573A.toInt()
++    private const val COPPER = 0xFF2F8A58.toInt()      // a trace under the mask: a lighter green
++    private const val GOLD = 0xFFCFA448.toInt()
++    private const val GOLD_DARK = 0xFF9C7A30.toInt()
++    private const val CHIP = 0xFF1A1A1C.toInt()
++    private const val LEAD = 0xFFB8BCC0.toInt()
++
++    private val cache = android.util.LruCache<String, Bitmap>(8)
++
++    /** The board's outline (notch on the top right as seen from the label side; [mirror]: seen from behind). */
++    fun outline(w: Float, h: Float, mirror: Boolean): Path = Path().apply {
++        val nw = w * NOTCH_W; val nh = h * NOTCH_H
++        if (!mirror) { moveTo(0f, 0f); lineTo(w - nw, 0f); lineTo(w - nw, nh); lineTo(w, nh); lineTo(w, h); lineTo(0f, h) }
++        else { moveTo(nw, 0f); lineTo(w, 0f); lineTo(w, h); lineTo(0f, h); lineTo(0f, nh); lineTo(nw, nh) }
++        close()
++    }
++
++    /** The chip (label) side, [w]×[h] px. */
++    fun chipSide(type: Int?, w: Int, h: Int): Bitmap = draw("c", partsOf(type), w, h)
++    /** The solder side, as seen from behind (reads right from behind), [w]×[h] px. */
++    fun solderSide(type: Int?, w: Int, h: Int): Bitmap = draw("s", partsOf(type), w, h)
++    /** Only the parts standing on the chip side (their silhouettes, for their thickness seen through the side). */
++    fun partsOnly(type: Int?, w: Int, h: Int): Bitmap = draw("p", partsOf(type), w, h)
++
++    private fun draw(side: String, parts: Parts, w0: Int, h0: Int): Bitmap {
++        val w = w0.coerceAtLeast(8); val h = h0.coerceAtLeast(8)
++        val key = "$side|${parts.key}|$w|$h"
++        synchronized(cache) { cache.get(key)?.let { return it } }
++        val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
++        val c = Canvas(b)
++        val p = Paint(Paint.ANTI_ALIAS_FLAG)
++        val fw = w.toFloat(); val fh = h.toFloat()
++        when (side) {
++            "c" -> chip(c, p, fw, fh, parts)
++            "s" -> solder(c, p, fw, fh, parts)
++            else -> standing(c, p, fw, fh, parts)
++        }
++        synchronized(cache) { cache.put(key, b) }
++        return b
++    }
++
++    private fun r(a: FloatArray, w: Float, h: Float) = RectF(a[0] * w, a[1] * h, (a[0] + a[2]) * w, (a[1] + a[3]) * h)
++
++    /** Deterministic "random" (the same board every time). */
++    private class Rng(var s: Int) { fun next(): Float { s = s * 1103515245 + 12345; return ((s ushr 8) and 0xFFFF) / 65535f } }
++
++    private fun substrate(c: Canvas, p: Paint, w: Float, h: Float, mirror: Boolean) {
++        val o = outline(w, h, mirror)
++        p.style = Paint.Style.FILL
++        p.shader = android.graphics.LinearGradient(0f, 0f, w, h, MASK, MASK_DARK, android.graphics.Shader.TileMode.CLAMP)
++        c.drawPath(o, p); p.shader = null
++        c.save(); c.clipPath(o)
++    }
++
++    /** Traces: groups of parallel lines with 45° corners between [from] and [to] points, under the mask. */
++    private fun bus(c: Canvas, p: Paint, x0: Float, y0: Float, x1: Float, y1: Float, n: Int, gap: Float, stroke: Float) {
++        p.style = Paint.Style.STROKE; p.strokeWidth = stroke; p.color = COPPER; p.strokeJoin = Paint.Join.ROUND
++        for (i in 0 until n) {
++            val o = i * gap
++            val path = Path()
++            path.moveTo(x0 + o, y0)
++            val mid = y0 + (y1 - y0) * 0.45f - o
++            path.lineTo(x0 + o, mid)
++            val dx = (x1 + o) - (x0 + o)
++            val run = kotlin.math.abs(dx)
++            path.lineTo(x1 + o, mid + run.coerceAtMost(kotlin.math.abs(y1 - mid)) * kotlin.math.sign(y1 - mid))
++            path.lineTo(x1 + o, y1)
++            c.drawPath(path, p)
++        }
++        p.style = Paint.Style.FILL
++    }
++
++    private fun via(c: Canvas, p: Paint, x: Float, y: Float, r: Float) {
++        p.color = GOLD_DARK; c.drawCircle(x, y, r, p)
++        p.color = 0xFF0E2A1C.toInt(); c.drawCircle(x, y, r * 0.45f, p)
++    }
++
++    private fun fingers(c: Canvas, p: Paint, w: Float, h: Float, gold: Boolean) {
++        val top = FINGERS_TOP * h
++        val l = FINGERS_L * w; val rgt = FINGERS_R * w
++        val pitch = (rgt - l) / FINGERS
++        for (i in 0 until FINGERS) {
++            val x = l + i * pitch
++            if (gold) {
++                p.color = GOLD; c.drawRect(x + pitch * 0.14f, top, x + pitch * 0.86f, h, p)
++                p.color = 0x33FFFFFF; c.drawRect(x + pitch * 0.2f, top, x + pitch * 0.38f, h, p)
++            } else {
++                // (Behind: the fingers' stubs under the mask, a via at each one's top — PokemonSilverBoardBackside.)
++                p.color = COPPER; c.drawRect(x + pitch * 0.22f, top + h * 0.01f, x + pitch * 0.78f, h, p)
++                via(c, p, x + pitch / 2f, top - h * 0.012f, pitch * 0.22f)
++            }
++        }
++    }
++
++    private fun holes(c: Canvas, p: Paint, w: Float, h: Float, mirror: Boolean) {
++        fun mx(x: Float) = if (mirror) 1f - x else x
++        p.color = GOLD_DARK; c.drawCircle(mx(SCREW[0]) * w, SCREW[1] * h, SCREW[2] * w, p)
++        p.color = 0xFFB0B4B8.toInt(); c.drawCircle(mx(SCREW[0]) * w, SCREW[1] * h, SCREW[3] * w, p)
++        p.color = 0xFF0C0C0C.toInt(); c.drawCircle(mx(SMALL_HOLE[0]) * w, SMALL_HOLE[1] * h, SMALL_HOLE[2] * w, p)
++    }
++
++    private fun soic(c: Canvas, p: Paint, rc: RectF, leadsAcross: Boolean, n: Int) {
++        // Leads on two sides (SOP), then the body.
++        p.color = LEAD
++        val lead = if (leadsAcross) rc.width() * 0.09f else rc.height() * 0.09f
++        for (i in 0 until n) {
++            if (leadsAcross) {
++                val y = rc.top + rc.height() * (i + 0.5f) / n
++                val t = rc.height() / n * 0.28f
++                c.drawRect(rc.left, y - t, rc.left + lead, y + t, p); c.drawRect(rc.right - lead, y - t, rc.right, y + t, p)
++            } else {
++                val x = rc.left + rc.width() * (i + 0.5f) / n
++                val t = rc.width() / n * 0.28f
++                c.drawRect(x - t, rc.top, x + t, rc.top + lead, p); c.drawRect(x - t, rc.bottom - lead, x + t, rc.bottom, p)
++            }
++        }
++        p.color = CHIP
++        val body = if (leadsAcross) RectF(rc.left + lead * 0.8f, rc.top, rc.right - lead * 0.8f, rc.bottom) else RectF(rc.left, rc.top + lead * 0.8f, rc.right, rc.bottom - lead * 0.8f)
++        c.drawRect(body, p)
++        p.color = 0x22FFFFFF; c.drawRect(body.left, body.top, body.right, body.top + body.height() * 0.06f, p)
++        // pin 1 dot
++        p.color = 0xFF333336.toInt(); c.drawCircle(body.left + body.width() * 0.14f, body.bottom - body.width() * 0.14f, body.width() * 0.05f, p)
++    }
++
++    private fun qfp(c: Canvas, p: Paint, rc: RectF, perSide: Int) {
++        p.color = LEAD
++        val lead = rc.width() * 0.12f
++        for (i in 0 until perSide) {
++            val f = (i + 0.5f) / perSide
++            val tx = rc.width() * 0.6f / perSide * 0.3f
++            val x = rc.left + lead + (rc.width() - 2 * lead) * f
++            val y = rc.top + lead + (rc.height() - 2 * lead) * f
++            c.drawRect(x - tx, rc.top, x + tx, rc.top + lead, p); c.drawRect(x - tx, rc.bottom - lead, x + tx, rc.bottom, p)
++            c.drawRect(rc.left, y - tx, rc.left + lead, y + tx, p); c.drawRect(rc.right - lead, y - tx, rc.right, y + tx, p)
++        }
++        p.color = CHIP; c.drawRect(rc.left + lead, rc.top + lead, rc.right - lead, rc.bottom - lead, p)
++    }
++
++    private fun chip(c: Canvas, p: Paint, w: Float, h: Float, parts: Parts) {
++        substrate(c, p, w, h, mirror = false)
++        val rng = Rng(parts.key.hashCode() + 7)
++        val st = (w * 0.006f).coerceAtLeast(0.8f)
++        // Traces from the chips down to the fingers, and round the battery (as the photo's kind and density).
++        bus(c, p, w * 0.17f, h * 0.48f, w * 0.06f, h * 0.87f, 7, w * 0.012f, st)
++        bus(c, p, w * 0.42f, h * 0.48f, w * 0.40f, h * 0.87f, 6, w * 0.012f, st)
++        bus(c, p, w * 0.86f, h * 0.48f, w * 0.80f, h * 0.87f, 6, w * 0.012f, st)
++        bus(c, p, w * 0.36f, h * 0.34f, w * 0.58f, h * 0.50f, 5, w * 0.012f, st)
++        bus(c, p, w * 0.05f, h * 0.10f, w * 0.03f, h * 0.86f, 2, w * 0.012f, st)
++        p.style = Paint.Style.STROKE; p.strokeWidth = st; p.color = COPPER
++        c.drawCircle(BATTERY[0] * w, BATTERY[1] * h, BATTERY[2] * w * 1.12f, p)
++        p.style = Paint.Style.FILL
++        // Vias.
++        for (i in 0 until 46) {
++            val x = 0.06f + rng.next() * 0.88f; val y = 0.08f + rng.next() * 0.78f
++            if (x in 0.55f..0.93f && y in 0.12f..0.47f) continue // under the battery
++            via(c, p, x * w, y * h, w * 0.0075f)
++        }
++        fingers(c, p, w, h, gold = true)
++        holes(c, p, w, h, mirror = false)
++        // Silkscreen outlines round the parts' places (white-ish, as on the board).
++        p.style = Paint.Style.STROKE; p.strokeWidth = st * 0.8f; p.color = 0x66E8E4C8
++        for (a in listOf(MAPPER, RAM, ROM)) c.drawRect(r(a, w, h).apply { inset(-w * 0.008f, -w * 0.008f) }, p)
++        p.style = Paint.Style.FILL
++        standing(c, p, w, h, parts)
++        c.restore()
++    }
++
++    /** The parts standing on the chip side. */
++    private fun standing(c: Canvas, p: Paint, w: Float, h: Float, parts: Parts) {
++        soic(c, p, r(ROM, w, h), leadsAcross = true, n = 16)
++        if (parts.ram) soic(c, p, r(RAM, w, h), leadsAcross = true, n = 14)
++        if (parts.mapper) qfp(c, p, r(MAPPER, w, h), 8)
++        if (parts.battery) {
++            soic(c, p, r(RESET, w, h), leadsAcross = false, n = 4)
++            val cx = BATTERY[0] * w; val cy = BATTERY[1] * h; val rr = BATTERY[2] * w
++            p.shader = android.graphics.RadialGradient(cx - rr * 0.3f, cy - rr * 0.3f, rr * 1.3f, 0xFFD9B9A0.toInt(), 0xFF8E6A55.toInt(), android.graphics.Shader.TileMode.CLAMP)
++            c.drawCircle(cx, cy, rr, p); p.shader = null
++            p.color = 0xFF7A5A48.toInt(); p.style = Paint.Style.STROKE; p.strokeWidth = rr * 0.05f; c.drawCircle(cx, cy, rr * 0.93f, p); p.style = Paint.Style.FILL
++            // The spot-welded tab across it, to the lower right (as photographed).
++            p.color = 0xFFB4B8BC.toInt()
++            c.save(); c.rotate(48f, cx, cy); c.drawRect(cx - rr * 0.12f, cy - rr * 0.55f, cx + rr * 0.12f, cy + rr * 1.15f, p); c.restore()
++        }
++        if (parts.crystal) {
++            val rc = r(CRYSTAL, w, h)
++            p.shader = android.graphics.LinearGradient(0f, rc.top, 0f, rc.bottom, 0xFFD8DADC.toInt(), 0xFF8C9094.toInt(), android.graphics.Shader.TileMode.CLAMP)
++            c.drawRoundRect(rc, rc.height() / 2f, rc.height() / 2f, p); p.shader = null
++        }
++        p.color = 0xFFA89880.toInt()
++        for (a in PASSIVES) c.drawRect(r(a, w, h), p)
++    }
++
++    private fun solder(c: Canvas, p: Paint, w: Float, h: Float, parts: Parts) {
++        substrate(c, p, w, h, mirror = true)
++        val st = (w * 0.006f).coerceAtLeast(0.8f)
++        // The big bundle (PokemonSilverBoardBackside: from the chips' places to the fingers, mostly lower middle).
++        bus(c, p, w * 0.20f, h * 0.38f, w * 0.12f, h * 0.86f, 12, w * 0.011f, st)
++        bus(c, p, w * 0.45f, h * 0.32f, w * 0.50f, h * 0.86f, 10, w * 0.011f, st)
++        bus(c, p, w * 0.70f, h * 0.45f, w * 0.78f, h * 0.86f, 6, w * 0.011f, st)
++        bus(c, p, w * 0.30f, h * 0.20f, w * 0.62f, h * 0.30f, 5, w * 0.011f, st)
++        // Vias in rows under where the chips' pins are (mirrored: seen from behind).
++        fun row(a: FloatArray, n: Int) {
++            val rc = r(floatArrayOf(1f - a[0] - a[2], a[1], a[2], a[3]), w, h)
++            for (i in 0 until n) { val y = rc.top + rc.height() * (i + 0.5f) / n; via(c, p, rc.left - w * 0.012f, y, w * 0.007f); via(c, p, rc.right + w * 0.012f, y, w * 0.007f) }
++        }
++        row(ROM, 8)
++        if (parts.ram) row(RAM, 7)
++        if (parts.mapper) row(MAPPER, 4)
++        if (parts.battery) {
++            // The battery's two solder lugs, through from the front.
++            val cx = (1f - BATTERY[0]) * w; val cy = BATTERY[1] * h; val rr = BATTERY[2] * w
++            p.color = 0xFFB4B8BC.toInt(); c.drawRect(cx - rr * 0.15f, cy - rr * 1.02f, cx + rr * 0.15f, cy - rr * 0.82f, p)
++            c.drawRect(cx + rr * 0.65f, cy + rr * 0.62f, cx + rr * 0.95f, cy + rr * 0.82f, p)
++        }
++        p.color = GOLD
++        for (a in TEST_PADS) { val rc = r(a, w, h); c.drawRoundRect(rc, rc.width() / 2f, rc.width() / 2f, p) }
++        fingers(c, p, w, h, gold = false)
++        holes(c, p, w, h, mirror = true)
++        c.restore()
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt b/app/src/main/java/com/shelf/launcher/ui/GeneratedLabels.kt
 new file mode 100644
 index 0000000..dee5af3
@@ -3844,7 +4265,7 @@ index eac242c..e923f28 100644
      @Volatile var testPose: FloatArray? = null
  }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..8449c2e 100644
+index 145a2a2..9ceed82 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 @@ -1,5 +1,6 @@
@@ -3915,7 +4336,7 @@ index 145a2a2..8449c2e 100644
                  .background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
                  .padding(horizontal = 10.dp, vertical = 4.dp)
          )
-@@ -1691,7 +1717,14 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1691,7 +1717,15 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
      // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
      // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
      val backStyle = Features.cartBackStyle.state.value
@@ -3927,22 +4348,42 @@ index 145a2a2..8449c2e 100644
 +            CartShells.split(pp).first?.takeIf { it.pack == null }?.let { ch -> ch.shell?.let { sh -> PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey)) } }
 +        }
 +    }
-+    val shellBack = remember(p.pick?.platform, p.realScan, backStyle, photoTone) {
++    val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
++    val shellBack = remember(p.pick?.platform, p.realScan, backStyle, photoTone, labelsV) {
          // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
          // was a plain silhouette, so the new backs never showed for the many games with a photo).
          if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
-@@ -1705,7 +1738,9 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1699,13 +1733,15 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+             val own = ownShellColour(sh, p.game.platform, p.game.stableKey) // (Update 210: its edition's plastic)
+             // (Update 228, #36: keyed by the colour — one "photo" key for every photo's back in the cache.)
+             val colour = PhotoTones.of(p.realScan)?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
+-            runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
++            runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL, boardType = boardTypeOf(p.game)).asImageBitmap() }.getOrNull()
+         }
+         else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
              val (ch, console) = CartShells.split(pp)
              // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
              ch?.shell?.let { sh ->
 -                runCatching { CartShells.backFor(sh, CartShells.colourOf(sh, ch.colourKey), 640, console, backStyle).asImageBitmap() }.getOrNull()
 +                val own = CartShells.colourOf(sh, ch.colourKey)
 +                val colour = photoTone?.let { t -> ShellColour("photo:$t", own.name, t, own.opacity) } ?: own
-+                runCatching { CartShells.backFor(sh, colour, 640, console, backStyle).asImageBitmap() }.getOrNull()
++                runCatching { CartShells.backFor(sh, colour, 640, console, backStyle, boardTypeOf(p.game)).asImageBitmap() }.getOrNull()
              }
          }
      }
-@@ -1778,10 +1813,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1764,6 +1800,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+             runCatching { CustomCartBacks.backImage(ctx, console, (saved ?: p.tone).copy(alpha = 1f).toArgb(), CustomCarts.aspectFor(console)) }.getOrNull()
+         }
+     }
++    // Update 468 (owner, Update 466 review: the GBC pak's 90° edge a flat opaque grey strip, the clear plastic not clear):
++    // the measured shell this piece is (its drawn shell, or the console's real shell under its photo) — for its rounded
++    // edges, the seam between its halves and its side grips, and, in clear plastic, the board and its parts inside.
++    val sideSpec = remember(p.pick?.platform, p.realScan, p.game.platform, p.game.stableKey, labelsV) { SlabSide.of(p) }
++    val sideBits = remember(sideSpec) { SlabSideBits() }
+     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
+     // (Update 257, #35: a PSP game's UMD — not a cartridge shell picked for it — shows its data side from behind.)
+     val isUmd = p.pick?.platform?.startsWith(SHELL_PREFIX) != true && customPlatform == null &&
+@@ -1778,10 +1819,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
      // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
      // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
      val ctxTone = androidx.compose.ui.platform.LocalContext.current
@@ -3955,17 +4396,110 @@ index 145a2a2..8449c2e 100644
              pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
              isCustomPiece(pp) -> null
              else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->
-@@ -1846,7 +1882,8 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1820,6 +1862,13 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+             )))
+             val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
+             val mx = androidx.compose.ui.graphics.Matrix()
++            // (Update 468: the clear pak's wall — the outline less its inside — its seam slice, its grips, its board.)
++            val ring = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
++            val cut = obtainGraphicsLayer().also { it.blendMode = BlendMode.DstOut }
++            val grips = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
++            val boardEdge = obtainGraphicsLayer()
++            val partsEdge = obtainGraphicsLayer()
++            val seam = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
+             onDrawWithContent {
+                 face.record { this@onDrawWithContent.drawContent() }
+                 // Update 238 (#117): turned and tilted (PiecePose) — over its top and under its bottom the same slices
+@@ -1846,19 +1895,99 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                      drawRect(sideTone, blendMode = BlendMode.SrcIn)
                      drawRect(sheen, blendMode = BlendMode.SrcAtop)
                  }
 -                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 48)
+-                if (n > 0) {
 +                // (Update 458, D175: up to 72 — a big GBA cartridge side-on wanted ~80, so 48 left them ~2 px apart.)
 +                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 72)
-                 if (n > 0) {
++                val ss = sideSpec
++                if (n > 0 && ss == null) {
                      // Far to near.
                      for (k in 0..n) {
-@@ -1859,6 +1896,12 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+                         val f = k.toFloat() / n
+                         val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
+                         at(z) { drawLayer(edge) }
+                     }
++                } else if (n > 0 && ss != null) {
++                    // Update 468: the measured shell — see SlabSide.
++                    val aspect = p.aspect
++                    val pw = minOf(w, h * aspect); val ph = pw / aspect
++                    val ppm = pw / ss.shell.w // px per mm across the face
++                    val zpm = depth / ss.shell.t // px per mm through its thickness
++                    val piece = androidx.compose.ui.geometry.Rect((w - pw) / 2f, (h - ph) / 2f, (w + pw) / 2f, (h + ph) / 2f)
++                    fun atIn(z: Float, insetPx: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
++                        if (insetPx <= 0.05f) { at(z, block); return }
++                        pose.matrix(mx, center, z)
++                        withTransform({ transform(mx); scale(1f - 2f * insetPx / pw, 1f - 2f * insetPx / ph, center) }) { block() }
++                    }
++                    val seamZ = depth / 2f - SlabSide.FRONT_HALF * zpm
++                    if (ss.grips) grips.record {
++                        // (Its grips: grooves across the front half's sides, 3–14 mm from the top — the GBC Game Pak side photos.)
++                        // (Each groove at least ~2.5 px wide as the turn draws it: edge-on, a slice is the face's outline
++                        // squeezed to ~1 %, so a groove 0.9 mm in from the edge was a hair and read as a comb of dots.)
++                        val gw = (2.5f / abs(pose.cy).coerceAtLeast(0.01f)).coerceIn(0.9f * ppm, pw * 0.45f)
++                        for (i in 0 until SlabSide.GRIP_LINES) {
++                            val y = piece.top + (SlabSide.GRIP_TOP + i * SlabSide.GRIP_PITCH) * ppm
++                            drawRect(Color.Black.copy(alpha = 0.55f), androidx.compose.ui.geometry.Offset(piece.left, y), androidx.compose.ui.geometry.Size(gw, 0.45f * ppm))
++                            drawRect(Color.Black.copy(alpha = 0.55f), androidx.compose.ui.geometry.Offset(piece.right - gw, y), androidx.compose.ui.geometry.Size(gw, 0.45f * ppm))
++                        }
++                    }
++                    val clear = ss.clear
++                    if (clear) {
++                        // The wall: the outline less its inside (1.2 mm walls), in the clear plastic.
++                        // (At least ~2.5 px as the turn draws it: edge-on a slice is its outline squeezed to ~1 %, and a
++                        // 1.2 mm wall there was a hair per slice — the side read as a comb and then vanished. Turned that far,
++                        // the wall you look through is the whole side, so the slices fill out to it.)
++                        val wall = maxOf(SlabSide.WALL * ppm, 2.5f / abs(pose.cy).coerceAtLeast(0.01f)).coerceAtMost(minOf(pw, ph) / 2f)
++                        cut.record { drawLayer(solid) }
++                        ring.record {
++                            drawLayer(edge)
++                            withTransform({ scale(1f - 2f * wall / pw, 1f - 2f * wall / ph, center) }) { drawLayer(cut) }
++                        }
++                        // What's inside, far to near: the board (1 mm, lying on the back half) and the parts on its label side.
++                        val bits = sideBits.at(ss, piece, ppm)
++                        if (bits != null) {
++                            boardEdge.record { drawImage(bits.board, dstOffset = bits.at, dstSize = bits.size); drawRect(Color(0xFF1C5A3C), blendMode = BlendMode.SrcIn) }
++                            partsEdge.record { drawImage(bits.parts, dstOffset = bits.at, dstSize = bits.size); drawRect(Color(0xFF232326), blendMode = BlendMode.SrcIn) }
++                            val zb0 = -depth / 2f + SlabSide.BOARD_FROM_BACK * zpm
++                            val zb1 = zb0 + SlabSide.BOARD_T * zpm
++                            val zp1 = zb1 + SlabSide.PARTS_T * zpm
++                            val nb = kotlin.math.ceil((zb1 - zb0) * abs(sn) / 1.2f).toInt().coerceIn(1, 8)
++                            val np = kotlin.math.ceil((zp1 - zb1) * abs(sn) / 1.2f).toInt().coerceIn(1, 10)
++                            val ops = ArrayList<Pair<Float, androidx.compose.ui.graphics.layer.GraphicsLayer>>()
++                            for (k in 0..nb) ops += (zb0 + (zb1 - zb0) * k / nb) to boardEdge
++                            for (k in 1..np) ops += (zb1 + (zp1 - zb1) * k / np) to partsEdge
++                            if (c >= 0f) ops.sortBy { it.first } else ops.sortByDescending { it.first }
++                            for ((z, l) in ops) at(z) { drawLayer(l) }
++                        }
++                        // The clear walls over it, as one sheet of plastic (slices overlapping don't add up to opaque).
++                        val cv = drawContext.canvas
++                        cv.saveLayer(androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h), androidx.compose.ui.graphics.Paint().apply { alpha = SlabSide.CLEAR_SIDE_ALPHA })
++                    }
++                    val layer = if (clear) ring else edge
++                    for (k in 0..n) {
++                        val f = k.toFloat() / n
++                        val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
++                        // (Rounded edges: the slices within 0.5 mm of a face drawn a little smaller — a 0.5 mm radius.)
++                        val d = (depth / 2f - abs(z)) / zpm
++                        val r = SlabSide.EDGE_R
++                        val inset = if (d < r) (r - kotlin.math.sqrt((r * r - (r - d) * (r - d)).coerceAtLeast(0f))) * ppm else 0f
++                        atIn(z, inset) { drawLayer(layer) }
++                        if (ss.grips && z >= seamZ) atIn(z, inset) { drawLayer(grips) }
++                    }
++                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
++                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
++                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
++                    at(seamZ) { drawLayer(seam) }
++                    if (clear) drawContext.canvas.restore()
+                 }
+                 // (Update 275: the bottom face round the openings — a drawn shell's own.)
                  val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                  val plasticArgb = sideTone.toArgb()
                  if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
@@ -3978,6 +4512,82 @@ index 145a2a2..8449c2e 100644
                  if (c >= 0f) {
                      lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))
                      lit.record { drawLayer(face) }
+@@ -1918,6 +2047,75 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+     ) { PieceFace(p, Modifier.fillMaxSize()) }
+ }
+ 
++/** Update 468: the clear Game Boy pak's board parts for [g] — its ROM header's cartridge type (GbBoard); null: unknown. */
++internal fun boardTypeOf(g: Game): Int? = com.shelf.launcher.data.LabelIds.of(g.name)?.cartType
++
++/**
++ * Update 468 (owner, Update 466 review: "show real thickness and rounded shell edges… correct the transparent plastic side,
++ * with the internal board visible"): the Game Boy family's pak as measured from the photos of the real one —
++ * https://commons.wikimedia.org/wiki/File:Nintendo_Game_Boy_Color_Game_Pak_Right_Side.jpg , …Left_Side.jpg , …Top.jpg
++ * (Mitch Mastroni, CC BY-SA 4.0): 7.7–7.8 mm thick; the front half 5.8 mm, the back half 2.0 mm, the seam between them a fine
++ * dark line; eight grip grooves across the front half's sides 4–13 mm from the top; corners rounded ~0.5 mm. The clear pak
++ * (https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Color-Cartridge.jpg , Evan-Amos, public domain): pale clear
++ * walls you see the green board through, the board lying on the back half (PokemonSilverBoard.jpg: chips on the label
++ * side). Measured for the Game Boy, black Color and clear Color paks (one mould); the GBA and the special paks are not.
++ */
++internal class SlabSide(val shell: CartShell, val clear: Boolean, val boardType: Int?, val grips: Boolean) {
++    companion object {
++        const val FRONT_HALF = 5.8f
++        const val GRIP_TOP = 4f; const val GRIP_PITCH = 1.3f; const val GRIP_LINES = 8
++        const val WALL = 1.2f
++        const val BOARD_FROM_BACK = 1.2f; const val BOARD_T = 1f; const val PARTS_T = 1.5f
++        const val EDGE_R = 0.5f
++        const val CLEAR_SIDE_ALPHA = 0.5f
++        private val MEASURED = setOf("gb", "gbc", "gbc_dual")
++
++        fun of(p: InspectPiece): SlabSide? = runCatching {
++            val pp = p.pick?.platform
++            val (sh, colour) = when {
++                pp != null && pp.startsWith(SHELL_PREFIX) -> {
++                    val ch = CartShells.split(pp).first ?: return@runCatching null
++                    if (ch.pack != null) return@runCatching null
++                    val sh = ch.shell ?: return@runCatching null
++                    sh to CartShells.colourOf(sh, ch.colourKey)
++                }
++                pp == null && p.realScan != null -> {
++                    val sh = ownShellOf(p.game.platform, p.game.stableKey) ?: return@runCatching null
++                    // (Only a photo of that very shape — as the connector end, `under`.)
++                    if (abs(p.aspect - sh.aspect) / sh.aspect > 0.15f) return@runCatching null
++                    sh to ownShellColour(sh, p.game.platform, p.game.stableKey)
++                }
++                else -> return@runCatching null
++            }
++            if (sh.id !in MEASURED) return@runCatching null
++            val clear = colour.opacity < 0.85f && CartBacks.of(sh.id)?.board != null
++            SlabSide(sh, clear, if (clear) boardTypeOf(p.game) else null, grips = true)
++        }.getOrNull()
++    }
++}
++
++/** Update 468: the clear pak's board pictures at the size it's drawn (GbBoard), made once per size. */
++internal class SlabSideBits {
++    class Bits(val board: androidx.compose.ui.graphics.ImageBitmap, val parts: androidx.compose.ui.graphics.ImageBitmap, val at: androidx.compose.ui.unit.IntOffset, val size: androidx.compose.ui.unit.IntSize)
++    private var key = ""
++    private var made: Bits? = null
++    fun at(ss: SlabSide, piece: androidx.compose.ui.geometry.Rect, ppm: Float): Bits? {
++        val m = CartBacks.of(ss.shell.id)?.board ?: return null
++        // (The back's millimetres are seen from behind: from the front the board sits mirrored across the shell.)
++        val x = ss.shell.w - m[0] - m[2]
++        val at = androidx.compose.ui.unit.IntOffset((piece.left + x * ppm).roundToInt(), (piece.top + m[1] * ppm).roundToInt())
++        val size = androidx.compose.ui.unit.IntSize((m[2] * ppm).roundToInt().coerceAtLeast(4), (m[3] * ppm).roundToInt().coerceAtLeast(4))
++        val k = "${ss.boardType}|$at|$size"
++        if (k != key) {
++            key = k
++            made = runCatching {
++                Bits(GbBoard.chipSide(ss.boardType, size.width, size.height).asImageBitmap(), GbBoard.partsOnly(ss.boardType, size.width, size.height).asImageBitmap(), at, size)
++            }.getOrNull()
++        }
++        return made
++    }
++}
++
+ /** Update 275: what InspectSlab draws of a piece's connector end (CartUnderside.kt). */
+ private class UnderPlan(
+     val shell: CartShell, val geo: CartUndersides.Geo, val opacity: Float, val full: Boolean,
 diff --git a/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt b/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt
 index d7ed69b..588d67e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt
@@ -8332,10 +8942,10 @@ index 0000000..e751de5
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt b/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt
 new file mode 100644
-index 0000000..d37460f
+index 0000000..fcadae9
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,111 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertEquals
@@ -8362,23 +8972,33 @@ index 0000000..d37460f
 +        assertEquals(listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR"), com.shelf.launcher.data.Features.BoxSides.values().map { it.name })
 +    }
 +
-+    @Test fun migrationOnlyMovesAnUnpickedFill() {
++    /** Update 467: no saved value ever changes; an existing install without one keeps Fill; only a new install gets Plain colour. */
++    @Test fun migrationNeverOverwritesAStoredValue() {
 +        val F = com.shelf.launcher.data.Features
-+        fun run(saved: String?, chosen: Boolean): String? {
++        fun run(saved: String?, existing: Boolean): String? {
 +            val p = FakePrefs(saved?.let { mutableMapOf<String, Any?>("box_sides" to it) } ?: mutableMapOf())
-+            F.boxSidesChosen.state.value = chosen
 +            F.boxSides.state.value = saved?.let { n -> com.shelf.launcher.data.Features.BoxSides.values().first { it.name == n } } ?: F.boxSides.default
-+            F.migrate466(p)
++            F.migrate467(p, existing)
 +            return p.m["box_sides"] as String?
 +        }
-+        assertEquals(null, run("FILL", chosen = false))          // never picked → the new default
-+        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
-+        assertEquals("FILL", run("FILL", chosen = true))         // picked in Settings → kept
++        for (v in listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR")) {
++            assertEquals(v, run(v, existing = true)); assertEquals(v, run(v, existing = false))
++        }
++        assertEquals("FILL", run(null, existing = true))          // upgraded install: keeps what it showed
 +        assertEquals(com.shelf.launcher.data.Features.BoxSides.FILL, F.boxSides.state.value)
-+        assertEquals("PLAIN", run("PLAIN", chosen = false))      // any other saved style is a choice → kept
-+        assertEquals("AUTHENTIC", run("AUTHENTIC", chosen = false))
-+        assertEquals(null, run(null, chosen = false))            // new install → default, nothing written
-+        F.boxSidesChosen.state.value = false; F.boxSides.state.value = F.boxSides.default
++        assertEquals(null, run(null, existing = false))           // new install: Plain colour default, nothing written
++        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
++        val once = FakePrefs(mutableMapOf("m467_box_sides_done" to true))
++        F.migrate467(once, true); assertEquals(null, once.m["box_sides"]) // runs once only
++        F.boxSides.state.value = F.boxSides.default
++    }
++
++    /** Update 467: Stadium 2's plain sides are its own dark indigo background, not its red logo; other covers unchanged. */
++    @Test fun stadium2SidesAreItsIndigoBackground() {
++        assertEquals(0xFF120123.toInt(), BoxSides.measuredColour("Pokemon Stadium 2", "n64"))
++        assertEquals(0xFF120123.toInt(), BoxSides.measuredColour("Pokémon Stadium 2", "N64"))
++        assertEquals(null, BoxSides.measuredColour("Pokemon Stadium", "n64"))
++        assertEquals(null, BoxSides.measuredColour("Pokemon Stadium 2", "gbc"))
 +    }
 +
 +    private class FakePrefs(val m: MutableMap<String, Any?>) : android.content.SharedPreferences {
@@ -8437,6 +9057,19 @@ index 0000000..d37460f
 +        assertTrue(ps.contains(""""ds" to floatArrayOf(2.9f, 1.6f, 27f, 31f), "3ds" to floatArrayOf(2.9f, 1.6f, 27f, 31f)"""))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Cartridges300Test.kt b/app/src/test/java/com/shelf/launcher/ui/Cartridges300Test.kt
+index d909264..741c3ab 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/Cartridges300Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/Cartridges300Test.kt
+@@ -72,7 +72,7 @@ class Cartridges300Test {
+     @Test fun blackDualModeCartIsTheGameBoyCase() {
+         val gb = CartShells.of("gb")!!; val dual = CartShells.of("gbc_dual")!!
+         assertEquals(gb.w, dual.w, 0.001f); assertEquals(gb.h, dual.h, 0.001f); assertEquals(gb.t, dual.t, 0.001f)
+-        assertEquals(9f, CartShells.of("gbc")!!.t, 0.001f) // (the clear Color-only cart unchanged)
++        assertEquals(7.8f, CartShells.of("gbc")!!.t, 0.001f) // (update 468: the clear Color-only pak is the same 7.8 mm mould — side photos)
+         assertEquals(3.64f, CartShells.of("ds")!!.t, 0.001f)
+     }
+ 
 diff --git a/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt b/app/src/test/java/com/shelf/launcher/ui/CategoryBar453Test.kt
 new file mode 100644
 index 0000000..74ac78f
@@ -8477,6 +9110,64 @@ index 0000000..74ac78f
 +        val s = roots.map { File(it + "AppDrawer.kt") }.first { it.exists() }.readText().replace("\r\n", "\n")
 +        assertTrue(s.contains("if (app === sorted.first()) Modifier.initialFocus() else Modifier"))
 +        assertTrue(s.contains("if (focused) FullText(\n            app.name"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt b/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt
+new file mode 100644
+index 0000000..ba35160
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt
+@@ -0,0 +1,52 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.LabelIds
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/** Update 468: the clear Game Boy pak's board follows the ROM header; its measured places stay on the board. */
++class GbBoard468Test {
++    private fun header(type: Int, good: Boolean = true): ByteArray {
++        val h = ByteArray(0x150)
++        h[0x143] = 0xC0.toByte(); h[0x147] = type.toByte()
++        var x = 0
++        for (i in 0x134..0x14C) x = (x - (h[i].toInt() and 0xFF) - 1) and 0xFF
++        h[0x14D] = (if (good) x else x + 1).toByte()
++        return h
++    }
++
++    @Test fun cartTypeOnlyFromAGoodHeader() {
++        assertEquals(0x10, LabelIds.gbCartType(header(0x10)))
++        assertNull(LabelIds.gbCartType(header(0x10, good = false)))
++        assertNull(LabelIds.gbCartType(ByteArray(0x100)))
++    }
++
++    @Test fun partsFollowTheCartridgeType() {
++        // Pokémon Gold / Silver / Crystal: MBC3 + timer + RAM + battery — the photographed board, all parts.
++        assertEquals(GbBoard.Parts(mapper = true, ram = true, battery = true, crystal = true), GbBoard.partsOf(0x10))
++        // MBC5 + RAM + battery: no crystal.
++        assertEquals(GbBoard.Parts(mapper = true, ram = true, battery = true, crystal = false), GbBoard.partsOf(0x1B))
++        // MBC5 alone: no RAM, no battery.
++        val mbc5 = GbBoard.partsOf(0x19)
++        assertTrue(mbc5.mapper); assertFalse(mbc5.ram); assertFalse(mbc5.battery)
++        // ROM only: no mapper either.
++        assertFalse(GbBoard.partsOf(0x00).mapper)
++        // Different boards for different types (not one board for every game).
++        assertTrue(GbBoard.partsOf(0x10).key != GbBoard.partsOf(0x19).key)
++    }
++
++    @Test fun measuredPartsAreOnTheBoardAndDontOverlapTheBigChips() {
++        for (a in listOf(GbBoard.MAPPER, GbBoard.RAM, GbBoard.ROM, GbBoard.RESET, GbBoard.CRYSTAL))
++            assertTrue(a[0] >= 0f && a[1] >= 0f && a[0] + a[2] <= 1f && a[1] + a[3] <= GbBoard.FINGERS_TOP)
++        // RAM (left) and ROM (right) side by side, the screw hole between them.
++        assertTrue(GbBoard.RAM[0] + GbBoard.RAM[2] < GbBoard.SCREW[0] - GbBoard.SCREW[2])
++        assertTrue(GbBoard.ROM[0] > GbBoard.SCREW[0] + GbBoard.SCREW[2])
++    }
++
++    @Test fun gameBoyPaksAreTheMeasuredThickness() {
++        for (id in listOf("gb", "gbc_dual", "gbc")) assertEquals(id, 7.8f, CartShells.of(id)!!.t, 0.05f)
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt b/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
@@ -9946,6 +10637,65 @@ index 0000000..16d7700
 +N64, SNES / SFC, NES / Famicom, Game Boy / GBC / GBA (cardboard boxes) use rememberBoxSides → all get the option.
 +Plastic cases (DS / 3DS / Switch / disc systems) don't use generated cardboard sides; unchanged.
 +Verified on hardware: N64 (5), GBC (1), GBA (1). SNES / NES / Famicom boxes: no games on the connected devices — wired, not verified.
+diff --git a/tools/qa/CARTS_468.md b/tools/qa/CARTS_468.md
+new file mode 100644
+index 0000000..7302c5f
+--- /dev/null
++++ b/tools/qa/CARTS_468.md
+@@ -0,0 +1,53 @@
++# Update 468 — Game Boy pak sides, clear GBC board, NES front (batch 4), Crystal media check — staging v0.6.67
++
++Owner review of Update 466 (qa466_review.pdf page 4). Rule R25: references first, used for measuring only — **no photo is
++bundled or committed**; the comparison sheet with reference thumbnails is private QA output (`Claude outputs/qa468/`).
++
++## References used
++| What | Reference (exact URL) | Licence | Used for |
++|---|---|---|---|
++| GBC Game Pak right / left side, top | https://commons.wikimedia.org/wiki/File:Nintendo_Game_Boy_Color_Game_Pak_Right_Side.jpg , …_Left_Side.jpg , …_Top.jpg (Mitch Mastroni) | CC BY-SA 4.0 | thickness 7.7–7.8 mm (side 80 px / 674 px of 65.5 mm; top 83 / 614 of 57 mm), front half 5.8 / back half 2.0 mm, seam, grip grooves 4–13 mm from the top on the front half, ~0.5 mm edge radius |
++| Clear GBC pak, 3/4 | https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Color-Cartridge.jpg (Evan-Amos) | Public domain | pale clear walls with the green board seen through them, gold fingers through the front |
++| Pokémon Silver board, chip side | https://commons.wikimedia.org/wiki/File:PokemonSilverBoard.jpg (Simon A. Eugster) | CC BY-SA 3.0 | part places (MBC3 QFP, CR2025 battery 19.8 mm, SRAM, mask ROM, reset IC, 32 kHz crystal, passives), screw hole, 32 gold fingers, notch |
++| Pokémon Silver board, solder side | https://commons.wikimedia.org/wiki/File:PokemonSilverBoardBackside.jpg (Simon A. Eugster) | CC BY-SA 3.0 | traces bundle, via rows, test pads TP1–TP4, finger stubs (not gold), no chips |
++| Clear GBC back | https://commons.wikimedia.org/wiki/File:GBCartridges_Back.jpg (PiaCarrot) | CC BY-SA 3.0 | board seen through the back (solder side), rear markings (466) |
++| NES Game Pak front | https://commons.wikimedia.org/wiki/File:NES-Cartridge.jpg (Evan-Amos) | Public domain | sticker recess 47.8 mm in, 56.8 × 90.7 mm from the top edge; groove column 18.4–44.5 mm, ~24 grooves; arrow; foot 6.9 mm in each side from 109 mm |
++| SFC / PAL rear (searched again) | Commons: SF_Memory_Cassette.jpg, SNES_Cartridge_PAL.jpg, Nigel_Mansell's…SNES_cartridge.JPG | — | fronts / connector edge only — **no straight-on rear found: SFC/PAL back stays BLOCKED** |
++
++## What changed (staging)
++- **Inspect sides of the Game Boy / black Color / clear Color paks** (`ui/MediaInspectView.kt` SlabSide): measured thickness
++  (clear pak 9 → 7.8 mm), rounded edges (0.5 mm), the seam between the halves, the grip grooves on the front half's sides.
++  The face is never stretched onto the side (sides are plastic only; the face fades out over the last degrees, 458).
++- **Clear pak:** walls see-through as one sheet of clear plastic (overlapping slices no longer add up to an opaque grey wall);
++  edge-on the wall fills out so the side never turns into a comb or vanishes. Inside: the board (1 mm, lying on the back
++  half) and the parts standing on its label side, at their depth — seen through the side at 60–105°.
++- **Board** (`ui/GbBoard.kt`, new): drawn from the Silver photos — chip side on the drawn front (under the label, which
++  hides the chips; gold fingers, battery top, traces and vias round it), solder side on the back (traces, vias, test pads,
++  finger stubs, screw hole, no chips). Parts follow the game's ROM header cartridge type (0x0147, read with the label facts —
++  `data/LabelIds.kt`): no SRAM / battery without save RAM, crystal only with the MBC3 timer, no mapper for ROM-only — so not one
++  board for every game. **Verified:** the MBC3 + timer + RAM + battery board (Gold / Silver / Crystal). **APPROXIMATE:**
++  other types (their own MBC1 / MBC5 board layouts are not photographed — the same places with parts left out).
++- **Real photos unchanged:** a game's own cartridge photo stays its front; the photo-made front (PhotoShells, 462) still
++  shows the photo's own board. Only the sides / inside are added.
++- **NES Game Pak front** (`ui/CartShells.kt`, batch 4): sticker upright on the right (55 × 90 on the front, 7 mm over the top),
++  groove column left, arrow, connector foot. Back not re-verified (unchanged).
++
++## Pokémon Crystal: box in the RC, clear cart in staging — cause
++Not a media-selection change. Page 4's Crystal row was taken with the test hook's `media` shell (update 462: "the piece the
++cartridge-and-disc look draws"). The RC (0.6.66) has no `media` shell, so its hook fell back to the normal Inspect piece —
++the game's case (the real box). Staging drew the real cartridge photo as asked. **Checked on the KONKR (staging):** the normal
++Inspect of Pokémon Crystal Version (no forced shell) shows the real box, as in the RC (`q468b/cv_none_*`). Nothing replaces
++a real box with a generated cartridge or the other way round; real scans keep precedence (RealScans464Test).
++
++## Verified on hardware (KONKR GT78 960×640, USB)
++Rotation 0 / 15 / 30 / 45 / 60 / 75 / 85 / 90 / 105 / 135 / 180 (sweeps q468a, q468b, q468c; `cart468.sh`): clear pak with photo-made
++front (Harvest Moon 3) and drawn front (photo shells off), Pokémon Crystal Version's real photo, black and grey paks, GBA
++(unchanged), NES. Sheet: `Claude outputs/qa468/gbc_rotation_468.png` (RC row, staging rows, reference thumbnails).
++
++## Open / not done
++- D218 GBA side not measured (plain wall). D219 home-screen turned pieces (SolidPiece) keep the old opaque sides — the board
++  face is shared, the measured sides are Inspect only.
++- The drawn traces are simplified (kind and density, not copied); the real solder side is darker and denser.
++- Gold contacts drawn through the back opening (466 data) are kept; the solder side's finger stubs are green.
++- SFC / PAL back BLOCKED (no straight-on rear photo). Famicom: Jaleco back only (unchanged).
++- Odin 2 Portal not re-swept for this update.
 diff --git a/tools/qa/INPUT_CONTRACT.md b/tools/qa/INPUT_CONTRACT.md
 new file mode 100644
 index 0000000..ce313f8
@@ -10233,10 +10983,10 @@ index 0000000..454338c
 +| ARTLIB | Odin | HW ok | HW ok | HW ok | HW (shows Own) | HW (shows Own) | HW ok |
 diff --git a/tools/qa/POPUP_AUDIT_467.md b/tools/qa/POPUP_AUDIT_467.md
 new file mode 100644
-index 0000000..9f95131
+index 0000000..62b9a1f
 --- /dev/null
 +++ b/tools/qa/POPUP_AUDIT_467.md
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,65 @@
 +# Popup geometry audit — update 467 (QA rule R26), staging v0.6.67
 +
 +Owner request (3 Nov 2026): "I don't want to discover clipped controls manually anymore." Clipped Play / Details / Back /
@@ -10292,6 +11042,9 @@ index 0000000..9f95131
 +- **D210** first A after Voltcap starts does nothing (fresh process) — both devices.
 +- **D211** Twin windows on the KONKR: a tap on Play does nothing (Odin fine) — cause not found.
 +- **Storage · Own:** the sweep's tap on the DETAILS tab didn't change the page; a manual tap did — NOT confirmed either way.
++- **Font 1.3 (KONKR, re-check k467fz after the fixes):** Resume, Terminal, Box PASS; still open **D213** Arctic Back cut,
++  **D214** rental tag BACK cut, **D215** Cover details More overlap; the Banner page's GAME INFO tab flagged there is a gate
++  false positive (whole-chip row, "+2 ›" — fixed in the gate after the run, not re-run).
 +- **D212 owner decision:** Arcade rows 17 dp + PRESS START bar (pixel heuristic), Memory card status 14 dp, Night's
 +  slanted keys and Orbit's round keys cross boxes, Magazine 3–6 px.
 +
@@ -10449,7 +11202,7 @@ index 2a8c5fb..5705ba5 100644
 +screenshot, cause and fix (POPUP_AUDIT). Regression fixtures: selftest TestClipGate / TestPopupGate (Pokémon Stadium 2
 +before / after, a deliberately clipped button, the real KONKR action-row crop, n/a row styles).
 diff --git a/tools/qa/defects.json b/tools/qa/defects.json
-index 7b25399..3801c3c 100644
+index 7b25399..3e4569a 100644
 --- a/tools/qa/defects.json
 +++ b/tools/qa/defects.json
 @@ -873,7 +873,7 @@
@@ -10525,7 +11278,7 @@ index 7b25399..3801c3c 100644
    },
    {
     "id": "D138",
-@@ -1646,6 +1647,723 @@
+@@ -1646,6 +1647,838 @@
     "status": "verified",
     "found": "2026-11-02 update 444 popfinal rapid A/B",
     "note": "GameWindow: while the window flies back, A acts on its press (asks to open again; its release is the home screen's orphan, never a Play click) and B on its press takes that open-again back. Odin + GT78: A B A B ends closed on the same game, A B B ends closed; no launch attempted (LAUNCH lines only from the QA script's own retry, blocked). PopupPolish444Test."
@@ -11245,6 +11998,121 @@ index 7b25399..3801c3c 100644
 +   ],
 +   "root_cause": "design of those windows",
 +   "fix": "not changed — owner to choose",
++   "verified": "—"
++  },
++  {
++   "id": "D213",
++   "title": "Font 1.3: Arctic drawer's Back cut again (8 rows don't fit)",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "open",
++   "found": "2026-11-03 update 467 font 1.3 sweep",
++   "where": "KONKR GT78 960x640 · font 1.3",
++   "evidence": [
++    "k467fz ARCTIC_OWN_main.png"
++   ],
++   "root_cause": "list fits at 1.0 only",
++   "fix": "NOT FIXED",
++   "verified": "—"
++  },
++  {
++   "id": "D214",
++   "title": "Font 1.3: rental tag's BACK cut",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "open",
++   "found": "2026-11-03 update 467 font 1.3 sweep",
++   "where": "KONKR GT78 960x640 · font 1.3",
++   "evidence": [
++    "k467fz SHOP_OWN_main.png"
++   ],
++   "root_cause": "rows sized for 1.0",
++   "fix": "NOT FIXED",
++   "verified": "—"
++  },
++  {
++   "id": "D215",
++   "title": "Font 1.3: Cover details with More open — Play and Save sync boxes overlap",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "open",
++   "found": "2026-11-03 update 467 font 1.3 sweep",
++   "where": "KONKR GT78 960x640 · font 1.3",
++   "evidence": [
++    "k467fz COVERDETAILS_OWN dumps"
++   ],
++   "root_cause": "not inspected yet",
++   "fix": "NOT FIXED",
++   "verified": "—"
++  },
++  {
++   "id": "D216",
++   "title": "Game Boy paks in Inspect: the side a flat opaque strip (clear pak grey, no thickness detail), clear plastic not see-through, board a plain green rectangle",
++   "rule": "R25",
++   "severity": "high",
++   "status": "verified",
++   "found": "2026-11-03 owner review of qa466_review.pdf page 4 (Harvest Moon / Crystal at 45 / 75 / 90)",
++   "where": "Inspect, KONKR GT78 960x640",
++   "evidence": [
++    "Claude outputs/qa468/q468a_*.tar, q468b.tar, q468c.tar (rotation 0-180)",
++    "Claude outputs/qa468/gbc_rotation_468.png"
++   ],
++   "root_cause": "InspectSlab drew every side as copies of the face's silhouette in one opaque plastic tone; the clear pak's board was painted flat on the face; the clear pak was 9 mm thick (the real pak 7.7-7.8 mm).",
++   "files": [
++    "ui/MediaInspectView.kt (SlabSide, SlabSideBits)",
++    "ui/GbBoard.kt (new)",
++    "ui/CartShells.kt",
++    "data/LabelIds.kt"
++   ],
++   "fix": "Measured from the GBC Game Pak side / top photos (Mitch Mastroni, CC BY-SA 4.0): 7.8 mm, seam 5.8 mm from the front, grip grooves 4-13 mm from the top, 0.5 mm edges; clear pak: see-through walls (one sheet, filled out edge-on), the board 1 mm thick lying on the back half with its parts on the label side, seen through the side; board drawn from the Pokémon Silver board photos, parts per ROM header cartridge type.",
++   "verified": "KONKR sweeps q468a / q468b / q468c: 0-180 every 15-45 degrees, clear (photo-made and drawn front), black, grey, Crystal real photo"
++  },
++  {
++   "id": "D217",
++   "title": "NES Game Pak drawn with its sticker across the top and the grip grooves across the bottom half",
++   "rule": "R25",
++   "severity": "medium",
++   "status": "verified",
++   "found": "2026-11-03 batch 4 (update 463 had noted every library photo shows the sticker upright on the right)",
++   "where": "all views of the drawn NES shell",
++   "evidence": [
++    "Claude outputs/qa468/q468c.tar hm_nes_*"
++   ],
++   "root_cause": "Update 240 read the 55 x 97 mm sticker as 97 wide; the straight-on photo (Evan-Amos, public domain) shows it 55 wide, upright beside a full-height groove column, an arrow under it and a narrower connector foot.",
++   "files": [
++    "ui/CartShells.kt"
++   ],
++   "fix": "Outline with the foot step, sticker 48.7 mm in, 55 x 90 mm on the front (7 mm over the top), 24 grooves in the left column, arrow. Back unchanged (not re-verified).",
++   "verified": "KONKR q468c hm_nes 0/45/90/180"
++  },
++  {
++   "id": "D218",
++   "title": "GBA pak side still the plain drawn wall (no seam / grips / edge radius)",
++   "rule": "R25",
++   "severity": "low",
++   "status": "open",
++   "found": "2026-11-03 update 468 check",
++   "where": "Inspect",
++   "evidence": [
++    "q468a hm_gba_*"
++   ],
++   "root_cause": "No measured side / top photos of the GBA pak used yet.",
++   "fix": "NOT FIXED (needs references)",
++   "verified": "—"
++  },
++  {
++   "id": "D219",
++   "title": "Home-screen turned cartridges (carousel / solid pieces) keep the old opaque sides; only Inspect has the measured sides",
++   "rule": "R25",
++   "severity": "low",
++   "status": "open",
++   "found": "2026-11-03 update 468",
++   "where": "SolidPiece.kt (home looks)",
++   "evidence": [
++    "code: Modifier.solidPiece unchanged"
++   ],
++   "root_cause": "solidPiece is the performance-tuned path (update 314-325); not changed in this pass.",
++   "fix": "NOT FIXED — the face (with the new board) is shared, the sides are not",
 +   "verified": "—"
    }
   ]

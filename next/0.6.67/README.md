@@ -150,6 +150,11 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
 25. **Update 466.** Plain colour box sides default + migrate466 / box_sides_chosen (`data/Features.kt`, `ui/SettingsDialog.kt`), dark-stroke
     check in the colour pick + QA dump BoxColourQa (`ui/BoxSides.kt`, `ui/QaTrace.kt` dir), clear GBC back / board, Famicom tab and
     back (`ui/CartBacks.kt`, `ui/CartShells.kt`); test BoxSidesLabels465Test updated. Evidence tools/qa/BACKS_466.md.
+26. **Update 467.** Popup geometry gate R26 (`ui/QaClip.kt` + popup fixes, see POPUP_AUDIT_467.md); migrate467 (stored box sides never
+    overwritten), Stadium 2 measured indigo sides (`ui/BoxSides.kt`).
+27. **Update 468.** Game Boy pak sides in Inspect (`ui/MediaInspectView.kt` SlabSide), clear GBC board (`ui/GbBoard.kt`, new;
+    `data/LabelIds.kt` cartridge type), clear pak 7.8 mm + NES front (`ui/CartShells.kt`); tests GbBoard468Test (new),
+    Cartridges300Test. Evidence tools/qa/CARTS_468.md.
 
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there

@@ -1,3 +1,29 @@
+# Update 468 (3 Nov 2026) — Game Boy pak sides + clear GBC board from photos, Crystal media explained, NES front (batch 4)
+
+**Owner request (Update 466 review):** GBC side geometry / transparency (art squeezed at 75°, opaque grey strip at 90°), a
+convincing board in the clear pak, why Crystal changed from box to cart, finish the backs, Stadium 2 sides, the default
+migration, batch 4 / 5, report before any release. Staging only; RC v0.6.66 untouched and reinstalled; nothing published.
+**References (measuring only, none bundled):** GBC Game Pak side / top (Mitch Mastroni, CC BY-SA 4.0), clear pak 3/4 and NES
+front (Evan-Amos, PD), Pokémon Silver board both sides (S. A. Eugster, CC BY-SA 3.0), clear back (PiaCarrot, CC BY-SA 3.0) —
+URLs and measurements in tools/qa/CARTS_468.md.
+**Fixed (D216, verified on the KONKR, 0–180° sweeps):** Inspect sides of the Game Boy / black / clear Color paks — 7.8 mm
+(clear was 9), seam at 5.8 mm, grip grooves 4–13 mm from the top, 0.5 mm edges; the clear pak's walls see-through as one
+sheet (no grey wall), filled out edge-on (no comb / vanishing side); the board (1 mm, on the back half) and its parts inside
+at their depth, seen through the side. New ui/GbBoard.kt: chip side under the label (chips hidden by it), solder side on the
+back, parts from the ROM header's cartridge type (data/LabelIds.kt reads 0x0147) — MBC3+timer board verified, other types
+APPROXIMATE. Real cartridge photos unchanged.
+**D217 (batch 4):** NES Game Pak front — sticker upright on the right, groove column, arrow, connector foot (was across the
+top). Back unchanged.
+**Crystal (item 2):** not a regression — page 4 used the test hook's `media` shell, which the RC doesn't have (it fell back to
+the case). Normal Inspect in staging shows the real box, as the RC (checked on the KONKR).
+**Items 4 / 5 on hardware:** Stadium 2 plain sides = its indigo (KONKR); migration kept this install's stored FILL (log
+"was FILL"); new installs Plain colour (unit test). Popup buttons whole (467).
+**Backs:** SFC / PAL still BLOCKED (no straight-on rear photo found); Famicom Jaleco only.
+**Open:** D218 GBA side not measured; D219 home-screen turned pieces keep the old sides; drawn traces simplified; Odin not
+re-swept; screen-off timeout was changed during tests without reading it first — set back to the system default (60 s).
+**Tests:** testDebugUnitTest PASS (GbBoard468Test new; Cartridges300Test now 7.8 mm), compileReleaseKotlin + assembleRelease
+PASS, tools/qa selftest 90 passed.
+
 # Update 467 (3 Nov 2026) — Clipped popup buttons fixed; automatic popup geometry gate (R26) mandatory
 
 **Owner request:** fix the clipped Play / Details / Back / More in the Pokémon Stadium 2 popup and make automatic visual QA

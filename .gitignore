@@ -99,3 +99,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
 /app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt
 /app/src/main/java/com/shelf/launcher/ui/QaClip.kt
+/app/src/main/java/com/shelf/launcher/ui/GbBoard.kt
+/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt

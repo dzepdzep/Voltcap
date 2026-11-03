@@ -2409,6 +2409,76 @@
    "root_cause": "not inspected yet",
    "fix": "NOT FIXED",
    "verified": "—"
+  },
+  {
+   "id": "D216",
+   "title": "Game Boy paks in Inspect: the side a flat opaque strip (clear pak grey, no thickness detail), clear plastic not see-through, board a plain green rectangle",
+   "rule": "R25",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-03 owner review of qa466_review.pdf page 4 (Harvest Moon / Crystal at 45 / 75 / 90)",
+   "where": "Inspect, KONKR GT78 960x640",
+   "evidence": [
+    "Claude outputs/qa468/q468a_*.tar, q468b.tar, q468c.tar (rotation 0-180)",
+    "Claude outputs/qa468/gbc_rotation_468.png"
+   ],
+   "root_cause": "InspectSlab drew every side as copies of the face's silhouette in one opaque plastic tone; the clear pak's board was painted flat on the face; the clear pak was 9 mm thick (the real pak 7.7-7.8 mm).",
+   "files": [
+    "ui/MediaInspectView.kt (SlabSide, SlabSideBits)",
+    "ui/GbBoard.kt (new)",
+    "ui/CartShells.kt",
+    "data/LabelIds.kt"
+   ],
+   "fix": "Measured from the GBC Game Pak side / top photos (Mitch Mastroni, CC BY-SA 4.0): 7.8 mm, seam 5.8 mm from the front, grip grooves 4-13 mm from the top, 0.5 mm edges; clear pak: see-through walls (one sheet, filled out edge-on), the board 1 mm thick lying on the back half with its parts on the label side, seen through the side; board drawn from the Pokémon Silver board photos, parts per ROM header cartridge type.",
+   "verified": "KONKR sweeps q468a / q468b / q468c: 0-180 every 15-45 degrees, clear (photo-made and drawn front), black, grey, Crystal real photo"
+  },
+  {
+   "id": "D217",
+   "title": "NES Game Pak drawn with its sticker across the top and the grip grooves across the bottom half",
+   "rule": "R25",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-03 batch 4 (update 463 had noted every library photo shows the sticker upright on the right)",
+   "where": "all views of the drawn NES shell",
+   "evidence": [
+    "Claude outputs/qa468/q468c.tar hm_nes_*"
+   ],
+   "root_cause": "Update 240 read the 55 x 97 mm sticker as 97 wide; the straight-on photo (Evan-Amos, public domain) shows it 55 wide, upright beside a full-height groove column, an arrow under it and a narrower connector foot.",
+   "files": [
+    "ui/CartShells.kt"
+   ],
+   "fix": "Outline with the foot step, sticker 48.7 mm in, 55 x 90 mm on the front (7 mm over the top), 24 grooves in the left column, arrow. Back unchanged (not re-verified).",
+   "verified": "KONKR q468c hm_nes 0/45/90/180"
+  },
+  {
+   "id": "D218",
+   "title": "GBA pak side still the plain drawn wall (no seam / grips / edge radius)",
+   "rule": "R25",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-03 update 468 check",
+   "where": "Inspect",
+   "evidence": [
+    "q468a hm_gba_*"
+   ],
+   "root_cause": "No measured side / top photos of the GBA pak used yet.",
+   "fix": "NOT FIXED (needs references)",
+   "verified": "—"
+  },
+  {
+   "id": "D219",
+   "title": "Home-screen turned cartridges (carousel / solid pieces) keep the old opaque sides; only Inspect has the measured sides",
+   "rule": "R25",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-03 update 468",
+   "where": "SolidPiece.kt (home looks)",
+   "evidence": [
+    "code: Modifier.solidPiece unchanged"
+   ],
+   "root_cause": "solidPiece is the performance-tuned path (update 314-325); not changed in this pass.",
+   "fix": "NOT FIXED — the face (with the new board) is shared, the sides are not",
+   "verified": "—"
   }
  ]
 }
