@@ -3,6 +3,18 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 461 (3 Nov 2026)
+| Request | Status | Evidence / note |
+|---|---|---|
+| D173 compile + test + KONKR | DONE | compiled, GameCopies460Test 5/5, d173_caseflow.png; whole path + size must match; picks still win |
+| D137 cap preloading, compare RC | MEASURED, decoding ahead REMOVED in Case stacks | A/B same build: +25-35 MB, no gain; RC 598-615 MB vs final staging 607-636 MB (cold start); still render-bound — OPEN |
+| Popup audit 53 layouts × 6 styles | DONE on hardware 318/318 (KONKR + Odin) | POPUP_AUDIT_461.md, popup_sheet_*.png; D183 fixed + re-checked; animations / More / Thor / RP NOT covered |
+| Brown option D | IMPLEMENTED, WAITING APPROVAL | brown_optionD_mock.png (Brown not on devices), labels461_closeup.png (KONKR, same code) |
+| Principle on other missing-label carts | GB / GBC done; GBA needs approval; others unchanged | labels461_konkr.png |
+| Hacks never base game's label | FIXED (D184) | Crystal Kaizo own art now; Crystal Clear fan label kept |
+| Other label audit | PARTLY | N64 / GBA / GBC real labels on KONKR; SNES / NES / Sega / DS / 3DS / Switch not on devices — NOT verified |
+| RP Classic Settings slide | OPEN | RP not connected |
+
 ## Update 460b (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|

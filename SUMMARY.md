@@ -1,3 +1,51 @@
+# Update 461 (3 Nov 2026) — D173 hardened + compiled, Case stacks decoding ahead removed (measured), full popup audit 318/318 on hardware + shade fix, Pokémon Brown option D printed Game Boy label, ROM hacks no longer wear their base game's label (NOT published)
+
+**Devices (USB):** KONKR Pocket GT78 BW0306N230000845, Odin 2 Portal b92036fb (wireless twin ignored). Thor / RP Classic not
+connected. v0.6.66 frozen; all work in v0.6.67 staging. Both handhelds back on the RC at the end.
+**D173 (Snap / Stadium):** staging compiled and unit-tested on the PC this time (GameCopies460Test 5/5). Copy matching hardened:
+the WHOLE path below the storage must match (`ROMs/n64/Pokemon Snap (USA).z64` on internal storage vs SD card), not only folder +
+file name (two games' `CD1/game.chd` never match), and a different file size never shares (another dump). Another game, region,
+revision or hack never matches (tests). A copy with scans of its own keeps them; your picks for the copy (PhysicalOverrides) still
+go on top. KONKR (compiled staging): Case flow shows the real US Snap / Stadium boxes (qa461/evidence/d173_caseflow.png); the
+media dump shows the internal copy's scans come from sharing (raw empty, state = SD copy's list).
+**D137 Case stacks (KONKR, same script, cold start: restart, picker closed, GBA "Advance Wars 2", 2 sets × 3 runs of 20 moves):**
+A/B in one staging build (`voltcap_test_warm`): decoding ahead OFF 612-617 MB after scrolling, first pass 50-57 % janky; ON
+(capped to 6 ahead / 1 behind, fronts + spines only, far pictures released) 637-652 MB, first pass 55-57 %; later passes the
+same (~25-40 %, 90th 42-44 ms) either way; no bare cases in the quick-move shots either way (d137_popin.png). So the decoding ahead
+costs memory for no measurable gain in Case stacks — **removed from Case stacks** (kept, capped, in Case flow / Rental shop where
+the blocks were reported). Final staging: 607-636 MB, first pass 46-54 %. **RC, same cold-start script (2 × 2 sets):** 598-615 MB, first pass 38-46 %, later passes 20-47 % (90th 40-44 ms). So staging is now ~10-20 MB above the RC (460b's "+90-110 MB" was mostly the RC having been measured warm, not cold) and its first pass is no smoother. Case stacks stays
+render-bound (cmd + GPU per frame); NOT fixed.
+**Popup audit (all 53 layouts × 6 R1 styles = 318, hardware):** KONKR 35 layouts + Odin 18 (popaudit461.sh, preview, launches
+blocked, snapshot restored). Every combination opened, B closed it, no crash, Voltcap stayed in front. Matrix:
+tools/qa/POPUP_AUDIT_461.md; sheets qa461/evidence/popup_sheet_*.png. **D183 fixed:** Row reveal / Shared move left the layout's own
+words and covers under the window's text — Channel grid, Hero carousel, TV guide had no shade; Cube menu, File select, Game
+rentals showed their title through the 0.8 shade. `WindowShade` (0.9, those layouts too): re-checked on the KONKR, 12 combinations
+readable (popfix461_after.png). Not applicable: Card binder, Pocket Quest, Green Core, Bubbles ignore the R1 style (own inline
+details; A plays there, as their hint says — one blocked launch each in the test, D186 deliberate). Art library, Terminal,
+Camera, Cover details, Pocket classic, Hero (Row reveal) show their own window for the row styles. Wii Channel, Cinema, Arctic and
+the other custom popups unchanged. NOT covered: animations (stills only), the More button, the Thor / RP Classic.
+**Pokémon Brown — option D (printed Game Boy label):** a Game Boy / Game Boy Color pak with no label scan wears a printed sticker
+laid out as the real ones (Silver, the Crystal Clear fan label): the cover the sticker's full height at its own proportions, printed
+grey side borders, "THIS SIDE OUT" down the right one and the game's name down the left (where a real label has its code) — no
+code, region, rating, seal or FAN-MADE; same shells. KONKR: Fool's Gold, Prism, Joel's (hacks without a label) next to Silver's real
+label at the same size (labels461_closeup.png). Brown itself is not on the connected devices: brown_optionD_mock.png is drawn from
+the same layout code's geometry with Brown's art (before / after / Silver at the same size) — **waiting for your approval**. Brown's
+cover art itself carries fan-made ESRB / Nintendo marks (part of its artwork, not added by Voltcap).
+**ROM hacks never wear the base game's label (D184 fixed):** Pokémon Crystal Kaizo was matched by ScreenScraper to Pokémon Crystal
+(same game id 82606) and wore Crystal's real label. `HackLabels`: a hack whose scans are the same ScreenScraper game as an official
+game in the library keeps its box but drops that label scan and cartridge photo → its own art on the printed label (KONKR,
+closeup). A hack with its own entry (Crystal Clear's fan label, jeuid 490544) is untouched. Limitation: when the base game is
+not in the library the match can't be seen.
+**Label audit, other formats:** N64 real labels (Smash, Snap) and GBA real (Advance Wars 2) on the KONKR. GBA hacks without a label
+(Emerald Kaizo) still get the RC's narrow cover sticker — a GBA printed design needs your approval first (no dark field). SNES / SFC,
+NES / Famicom, Sega, DS, 3DS, Switch: no such games on the connected devices — NOT hardware-verified (code paths unchanged: real scan
+first, your label, Labels folder, then the existing fallback). Vita has no drawn cartridge (case only). Kalos Crystal has no
+artwork at all (title on the sticker).
+**Settings slide (RP Classic):** OPEN — RP Classic not connected; categories appearing abruptly instead of sliding is a
+presentation problem to check there.
+**Tests:** testDebugUnitTest green (GameCopies460Test, WarmWindow461Test, PrintedGameBoy461Test, PopupShade461Test,
+HackLabels461Test, PopupReview443Test / Labels460Test updated). New QA hook `voltcap_test_warm off|noprepare|on` (staging).
+
 # Update 460b (3 Nov 2026) — D173 fixed: Pokémon Snap / Stadium real US boxes and spines (KONKR), Case stacks measured, Brown fallback options (NOT published)
 
 **Devices (USB):** KONKR Pocket GT78 BW0306N230000845 only (Odin not used; Thor / RP Classic not connected). v0.6.66 frozen; staging only.

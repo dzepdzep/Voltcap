@@ -892,8 +892,11 @@ internal object CartShells {
         // designs (grey strips, GBA title panel, N64 footer, FAN-MADE down the side) are off; they stay only behind the QA
         // switch GeneratedLabels.enabled for side-by-side comparisons. Real label scans, your own label and a label from
         // your Labels folder (LabelFolder) come first, as before; a cover is the simple fallback.)
-        val labelKind = if (GeneratedLabels.enabled && !scan && art != null && head == null && frame == null && !paperOn) GeneratedLabels.kindOf(s.id) else null
-        val key = "f11|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 461, owner's option D for Pokémon Brown: a Game Boy / Game Boy Color pak without a label scan wears the
+        // printed Game Boy sticker — GeneratedLabels.printed — on the same shell; your own label or a scan still comes first.)
+        val kindNow = GeneratedLabels.kindOf(s.id)
+        val labelKind = if ((GeneratedLabels.enabled || GeneratedLabels.printed(kindNow)) && !scan && art != null && head == null && frame == null && !paperOn) kindNow else null
+        val key = "f12|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)

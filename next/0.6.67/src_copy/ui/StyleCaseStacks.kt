@@ -125,8 +125,8 @@ private const val STACKS_CASE_YAW = 24f
 @Composable
 internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
     val g0 = c.game
-    // (Update 460: the 3D middle cases of the games either side decoded ahead — no bare block while moving.)
-    if (stacksCaseLook(c.type) && !spinesOn(c.type) && Features.stacks3d.state.value) WarmCaseNeighbours(c, c.focus, 3, loopRowOn(c), realFront = false)
+    // (Update 461, D137: no decoding ahead here — measured on the KONKR (A/B, same build, cold start, 2 x 3 runs each) it held
+    // 25-35 MB more for no smoother scrolling and no fewer bare cases: Case stacks shows one 3D case, the stacks are spines.)
     // A button bar hidden in Edit Home (or switched off) drops out of the D-pad's way: ▼ then reaches what lies below.
     val barOn = Features.stacksBar.state.value && !LayoutParts.off(HomeLayout.STACKS, "bar")
     val toolsOn = Features.stacksToolbar.state.value && !LayoutParts.off(HomeLayout.STACKS, "tools") && c.shortcuts.isNotEmpty()

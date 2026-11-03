@@ -1034,6 +1034,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             if (!refresh || (!force && list.any { it.first == com.shelf.launcher.ui.BoxTexture.LABEL }) || screenScraperStore.load() == null) {
                 physicalRaw[key] = list
+                refreshHackLabels()
                 // (Update 232, #60: the state left as it is when the game's list is the one it already has — no new map.)
                 val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
                 _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
@@ -1074,6 +1075,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 ed.apply()
             }
             physicalRaw[key] = list
+            refreshHackLabels()
             // (Update 232, #60: the state left as it is when the look again found the list it already has — no new map.)
             val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
             _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
@@ -1082,6 +1084,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Update 137: what ScreenScraper found for each game, before your picks (PhysicalOverrides). */
     private val physicalRaw = java.util.concurrent.ConcurrentHashMap<String, List<Pair<String, String>>>()
+
+    /** Update 461: which ROM hacks' saved scans are their base game's (HackLabels), after a game's scans change. */
+    private fun refreshHackLabels() {
+        com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+    }
 
     /**
      * Update 205: the games whose scans were asked for or shown this run — the ones whose pictures "Save art on the
@@ -1136,8 +1143,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 if (list.isEmpty()) continue
                 physicalRaw.putIfAbsent(k, list)
-                loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
             }
+            // (Update 461: ROM hacks matched to their base game don't wear that game's label — HackLabels.)
+            com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+            for ((k, list) in physicalRaw) loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
             // (Update 305: a game with your own pictures but nothing scraped — no saved list — gets them too; they showed
             // only once its scans had been looked up again.)
             for (k in com.shelf.launcher.data.PhysicalOverrides.keys()) {
@@ -1168,6 +1177,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 if (physicalRaw.containsKey(k) || now[k] != null) continue
                 val sib = com.shelf.launcher.data.GameCopies.copyKey(k)?.let { byCopy[it] }?.takeIf { it != k } ?: continue
                 val raw = physicalRaw[sib] ?: continue
+                if (!com.shelf.launcher.data.GameCopies.sameSize(runCatching { java.io.File(k).length() }.getOrDefault(0L), runCatching { java.io.File(sib).length() }.getOrDefault(0L))) continue
                 upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, raw) }.getOrNull() ?: continue
             }
             if (upd.isNotEmpty()) {

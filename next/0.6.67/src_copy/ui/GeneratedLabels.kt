@@ -27,6 +27,14 @@ internal object GeneratedLabels {
     /** Update 460: off by default — the owner rejected generated label designs; QA only (`voltcap_test_genlabels`). */
     @Volatile var enabled = false
 
+    /**
+     * Update 461 (owner, Pokémon Brown "option D"): the one design that is on by default — a Game Boy / Game Boy Color pak
+     * with no label scan gets a full-size printed sticker in the style of the real ones (printedGameBoy): grey printed
+     * borders and side areas with a fine darker frame line, the cover whole at its own proportions, a thin keyline round it.
+     * Nothing printed that identifies anything: no product code, region, rating, seal or "FAN-MADE".
+     */
+    fun printed(kind: Kind?): Boolean = kind == Kind.DMG || kind == Kind.CGB
+
     enum class Kind { DMG, CGB, AGB, N64, NES, FAMICOM, SNES, SFC, VB, MEGA_DRIVE, MASTER_SYSTEM, GAME_GEAR, SEGA_32X, ATARI, CARD, PLAIN }
 
     /** The label design for a drawn shell, or null where the shell keeps its own (DS / 3DS / Switch cards — SwitchLabel). */
@@ -101,6 +109,49 @@ internal object GeneratedLabels {
         Kind.CARD, Kind.PLAIN -> floatArrayOf(w * 0.04f, h * 0.04f, w * 0.96f, h * 0.84f)
     }
 
+    /**
+     * Update 461: where the cover goes on the printed Game Boy sticker [w] × [h] ([mm] px per millimetre) at its aspect
+     * [a]: the full height of the sticker, as on the real labels (Pokémon Silver, the Crystal Clear fan label), between grey
+     * printed side borders at least 3.6 mm wide; a cover too wide for that fits the width instead, grey above and below.
+     * Centred, never cut or stretched (pure — unit-tested).
+     */
+    fun printedArtRect(w: Float, h: Float, a: Float, mm: Float): FloatArray {
+        val l = minOf(3.6f * mm, w * 0.12f)
+        val aw = (w - 2 * l).coerceAtLeast(1f); val ah = h.coerceAtLeast(1f)
+        val fw: Float; val fh: Float
+        if (a >= aw / ah) { fw = aw; fh = aw / a } else { fh = ah; fw = ah * a }
+        val x = (w - fw) / 2f; val y = (h - fh) / 2f
+        return floatArrayOf(x, y, x + fw, y + fh)
+    }
+
+    /**
+     * Update 461: the printed Game Boy sticker (see [printed]) — laid out as the real ones are: the art the full height of the
+     * sticker, the printed grey either side; the right border carries the "THIS SIDE OUT" every Game Boy label has, the left
+     * one the game's name where a real label has its product code (never a code, region, rating or seal).
+     */
+    fun printedGameBoy(art: Bitmap, w: Int, h: Int, mm: Float, colour: Boolean, title: String? = null): Bitmap {
+        val b = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
+        val c = Canvas(b)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+        val W = b.width.toFloat(); val H = b.height.toFloat()
+        // The printed grey (a touch lighter on the Color paks), lit a little from the top as the paper is.
+        val top = if (colour) 0xFFB9B9BE.toInt() else 0xFFB0B0B4.toInt()
+        val bottom = if (colour) 0xFFA9A9AE.toInt() else 0xFFA0A0A5.toInt()
+        p.shader = LinearGradient(0f, 0f, 0f, H, top, bottom, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, W, H, p); p.shader = null
+        fine(c, p, W, H, 0x0A000000)
+        val r = printedArtRect(W, H, art.width.toFloat() / art.height.coerceAtLeast(1), mm).let { RectF(it[0], it[1], it[2], it[3]) }
+        c.drawBitmap(art, null, r, p)
+        val ink = 0xFF2A2A2D.toInt()
+        val size = minOf(1.3f * mm, r.left * 0.42f)
+        if (r.left > 1.8f * mm) {
+            vertical(c, "THIS SIDE OUT", RectF(r.right, 0f, W, H), size, ink, up = false, bold = true)
+            val name = title?.let { TAGS.replace(gameDisplayName(it), " ").replace(SPACES, " ").trim() }?.takeIf { it.isNotBlank() }
+            if (name != null) vertical(c, name.uppercase(), RectF(0f, 0f, r.left, H), size, ink, up = true, bold = true)
+        }
+        return b
+    }
+
     /** What is printed to identify the game: the real code, else "FAN-MADE" / "HOMEBREW", else nothing (pure). */
     fun idLine(id: com.shelf.launcher.data.LabelIds.Id?): String? = id?.unofficial ?: id?.code
 
@@ -109,6 +160,7 @@ internal object GeneratedLabels {
      * [title]: the game's name (typeset only where the design prints one); [brand]: its console's name (header bands).
      */
     fun compose(kind: Kind, art: Bitmap, w: Int, h: Int, mm: Float, id: com.shelf.launcher.data.LabelIds.Id?, title: String?, brand: String): Bitmap {
+        if (!enabled && printed(kind)) return printedGameBoy(art, w, h, mm, colour = kind == Kind.CGB, title = title)
         val b = Bitmap.createBitmap(w.coerceAtLeast(8), h.coerceAtLeast(8), Bitmap.Config.ARGB_8888)
         val c = Canvas(b)
         val p = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)

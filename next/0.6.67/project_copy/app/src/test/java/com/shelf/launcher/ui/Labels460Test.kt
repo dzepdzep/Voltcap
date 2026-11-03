@@ -54,7 +54,7 @@ class Labels460Test {
     @Test fun generatedDesignsOffByDefault() {
         assertFalse(GeneratedLabels.enabled)
         val cs = src("CartShells.kt")
-        assertTrue(cs.contains("val labelKind = if (GeneratedLabels.enabled &&"))
+        assertTrue(cs.contains("val labelKind = if ((GeneratedLabels.enabled || GeneratedLabels.printed(kindNow)) &&"))
         // ROM-hack status is never printed on a label; only a real header code
         assertTrue(cs.contains("val idText = ids?.code"))
         assertFalse(cs.contains("GeneratedLabels.idLine(ids)"))
@@ -74,6 +74,8 @@ class Labels460Test {
     }
 
     @Test fun caseLayoutsDecodeAhead() {
-        for (f in listOf("StyleCaseFlow.kt", "StyleCaseStacks.kt", "StyleRentalShop.kt")) assertTrue(f, src(f).contains("WarmCaseNeighbours("))
+        for (f in listOf("StyleCaseFlow.kt", "StyleRentalShop.kt")) assertTrue(f, src(f).contains("WarmCaseNeighbours("))
+        // (Update 461, D137: not in Case stacks — measured, no gain for its memory.)
+        assertTrue(!src("StyleCaseStacks.kt").contains("WarmCaseNeighbours("))
     }
 }

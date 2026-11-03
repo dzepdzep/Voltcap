@@ -85,3 +85,8 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Labels460Test.kt
 /app/src/main/java/com/shelf/launcher/data/GameCopies.kt
 /app/src/test/java/com/shelf/launcher/data/GameCopies460Test.kt
+/app/src/main/java/com/shelf/launcher/data/HackLabels.kt
+/app/src/test/java/com/shelf/launcher/data/HackLabels461Test.kt
+/app/src/test/java/com/shelf/launcher/ui/WarmWindow461Test.kt
+/app/src/test/java/com/shelf/launcher/ui/PrintedGameBoy461Test.kt
+/app/src/test/java/com/shelf/launcher/ui/PopupShade461Test.kt

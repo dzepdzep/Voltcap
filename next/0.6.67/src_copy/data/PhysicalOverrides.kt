@@ -85,7 +85,7 @@ object PhysicalOverrides {
         // its title — no longer shows that game's RA box and title screen saved with its scans.)
         // (Update 302: TheGamesDB's back where the game has none of its own — TgdbBacks.)
         val scrapedPlus = TgdbBacks.fill(key, scraped)
-        val list0 = if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus
+        val list0 = HackLabels.strip(key, if (key in RaMatchStore.refusedKeys) scrapedPlus.filter { it.first !in FROM_RA } else scrapedPlus)
         // (Update 460: a label from your Labels folder — LabelFolder — where the game has no real label scan, and always for
         // a ROM hack, whose scraped label is its base game's. Your own pick below still wins.)
         val list = LabelFolder.forKey(key)?.let { folder -> LabelFolder.merge(list0, folder, RomHacks.isModified(null, key)) } ?: list0
