@@ -64,6 +64,13 @@ Large master prompts have been truncated. Work in shorter, complete stages. Read
   (RealScans464Test + RC-vs-staging pixels). No reference → BLOCKED / APPROXIMATE, never a guess, never "authentic". Real scans,
   your picks and custom models keep their precedence over anything generated; a new look never becomes the default without the
   owner's approval of a side-by-side comparison.
+- **Popup / window geometry gate (permanent, owner 3 Nov 2026; QA rule R26):** a popup, game window, dialog or page is not
+  done until `tools/qa/device/popclip.sh` + `tools/qa/tools/popclip.py` (QaClip layout dump + screenshot) pass on hardware for
+  what it touches: every action whole and on screen (nothing cut by a parent or a scroll), no overlaps, touch size (>= 24 dp), focus on the
+  first action, More / pages working, nothing left after closing — graded separately (open, geometry, visual, focus, buttons,
+  settle); only all-PASS is PASS, missing evidence is INFRA / NOT TESTED. Actions never live inside a scrolling column: the
+  content scrolls in the room the action row leaves. Run it after every popup layout change; `geomcheck --clip` fixtures in
+  tools/qa/selftest must keep failing on the clipped cases.
 - **Device QA:** only under the Thor authorization above; check on hardware what a change touches, mark the rest NOT TESTED, don't repeat passed QA.
 - **User settings:** never reset, rename or migrate preferences, profiles, layouts, categories or artwork silently; temporary test values are restored; new prefs go into `data/SettingsScopes.kt`.
 - **Music players:** the existing player designs and their toggles stay as they are; improve transitions / reliability inside them, never replace or redesign a player.

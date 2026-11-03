@@ -242,6 +242,7 @@ Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No p
 | Monochrome / themed icon inconsistencies | DONE in 454 (audit, no defect) |
 | Switch-style Tile home alignment | DONE (369/370 Thor); 453 still: title, row and dock aligned |
 | Pocket ribbon navigation | DONE (453: one press = one move both ways, no wrap at the first game) |
-| Popups x 53 layouts x R1 modes | PARTIAL (modes: Stacks 452 + 15 layouts 454; rapid: 21 layouts 453) |
+| Popups x 53 layouts x R1 modes | DONE as a gate (467: 318/318 on KONKR + Odin, controller + touch, 6 categories; KONKR font 1.3 subset) — open D210 / D211 / D212 |
+| Clipped popup buttons (Stadium 2) + mandatory visual QA (467) | DONE (D197; R26 gate permanent; POPUP_AUDIT_467.md). NOT TESTED: density, Odin 1.3, varied content |
 | D64 (owner decision), D67 logo over dock, D61 render-bound layouts, D165 Settings window | OPEN |
 | AutoTDP items D113–D119 | FIXED-UNVERIFIED (need real games) |

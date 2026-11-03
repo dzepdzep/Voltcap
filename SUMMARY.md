@@ -1,3 +1,34 @@
+# Update 467 (3 Nov 2026) — Clipped popup buttons fixed; automatic popup geometry gate (R26) mandatory
+
+**Owner request:** fix the clipped Play / Details / Back / More in the Pokémon Stadium 2 popup and make automatic visual QA
+mandatory ("I don't want to discover clipped controls manually anymore").
+**Root cause (D197):** Case flow's window (ui/WinScenes.kt CaseFlowMedia) was one scrolling panel with a max height — the
+action row sat inside the scroll and was cut by the panel on the KONKR. Now media / chips / story scroll in the room the row
+leaves; the row (buttons, labels, corners, focus) is always whole. Sheet Claude outputs/qa467/stadium2_before_after_inspect.png.
+**Gate (permanent, CLAUDE.md + tools/qa/RULES.md R26 + README):** ui/QaClip.kt (test hooks: Compose semantics — own box vs the
+part ancestors let show, focus incl. focus-ring mark, scroll / paging / tilt; asked through a file because an intent closes
+in-home popups), device/popclip.sh (home → A → tap Details → tap More → tap Play with launches blocked → B; screenshot + dump
+each step), device/popclip_cfg.sh (font / density, restored), tools/popclip.py + geomcheck --clip (six separate categories:
+open / geometry / visual / focus / buttons / settle; PASS only if all pass; INFRA / NOT TESTED never PASS; row styles without
+a row = n/a). Selftest 90+ tests incl. Stadium 2 before / after, a deliberately clipped button, the real KONKR crop, Resume's
+squeezed box, script guards; CI runs them (qa.yml).
+**Sweeps:** all 53 layouts × 6 styles on KONKR 960×640 and Odin 2 Portal 1920×1080 (controller + touch), KONKR at font 1.3
+on 10 layouts. Latest: KONKR 266 PASS / 24 FAIL / 23 n/a; Odin 270 PASS / 21 FAIL / 25 n/a — most remaining FAILs are Card
+binder / Pocket where A plays from the home (popup not reachable by A). tools/qa/POPUP_AUDIT_467.md.
+**Also fixed (D198–D209):** first face button after a touch did nothing / Row windows without focus (MainActivity); Classic
+window buttons had no click semantics; Resume facts squeezed; Back cut in Arctic, Blades, Panels, Rental tag; Storage beside
+the case (tabs / SUMMARY); Terminal touch size; Twin touch on Play taken for the A release (Odin verified); Bubbles keys
+semantics; Inspect hint off screen at font 1.3; facts box gives way under one row.
+**Open:** D210 first A after Voltcap starts; D211 Twin taps on the KONKR; at font 1.3 D213 Arctic Back, D214 rental BACK,
+D215 Cover details overlap; Storage DETAILS tab tap (sweep only); D212 owner
+choices (Arcade / Memory card / Night / Orbit / Magazine). NOT TESTED: smaller density, Odin font 1.3, varied content,
+frame-by-frame animation.
+**Files:** src_copy MainActivity.kt, ui/QaClip.kt (new), QaTrace.kt, TestHooks.kt, DialogChrome.kt, GameDetailsOverlay.kt,
+GameWindow.kt, WinScenes.kt, WinScenesHomes.kt, WinScenesHomes2.kt, WinScenesConsole.kt, WinScenesMore.kt, WinSceneTwin.kt,
+WholeChipRow.kt, StyleBubbles.kt, MediaInspectView.kt; tools/qa geomcheck.py, popclip.py, device/popclip.sh,
+device/popclip_cfg.sh, selftest + fixtures, RULES / README / POPUP_AUDIT_467 / defects.json. Staging only; RC v0.6.66
+reinstalled on both devices, NOT published.
+
 # Update 466 (3 Nov 2026) — Plain-colour box sides default, Snap front checked, batch 3 backs (clear GBC, Famicom; SFC blocked)
 
 **Owner decisions:** box sides option C then "make Plain colour the new default … preserve any explicitly saved preference";

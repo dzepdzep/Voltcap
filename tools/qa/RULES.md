@@ -209,3 +209,24 @@ pixel check). An invented rear is never called authentic; one shape is never ass
 No suitable reference → the work is marked BLOCKED or APPROXIMATE, not guessed. Visual changes are judged on device
 screenshots against the references, never on tests alone.
 
+
+## R26 POPUP GEOMETRY GATE (permanent, owner 3 Nov 2026 — update 467)
+"I don't want to discover clipped controls manually anymore." Every popup / game window / dialog change is checked on hardware
+with `device/popclip.sh` before it is reported done, and graded by `tools/popclip.py` in six SEPARATE categories:
+- open: the first A opens it (a first A that opened nothing is a FAIL), B closes it.
+- geometry (`geomcheck --clip`, from Compose semantics): nothing cut by its parents; a window action partly cut inside a
+  scrolling list counts as cut (wholly scrolled away = reachable, noted); on screen; no overlapping controls; touch targets
+  >= 24 dp (WCAG 2.2) — under 32 dp noted; the focused control whole and on screen. The home screen's own nodes (the closed
+  step's dump) are left out.
+- visual: pixel check of each action button's drawn edge in the screenshot — heuristic; coordinates alone never claim visual
+  coverage.
+- focus: a window action (Play / Continue) has the controller focus when it opens (focusRing marks custom highlights).
+- buttons: touch — a tap on Details opens its page, a tap on Play asks for the launch (blocked: `qa_nolaunch`); More (where
+  present) opens its actions. Missing evidence = NOT TESTED.
+- settle: settled stills whole and nothing left after closing (frame-by-frame animation is the flash checker's job, R1).
+A popup is PASS only when every applicable category is PASS. A style the layout doesn't offer (a row style with no row) is
+SKIP (n/a). Missing screenshots / dumps / hardware = INFRA or NOT TESTED, never PASS. Opening and closing alone is not a pass.
+The device side never uses an intent while a popup is up (an intent closes the popups that live in the home screen): dumps
+and More go through files (`qa_clip_req`, `qa_winmore_req`). Each defect is logged with layout, style, resolution,
+screenshot, cause and fix (POPUP_AUDIT). Regression fixtures: selftest TestClipGate / TestPopupGate (Pokémon Stadium 2
+before / after, a deliberately clipped button, the real KONKR action-row crop, n/a row styles).

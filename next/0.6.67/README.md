@@ -114,6 +114,13 @@ Kept outside `app/` so it can never be built into the frozen 0.6.66 release cand
     hook art / name fields (`ui/MediaInspect.kt`, `ui/LauncherScreen.kt`, `ui/GameWindow.kt`, `ui/StyleCardboardBox.kt`). Test
     PhotoShells462Test updated.
 
+26. **Update 467.** Popup geometry gate R26 + clipped popup fixes: `ui/QaClip.kt` (new), `ui/QaTrace.kt`, `ui/TestHooks.kt`
+    (clip / file triggers / screen on in preview / qa_nolaunch), `MainActivity.kt` (gamepad button leaves touch mode),
+    `ui/DialogChrome.kt`, `ui/GameDetailsOverlay.kt`, `ui/GameWindow.kt`, `ui/WinScenes.kt` (Case flow action row, Storage),
+    `ui/WinScenesHomes.kt` (Arctic), `ui/WinScenesHomes2.kt` (Resume), `ui/WinScenesConsole.kt` (Blades, Panels, Terminal,
+    Rental tag), `ui/WinScenesMore.kt`, `ui/WinSceneTwin.kt`, `ui/WholeChipRow.kt`, `ui/StyleBubbles.kt`, `ui/MediaInspectView.kt`.
+    QA: tools/qa/tools/geomcheck.py + popclip.py, device/popclip.sh + popclip_cfg.sh, selftest fixtures (clip_*), RULES R26.
+
 ## Placeholders in the 0.6.66 tree
 `app/src/main/java/com/shelf/launcher/ui/ProfileLooks.kt`, `app/src/test/java/com/shelf/launcher/ui/ProfilePicker445Test.kt` and
 `TwinBack447Test.kt`, `NavBar449Test.kt`, plus `data/ContinueApps.kt`, `data/ContinueApps450Test.kt`, `device/ChargeFastStop450Test.kt`, `device/ChargeWake451Test.kt`, `ui/PopupMore451Test.kt`, `ui/PopupMore452Test.kt`, `ui/PopupReopen453Test.kt`, `ui/CategoryBar453Test.kt`, `ui/SwitchTitle453Test.kt`, `data/TrashFolders453Test.kt`, `ui/PreviewCategory454Test.kt`, `ui/SaturnDreamcast454Test.kt`, `ui/RibbonTop455Test.kt`, `ui/PanelHold456Test.kt`, `ui/PqTabs456Test.kt`, `ui/Render457Test.kt`, `ui/SideEdge458Test.kt`, `ui/GbPak458Test.kt`, `data/LabelIds.kt`, `ui/GeneratedLabels.kt`, `ui/Labels459Test.kt`, `data/LabelFolder.kt`, `ui/Labels460Test.kt`, `data/GameCopies.kt`, `data/GameCopies460Test.kt`, `data/HackLabels.kt`, `data/HackLabels461Test.kt`, `ui/WarmWindow461Test.kt`, `ui/PrintedGameBoy461Test.kt`, `ui/PopupShade461Test.kt` (and their `src_copy/` / `project_copy/` copies) are EMPTY placeholders (only a package line); they are listed in `.gitignore`,

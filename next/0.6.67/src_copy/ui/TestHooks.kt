@@ -105,6 +105,9 @@ internal object TestHooks {
     @Volatile var noLaunch = false
     /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
     fun interceptLaunch(where: String, key: String): Boolean {
+        // (Update 467: also while <external files>/qa_nolaunch exists — a sweep's block survives Voltcap restarting mid-run,
+        // which the intent's in-memory switch did not: the first tap on Play after a restart would have started the game.)
+        if (!noLaunch && QaTrace.on && QaClip.noLaunchFile()) noLaunch = true
         if (!noLaunch && !QaTrace.on) return false
         val who = Throwable().stackTrace.drop(1).take(14).joinToString(" < ") { "${it.fileName}:${it.lineNumber}" }
         android.util.Log.e("VoltcapQA", "LAUNCH ${if (noLaunch) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
@@ -222,6 +225,9 @@ internal object TestHooks {
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
+        // Update 467: `--es voltcap_test_clip <tag>` — every control / text and how much of it shows, into
+        // <external files>/qa_clip/<tag>.json (QaClip; tools/qa/tools/geomcheck.py --clip). Optional `--ei voltcap_test_clip_ms`.
+        intent?.getStringExtra("voltcap_test_clip")?.let { if (enabled(context)) QaClip.request(context, it, (intent.getIntExtra("voltcap_test_clip_ms", 700)).toLong()) }
         intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
         // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells
         // (update 463: every supported shell looked at first, and the coverage into photoshells/inventory.tsv; send it again once
@@ -313,6 +319,12 @@ internal object TestHooks {
         // Pass 5: `--ez voltcap_test_preview false` ends a preview: your saved appearance back on screen, saving again.
         // (QA: a run's preview lasted until Voltcap restarted — the layout tried stayed, and nothing you changed was saved.)
         val pvEnd = intent?.hasExtra("voltcap_test_preview") == true && !pv
+        // Update 467: a preview run keeps the screen on (this window's flag only, no system setting): the KONKR's injected
+        // keys don't count as activity, so a long sweep fell asleep after a minute and every key then ended in an ANR.
+        if (intent?.hasExtra("voltcap_test_preview") == true && enabled(context)) (context as? android.app.Activity)?.window?.let {
+            if (pv) it.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            else it.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1
         if (su >= 0 && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {

@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,9 @@ internal fun WholeChipRow(
     val drag = remember { floatArrayOf(0f) }
     SubcomposeLayout(
         modifier
+            // (Update 467, QA only: a row that shows whole chips and "+N" for the rest — the gate reads its hidden chips
+            // like a scrolling list's, reachable with L1 / R1 and a swipe.)
+            .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Paged] = true } else Modifier)
             // Clipped sideways only, so a chip's focus ring / glow above and below still shows.
             .drawWithContent { clipRect(0f, -size.height, size.width, size.height * 2f) { this@drawWithContent.drawContent() } }
             .pointerInput(count) {

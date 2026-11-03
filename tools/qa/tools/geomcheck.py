@@ -15,6 +15,23 @@ Checks (each reports its own Result):
   movement  no element jumps further than limits.jump_px (default 60) between two frames unless a key came in the last
             limits.settle_ms (default 450) — a drift or snap with no key is a defect; the glide after a key is expected
 Exit codes as qalib: 0 PASS, 1 FAIL, 2 INFRA (bad / empty trace: never a pass), 3 NOT TESTED.
+
+Update 467 — clipping gate (permanent, QA rule R26):
+  python3 geomcheck.py CLIP.json --clip [--png SHOT.png] [--json OUT.json]
+CLIP.json is QaClip's dump (`--es voltcap_test_clip TAG` -> <files>/qa_clip/TAG.json): per window, every control and text
+node with `full` (its own box) and `shown` (the part inside all its ancestors). Results:
+  clip      no control / text is cut: shown == full within clip_px (default 1.5); a control cut inside a scrolling list is
+            reported separately (scroll-clip) — it is reachable only by scrolling, and FAILS when it is a window action
+            (Play, Continue, Details, Back, More, Close, OK, Cancel)
+  screen    every shown control lies inside the screen and its own window
+  overlap   no two controls overlap by more than overlap_px (default 2) unless one holds the other
+  touch     every control is at least touch_dp (default 24, WCAG 2.2 target size) dp tall and wide — smaller is a FAIL;
+            under 32 dp is noted (Compose widens small targets to 48 dp where nothing else is under the finger)
+  focus     a focused control is not cut and is on screen; no window shows a focused node outside itself
+  pixels    (with --png) inside each window action's laid-out box, below its middle: no row where nearly the whole width
+            changes at once (fill above, backdrop below) well above its bottom — a draw clip the layout can't see FAILS.
+            Heuristic: never claims full coverage.
+An empty dump (no windows / no controls) is INFRA, never PASS.
 """
 import json, os, re, sys
 
@@ -119,10 +136,212 @@ def from_logcat(text):
     return {"screen": screen, "frames": frames, "row": "auto", "limits": {"skip_key_frames": True}}
 
 
+# touch: below touch_dp (24 dp, WCAG 2.2 "target size minimum") is a FAIL; below touch_note_dp (32) is noted — Compose
+# widens a small clickable's touch area to 48 dp where nothing else is under the finger, so its drawn size is not the target.
+CLIP_DEFAULTS = dict(clip_px=1.5, overlap_px=2.0, touch_dp=24.0, touch_note_dp=32.0)
+# The layouts' own words for the window's actions (GameWindow.kt WinLook: play / details / back) — popclip.sh keeps the same
+# lists (PLAYW / DETW; the selftest checks they match).
+PLAY_WORDS = ("play", "continue", "resume", "start", "start game", "continue game", "play game", "press start", "power on",
+              "run", "play it!", "continue!", "rent & play")
+DETAILS_WORDS = ("details", "full details", "information", "info", "game info", "contents", "status", "sleeve notes",
+                 "card text", "turn over", "summary", "the story", "type nfo", "catalogue card")
+BACK_WORDS = ("back", "home", "put back", "exit", "stop", "close")
+ACTIONS = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in PLAY_WORDS + DETAILS_WORDS + BACK_WORDS) +
+                     r"|more|less|ok|cancel|\u22ef|\u2026|\.\.\.)$")
+PLAY_RE = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in PLAY_WORDS) + r")$")
+
+
+def _label(n):
+    # (Labels can start with the button's glyph — "▶ Play", "◧ Inspect" — the word is what counts.)
+    lab = (n.get("label") or "?").split(" #")[0].strip()
+    stripped = re.sub(r"^[^\w\u22ef\u2026.]+", "", lab).strip()
+    # (A key whose picture is described by the same word it shows reads "Play Play" — Airy's round keys; and Storage's
+    # pointer column joins in as "▶/PLAY": the word once, after the pointer.)
+    stripped = re.sub(r"^[^\w]*/", "", stripped).strip() or stripped
+    w = stripped.split(" ")
+    if len(w) % 2 == 0 and w[:len(w) // 2] == w[len(w) // 2:]: stripped = " ".join(w[:len(w) // 2])
+    return stripped or lab or "?"
+
+
+def _is_action(n):
+    lab = _label(n)
+    # ("Play" / "Continue" with more words after them — "Play on TV"; never "Played", a fact.)
+    return bool(ACTIONS.match(lab)) or bool(re.match(r"(?i)^(play|continue)(\s|$)", lab))
+
+
+def _key(n):
+    return (_label(n), tuple(n.get("full") or ()))
+
+
+def clip_evaluate(dump, limits=None, png=None, baseline=None):
+    """Results of the clipping gate for a QaClip dump (dict). INFRA without evidence.
+    baseline: a dump of the same screen with no popup (popclip's closed step): its nodes — the home screen behind a popup
+    drawn in the same window, the status bar — are not the popup's and are left out."""
+    home = {_key(n) for w in ((baseline or {}).get("windows") or []) for n in (w.get("nodes") or [])}
+    wins = (dump or {}).get("windows") or []
+    # (Only the window that has the controller — the popup, a dialog — when one has it; the home screen behind a popup is
+    # its own window and not what is being checked.)
+    if any(w.get("focus") for w in wins): wins = [w for w in wins if w.get("focus")]
+    nodes = [(w, n) for w in wins for n in (w.get("nodes") or []) if _key(n) not in home]
+    if not wins or not any(n.get("kind") == "control" for _, n in nodes):
+        return [qalib.Result("clip dump", qalib.INFRA, "no windows / no controls in the dump: nothing was measured")]
+    lim = dict(CLIP_DEFAULTS); lim.update(limits or {})
+    dens = float(dump.get("density") or 1.0)
+    sw, sh = (dump.get("screen") or [0, 0])[:2]
+    cut, scut, off, ovl, small, foc, near, hidden, runs = [], [], [], [], [], [], [], [], []
+    for w, n in nodes:
+        f, s_ = n.get("full"), n.get("shown")
+        if not f or not s_ or f[2] <= 0 or f[3] <= 0: continue
+        lab = _label(n); wx, wy = (w.get("at") or [0, 0])[:2]
+        # (Only where the shown part stops INSIDE the node's own box: a focused control drawn a little larger — scaled up —
+        # shows more than its box, which is not a cut.)
+        miss = max(s_[0] - f[0], s_[1] - f[1], (f[0] + f[2]) - (s_[0] + s_[2]), (f[1] + f[3]) - (s_[1] + s_[3]), 0)
+        if s_[2] <= 0 or s_[3] <= 0:
+            miss = max(f[2], f[3])  # wholly cut away
+        # (A tilted scene — the rental tag — reports straight boxes round turned content: a few % of the width either way.)
+        tilt_px = (f[2] * 0.06 + 4) if n.get("tilt") else 0
+        if miss > lim["clip_px"] + tilt_px:
+            what = f"{lab} ({n.get('kind')}) cut by {miss:g} px: full {f} shown {s_}"
+            # (Inside a scrolling list a node may be scrolled out — reachable. An ACTION there fails only when it is partly
+            # shown at rest: a button cut across, the Stadium 2 bug; wholly scrolled away it is reachable like the rest.)
+            partly = s_[2] > 0 and s_[3] > 0
+            # (A paging row / box — whole chips or rows at a time, "+N" for the rest, drawn clipped — never draws a part
+            # of a chip: its layout boxes run on past the drawing clip the semantics can't see.)
+            if n.get("paged"): scut.append(what)
+            elif n.get("scroll") and not (_is_action(n) and partly): scut.append(what)
+            # (Text wholly out of view — a paging box showing whole rows in turn, Twin's facts — is not drawn cut; a
+            # control wholly pushed out is.)
+            elif not partly and n.get("kind") != "control": hidden.append(lab)
+            else: cut.append(what)
+            if n.get("focused"): foc.append(f"focused {lab} is cut")
+        if n.get("kind") == "control" and s_[2] > 0 and s_[3] > 0:
+            ax, ay = wx + s_[0], wy + s_[1]
+            # (displayMetrics can leave out the navigation bar's strip; the window's own size is the usable screen too.)
+            at = w.get("at") or [0, 0, 0, 0]
+            bw, bh = max(sw, at[0] + at[2]), max(sh, at[1] + at[3])
+            if sw and (ax < -1 or ay < -1 or ax + s_[2] > bw + 1 or ay + s_[3] > bh + 1):
+                off.append(f"{lab} leaves the screen: {[ax, ay, s_[2], s_[3]]} on {bw}x{bh}")
+            if n.get("focused") and sw and (ax + s_[2] <= 0 or ay + s_[3] <= 0 or ax >= sw or ay >= sh):
+                foc.append(f"focused {lab} is off the screen")
+            mn = lim["touch_dp"] * dens
+            if (f[2] < mn - 0.5 or f[3] < mn - 0.5) and not n.get("scroll"):
+                small.append(f"{lab} {f[2]:g}x{f[3]:g} px < {lim['touch_dp']:g} dp ({mn:g} px)")
+            elif (f[2] < lim["touch_note_dp"] * dens - 0.5 or f[3] < lim["touch_note_dp"] * dens - 0.5) and not n.get("scroll"):
+                near.append(f"{lab} {f[2] / dens:.0f}x{f[3] / dens:.0f} dp")
+    # A scrolling box squeezed so small that it shows no whole line (Resume's facts beside a tall key column on the KONKR):
+    # its short rows (one or two lines) are all partly shown or hidden, none whole.
+    tiny = []
+    for w in wins:
+        rows = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("full") and n.get("shown")
+                and n["full"][3] <= 48 * dens and n["full"][3] > 0]
+        whole = [n for n in rows if n["shown"][3] >= n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
+        part = [n for n in rows if 0 < n["shown"][3] < n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
+        # (Only when the box itself is that small: the tallest thing it shows is under one of its rows — a long story
+        # scrolling above a facts line, Cinema's, is a normal list.)
+        seen = max([n["shown"][3] for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("shown")] or [0])
+        if part and not whole and seen < min(n["full"][3] for n in part):
+            tiny.append(f"a scrolling box shows only part of a line ({', '.join(_label(n) for n in part[:3])}: "
+                        f"{max(n['shown'][3] for n in part):g} of {part[0]['full'][3]:g} px) and no whole one")
+    cut.extend(tiny)
+    for w in wins:
+        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "control" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        for i in range(len(ctl)):
+            for j in range(i + 1, len(ctl)):
+                a, b = ctl[i]["shown"], ctl[j]["shown"]
+                ix = min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]); iy = min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1])
+                tol = lim["overlap_px"] + ((max(a[2], b[2]) * 0.1) if (ctl[i].get("tilt") and ctl[j].get("tilt")) else 0)
+                if ix <= lim["overlap_px"] or iy <= tol: continue
+                inside = lambda p, q: p[0] >= q[0] - 1 and p[1] >= q[1] - 1 and p[0] + p[2] <= q[0] + q[2] + 1 and p[1] + p[3] <= q[1] + q[3] + 1
+                if inside(a, b) or inside(b, a): continue
+                ovl.append(f"{_label(ctl[i])} and {_label(ctl[j])} overlap {ix:g}x{iy:g} px")
+        # (Words drawn under / over a button that aren't its own: a text node crossing a control's box without being inside it.)
+        txt = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "text" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        for t in txt:
+            a = t["shown"]
+            for c in ctl:
+                b = c["shown"]
+                ix = min(a[0] + a[2], b[0] + b[2]) - max(a[0], b[0]); iy = min(a[1] + a[3], b[1] + b[3]) - max(a[1], b[1])
+                if ix <= lim["overlap_px"] or iy <= lim["overlap_px"]: continue
+                if a[0] >= b[0] - 1 and a[1] >= b[1] - 1 and a[0] + a[2] <= b[0] + b[2] + 1 and a[1] + a[3] <= b[1] + b[3] + 1: continue
+                if b[0] >= a[0] - 1 and b[1] >= a[1] - 1 and b[0] + b[2] <= a[0] + a[2] + 1 and b[1] + b[3] <= a[1] + a[3] + 1: continue
+                runs.append(f"{_label(t)[:30]} / {_label(c)} {ix:g}x{iy:g} px")
+    out = []
+    def res(name, probs, ok, status=qalib.FAIL):
+        out.append(qalib.Result(name, status if probs else qalib.PASS,
+                                ("; ".join(probs[:6]) + (f" (+{len(probs) - 6} more)" if len(probs) > 6 else "")) if probs else ok))
+    res("clip", cut, "no control or text is cut by its parents")
+    # (Partly scrolled out of a scrolling list: reachable by scrolling — noted, not a failure; window actions never count here.)
+    if hidden:
+        out.append(qalib.Result("hidden-text", qalib.PASS, f"{len(hidden)} text node(s) wholly out of view (paged / folded, not drawn cut): " + ", ".join(hidden[:5])))
+    out.append(qalib.Result("scroll-clip", qalib.PASS, (f"{len(scut)} node(s) partly scrolled out of their list (reachable): " + "; ".join(scut[:3])) if scut else "nothing inside a scrolling list is cut"))
+    res("screen", off, "every control inside the screen")
+    res("overlap", ovl, "no overlapping controls")
+    # (Text boxes crossing a button: noted, not failed — a text box can be taller than its drawn lines, e.g. a clipped last
+    # line; the screenshot shows whether words really run under a button.)
+    if runs:
+        out.append(qalib.Result("text-near-controls", qalib.PASS, f"{len(runs)} text box(es) cross a control's box (check the screenshot): " + "; ".join(runs[:3])))
+    res("touch", small, f"every control at least {lim['touch_dp']:g} dp" + (f"; under {lim['touch_note_dp']:g} dp (touch widened to 48 dp by Compose): " + ", ".join(near[:4]) if near else ""))
+    res("focus", foc, "the focused control is whole and on screen")
+    if png:
+        out.append(pixel_check(dump, png, home))
+    else:
+        out.append(qalib.Result("pixels", qalib.NOT_TESTED, "no screenshot given (--png): drawn clipping not checked"))
+    return out
+
+
+def pixel_check(dump, png, home=frozenset()):
+    """For each window action button: where its own fill actually ends. Read upward from the button's middle row, the fill
+    should taper into a rounded end (its last rows narrow) at its laid-out bottom; a fill that stops in a straight full-width
+    edge, or well short of the laid-out bottom, was cut by something the layout doesn't report. Heuristic — never claims
+    full visual coverage."""
+    try:
+        from PIL import Image
+        im = Image.open(png).convert("RGB")
+    except Exception as e:
+        return qalib.Result("pixels", qalib.INFRA, f"cannot read screenshot {png}: {e}")
+    W, H = im.size; px = im.load()
+    d = lambda a, b: sum(abs(a[k] - b[k]) for k in range(3))
+    bad, n_ok = [], 0
+    for w in dump.get("windows") or []:
+        wx, wy = (w.get("at") or [0, 0])[:2]
+        for n in w.get("nodes") or []:
+            if n.get("kind") != "control" or not _is_action(n) or _key(n) in home: continue
+            f, sh_ = n.get("full"), n.get("shown")
+            if not f or f[3] < 12 or f[2] < 12: continue
+            if sh_ and (sh_[2] <= 0 or sh_[3] <= 0): continue  # wholly scrolled away: nothing drawn to read (clip judges it)
+            x0, x1 = int(wx + f[0] + f[2] * 0.08), int(wx + f[0] + f[2] * 0.92)
+            y0, y1 = int(wy + f[1]), int(wy + f[1] + f[3])
+            if y1 > H or x1 > W or x0 < 0 or y0 < 0:
+                bad.append(f"{_label(n)} lies outside the screenshot"); continue
+            # (A cut is one row where nearly the whole width changes at once — fill above, backdrop below — well above
+            # the laid-out bottom; a rounded end changes a few columns per row, and text never spans the width.)
+            ym = (y0 + y1) // 2
+            cut_at = None
+            for y in range(ym, y1 - 1):
+                ch = sum(1 for x in range(x0, x1) if d(px[x, y], px[x, y + 1]) > 80) / max(1, x1 - x0)
+                if ch > 0.75 and (y1 - 1 - y) > max(4, f[3] * 0.2):
+                    cut_at = y; break
+            if cut_at is not None:
+                bad.append(f"{_label(n)}: drawn edge cut straight across {y1 - 1 - cut_at} px above its laid-out bottom")
+            else:
+                n_ok += 1
+    if not bad and not n_ok:
+        return qalib.Result("pixels", qalib.NOT_TESTED, "no window action buttons to compare")
+    return qalib.Result("pixels", qalib.FAIL if bad else qalib.PASS, "; ".join(bad) if bad else f"{n_ok} action button(s) drawn whole (heuristic)")
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__); sys.exit(2)
     path = sys.argv[1]
+    if "--clip" in sys.argv:
+        jp = sys.argv[sys.argv.index("--json") + 1] if "--json" in sys.argv else None
+        png = sys.argv[sys.argv.index("--png") + 1] if "--png" in sys.argv else None
+        try:
+            dump = json.load(open(path, encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            qalib.finish([qalib.Result("clip dump", qalib.INFRA, f"cannot read {path}: {e}")], "Clipping check", jp)
+        qalib.finish(clip_evaluate(dump, png=png), "Clipping check", jp)
     try:
         if "--logcat" in sys.argv:
             trace = from_logcat(open(path, encoding="utf-8", errors="replace").read())

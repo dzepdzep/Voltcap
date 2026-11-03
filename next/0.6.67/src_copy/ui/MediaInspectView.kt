@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.layout.layout
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.compose.animation.core.CubicBezierEasing
@@ -1573,6 +1574,7 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
         kotlinx.coroutines.withTimeoutOrNull(3_500) { snapshotFlow { motion.out.floatValue > 0.05f || motion.lid.floatValue < 0.9f }.first { it } }
         shown.animateTo(0f, tween(400))
     }
+    val screenWpx = with(density) { androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
     Box(
         Modifier
             .offset { IntOffset(left.roundToInt(), (bottom + with(density) { 6.dp.toPx() }).roundToInt()) }
@@ -1591,7 +1593,16 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
             color = Color.White, fontSize = 12.sp, maxLines = 1,
             // Update 201: as wide as it needs, centred under the case — it was cut to the case's width, so under a narrow
             // case "Tap the cartridge (or click a stick) to take it out" lost its end ("… to").
-            modifier = Modifier.wrapContentWidth(unbounded = true)
+            // (Update 467, popup gate: with large text, under a case near the screen's edge, it ran 12 px off the left
+            // edge — "an the case …"; it now slides back inside the screen, still as close to centred as it can be.)
+            modifier = Modifier.layout { m, c ->
+                val p = m.measure(c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
+                val centred = (c.maxWidth - p.width) / 2
+                val edge = 4.dp.roundToPx()
+                val absL = left.roundToInt() + centred
+                val shift = if (absL < edge) edge - absL else if (absL + p.width > screenWpx - edge) (screenWpx - edge) - (absL + p.width) else 0
+                layout(c.maxWidth, p.height) { p.place(centred + shift, 0) }
+            }
                 .background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         )

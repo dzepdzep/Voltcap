@@ -24,6 +24,7 @@ internal object QaTrace {
         on = TestHooks.enabled(activity)
         if (!on) return
         dir = runCatching { activity.getExternalFilesDir(null) }.getOrNull()
+        QaClip.watch(activity)
         val hz = runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 30) activity.display?.refreshRate else @Suppress("DEPRECATION") activity.windowManager.defaultDisplay.refreshRate
         }.getOrNull() ?: 60f

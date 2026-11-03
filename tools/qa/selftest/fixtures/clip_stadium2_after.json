@@ -1,0 +1,136 @@
+{
+ "screen": [
+  960,
+  640
+ ],
+ "density": 1.5,
+ "fontScale": 1.0,
+ "windows": [
+  {
+   "id": "a",
+   "at": [
+    0,
+    0,
+    960,
+    640
+   ],
+   "focus": true,
+   "nodes": [
+    {
+     "label": "Pokemon Stadium 2",
+     "kind": "text",
+     "full": [
+      452,
+      200,
+      320,
+      30
+     ],
+     "shown": [
+      452,
+      200,
+      320,
+      30
+     ],
+     "focused": false,
+     "scroll": false,
+     "id": 0
+    },
+    {
+     "label": "While Pok\u00e9mon Stadium 2 does have a storyline",
+     "kind": "text",
+     "full": [
+      434,
+      462,
+      470,
+      70
+     ],
+     "shown": [
+      434,
+      462,
+      470,
+      70
+     ],
+     "focused": false,
+     "scroll": false,
+     "id": 0
+    },
+    {
+     "label": "Play",
+     "kind": "control",
+     "full": [
+      434,
+      512,
+      124,
+      62
+     ],
+     "shown": [
+      434,
+      512,
+      124,
+      62
+     ],
+     "focused": true,
+     "scroll": false,
+     "id": 0
+    },
+    {
+     "label": "Details",
+     "kind": "control",
+     "full": [
+      570,
+      516,
+      118,
+      58
+     ],
+     "shown": [
+      570,
+      516,
+      118,
+      58
+     ],
+     "focused": false,
+     "scroll": false,
+     "id": 0
+    },
+    {
+     "label": "Back",
+     "kind": "control",
+     "full": [
+      700,
+      516,
+      98,
+      58
+     ],
+     "shown": [
+      700,
+      516,
+      98,
+      58
+     ],
+     "focused": false,
+     "scroll": false,
+     "id": 0
+    },
+    {
+     "label": "More",
+     "kind": "control",
+     "full": [
+      810,
+      516,
+      60,
+      58
+     ],
+     "shown": [
+      810,
+      516,
+      60,
+      58
+     ],
+     "focused": false,
+     "scroll": false,
+     "id": 0
+    }
+   ]
+  }
+ ]
+}

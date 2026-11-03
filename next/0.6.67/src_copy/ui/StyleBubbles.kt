@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -779,7 +781,10 @@ private fun LiveAreaBody(c: StyleCtx, g: Game, compact: Boolean) {
                         .clip(RoundedCornerShape(10.dp))
                         .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFE2E8EF))))
                         .border(if (startOn) 3.dp else 1.dp, if (startOn) Color(0xFF39A9FF) else Color.White.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                        .pointerInput(Unit) { detectTapGestures { bubblesLiveAct(c, 0) } },
+                        .pointerInput(Unit) { detectTapGestures { bubblesLiveAct(c, 0) } }
+                        // (Update 467: a button to accessibility and the popup gate too — it was a bare tap area; the lit
+                        // one carries the QA focus mark like a focus ring.)
+                        .semantics(mergeDescendants = true) { onClick { bubblesLiveAct(c, 0); true }; if (startOn && QaTrace.on) this[QaClip.Ring] = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Start", color = Color(0xFF1A2633), fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold)
@@ -823,7 +828,8 @@ private fun LiveRound(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
         Modifier.size(if (compact) 40.dp else 50.dp).graphicsLayer { scaleX = s; scaleY = s }.clip(CircleShape)
             .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.95f), Color(0xFFCFD9E4))))
             .border(if (on) 3.dp else 1.dp, if (on) Color(0xFF39A9FF) else Color.White, CircleShape)
-            .pointerInput(label) { detectTapGestures { onTap() } },
+            .pointerInput(label) { detectTapGestures { onTap() } }
+            .semantics { onClick { onTap(); true }; if (on && QaTrace.on) this[QaClip.Ring] = true },
         contentAlignment = Alignment.Center
     ) { Icon(icon, label, tint = Color(0xFF26364A), modifier = Modifier.size(if (compact) 20.dp else 24.dp)) }
 }

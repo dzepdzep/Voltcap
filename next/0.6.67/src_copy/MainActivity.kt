@@ -287,6 +287,11 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.QaGeom.key(event.keyCode, event.action == android.view.KeyEvent.ACTION_DOWN)
         if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
+        // Update 467 (popup gate): after a touch, the first A / B / X / Y did nothing — Android leaves touch mode only for
+        // the D-pad and typing keys, so a face button reached a home screen with nothing focused (the popup sweep: "first A
+        // opened nothing", and Row windows opened with no button lit). A gamepad button now leaves touch mode first.
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && android.view.KeyEvent.isGamepadButton(event.keyCode) &&
+            window?.decorView?.isInTouchMode == true) runCatching { window.decorView.requestFocusFromTouch() }
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)

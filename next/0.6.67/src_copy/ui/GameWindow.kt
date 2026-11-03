@@ -979,7 +979,9 @@ internal fun GameWindow(
     val winToken = remember(g.stableKey) { Any() }
     DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
     val onPlay: () -> Unit = {
-        val orphan = HomeKeyGuard.takeOrphanRelease()
+        // (Update 467, popup gate: the left-over A release is a key's — a TOUCH on Play after opening with A was taken for
+        // it and did nothing the first time (Twin layouts open on A's press). It is cleared either way.)
+        val orphan = HomeKeyGuard.takeOrphanRelease() && KeyInput.lastWasKey
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit

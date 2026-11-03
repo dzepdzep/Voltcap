@@ -2124,6 +2124,291 @@
    "status": "open",
    "found": "2026-11-03 update 466",
    "note": "Photo path keeps opaque sides (462b); back and front now show the board."
+  },
+  {
+   "id": "D197",
+   "title": "Case flow window: Play / Details / Back / More cut at the bottom (Pokémon Stadium 2)",
+   "rule": "R26",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "CASEFLOW · OWN · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "Claude outputs/qa467/stadium2_before_after_inspect.png"
+   ],
+   "root_cause": "CaseFlowMedia: the whole panel was one verticalScroll with heightIn(max) — the action row sat inside the scroll and was clipped by the panel",
+   "fix": "ui/WinScenes.kt: media + chips + summary scroll in weight(1f, fill=false); the action row is outside the scroll, always whole",
+   "verified": "k467f CASEFLOW_* PASS, o467f PASS"
+  },
+  {
+   "id": "D198",
+   "title": "After a touch, the first A / B / X / Y did nothing; Row windows opened with no button lit",
+   "rule": "R26",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "all layouts · ROW_OPENS / ROW_REVEAL / SHARED most visible · KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
+   "evidence": [
+    "sweep k467s log 'first A opened nothing' (before)"
+   ],
+   "root_cause": "Android leaves touch mode only for D-pad and typing keys; a face button reached a home screen with nothing focused",
+   "fix": "MainActivity.dispatchKeyEvent: a gamepad button leaves touch mode first (requestFocusFromTouch)",
+   "verified": "manual tap→B→A and tap→A: popup opens, Play focused (KONKR)"
+  },
+  {
+   "id": "D199",
+   "title": "Classic details window: Play / More etc. had no click semantics (TalkBack, QA)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "CLASSIC style · all layouts",
+   "evidence": [
+    "QaClip dump (Play reported as text)"
+   ],
+   "root_cause": "tapToRun was a bare pointerInput",
+   "fix": "ui/GameDetailsOverlay.kt tapToRun adds onClick semantics; DialogChrome.focusRing marks the lit control for QA (hooks only)",
+   "verified": "k467f *_CLASSIC PASS"
+  },
+  {
+   "id": "D200",
+   "title": "Resume window: the facts box squeezed to half a line beside a tall key column",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "RESUME · OWN · KONKR GT78 960x640 (1.5x) (1.0 and 1.3 font)",
+   "evidence": [
+    "k467f RESUME_OWN_main.png"
+   ],
+   "root_cause": "DiscoverCard's square was as tall as the card, leaving the card ~210 dp; SceneFactsBody then had ~14 dp",
+   "fix": "ui/WinScenesHomes2.kt square leaves the card ≥ 290 dp; ui/WinScenesMore.kt SceneFactsBody gives its room away under one whole row",
+   "verified": "k467r RESUME_* PASS (1.0); 1.3 in k467fz"
+  },
+  {
+   "id": "D201",
+   "title": "Arctic drawer: Back cut at the drawer's foot",
+   "rule": "R26",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "ARCTIC · OWN · KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
+   "evidence": [
+    "k467f ARCTIC_OWN_main.png"
+   ],
+   "root_cause": "FullText took the theme's 24 sp line → 36 dp rows; 8–9 rows didn't fit",
+   "fix": "ui/WinScenesHomes.kt: own 18 sp line height; 6 dp padding under 500 dp",
+   "verified": "k467t ARCTIC_* PASS; Odin o467z"
+  },
+  {
+   "id": "D202",
+   "title": "Blade guide: Back cut at the blade's bottom",
+   "rule": "R26",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "BLADES · OWN · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "k467f BLADES_OWN_main.png"
+   ],
+   "root_cause": "36 / 44 dp rows × 8 ran past the blade on a 427 dp screen",
+   "fix": "ui/WinScenesConsole.kt BladeGuide rows 29 / 38 dp under 440 dp",
+   "verified": "k467r BLADES_* PASS"
+  },
+  {
+   "id": "D203",
+   "title": "Panels: Back's last 3 dp cut",
+   "rule": "R26",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "PANELS · OWN · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "k467f PANELS_OWN_main.png"
+   ],
+   "root_cause": "short rows 31 dp",
+   "fix": "PanelDetail short rows 30 / 38 dp",
+   "verified": "k467r PANELS_* PASS"
+  },
+  {
+   "id": "D204",
+   "title": "Storage window beside the case: tabs ran off the band (Options 6 px), SUMMARY broke over two lines",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "STORAGE · OWN (Inspect) · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "k467f STORAGE_OWN_main.png"
+   ],
+   "root_cause": "fixed tab padding / font and 3 menu items a row in a ~320 dp window",
+   "fix": "ui/WinScenes.kt StorageRecord: narrow (<560 dp) tabs tighter, no L1/R1 marks, 2 menu items a row",
+   "verified": "k467r STORAGE_OWN geometry PASS"
+  },
+  {
+   "id": "D205",
+   "title": "Terminal: command rows 20 dp and status lines 13 dp (under the 24 dp touch size)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "TERMINAL · OWN · both",
+   "evidence": [
+    "k467f / o467f TERMINAL_OWN"
+   ],
+   "root_cause": "2 dp row padding",
+   "fix": "rows 4 dp padding, status lines heightIn(24 dp)",
+   "verified": "k467t TERMINAL_* PASS; Odin o467z"
+  },
+  {
+   "id": "D206",
+   "title": "Rental tag: BACK ended 10 dp under the tag's foot",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "SHOP · OWN · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "k467f SHOP_OWN_main.png"
+   ],
+   "root_cause": "rows 30 / 38 dp + 4 dp gaps on a 427 dp screen",
+   "fix": "RentalTag rows 24 / 30 dp, 2 dp gaps under 440 dp; tag marked tilted for QA",
+   "verified": "k467fz (1.3) — 1.0 not re-run"
+  },
+  {
+   "id": "D207",
+   "title": "Twin windows: the first TOUCH on Play after opening with A was taken for the A release",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "partly",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE · OWN",
+   "evidence": [
+    "o467f / k467f TWIN_*_OWN_play.txt blocked=0"
+   ],
+   "root_cause": "HomeKeyGuard orphan A-release consumed by a touch",
+   "fix": "GameWindow.onPlay: the orphan release only counts after a key press",
+   "verified": "Odin o467t PASS; KONKR still FAIL (a tap on Play does nothing at all — OPEN, D211)"
+  },
+  {
+   "id": "D208",
+   "title": "Bubbles LiveArea: Start and round keys were bare tap areas (no accessibility / QA semantics)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "BUBBLES · all",
+   "evidence": [
+    "o467r BUBBLES dumps"
+   ],
+   "root_cause": "pointerInput only",
+   "fix": "ui/StyleBubbles.kt: onClick semantics + QA focus mark",
+   "verified": "LiveArea is the layout's own page: popup NOT TESTED"
+  },
+  {
+   "id": "D209",
+   "title": "Font 1.3: the Inspect hint under the case ran 12 px off the screen's left edge",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "BOX / COVERDETAILS · OWN · KONKR GT78 960x640 (1.5x) · font 1.3",
+   "evidence": [
+    "k467fs BOX_OWN_main.png"
+   ],
+   "root_cause": "unbounded centred hint under a case near the edge",
+   "fix": "ui/MediaInspectView.kt OpenHint slides back inside the screen",
+   "verified": "k467fz"
+  },
+  {
+   "id": "D210",
+   "title": "First A after Voltcap starts does nothing (second A opens)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "first combo of every run · both devices",
+   "evidence": [
+    "k467r / o467r / o467t log 'first A opened nothing' (CASEFLOW_OWN, TWIN_DESK_OWN)"
+   ],
+   "root_cause": "fresh process: nothing focused in Compose until a key; D198's fix doesn't cover it",
+   "fix": "NOT FIXED — needs a focus on start",
+   "verified": "—"
+  },
+  {
+   "id": "D211",
+   "title": "Twin windows on the KONKR: a tap on Play does nothing",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "TWIN_* · OWN · KONKR GT78 960x640 (1.5x)",
+   "evidence": [
+    "k467t TWIN_*_OWN_play.txt blocked=0; manual tap logged nothing"
+   ],
+   "root_cause": "touch doesn't reach the key (Odin works) — cause not found",
+   "fix": "NOT FIXED",
+   "verified": "—"
+  },
+  {
+   "id": "D212",
+   "title": "Owner decision: small touch rows / boxes that cross by design",
+   "rule": "R26",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-03 update 467 popup gate (popclip)",
+   "where": "ARCADE (rows 17 dp, PRESS START bar), MEMCARD (status 14 dp), NIGHT (slanted keys' boxes cross 13 px), ORBIT (round keys 9×18 px), MAGAZINE (3–6 px)",
+   "evidence": [
+    "k467f / o467f"
+   ],
+   "root_cause": "design of those windows",
+   "fix": "not changed — owner to choose",
+   "verified": "—"
+  },
+  {
+   "id": "D213",
+   "title": "Font 1.3: Arctic drawer's Back cut again (8 rows don't fit)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-03 update 467 font 1.3 sweep",
+   "where": "KONKR GT78 960x640 · font 1.3",
+   "evidence": [
+    "k467fz ARCTIC_OWN_main.png"
+   ],
+   "root_cause": "list fits at 1.0 only",
+   "fix": "NOT FIXED",
+   "verified": "—"
+  },
+  {
+   "id": "D214",
+   "title": "Font 1.3: rental tag's BACK cut",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-03 update 467 font 1.3 sweep",
+   "where": "KONKR GT78 960x640 · font 1.3",
+   "evidence": [
+    "k467fz SHOP_OWN_main.png"
+   ],
+   "root_cause": "rows sized for 1.0",
+   "fix": "NOT FIXED",
+   "verified": "—"
+  },
+  {
+   "id": "D215",
+   "title": "Font 1.3: Cover details with More open — Play and Save sync boxes overlap",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-03 update 467 font 1.3 sweep",
+   "where": "KONKR GT78 960x640 · font 1.3",
+   "evidence": [
+    "k467fz COVERDETAILS_OWN dumps"
+   ],
+   "root_cause": "not inspected yet",
+   "fix": "NOT FIXED",
+   "verified": "—"
   }
  ]
 }

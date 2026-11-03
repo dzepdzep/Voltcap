@@ -351,8 +351,10 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
         translationX = (1f - e) * -size.width * 0.12f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
     }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        // The big square.
-        Box(Modifier.fillMaxHeight().aspectRatio(1f).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
+        // The big square — (update 467, popup gate: as tall as the card, it left the discover card ~210 dp on the KONKR, the
+        // keys one per line and the facts a 14 dp sliver showing half a line; it now leaves the card at least 290 dp).
+        val side = minOf(h, (w - 10.dp - 290.dp).coerceAtLeast(140.dp))
+        Box(Modifier.size(side).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
             (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
             Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
