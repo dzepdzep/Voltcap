@@ -198,3 +198,14 @@ A line marked `qa-ok: RULE (reason)` (on the line or the line before) is accepte
 - **Why:** the animation prefs (Fade / Slide) were treated as the only cause; the structure (shell inside the animated container, category as an animation key) made the layout rebuild whatever they said.
 - **Check:** `static_checks.py` CATSHELL (HIGH); `CategoryStable394Test` (scans the source); hardware `sh catswitch.sh RUN "LAYOUTS"` then `python3 tools/qa/tools/catswitch.py out RUN` (blank / white / dip frames across repeated L2 / R2, 150 ms reversals = FAIL; two layouts with equal stills = INFRA: the preview did not apply). Each tested layout is its own `cat_layout_default` for the session (snapshot restored).
 - **Not covered by the tool (check by contact sheet / mark NOT TESTED):** empty categories, mixed systems, missing artwork, per-category overrides, second screen.
+
+## R25 REFERENCE-FIRST: realistic game media starts from authentic photographs (update 465; permanent, CLAUDE.md)
+Every change to a physical cartridge, card, disc, box, case or other realistic media model starts from genuine photographs
+of that exact object. For each model changed, record (in the update's QA doc): console and region; physical revision /
+variant / manufacturer where relevant; the reference URLs (and their licence — references are for measuring and comparing,
+never bundled without rights); which angles the references cover; what was measured or visually verified; what stays
+approximate; whether the old model was already right; and that real scans are unchanged (RealScans464Test + an RC-vs-staging
+pixel check). An invented rear is never called authentic; one shape is never assumed for every revision or manufacturer.
+No suitable reference → the work is marked BLOCKED or APPROXIMATE, not guessed. Visual changes are judged on device
+screenshots against the references, never on tests alone.
+

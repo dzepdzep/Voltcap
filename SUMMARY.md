@@ -1,3 +1,23 @@
+# Update 465 (3 Nov 2026) — physical media master update, batches 1-2: box-face trace + "Plain colour" box sides option (staging)
+
+**Owner:** master physical media quality update (5 batches); this entry = batch 1 (reference audit, N64 cardboard boxes) and batch 2
+(improved generated cardboard sides as a separate option). Batches 3-5 not started.
+**Device:** KONKR GT78 BW0306N230000845 (USB). Staging for the tests only, RC v0.6.66 back at the end, view restored, QA files removed,
+box_sides restored to FILL. Settings, profiles, artwork untouched.
+**Batch 1 finding:** N64 Pokémon boxes — front, spine and back are the authentic US scans (unchanged). Right side / top / bottom have
+no scan anywhere (ScreenScraper: front / spine / back only), so the default "Fill missing sides" print draws them (red from the N64
+band, title + logo). No wrong scan, no region mix-up, no duplicate ROM copies (internal ROMs/n64 only). Nothing to fix in selection.
+**Batch 2:** new Settings › Box sides option **"Plain colour from the box art"** (`BoxSides.COLOUR`; default stays FILL — no one's
+setting changes). One colour from the console's art window (skips platform band, white corners, rating), cardboard grain + fold
+shading, no stripes / logos / codes / gloss; real side scans and your picks still win. Tuned once (Kirby 64 was band-red, Silver gold →
+now pink / slate blue). Comparison sheets: Claude outputs/qa465/qa465_box_sides_v2.png, _v2_zoom.png. **Default choice = owner.**
+**Trace:** mediadump now writes FACES / SIDES lines per game (no URLs).
+**Rule:** CLAUDE.md quality rule + tools/qa/RULES.md R25 "reference-first physical media" (permanent).
+**Files:** src_copy data/Features.kt, ui/BoxSides.kt, ui/SettingsDialog.kt, ui/LauncherScreen.kt; project_copy test
+BoxSidesLabels465Test.kt (new, 4 tests; placeholder in the RC tree). All in next/0.6.67 (+ patch). Unit tests 740 green; assembleRelease OK.
+**Doc:** tools/qa/BOX_SIDES_465.md. **Not tested:** SNES / NES / Famicom boxes (no such games on the connected devices).
+RC (v0.6.66) unchanged, NOT published.
+
 # Update 464 (3 Nov 2026) — real cartridge scans proven unchanged (RC vs staging), guard tests; PhotoShells stays drawn-shell only
 
 **Owner:** "Do not change the appearance of my existing real cartridge scans … only after these checks pass should you extend".

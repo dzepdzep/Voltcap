@@ -97,3 +97,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/main/java/com/shelf/launcher/ui/PhotoShells.kt
 /app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
 /app/src/test/java/com/shelf/launcher/ui/PhotoShells462Test.kt
+/app/src/test/java/com/shelf/launcher/ui/BoxSidesLabels465Test.kt

@@ -2079,6 +2079,15 @@
    "status": "in progress",
    "found": "2026-11-03 update 462 (owner)",
    "note": "PhotoShells: the front made from a real cartridge photo of the same shell from the user's own library, the label laid into the recess; contact sheet qa462. Other systems not yet."
+  },
+  {
+   "id": "D192",
+   "title": "Generated N64 box right side / top look printed (red band + title) next to authentic scans",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "in progress",
+   "found": "2026-11-03 update 465 (owner)",
+   "note": "Cause: no side scans exist; FILL print. Plain-colour option BoxSides.COLOUR added (default unchanged), owner to choose the default from qa465_box_sides_v2."
   }
  ]
 }

@@ -1,4 +1,5 @@
 **v0.6.66 DEVELOPMENT (started 1 Nov 2026, after v0.6.65 was published — tag v0.6.65 = 8261de7) — resume here. NOT published (owner approval needed).**
+**Update 465: batches 1-2 of the physical media master update done (BOX_SIDES_465.md). Box sides option COLOUR exists, default FILL until the owner picks. Next: batch 3 (clear GBC / SFC-PAL / Famicom backs from licensed photo references, R25), batch 4 NES geometry, batch 5 regression sweep. Open owner questions: default box sides; Sega library scan.**
 Batch 1 DONE (update 438): D131 fixed + verified on the Odin and GT78 — cause was LauncherScreen's corner path flipping the ☰ by the game-row
 setting on whole-screen layouts; fix in `ui/ShortcutCorner.kt` (see SUMMARY 438 / defects.json D131). Earlier D131 explanations (commits d28b5b6 / f0f71bc:
 StyleDiscStation row, "styleHasShortcuts by design", "fix to try") are superseded — do not re-investigate.

@@ -57,6 +57,13 @@ The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHOR
 Large master prompts have been truncated. Work in shorter, complete stages. Read `COWORK_HANDOFF.md` and continue unfinished tasks. Never assume missing prompt sections are done. Avoid repeating successful QA. Task prompts are short; the next task is in `CURRENT_TASK.md`, unfinished priorities in `COWORK_HANDOFF.md`.
 
 ## Quality rules (permanent; extend rules 5, 6, 7, 9, 11, 12 and the Thor section, do not repeat them)
+- **Reference-first physical media (permanent, owner 3 Nov 2026; QA rule R25):** every change to a realistic cartridge, card, disc,
+  box or case model starts from authentic photographs of that exact console / region / revision / manufacturer. Document per
+  model: references (URLs + licence; never bundle third-party photos without rights), angles they cover, what was measured or
+  verified, what stays approximate, whether the old model was already right, and that real scans are unchanged
+  (RealScans464Test + RC-vs-staging pixels). No reference → BLOCKED / APPROXIMATE, never a guess, never "authentic". Real scans,
+  your picks and custom models keep their precedence over anything generated; a new look never becomes the default without the
+  owner's approval of a side-by-side comparison.
 - **Device QA:** only under the Thor authorization above; check on hardware what a change touches, mark the rest NOT TESTED, don't repeat passed QA.
 - **User settings:** never reset, rename or migrate preferences, profiles, layouts, categories or artwork silently; temporary test values are restored; new prefs go into `data/SettingsScopes.kt`.
 - **Music players:** the existing player designs and their toggles stay as they are; improve transitions / reliability inside them, never replace or redesign a player.

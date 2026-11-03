@@ -1128,7 +1128,11 @@ object Features {
      * real packaging scan (no scraper has those sides, so mostly your own scans), else plain card. PLAIN: plain card.
      */
     enum class BoxSides(val label: String) {
-        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard")
+        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard"),
+        // (Update 465, owner: "the generated sides can look too busy … a plain colour naturally derived from the box art":
+        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print. The
+        // default stays "Fill missing sides" until the owner picks.)
+        COLOUR("Plain colour from the box art")
     }
     val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
     /**

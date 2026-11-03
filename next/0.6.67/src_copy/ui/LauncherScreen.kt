@@ -983,6 +983,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     append("homeScans=${HomeScans.of(k)?.map { it.first }} known=${HomeScans.knownHere(k)}\n")
                     append("front=${BoxTexture.front(st.withoutFlat(), g.platform)}\nuserSpine=${BoxTexture.userSpine(st.withoutFlat(), g.platform)}\n")
                     append("flat=${st?.filter { FlatArt.isKnown(it.second) }?.map { it.first }}\n")
+                    // (Update 465: each face of the 3D box by where it comes from — the scan's own label (its media / region
+                    // only, never an address: they carry the account) or "cover" / "drawn" — and each blank side's source.)
+                    fun src(u: String?): String = when {
+                        u == null -> "drawn"
+                        else -> st?.firstOrNull { it.second == u }?.let { (lab, url) ->
+                            val m = Regex("[?&]media=([^&]+)").find(url)?.groupValues?.get(1); val r = Regex("[?&]region=([^&]+)").find(url)?.groupValues?.get(1)
+                            "$lab [media=$m region=$r markedScan=${com.shelf.launcher.data.ArtProvenance.isScan(url)}]"
+                        } ?: if (u == (state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl)) "cover" else "other picture"
+                    }
+                    val m3 = runCatching { case3dModels(g, state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl, st, true) }.getOrNull()
+                    append("FACES front=${src(m3?.first)} | spine=${src(m3?.second)} | back=${src(m3?.third)}\n")
+                    append("SIDES mode=${com.shelf.launcher.data.Features.boxSides.state.value} " + BoxSide.values().joinToString(" ") { sd ->
+                        val e = st.withoutFlat()?.firstOrNull { it.first == sd.label }
+                        "${sd.name}=" + (e?.let { "picture(markedScan=${com.shelf.launcher.data.ArtProvenance.isScan(it.second)})" } ?: "none")
+                    } + "\n")
                 }
             }
         }

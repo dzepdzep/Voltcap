@@ -3,6 +3,23 @@
 Legend: DONE (verified on hardware unless noted) · FIXED (code + tests, hardware partial) · OPEN · DEFERRED (owner decision / device needed).
 Release: v0.6.66 RC frozen and unpublished; all new work in `next/0.6.67/`. No publishing without the owner's approval.
 
+## Update 465 (3 Nov 2026) — master physical media update
+| Request | Status | Evidence / note |
+|---|---|---|
+| B1 trace every visible box face | DONE (KONKR) | FACES/SIDES mediadump; front/spine/back authentic, right/top/bottom generated (no scans exist) |
+| B1 duplicate ROM copies internal / SD | DONE | KONKR: internal ROMs/n64 only, no SD copies |
+| B1 genuine N64 designs unaltered | DONE | no change to front/spine/back path |
+| B1 fallback despite valid scans → fix + test | DONE (no such case) | BoxSidesLabels465Test guards pick order |
+| B2 plain-colour sides as separate option | FIXED (owner to judge) | BoxSides.COLOUR; sheets qa465_box_sides_v2(_zoom).png |
+| B2 default unchanged without approval | DONE | default FILL |
+| B2 comparisons Snap / Stadium / Stadium 2 / Paper Mario / others | DONE | + Kirby 64, Silver GBC, Advance Wars 2 GBA; SNES/NES boxes NOT TESTED (no games) |
+| B3 clear GBC / SFC-PAL / Famicom backs | OPEN | next batch |
+| B4 NES geometry | OPEN | |
+| B5 regression sweep (labels, angles, layouts, perf) | OPEN (labels part: BoxSidesLabels465Test) | |
+| S9 reference-first rule | DONE | CLAUDE.md + RULES.md R25 |
+| S10 review PDF / matrix | PARTIAL | box-sides review + matrix in BOX_SIDES_465.md / PDF; backs + NES after batches 3-4 |
+| Sega photos | DEFERRED | needs a scanned Sega library (owner) |
+
 ## Update 464 (3 Nov 2026)
 | Request | Status | Evidence / note |
 |---|---|---|
