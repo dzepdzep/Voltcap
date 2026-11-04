@@ -23,6 +23,11 @@ for lay in $LAYS; do
   # (QA_CATEGORY=All: the walk runs in that category — the Odin's consoles hold one or two games each, a walk there can't move.)
   [ -n "$QA_CATEGORY" ] && { A --es voltcap_test_category "$QA_CATEGORY"; sleep 2; }
   [ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 2.5; }
+  # (Update 475, D249: "Who's playing?" can come up again (a restart, the first start after an install): every key of the
+  # walk then went to the picker and the layout looked stuck. Closed with B whenever the app's own mark says PICKER;
+  # the mark at the start is logged, and navclip.py grades a walk that began on the picker INFRA.)
+  for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B; sleep 1.5; echo "$lay picker closed with B" >> $OUT/log.txt; done
+  echo "$lay mark=$(cut -d' ' -f1 $F/voltcap_qa_screen 2>/dev/null)" >> $OUT/steps.txt
   s=0; screencap -p $OUT/${lay}_s0.png; dump ${lay}_s0
   axis=RIGHT; back=LEFT
   for key in A1 A2 B1 B2; do

@@ -84,6 +84,9 @@ def texts(d):
 
 
 def grade_layout(run, lay, exp):
+    sp = os.path.join(run, "steps.txt")
+    if os.path.exists(sp) and re.search(rf"^{re.escape(lay)} mark=PICKER", open(sp, encoding="utf-8", errors="replace").read(), re.M):
+        return {k: (qalib.INFRA, "the walk began on the profile picker (Who's playing?): its keys never reached the home screen") for k in ("move", "jump", "steady", "art", "late")}
     d = {i: load(run, f"{lay}_s{i}") for i in range(5)}
     png = {i: os.path.join(run, f"{lay}_s{i}.png") for i in range(5)}
     early = {i: next((p for p in (os.path.join(run, f"{lay}_s{i}e.raw"), os.path.join(run, f"{lay}_s{i}e.png")) if os.path.exists(p)),

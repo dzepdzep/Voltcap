@@ -66,6 +66,17 @@
    "patch_sha256": "2e683f81993d8462836482f66c213130895211e1a44c39bb84bc693364fefb8c",
    "tree_hash": "9f355cf503c8ec166108a39c378d5bb9a85c7caf31da087d4eff789fb8d8444a",
    "note": "update 474 phase 1, build c: as 474b + QaArt keyed by the request's target (dumps had no images) + fixture art numbered by alphabetical rank over 24 pictures (neighbours shared one, k474p); never published"
+  },
+  {
+   "id": "qa-0.6.68-475a",
+   "apk_sha256": "7c4e696d035f348f4f3afbbbb2bb362bde3056c3157f31f9e30872972240fb21",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "ebc96ea81bfca31088792d1040c5de619d899308",
+   "patch_sha256": "8d4f8554f200a145e706d81f395fa8d2c30ed86b77f8eda5891265f10935cb73",
+   "tree_hash": "82f9f2b82107566ee03709643d38d8d7ea464326af9f97661adbbb3e597ddb94",
+   "note": "update 475: 474c + D245 (row-style facts first, story in whole lines), D246 (Storage facts whole rows), D247 (Airy story whole lines), D248 (logo shapes kept on disk); main's app source = ebc96ea (main HEAD 519be56 changed no app file); never published"
   }
  ]
 }

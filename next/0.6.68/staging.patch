@@ -23,6 +23,85 @@ index b8fdb4e..38d63e9 100644
              .build()
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt b/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
+index c5dcaf5..f746344 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
+@@ -1019,20 +1019,63 @@ internal fun GameLogo(url: String?, height: androidx.compose.ui.unit.Dp, maxWidt
+  */
+ internal object LogoAspects {
+     private val known = java.util.concurrent.ConcurrentHashMap<String, Float>()
++    // (Update 475, D248: the shapes are also kept on disk — cache/logo_aspects.txt, a hashed address and the shape per line,
++    // never the address itself. Known only for the session, the FIRST time a game's logo showed after a start its slot was
++    // the full logo width — "Pokemon Stadium 2" at x 204 — and every later time the logo's own width — x 63: the same game's
++    // title in two places (navclip k474r, KONKR). A cache, not a setting: deleting it only costs that first-time slot again.)
++    @Volatile private var disk: Map<String, Float>? = null
++    private val writer = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "logo-aspects").apply { isDaemon = true } }
++    private const val FILE = "logo_aspects.txt"
++    private const val MAX_LINES = 4000
+ 
+-    fun note(url: String, drawable: android.graphics.drawable.Drawable) {
++    fun note(url: String, drawable: android.graphics.drawable.Drawable, context: android.content.Context? = null) {
+         val w = drawable.intrinsicWidth
+         val h = drawable.intrinsicHeight
+-        if (w > 0 && h > 0) known[url] = w.toFloat() / h
++        if (w <= 0 || h <= 0) return
++        val a = w.toFloat() / h
++        val old = known.put(url, a)
++        val ctx = context?.applicationContext ?: return
++        if (old != null && kotlin.math.abs(old - a) < 0.01f) return
++        val key = keyOf(url)
++        if (disk?.get(key)?.let { kotlin.math.abs(it - a) < 0.01f } == true) return
++        writer.execute {
++            runCatching {
++                val f = java.io.File(ctx.cacheDir, FILE)
++                if (f.exists() && f.length() > MAX_LINES * 24L) f.writeText(encode(decode(f.readText()).entries.toList().takeLast(MAX_LINES / 2).associate { it.key to it.value }))
++                f.appendText(line(key, a))
++            }
++        }
+     }
+ 
+     fun of(context: android.content.Context, url: String): Float? {
+         known[url]?.let { return it }
++        val d = disk ?: runCatching { decode(java.io.File(context.cacheDir, FILE).takeIf { it.exists() }?.readText() ?: "") }
++            .getOrDefault(emptyMap()).also { disk = it }
++        d[keyOf(url)]?.let { a -> known[url] = a; return a }
+         val bmp = runCatching {
+             coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key("$url|style|${styleArtPx(context)}"))?.bitmap
+         }.getOrNull() ?: return null
+         return if (bmp.width > 0 && bmp.height > 0) (bmp.width.toFloat() / bmp.height).also { known[url] = it } else null
+     }
++
++    /** A short hash of the logo's address: the file never holds an address (they can carry an account's sign-in). */
++    internal fun keyOf(url: String): String =
++        java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
++
++    internal fun line(key: String, aspect: Float) = "$key\t${"%.4f".format(java.util.Locale.ROOT, aspect)}\n"
++
++    internal fun encode(m: Map<String, Float>) = m.entries.joinToString("") { line(it.key, it.value) }
++
++    /** The file's lines (later lines win); anything malformed is skipped. */
++    internal fun decode(text: String): Map<String, Float> {
++        val out = LinkedHashMap<String, Float>()
++        text.lineSequence().forEach { l ->
++            val p = l.split('\t')
++            val a = p.getOrNull(1)?.toFloatOrNull()
++            if (p.size == 2 && p[0].length == 16 && a != null && a > 0f && a < 50f) { out.remove(p[0]); out[p[0]] = a }
++        }
++        return out
++    }
+ }
+ 
+ /**
+@@ -1081,7 +1124,7 @@ internal fun LogoAndName(
+                 contentDescription = null,
+                 contentScale = ContentScale.Fit,
+                 alignment = if (centered) Alignment.Center else Alignment.CenterStart,
+-                onSuccess = { s -> LogoAspects.note(logoUrl, s.result.drawable) },
++                onSuccess = { s -> LogoAspects.note(logoUrl, s.result.drawable, context) },
+                 onError = { failed = true },
+                 modifier = Modifier.width(slotWidth).height(logoHeight)
+             )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 index eca8853..eaff39e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
@@ -311,6 +390,66 @@ index 0000000..05d27e1
 +        return out
 +    }
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt b/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
+index 418ffc1..a3111b1 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
+@@ -484,27 +484,29 @@ internal fun RowMotionWindow(
+                     .width(with(d) { minOf(if (opens) textW else minOf(textW, W * 0.62f), with(d) { 760.dp.toPx() }).toDp() })
+                     .height(with(d) { infoH.toDp() })
+             ) {
++                // (Update 475, D245: the facts and the achievements come first — they are short and exist nowhere else in this
++                // window; the story takes only the room they leave (the whole story is one press away, Details) and gives way
++                // entirely on a short screen. Before, the story claimed its 3–5 lines first and the facts / achievements under it
++                // were laid out with no height at all: KONKR 17 combinations, Odin 5, k471a / k474a.)
+                 val summary = meta?.summary?.takeIf { it.isNotBlank() }
+-                if (summary != null) Text(
+-                    summary, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 1.4.em,
+-                    maxLines = if (infoH > with(d) { 170.dp.toPx() }) 5 else 3, overflow = TextOverflow.Ellipsis
++                if (summary != null) StoryLines(
++                    summary, Color.White.copy(alpha = 0.9f), 13.sp, (13 * 1.4f).sp, if (infoH > with(d) { 170.dp.toPx() }) 5 else 3,
++                    Modifier.weight(1f, fill = false)
+                 )
+-                val facts = listOfNotNull(
+-                    meta?.developer?.let { "Developer" to it }, meta?.genres?.firstOrNull()?.let { "Genre" to it },
+-                    meta?.releaseYear?.let { "Released" to it.toString() }
+-                )
+-                if (facts.isNotEmpty()) Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
++                val facts = revealFacts(meta?.developer, meta?.genres?.firstOrNull(), meta?.releaseYear, earned, total)
++                if (facts.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(
++                    Modifier.padding(top = if (summary != null) 10.dp else 0.dp),
++                    horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)
++                ) {
+                     facts.forEach { (h, v) ->
+                         Column {
+                             Text(h.uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em, maxLines = 1)
+-                            Text(v, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
++                            Text(v, color = Color.White, fontSize = 13.sp, maxLines = 1)
+                         }
+                     }
+                 }
+-                if (total > 0) {
+-                    Spacer(Modifier.height(12.dp))
+-                    Text("Achievements  $earned / $total", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+-                    Box(Modifier.padding(top = 5.dp).width(220.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.16f))) {
++                if (total > 0 && infoH > with(d) { 150.dp.toPx() }) {
++                    Box(Modifier.padding(top = 8.dp).width(220.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.16f))) {
+                         Box(Modifier.fillMaxWidthFraction(earned.toFloat() / total).height(5.dp).background(accent))
+                     }
+                 }
+@@ -649,3 +651,12 @@ internal fun Modifier.rowRevealFade(): Modifier =
+ internal object ActiveWinMotion {
+     var value by androidx.compose.runtime.mutableStateOf(Features.WinMotion.NONE)
+ }
++
++/**
++ * Update 475 (D245): the facts the row-style window shows under the story — developer, genre, year and the achievements
++ * count as a fact like the others (it stays in view on every screen; the progress bar is drawn only when there is room).
++ */
++internal fun revealFacts(developer: String?, genre: String?, year: Int?, earned: Int, total: Int): List<Pair<String, String>> = listOfNotNull(
++    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
++    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
++)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 index 536f473..3b53bf0 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
@@ -333,6 +472,101 @@ index 536f473..3b53bf0 100644
          val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
          if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
              // (A walk only ever previews: nothing it changes is saved.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
+new file mode 100644
+index 0000000..ce680c4
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
+@@ -0,0 +1,61 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.layout.Layout
++import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.unit.Constraints
++
++/**
++ * Update 475 (D246): a column that shows its rows whole or not at all. Rows are laid out top to bottom at their own height;
++ * the first row that would not fit in the room left — and every row after it — is not shown (never squeezed to a sliver
++ * or to no height: the Storage window's facts on the KONKR, k474a). Use only where the same information is one press away
++ * (a Details page); the part is marked as giving way for the QA gate (QaClip.GivesWay).
++ */
++@Composable
++internal fun WholeRows(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
++    Layout(content, modifier.semantics { this[QaClip.GivesWay] = true }) { measurables, constraints ->
++        val maxH = if (constraints.hasBoundedHeight) constraints.maxHeight else Int.MAX_VALUE
++        val loose = Constraints(minWidth = 0, maxWidth = constraints.maxWidth, minHeight = 0, maxHeight = Constraints.Infinity)
++        val all = measurables.map { it.measure(loose) }
++        val shown = all.take(wholeRowsThatFit(all.map { it.height }, maxH))
++        val used = shown.sumOf { it.height }
++        val w = (shown.maxOfOrNull { it.width } ?: 0).coerceIn(constraints.minWidth, constraints.maxWidth)
++        layout(w, used.coerceAtLeast(constraints.minHeight)) {
++            var y = 0
++            shown.forEach { it.placeRelative(0, y); y += it.height }
++        }
++    }
++}
++
++/** How many of [heights] fit whole, top to bottom, in [room] (the rule [WholeRows] lays out by; unit-tested). */
++internal fun wholeRowsThatFit(heights: List<Int>, room: Int): Int {
++    var used = 0
++    heights.forEachIndexed { i, h -> if (used + h > room) return i; used += h }
++    return heights.size
++}
++
++/**
++ * Update 475 (D245 / D247): a story (a game's summary) in whatever room is left — as many WHOLE lines as fit, up to
++ * [maxLines], ending in an ellipsis when cut (the whole story is one press away: Details); nothing at all when not even one
++ * line fits, never a half line or a line of no height. Put it in a Column with `Modifier.weight(1f, fill = false)` so the
++ * facts and keys around it are laid out first. Marked as giving way for the QA gate.
++ */
++@Composable
++internal fun StoryLines(
++    text: String, color: androidx.compose.ui.graphics.Color, fontSize: androidx.compose.ui.unit.TextUnit,
++    lineHeight: androidx.compose.ui.unit.TextUnit, maxLines: Int, modifier: Modifier = Modifier
++) {
++    androidx.compose.foundation.layout.BoxWithConstraints(modifier.semantics { this[QaClip.GivesWay] = true }) {
++        val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { lineHeight.toPx() }
++        val fit = storyLinesThatFit(constraints.maxHeight, lineH, maxLines)
++        if (fit >= 1) androidx.compose.material3.Text(
++            text, color = color, fontSize = fontSize, lineHeight = lineHeight, maxLines = fit,
++            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
++        )
++    }
++}
++
++/** Whole lines of height [lineH] px that fit in [room] px, at most [maxLines] (unbounded room = [maxLines]). */
++internal fun storyLinesThatFit(room: Int, lineH: Float, maxLines: Int): Int =
++    if (room == androidx.compose.ui.unit.Constraints.Infinity) maxLines else (room / lineH).toInt().coerceIn(0, maxLines)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
+index ce010b0..9b0ebc4 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
+@@ -848,7 +848,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+                             Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                         }
+                     }
+-                    Column(Modifier.fillMaxWidth().weight(1f, fill = false)) {
++                    // (Update 475, D246: whole rows only — on a short screen the facts that don't fit are left out whole (all of
++                    // them are on the Details page), never squeezed: LAST PLAYED / ACHIEVED had no height and PLAYED 10 of its 36 px.)
++                    WholeRows(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                         cell("Released", ctx.year)
+                         cell("Made by", ctx.developer)
+                         cell("Kind", ctx.genres)
+@@ -1433,9 +1435,11 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+                             }
+                         }
+                     }
++                    // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
++                    // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)
+                     ctx.summary?.let {
+                         Spacer(Modifier.height(10.dp))
+-                        Text(it, color = Color(0xFF66707E), fontSize = 13.sp, lineHeight = 18.sp, maxLines = 4)
++                        StoryLines(it, Color(0xFF66707E), 13.sp, 18.sp, 4, Modifier.weight(1f, fill = false))
+                     }
+                 } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
+             }
 diff --git a/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt b/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
 new file mode 100644
 index 0000000..54cbeae
@@ -399,5 +633,69 @@ index 0000000..54cbeae
 +    @Test fun artShapesAreTheAdvertisedOnes() {
 +        assertEquals(960 to 540, QaFixture.shape("wide")); assertEquals(600 to 900, QaFixture.shape("portrait"))
 +        assertEquals(64 to 96, QaFixture.shape("lowres")); assertNull(QaFixture.shape("real"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt b/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt
+new file mode 100644
+index 0000000..1cfb60f
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt
+@@ -0,0 +1,58 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/** Update 475 (D245): the row-style window keeps every fact, the achievements count included, whatever the story's length. */
++class RevealFacts475Test {
++    @Test fun everyFactAndTheAchievementsCount() {
++        val f = revealFacts("HAL Laboratory", "Simulator", 2000, 3, 109)
++        assertEquals(listOf("Developer", "Genre", "Released", "Achievements"), f.map { it.first })
++        assertEquals("3 / 109", f.last().second)
++    }
++
++    @Test fun missingOnesAreLeftOutNotBlank() {
++        assertTrue(revealFacts(null, " ", null, 0, 0).isEmpty())
++        assertEquals(listOf("Released"), revealFacts("", null, 1999, 0, 0).map { it.first })
++    }
++
++    @Test fun theStoryNeverComesBeforeTheFactsInTheLayout() {
++        // (The story is the Column's only weighted child: Compose measures it last, in the room the facts leave.)
++        val src = java.io.File("src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt").readText()
++        val room = src.substringAfter("// ---- what appears in the room they leave ----").substringBefore("// ---- Play / Continue")
++        assertTrue(room.contains("StoryLines("))
++        assertTrue(room.indexOf("StoryLines(") < room.indexOf("revealFacts("))
++        assertTrue(room.contains("Modifier.weight(1f, fill = false)"))
++    }
++}
++
++/** Update 475 (D246 / D247): rows are shown whole or not at all. */
++class WholeRows475Test {
++    @Test fun storyShowsWholeLinesOrNone() {
++        assertEquals(0, storyLinesThatFit(17, 18f, 4))
++        assertEquals(2, storyLinesThatFit(40, 18f, 4))
++        assertEquals(4, storyLinesThatFit(400, 18f, 4))
++        assertEquals(4, storyLinesThatFit(androidx.compose.ui.unit.Constraints.Infinity, 18f, 4))
++    }
++
++    @Test fun onlyRowsThatFitWhole() {
++        assertEquals(1, wholeRowsThatFit(listOf(30, 30, 30), 59))
++        assertEquals(2, wholeRowsThatFit(listOf(30, 30, 30), 60))
++        assertEquals(0, wholeRowsThatFit(listOf(30), 29))
++        assertEquals(3, wholeRowsThatFit(listOf(30, 30, 30), Int.MAX_VALUE))
++    }
++}
++
++/** Update 475 (D248): logo shapes kept on disk by a hashed address — the title's place no longer differs on the first visit. */
++class LogoAspects475Test {
++    @Test fun roundTripAndNoAddressInTheFile() {
++        val url = "https://example.invalid/media?ssid=someone&sspassword=secret&id=1"
++        val k = LogoAspects.keyOf(url)
++        assertEquals(16, k.length)
++        val text = LogoAspects.encode(mapOf(k to 2.5f)) + "garbage\n" + LogoAspects.line(k, 3.25f)
++        assertTrue(!text.contains("example") && !text.contains("secret"))
++        assertEquals(3.25f, LogoAspects.decode(text)[k]!!, 0.0001f)
++        assertEquals(1, LogoAspects.decode(text).size)
 +    }
 +}

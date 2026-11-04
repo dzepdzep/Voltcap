@@ -1244,6 +1244,13 @@ class TestQa474(unittest.TestCase):
         self.assertEqual(g["late"][0], "PASS"); self.assertIn("WARN", g["late"][1])
         self.assertIn("low-res", g["late"][1]); self.assertIn("> 400 ms", g["late"][1])
 
+    def test_nav_walk_on_the_profile_picker_is_infra(self):
+        """Update 475, D249: the keys went to "Who's playing?" — not a stuck layout."""
+        import navclip
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "steps.txt"), "w").write("L mark=PICKER\n")
+        self.assertTrue(all(v[0] == "INFRA" for v in navclip.grade_layout(d, "L", {}).values()))
+
     def test_nav_jump_stale_stuck_fail(self):
         self.assertEqual(self.nav_run(jump=True)["jump"][0], "FAIL")
         st = self.nav_run(stale=True)["art"]; self.assertEqual(st[0], "FAIL"); self.assertIn("stale", st[1])
@@ -1278,6 +1285,16 @@ class TestQa474(unittest.TestCase):
         self.assertTrue(any("density" in x.reason and "roomy" not in x.reason for x in r))   # key named, value never printed
         os.remove(os.path.join(c, "voltcap_test_snapshot_view.json"))
         self.assertIn("INFRA", [x.status for x in snapdiff.diff(a, c)])
+
+    # --- visual PDF: the boxes it draws are the dump's own proofs --------------------------------------------------
+    def test_visualpdf_marks_the_cover_details_cutoff_not_the_fixed_one(self):
+        try:
+            import visualpdf
+        except ImportError:
+            self.skipTest("reportlab missing")
+        bad = visualpdf.auto_marks(self.fx("coverdetails_471_k471cd_more.json"))
+        self.assertTrue(any("trophies" in t for _, t in bad))
+        self.assertFalse(any("trophies" in t for _, t in visualpdf.auto_marks(self.fx("coverdetails_471_k471gd_more.json"))))
 
     # --- D242: a row style claimed "not offered" without the app confirming the style was set --------------------
     def test_style_set_note_required_for_skip(self):

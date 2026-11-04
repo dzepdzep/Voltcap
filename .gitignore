@@ -63,3 +63,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/main/java/com/shelf/launcher/ui/QaArt.kt
 /app/src/main/java/com/shelf/launcher/ui/QaFixture.kt
 /app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
+/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
+/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt

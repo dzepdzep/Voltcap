@@ -247,6 +247,7 @@ def main():
     # n/a rows (SKIP) are listed but don't decide the verdict; the applicable ones do (none applicable = NOT TESTED).
     appl = [r for r in results if r.status != qalib.SKIP]
     print("Evidence: " + (evidence.label(ev_info) if ev_st == qalib.PASS else f"{ev_st}: {ev_why}"))
+    print(f"Popup gate (applicable, n/a rows left out): {qalib.verdict(appl)}")
     print(qalib.report_text(results, "Popup gate"))
     if jp:
         qalib.write_json(jp, results, {"evidence": {"status": ev_st, "reason": ev_why,
