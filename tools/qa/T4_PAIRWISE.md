@@ -1,0 +1,65 @@
+# T4 pairwise set — 59 runs cover all 335 coverable pairs
+
+Excluded (impossible) pairs: 0. Layouts used: 43 of 53 (missing: ARTLIB, BUBBLES, CAMERA, CARDS, CHAN, CONSOLES, COVERDETAILS, CUBE, TERMINAL, TV).
+
+| # | layout | family | style | font | density | content | device |
+|---|---|---|---|---|---|---|---|
+| 1 | HERO | carousel | OWN | 0.85 | smaller | long | KONKR |
+| 2 | CUSTOM | custom | BANNER | 1.0 | default | long | ODIN |
+| 3 | CUSTOM | custom | ROW_OPENS | 1.3 | larger | lowres | KONKR |
+| 4 | HERO_TILES | carousel | ROW_REVEAL | 0.85 | default | lowres | ODIN |
+| 5 | TWIN_DESK | dual | BANNER | 0.85 | larger | noart | KONKR |
+| 6 | GRID | grid | OWN | 1.3 | smaller | noart | ODIN |
+| 7 | LIBRARY | grid | ROW_REVEAL | 1.0 | larger | portrait | KONKR |
+| 8 | TWIN_ICONS | dual | ROW_OPENS | 0.85 | smaller | portrait | ODIN |
+| 9 | SHELF | physical | SHARED | 0.85 | default | real | KONKR |
+| 10 | CLASSIC | row | CLASSIC | 1.0 | smaller | real | ODIN |
+| 11 | TILES | row | OWN | 0.85 | default | sparse | KONKR |
+| 12 | STACKS | physical | BANNER | 1.3 | smaller | sparse | ODIN |
+| 13 | POCKET | scene | CLASSIC | 0.85 | default | square | KONKR |
+| 14 | ORBIT | carousel | SHARED | 1.0 | larger | square | ODIN |
+| 15 | CINEMA | carousel | BANNER | 1.3 | default | wide | KONKR |
+| 16 | POCKET_CLASSIC | scene | OWN | 1.0 | larger | wide | ODIN |
+| 17 | ARCTIC | carousel | ROW_OPENS | 1.0 | default | noart | KONKR |
+| 18 | BLADES | carousel | CLASSIC | 1.3 | default | portrait | KONKR |
+| 19 | DISCS | physical | CLASSIC | 1.0 | larger | long | KONKR |
+| 20 | CIRCUIT | carousel | OWN | 1.3 | larger | real | KONKR |
+| 21 | HERO_TILES | carousel | ROW_OPENS | 1.0 | larger | sparse | KONKR |
+| 22 | POCKET_RIBBON | scene | SHARED | 1.3 | smaller | lowres | KONKR |
+| 23 | CUSTOM | custom | ROW_REVEAL | 1.3 | smaller | square | KONKR |
+| 24 | CUSTOM | custom | SHARED | 0.85 | smaller | wide | KONKR |
+| 25 | CUSTOM | custom | CLASSIC | 0.85 | smaller | noart | KONKR |
+| 26 | CUSTOM | custom | OWN | 0.85 | smaller | portrait | KONKR |
+| 27 | CUSTOM | custom | BANNER | 0.85 | smaller | real | KONKR |
+| 28 | CUSTOM | custom | ROW_REVEAL | 0.85 | smaller | sparse | KONKR |
+| 29 | TWIN_SHOWCASE | dual | ROW_REVEAL | 1.3 | default | long | KONKR |
+| 30 | TWIN_DESK | dual | OWN | 1.0 | smaller | lowres | KONKR |
+| 31 | TWIN_ICONS | dual | ROW_OPENS | 0.85 | smaller | real | KONKR |
+| 32 | TWIN_SHOWCASE | dual | SHARED | 0.85 | smaller | sparse | KONKR |
+| 33 | TWIN_DESK | dual | OWN | 0.85 | smaller | square | KONKR |
+| 34 | TWIN_ICONS | dual | CLASSIC | 0.85 | smaller | wide | KONKR |
+| 35 | TIMELINE | grid | ROW_OPENS | 0.85 | default | long | KONKR |
+| 36 | MAGAZINE | grid | BANNER | 0.85 | smaller | lowres | KONKR |
+| 37 | SHOP | grid | ROW_REVEAL | 0.85 | smaller | real | KONKR |
+| 38 | PANELS | grid | CLASSIC | 0.85 | smaller | sparse | KONKR |
+| 39 | HUB | grid | BANNER | 0.85 | smaller | square | KONKR |
+| 40 | RESUME | grid | ROW_OPENS | 0.85 | smaller | wide | KONKR |
+| 41 | GRID | grid | SHARED | 0.85 | smaller | long | KONKR |
+| 42 | CRATE | physical | OWN | 0.85 | smaller | lowres | KONKR |
+| 43 | CASEFLOW | physical | ROW_REVEAL | 0.85 | smaller | noart | KONKR |
+| 44 | BOX | physical | BANNER | 0.85 | smaller | portrait | KONKR |
+| 45 | STORAGE | physical | ROW_OPENS | 0.85 | smaller | square | KONKR |
+| 46 | MEMCARD | physical | ROW_REVEAL | 0.85 | smaller | wide | KONKR |
+| 47 | BAR | row | BANNER | 1.3 | larger | long | KONKR |
+| 48 | DASH | row | ROW_OPENS | 0.85 | smaller | lowres | KONKR |
+| 49 | SIDE | row | SHARED | 0.85 | smaller | noart | KONKR |
+| 50 | SPOT | row | ROW_REVEAL | 0.85 | smaller | portrait | KONKR |
+| 51 | CROSS | row | OWN | 0.85 | smaller | square | KONKR |
+| 52 | LIVE | row | OWN | 0.85 | smaller | wide | KONKR |
+| 53 | GREENCORE | scene | BANNER | 0.85 | smaller | long | KONKR |
+| 54 | FILESELECT | scene | ROW_OPENS | 0.85 | smaller | noart | KONKR |
+| 55 | ARCADE | scene | ROW_REVEAL | 0.85 | smaller | portrait | KONKR |
+| 56 | NIGHT | scene | OWN | 0.85 | smaller | real | KONKR |
+| 57 | AIRY | scene | OWN | 0.85 | smaller | sparse | KONKR |
+| 58 | ORBIT | carousel | CLASSIC | 0.85 | smaller | lowres | KONKR |
+| 59 | CINEMA | carousel | SHARED | 0.85 | smaller | portrait | KONKR |

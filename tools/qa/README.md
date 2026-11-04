@@ -82,7 +82,7 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
   crossfade is a transient too, so transients are for human review of the contact sheets.
 - **Device sweeps**: `device/layouts.sh` sources `device/guard.sh` (needs `guard.sh` + `picker.sh` next to `vqa.sh`), writes
   `out/RUN_manifest.txt`, skips a layout showing "Who's playing?" (SKIP) or a black screen (UNKNOWN). After pulling `out/`:
-  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` prints PICKER / HOME / UNKNOWN (a black, missing, short or garbage capture is UNKNOWN, never HOME);
+  `python3 tools/qa/tools/runcheck.py qa_runs/<run>/out RUN`. `picker.sh` prints PICKER / HOME / UNKNOWN from Voltcap's own `voltcap_qa_screen` mark (update 447, any picker look; old builds: the blue corner); a black, missing, short or garbage capture is UNKNOWN, never HOME;
   `guard.sh screen_state` and `pop.sh` use it (pop.sh needs a verified HOME). `layouts.sh` presses B (keeps the profile) up to 3 times on
   the picker, then skips what is still not HOME. HOME = lit and not the picker: it does not prove the screen is Voltcap. Use a run-specific
   folder on the device and copy `vqa.sh` with its `D=` line changed if an older `/data/local/tmp/vqa` must stay untouched.
@@ -94,5 +94,56 @@ never PASS. Evidence that predates the run (`--not-before` / `--max-age`, the sw
   volume / refresh rate back. Never uninstall, clear data, touch charging or run on a device that is not a known dev target
   (the Google TV Streamer is not one).
 
+## Evidence binding and the update 474 checks (QA overhaul phase 1)
+- **Every device run is bound to a build.** `device/evidence.sh` (sourced by popclip.sh / navclip.sh) writes `manifest.txt`:
+  installed APK SHA-256 + its stamped git revision, versionName / Code, serial, model, display + override, density + override,
+  font scale, animator scale, pid, layouts / styles / game / content, the script's own SHA-256, start and finish. `tools/evidence.py`
+  resolves the APK through `builds.json` (base commit, staging patch SHA-256, source tree hash from `tools/srchash.py`) and checks
+  every evidence file was written during the run. No manifest, interrupted, unknown APK, wrong versionCode, `--expect-build`
+  mismatch or a stale file = **INFRA**, never PASS (`--legacy`: an old run graded, its PASSes become NOT TESTED).
+- **popclip (R26) now also fails:** text / controls squeezed to no height (D244 Cover details: graded PASS before), text cut
+  inside its own box or ending in an ellipsis (needs a 474+ build: QaClip `texts`; older dumps = text NOT TESTED), the window
+  showing another game than the home focus. A run whose home was on another game than its own = INFRA. Warnings (PASS, reason
+  "WARN"): a part marked `QaClip.GivesWay`, a long story shortened beside its own Details / More (deliberate summary), and text
+  overflow reports the layout can't confirm (auto-sized text: Compose reports its unshrunk layout).
+- **navclip (T5, `device/navclip.sh` + `tools/navclip.py`, expectations in `nav_expect.json`):** move (focus moved and came
+  back), jump (same game, same places, 2 dp), steady (fixed texts stay), art (same game = same picture; the next game ≠ the
+  last one's picture: stale art), late (early raw screenshot + Coil load times, upscaled > 2x low-res pictures: WARN only — no
+  universal timing threshold). No key moved the focus in any layout = INFRA (keys not delivered).
+- **artfit.py:** QA fixture art (frame + circle) drawn stretched > 8 % = FAIL; cropping reported (artistic crops are design).
+- **Fixtures (staging build only):** `am start -n com.shelf.launcher/.MainActivity --es voltcap_test_fixture "names=long,art=portrait,meta=none"`
+  (`off` ends it). Display-only, needs the hooks file; nothing written (ROMs, artwork, categories, metadata, settings); names keep
+  the real alphabetical order; drawn art lives in the app cache. Set `QA_CONTENT=<spec>` for popclip / navclip so the manifest says so.
+- **T4:** `tools/pairwise.py gen|check` over `pairwise_model.json` (all pairs of family × style × font × density × content × device).
+  **T6:** `tools/t6plan.py INVENTORY.csv` (groups) and `tools/snapdiff.py BEFORE AFTER` (the owner's settings restored exactly).
+
 ## Physical QA on the Thor (standing authorization, CLAUDE.md)
 The owner's standing authorization in `CLAUDE.md` ("Standing Thor QA authorization") covers routine QA on the AYN Thor, ADB serial **3140972f** (always `adb -s 3140972f`): no per-session permission is needed. Safeguards stay: max 15 minutes physical QA per task; never clear app data or uninstall; no charging-limit changes; preserve games, saves, profiles, artwork; restore volume / DND / display; stop test processes and recorders; never touch any other device (Google TV Streamer, Odin 2 Portal). A simulated test is still not hardware verification: mark untested rows NOT TESTED. `tools/geomcheck.py TRACE.json` is the device-free element geometry check.
+
+**Popup geometry gate (R26, update 467).** On hardware: `setsid sh /data/local/tmp/popclip.sh TAG "LAYOUTS" "STYLES" "GAME" &`
+(wrapped in `voltcap_test_snapshot save` / `restore`; test hooks on; the run copies its dumps into `/sdcard/pc/TAG/qa_clip`,
+keeps the screen on through the preview's window flag and blocks launches through `<files>/qa_nolaunch`), pull `/sdcard/pc/TAG`, then
+`python3 tools/popclip.py RUN_DIR --md report.md` (six categories per layout x style; PASS only when all pass) or one dump at a
+time: `python3 tools/geomcheck.py CLIP.json --clip --png SHOT.png`. The app side is `ui/QaClip.kt` (`echo TAG > <files>/qa_clip_req`
+while a popup is up — an intent would close it; `--es voltcap_test_clip TAG` otherwise):
+every control / text node's own box and the part its ancestors let show, read from Compose semantics. Layout bounds can't see
+every drawing clip — the pixel check is a heuristic; don't claim full visual coverage from it. CI: the selftest's TestClipGate
+runs with every `python3 tools/qa/selftest/test_qa.py` (device-free); the device sweep runs after popup layout changes.
+
+## Keeping the owner's home state (update 451)
+`device/viewstate.sh save` before a test and `device/viewstate.sh restore` after it: settings, category order, the selected
+category, the focused game and the profile are saved; restore puts them back and the app checks them (exit 0 only on `OK`).
+`voltcap_test_category` takes `S:<list>` for a special list (`S:RECENT` = Continue playing) and never leaves the screen on an empty
+category. Never end a run without a passing restore.
+
+## Update 453 device scripts (all save the view state first and restore + verify it)
+`rapidab.sh TAG "LAYOUTS" N` rapid A B A B N times per layout (end state, blocked launches, log per open end) ·
+`catparity.sh TAG N` category screen tiles vs N x R2 / L2 stops in the owner's layout · `longtitle.sh TAG "LAYOUTS"` long-title /
+no-metadata games' windows collapsed + More · `navcheck.sh TAG "LAYOUTS" "KEYS"` focus line per key · `media.sh TAG "LAYOUTS" "CONSOLES"`
+media stills per console. Set a test category BEFORE a layout preview (D164). Wake the device first: keys injected while it sleeps end in
+an input-timeout report.
+
+## Update 454 device scripts
+`perf.sh TAG REPS` frame cadence per action (R1, Settings, L2/R2, game window, return from an Android app, app drawer scroll) from the
+app's `cadence n= missed= maxgap=` lines · `popmodes.sh TAG "LAYOUTS"` every R1 popup style x layout: A opens, B closes, no launch
+(writes popup_style_by_layout during the run; snapshot saved first and restored + verified). Layout previews now survive category switches (D164).

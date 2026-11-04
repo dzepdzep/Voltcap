@@ -1,0 +1,403 @@
+diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
+index e33cd4f..7509338 100644
+--- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
++++ b/app/src/main/java/com/shelf/launcher/MainActivity.kt
+@@ -267,6 +267,7 @@ class MainActivity : ComponentActivity() {
+         val focusedCover by remember(vm) {
+             vm.uiState.map { s ->
+                 val shown = s.forDisplay().let { if (com.shelf.launcher.ui.DemoLibrary.on.value) com.shelf.launcher.ui.DemoLibrary.dress(it) else it }
++                    .let { if (com.shelf.launcher.ui.QaFixture.spec.value != null) com.shelf.launcher.ui.QaFixture.dress(it) else it }
+                 shown.visibleGames.getOrNull(shown.focusedIndex)?.let {
+                     shown.artOverrides[it.stableKey]?.cover ?: shown.art[it.stableKey]?.gridUrl
+                 }
+diff --git a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt b/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
+index b8fdb4e..38d63e9 100644
+--- a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
++++ b/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
+@@ -127,6 +127,8 @@ object ArtStorage {
+                 // Update 114: saved pictures from their files; your games' pictures saved the first time they load.
+                 add(SavedArtInterceptor())
+             }
++            // (Update 474: QA only, with the hooks file — timings and sizes of delivered pictures for tools/qa, QaArt.kt.)
++            .apply { if (com.shelf.launcher.ui.TestHooks.enabled(context)) eventListener(com.shelf.launcher.ui.QaArt) }
+             .build()
+             // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
+             .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
+index eca8853..eaff39e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
+@@ -370,7 +370,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+     // (Update 423: the QA stand-in library for preview pictures, display only — DemoLibrary.kt.)
+     val demoOn = DemoLibrary.on.value
+     val demoArt = DemoLibrary.artDir.value
+-    val state = remember(uiState, demoOn, demoArt) { uiState.forDisplay().let { if (demoOn) DemoLibrary.dress(it) else it } }
++    val fx = QaFixture.spec.value; val fxArt = QaFixture.artDir.value
++    val state = remember(uiState, demoOn, demoArt, fx, fxArt) { uiState.forDisplay().let { if (demoOn) DemoLibrary.dress(it) else it }.let { if (fx != null) QaFixture.dress(it) else it } }
+     // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
+     // Update 422: Settings › Library › ES-DE artwork works through the view model.
+     androidx.compose.runtime.SideEffect {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/QaArt.kt b/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
+new file mode 100644
+index 0000000..5527ac4
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
+@@ -0,0 +1,57 @@
++package com.shelf.launcher.ui
++
++import coil.EventListener
++import coil.request.ErrorResult
++import coil.request.ImageRequest
++import coil.request.SuccessResult
++import coil.size.Dimension
++import coil.size.Size
++
++/**
++ * Update 474 (QA only — installed on the image loader only while the QA hooks file exists, ArtStorage.createImageLoader):
++ * the last pictures Coil delivered, for tools/qa (QaClip dumps them as "images"): how long each took, the size it was asked
++ * for (the box it is drawn into), the size it was decoded at (smaller than asked = the source itself is smaller: upscaled on
++ * screen), FIT or FILL (FILL crops what doesn't fit), and where it came from (memory / disk / network). The picture's address
++ * is never written — only a short hash of it, so a dump can't leak an account in a ScreenScraper address.
++ */
++internal object QaArt : EventListener {
++    private class Rec(val tok: String, val t0: Long) { var t1 = 0L; var w = -1; var h = -1; var dw = -1; var dh = -1; var scale = ""; var src = ""; var ok = false }
++    // (Keyed by the request's target — stable when an interceptor copies the request (SavedArtInterceptor's newBuilder()):
++    // keyed by the request itself, onSuccess saw a copy, found nothing, and every dump in update 474's first runs had no images.)
++    private val live = java.util.IdentityHashMap<Any, Rec>()
++    private fun key(r: ImageRequest): Any = r.target ?: r.data
++    private val done = ArrayDeque<Rec>()
++
++    private fun tok(data: Any): String = runCatching {
++        val d = java.security.MessageDigest.getInstance("SHA-1").digest(data.toString().toByteArray())
++        d.take(5).joinToString("") { "%02x".format(it) }
++    }.getOrDefault("?")
++
++    private fun px(d: Dimension): Int = (d as? Dimension.Pixels)?.px ?: -1
++
++    @Synchronized override fun onStart(request: ImageRequest) { live[key(request)] = Rec(tok(request.data), android.os.SystemClock.uptimeMillis()) }
++    @Synchronized override fun resolveSizeEnd(request: ImageRequest, size: Size) {
++        live[key(request)]?.let { it.w = px(size.width); it.h = px(size.height) }
++    }
++    @Synchronized override fun onSuccess(request: ImageRequest, result: SuccessResult) = finish(request) { r ->
++        r.ok = true; r.dw = result.drawable.intrinsicWidth; r.dh = result.drawable.intrinsicHeight
++        r.scale = request.scale.name; r.src = result.dataSource.name
++    }
++    @Synchronized override fun onError(request: ImageRequest, result: ErrorResult) = finish(request) { r -> r.scale = request.scale.name; r.src = "ERROR" }
++    @Synchronized override fun onCancel(request: ImageRequest) { live.remove(key(request)) }
++
++    private fun finish(request: ImageRequest, fill: (Rec) -> Unit) {
++        val r = live.remove(key(request)) ?: return
++        r.t1 = android.os.SystemClock.uptimeMillis(); fill(r)
++        done.addLast(r); while (done.size > 120) done.removeFirst()
++    }
++
++    /** The finished requests of the last 20 s, newest last. */
++    @Synchronized fun json(): String {
++        val now = android.os.SystemClock.uptimeMillis()
++        return done.filter { now - it.t1 < 20_000 }.joinToString(",", "[", "]") { r ->
++            "{\"tok\":\"${r.tok}\",\"ago\":${now - r.t1},\"ms\":${r.t1 - r.t0},\"want\":[${r.w},${r.h}],\"got\":[${r.dw},${r.dh}]," +
++                "\"scale\":\"${r.scale}\",\"src\":\"${r.src}\",\"ok\":${r.ok}}"
++        }
++    }
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
+index c9b959a..42c3240 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
+@@ -144,9 +144,54 @@ internal object QaClip {
+                 sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
+                 sb.append("\"focused\":${c.getOrNull(SemanticsProperties.Focused) == true || r.ring},\"scroll\":${scrolls(n)},\"tilt\":${tilted(n)},\"paged\":${paged(n)},\"id\":${n.id}}")
+             }
++            sb.append("],")
++            // (Update 474: every text as laid out — unmerged, so the words inside a button count too — with what its own
++            // TextLayoutResult says: lines, did it need more height / width than it was given (cut inside its own box, or
++            // stopped by maxLines), an ellipsis at its end. geomcheck's "text" check reads this; boxes alone missed D244.)
++            sb.append("\"texts\":[")
++            var firstT = true
++            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
++                val c = n.config
++                val words = c.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } ?: continue
++                if (words.isBlank()) continue
++                val tl = runCatching {
++                    c.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.let { act ->
++                        val l = ArrayList<androidx.compose.ui.text.TextLayoutResult>(); if (act(l)) l.firstOrNull() else null
++                    }
++                }.getOrNull()
++                val pos = n.positionInWindow; val sz = n.size; val b = n.boundsInWindow
++                if (!firstT) sb.append(','); firstT = false
++                sb.append("{\"text\":\"${esc(words.take(80))}\",\"len\":${words.length},")
++                sb.append("\"full\":[${pos.x.toInt()},${pos.y.toInt()},${sz.width},${sz.height}],")
++                sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
++                if (tl != null) {
++                    val lines = tl.lineCount
++                    val ell = lines > 0 && runCatching { tl.isLineEllipsized(lines - 1) }.getOrDefault(false)
++                    sb.append("\"lines\":$lines,\"maxLines\":${tl.layoutInput.maxLines.let { if (it == Int.MAX_VALUE) -1 else it }},")
++                    sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
++                    sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
++                }
++                sb.append("\"scroll\":${scrolls(n)},\"giveway\":${givesWay(n)},\"id\":${n.id}}")
++            }
+             sb.append("]}")
+         }
+-        sb.append("]}")
++        sb.append("],")
++        // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)
++        val vmFocus = runCatching { TestHooks.viewState?.invoke()?.optString("focus") }.getOrNull()?.takeIf { it.isNotEmpty() }
++        sb.append("\"focusedGame\":${vmFocus?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
++        sb.append("\"originKey\":${GameOrigin.key?.takeIf { it != GameOrigin.FOCUSED }?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
++        sb.append("\"origin\":${GameOrigin.rect?.let { "[${it.left.toInt()},${it.top.toInt()},${it.width.toInt()},${it.height.toInt()}]" } ?: "null"},")
++        sb.append("\"popupGame\":${GamePopup.game?.let { "\"" + esc(it.stableKey.takeLast(120)) + "\"" } ?: "null"},")
++        sb.append("\"popupName\":${GamePopup.game?.let { "\"" + esc(it.name.take(120)) + "\"" } ?: "null"},")
++        sb.append("\"images\":${QaArt.json()}}")
+         return sb.toString()
+     }
++
++    /** Update 474: inside a part marked as giving way by design (it may shrink to nothing when the room is short). */
++    val GivesWay = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaGivesWay") { a, b -> a == true || b == true }
++    private fun givesWay(n: SemanticsNode): Boolean {
++        var p: SemanticsNode? = n
++        while (p != null) { if (p.config.getOrNull(GivesWay) == true) return true; p = p.parent }
++        return false
++    }
+ }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/QaFixture.kt b/app/src/main/java/com/shelf/launcher/ui/QaFixture.kt
+new file mode 100644
+index 0000000..05d27e1
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/QaFixture.kt
+@@ -0,0 +1,145 @@
++package com.shelf.launcher.ui
++
++import android.content.Context
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.graphics.Color
++import android.graphics.Paint
++import androidx.compose.runtime.mutableStateOf
++import com.shelf.launcher.LauncherUiState
++import com.shelf.launcher.data.GameArt
++import java.io.File
++
++/**
++ * Update 474 — QA test content, display-only (like [DemoLibrary]): `--es voltcap_test_fixture "names=long,art=wide,meta=none"`
++ * (only with the QA hooks file; `--es voltcap_test_fixture off` or a restart ends it). The same games stay in the same places
++ * (keys, consoles, order, focus); only how they are DRAWN changes, so nothing is written: no ROM, artwork, category, metadata
++ * or setting is touched, and the drawn pictures live in cache/qa_fixture_art (deleted when it goes off).
++ *   names = real | long (very long, with Unicode) | short (three letters) — both keep the real names' alphabetical order
++ *   art   = real | none | wide (16:9) | square | portrait (2:3) | ultrawide (3:1) | lowres (64 × 96, shown much bigger)
++ *   meta  = real | none (no description, maker, genre, year, achievements, screenshots, clips)
++ * Every drawn picture carries its own shape in words ("QA 16:9 …") so a screenshot shows which fixture is on.
++ */
++internal object QaFixture {
++    data class Spec(val names: String = "real", val art: String = "real", val meta: String = "real") {
++        val text get() = "names=$names,art=$art,meta=$meta"
++    }
++
++    val spec = mutableStateOf<Spec?>(null)
++    val artDir = mutableStateOf<File?>(null)
++
++    fun parse(s: String): Spec? {
++        if (s.isBlank() || s == "off") return null
++        val m = s.split(',').mapNotNull { p -> p.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() } }.toMap()
++        return Spec(m["names"] ?: "real", m["art"] ?: "real", m["meta"] ?: "real")
++    }
++
++    private val LONG = listOf(
++        "The Extraordinarily Long Chronicle of the Forgotten Lighthouse Keeper and the Seven Clockwork Islands — Director’s Cut",
++        "Ünïcödé Ädventure: Reise durch die Überflüssig Langen Titelzeilen (Special Edition) 完全版",
++        "SuperUltraMegaCompoundWordWithoutAnySpacesThatNeverEndsAndMustWrapSomehow",
++        "Pocket Monsters: The Very Long Subtitle That Keeps Going Past Every Reasonable Width"
++    )
++
++    /** A three-letter code per alphabetical rank (Aaa, Aab, …): it sorts like the real names, so a layout or list that sorts
++     *  by name keeps every game where it was (the dressed long names once opened another game's window: k474f). */
++    fun code(rank: Int): String {
++        val a = rank / 676 % 26; val b = rank / 26 % 26; val c = rank % 26
++        return "${'A' + a}${'a' + b}${'a' + c}"
++    }
++
++    fun name(rank: Int, real: String, mode: String): String = when (mode) {
++        "long" -> code(rank) + " · " + LONG[rank % LONG.size]
++        "short" -> code(rank)
++        else -> real
++    }
++
++    /** stableKey → dressed name, by the real names' case-insensitive order (as DemoLibrary.names). */
++    fun names(games: List<com.shelf.launcher.data.Game>, mode: String): Map<String, String> {
++        val order = games.indices.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { games[it].name })
++        val out = HashMap<String, String>(games.size)
++        order.forEachIndexed { rank, i -> out[games[i].stableKey] = name(rank, games[i].name, mode) }
++        return out
++    }
++
++    fun shape(mode: String): Pair<Int, Int>? = when (mode) {
++        "wide" -> 960 to 540; "square" -> 720 to 720; "portrait" -> 600 to 900
++        "ultrawide" -> 1200 to 400; "lowres" -> 64 to 96; else -> null
++    }
++
++    const val SLOTS = 24
++
++    /** Draws the pictures for [mode] once ([SLOTS] of them, numbered, hues far apart) into cache/qa_fixture_art/<mode>. */
++    fun prepare(context: Context, mode: String, done: (File?) -> Unit) {
++        val wh = shape(mode) ?: return done(null)
++        Thread {
++            val dir = File(context.cacheDir, "qa_fixture_art/$mode").apply { mkdirs() }
++            runCatching {
++                for (i in 0 until SLOTS) {
++                    val f = File(dir, "a_$i.png")
++                    if (!f.exists()) {
++                        val b = Bitmap.createBitmap(wh.first, wh.second, Bitmap.Config.ARGB_8888)
++                        val c = Canvas(b)
++                        c.drawColor(Color.HSVToColor(floatArrayOf((i * 137.5f) % 360f, 0.55f, if (i % 2 == 0) 0.75f else 0.55f)))
++                        val p = Paint(Paint.ANTI_ALIAS_FLAG)
++                        // A frame 4 % in from every edge: a crop shows as a missing frame side, a stretch as uneven circles.
++                        p.style = Paint.Style.STROKE; p.strokeWidth = maxOf(2f, wh.first * 0.02f); p.color = Color.WHITE
++                        val m = wh.first * 0.04f
++                        c.drawRect(m, m, wh.first - m, wh.second - m, p)
++                        val r = minOf(wh.first, wh.second) * 0.22f
++                        c.drawCircle(wh.first / 2f, wh.second / 2f, r, p)
++                        p.style = Paint.Style.FILL; p.textSize = maxOf(10f, wh.second * 0.08f); p.textAlign = Paint.Align.CENTER
++                        c.drawText("QA ${mode.uppercase()} #$i", wh.first / 2f, wh.second * 0.88f, p)
++                        f.outputStream().use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }; b.recycle()
++                    }
++                }
++            }
++            done(dir)
++        }.start()
++    }
++
++    fun clear(context: Context) { runCatching { File(context.cacheDir, "qa_fixture_art").deleteRecursively() } }
++
++    // (The renamed list and the drawn art are kept while the real list is the same object — a new list on every state change
++    // made layouts that key on it start over, as DemoLibrary found; everything else is taken from the live state each time.)
++    private var memoIn: List<com.shelf.launcher.data.Game>? = null
++    private var memoSpec: Spec? = null
++    private var memoDir: File? = null
++    private var memoGames: List<com.shelf.launcher.data.Game> = emptyList()
++    private var memoArt: Map<String, GameArt>? = null
++    private var memoNoScans: Map<String, List<Pair<String, String>>> = emptyMap()
++
++    fun dress(s: LauncherUiState): LauncherUiState {
++        val sp = spec.value ?: return s
++        val dir = artDir.value
++        if (memoIn !== s.games || memoSpec != sp || memoDir != dir) {
++            val keys = s.games.map { it.stableKey }
++            memoGames = if (sp.names == "real") s.games else names(s.games, sp.names).let { m -> s.games.map { g -> g.copy(name = m[g.stableKey] ?: g.name) } }
++            memoArt = when {
++                sp.art == "real" -> null
++                sp.art == "none" -> emptyMap()
++                dir == null -> null
++                // (Numbered by the games' alphabetical rank, over SLOTS pictures: neighbours in any name-sorted list — a console
++                // or All — get different pictures. Numbered by list position over 8, games 8 apart sat side by side, k474p.)
++                else -> run {
++                    val rank = s.games.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }).withIndex().associate { (r, g) -> g.stableKey to r }
++                    s.games.associate { g ->
++                        val u = "file://" + File(dir, "a_${(rank[g.stableKey] ?: 0) % SLOTS}.png").absolutePath
++                        g.stableKey to GameArt(gridUrl = u, wideGridUrl = u, heroUrl = u)
++                    }
++                }
++            }
++            memoNoScans = keys.associateWith { emptyList<Pair<String, String>>() }
++            memoIn = s.games; memoSpec = sp; memoDir = dir
++        }
++        var out = s.copy(games = memoGames)
++        memoArt?.let { a ->
++            out = out.copy(art = a, artOverrides = emptyMap(), screenshots = emptyMap(), videoUrls = emptyMap(),
++                physicalMedia = memoNoScans, sgdbLogos = emptyMap())
++        }
++        if (sp.meta == "none") out = out.copy(metadata = emptyMap(), screenshots = emptyMap(), raProgress = emptyMap(),
++            raAchievementDetails = emptyMap(), raCompletionById = emptyMap(), metadataNotes = emptyMap(), detailCandidates = emptyMap(),
++            videoUrls = emptyMap())
++        return out
++    }
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
+index 536f473..3b53bf0 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
+@@ -350,6 +350,17 @@ internal object TestHooks {
+             if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
+             else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
+         }
++        // Update 474: `--es voltcap_test_fixture "names=long,art=wide,meta=none"` | off — QA test content, display only (QaFixture.kt).
++        if (intent?.hasExtra("voltcap_test_fixture") == true && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false))
++        {
++            val sp = QaFixture.parse(intent.getStringExtra("voltcap_test_fixture") ?: "off")
++            val app = context.applicationContext
++            QaFixture.artDir.value = null
++            if (sp == null) QaFixture.clear(app)
++            QaFixture.spec.value = sp
++            if (sp != null) QaFixture.prepare(app, sp.art) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (QaFixture.spec.value == sp) QaFixture.artDir.value = dir } }
++            android.util.Log.e("VoltcapTest", "fixture ${sp?.text ?: "off"}")
++        }
+         val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
+         if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
+             // (A walk only ever previews: nothing it changes is saved.)
+diff --git a/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt b/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
+new file mode 100644
+index 0000000..54cbeae
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
+@@ -0,0 +1,62 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.LauncherUiState
++import com.shelf.launcher.data.Game
++import com.shelf.launcher.data.SourceType
++import org.junit.After
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertSame
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Update 474: QA fixtures are display-only and off unless asked for (the hooks file gates the intent in TestHooks): the same
++ * games, keys, consoles and order; nothing in the real state is replaced while no fixture is on.
++ */
++class QaFixture474Test {
++    private val games = listOf(
++        Game("Zelda-like Quest", "SNES", 1, SourceType.ROM, romPath = "/r/a.sfc"),
++        Game("Alpha Racer", "N64", 2, SourceType.ROM, romPath = "/r/b.z64"),
++        Game("Middle Tales", "GBA", 3, SourceType.ROM, romPath = "/r/c.gba")
++    )
++
++    @After fun off() { QaFixture.spec.value = null; QaFixture.artDir.value = null }
++
++    @Test fun offByDefaultAndOffReturnsTheRealStateItself() {
++        val s = LauncherUiState(games = games)
++        assertNull(QaFixture.spec.value)
++        assertSame(s, QaFixture.dress(s))
++        assertNull(QaFixture.parse("off")); assertNull(QaFixture.parse(""))
++    }
++
++    @Test fun parseKeepsRealForWhatIsNotNamed() {
++        val sp = QaFixture.parse("names=long, meta=none")!!
++        assertEquals(QaFixture.Spec("long", "real", "none"), sp)
++        assertEquals("names=long,art=real,meta=none", sp.text)
++    }
++
++    @Test fun longNamesAreWholeAndKeysOrderConsolesStay() {
++        QaFixture.spec.value = QaFixture.Spec(names = "long", meta = "none")
++        val d = QaFixture.dress(LauncherUiState(games = games))
++        assertEquals(games.map { it.stableKey to it.platform }, d.games.map { it.stableKey to it.platform })
++        assertTrue(d.games.all { it.name.length > 60 && !it.name.endsWith("…") })
++        assertTrue(d.metadata.isEmpty() && d.screenshots.isEmpty())
++    }
++
++    @Test fun dressedNamesKeepTheAlphabeticalOrder() {
++        // (k474f, KONKR: long names that sorted differently made A open another game's window — Paper Mario for Pokemon Stadium 2.)
++        for (mode in listOf("long", "short")) {
++            val m = QaFixture.names(games, mode)
++            val real = games.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name }).map { it.stableKey }
++            val dressed = games.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { m[it.stableKey]!! }).map { it.stableKey }
++            assertEquals(mode, real, dressed)
++        }
++        assertEquals("Aaa", QaFixture.code(0)); assertEquals("Aba", QaFixture.code(26)); assertEquals("Baa", QaFixture.code(676))
++    }
++
++    @Test fun artShapesAreTheAdvertisedOnes() {
++        assertEquals(960 to 540, QaFixture.shape("wide")); assertEquals(600 to 900, QaFixture.shape("portrait"))
++        assertEquals(64 to 96, QaFixture.shape("lowres")); assertNull(QaFixture.shape("real"))
++    }
++}

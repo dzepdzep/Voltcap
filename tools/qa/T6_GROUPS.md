@@ -1,0 +1,111 @@
+# T6 settings groups (update 474 plan; nothing run yet = NOT TESTED)
+
+1206 settings in the inventory; **792 settable by QA in 101 groups** of ≤ 20.
+
+Not set by QA: 391 no settings UI (internal / derived); 16 account / internal state: never set by QA; 7 device / power setting: never set by QA (owner rule).
+
+Per group: snapshot save → BEFORE copy → set each key (preview) → screenshot + dump → snapshot restore → save → AFTER copy → `snapdiff.py BEFORE AFTER` must PASS.
+
+| # | group | keys | status |
+|---|---|---|---|
+| 1 | appearance:category | 6 | NOT TESTED |
+| 2 | appearance:lights | 4 | NOT TESTED |
+| 3 | appearance:music | 7 | NOT TESTED |
+| 4 | appearance:scene | 9 | NOT TESTED |
+| 5 | appearance:second | 16 | NOT TESTED |
+| 6 | appearance:show | 7 | NOT TESTED |
+| 7 | appearance:tile | 5 | NOT TESTED |
+| 8 | voltcap_features:ach | 4 | NOT TESTED |
+| 9 | voltcap_features:ah | 5 | NOT TESTED |
+| 10 | voltcap_features:anim | 5 | NOT TESTED |
+| 11 | voltcap_features:ar | 20 | NOT TESTED |
+| 12 | voltcap_features:art | 12 | NOT TESTED |
+| 13 | voltcap_features:bar | 10 | NOT TESTED |
+| 14 | voltcap_features:bl | 5 | NOT TESTED |
+| 15 | voltcap_features:box | 19 | NOT TESTED |
+| 16 | voltcap_features:bv | 5 | NOT TESTED |
+| 17 | voltcap_features:cards | 4 | NOT TESTED |
+| 18 | voltcap_features:carousel | 10 | NOT TESTED |
+| 19 | voltcap_features:case | 4 | NOT TESTED |
+| 20 | voltcap_features:cf | 10 | NOT TESTED |
+| 21 | voltcap_features:chan | 8 | NOT TESTED |
+| 22 | voltcap_features:circuit | 4 | NOT TESTED |
+| 23 | voltcap_features:classic | 7 | NOT TESTED |
+| 24 | voltcap_features:cn | 10 | NOT TESTED |
+| 25 | voltcap_features:console | 5 | NOT TESTED |
+| 26 | voltcap_features:corner | 4 | NOT TESTED |
+| 27 | voltcap_features:cross | 11 | NOT TESTED |
+| 28 | voltcap_features:cube | 10 | NOT TESTED |
+| 29 | voltcap_features:dash | 14 | NOT TESTED |
+| 30 | voltcap_features:detail | 4 | NOT TESTED |
+| 31 | voltcap_features:disc | 9 | NOT TESTED |
+| 32 | voltcap_features:dock | 5 | NOT TESTED |
+| 33 | voltcap_features:facts | 5 | NOT TESTED |
+| 34 | voltcap_features:fs | 6 | NOT TESTED |
+| 35 | voltcap_features:game | 6 | NOT TESTED |
+| 36 | voltcap_features:gc | 9 | NOT TESTED |
+| 37 | voltcap_features:hero | 13 | NOT TESTED |
+| 38 | voltcap_features:inspect | 7 | NOT TESTED |
+| 39 | voltcap_features:live | 7 | NOT TESTED |
+| 40 | voltcap_features:ll | 5 | NOT TESTED |
+| 41 | voltcap_features:mc | 11 | NOT TESTED |
+| 42 | voltcap_features:mg | 4 | NOT TESTED |
+| 43 | voltcap_features:nm | 4 | NOT TESTED |
+| 44 | voltcap_features:od | 6 | NOT TESTED |
+| 45 | voltcap_features:pb | 17 | NOT TESTED |
+| 46 | voltcap_features:pc | 4 | NOT TESTED |
+| 47 | voltcap_features:pd | 4 | NOT TESTED |
+| 48 | voltcap_features:pocket | 7 | NOT TESTED |
+| 49 | voltcap_features:pq | 16 | NOT TESTED |
+| 50 | voltcap_features:ribbon | 11 | NOT TESTED |
+| 51 | voltcap_features:rs | 5 | NOT TESTED |
+| 52 | voltcap_features:save | 8 | NOT TESTED |
+| 53 | voltcap_features:saver | 4 | NOT TESTED |
+| 54 | voltcap_features:second | 11 | NOT TESTED |
+| 55 | voltcap_features:shelf | 6 | NOT TESTED |
+| 56 | voltcap_features:side | 7 | NOT TESTED |
+| 57 | voltcap_features:spine | 5 | NOT TESTED |
+| 58 | voltcap_features:spot | 13 | NOT TESTED |
+| 59 | voltcap_features:st | 6 | NOT TESTED |
+| 60 | voltcap_features:stacks | 5 | NOT TESTED |
+| 61 | voltcap_features:stage#1 | 20 | NOT TESTED |
+| 62 | voltcap_features:stage#2 | 7 | NOT TESTED |
+| 63 | voltcap_features:theme | 5 | NOT TESTED |
+| 64 | voltcap_features:tile | 5 | NOT TESTED |
+| 65 | voltcap_features:tm | 5 | NOT TESTED |
+| 66 | voltcap_features:tv | 8 | NOT TESTED |
+| 67 | voltcap_features:twin | 13 | NOT TESTED |
+| 68 | accessories:misc#1 | 1 | NOT TESTED |
+| 69 | app_storage:misc#1 | 1 | NOT TESTED |
+| 70 | appearance:misc#1 | 20 | NOT TESTED |
+| 71 | appearance:misc#2 | 20 | NOT TESTED |
+| 72 | appearance:misc#3 | 20 | NOT TESTED |
+| 73 | appearance:misc#4 | 20 | NOT TESTED |
+| 74 | appearance:misc#5 | 8 | NOT TESTED |
+| 75 | bios_check:misc#1 | 1 | NOT TESTED |
+| 76 | categories:misc#1 | 1 | NOT TESTED |
+| 77 | charge_limit:misc#1 | 2 | NOT TESTED |
+| 78 | console_logos:misc#1 | 2 | NOT TESTED |
+| 79 | esde_media:misc#1 | 1 | NOT TESTED |
+| 80 | hidden_apps:misc#1 | 1 | NOT TESTED |
+| 81 | layout_presets:misc#1 | 2 | NOT TESTED |
+| 82 | music_overrides:misc#1 | 2 | NOT TESTED |
+| 83 | physical_media:misc#1 | 1 | NOT TESTED |
+| 84 | profiles:misc#1 | 1 | NOT TESTED |
+| 85 | screen_layouts:misc#1 | 1 | NOT TESTED |
+| 86 | session_summary:misc#1 | 1 | NOT TESTED |
+| 87 | system_logos:misc#1 | 3 | NOT TESTED |
+| 88 | theme:misc#1 | 1 | NOT TESTED |
+| 89 | tuner_stock:misc#1 | 4 | NOT TESTED |
+| 90 | voltcap_features:misc#1 | 20 | NOT TESTED |
+| 91 | voltcap_features:misc#2 | 20 | NOT TESTED |
+| 92 | voltcap_features:misc#3 | 20 | NOT TESTED |
+| 93 | voltcap_features:misc#4 | 20 | NOT TESTED |
+| 94 | voltcap_features:misc#5 | 20 | NOT TESTED |
+| 95 | voltcap_features:misc#6 | 20 | NOT TESTED |
+| 96 | voltcap_features:misc#7 | 20 | NOT TESTED |
+| 97 | voltcap_features:misc#8 | 1 | NOT TESTED |
+| 98 | voltcap_lights:misc#1 | 1 | NOT TESTED |
+| 99 | web_remote:misc#1 | 1 | NOT TESTED |
+| 100 | whats_new:misc#1 | 1 | NOT TESTED |
+| 101 | year_recap:misc#1 | 1 | NOT TESTED |

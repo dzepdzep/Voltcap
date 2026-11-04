@@ -1,3 +1,19 @@
+# Update 474 (4 Nov 2026) — QA overhaul phase 1: traceable, harder-to-fool QA (tools + staging 0.6.68; v0.6.67 untouched)
+
+Report: `tools/qa/QA_PHASE1_474.md` (old vs new, hardware runs, limitations). Plan: `tools/qa/QA_OVERHAUL_474.md`.
+- **Tools merged** (main + cloud copy, nothing lost) and **evidence binding**: `device/evidence.sh` manifest per run, `tools/evidence.py`
+  + `builds.json` + `tools/srchash.py` (APK SHA-256 → base commit, staging patch, tree hash). Missing / stale / unknown = INFRA.
+- **New checks** (each with failing + passing self-tests, 117 tests): squeezed text / controls (catches D244 that passed), text cut in its own
+  box / ellipsis, window for another game, run on another game = INFRA; T5 navigation `navclip` (move, jump, steady, stale art, late WARN);
+  `artfit` (stretched fixture art); T4 `pairwise.py` (59 runs, all 335 pairs); T6 `t6plan.py` + `snapdiff.py`.
+- **Staging 0.6.68** (`next/0.6.68/staging.patch`, QA-only app code, hooks-file gated): QaClip text layout / focus / window game /
+  images export, `QaArt` (Coil timings, hashed tokens), `QaFixture` (display-only long / short names, no metadata, no / wide / square /
+  portrait / ultrawide / low-res art) + `QaFixture474Test`. CI workflow `next/0.6.68/staging-ci.yml` (applies the patch on main, builds / tests it) — **copy it to `.github/workflows/staging.yml`** (the remote tools can't write `.github`).
+  PC working tree: the three new files are placeholders in `.gitignore` (main never commits staging code).
+- **Hardware** (USB KONKR + Odin, builds qa-0.6.68-474a/b/c at versionCode 73, never published): defects D245–D249 recorded; owner
+  settings snapshot identical before / after on both; RC 0.6.66 (f79aa2a7) reinstalled. Thor / RP Classic NOT TESTED.
+- Files: tools/qa/** (see the report), .github/workflows/staging.yml, next/0.6.68/*, .gitignore, SUMMARY.md. App on main: unchanged.
+
 # Update 473 (4 Nov 2026) — CI fix: picker.sh screen marks (QA tooling only; app code unchanged)
 
 GitHub "QA tooling checks" had failed since update 469 (runs #123-#127): main still had the pre-447 `tools/qa/device/picker.sh`

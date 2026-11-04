@@ -1,0 +1,552 @@
+{
+ "_note": "Update 474 T4 pairwise set (pairwise.py gen). Status of each run lives in the run's own report, not here.",
+ "pairs": 335,
+ "excluded": [],
+ "uncovered": [],
+ "layouts_used": 43,
+ "layouts_missing": [
+  "ARTLIB",
+  "BUBBLES",
+  "CAMERA",
+  "CARDS",
+  "CHAN",
+  "CONSOLES",
+  "COVERDETAILS",
+  "CUBE",
+  "TERMINAL",
+  "TV"
+ ],
+ "runs": [
+  {
+   "family": "carousel",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "HERO"
+  },
+  {
+   "family": "custom",
+   "style": "BANNER",
+   "font": "1.0",
+   "density": "default",
+   "content": "long",
+   "device": "ODIN",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "ROW_OPENS",
+   "font": "1.3",
+   "density": "larger",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "carousel",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "default",
+   "content": "lowres",
+   "device": "ODIN",
+   "layout": "HERO_TILES"
+  },
+  {
+   "family": "dual",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "larger",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "TWIN_DESK"
+  },
+  {
+   "family": "grid",
+   "style": "OWN",
+   "font": "1.3",
+   "density": "smaller",
+   "content": "noart",
+   "device": "ODIN",
+   "layout": "GRID"
+  },
+  {
+   "family": "grid",
+   "style": "ROW_REVEAL",
+   "font": "1.0",
+   "density": "larger",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "LIBRARY"
+  },
+  {
+   "family": "dual",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "ODIN",
+   "layout": "TWIN_ICONS"
+  },
+  {
+   "family": "physical",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "default",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "SHELF"
+  },
+  {
+   "family": "row",
+   "style": "CLASSIC",
+   "font": "1.0",
+   "density": "smaller",
+   "content": "real",
+   "device": "ODIN",
+   "layout": "CLASSIC"
+  },
+  {
+   "family": "row",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "default",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "TILES"
+  },
+  {
+   "family": "physical",
+   "style": "BANNER",
+   "font": "1.3",
+   "density": "smaller",
+   "content": "sparse",
+   "device": "ODIN",
+   "layout": "STACKS"
+  },
+  {
+   "family": "scene",
+   "style": "CLASSIC",
+   "font": "0.85",
+   "density": "default",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "POCKET"
+  },
+  {
+   "family": "carousel",
+   "style": "SHARED",
+   "font": "1.0",
+   "density": "larger",
+   "content": "square",
+   "device": "ODIN",
+   "layout": "ORBIT"
+  },
+  {
+   "family": "carousel",
+   "style": "BANNER",
+   "font": "1.3",
+   "density": "default",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "CINEMA"
+  },
+  {
+   "family": "scene",
+   "style": "OWN",
+   "font": "1.0",
+   "density": "larger",
+   "content": "wide",
+   "device": "ODIN",
+   "layout": "POCKET_CLASSIC"
+  },
+  {
+   "family": "carousel",
+   "style": "ROW_OPENS",
+   "font": "1.0",
+   "density": "default",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "ARCTIC"
+  },
+  {
+   "family": "carousel",
+   "style": "CLASSIC",
+   "font": "1.3",
+   "density": "default",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "BLADES"
+  },
+  {
+   "family": "physical",
+   "style": "CLASSIC",
+   "font": "1.0",
+   "density": "larger",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "DISCS"
+  },
+  {
+   "family": "carousel",
+   "style": "OWN",
+   "font": "1.3",
+   "density": "larger",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "CIRCUIT"
+  },
+  {
+   "family": "carousel",
+   "style": "ROW_OPENS",
+   "font": "1.0",
+   "density": "larger",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "HERO_TILES"
+  },
+  {
+   "family": "scene",
+   "style": "SHARED",
+   "font": "1.3",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "POCKET_RIBBON"
+  },
+  {
+   "family": "custom",
+   "style": "ROW_REVEAL",
+   "font": "1.3",
+   "density": "smaller",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "CLASSIC",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "custom",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "CUSTOM"
+  },
+  {
+   "family": "dual",
+   "style": "ROW_REVEAL",
+   "font": "1.3",
+   "density": "default",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "TWIN_SHOWCASE"
+  },
+  {
+   "family": "dual",
+   "style": "OWN",
+   "font": "1.0",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "TWIN_DESK"
+  },
+  {
+   "family": "dual",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "TWIN_ICONS"
+  },
+  {
+   "family": "dual",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "TWIN_SHOWCASE"
+  },
+  {
+   "family": "dual",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "TWIN_DESK"
+  },
+  {
+   "family": "dual",
+   "style": "CLASSIC",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "TWIN_ICONS"
+  },
+  {
+   "family": "grid",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "default",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "TIMELINE"
+  },
+  {
+   "family": "grid",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "MAGAZINE"
+  },
+  {
+   "family": "grid",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "SHOP"
+  },
+  {
+   "family": "grid",
+   "style": "CLASSIC",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "PANELS"
+  },
+  {
+   "family": "grid",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "HUB"
+  },
+  {
+   "family": "grid",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "RESUME"
+  },
+  {
+   "family": "grid",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "GRID"
+  },
+  {
+   "family": "physical",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "CRATE"
+  },
+  {
+   "family": "physical",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "CASEFLOW"
+  },
+  {
+   "family": "physical",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "BOX"
+  },
+  {
+   "family": "physical",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "STORAGE"
+  },
+  {
+   "family": "physical",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "MEMCARD"
+  },
+  {
+   "family": "row",
+   "style": "BANNER",
+   "font": "1.3",
+   "density": "larger",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "BAR"
+  },
+  {
+   "family": "row",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "DASH"
+  },
+  {
+   "family": "row",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "SIDE"
+  },
+  {
+   "family": "row",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "SPOT"
+  },
+  {
+   "family": "row",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "square",
+   "device": "KONKR",
+   "layout": "CROSS"
+  },
+  {
+   "family": "row",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "wide",
+   "device": "KONKR",
+   "layout": "LIVE"
+  },
+  {
+   "family": "scene",
+   "style": "BANNER",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "long",
+   "device": "KONKR",
+   "layout": "GREENCORE"
+  },
+  {
+   "family": "scene",
+   "style": "ROW_OPENS",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "noart",
+   "device": "KONKR",
+   "layout": "FILESELECT"
+  },
+  {
+   "family": "scene",
+   "style": "ROW_REVEAL",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "ARCADE"
+  },
+  {
+   "family": "scene",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "real",
+   "device": "KONKR",
+   "layout": "NIGHT"
+  },
+  {
+   "family": "scene",
+   "style": "OWN",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "sparse",
+   "device": "KONKR",
+   "layout": "AIRY"
+  },
+  {
+   "family": "carousel",
+   "style": "CLASSIC",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "lowres",
+   "device": "KONKR",
+   "layout": "ORBIT"
+  },
+  {
+   "family": "carousel",
+   "style": "SHARED",
+   "font": "0.85",
+   "density": "smaller",
+   "content": "portrait",
+   "device": "KONKR",
+   "layout": "CINEMA"
+  }
+ ]
+}

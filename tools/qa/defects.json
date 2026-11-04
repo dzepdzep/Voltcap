@@ -2858,6 +2858,84 @@
    "root_cause": "nine keys in six rows left the two lines 40 px short.",
    "fix": "on a short panel with More open the keys are compact (26 dp, 4 dp apart, touch >= 24 dp); the facts / story under the lines are what gives way.",
    "verified": "k471gd (280 dpi) both lines whole, PASS; k471g / k471gf / k471gl / k471gm, o471g / o471gf / o471gd PASS (build G)"
+  },
+  {
+   "id": "D245",
+   "title": "Row opens / Row reveal window: the facts line (developer, genre, year) and the achievements line get no height, and the story ends in an ellipsis",
+   "rule": "R26, rule 11",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-04 update 474 squeezed check re-run on the update 471 sweeps (graded PASS by the old gate): KONKR 17 combinations (k471a / k471r: *_ROW_OPENS on 15 layouts, TV / CROSS ROW_REVEAL), Odin 5 (ARCADE / ARCTIC / CINEMA / CROSS ROW_OPENS, CROSS / TV ROW_REVEAL)",
+   "where": "ui/RowRevealWindow.kt info room (Column of fixed height infoH: summary maxLines 3 / 5 with TextOverflow.Ellipsis, then the facts Row and the achievements line)",
+   "evidence": [
+    "k471r DASH_ROW_OPENS_main (screenshot: Nintendo 64 · Never played, the story cut with an ellipsis, no facts, no achievements line)",
+    "o471a CINEMA_ROW_OPENS_main"
+   ],
+   "root_cause": "the fixed-height column gives the story first claim; what doesn't fit below it is laid out with zero height (silently gone) instead of the story giving way or the room scrolling.",
+   "fix": "not fixed (phase 1 records only)",
+   "verified": ""
+  },
+  {
+   "id": "D246",
+   "title": "Storage window (OWN): every fact row after RELEASED (KIND, PLAYED, LAST PLAYED, ACHIEVED) has no height",
+   "rule": "R26",
+   "severity": "low",
+   "status": "open (triage: a deliberate paged summary — the dots under RELEASED — or a defect; owner decision)",
+   "found": "2026-11-04 update 474 squeezed check on k471a, k471L1 / L2 / L3 (KONKR) and o471a (Odin): graded PASS before",
+   "where": "Storage layout's own window (facts panel)",
+   "evidence": [
+    "k471a STORAGE_OWN_main",
+    "o471a STORAGE_OWN_main"
+   ],
+   "root_cause": "not analysed yet",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D247",
+   "title": "Airy window (OWN) on the KONKR: the story text is laid out with no height (no description at all)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "open (triage: deliberate give-way when the keys wrap to two lines, then it needs the GivesWay mark; otherwise a defect)",
+   "found": "2026-11-04 update 474 squeezed check on k471a (KONKR, 240 dpi): graded PASS before; not on the Odin",
+   "where": "Airy layout's own window",
+   "evidence": [
+    "k471a AIRY_OWN_main"
+   ],
+   "root_cause": "not analysed yet",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D248",
+   "title": "Voltcap row (CLASSIC): the focused game's title drawn at x 204 instead of 63 on arrival, then snaps to 63 after the first move (jumping title)",
+   "rule": "R21 / R24",
+   "severity": "low",
+   "status": "open (intermittent: 1 of 5 runs; seen when CLASSIC came right after TILES)",
+   "found": "2026-11-04 update 474 navclip k474r (KONKR, build qa-0.6.68-474c): jump FAIL, same game, its title 141 px elsewhere at s0 than at s4",
+   "where": "ui/GameDock.kt / GameCard.kt (the name row under the capsule) — not analysed",
+   "evidence": [
+    "k474r CLASSIC_s0 / CLASSIC_s4 (+ dumps)"
+   ],
+   "root_cause": "not analysed yet (possibly the name row's slide-in left offset after a layout switch with a programmatic focus — the test hook's game select)",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D249",
+   "title": "Home navigation: the first D-pad key of a run is sometimes ignored (focus doesn't move; the next ones do)",
+   "rule": "R23",
+   "severity": "low",
+   "status": "open (triage: a real one-press bug or the test hook's first focus; seen in the first layout of 3 KONKR walks: CLASSIC k474m, GRID k474p; not in k474r / k474w)",
+   "found": "2026-11-04 update 474 navclip (KONKR)",
+   "where": "not analysed",
+   "evidence": [
+    "k474m CLASSIC (no key moved at all)",
+    "k474p GRID log 'RIGHT moved nothing'"
+   ],
+   "root_cause": "not analysed",
+   "fix": "",
+   "verified": ""
   }
  ]
 }

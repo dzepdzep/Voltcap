@@ -284,6 +284,61 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         v = min(under, key=lambda x: x["full"][1])
         if v["shown"][3] < v["full"][3] * 0.6:
             facts.append(f"{lt} shown, its value '{_label(v)[:30]}' {'hidden' if v['shown'][3] <= 0 else 'cut (%d of %d px)' % (v['shown'][3], v['full'][3])}")
+    # (Update 474, D244: Cover details at 280 dpi gave "Never played · 0 / 109 trophies" no height at all — every box "whole",
+    # the gate passed while the line was gone. A control or text the popup lays out with a width but no height is squeezed
+    # out of view: FAIL — unless it sits in a part marked as giving way by design (QaClip.GivesWay), then a warning.)
+    squeezed, gave = [], []
+    give = {(t.get("text", "")[:80], tuple(t.get("full") or [])) for w in wins for t in (w.get("texts") or []) if t.get("giveway")}
+    for w, n in nodes:
+        f = n.get("full") or []
+        if len(f) == 4 and f[2] > 0 and f[3] <= 1 and _label(n).strip():
+            what = f"{_label(n)[:40]} ({n.get('kind')}) is {f[2]:g} x {f[3]:g} px"
+            (gave if (_label(n)[:80], tuple(f)) in give else squeezed).append(what)
+    # (Update 474: each text's own layout — needs QaClip's "texts" (staging builds from update 474 on). Cut inside its own box
+    # (didOverflowHeight: given less height than its lines, or stopped by maxLines), cut sideways (didOverflowWidth with no
+    # wrap and no marquee), or ending in an ellipsis the text itself doesn't have (rule 11). Popup texts only: the home screen
+    # behind (baseline) and texts in a scrolling list (laid out whole, scrolled to) are left out.)
+    has_texts = any("texts" in w for w in wins)
+    hometx = {(t.get("text"), tuple(t.get("full") or [])) for w in ((baseline or {}).get("windows") or []) for t in (w.get("texts") or [])}
+    tcut, tell, tgave, tunc, tsum = [], [], [], [], []
+    # (Trust: Compose answers GetTextLayoutResult for a plain String Text with a layout made again from the node's ORIGINAL
+    # style — an auto-sized text (TextAutoSize, most VoltCap labels after update 4xx's rule 11 pass) reports its unshrunk
+    # size: "overflow" though the drawn text fits. Seen on hardware in update 474 (Play / Details at 43 px "cut sideways").
+    # So a report is trusted only when its measured height is the box's own (|textH − boxH| <= 1 px); an untrusted overflow
+    # is a warning, unless the box is under half of even that line — cut at any size the text could shrink to. Overflow
+    # sideways has no width to check against: always a warning.)
+    # (A deliberate summary: a long text (a story) shortened in a window that has its own Details / More action — the whole
+    # text is one press away (rule 11's "reachable"). Reported as a warning, never a failure; a short text (a name, a fact)
+    # cut is never a summary.)
+    def has_details(w):
+        return any(n.get("kind") == "control" and re.sub(r"^[^A-Za-z]+", "", _label(n)).strip().lower() in DETAILS_WORDS + ("more",)
+                   for n in (w.get("nodes") or []))
+    for w in wins:
+        summary_ok = has_details(w)
+        for t in w.get("texts") or []:
+            f = t.get("full") or []
+            if (t.get("text"), tuple(f)) in hometx or "lines" not in t: continue
+            if summary_ok and (t.get("len") or len(t.get("text") or "")) > 160 and (t.get("ellipsis") or t.get("ovH")):
+                tsum.append(f"'{(t.get('text') or '')[:30]}' shortened to {t.get('lines')} line(s) (the whole text: Details / More)")
+                continue
+            if len(f) == 4 and (f[2] <= 0 or f[3] <= 0): continue  # zero-size: the squeezed check above
+            sh_ = t.get("shown") or [0, 0, 0, 0]
+            if len(sh_) == 4 and (sh_[2] <= 0 or sh_[3] <= 0): continue  # wholly out of view (paged / scrolled): clip / hidden checks
+            lab = (t.get("text") or "")[:40]
+            th, bh = t.get("textH"), t.get("boxH")
+            trusted = th is None or bh is None or abs(th - bh) <= 1
+            tiny = th is not None and bh is not None and bh * 2 < th / max(1, t.get("lines") or 1)
+            sink = tgave if t.get("giveway") else None
+            if t.get("ellipsis"):
+                (sink if sink is not None else tell if trusted else tunc).append(
+                    f"'{lab}' ends in an ellipsis ({t.get('lines')} line(s), maxLines {t.get('maxLines')})")
+            elif t.get("ovH") and not t.get("scroll"):
+                why = (f"stopped at maxLines {t.get('maxLines')}" if t.get("maxLines", -1) > 0 and t.get("lines") == t.get("maxLines")
+                       else f"needs more than its {bh} px")
+                (sink if sink is not None else tcut if (trusted or tiny) else tunc).append(
+                    f"'{lab}' cut inside its own box ({why}; {t.get('lines')} line(s) shown" + ("" if trusted else f"; box {bh} of {th} px") + ")")
+            elif t.get("ovW") and not t.get("scroll"):
+                (sink if sink is not None else tunc).append(f"'{lab}' may be cut sideways (reported, unconfirmed)")
     out = []
     def res(name, probs, ok, status=qalib.FAIL):
         out.append(qalib.Result(name, status if probs else qalib.PASS,
@@ -294,6 +349,17 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         out.append(qalib.Result("hidden-text", qalib.PASS, f"{len(hidden)} text node(s) wholly out of view (paged / folded, not drawn cut): " + ", ".join(hidden[:5])))
     out.append(qalib.Result("scroll-clip", qalib.PASS, (f"{len(scut)} node(s) partly scrolled out of their list (reachable): " + "; ".join(scut[:3])) if scut else "nothing inside a scrolling list is cut"))
     res("facts", facts, "every fact label shown has its value in view")
+    res("squeezed", squeezed, "no control or text squeezed to no height")
+    if has_texts:
+        res("text", tcut + tell, "every text whole inside its own box, no ellipsis")
+    else:
+        out.append(qalib.Result("text", qalib.NOT_TESTED, "dump has no text layout (\"texts\": a build before update 474): cut-inside-the-box not checked"))
+    if has_texts and tsum:
+        out.append(qalib.Result("warn-summary", qalib.PASS, f"WARN: {len(tsum)} deliberate summary(ies): " + "; ".join(tsum[:3])))
+    if has_texts and tunc:
+        out.append(qalib.Result("warn-text-unconfirmed", qalib.PASS, f"WARN: {len(tunc)} text overflow report(s) not confirmed by the layout (auto-sized text reports its unshrunk size; check the screenshot): " + "; ".join(tunc[:4])))
+    if gave or tgave:
+        out.append(qalib.Result("warn-gives-way", qalib.PASS, f"{len(gave) + len(tgave)} item(s) in a part that gives way by design: " + "; ".join((gave + tgave)[:4])))
     res("screen", off, "every control inside the screen")
     res("overlap", ovl, "no overlapping controls")
     # (Text boxes crossing a button: noted, not failed — a text box can be taller than its drawn lines, e.g. a clipped last

@@ -1,0 +1,92 @@
+name: Staging build (next/0.6.68)
+
+# Update 474: builds and unit-tests the REAL staging source — main + next/0.6.68/staging.patch — on every push to main that
+# touches it (and by hand). The job prints, and puts in its summary, exactly what was tested: main's commit, the patch's
+# SHA-256 and the source tree hash (tools/qa/tools/srchash.py) of the patched tree — the same hash tools/qa/builds.json
+# records for an APK built from it. Discord SDK stubbed (-PvoltcapCiWithoutDiscord): a compile + unit-test check, never a
+# user build; the debug APK is not uploaded. Release code on main is not changed by this job.
+on:
+  push:
+    branches: [main]
+    paths: ['next/0.6.68/**', 'app/**', '.github/workflows/staging.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  staging:
+    name: Staging 0.6.68 — patch applies, Android compiles, unit tests, QA self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PATCH: next/0.6.68/staging.patch
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Source revision before the patch
+        id: before
+        run: |
+          echo "main_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "main_tree=$(python tools/qa/tools/srchash.py . | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Apply the staging patch (fails if it no longer applies)
+        id: patch
+        run: |
+          test -s "$PATCH"
+          git apply --check --ignore-whitespace "$PATCH"
+          git apply --ignore-whitespace "$PATCH"
+          echo "patch_sha256=$(sha256sum "$PATCH" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "tree=$(python tools/qa/tools/srchash.py . | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          git status --short app | head -40
+      - name: Configure JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 36 and native tools
+        run: |
+          SDKM=$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -1)
+          test -n "$SDKM"
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+      - name: Compile + JVM unit tests (staging source)
+        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
+      - name: QA self-tests and strict static checks on the staging source
+        if: ${{ !cancelled() }}
+        run: |
+          python -m pip install --quiet numpy pillow
+          python tools/qa/selftest/test_qa.py
+          python tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher --strict --min-files 100
+      - name: Job summary (what was tested)
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## Staging 0.6.68"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| main commit | \`${{ steps.before.outputs.main_commit }}\` |"
+            echo "| main tree hash | \`${{ steps.before.outputs.main_tree }}\` |"
+            echo "| staging patch SHA-256 | \`${{ steps.patch.outputs.patch_sha256 }}\` |"
+            echo "| tested tree hash (main + patch) | \`${{ steps.patch.outputs.tree }}\` |"
+            echo
+            echo "Discord SDK stubbed: a compile / unit-test check, not a user build. Hardware QA is not run here."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "TESTED main=${{ steps.before.outputs.main_commit }} patch=${{ steps.patch.outputs.patch_sha256 }} tree=${{ steps.patch.outputs.tree }}"
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-0.6.68-test-results
+          path: |
+            app/build/reports/tests
+            app/build/test-results
+          if-no-files-found: ignore

@@ -58,3 +58,8 @@ tools/themes/refresh-review/sheet-*
 # v0.6.67: the staging placeholders are real files now (update 472); this one stays an empty leftover.
 /app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
 /qa_pull/
+# Update 474: v0.6.68 staging (next/0.6.68/staging.patch) — new files that exist only in the PC working tree while the staging
+# QA build is made; main never commits them. Remove these lines when the patch is applied to main.
+/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
+/app/src/main/java/com/shelf/launcher/ui/QaFixture.kt
+/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt

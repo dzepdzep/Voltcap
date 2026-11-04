@@ -14,7 +14,7 @@ layout x popup style in SEPARATE categories — a popup is PASS only when every 
 
 Missing screenshots / dumps are INFRA, a style the layout doesn't offer (a row style without a row, from the dump's hasRow)
 is SKIP (n/a) — never PASS.
-  python3 popclip.py RUN_DIR [--json OUT.json] [--md OUT.md]
+  python3 popclip.py RUN_DIR [--json OUT.json] [--md OUT.md] [--ledger builds.json] [--expect-build ID] [--legacy]\nUpdate 474: a run counts only with its manifest.txt (device/evidence.sh) bound to a build in tools/qa/builds.json (evidence.py);\notherwise every combination is INFRA (--legacy: an old run is graded but its PASSes are NOT TESTED).
 RUN_DIR holds <n>_{main,more,page,closed}.png from popclip.sh and qa_clip/<TAG>_<n>_<step>.json (or <n>_<step>.json).
 Exit: 0 all PASS, 1 any FAIL, 2 INFRA, 3 NOT TESTED (qalib).
 """
@@ -112,6 +112,19 @@ def grade(run, n):
         (qalib.PASS, "opened, B closed") if opened and closed_ok else \
         (qalib.FAIL, ("did not open (no Play / Continue)" if not opened else "still open after B B")) if d["closed"] is not None or not opened else \
         (qalib.INFRA, "no closed-step dump")
+    # (Update 474: the window must show the game you were on — the app's own focus at the home step vs the game the
+    # window holds. Dumps before 474 carry neither: not checked there.)
+    hf, pg = (d["home"] or {}).get("focusedGame"), (d["main"] or {}).get("popupGame")
+    # (Update 474: the run is on the game it names, or it measured something else — the Odin run on "WWE" whose home was on
+    # the RetroArch app: every category INFRA (not this content), not a pass or a fail of the window.)
+    gfp = os.path.join(run, "game.txt")
+    want_g = re.sub(r"[^a-z0-9]", "", open(gfp, encoding="utf-8").read().lower()) if os.path.exists(gfp) else ""
+    hit = re.search(r"-> (.+)$", open(os.path.join(run, "log.txt"), encoding="utf-8", errors="replace").read(), re.M) if os.path.exists(os.path.join(run, "log.txt")) else None
+    want_full = re.sub(r"[^a-z0-9]", "", hit.group(1).lower()) if hit else want_g
+    if hf and want_g and want_full not in re.sub(r"[^a-z0-9]", "", hf.lower()) and want_g not in re.sub(r"[^a-z0-9]", "", hf.lower()):
+        return {k: (qalib.INFRA, f"the home screen was on another game ('{hf[-40:]}'), not the run's '{want_g}': this content was not tested") for k in CATS}
+    if opened and hf and pg and hf != pg and not hf.endswith(pg) and not pg.endswith(hf):
+        out["open"] = (qalib.FAIL, f"the window shows another game: home on '{hf[-40:]}', window '{pg[-40:]}'")
     if not opened:
         for k in ("geometry", "visual", "focus", "buttons", "settle"):
             out[k] = (qalib.NOT_TESTED, "popup did not open")
@@ -193,9 +206,30 @@ def main():
     names = sorted({os.path.basename(p)[:-len("_main.png")] for p in glob.glob(os.path.join(run, "*_main.png"))})
     if not names:
         qalib.finish([qalib.Result("popup sweep", qalib.INFRA, f"no *_main.png in {run}")], "Popup gate")
+    # (Update 474: every result is bound to the run's manifest — exact build, device, configuration, fresh files. Without a
+    # valid binding nothing passes: INFRA; --legacy grades an old run but its PASSes become NOT TESTED.)
+    import evidence
+    legacy = "--legacy" in sys.argv
+    led = sys.argv[sys.argv.index("--ledger") + 1] if "--ledger" in sys.argv else evidence.LEDGER
+    exp = sys.argv[sys.argv.index("--expect-build") + 1] if "--expect-build" in sys.argv else None
+    ev_st, ev_info, ev_why = evidence.check_run(run, led, exp)
+    notes = (ev_info or {}).get("_notes") or []
+    style_set = {}
+    for x in notes:
+        p = x.split()
+        if len(p) == 3 and p[0] == "style_set":
+            style_set[p[1]] = p[2] != "0"
     rows, results = [], []
     for n in names:
         g = grade(run, n)
+        # (D242: "not offered" counts only when the app confirmed the style was set for this combination.)
+        if all(v[0] == qalib.SKIP for v in g.values()) and ev_info.get("manifest") and not style_set.get(n):
+            g = {k: (qalib.INFRA, "n/a claimed but the app never confirmed the style was set (D242)") for k in g}
+        if ev_st != qalib.PASS:
+            if legacy:
+                g = {k: ((qalib.NOT_TESTED, "legacy run, not bound to a build: " + v[1]) if v[0] == qalib.PASS else v) for k, v in g.items()}
+            else:
+                g = {k: (qalib.INFRA, "evidence: " + ev_why) if v[0] != qalib.SKIP else (qalib.INFRA, "evidence: " + ev_why) for k, v in g.items()}
         overall = qalib.verdict([qalib.Result(k, v[0], v[1]) for k, v in g.items()])
         rows.append((n, overall, g))
         results.append(qalib.Result(n, overall, "; ".join(f"{k}={v[0]}" for k, v in g.items() if v[0] != qalib.PASS) or "all categories PASS"))
@@ -212,9 +246,13 @@ def main():
     jp = sys.argv[sys.argv.index("--json") + 1] if "--json" in sys.argv else None
     # n/a rows (SKIP) are listed but don't decide the verdict; the applicable ones do (none applicable = NOT TESTED).
     appl = [r for r in results if r.status != qalib.SKIP]
+    print("Evidence: " + (evidence.label(ev_info) if ev_st == qalib.PASS else f"{ev_st}: {ev_why}"))
     print(qalib.report_text(results, "Popup gate"))
     if jp:
-        qalib.write_json(jp, results)
+        qalib.write_json(jp, results, {"evidence": {"status": ev_st, "reason": ev_why,
+                                                    "label": evidence.label(ev_info) if ev_st == qalib.PASS else None,
+                                                    "manifest": {k: v for k, v in (ev_info or {}).items() if k not in ("_notes", "build")},
+                                                    "build": (ev_info or {}).get("build")}})
     sys.exit(qalib.EXIT[qalib.verdict(appl)])
 
 

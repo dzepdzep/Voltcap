@@ -1,0 +1,71 @@
+{
+ "_note": "Update 474: every APK QA may test. evidence.py looks up the installed APK's SHA-256 here; an APK not listed is an unknown build (INFRA). id = what reports print; base_commit = main at build time; patch_sha256 = next/<ver>/staging.patch applied on top (null = none); tree_hash = tools/qa/tools/srchash.py of the exact app source built (null = not recorded). Add a row for every build before testing it.",
+ "builds": [
+  {
+   "id": "v0.6.67-release",
+   "apk_sha256": "1586accc99cf80dacd739cd17d049a6d90f6d5059cfddd98980393f4a25e119f",
+   "version_name": "0.6.67",
+   "version_code": 74,
+   "variant": "release",
+   "base_commit": "0357637971ad630350d3ee746c39085e86f26d1c",
+   "patch_sha256": null,
+   "tree_hash": "b2d7a8caeeccb667638bcb0127210a0a0e8f4a78ee092484d7faef1c93211cba",
+   "note": "published GitHub release v0.6.67"
+  },
+  {
+   "id": "v0.6.67-compat",
+   "apk_sha256": "769771ac8cdb0097352e88e05b46fe5bfdf714376051c913c647a3124068bf07",
+   "version_name": "0.6.67",
+   "version_code": 74,
+   "variant": "compat",
+   "base_commit": "0357637971ad630350d3ee746c39085e86f26d1c",
+   "patch_sha256": null,
+   "tree_hash": "b2d7a8caeeccb667638bcb0127210a0a0e8f4a78ee092484d7faef1c93211cba",
+   "note": "published GitHub release v0.6.67"
+  },
+  {
+   "id": "rc-0.6.66",
+   "apk_sha256": "f79aa2a7c5afbaa5a494a3ddc0bebbafa038b4d95ec7332c8e91ef4dee7cc315",
+   "version_name": "0.6.66",
+   "version_code": 73,
+   "variant": "release",
+   "base_commit": "c9b4248086a40ac2e72fe91aacd6116e929546b6",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "the RC installed on the owner's handhelds (QA restore target); tree hash not recorded (built with empty placeholders)"
+  },
+  {
+   "id": "qa-0.6.68-474a",
+   "apk_sha256": "ccf46242cd3c99c199ee3e99f64acf8128f10d5fd01a55939a1440715fe91133",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "ebc96ea81bfca31088792d1040c5de619d899308",
+   "patch_sha256": "a2705dbc8dc95422fe3a27e11fb4f0cb0e657c247ac9f73677ee7a3d7cf78888",
+   "tree_hash": "d5dfc49157da7ac3ade390714a9be152ed93ade264a93e917b0b3e1fda5bb97b",
+   "note": "update 474 phase 1: main ebc96ea + next/0.6.68/staging.patch + versionCode 73 / versionName 0.6.68-qa (tree hash includes that build.gradle.kts); never published"
+  },
+  {
+   "id": "qa-0.6.68-474b",
+   "apk_sha256": "23e5a951cde42af92cbb2e643e69a8c45c7226dc93fb6813a62731c5cd5f02df",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "ebc96ea81bfca31088792d1040c5de619d899308",
+   "patch_sha256": "eb56e7170085b7ca66278665d8ea9d8ca25a155ba7125c6dbb26cc48d1320268",
+   "tree_hash": "47257f672be7b47089e617b0f849572cbe50821037cf44d0ad854a90c0819cac",
+   "note": "update 474 phase 1, build b: as 474a + QaFixture names keep the real alphabetical order (k474f opened another game's window with 474a); never published"
+  },
+  {
+   "id": "qa-0.6.68-474c",
+   "apk_sha256": "5cbd63bcaf533f24317ed2b9030807bca33bc36ddda942b7c58e8ca8ed4dd1f8",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "ebc96ea81bfca31088792d1040c5de619d899308",
+   "patch_sha256": "2e683f81993d8462836482f66c213130895211e1a44c39bb84bc693364fefb8c",
+   "tree_hash": "9f355cf503c8ec166108a39c378d5bb9a85c7caf31da087d4eff789fb8d8444a",
+   "note": "update 474 phase 1, build c: as 474b + QaArt keyed by the request's target (dumps had no images) + fixture art numbered by alphabetical rank over 24 pictures (neighbours shared one, k474p); never published"
+  }
+ ]
+}

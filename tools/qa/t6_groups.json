@@ -1,0 +1,1407 @@
+{
+ "groups": [
+  {
+   "file": "appearance",
+   "name": "appearance:category",
+   "keys": [
+    "category_anim",
+    "category_logos",
+    "category_scenes",
+    "category_screen",
+    "category_side",
+    "category_tile_style2"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:lights",
+   "keys": [
+    "lights_color",
+    "lights_enabled",
+    "lights_music",
+    "lights_off_screensaver"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:music",
+   "keys": [
+    "music_custom_name",
+    "music_custom_stamp",
+    "music_fx_second",
+    "music_mode",
+    "music_player_position",
+    "music_track",
+    "music_volume"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:scene",
+   "keys": [
+    "scene_fade",
+    "scene_from_cover",
+    "scene_hue",
+    "scene_particles",
+    "scene_quality",
+    "scene_second_only",
+    "scene_speed",
+    "scene_theme",
+    "scene_time_of_day"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:second",
+   "keys": [
+    "second_art_blur",
+    "second_art_type",
+    "second_details",
+    "second_details_case",
+    "second_dock",
+    "second_dock_apps",
+    "second_dock_on_second",
+    "second_music_blur",
+    "second_music_blur_art",
+    "second_music_layout",
+    "second_music_lyrics",
+    "second_page",
+    "second_page_arrows",
+    "second_player_over_art",
+    "second_scene_theme",
+    "second_visualizer_art"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:show",
+   "keys": [
+    "show_console_name",
+    "show_game_logos_v2",
+    "show_legend",
+    "show_rarity",
+    "show_screenshots",
+    "show_status_bar",
+    "show_tips"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:tile",
+   "keys": [
+    "tile_dock_position",
+    "tile_focus",
+    "tile_scale",
+    "tile_shortcut_theme2",
+    "tile_shortcuts"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:ach",
+   "keys": [
+    "ach_comments_auto",
+    "ach_hub_view",
+    "ach_place",
+    "ach_view"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:ah",
+   "keys": [
+    "ah_accent",
+    "ah_bubbles",
+    "ah_curve",
+    "ah_lcd",
+    "ah_size"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:anim",
+   "keys": [
+    "anim_held_pictures",
+    "anim_info",
+    "anim_page",
+    "anim_page_slide",
+    "anim_rise_in"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:ar",
+   "keys": [
+    "ar_art",
+    "ar_cab",
+    "ar_clock",
+    "ar_crt",
+    "ar_first",
+    "ar_mode",
+    "ar_motion",
+    "ar_nav",
+    "ar_room",
+    "ar_row_continue",
+    "ar_row_fav",
+    "ar_row_most",
+    "ar_row_new",
+    "ar_screen",
+    "ar_side_art",
+    "ar_sounds",
+    "ar_spacing",
+    "ar_speed",
+    "ar_video",
+    "ar_view"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:art",
+   "keys": [
+    "art_color_source",
+    "art_drop_case",
+    "art_in_background",
+    "art_keep_accent",
+    "art_pos_looks",
+    "art_priority",
+    "art_shift_case",
+    "art_source_cover",
+    "art_source_hero",
+    "art_source_logo",
+    "art_source_wide",
+    "art_zoom_case"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:bar",
+   "keys": [
+    "bar_art",
+    "bar_art_cut",
+    "bar_games_at",
+    "bar_grow_v3",
+    "bar_icons",
+    "bar_names_v2",
+    "bar_squares",
+    "bar_start",
+    "bar_tabs_current",
+    "bar_tile"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:bl",
+   "keys": [
+    "bl_badges",
+    "bl_color",
+    "bl_motion",
+    "bl_sounds",
+    "bl_start"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:box",
+   "keys": [
+    "box_3d",
+    "box_arrange",
+    "box_cardboard",
+    "box_case_size",
+    "box_dividers",
+    "box_flow_tilt",
+    "box_label",
+    "box_lift",
+    "box_order",
+    "box_rows",
+    "box_side_colors",
+    "box_sides",
+    "box_sides_chosen",
+    "box_spacing",
+    "box_speed",
+    "box_spine_side",
+    "box_switch",
+    "box_tilt",
+    "box_wear"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:bv",
+   "keys": [
+    "bv_float",
+    "bv_folders",
+    "bv_opens",
+    "bv_sounds",
+    "bv_wall"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:cards",
+   "keys": [
+    "cards_a_plays",
+    "cards_fan",
+    "cards_frame",
+    "cards_sheen"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:carousel",
+   "keys": [
+    "carousel_3d",
+    "carousel_edge",
+    "carousel_gap",
+    "carousel_layouts",
+    "carousel_reflect",
+    "carousel_size",
+    "carousel_spread",
+    "carousel_stage",
+    "carousel_stage_game_color",
+    "carousel_view"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:case",
+   "keys": [
+    "case_motion",
+    "case_region",
+    "case_style",
+    "case_with_media"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:cf",
+   "keys": [
+    "cf_angle",
+    "cf_curve",
+    "cf_pitch",
+    "cf_reflect",
+    "cf_side",
+    "cf_size",
+    "cf_spacing",
+    "cf_speed",
+    "cf_stage",
+    "cf_title"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:chan",
+   "keys": [
+    "chan_art",
+    "chan_cols",
+    "chan_corner",
+    "chan_custom",
+    "chan_light",
+    "chan_names",
+    "chan_status_bar",
+    "chan_symbols"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:circuit",
+   "keys": [
+    "circuit_backdrop",
+    "circuit_colors",
+    "circuit_current",
+    "circuit_labels"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:classic",
+   "keys": [
+    "classic_accent",
+    "classic_analogue",
+    "classic_art",
+    "classic_calendar",
+    "classic_toolbar",
+    "classic_top_art",
+    "classic_window_layouts"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:cn",
+   "keys": [
+    "cn_accent",
+    "cn_hero",
+    "cn_logo",
+    "cn_preview",
+    "cn_roll",
+    "cn_row_continue",
+    "cn_row_fav",
+    "cn_row_most",
+    "cn_row_new",
+    "cn_tiles"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:console",
+   "keys": [
+    "console_badge_logos",
+    "console_badges",
+    "console_name_pin",
+    "console_stack_games",
+    "console_stack_photos"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:corner",
+   "keys": [
+    "corner_viz",
+    "corner_viz_corner",
+    "corner_viz_only_music_v2",
+    "corner_viz_size"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:cross",
+   "keys": [
+    "cross_cats",
+    "cross_folders",
+    "cross_info",
+    "cross_labels",
+    "cross_logo_cut",
+    "cross_logo_tint",
+    "cross_scale",
+    "cross_tint",
+    "cross_trophies",
+    "cross_trophy_cat",
+    "cross_waves"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:cube",
+   "keys": [
+    "cube_backdrop",
+    "cube_dock",
+    "cube_extra_faces",
+    "cube_face",
+    "cube_home",
+    "cube_idle",
+    "cube_look",
+    "cube_reduced_motion",
+    "cube_size",
+    "cube_tint"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:dash",
+   "keys": [
+    "dash_cut",
+    "dash_hero",
+    "dash_menu",
+    "dash_menu_count",
+    "dash_menu_labels",
+    "dash_opacity",
+    "dash_panel",
+    "dash_player_art",
+    "dash_profile",
+    "dash_quick",
+    "dash_row_title",
+    "dash_status",
+    "dash_subtitle",
+    "dash_title"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:detail",
+   "keys": [
+    "detail_layer_cover",
+    "detail_layer_logo",
+    "detail_layer_screenshots",
+    "detail_layer_video"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:disc",
+   "keys": [
+    "disc_about",
+    "disc_blur",
+    "disc_calm_bg",
+    "disc_case",
+    "disc_case_3d",
+    "disc_motion",
+    "disc_player",
+    "disc_spin",
+    "disc_style"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:dock",
+   "keys": [
+    "dock_backing",
+    "dock_color",
+    "dock_image",
+    "dock_opacity",
+    "dock_other_games"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:facts",
+   "keys": [
+    "facts_details",
+    "facts_grid",
+    "facts_list",
+    "facts_row",
+    "facts_second"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:fs",
+   "keys": [
+    "fs_bounce",
+    "fs_colors",
+    "fs_page",
+    "fs_pattern",
+    "fs_sounds",
+    "fs_spacing"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:game",
+   "keys": [
+    "game_ambience",
+    "game_journey",
+    "game_states",
+    "game_window",
+    "game_window_case",
+    "game_window_colors"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:gc",
+   "keys": [
+    "gc_accent",
+    "gc_bg_motion",
+    "gc_browse",
+    "gc_glow",
+    "gc_hum",
+    "gc_reduced_motion",
+    "gc_sounds",
+    "gc_sphere_speed",
+    "gc_volume"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:hero",
+   "keys": [
+    "hero_blur",
+    "hero_card_style",
+    "hero_carousel_motion",
+    "hero_covers_right",
+    "hero_dim",
+    "hero_shade",
+    "hero_shade_strength",
+    "hero_side_covers",
+    "hero_tiles_dock",
+    "hero_tiles_pale",
+    "hero_tiles_rows",
+    "hero_tiles_size",
+    "hero_tiles_status_bar"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:inspect",
+   "keys": [
+    "inspect_auto_return",
+    "inspect_hold",
+    "inspect_mode",
+    "inspect_mode_asked_274",
+    "inspect_open_at_start",
+    "inspect_return_speed",
+    "inspect_sway"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:live",
+   "keys": [
+    "live_art",
+    "live_bar",
+    "live_color",
+    "live_light",
+    "live_names",
+    "live_page",
+    "live_tabs"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:ll",
+   "keys": [
+    "ll_activity",
+    "ll_near",
+    "ll_recent",
+    "ll_subdue",
+    "ll_unfinished"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:mc",
+   "keys": [
+    "mc_arrange",
+    "mc_back",
+    "mc_db_icons",
+    "mc_depth",
+    "mc_float",
+    "mc_hints",
+    "mc_save_icons",
+    "mc_selected",
+    "mc_size",
+    "mc_spacing",
+    "mc_title"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:mg",
+   "keys": [
+    "mg_desk",
+    "mg_shot",
+    "mg_sounds",
+    "mg_style"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:nm",
+   "keys": [
+    "nm_color",
+    "nm_moon",
+    "nm_rows",
+    "nm_water"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:od",
+   "keys": [
+    "od_color",
+    "od_real",
+    "od_ring",
+    "od_spin",
+    "od_stars",
+    "od_tilt"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:pb",
+   "keys": [
+    "pb_animate",
+    "pb_bands",
+    "pb_bar_count",
+    "pb_bar_random",
+    "pb_follow_home",
+    "pb_show_count",
+    "pb_show_covers",
+    "pb_show_last_played",
+    "pb_show_legend",
+    "pb_show_logo",
+    "pb_show_maker",
+    "pb_show_name",
+    "pb_show_shadow",
+    "pb_slide_layout",
+    "pb_tall_cards",
+    "pb_themed_pickers",
+    "pb_view"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:pc",
+   "keys": [
+    "pc_grid",
+    "pc_palette",
+    "pc_shift",
+    "pc_sounds"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:pd",
+   "keys": [
+    "pd_color",
+    "pd_profile",
+    "pd_sounds",
+    "pd_start"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:pocket",
+   "keys": [
+    "pocket_anim",
+    "pocket_arrange",
+    "pocket_name",
+    "pocket_pixel2",
+    "pocket_sounds",
+    "pocket_start_category",
+    "pocket_strip"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:pq",
+   "keys": [
+    "pq_a_plays",
+    "pq_accent",
+    "pq_background",
+    "pq_bg_anim",
+    "pq_bumpers2",
+    "pq_description",
+    "pq_media2",
+    "pq_parallax",
+    "pq_reduced_motion",
+    "pq_screenshots",
+    "pq_size",
+    "pq_sound_volume",
+    "pq_sounds",
+    "pq_speed",
+    "pq_theme",
+    "pq_tilt"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:ribbon",
+   "keys": [
+    "ribbon_accent",
+    "ribbon_cart",
+    "ribbon_gap",
+    "ribbon_glow",
+    "ribbon_icon2",
+    "ribbon_names",
+    "ribbon_slides",
+    "ribbon_split",
+    "ribbon_start_categories",
+    "ribbon_status",
+    "ribbon_top"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:rs",
+   "keys": [
+    "rs_cases",
+    "rs_neon",
+    "rs_rows",
+    "rs_sounds",
+    "rs_wall"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:save",
+   "keys": [
+    "save_engraving",
+    "save_turn",
+    "save_vault_backdrop",
+    "save_vault_card",
+    "save_vault_clear",
+    "save_vault_endless",
+    "save_vault_filter",
+    "save_vault_style"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:saver",
+   "keys": [
+    "saver_away",
+    "saver_follow_system",
+    "saver_low_at",
+    "saver_mode"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:second",
+   "keys": [
+    "second_dim_after",
+    "second_dim_backlight",
+    "second_dim_level2",
+    "second_dock_mono",
+    "second_folder_logo",
+    "second_folder_look",
+    "second_folder_plain",
+    "second_look",
+    "second_open_case",
+    "second_slow_unused",
+    "second_top_follows"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:shelf",
+   "keys": [
+    "shelf_backdrop",
+    "shelf_bob",
+    "shelf_look",
+    "shelf_pulled",
+    "shelf_real_sizes_348",
+    "shelf_stand"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:side",
+   "keys": [
+    "side_art",
+    "side_caps",
+    "side_emblem_v2",
+    "side_gold",
+    "side_orb",
+    "side_row_title",
+    "side_width"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:spine",
+   "keys": [
+    "spine_cuts",
+    "spine_depth",
+    "spine_recheck_at",
+    "spine_scrape",
+    "spine_style"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:spot",
+   "keys": [
+    "spot_art",
+    "spot_cards",
+    "spot_hints",
+    "spot_logo",
+    "spot_look",
+    "spot_name_at",
+    "spot_shade",
+    "spot_shape",
+    "spot_status_bar",
+    "spot_tabs",
+    "spot_tiles_at",
+    "spot_title_at",
+    "spot_title_row"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:st",
+   "keys": [
+    "st_cursor",
+    "st_motion",
+    "st_preview",
+    "st_size",
+    "st_spacing",
+    "st_wallpaper"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:stacks",
+   "keys": [
+    "stacks_3d",
+    "stacks_bar",
+    "stacks_depth",
+    "stacks_mirror",
+    "stacks_toolbar"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:stage#1",
+   "keys": [
+    "stage_aurora",
+    "stage_bg_blur",
+    "stage_bg_bright",
+    "stage_bg_react",
+    "stage_bokeh",
+    "stage_circle",
+    "stage_cover_colors",
+    "stage_fps",
+    "stage_fx_react",
+    "stage_idle_after",
+    "stage_idle_fx",
+    "stage_idle_picture",
+    "stage_lines",
+    "stage_low_power",
+    "stage_particle_amount",
+    "stage_particles",
+    "stage_reaction",
+    "stage_rings",
+    "stage_spectrum",
+    "stage_stars"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:stage#2",
+   "keys": [
+    "stage_clock_24",
+    "stage_lyric_offset_ms",
+    "stage_lyrics",
+    "stage_seconds",
+    "stage_status",
+    "stage_ui_scale",
+    "stage_volume"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:theme",
+   "keys": [
+    "theme_intensity",
+    "theme_rotation",
+    "theme_rotation_kinds",
+    "theme_rotation_launches",
+    "theme_rotation_minutes"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:tile",
+   "keys": [
+    "tile_switch",
+    "tile_switch_frame",
+    "tile_switch_hints",
+    "tile_switch_plain",
+    "tile_switch_profiles"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:tm",
+   "keys": [
+    "tm_boot",
+    "tm_crt",
+    "tm_pixel",
+    "tm_sounds",
+    "tm_theme"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:tv",
+   "keys": [
+    "tv_carousel_side",
+    "tv_carousel_tilt",
+    "tv_carousel_tilt_dir",
+    "tv_carousel_tilt_sides",
+    "tv_info_under",
+    "tv_recent_badges",
+    "tv_room_games",
+    "tv_room_names"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:twin",
+   "keys": [
+    "twin_calendar",
+    "twin_clock",
+    "twin_cols",
+    "twin_desk_art",
+    "twin_desk_clock",
+    "twin_desk_game",
+    "twin_desk_gap",
+    "twin_desk_handles",
+    "twin_desk_play_icon",
+    "twin_gap",
+    "twin_icons_tone",
+    "twin_show_rows",
+    "twin_show_status_bar"
+   ]
+  },
+  {
+   "file": "accessories",
+   "name": "accessories:misc#1",
+   "keys": [
+    "hidden"
+   ]
+  },
+  {
+   "file": "app_storage",
+   "name": "app_storage:misc#1",
+   "keys": [
+    "root_folder"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:misc#1",
+   "keys": [
+    "achievement_badges",
+    "achievement_fly_in",
+    "achievement_fly_sounds",
+    "achievements_on_cards",
+    "animate_on_lite",
+    "animated_art",
+    "arrival_anim",
+    "background_style",
+    "banner_buttons",
+    "button_glyphs",
+    "button_layout",
+    "card_corners",
+    "card_size",
+    "cover_achievements",
+    "cover_recent_unlocks",
+    "density",
+    "details_backdrop",
+    "details_sections",
+    "discord_presence",
+    "discord_rich_presence"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:misc#2",
+   "keys": [
+    "dock_position",
+    "favorite_star",
+    "flash_on_unlock",
+    "focus_border",
+    "focus_effect",
+    "focus_position",
+    "focused_card_style",
+    "franchise_collections",
+    "genre_collections",
+    "haptic_strength",
+    "haptics",
+    "hero_fit_v2",
+    "hero_motion",
+    "hero_zoom_percent",
+    "hidden_media",
+    "hide_all_brackets",
+    "hide_region_tags",
+    "home_layout",
+    "hotkeys_v2",
+    "idle_saver"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:misc#3",
+   "keys": [
+    "info_spacing",
+    "intro_style",
+    "last_played_on_banner",
+    "logo_placement",
+    "loop_row3",
+    "lyrics_position",
+    "mastered_shimmer",
+    "mastered_style",
+    "mastered_theme_color",
+    "mini_player",
+    "mini_player_lyrics",
+    "name_backdrop",
+    "name_capsule",
+    "name_side",
+    "news_sources",
+    "offer_missing",
+    "other_games_look",
+    "performance_mode",
+    "play_status",
+    "playtime_on_home"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:misc#4",
+   "keys": [
+    "popup_zoom",
+    "prefer_animated_art",
+    "progress_above",
+    "progress_on_banner",
+    "ra_logos",
+    "row_info",
+    "screenshot_folders",
+    "sharp_heroes",
+    "shimmer_style",
+    "shortcut_highlight",
+    "shortcut_spot",
+    "sort_mode",
+    "sound_style_v2",
+    "sound_volume",
+    "sounds",
+    "start_category",
+    "text_scale",
+    "theme_sounds",
+    "tilt_others",
+    "title_placement2"
+   ]
+  },
+  {
+   "file": "appearance",
+   "name": "appearance:misc#5",
+   "keys": [
+    "trophy_corner",
+    "trophy_on_banner",
+    "unlock_popups",
+    "user_collections",
+    "video_previews",
+    "video_sound",
+    "wallpaper_uri",
+    "weekly_recap"
+   ]
+  },
+  {
+   "file": "bios_check",
+   "name": "bios_check:misc#1",
+   "keys": [
+    "folders"
+   ]
+  },
+  {
+   "file": "categories",
+   "name": "categories:misc#1",
+   "keys": [
+    "hidden"
+   ]
+  },
+  {
+   "file": "charge_limit",
+   "name": "charge_limit:misc#1",
+   "keys": [
+    "fast_lead",
+    "switch_stack"
+   ]
+  },
+  {
+   "file": "console_logos",
+   "name": "console_logos:misc#1",
+   "keys": [
+    "at",
+    "json"
+   ]
+  },
+  {
+   "file": "esde_media",
+   "name": "esde_media:misc#1",
+   "keys": [
+    "on"
+   ]
+  },
+  {
+   "file": "hidden_apps",
+   "name": "hidden_apps:misc#1",
+   "keys": [
+    "hidden_package_names"
+   ]
+  },
+  {
+   "file": "layout_presets",
+   "name": "layout_presets:misc#1",
+   "keys": [
+    "active_id",
+    "custom"
+   ]
+  },
+  {
+   "file": "music_overrides",
+   "name": "music_overrides:misc#1",
+   "keys": [
+    "f:$key",
+    "n:$key"
+   ]
+  },
+  {
+   "file": "physical_media",
+   "name": "physical_media:misc#1",
+   "keys": [
+    "spine_checked:${g.stableKey}"
+   ]
+  },
+  {
+   "file": "profiles",
+   "name": "profiles:misc#1",
+   "keys": [
+    "active"
+   ]
+  },
+  {
+   "file": "screen_layouts",
+   "name": "screen_layouts:misc#1",
+   "keys": [
+    "kinds_json"
+   ]
+  },
+  {
+   "file": "session_summary",
+   "name": "session_summary:misc#1",
+   "keys": [
+    "enabled"
+   ]
+  },
+  {
+   "file": "system_logos",
+   "name": "system_logos:misc#1",
+   "keys": [
+    "at",
+    "branch",
+    "paths"
+   ]
+  },
+  {
+   "file": "theme",
+   "name": "theme:misc#1",
+   "keys": [
+    "selected_theme"
+   ]
+  },
+  {
+   "file": "tuner_stock",
+   "name": "tuner_stock:misc#1",
+   "keys": [
+    "boot",
+    "dirty",
+    "stock",
+    "vendor"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#1",
+   "keys": [
+    "achievement_intensity",
+    "all_case_fit",
+    "animate_only_new",
+    "animated_focus_only2",
+    "arcade_game_colors",
+    "arcade_glow",
+    "arcade_lines",
+    "auto_backup",
+    "auto_backup_accounts",
+    "back_rating",
+    "back_rating_others",
+    "backdrop_achievements",
+    "badge_count",
+    "badge_name",
+    "badge_percent",
+    "big_gc_discs",
+    "big_logo_sgdb",
+    "capsule_reveal_first",
+    "capsule_reveal_v2",
+    "capsule_swap"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#2",
+   "keys": [
+    "cart_back_style",
+    "cart_look",
+    "cart_motion",
+    "carts_only",
+    "category_art",
+    "category_slide",
+    "category_title_212",
+    "clip_idle_pause",
+    "clips_max_mb",
+    "clips_offline",
+    "completion_celebration",
+    "context_milestone",
+    "cover_light",
+    "cover_templates",
+    "crate_spin",
+    "crate_wood",
+    "custom_layout",
+    "density",
+    "discs_for_all",
+    "endless_fill"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#3",
+   "keys": [
+    "era_art",
+    "favorite_themes",
+    "focus_pop",
+    "gbc_cart",
+    "grid_focus",
+    "grid_tiles",
+    "grids_continuous",
+    "header_style",
+    "hidden_parts",
+    "home_header",
+    "home_header_hidden",
+    "home_header_tight",
+    "hub_art",
+    "hub_icons",
+    "idle_focus",
+    "idle_rest_min",
+    "karaoke_ball",
+    "keep_art",
+    "kit_volume",
+    "launch_throw2"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#4",
+   "keys": [
+    "lib_cols",
+    "lib_panel",
+    "lib_tabs",
+    "living_library",
+    "look_spines",
+    "look_square_tiles",
+    "lyric_cover_bg",
+    "lyric_next_line",
+    "lyric_scatter",
+    "lyrics_align",
+    "lyrics_motion",
+    "lyrics_offset_ms",
+    "manual_keep",
+    "media_shells",
+    "metacritic_chip",
+    "mixed_art",
+    "mixer_notification",
+    "mono_icon_style",
+    "motion_focused_only",
+    "motion_on_lite"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#5",
+   "keys": [
+    "music_crossfade",
+    "music_keep_screen_off",
+    "music_skins",
+    "name_blur",
+    "name_contrast",
+    "original_cases",
+    "overlay_arrows",
+    "overlay_parts",
+    "own_case_fit",
+    "part_backing",
+    "part_backing_solid",
+    "part_styles",
+    "pause_on_close",
+    "pause_on_lock",
+    "photo_shells",
+    "pixel_artwork",
+    "pixel_size",
+    "pixel_ui",
+    "platform_intro_videos",
+    "platform_media_scrape"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#6",
+   "keys": [
+    "play_style",
+    "popup_style_by_layout",
+    "printed_backs",
+    "quick_menu_in_game",
+    "ra_show_pinned",
+    "real_editions",
+    "res_art",
+    "res_next_ach",
+    "retro_icons",
+    "rollout_on",
+    "rollout_speed",
+    "row_blur",
+    "row_glide",
+    "scene_fps",
+    "scene_half_res",
+    "short_console_names",
+    "shortcut_hidden",
+    "shortcut_scale",
+    "shortcut_themed_icons",
+    "shortcuts_open"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#7",
+   "keys": [
+    "smart_continue",
+    "spines_own",
+    "spotify_quiet_wake",
+    "startup_mode",
+    "status_matches_layout",
+    "style_music",
+    "style_row_focus",
+    "timeline_by",
+    "timeline_dates",
+    "transition_speed",
+    "trophy_mastered_only",
+    "ui_font",
+    "ui_glow",
+    "ui_style",
+    "unlock_animation",
+    "volt_battery",
+    "volt_line",
+    "widget_scales",
+    "win_banner",
+    "win_motion"
+   ]
+  },
+  {
+   "file": "voltcap_features",
+   "name": "voltcap_features:misc#8",
+   "keys": [
+    "win_scenes"
+   ]
+  },
+  {
+   "file": "voltcap_lights",
+   "name": "voltcap_lights:misc#1",
+   "keys": [
+    "picked"
+   ]
+  },
+  {
+   "file": "web_remote",
+   "name": "web_remote:misc#1",
+   "keys": [
+    "on"
+   ]
+  },
+  {
+   "file": "whats_new",
+   "name": "whats_new:misc#1",
+   "keys": [
+    "seen"
+   ]
+  },
+  {
+   "file": "year_recap",
+   "name": "year_recap:misc#1",
+   "keys": [
+    "first_use"
+   ]
+  }
+ ],
+ "not_set": {
+  "no settings UI (internal / derived)": 391,
+  "account / internal state: never set by QA": 16,
+  "device / power setting: never set by QA (owner rule)": 7
+ }
+}

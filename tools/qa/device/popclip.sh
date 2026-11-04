@@ -6,6 +6,10 @@
 # Preview only, launches blocked. Evaluate with tools/qa/tools/popclip.py. Progress in $OUT/log.txt, DONE at the end.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; STYLES=$3; GAME=$4
 OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
+# (Update 474: the run manifest — build, device, configuration, start / end — that tools/qa/tools/evidence.py requires
+# before any combination of this run can PASS.)
+. "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
+ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
 k() { input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 # Is a popup (a Play / Continue action) up? — a probe dump, so B is never pressed once too often (B on the home opens the
@@ -37,7 +41,8 @@ for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; 
 [ -n "$GAME" ] && { logcat -c; A --es voltcap_test_game "$GAME"; sleep 3; echo "$GAME" > $OUT/game.txt
   # (Update 469: the hook logs which game it found — a run on the wrong game is stopped, not graded.)
   logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME'" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
-  logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed 's/.*VoltcapTest: //' >> $OUT/log.txt; }
+  logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed 's/.*VoltcapTest: //' >> $OUT/log.txt
+  ev_note $OUT "game_match=$(logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed "s/.*-> //;s/https[^ ]*//g")"; }
 touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
 for lay in $LAYS; do
@@ -59,7 +64,10 @@ for lay in $LAYS; do
       grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
+    logcat -c
     A --es voltcap_test_pref "popup_style_by_layout=$lay=$st"; sleep 1.2
+    # (Update 474, D242: the app's own answer that the style is set — a SKIP (style not offered) only counts with it.)
+    ev_note $OUT "style_set $n $(logcat -d -s VoltcapTest | grep 'pref popup_style_by_layout' | grep -c "$lay=$st")"
     k WAKEUP 0.3
     # The home screen before the popup (what "closed" must come back to).
     shot ${n}_home
@@ -109,4 +117,5 @@ done
 A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
+ev_end $OUT
 echo DONE >> $OUT/log.txt

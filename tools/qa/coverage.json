@@ -494,6 +494,64 @@
    "status": "NOT TESTED",
    "evidence": "-",
    "limits": "UPDATE 397 (Thor, C6-C9): PASS (no blank / white / dip frame, layout seen in the still) POCKET_RIBBON, GREENCORE, TWIN_DESK (main screen only, no second display), POCKET_CLASSIC and DISCS (need PRE=A); POCKET PASS with an OPEN defect (info panel shows old + new title overlapped for 1 frame at the swap, reproduced 3x, also without the 397 change; shelf thumbnails fade in over ~3 frames). DISCS: disc label blank ~3 frames while the new title is already shown (image load, not an animation). FILESELECT flagged frame classified: it is the swap frame itself (benign). UPDATE 396 runs C4 / C5 (Thor): PASS (no blank / white / dip frame, intended layout seen in the still) HERO, DASH, ARCADE, CRATE, CARDS, STORAGE (needs PRE=A to leave its category screen), FILESELECT (1 transient frame flagged for review, not inspected); rapid reversals are in the NAV sequence; immediate game navigation after L2 / R2 NOT TESTED on hardware (unit test only). Earlier: PASS (no blank / white / dip frame, shell still: contact sheet of BOX read) for CINEMA, COVERDETAILS, BOX, CLASSIC, TILES (CS-02) and, update 395 run C3, ARTLIB, ARCTIC, SHELF, SIDE, STACKS, BOX again (SIDE and BOX transient frames = the swap frame itself); every other layout NOT TESTED until run through catswitch.sh (next batch: HERO, DASH, ARCADE, CRATE, CARDS, STORAGE, FILESELECT, POCKET, DISCS, TWIN_*); rapid-reversal artwork / title sync and the 600 ms guard against game animations were NOT checked frame by frame"
+  },
+  {
+   "mode": "automated",
+   "hardware": true,
+   "id": "QA474-POP",
+   "feature": "Popup gate R26 + update 474 checks (squeezed, text-in-box, wrong game, evidence binding)",
+   "test": "popclip.sh + popclip.py (qa-0.6.68-474a/b)",
+   "device": "KONKR GT78 BW0306N230000845 + Odin 2 Portal b92036fb (USB)",
+   "status": "FAIL",
+   "evidence": "runs k474a, k474f, k474g, o474b (manifests bound to builds.json)",
+   "device_run": "k474a k474g o474b",
+   "limits": "Representative only: 5 layouts x OWN / ROW_OPENS at default config (+ long-name / no-metadata fixture on 4 layouts, KONKR). FAIL = real defects D245 (Row opens facts squeezed, both devices), D246 (Storage facts squeezed, both), D247 (Airy story squeezed, KONKR). Cover details (D244 fixed) PASS on both. o474a INFRA (run's home on another game). Full T1 sweep with the new checks: NOT TESTED (phase 2)."
+  },
+  {
+   "mode": "automated",
+   "hardware": true,
+   "id": "QA474-NAV",
+   "feature": "Home navigation T5: move / jump / steady / stale art / late art (navclip)",
+   "test": "navclip.sh + navclip.py (qa-0.6.68-474c)",
+   "device": "KONKR GT78 + Odin 2 Portal (USB)",
+   "status": "FAIL",
+   "evidence": "k474r (real art, 6 layouts), k474w (wide fixture art, 4), o474r (square fixture art, category All, 3)",
+   "device_run": "k474r k474w o474r",
+   "limits": "FAIL = D248 (Voltcap row title drawn at x 204 instead of 63 after switching from Tiles, 1 of 5 runs, intermittent). 'late' is a WARN only (early raw shot ~0.35 s after the key, screencap latency). Odin walks only with a fixture and in All (its consoles hold 1-2 games). Category-switch and 47 other layouts NOT TESTED."
+  },
+  {
+   "mode": "automated",
+   "hardware": true,
+   "id": "QA474-FIX",
+   "feature": "QA fixtures (names long / short, no metadata, no / wide / square / portrait / ultrawide / low-res art)",
+   "test": "voltcap_test_fixture (staging) + QaFixture474Test",
+   "device": "KONKR + Odin (USB)",
+   "status": "PASS",
+   "evidence": "k474g (long names: same games open, order kept), k474w / o474r (art shapes, not stretched: artfit), settings snapshot identical before / after (md5, both devices)",
+   "device_run": "k474g k474w o474r",
+   "limits": "Display-only; game COUNT fixtures not implemented (the view model's own list decides navigation: needs a VM-level session list, phase 2). Unit tests compiled and run on the PC (testDebugUnitTest)."
+  },
+  {
+   "mode": "automated",
+   "hardware": false,
+   "id": "QA474-T4",
+   "feature": "T4 pairwise covering set (family x style x font x density x content x device)",
+   "test": "pairwise.py gen / check",
+   "device": "none (planning)",
+   "status": "PASS",
+   "evidence": "t4_pairwise.json: 59 runs cover all 335 coverable pairs, 0 excluded, 0 uncovered (selftest)",
+   "limits": "The 59 runs themselves: NOT TESTED. 10 layouts appear in no T4 run (covered by T1 / T3 sweeps)."
+  },
+  {
+   "mode": "automated",
+   "hardware": false,
+   "id": "QA474-T6",
+   "feature": "T6 settings groups + restoration check",
+   "test": "t6plan.py + snapdiff.py",
+   "device": "none (planning) / KONKR + Odin restore",
+   "status": "NOT TESTED",
+   "evidence": "T6_GROUPS.md: 792 settable settings in 101 groups; 414 not set by QA (no UI / account / device-power)",
+   "limits": "No group run yet. Restoration proven for this session's own runs only (4 snapshot files identical on both devices)."
   }
  ],
  "release_install": {

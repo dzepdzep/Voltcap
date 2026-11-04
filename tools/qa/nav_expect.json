@@ -1,0 +1,4 @@
+{
+ "_note": "Update 474: per-layout expectations for tools/navclip.py (T5). moves = the focused card / title glides to a new place by design (carousels): fixed-text drift is not a failure there; animated_art = the focused picture plays (looser picture match); moving_texts = texts that move on purpose; skip = not walkable, with the reason. Only layouts listed here differ from the default (everything must stay put; same game = same picture). Edit with evidence.",
+ "layouts": {}
+}

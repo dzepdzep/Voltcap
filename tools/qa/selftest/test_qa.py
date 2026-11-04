@@ -924,7 +924,18 @@ class TestPopupGate(unittest.TestCase):
 
     def test_fixed_row_passes_geometry_never_overall_without_pages(self):
         import popclip
-        g = popclip.grade(self.run_dir(before=False), "CASEFLOW_OWN")
+        d = self.run_dir(before=False)
+        # (Update 474: a dump without text layout — every build before 474 — can't pass geometry any more: the text check is
+        # NOT TESTED there. With the texts exported (all whole) the same fixed row passes.)
+        g = popclip.grade(d, "CASEFLOW_OWN")
+        self.assertEqual(g["geometry"][0], "NOT TESTED"); self.assertIn("no text layout", g["geometry"][1])
+        p = os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_main.json"); dd = json.load(open(p, encoding="utf-8"))
+        for w in dd["windows"]:
+            w["texts"] = [{"text": n["label"], "full": n["full"], "shown": n["shown"], "lines": 1, "maxLines": -1, "ovH": False,
+                           "ovW": False, "ellipsis": False, "boxH": n["full"][3], "scroll": False, "giveway": False}
+                          for n in w["nodes"] if n["full"][3] > 0]
+        json.dump(dd, open(p, "w", encoding="utf-8"))
+        g = popclip.grade(d, "CASEFLOW_OWN")
         self.assertEqual(g["geometry"][0], "PASS")
         self.assertNotEqual(g["buttons"][0], "PASS")   # no More / Details steps recorded: never a pass
 
@@ -1047,6 +1058,233 @@ class TestLineEndings(unittest.TestCase):
                 if n.endswith(ext) and b"\r" in open(os.path.join(d, n), "rb").read():
                     bad.append(sub + "/" + n)
         self.assertEqual(bad, [], "CRLF in %s: run  sh tools/qa/tools/pushqa.sh  (strips them and pushes LF copies)" % bad)
+
+
+class TestQa474(unittest.TestCase):
+    """Update 474 (QA overhaul phase 1): each new check fails on a known-broken screen and passes the fixed / good one."""
+    def fx(self, n):
+        with open(os.path.join(FIX, n), encoding="utf-8") as fh: return json.load(fh)
+
+    def clip(self, d, b=None):
+        import geomcheck
+        return {r.name: (r.status, r.reason) for r in geomcheck.clip_evaluate(d, baseline=b)}
+
+    # --- D244 Cover details: real KONKR dumps, before (k471cd) and after (k471gd) the fix -------------------------------
+    def test_cover_details_cutoff_the_old_gate_passed_is_caught(self):
+        st = self.clip(self.fx("coverdetails_471_k471cd_more.json"), self.fx("coverdetails_471_k471cd_closed.json"))
+        for k in ("clip", "facts", "screen", "overlap", "focus"):   # every check the old gate had: PASS on the broken screen
+            self.assertEqual(st[k][0], "PASS", k)
+        self.assertEqual(st["squeezed"][0], "FAIL"); self.assertIn("trophies", st["squeezed"][1])
+
+    def test_cover_details_fixed_passes_squeezed(self):
+        st = self.clip(self.fx("coverdetails_471_k471gd_more.json"), self.fx("coverdetails_471_k471gd_closed.json"))
+        self.assertEqual(st["squeezed"][0], "PASS")
+        self.assertEqual(st["text"][0], "NOT TESTED")   # a 0.6.66-era dump has no text layout: never a pass
+
+    def test_gives_way_part_is_a_warning_not_a_fail(self):
+        d = self.fx("coverdetails_471_k471cd_more.json"); b = self.fx("coverdetails_471_k471cd_closed.json")
+        n = next(n for w in d["windows"] for n in w["nodes"] if (n.get("full") or [0, 0, 0, 9])[3] <= 1 and n.get("full", [0, 0, 0])[2] > 0)
+        for w in d["windows"]:
+            w.setdefault("texts", []).append({"text": n["label"], "full": n["full"], "shown": n["shown"], "giveway": True})
+        st = self.clip(d, b)
+        self.assertEqual(st["squeezed"][0], "PASS")
+
+    # --- text cut inside its own box (synthetic: TextLayoutResult fields as QaClip exports them) -----------------------
+    def text_dump(self, **t):
+        base = {"text": "Never played - 0 / 109 trophies", "full": [100, 100, 300, 40], "shown": [100, 100, 300, 40], "lines": 1,
+                "maxLines": -1, "ovH": False, "ovW": False, "ellipsis": False, "boxH": 40, "scroll": False, "giveway": False}
+        base.update(t)
+        return {"density": 2.0, "screen": [960, 640], "windows": [{"at": [0, 0, 960, 640], "focus": True, "texts": [base], "nodes": [
+            {"label": "Play", "kind": "control", "full": [100, 300, 160, 60], "shown": [100, 300, 160, 60], "focused": True}]}]}
+
+    def test_text_whole_passes(self):
+        self.assertEqual(self.clip(self.text_dump())["text"][0], "PASS")
+
+    def test_text_ellipsis_fails(self):
+        st = self.clip(self.text_dump(ellipsis=True, maxLines=1))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("ellipsis", st[1])
+
+    def test_text_cut_by_its_own_box_fails(self):
+        st = self.clip(self.text_dump(ovH=True, lines=2, boxH=24))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("cut inside its own box", st[1])
+        # (Update 474 hardware: auto-sized texts report their unshrunk layout. Sideways and untrusted reports only warn; a box
+        # under half the reported line is cut at any size.)
+        st = self.clip(self.text_dump(ovW=True))
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("WARN", st["warn-text-unconfirmed"][1])
+        st = self.clip(self.text_dump(ovH=True, maxLines=1, lines=1, textH=36, boxH=30))   # Airy's chips: drawn whole
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("warn-text-unconfirmed", st)
+        st = self.clip(self.text_dump(ovH=True, maxLines=1, lines=1, textH=36, boxH=10))   # Row opens' DEVELOPER in a 10 px box
+        self.assertEqual(st["text"][0], "FAIL")
+        st = self.clip(self.text_dump(ellipsis=True, maxLines=3, lines=2, textH=56, boxH=56))   # a short text: trusted ellipsis
+        self.assertEqual(st["text"][0], "FAIL")
+
+    def test_long_story_shortened_beside_details_is_a_summary_warning(self):
+        story = "While the game does have a storyline, progress is made by winning cups. " * 6
+        d = self.text_dump(text=story, len=len(story), ovH=True, maxLines=3, lines=3, textH=56, boxH=56)
+        self.assertEqual(self.clip(d)["text"][0], "FAIL")           # no Details action: the rest is unreachable
+        d["windows"][0]["nodes"].append({"label": "Details", "kind": "control", "full": [300, 300, 160, 60], "shown": [300, 300, 160, 60]})
+        st = self.clip(d)
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("summary", st["warn-summary"][1])
+
+    def test_text_in_scroll_or_marquee_is_expected_not_cut(self):
+        self.assertEqual(self.clip(self.text_dump(ovH=True, scroll=True))["text"][0], "PASS")
+        self.assertEqual(self.clip(self.text_dump(ovW=True, scroll=True))["text"][0], "PASS")
+
+    # --- evidence binding -----------------------------------------------------------------------------------------
+    def ev_run(self, apk="f79aa2a7c5afbaa5a494a3ddc0bebbafa038b4d95ec7332c8e91ef4dee7cc315", finished=True, vc="73", stale=False):
+        import evidence
+        d = tempfile.mkdtemp(); now = int(time.time())
+        m = dict(manifest=1, tag="t", started=now - 30, serial="S", model="M", display="1920x1080", density=280, font_scale=1.0,
+                 version_name="0.6.66", version_code=vc, apk_sha256=apk)
+        if finished: m["finished"] = now + 5
+        open(os.path.join(d, "manifest.txt"), "w").write("".join(f"{k}={v}\n" for k, v in m.items()) + "style_set X_OWN 1\n")
+        p = os.path.join(d, "X_OWN_main.png"); open(p, "wb").write(b"x")
+        if stale: os.utime(p, (now - 3600, now - 3600))
+        return evidence.check_run(d)
+
+    def test_evidence_good_run_passes(self):
+        st, info, why = self.ev_run()
+        self.assertEqual(st, "PASS", why); self.assertEqual(info["build"]["id"], "rc-0.6.66")
+
+    def test_evidence_missing_interrupted_unknown_stale_are_infra(self):
+        import evidence
+        self.assertEqual(evidence.check_run(tempfile.mkdtemp())[0], "INFRA")                    # no manifest
+        self.assertIn("interrupted", self.ev_run(finished=False)[2])
+        self.assertIn("unknown build", self.ev_run(apk="0" * 64)[2])
+        self.assertIn("versionCode", self.ev_run(vc="74")[2])
+        self.assertIn("stale", self.ev_run(stale=True)[2])
+
+    # --- wrong game in the window ----------------------------------------------------------------------------------
+    def test_window_for_another_game_fails_open(self):
+        import popclip
+        t = TestPopupGate(); d = t.run_dir(before=False)
+        from PIL import Image
+        Image.new("RGB", (960, 640), (20, 20, 20)).save(os.path.join(d, "CASEFLOW_OWN_home.png"))
+        home = {"focusedGame": "rom:/r/n64/Pokemon Stadium 2 (USA).z64", "windows": [{"at": [0, 0, 960, 640], "focus": True, "nodes": [
+            {"label": "home", "kind": "control", "full": [0, 0, 960, 640], "shown": [0, 0, 960, 640]}]}]}
+        json.dump(home, open(os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_home.json"), "w"))
+        p = os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_main.json"); m = json.load(open(p))
+        m["popupGame"] = "rom:/r/n64/Pokemon Snap (USA).z64"; json.dump(m, open(p, "w"))
+        g = popclip.grade(d, "CASEFLOW_OWN")["open"]
+        self.assertEqual(g[0], "FAIL"); self.assertIn("another game", g[1])
+        m["popupGame"] = "rom:/r/n64/Pokemon Stadium 2 (USA).z64"; json.dump(m, open(p, "w"))
+        self.assertNotIn("another game", popclip.grade(d, "CASEFLOW_OWN")["open"][1])
+
+    # --- art fit: QA fixture picture drawn as QaFixture does --------------------------------------------------------
+    def fixture_png(self, w, h, sx=1.0, sy=1.0, crop=0):
+        from PIL import Image, ImageDraw
+        im = Image.new("RGB", (w, h), (60, 90, 160)); dr = ImageDraw.Draw(im); m = w * 0.04; lw = max(2, int(w * 0.02))
+        dr.rectangle([m, m, w - m, h - m], outline=(255, 255, 255), width=lw)
+        r = min(w, h) * 0.22; dr.ellipse([w / 2 - r, h / 2 - r, w / 2 + r, h / 2 + r], outline=(255, 255, 255), width=lw)
+        im = im.resize((int(w * sx), int(h * sy)))
+        if crop: im = im.crop((crop, 0, im.width - crop, im.height))
+        c = Image.new("RGB", (im.width + 40, im.height + 40), (10, 10, 10)); c.paste(im, (20, 20))
+        p = os.path.join(tempfile.mkdtemp(), "a.png"); c.save(p); return p, [20, 20, im.width, im.height]
+
+    def test_artfit_round_passes_stretched_fails_crop_is_reported(self):
+        import artfit
+        p, box = self.fixture_png(400, 300); r = artfit.fit(p, box)
+        self.assertEqual(r["status"], "PASS", r); self.assertIn("whole picture", r["reason"])
+        p, box = self.fixture_png(400, 300, sx=1.4); r = artfit.fit(p, box)
+        self.assertEqual(r["status"], "FAIL", r); self.assertIn("stretched", r["reason"])
+        p, box = self.fixture_png(400, 300, crop=30); r = artfit.fit(p, box)
+        self.assertEqual(r["status"], "PASS", r); self.assertIn("cropped at", r["reason"])
+        from PIL import Image
+        q = os.path.join(tempfile.mkdtemp(), "b.png"); Image.new("RGB", (300, 300), (40, 40, 40)).save(q)
+        self.assertEqual(artfit.fit(q, [0, 0, 300, 300])["status"], "NOT TESTED")   # not fixture art: never a pass
+
+    def test_artfit_real_odin_fixture_shots(self):
+        """Real Odin screenshots of the square fixture (o474q): the grid card (cropped sideways) and Voltcap row's card under its
+        dark scrim are round = PASS; the same pictures squeezed 25 % = FAIL."""
+        import artfit
+        from PIL import Image
+        for n, box in (("artfit_odin_grid_square_474.png", [10, 10, 143, 204]), ("artfit_odin_classic_scrim_474.png", [0, 0, 369, 172])):
+            p = os.path.join(FIX, n)
+            self.assertEqual(artfit.fit(p, box)["status"], "PASS", n)
+            im = Image.open(p); q = os.path.join(tempfile.mkdtemp(), "s.png")
+            im.resize((int(im.width * 1.25), im.height)).save(q)
+            r = artfit.fit(q, [box[0] * 1.25, box[1], box[2] * 1.25, box[3]])
+            self.assertEqual(r["status"], "FAIL", (n, r))
+
+    # --- navigation: jump / stale art / stuck focus ----------------------------------------------------------------
+    def nav_run(self, jump=False, stale=False, stuck=False, images=None):
+        import navclip
+        from PIL import Image
+        d = tempfile.mkdtemp(); os.makedirs(os.path.join(d, "qa_clip"))
+        games = ["g/A", "g/B", "g/C", "g/B", "g/A"]
+        col = {"g/A": (200, 40, 40), "g/B": (40, 200, 40), "g/C": (40, 40, 200)}
+        for i, g in enumerate(games):
+            if stuck and i == 1: g = "g/A"
+            c = col["g/A"] if (stale and i == 1) else col[g]
+            im = Image.new("RGB", (960, 640), (10, 10, 10))
+            for x in range(100, 300):
+                for y in range(100, 300):
+                    if (x // 20 + y // 20) % 2: im.putpixel((x, y), c)
+            im.save(os.path.join(d, f"L_s{i}.png"))
+            if i: im.save(os.path.join(d, f"L_s{i}e.png"))
+            ty = 400 + (30 if (jump and i == 4) else 0)
+            json.dump({"density": 2.0, "focusedGame": g, "origin": [100, 100, 200, 200], "images": images or [], "windows": [{"texts": [
+                {"text": "Header", "full": [10, 10, 100, 20]}, {"text": "Title " + g[-1], "full": [100, ty, 200, 30]}]}]},
+                open(os.path.join(d, "qa_clip", f"L_s{i}.json"), "w"))
+        return navclip.grade_layout(d, "L", {})
+
+    def test_nav_good_walk_passes(self):
+        g = self.nav_run()
+        for k in ("move", "jump", "steady", "art"):
+            self.assertEqual(g[k][0], "PASS", (k, g[k]))
+
+    def test_nav_slow_and_lowres_art_warn_never_fail(self):
+        import navclip
+        g = self.nav_run()
+        self.assertFalse(g["late"][1].startswith("WARN"))
+        d = tempfile.mkdtemp()
+        import shutil
+        # (re-run with images in the dumps: a slow load and a 64 x 96 picture drawn into a 300 x 450 box)
+        g = self.nav_run(images=[{"tok": "a", "ok": True, "ms": 900, "ago": 500, "want": [300, 450], "got": [64, 96]}])
+        self.assertEqual(g["late"][0], "PASS"); self.assertIn("WARN", g["late"][1])
+        self.assertIn("low-res", g["late"][1]); self.assertIn("> 400 ms", g["late"][1])
+
+    def test_nav_jump_stale_stuck_fail(self):
+        self.assertEqual(self.nav_run(jump=True)["jump"][0], "FAIL")
+        st = self.nav_run(stale=True)["art"]; self.assertEqual(st[0], "FAIL"); self.assertIn("stale", st[1])
+        self.assertEqual(self.nav_run(stuck=True)["move"][0], "FAIL")
+
+    # --- T4 pairwise set ----------------------------------------------------------------------------------------------
+    def test_pairwise_set_covers_every_pair_and_check_catches_gaps(self):
+        import pairwise
+        m, f = pairwise.load()
+        runs, excl = pairwise.generate(m, f)
+        unc, bad, _ = pairwise.check(m, f, runs)
+        self.assertEqual((unc, bad), ([], []))
+        self.assertTrue(all(pairwise.offers(m, r["layout"], r["style"]) for r in runs))
+        unc, _, _ = pairwise.check(m, f, runs[1:])          # one run fewer: some pair is no longer covered
+        self.assertTrue(unc)
+        broken = [dict(runs[0], layout="HERO", family="carousel", style="ROW_OPENS")] + runs[1:]
+        self.assertTrue(any("does not offer" in b for b in pairwise.check(m, f, broken)[1]))
+
+    # --- T6: settings restored exactly -------------------------------------------------------------------------------
+    def test_snapdiff_identical_passes_changed_fails_missing_infra(self):
+        import snapdiff
+        def snap(v):
+            d = tempfile.mkdtemp()
+            json.dump({"density": v, "ui_font": "x"}, open(os.path.join(d, "voltcap_test_snapshot.json"), "w"))
+            json.dump({"home_layout": "s:CASEFLOW"}, open(os.path.join(d, "voltcap_test_snapshot_appearance.json"), "w"))
+            open(os.path.join(d, "voltcap_test_snapshot_categories.txt"), "w").write("All\n")
+            json.dump({"focus": "a"}, open(os.path.join(d, "voltcap_test_snapshot_view.json"), "w"))
+            return d
+        a, b, c = snap("cozy"), snap("cozy"), snap("roomy")
+        self.assertEqual(qalib.verdict(snapdiff.diff(a, b)), "PASS")
+        r = snapdiff.diff(a, c); self.assertEqual(qalib.verdict(r), "FAIL")
+        self.assertTrue(any("density" in x.reason and "roomy" not in x.reason for x in r))   # key named, value never printed
+        os.remove(os.path.join(c, "voltcap_test_snapshot_view.json"))
+        self.assertIn("INFRA", [x.status for x in snapdiff.diff(a, c)])
+
+    # --- D242: a row style claimed "not offered" without the app confirming the style was set --------------------
+    def test_style_set_note_required_for_skip(self):
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn("style_set", sh)
+        src = open(os.path.join(TOOLS, "popclip.py"), encoding="utf-8").read()
+        self.assertIn("never confirmed the style was set (D242)", src)
 
 
 if __name__ == "__main__":

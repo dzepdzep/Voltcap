@@ -64,3 +64,38 @@ photo-made shell; label = the game's own. Approximate (real AND generated alike)
 backs are the researched drawn backs in the photo's plastic (no back photos exist); clear GBC paks share one clear photo.
 Performance: templates are only made for shells on screen (one 720 px picture each); the QA run that made all 14 at once had the
 app at 411 MB PSS on the KONKR (not compared against the RC in the same state).
+
+## Update 463 audit — duplicated front print and cartridge backs (owner request, same day)
+
+### Front: duplicated printed elements
+- **Found, fixed:** 3DS (and the same risk on DS). The first 463 run showed two product-code lines on the 3DS card
+  (`LNA-CTR-BMCP-EUR` from the laid label + `LNA-CTR-BSYE-USA` left from the photo's own sticker): the photo's sticker was found
+  only down to its art, and the code strip under it stayed. Fix: DS / 3DS cover the photo's WHOLE paper (down to 93 %, the code strip
+  included) and copy that same place of the drawn front (`STICKER` + `WHOLE`). Re-run (`qa463/sd`): one code line only. (The cut
+  `…BMCP-EUR` line still visible at the very bottom of the 3DS sheet row is part of the QA stand-in label crop itself, not the app.)
+- **DS:** one header, one code (FFCC re-laid on its own photo, identical to the photo).
+- **Switch:** one red NINTENDO SWITCH header, one `LA-H-…` code: the one Switch photo used (DKC, the only template the dark-grey
+  card picks) has its whole sticker found, header and code included — nothing of the photo's print is left round the laid label.
+- **Drawn label composition itself (CartShells.front):** no doubling by design — a real label scan is drawn as the whole sticker with
+  no header, footer or code (`scan` turns off the Switch header, the DS / 3DS paper strip / frame and the ROM-header code); the header /
+  bottom band / code are only drawn for a cover (which has none of them, its box banner is cut off — labelArt).
+- **GB / GBC / GBA, N64, SNES, SFC, Famicom:** no duplicate seen in the sheets (the sticker found covers the photo's whole label).
+
+### Backs (all backs are the researched drawn backs, in the photo's plastic for photo-made pieces — the same for real-scan pieces,
+since no back photos exist; real and generated therefore always match each other at the back)
+| Shell | Back now | Verdict | Needs |
+|---|---|---|---|
+| Game Boy grey / GBC black / GBA | moulded MADE IN JAPAN / PAT. PEND. box, grooves, screw, gold contacts; GBA moulded text + contacts | acceptable | finer moulding / screw recess shading (minor) |
+| GBC clear (Color-only) | flat green rectangle + black chip + grey frame, opaque grey rim | **needs improvement** — reads schematic next to the photographed clear front (front shows a grey-brown board, back a green one; rim opaque) | a clear back that uses the front photo's board tone, translucent rim |
+| N64 | grey, moulded Nintendo, two screws, big warning-sticker panel, ledges | acceptable | — |
+| SNES North America | grey panel with text lines, foot recess | acceptable | — |
+| Super Famicom / PAL | plain grey slab with large round top corners (drawn outline) | **needs improvement** — no detail and the corners don't match the photo's front | researched back (screws, warning label) and the photo's outline |
+| Famicom | plain dark slab | **needs improvement** | researched back |
+| NES (drawn, not photo-made) | warning label, screws | acceptable as drawing; the drawn front itself is wrong (see matrix) | NES re-measure |
+| DS | dark grey, gold contacts | acceptable (plain) | moulded ribs / text (minor) |
+| 3DS | pale grey, tab, contacts | acceptable | — |
+| Switch | dark grey, contact block | acceptable (plain) | moulded ribs (minor) |
+
+Side transition: at 45° / 75° every shell turns as one piece (front photo → side in the photo's edge plastic → back); the 90° view is
+a slab of the shell's thickness (real and generated alike). Clear GBC sides are opaque grey (real: translucent) — part of the clear
+back item above.

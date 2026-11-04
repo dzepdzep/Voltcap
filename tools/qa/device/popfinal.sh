@@ -6,7 +6,9 @@
 P=com.shelf.launcher; TAG=$1; COMBOS=$2; SZ=${3:-960x540}; GAME=$4
 V=/data/local/tmp/vqa; OUT=/sdcard/pf/$TAG; rm -rf $OUT; mkdir -p $OUT
 # (D136: the "Who's playing?" profile picker can come up in front after a while — B keeps the current profile, nothing else.)
-picker() { uiautomator dump /sdcard/vqa_ui.xml > /dev/null 2>&1; grep -q "Who.s playing" /sdcard/vqa_ui.xml && { input keyevent KEYCODE_BUTTON_B; sleep 1.5; echo "picker dismissed"; }; rm -f /sdcard/vqa_ui.xml; }
+# (D136, update 452: the app's own screen mark first — uiautomator can't dump an animated home on the RP Classic, so the
+# picker was missed and the moves walked it; the dump stays as the fallback for builds without the mark.)
+picker() { m=/sdcard/Android/data/com.shelf.launcher/files/voltcap_qa_screen; if [ -s $m ] && grep -q "^PICKER $(pidof com.shelf.launcher | cut -d' ' -f1)" $m; then input keyevent KEYCODE_BUTTON_B; sleep 1.5; echo "picker dismissed (mark)"; elif [ ! -s $m ]; then uiautomator dump /sdcard/vqa_ui.xml > /dev/null 2>&1; grep -q "Who.s playing" /sdcard/vqa_ui.xml 2>/dev/null && { input keyevent KEYCODE_BUTTON_B; sleep 1.5; echo "picker dismissed"; }; rm -f /sdcard/vqa_ui.xml; fi; }
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
 K() { sh $V/vqa.sh seq "$1" ${2:-150} > /dev/null; }
 # The focused window's token: the game window is a window of its own (same activity name, another token).

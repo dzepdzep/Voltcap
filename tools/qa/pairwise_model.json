@@ -1,0 +1,25 @@
+{
+ "_note": "Update 474 T4 model (tools/pairwise.py). families: QA grouping of the 53 HomeLayout values by how their home screen and window are built (row / carousel / grid / physical media / retro scenes / dual / custom) — a QA assumption, revise freely. norow: layouts whose row styles were n/a (PopupStyle.offered: no drawn row) in the update 471 T1 sweeps on BOTH KONKR and Odin. content values map to QaFixture specs (voltcap_test_fixture). density values: KONKR 210 / default / 280, Odin 320 / default / 420 (wm density, restored).",
+ "families": {
+  "row": ["CLASSIC", "TILES", "BAR", "DASH", "SIDE", "SPOT", "CROSS", "LIVE", "CHAN", "TV"],
+  "carousel": ["HERO", "HERO_TILES", "ORBIT", "CINEMA", "ARCTIC", "BLADES", "CIRCUIT"],
+  "grid": ["GRID", "LIBRARY", "ARTLIB", "TIMELINE", "MAGAZINE", "SHOP", "PANELS", "HUB", "RESUME"],
+  "physical": ["SHELF", "STACKS", "DISCS", "CRATE", "CASEFLOW", "BOX", "STORAGE", "MEMCARD", "CUBE", "CARDS", "CONSOLES", "COVERDETAILS"],
+  "scene": ["POCKET", "POCKET_CLASSIC", "POCKET_RIBBON", "GREENCORE", "CAMERA", "TERMINAL", "FILESELECT", "ARCADE", "NIGHT", "AIRY", "BUBBLES"],
+  "dual": ["TWIN_DESK", "TWIN_ICONS", "TWIN_SHOWCASE"],
+  "custom": ["CUSTOM"]
+ },
+ "row_styles": ["ROW_OPENS", "ROW_REVEAL", "SHARED"],
+ "norow": ["ARTLIB", "BUBBLES", "CAMERA", "COVERDETAILS", "HERO", "POCKET_CLASSIC", "TERMINAL"],
+ "factors": {
+  "style": ["OWN", "BANNER", "ROW_OPENS", "ROW_REVEAL", "SHARED", "CLASSIC"],
+  "font": ["0.85", "1.0", "1.3"],
+  "density": ["smaller", "default", "larger"],
+  "content": ["real", "long", "sparse", "noart", "wide", "square", "portrait", "lowres"],
+  "device": ["KONKR", "ODIN"]
+ },
+ "content_specs": {
+  "real": "off", "long": "names=long", "sparse": "meta=none", "noart": "art=none", "wide": "art=wide",
+  "square": "art=square", "portrait": "art=portrait", "lowres": "art=lowres"
+ }
+}
