@@ -67,3 +67,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Readability476Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

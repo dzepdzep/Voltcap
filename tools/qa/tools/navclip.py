@@ -27,6 +27,20 @@ EXPECT = os.path.join(os.path.dirname(HERE), "nav_expect.json")
 TOL_DP = 2.0
 
 
+
+def same_pixels(a, b, box, limit=4.0):
+    """Update 477: the two screenshots' mean difference inside box (x, y, w, h) is under [limit] (0-255): nothing moved there."""
+    try:
+        from PIL import Image, ImageChops, ImageStat
+        x, y, w, h = [int(v) for v in box]
+        ia, ib = Image.open(a).convert("L"), Image.open(b).convert("L")
+        r = (max(0, x), max(0, y), min(ia.width, x + w), min(ia.height, y + h))
+        if r[2] - r[0] < 8 or r[3] - r[1] < 8:
+            return False
+        return ImageStat.Stat(ImageChops.difference(ia.crop(r), ib.crop(r))).mean[0] < limit
+    except Exception:
+        return False
+
 def load(run, name):
     tag = os.path.basename(os.path.normpath(run))
     for p in (os.path.join(run, "qa_clip", f"{tag}_{name}.json"), os.path.join(run, "qa_clip", f"{name}.json")):
@@ -137,15 +151,25 @@ def grade_layout(run, lay, exp):
     mine = [k for k in t[0] if n1.get(k) == 1 and all(k in t[i] for i in ok_back) and away and all(k not in t[i] for i in away)]
     if exp.get("pages"):
         mine = []   # (its info panel turns pages by itself: only the card is compared)
-    probs = []
+    probs, notes = [], []
     for i in ok_back:
         oi = d[i].get("origin")
         # (A card that pulses or bounces by design (Orbit, File select) changes size about its centre: its centre is compared.)
-        if o0 and oi and exp.get("pulse"):
+        # (Update 477: slot_free — a row that scrolls only as far as needed puts the same game at another slot after ▶ ◀
+        # (Arctic): the card's place is not compared, its own texts still are.)
+        if exp.get("slot_free"):
+            pass
+        elif o0 and oi and exp.get("pulse"):
             if max(abs((o0[0] + o0[2] / 2) - (oi[0] + oi[2] / 2)), abs((o0[1] + o0[3] / 2) - (oi[1] + oi[3] / 2))) > max(tol, 0.25 * o0[3]):
                 probs.append(f"focused card centre moved {o0} → {oi} (s{i})")
         elif o0 and oi and max(abs(a - b) for a, b in zip(o0, oi)) > tol:
-            probs.append(f"focused card {o0} → {oi} (s{i})")
+            # (Update 477, T5 triage: Cinema on the Odin reported the card 11-17 px off on return while every screenshot had
+            # its border at the same pixel — the origin was taken mid-glide. The screenshots decide: the same pixels where
+            # the card was at s0 are no jump.)
+            if same_pixels(png[0], png[i], o0):
+                notes.append(f"s{i}: the dump's card box is off ({o0} → {oi}) but the screenshot is the same there (box taken mid-glide)")
+            else:
+                probs.append(f"focused card {o0} → {oi} (s{i})")
         probs += [f"'{k[:30]}' {t[0][k]} → {t[i][k]} (s{i})" for k in mine if max(abs(a - b) for a, b in zip(t[0][k], t[i][k])) > tol]
     if not t[0]:
         out["jump"] = (qalib.NOT_TESTED, "no text layout in the dump (build before update 474)")
@@ -154,7 +178,8 @@ def grade_layout(run, lay, exp):
     elif probs:
         out["jump"] = (qalib.FAIL, "back on the same game, things are elsewhere: " + "; ".join(probs[:5]))
     else:
-        out["jump"] = (qalib.PASS, f"same game, same places ({len(mine)} of its own texts{' + the card' if o0 else ''})")
+        out["jump"] = (qalib.PASS, f"same game, same places ({len(mine)} of its own texts{' + the card' if o0 else ''})"
+                       + ("; WARN: " + "; ".join(notes[:2]) if notes else ""))
     # steady: words on screen at EVERY step, once each (chrome: headers, hints, the category). A group of 2+ of them moving by
     # the same amount is a list scrolling or a panel paging (by design: TV's grid, Hero's rotating info pages) — not a jump;
     # one that moves on its own, or a few, is.
@@ -179,6 +204,11 @@ def grade_layout(run, lay, exp):
         if all(inside(boxes[i], d[i].get("origin")) for i in range(5)):
             continue
         dv = tuple((round((boxes[i][0] - boxes[0][0]) / tol), round((boxes[i][1] - boxes[0][1]) / tol)) for i in range(1, 5))
+        # (Update 477, T5 triage: moving_pattern — texts that change place by design, matched whole: a frame counter's
+        # digits (Camera), the selection pointer (Terminal's ►), a label that follows the focused item (Twin icons' Open).)
+        pat = exp.get("moving_pattern")
+        if pat and re.fullmatch(pat, k or ""):
+            continue
         if any(abs(x) > 1 or abs(y) > 1 for x, y in dv) and not exp.get("moves") and k not in exp.get("moving_texts", []):
             movers.setdefault(dv, []).append(k)
     lone = [k for dv, ks in movers.items() if len(ks) < 2 for k in ks]

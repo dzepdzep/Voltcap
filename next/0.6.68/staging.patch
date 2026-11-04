@@ -1,8 +1,27 @@
 diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
-index e33cd4f..7509338 100644
+index e33cd4f..616ee1f 100644
 --- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
 +++ b/app/src/main/java/com/shelf/launcher/MainActivity.kt
-@@ -267,6 +267,7 @@ class MainActivity : ComponentActivity() {
+@@ -5,7 +5,7 @@ import android.content.ClipboardManager
+ import android.content.Context
+ import android.os.Bundle
+ import androidx.activity.ComponentActivity
+-import androidx.activity.compose.setContent
++import com.shelf.launcher.ui.setKeyRootContent
+ import androidx.activity.enableEdgeToEdge
+ import androidx.activity.compose.BackHandler
+ import androidx.compose.foundation.background
+@@ -193,7 +193,8 @@ class MainActivity : ComponentActivity() {
+         // Watches real frame times so Automatic quality can step down on devices that can't keep up.
+         com.shelf.launcher.device.FrameWatch.start(this)
+         com.shelf.launcher.ui.CustomPieceTones.attach(this) // (QA pass 3, D25: pack-cartridge tones kept across starts)
+-        setContent {
++        // (Update 477, D252: the content's root leaves touch mode before Android can eat the first D-pad press after a touch.)
++        setKeyRootContent {
+             // "Hide navigation bar" switched: the window follows at once.
+             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
+             // Update 449: and when the handheld's own hide_nav_bar changes (Retroid: the window asks only while it's off).
+@@ -267,6 +268,7 @@ class MainActivity : ComponentActivity() {
          val focusedCover by remember(vm) {
              vm.uiState.map { s ->
                  val shown = s.forDisplay().let { if (com.shelf.launcher.ui.DemoLibrary.on.value) com.shelf.launcher.ui.DemoLibrary.dress(it) else it }
@@ -10,6 +29,30 @@ index e33cd4f..7509338 100644
                  shown.visibleGames.getOrNull(shown.focusedIndex)?.let {
                      shown.artOverrides[it.stableKey]?.cover ?: shown.art[it.stableKey]?.gridUrl
                  }
+@@ -286,6 +288,11 @@ class MainActivity : ComponentActivity() {
+     // button legend can follow the handheld's own setting (SystemButtonLayout).
+     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+         com.shelf.launcher.ui.QaGeom.key(event.keyCode, event.action == android.view.KeyEvent.ACTION_DOWN)
++        // (Update 477, D252 triage, QA only: does a key reach the activity, and in which input mode — after a touch the first
++        // D-pad press seemed lost. With the touch-mode changes logged below, the trace says which layer took it.)
++        if (com.shelf.launcher.ui.QaTrace.on && event.action == android.view.KeyEvent.ACTION_DOWN)
++            com.shelf.launcher.ui.QaTrace.event("key", "${android.view.KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_")} " +
++                "touchMode=${window?.decorView?.isInTouchMode} focus=${currentFocus?.javaClass?.simpleName}")
+         if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
+         // Update 467 (popup gate): after a touch, the first A / B / X / Y did nothing — Android leaves touch mode only for
+         // the D-pad and typing keys, so a face button reached a home screen with nothing focused (the popup sweep: "first A
+@@ -306,7 +313,10 @@ class MainActivity : ComponentActivity() {
+             }) com.shelf.launcher.data.AnimatedArt.onMove()
+         runCatching { com.shelf.launcher.data.SystemButtonLayout.observe(this, event) }
+         com.shelf.launcher.ui.QaWalk.afterKey(event) // (QA: the controller walk, test hooks + voltcap_test_walk only)
+-        return super.dispatchKeyEvent(event)
++        val handled = super.dispatchKeyEvent(event)
++        if (com.shelf.launcher.ui.QaTrace.on && event.action == android.view.KeyEvent.ACTION_DOWN)
++            com.shelf.launcher.ui.QaTrace.event("keydone", "${android.view.KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_")} handled=$handled")
++        return handled
+     }
+ 
+     // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
 diff --git a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt b/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
 index b8fdb4e..38d63e9 100644
 --- a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
@@ -23,6 +66,46 @@ index b8fdb4e..38d63e9 100644
              .build()
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt b/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
+index 8f84258..812e91c 100644
+--- a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
++++ b/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
+@@ -37,6 +37,12 @@ object FrameWatch {
+         val t = HandlerThread("voltcap-frames").also { it.start() }
+         thread = t
+         com.shelf.launcher.ui.QaTrace.init(activity)
++        // (Update 477, D252 triage, QA only: every change of Android's touch mode, with what holds the focus then.)
++        if (com.shelf.launcher.ui.QaTrace.on) runCatching {
++            activity.window.decorView.viewTreeObserver.addOnTouchModeChangeListener { inTouch ->
++                com.shelf.launcher.ui.QaTrace.event("touchmode", "$inTouch focus=${activity.currentFocus?.javaClass?.simpleName}")
++            }
++        }
+         ignoreUntil = SystemClock.uptimeMillis() + GRACE_MS
+         val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
+         listener = l
+diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
+index 11b8faf..0edb216 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
+@@ -22,6 +22,7 @@ import androidx.compose.foundation.basicMarquee
+ import androidx.compose.runtime.getValue
+ import androidx.compose.runtime.setValue
+ import androidx.compose.ui.layout.layout
++import androidx.compose.ui.semantics.semantics
+ 
+ /**
+  * Text that shrinks (from [maxSize] down to [minSize]) until it fits the room it's given in at most
+@@ -119,7 +120,9 @@ private fun FullTextMarquee(
+         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
+         // (RP Classic QA: a slide never stops, so a home screen with long names redrew forever. It rests with the home
+         // screen — 30 s without input, HomeIdle.calm — and starts again with the first press.)
+-        modifier = if (calmHere()) modifier else modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp)
++        // (Update 477: marked as sliding for the QA gate — QaClip.Slides — whether it moves now or rests.)
++        modifier = (if (calmHere()) modifier else modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp))
++            .semantics { this[QaClip.Slides] = true }
+     )
+ }
+ 
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt b/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
 index c5dcaf5..f746344 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
@@ -102,6 +185,341 @@ index c5dcaf5..f746344 100644
                  onError = { failed = true },
                  modifier = Modifier.width(slotWidth).height(logoHeight)
              )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
+index 169d875..1dcbb43 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
+@@ -323,7 +323,10 @@ private class WinLook(
+      * Update 330: the layout's own colours ARE its look (Pocket classic's paper, the memory-card screen's grey): "The
+      * game's colours" / "Theme colours" then only colour its accent (the lit button, the picture's frame), never the panel.
+      */
+-    val keepsPalette: Boolean = false
++    val keepsPalette: Boolean = false,
++    /** Update 476 (D262): the panel has a header band drawn at a fixed share of its height (Storage's blue strip): a full
++     *  page — taller than the window — takes the plain [paper] instead, or its header sits half on the band. */
++    val bandedPanel: Boolean = false
+ )
+ 
+ private fun solid(c: Color): Brush = Brush.verticalGradient(listOf(c, c))
+@@ -344,7 +347,7 @@ private fun WinLook.tinted(tint: Color): WinLook {
+             mediaFrame = if (mediaFrame != null) a else null, mediaFrameW = mediaFrameW,
+             ink = ink, muted = muted, accent = a, btnFill = btnFill, btnInk = btnInk, btnOnFill = solid(a), btnOnInk = onA,
+             btnBorder = btnBorder, back = back, details = details, play = play, mono = mono, caps = caps, paper = paper,
+-            stripes = stripes, keepsPalette = true
++            stripes = stripes, keepsPalette = true, bandedPanel = bandedPanel
+         )
+     }
+     val deep = mix(tint, Color.Black, 0.55f)
+@@ -611,7 +614,7 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
+             btnFill = solid(Color.White), btnInk = Color(0xFF1E2A3A), btnOnFill = solid(Color(0xFFFF5A4E)), btnOnInk = Color.White,
+             btnBorder = Color(0xFF4C6A8E),
+             back = "Back", details = "Summary", play = playWord,
+-            paper = Color(0xFFF7F9FC), keepsPalette = true
++            paper = Color(0xFFF7F9FC), keepsPalette = true, bandedPanel = true
+         )
+         // Update 330: File select — the block opened out: chunky blue with a thick light bevel, yellow for the lit button.
+         HomeLayout.FILESELECT -> WinLook(
+@@ -1760,13 +1763,14 @@ private fun TvControls(
+         }
+         val status = LocalWinStatus.current
+         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+-            winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras).forEach { (l, f, isPlay) ->
++            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
++            ButtonRow(tvItems.map { it.first }) { tvItems.forEach { (l, f, isPlay) ->
+                 WinButton(
+                     look, if (look.caps) l.uppercase() else l,
+                     Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
+                     wideButton = false, stretch = true, compact = true, onClick = f
+                 )
+-            }
++            } }
+             // (Update 213: Performance as a round button in the TV's small strip.)
+             if (page == WinPage.MAIN && status?.perf != null) Box(Modifier.focusRequester(status.perfFocus)) {
+                 WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 32.dp, status.onPerf)
+@@ -1859,7 +1863,7 @@ private fun WindowBody(
+         fun btnMod(l: String, isPlay: Boolean): Modifier =
+             if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
+         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
+-            all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) }
++            ButtonRow(all.map { it.first }) { all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) } }
+             // (Update 119: the game's options, achievements and save sync under them.)
+             if (!details) WinIcons(look, extras)
+             WinStatusLine(look)
+@@ -1875,13 +1879,13 @@ private fun WindowBody(
+           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+             if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                 // [share]: the buttons share the width (a narrow column).
+-                items.forEach { (l, f, isPlay) ->
++                ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
+                     WinButton(
+                         look, if (look.caps) l.uppercase() else l,
+                         Modifier.weight(1f).then(btnMod(l, isPlay)),
+                         wideButton = false, stretch = true, onClick = f
+                     )
+-                }
++                } }
+             } else {
+                 // (Update 291, Toni: "the icon isn't reachable": the Inspect icon was the fifth round icon, and on the Cube
+                 // layout's window (Mario Party, Animal Crossing) it ran past the window's right edge — the estimate above is
+@@ -1890,9 +1894,9 @@ private fun WindowBody(
+                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+                     itemVerticalAlignment = Alignment.CenterVertically
+                 ) {
+-                    items.forEach { (l, f, isPlay) ->
++                    ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
+                         WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = false, stretch = false, onClick = f)
+-                    }
++                    } }
+                     if (!details && !iconsBelow) WinIcons(look, extras, 44.dp)
+                 }
+             }
+@@ -2241,7 +2245,10 @@ internal val MORE_SCENES = setOf(
+     WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
+     WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
+     WinScene.TILE_CARD, WinScene.POCKET_LCD, WinScene.DISC_PANEL, WinScene.CORE_PANEL, WinScene.CUBE_FACE, WinScene.RECORD_SLEEVE,
+-    WinScene.CASE_MEDIA, WinScene.FILE_CARD
++    WinScene.CASE_MEDIA, WinScene.FILE_CARD,
++    // (Update 477, D266: Airy's eight round keys took two rows on the KONKR and the chips' second line — Played, ★ — was not
++    // drawn. Play, Details, Back, Inspect and More in one row; the rest opens in the panel's well with More.)
++    WinScene.AIRY_PANEL
+ )
+ 
+ /** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
+@@ -2266,9 +2273,9 @@ private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, ma
+             Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+             verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically
+         ) {
+-            ctx.buttons.forEach { a ->
++            ButtonRow(ctx.buttons.map { it.label }) { ctx.buttons.forEach { a ->
+                 WinButton(look, if (look.caps) a.label.uppercase() else a.label, if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier, wideButton = false, compact = compact, onClick = a.onClick)
+-            }
++            } }
+         }
+     }
+ }
+@@ -2283,7 +2290,7 @@ private fun ExpandedWinPage(
+     // (The window's own panel; a look whose parts float on the veil takes its details paper — the Wii window's white — and
+     // only a look with neither gets a dark glass.)
+     val own = look.panel != null || look.paper != null
+-    val panel = look.panel ?: look.paper?.let { solid(it) } ?: solid(Color(0xF2121519))
++    val panel = (if (look.bandedPanel) look.paper?.let { solid(it) } else null) ?: look.panel ?: look.paper?.let { solid(it) } ?: solid(Color(0xF2121519))
+     val ink = if (own) look.ink else Color.White
+     val muted = if (own) look.muted else Color.White.copy(alpha = 0.7f)
+     val compact = maxH < 420.dp
+@@ -2656,17 +2663,55 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
+                 fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
+                 style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
+             )
+-        } else androidx.compose.material3.Text(
+-            label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp,
+-            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = if (look.mono) FontFamily.Monospace else null,
+-            // (Update 129: a little smaller rather than cut, where the button can't grow — e.g. buttons sharing a row.)
+-            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
+-                minFontSize = 9.sp, maxFontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp, stepSize = 0.5.sp
++        } else androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
++            // (Update 476, D259: in a row where one word had to shrink — "Full details" on the TV's Details page — its
++            // neighbours kept the full size: three sizes in one row. Each button measures the size its word fits at (the
++            // real text layout, 0.5 sp steps down to 9 sp — what auto-size did); the row's buttons share the smallest
++            // (LocalButtonRowSize); alone, a button keeps its own. 476a read the size back from auto-size's layout, which
++            // reports the asked size, not the one drawn: the TV still showed three sizes on hardware.)
++            val base = if (compact) 12f else if (look.btn == Btn.LCD) 13f else 15f
++            val family = if (look.mono) FontFamily.Monospace else null
++            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
++            val textStyle = androidx.compose.material3.LocalTextStyle.current
++            val maxW = constraints.maxWidth
++            val own = remember(label, maxW, base, family, textStyle) {
++                buttonFitSize(base) { sz ->
++                    maxW == androidx.compose.ui.unit.Constraints.Infinity || measurer.measure(label,
++                        textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = sz.sp, fontWeight = FontWeight.SemiBold, fontFamily = family)),
++                        maxLines = 1, softWrap = false).size.width <= maxW
++                }
++            }
++            val row = LocalButtonRowSize.current
++            LaunchedEffect(row, own) { if (row != null) row.floatValue = sharedButtonSize(row.floatValue, own) }
++            val size = row?.let { minOf(own, it.floatValue) } ?: own
++            androidx.compose.material3.Text(
++                label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = size.sp,
++                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = family   // qa-ok: TRUNCATE-CLIP (sized to fit its button: buttonFitSize)
+             )
+-        )
++        }
+     }
+ }
+ 
++/** Update 476 (D259): the font size (sp) the buttons of one row share — set by [ButtonRow], lowered by any button that shrank. */
++internal val LocalButtonRowSize = androidx.compose.runtime.compositionLocalOf<androidx.compose.runtime.MutableFloatState?> { null }
++
++/** Update 476 (D259): the largest size from [base] sp down to 9 sp, in 0.5 sp steps, at which [fits]; 9 when none does. */
++internal fun buttonFitSize(base: Float, fits: (Float) -> Boolean): Float {
++    var s = base
++    while (s > 9f && !fits(s)) s -= 0.5f
++    return s.coerceAtLeast(9f)
++}
++
++/** The row's shared size after a button laid its word out at [used] sp (only ever goes down; NaN / unset sizes ignored). */
++internal fun sharedButtonSize(current: Float, used: Float): Float = if (used.isNaN() || used <= 0f) current else minOf(current, used)
++
++/** Update 476 (D259): [content]'s buttons share one font size; [key] (the labels) starts it afresh when the words change. */
++@Composable
++private fun ButtonRow(key: Any, content: @Composable () -> Unit) {
++    val size = remember(key) { androidx.compose.runtime.mutableFloatStateOf(99f) }
++    androidx.compose.runtime.CompositionLocalProvider(LocalButtonRowSize provides size) { content() }
++}
++
+ /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
+ @Composable
+ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
+@@ -2676,13 +2721,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+     val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
+     val meta = state.metadata[g.stableKey]
+     val titles = LocalTitleOptions.current
+-    Row(modifier.background(paper).padding(16.dp)) {
+-        Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
++    // (Update 476, D253: on a narrow page — Cross's column beside its options, the half-width cards of Stacks / Box / Pocket —
++    // the full-height cover took all but 61 dp and the text broke mid-word over 114 lines. The text keeps at least
++    // DETAILS_MIN_TEXT; the cover shrinks first (top-aligned, its shape kept), and when even a small cover doesn't fit beside
++    // the text it goes above it. Nothing is hidden: every fact and the whole story stay on the page.)
++    BoxWithConstraints(modifier.background(paper).padding(16.dp)) {
++    val fit = detailsCoverFit(maxWidth.value, maxHeight.value)
++    val stackedCoverH = minOf(maxHeight * 0.45f, 160.dp)
++    val coverBox: @Composable (Modifier) -> Unit = { m ->
++        Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
+             // (Update 202: the cover's file's flat strips trimmed — rememberCoverRequest; Crop fills the place.)
+             if (cover != null) AsyncImage(rememberCoverRequest(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+         }
+-        Spacer(Modifier.width(14.dp))
++    }
++    val stacked = fit == null
++    Row(Modifier.fillMaxSize()) {
++        if (fit != null) {
++            coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
++            Spacer(Modifier.width(DETAILS_GAP.dp))
++        }
+         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
++            if (stacked) {
++                coverBox(Modifier.height(stackedCoverH).aspectRatio(0.72f))
++                Spacer(Modifier.height(10.dp))
++            }
+             // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
+             // scrolls, so the name and the facts wrap in full.)
+             // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
+@@ -2710,4 +2772,24 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+             androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
+         }
+     }
++    }
++}
++
++internal const val DETAILS_MIN_TEXT = 200f   // dp the details text column keeps, at least (≈ 28 characters of 13 sp)
++internal const val DETAILS_GAP = 14f
++internal const val DETAILS_MIN_COVER = 64f
++
++/**
++ * Update 476 (D253): the cover's width (dp) on the details page of [w] x [h] dp (inside its padding): full height (0.72 : 1)
++ * when the text still keeps [DETAILS_MIN_TEXT]; narrower (top-aligned) when not; null = no room beside the text even for a
++ * [DETAILS_MIN_COVER] cover — the cover goes above the text.
++ */
++internal fun detailsCoverFit(w: Float, h: Float): Float? {
++    val full = h * 0.72f
++    val room = w - DETAILS_GAP - DETAILS_MIN_TEXT
++    return when {
++        room >= full -> full
++        room >= DETAILS_MIN_COVER -> room
++        else -> null
++    }
+ }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt b/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt
+index 06392a7..a195039 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt
+@@ -516,6 +516,15 @@ private fun CoverWheel(
+     }
+ }
+ 
++/** Update 476 (D254): the plate behind the hero's info text over a picture — darkest under the text's side, never opaque. */
++internal fun heroTextPlate(textOnLeft: Boolean): Brush {
++    val lo = Color.Black.copy(alpha = HERO_PLATE_MIN)
++    val hi = Color.Black.copy(alpha = HERO_PLATE_MAX)
++    return if (textOnLeft) Brush.horizontalGradient(0f to hi, 1f to lo) else Brush.horizontalGradient(0f to lo, 1f to hi)
++}
++internal const val HERO_PLATE_MIN = 0.28f
++internal const val HERO_PLATE_MAX = 0.62f
++
+ @Composable
+ private fun InfoRegion(
+     info: HeroInfo,
+@@ -543,7 +552,12 @@ private fun InfoRegion(
+     val layered = Features.detailLayerCover.state.value && cover != null ||
+         Features.detailLayerScreenshots.state.value && info.screenshots.isNotEmpty() ||
+         Features.detailLayerVideo.state.value && videoUrl != null
+-    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp), horizontalAlignment = hEnd) {
++    // (Update 476, D254: the info text sat straight on the hero picture — a screenshot with its own HUD / title text, the
++    // cover's small print — and was hard to read on the KONKR. A soft dark plate behind the text column (layered pane or
++    // the screen's own hero picture) keeps every picture as chosen and the text readable; nothing moves.)
++    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp)
++        .background(heroTextPlate(right), RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
++        horizontalAlignment = hEnd) {
+         // The page: only this part changes when ◀ ▶ are pressed.
+         AnimatedContent(
+             targetState = p,
+diff --git a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
+index 2f264a2..c4d07e0 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
+@@ -14,3 +14,53 @@ internal object KeyInput {
+         if (lastWasKey && view.isInTouchMode) runCatching { view.requestFocusFromTouch() }
+     }
+ }
++
++/**
++ * Update 477 (D252): after a touch, the first D-pad press on the home screen did nothing. Android eats a navigation key that
++ * takes it out of touch mode (ViewRootImpl's early "leave touch mode and consume" step) before any app code sees it — the QA
++ * trace showed one key of two reaching the activity on the KONKR (Android 12). This root leaves touch mode in the pre-IME
++ * step, which comes first, so that press is delivered and moves as usual. Gamepad buttons were already handled
++ * (MainActivity, update 467); touch behaviour is unchanged (touch mode starts again with the next touch).
++ */
++internal class KeyRootComposeView(context: android.content.Context) : androidx.compose.ui.platform.AbstractComposeView(context) {
++    private val content = androidx.compose.runtime.mutableStateOf<(@androidx.compose.runtime.Composable () -> Unit)?>(null)
++    override var shouldCreateCompositionOnAttachedToWindow: Boolean = false
++        private set
++
++    fun setContent(c: @androidx.compose.runtime.Composable () -> Unit) {
++        shouldCreateCompositionOnAttachedToWindow = true
++        content.value = c
++        if (isAttachedToWindow) createComposition()
++    }
++
++    @androidx.compose.runtime.Composable
++    override fun Content() { content.value?.invoke() }
++
++    override fun getAccessibilityClassName(): CharSequence = KeyRootComposeView::class.java.name
++
++    override fun dispatchKeyEventPreIme(event: android.view.KeyEvent): Boolean {
++        if (leavesTouchModeFirst(event.action, event.keyCode, isInTouchMode)) {
++            runCatching { (findFocus() ?: this).requestFocusFromTouch() }
++            if (QaTrace.on) QaTrace.event("leftouch", android.view.KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_"))
++        }
++        return super.dispatchKeyEventPreIme(event)
++    }
++}
++
++/** Update 477 (D252): a D-pad press while Android is in touch mode leaves it first (pre-IME), so the press is not eaten. */
++internal fun leavesTouchModeFirst(action: Int, keyCode: Int, inTouchMode: Boolean): Boolean =
++    inTouchMode && action == android.view.KeyEvent.ACTION_DOWN && keyCode in NAV_KEYS
++
++internal val NAV_KEYS = setOf(
++    android.view.KeyEvent.KEYCODE_DPAD_LEFT, android.view.KeyEvent.KEYCODE_DPAD_RIGHT, android.view.KeyEvent.KEYCODE_DPAD_UP,
++    android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_TAB,
++    android.view.KeyEvent.KEYCODE_PAGE_UP, android.view.KeyEvent.KEYCODE_PAGE_DOWN, android.view.KeyEvent.KEYCODE_MOVE_HOME,
++    android.view.KeyEvent.KEYCODE_MOVE_END
++)
++
++/** Update 477 (D252): the activity's Compose content in [KeyRootComposeView] (ComponentActivity sets the view-tree owners). */
++internal fun androidx.activity.ComponentActivity.setKeyRootContent(c: @androidx.compose.runtime.Composable () -> Unit) {
++    val v = KeyRootComposeView(this)
++    v.setContent(c)
++    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 index eca8853..eaff39e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
@@ -180,10 +598,29 @@ index 0000000..5527ac4
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
-index c9b959a..42c3240 100644
+index c9b959a..3a9099e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
-@@ -144,9 +144,54 @@ internal object QaClip {
+@@ -28,6 +28,10 @@ internal object QaClip {
+     /** Update 467: a box that shows its rows a page at a time (SnapRows) — its rows are out of view by design, like a scroll's. */
+     val Paged = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaPaged") { a, b -> a == true || b == true }
+ 
++    /** Update 477: a text sliding sideways to show all of itself (FullText's marquee) — cut at rest by design, reachable as
++     *  it slides (rule 11), like a scrolled one; geomcheck read it as cut (Airy's long name, k477i). */
++    val Slides = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaSlides") { a, b -> a == true || b == true }
++
+     /**
+      * Update 467: a dump asked for by a file, not an intent — an `am start` reaches the activity and closes the popups that
+      * live inside the home screen (Classic, Row reveal, Shared), so the dump would show the home. popclip.sh writes the tag
+@@ -87,6 +91,7 @@ internal object QaClip {
+     }
+ 
+     private fun scrolls(n: SemanticsNode): Boolean {
++        if (n.config.getOrNull(Slides) == true) return true
+         var p = n.parent
+         while (p != null) {
+             val c = p.config
+@@ -144,9 +149,64 @@ internal object QaClip {
                  sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
                  sb.append("\"focused\":${c.getOrNull(SemanticsProperties.Focused) == true || r.ring},\"scroll\":${scrolls(n)},\"tilt\":${tilted(n)},\"paged\":${paged(n)},\"id\":${n.id}}")
              }
@@ -214,6 +651,9 @@ index c9b959a..42c3240 100644
 +                    sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
 +                    sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
 +                }
++                // (Update 477, D266: a text a full FlowRow / Column dropped is measured but never placed — its box is the last
++                // one it had, so 'full' and 'shown' look fine while nothing is drawn (Airy's chips with More open, k477e).)
++                sb.append("\"placed\":${placed(n)},")
 +                sb.append("\"scroll\":${scrolls(n)},\"giveway\":${givesWay(n)},\"id\":${n.id}}")
 +            }
              sb.append("]}")
@@ -230,6 +670,13 @@ index c9b959a..42c3240 100644
 +        sb.append("\"images\":${QaArt.json()}}")
          return sb.toString()
      }
++
++    /** Update 477: the node and every layout above it placed (drawn) in the last layout pass. */
++    private fun placed(n: SemanticsNode): Boolean {
++        var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
++        while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }
++        return true
++    }
 +
 +    /** Update 474: inside a part marked as giving way by design (it may shrink to nothing when the room is short). */
 +    val GivesWay = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaGivesWay") { a, b -> a == true || b == true }
@@ -474,10 +921,10 @@ index 536f473..3b53bf0 100644
              // (A walk only ever previews: nothing it changes is saved.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
 new file mode 100644
-index 0000000..ce680c4
+index 0000000..885cc81
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,106 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.runtime.Composable
@@ -539,8 +986,53 @@ index 0000000..ce680c4
 +/** Whole lines of height [lineH] px that fit in [room] px, at most [maxLines] (unbounded room = [maxLines]). */
 +internal fun storyLinesThatFit(room: Int, lineH: Float, maxLines: Int): Int =
 +    if (room == androidx.compose.ui.unit.Constraints.Infinity) maxLines else (room / lineH).toInt().coerceIn(0, maxLines)
++
++/** Update 476 (D255 / D260): the words under a story that was cut — the whole story is on the Details page. */
++internal const val STORY_CUE = "Full story on Details ›"
++
++/**
++ * Update 476 (D255): a story of at most [maxLines] whole lines; when it is longer than that, its last line is given to
++ * [STORY_CUE] so the cut never looks like the end. Lines are counted with the real text layout at the box's width.
++ */
++@Composable
++internal fun StoryWithCue(
++    text: String, color: androidx.compose.ui.graphics.Color, cueColor: androidx.compose.ui.graphics.Color,
++    fontSize: androidx.compose.ui.unit.TextUnit, lineHeight: androidx.compose.ui.unit.TextUnit, maxLines: Int, modifier: Modifier = Modifier
++) {
++    androidx.compose.foundation.layout.BoxWithConstraints(modifier.semantics { this[QaClip.GivesWay] = true }) {
++        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
++        val style = androidx.compose.ui.text.TextStyle(fontSize = fontSize, lineHeight = lineHeight)
++        val widthPx = constraints.maxWidth
++        val total = androidx.compose.runtime.remember(text, widthPx, fontSize, lineHeight) {
++            if (widthPx == androidx.compose.ui.unit.Constraints.Infinity) 1
++            else measurer.measure(text, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = widthPx)).lineCount
++        }
++        val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { lineHeight.toPx() }
++        val room = storyLinesThatFit(constraints.maxHeight, lineH, maxLines)
++        val (shown, cue) = storyCueSplit(total, room)
++        androidx.compose.foundation.layout.Column {
++            if (shown >= 1) androidx.compose.material3.Text(
++                text, color = color, fontSize = fontSize, lineHeight = lineHeight, maxLines = shown,
++                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis   // qa-ok: TRUNCATE (summary; whole story on Details, cue below)
++            )
++            if (cue) FullText(STORY_CUE, color = cueColor, fontSize = fontSize * 0.9f, lineHeight = lineHeight,
++                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
++        }
++    }
++}
++
++/**
++ * Lines of story shown and whether the cue line is drawn, for a story [total] lines long in [room] whole lines:
++ * all of it when it fits; else room − 1 story lines + the cue (room ≥ 2); one line, no cue, when only one fits.
++ */
++internal fun storyCueSplit(total: Int, room: Int): Pair<Int, Boolean> = when {
++    room <= 0 -> 0 to false
++    total <= room -> total to false
++    room == 1 -> 1 to false
++    else -> (room - 1) to true
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-index ce010b0..9b0ebc4 100644
+index ce010b0..0739126 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 @@ -848,7 +848,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
@@ -554,7 +1046,37 @@ index ce010b0..9b0ebc4 100644
                          cell("Released", ctx.year)
                          cell("Made by", ctx.developer)
                          cell("Kind", ctx.genres)
-@@ -1433,9 +1435,11 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+@@ -1400,6 +1402,10 @@ private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this)
+ @OptIn(ExperimentalLayoutApi::class)
+ private fun AiryPanel(ctx: WinSceneCtx) {
+     val accent = Color(com.shelf.launcher.data.Features.ahAccent.state.value.argb)
++    // (Update 477, D266: the keys along the bottom are the ones always shown — Play, Details, Back, Inspect, More / Less; with
++    // More open the others follow them in the same row, a little smaller, instead of a second row that took the facts' room.)
++    val tools = if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()
++    val (primaryTools, secondary) = airySplit(tools)
+     val w = minOf(ctx.maxW * 0.92f, 860.dp)
+     val h = minOf(ctx.maxH * 0.9f, 480.dp)
+     Column(
+@@ -1420,43 +1426,41 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+                 if (ctx.page == WinPage.MAIN) {
+                     Row(verticalAlignment = Alignment.Top) {
+                         Column(Modifier.weight(1f)) {
+-                            Text(ctx.name, color = Color(0xFF2D3440), fontSize = 28.sp, lineHeight = 31.sp, fontWeight = FontWeight.Light, maxLines = 3)
++                            // (Update 477: two lines at most — it shrinks, then slides, never cut (a long name stopped at 3 lines,
++                            // k477f); no reserved height, so a short name leaves the facts their room.)
++                            FullText(ctx.name, Color(0xFF2D3440), 28.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 31.sp, reserve = false)
+                             Text(ctx.console, color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                         }
+-                        AiryLcd(ctx.cover, Modifier.size(84.dp, 64.dp))
++                        // (Update 477, D266: a little smaller with More open — the facts under it keep their room on the KONKR.)
++                        AiryLcd(ctx.cover, if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
+                     }
+                     Spacer(Modifier.height(10.dp))
+-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
++                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                         listOfNotNull(ctx.year, ctx.developer, ctx.genres, "Played " + ctx.played, if (ctx.total > 0) "★ ${ctx.earned} / ${ctx.total}" else null).forEach {
+                             Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFE9EFF6)).padding(horizontal = 12.dp, vertical = 4.dp)) {
+                                 Text(it, color = Color(0xFF55606F), fontSize = 12.sp, maxLines = 1)
                              }
                          }
                      }
@@ -567,6 +1089,420 @@ index ce010b0..9b0ebc4 100644
                      }
                  } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
              }
+         }
+-        Spacer(Modifier.height(14.dp))
++        Spacer(Modifier.height(if (secondary.isEmpty()) 14.dp else 10.dp))
++        // (Update 477, D266: the round keys always shown along the bottom; with More open the others in one compact row of
++        // rounded pills under them — word beside the icon, so the row is short and the facts above keep their room (477a put
++        // them in the panel's well: squeezed to 14 px on the KONKR; 477b as small round keys in the same row: it wrapped).)
+         FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+-            (ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()).forEach { a ->
+-                SceneControl(a, Modifier) { on ->
+-                    val lift by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.6f), label = "ahBtn")
+-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer { translationY = -lift * 4.dp.toPx() }) {
+-                        Box(
+-                            Modifier.size(if (a.primary) 58.dp else 50.dp)
+-                                .drawBehind { drawCircle(Color(0xFF1C3150).copy(alpha = 0.12f + 0.1f * lift), size.minDimension / 2f, Offset(size.width / 2f, size.height / 2f + 4f)) }
+-                                .clip(CircleShape).background(if (a.primary) accent else Color.White)
+-                                .border(if (on) 3.dp else 1.dp, if (on) accent.copy(alpha = if (a.primary) 0.5f else 1f) else Color(0xFFDDE5EF), CircleShape),
+-                            contentAlignment = Alignment.Center
+-                        ) { Icon(a.icon, a.label, tint = if (a.primary) Color.White else if (on) accent else Color(0xFF55606F), modifier = Modifier.size(24.dp)) }
+-                        Text(a.label, color = if (on) Color(0xFF2D3440) else Color(0xFF7A8493), fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(top = 3.dp))
+-                    }
+-                }
+-            }
++            (ctx.buttons + primaryTools).forEach { a -> AiryKey(a, accent) }
++        }
++        if (secondary.isNotEmpty()) FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
++            verticalArrangement = Arrangement.spacedBy(6.dp)) {
++            secondary.forEach { a -> AiryPill(a, accent) }
+         }
+         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+             ctx.chips.forEach { a ->
+@@ -1468,6 +1472,48 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+     }
+ }
+ 
++/** Update 477 (D266): Airy's bottom-row tools (Inspect, More / Less) and the ones More shows (the pill row). */
++internal fun airySplit(tools: List<WinAction>): Pair<List<WinAction>, List<WinAction>> {
++    val more = tools.any { it.label == "More" || it.label == "Less" }
++    if (!more) return tools to emptyList()   // (no More here — a window that isn't compact: every key along the bottom)
++    return tools.partition { it.label == "Inspect" || it.label == "More" || it.label == "Less" }
++}
++
++/** Update 477 (D266): one of the keys More shows — a rounded pill, the word beside its icon (lit: ringed in the accent). */
++@Composable
++private fun AiryPill(a: WinAction, accent: Color) {
++    SceneControl(a, Modifier) { on ->
++        Row(
++            Modifier.height(32.dp).clip(RoundedCornerShape(50)).background(Color.White)
++                .border(if (on) 2.dp else 1.dp, if (on) accent else Color(0xFFDDE5EF), RoundedCornerShape(50))
++                .padding(start = 10.dp, end = 14.dp),
++            verticalAlignment = Alignment.CenterVertically
++        ) {
++            Icon(a.icon, a.label, tint = if (on) accent else Color(0xFF55606F), modifier = Modifier.size(18.dp))
++            Spacer(Modifier.width(6.dp))
++            Text(a.label, color = if (on) Color(0xFF2D3440) else Color(0xFF55606F), fontSize = 12.sp, maxLines = 1)
++        }
++    }
++}
++
++/** One of Airy's round keys with its word under it (lit: ringed and lifted). [small]: a little smaller. */
++@Composable
++private fun AiryKey(a: WinAction, accent: Color, small: Boolean = false) {
++    SceneControl(a, Modifier) { on ->
++        val lift by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.6f), label = "ahBtn")
++        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer { translationY = -lift * 4.dp.toPx() }) {
++            Box(
++                Modifier.size(if (a.primary) 58.dp else if (small) 40.dp else 50.dp)
++                    .drawBehind { drawCircle(Color(0xFF1C3150).copy(alpha = 0.12f + 0.1f * lift), size.minDimension / 2f, Offset(size.width / 2f, size.height / 2f + 4f)) }
++                    .clip(CircleShape).background(if (a.primary) accent else Color.White)
++                    .border(if (on) 3.dp else 1.dp, if (on) accent.copy(alpha = if (a.primary) 0.5f else 1f) else Color(0xFFDDE5EF), CircleShape),
++                contentAlignment = Alignment.Center
++            ) { Icon(a.icon, a.label, tint = if (a.primary) Color.White else if (on) accent else Color(0xFF55606F), modifier = Modifier.size(if (small) 20.dp else 24.dp)) }
++            Text(a.label, color = if (on) Color(0xFF2D3440) else Color(0xFF7A8493), fontSize = if (small) 10.sp else 11.sp, maxLines = 1, modifier = Modifier.padding(top = 3.dp))
++        }
++    }
++}
++
+ // ---------------------------------------------------------------------------------------------------------------------
+ // Night menu: the status screen
+ // ---------------------------------------------------------------------------------------------------------------------
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
+index 1f14765..5ee8479 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
+@@ -103,7 +103,7 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
+                     if (ctx.page != WinPage.MAIN) Text(" " + arcadePageName(ctx.page), color = ArcCyan, fontSize = small, style = glow, maxLines = 1)
+                 }
+                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
+-                    style = glow)
++                    lineHeight = small * ARCADE_LINE, style = glow)
+                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+                 Row(Modifier.weight(1f).fillMaxWidth()) {
+                     // The picture, INSERT COIN under it.
+@@ -135,7 +135,9 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
+                                     ctx.chips.forEach { a ->
+                                         SceneControl(a, Modifier.fillMaxWidth(), minTouch = 24.dp) { on ->
+                                             Text(sceneLabel(a.label).uppercase(), color = if (on) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcDim, fontSize = small, maxLines = 3,
+-                                                style = TextStyle(fontFamily = font), modifier = Modifier.fillMaxWidth().padding(start = 14.dp))
++                                                // (Update 476, D264: the pixel font's glyphs are taller than the theme's line height —
++                                                // a status that wrapped ("BALANCED · AUTOTDP BALANCED · / DEVICE DEFAULT") had its lines touching.)
++                                                lineHeight = small * ARCADE_LINE, style = TextStyle(fontFamily = font), modifier = Modifier.fillMaxWidth().padding(start = 14.dp))
+                                         }
+                                     }
+                                 }
+@@ -192,3 +194,7 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
+ private fun arcadePageName(p: WinPage) = when (p) {
+     WinPage.MAIN -> ""; WinPage.DETAILS -> "GAME INFO"; WinPage.OPTIONS -> "OPTIONS"; WinPage.TROPHIES -> "ACHIEVEMENTS"; WinPage.PERF -> "PERFORMANCE"
+ }
++
++
++/** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
++internal const val ARCADE_LINE = 1.35f
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
+index 96dda3b..28dd380 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
+@@ -301,7 +301,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+             drawPeelFlap(pk)
+         }.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0D1520))
+     ) {
+-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
+         Row(Modifier.fillMaxSize().padding(18.dp)) {
+             Column(Modifier.weight(0.5f).fillMaxHeight()) {
+@@ -529,7 +529,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+         Column(Modifier.fillMaxSize()) {
+             // The art strip with the name.
+             Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
+-                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
+                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
+                     Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
+index d320f64..c90611e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
+@@ -158,12 +158,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
+     }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
+         // Header strip with the art.
+         Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.3f, 150.dp))) {
+-            (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++            (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
+-            Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 6.dp)) {
+-                StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+-                Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+-            }
++        }
++        // (Update 476, D255: the name was drawn over the art's lower part — where the game's own logo usually sits — and the
++        // two titles fought. The name now sits just under the art, on the card; the art strip is unchanged.)
++        Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 2.dp)) {
++            StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
++            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+         }
+         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = false)) {
+             if (ctx.page == WinPage.MAIN) {
+@@ -176,7 +178,9 @@ internal fun DashCard(ctx: WinSceneCtx) {
+                         }
+                     }
+                 }
+-                ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 3, modifier = Modifier.padding(top = 8.dp)) }
++                // (Update 476, D255: the story ended after 3 lines, cut silently mid-sentence. Whole lines, and a cue to Details
++                // when there's more.)
++                ctx.summary?.let { StoryWithCue(it, Color.White.copy(alpha = 0.7f), a, 11.sp, 14.sp, 3, Modifier.padding(top = 8.dp).fillMaxWidth()) }
+             } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
+         }
+         Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp)) {
+@@ -200,7 +204,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+             shadowElevation = 20.dp.toPx()
+         }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
+             Box(Modifier.fillMaxWidth().aspectRatio(2.1f)) {
+-                (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++                (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
+             }
+             Column(Modifier.padding(horizontal = 14.dp)) {
+@@ -238,14 +242,21 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
+         scaleX = s; scaleY = s
+         shape = RoundedCornerShape(6.dp); clip = true
+     }.background(Color.Black)) {
+-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.75f) }
++        // (Update 476, D256: the poster's picture was decoded at the CARDS' size — 360 px on the KONKR, 512 on the Odin — and
++        // drawn across the whole window: 2.7–3.8× upscaled, soft. Window-wide pictures in the scenes now use the backdrop
++        // request (the screen's long side), as the classic window already did; the picture itself is the owner's choice.)
++        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.75f) }
+         // The spotlight: dark round the edges, a pool of light on the title.
+         Canvas(Modifier.fillMaxSize()) {
+             drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * 0.3f), radius = size.maxDimension * 0.7f))
+             drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)), startY = size.height * 0.45f))
+         }
+         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+-            ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.55f).height(minOf(h * 0.18f, 90.dp)), contentScale = ContentScale.Fit) }
++            // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
++            // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
++            val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
++            ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.55f).height(minOf(h * 0.18f, 90.dp)),
++                contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
+                 ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+             Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
+                 modifier = Modifier.padding(vertical = 6.dp))
+@@ -285,19 +296,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
+                 if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
+                 Spacer(Modifier.height(12.dp))
+                 // The actions as round dock icons with their names under them.
+-                KeyRow(sceneKeys(ctx), 10.dp) { k ->
++                // (Update 476, D258: a status key's whole text — "Balanced · AutoTDP Balanced · Device default", "Saves: up to
++                // date · 1 min ago" — wrapped to 3–4 lines under its 78 dp icon. The icon keeps the first part; the whole
++                // text shows on one line under the dock while that key has the focus. The line's room is always kept, so
++                // nothing moves when the focus does.)
++                val keys = sceneKeys(ctx)
++                val anyShort = keys.any { dockShortLabel(sceneLabel(it.label)) != sceneLabel(it.label) }
++                val fullLine = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
++                KeyRow(keys, 10.dp) { k ->
+                     SceneControl(k, Modifier) { on ->
++                        val whole = sceneLabel(k.label)
++                        val short = dockShortLabel(whole)
++                        androidx.compose.runtime.LaunchedEffect(on, whole) {
++                            if (on) fullLine.value = if (short != whole) whole else null
++                            else if (fullLine.value == whole) fullLine.value = null
++                        }
+                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(78.dp)) {
+                             Box(Modifier.size(46.dp).graphicsLayer { val s = if (on) 1.12f else 1f; scaleX = s; scaleY = s }.clip(CircleShape)
+                                 .background(if (k.primary) a else Color.White.copy(alpha = 0.1f)).border(if (on) 2.dp else 0.dp, Color.White, CircleShape),
+                                 contentAlignment = Alignment.Center) {
+                                 Icon(k.icon, null, tint = if (k.primary) onColor(a) else Color.White, modifier = Modifier.size(22.dp))
+                             }
+-                            Text(sceneLabel(k.label), color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = 10.sp, lineHeight = 12.sp,
++                            Text(short, color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = 10.sp, lineHeight = 12.sp,
+                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 3.dp))
+                         }
+                     }
+                 }
++                if (anyShort) Box(Modifier.fillMaxWidth().height(18.dp).padding(top = 4.dp), contentAlignment = Alignment.Center) {
++                    fullLine.value?.let { FullText(it, color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1) }
++                }
+             }
+             // The pointer down to the dock.
+             Canvas(Modifier.size(22.dp, 10.dp)) {
+@@ -439,7 +466,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+     }.background(Color(0xFF1B2838))) {
+         // The hero banner across the top, logo on it.
+         Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
+-            (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++            (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1B2838)))))
+             Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
+                 ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
+@@ -530,7 +557,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+         alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
+         shape = RoundedCornerShape(16.dp); clip = true
+     }.background(Color.Black)) {
+-        (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++        (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
+         Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
+             ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
+@@ -625,3 +652,10 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+         }
+     }
+ }
++
++
++/**
++ * Update 476 (D258): the dock's label for a key — a status text ("Balanced · AutoTDP Balanced · Device default",
++ * "Saves: up to date · 1 min ago") keeps its first part under the icon; the whole text is shown while the key has the focus.
++ */
++internal fun dockShortLabel(label: String): String = label.substringBefore(" · ").trim().ifEmpty { label }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
+index 00bae26..02e3b51 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
+@@ -142,7 +142,10 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+         var tight by androidx.compose.runtime.remember(ctx.g.stableKey, ctx.tools.size, ctx.chips.size) { androidx.compose.runtime.mutableStateOf(false) }
+         val asLines = inline || tight
+         androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
+-        Column(Modifier.weight(1f, fill = false).layout { m, c ->
++        // (Update 476, D260: a story cut by the room faded out mid-sentence with nothing saying there was more. While the box
++        // can scroll further, a small cue at its bottom edge says where the whole story is.)
++        Box(Modifier.weight(1f, fill = false)) {
++        Column(Modifier.layout { m, c ->
+             if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
+         }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
+             val facts = shownFacts(ctx, omit)
+@@ -169,9 +172,17 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+             }
+             ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
+         }
++        if (ctx.summary != null && viewH > 0 && sc.canScrollForward) FullText(STORY_CUE, color = label, fontSize = 9.sp,
++            fontWeight = FontWeight.Bold, fontFamily = font,
++            modifier = Modifier.align(Alignment.BottomEnd).background(sceneCueBack(value)).padding(horizontal = 4.dp))
++        }
+     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
+ }
+ 
++/** Update 476: the cue's backing — the window's ground behind light ink (dark windows), a pale one behind dark ink. */
++internal fun sceneCueBack(ink: Color): Color =
++    if (ink.red * 0.3f + ink.green * 0.59f + ink.blue * 0.11f > 0.5f) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.7f)
++
+ internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
+ 
+ // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt
+new file mode 100644
+index 0000000..61da863
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt
+@@ -0,0 +1,59 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Info
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 477 (D266): Airy's window keeps its facts — one row of round keys along the bottom, the rest behind More in a pill row. */
++class Airy477Test {
++    private fun a(l: String) = WinAction(l, Icons.Filled.Info, {})
++    private fun src(name: String): String =
++        listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
++            .map(::File).first { it.exists() }.readText()
++
++    @Test fun moreClosedKeepsInspectAndMoreAlongTheBottom() {
++        val (bottom, well) = airySplit(listOf(a("Inspect"), a("More")))
++        assertEquals(listOf("Inspect", "More"), bottom.map { it.label }); assertTrue(well.isEmpty())
++    }
++
++    @Test fun moreOpenPutsTheRestInTheWellNothingLost() {
++        val tools = listOf("Options", "Achievements", "Save sync", "Manual", "Inspect", "Less").map(::a)
++        val (bottom, well) = airySplit(tools)
++        assertEquals(listOf("Inspect", "Less"), bottom.map { it.label })
++        assertEquals(listOf("Options", "Achievements", "Save sync", "Manual"), well.map { it.label })
++        assertEquals(tools.size, bottom.size + well.size)
++    }
++
++    @Test fun aWindowWithoutMoreKeepsEveryKeyAlongTheBottom() {
++        val tools = listOf("Options", "Achievements", "Inspect").map(::a)
++        assertEquals(tools, airySplit(tools).first)
++    }
++
++    // 477a put More's keys in the well (squeezed to 14 px on the KONKR), 477b as small round keys after the others (the row
++    // wrapped and the chips' second line was dropped): More's keys are a short pill row of their own.
++    @Test fun moreKeysAreAPillRowNotTheWellOrASecondRowOfRoundKeys() {
++        val s = src("WinScenes.kt")
++        val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
++        assertTrue(airy.contains("secondary.forEach { a -> AiryPill(a, accent) }"))
++        assertTrue(!airy.contains("small = true"))
++    }
++
++    // A long name shrinks, then slides — never stopped at a line count (k477f: cut at 3 lines).
++    @Test fun theNameIsNeverCut() {
++        val s = src("WinScenes.kt")
++        val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
++        assertTrue(airy.contains("FullText(ctx.name"))
++    }
++
++    // A sliding name is reachable (rule 11): the QA gate is told so instead of reading it as cut (k477i).
++    @Test fun aSlidingTextIsMarkedForTheGate() {
++        assertTrue(src("FitText.kt").contains("this[QaClip.Slides] = true"))
++    }
++
++    @Test fun airyIsACompactMoreWindow() {
++        assertTrue(WinScene.AIRY_PANEL in MORE_SCENES)
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
+new file mode 100644
+index 0000000..aa0ba08
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
+@@ -0,0 +1,26 @@
++package com.shelf.launcher.ui
++
++import android.view.KeyEvent
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 477 (D252): the first D-pad press after a touch is not eaten — the root leaves touch mode in the pre-IME step. */
++class Input477Test {
++    @Test fun aDpadPressInTouchModeLeavesItFirst() {
++        for (k in listOf(KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN))
++            assertTrue(leavesTouchModeFirst(KeyEvent.ACTION_DOWN, k, inTouchMode = true))
++    }
++
++    @Test fun notOutsideTouchModeNotOnKeyUpNotForFaceButtons() {
++        assertFalse(leavesTouchModeFirst(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT, inTouchMode = false))
++        assertFalse(leavesTouchModeFirst(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT, inTouchMode = true))
++        assertFalse(leavesTouchModeFirst(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BUTTON_A, inTouchMode = true))   // (MainActivity, update 467)
++    }
++
++    @Test fun theActivityUsesTheKeyRoot() {
++        val f = listOf("src/main/java/com/shelf/launcher/MainActivity.kt", "app/src/main/java/com/shelf/launcher/MainActivity.kt").map(::File).first { it.exists() }
++        assertTrue(f.readText().contains("setKeyRootContent {"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
+index 249059f..f649ed0 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
+@@ -12,7 +12,9 @@ class PopupMore451Test {
+             assertTrue("$s gets More", s in MORE_SCENES)
+         // Their own compact designs / menu lists stay as they are.
+         for (s in listOf(WinScene.WII_PREVIEW, WinScene.CINEMA_PREMIERE, WinScene.ARCTIC_DRAWER, WinScene.BUBBLE_CARD, WinScene.CARD_BACK,
+-            WinScene.MEMCARD_INFO, WinScene.AIRY_PANEL, WinScene.CROSS_OPTIONS, WinScene.ARCADE_MENU, WinScene.TERM_RUN))
++            WinScene.MEMCARD_INFO, WinScene.CROSS_OPTIONS, WinScene.ARCADE_MENU, WinScene.TERM_RUN))
++        // (Update 477, D266, owner: Airy's round keys took two rows on the KONKR and hid facts — Airy now has More, its
++        // secondary keys open in the panel's well: Airy477Test.)
+             assertFalse("$s keeps its own window", s in MORE_SCENES)
+     }
+ 
 diff --git a/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt b/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
 new file mode 100644
 index 0000000..54cbeae
@@ -633,6 +1569,138 @@ index 0000000..54cbeae
 +    @Test fun artShapesAreTheAdvertisedOnes() {
 +        assertEquals(960 to 540, QaFixture.shape("wide")); assertEquals(600 to 900, QaFixture.shape("portrait"))
 +        assertEquals(64 to 96, QaFixture.shape("lowres")); assertNull(QaFixture.shape("real"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Readability476Test.kt b/app/src/test/java/com/shelf/launcher/ui/Readability476Test.kt
+new file mode 100644
+index 0000000..b5f6ec4
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Readability476Test.kt
+@@ -0,0 +1,126 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNotNull
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 476: the objective fixes from the phase-2 review (D253, D255, D258, D259, D256, D260). */
++class Readability476Test {
++    private fun src(name: String): String =
++        listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
++            .map(::File).first { it.exists() }.readText()
++
++    // D253: the KONKR Cross details page measured 298 x 300 dp inside its padding; the full-height cover (216 dp) left 61 dp.
++    @Test fun crossDetailsOnTheKonkrKeepsAReadableTextColumn() {
++        val w = 298f; val h = 300f
++        val cover = detailsCoverFit(w, h)
++        assertNotNull(cover)
++        assertTrue("text column ${w - cover!! - DETAILS_GAP} dp", w - cover - DETAILS_GAP >= DETAILS_MIN_TEXT)
++        assertTrue(cover >= DETAILS_MIN_COVER)
++    }
++
++    @Test fun aWidePageKeepsTheFullHeightCover() {
++        assertEquals(400f * 0.72f, detailsCoverFit(900f, 400f)!!, 0.01f)
++    }
++
++    @Test fun aVeryNarrowPagePutsTheCoverAboveTheText() {
++        assertNull(detailsCoverFit(240f, 400f))   // 240 − 14 − 200 = 26 dp: no room for even a small cover beside the text
++    }
++
++    @Test fun neverLessThanTheMinimumTextWhenTheCoverIsBeside() {
++        for (w in 100..1200 step 7) for (h in 80..700 step 13) {
++            val c = detailsCoverFit(w.toFloat(), h.toFloat()) ?: continue
++            assertTrue("w $w h $h", w - c - DETAILS_GAP >= DETAILS_MIN_TEXT - 0.01f)
++        }
++    }
++
++    // D258: the Bar dock's status keys.
++    @Test fun dockStatusKeysKeepTheirFirstPart() {
++        assertEquals("Balanced", dockShortLabel("Balanced · AutoTDP Balanced · Device default"))
++        assertEquals("Saves: up to date", dockShortLabel("Saves: up to date · 1 min ago"))
++        assertEquals("Achievements", dockShortLabel("Achievements"))
++        assertEquals("·", dockShortLabel("·"))
++    }
++
++    // D259: one size per button row — only ever down, a bad reading ignored.
++    @Test fun buttonsOfARowShareTheSmallestSize() {
++        var s = 99f
++        for (used in listOf(15f, 15f, 11.5f, 15f)) s = sharedButtonSize(s, used)
++        assertEquals(11.5f, s, 0f)
++        assertEquals(11.5f, sharedButtonSize(s, Float.NaN), 0f)
++        assertEquals(11.5f, sharedButtonSize(s, 0f), 0f)
++    }
++
++    @Test fun aButtonWordTakesTheLargestSizeItFitsAt() {
++        assertEquals(15f, buttonFitSize(15f) { true }, 0f)
++        assertEquals(11.5f, buttonFitSize(15f) { it <= 11.5f }, 0f)
++        assertEquals(9f, buttonFitSize(15f) { false }, 0f)
++    }
++
++    // 476a took the size back from auto-size's layout (it reports the asked size): the TV still showed three sizes.
++    @Test fun theSharedSizeIsMeasuredNotReadBackFromAutoSize() {
++        val s = src("GameWindow.kt")
++        assertFalse(s.contains("r.layoutInput.style.fontSize"))
++        assertTrue(s.contains("buttonFitSize(base)"))
++    }
++
++    @Test fun everyWindowButtonRowSharesItsSize() {
++        val s = src("GameWindow.kt")
++        // (476a missed the shared-width row — the TV's narrow window — and its Details page still had three sizes.)
++        // Every call of WinButton (its definition left out) sits inside a ButtonRow: as many rows as calls.
++        val calls = Regex("(?<!fun )WinButton\\(\\s*look").findAll(s).count()
++        assertEquals(5, calls)
++        assertEquals("WinButton callers inside a ButtonRow", calls, Regex("ButtonRow\\(").findAll(s).count() - 1)
++    }
++
++    // D255: the story's cue line.
++    @Test fun aCutStoryGivesItsLastLineToTheCue() {
++        assertEquals(3 to false, storyCueSplit(3, 3))
++        assertEquals(2 to true, storyCueSplit(7, 3))
++        assertEquals(1 to false, storyCueSplit(7, 1))
++        assertEquals(0 to false, storyCueSplit(7, 0))
++        assertEquals(2 to false, storyCueSplit(2, 5))
++    }
++
++    @Test fun dashAndClassicSayWhereTheWholeStoryIs() {
++        val homes = src("WinScenesHomes2.kt")
++        val dash = homes.substring(homes.indexOf("internal fun DashCard"), homes.indexOf("internal fun SideDrawer"))
++        assertTrue(dash.contains("StoryWithCue("))
++        assertFalse("Dash story cut silently", dash.contains("maxLines = 3, modifier = Modifier.padding(top = 8.dp)"))
++        assertTrue(src("WinScenesMore.kt").contains("STORY_CUE"))
++    }
++
++    // D256: window-wide pictures in the scenes are decoded at the screen's size, not the cards'.
++    @Test fun windowWidePicturesUseTheBackdropRequest() {
++        val homes = src("WinScenesHomes2.kt")
++        val spot = homes.substring(homes.indexOf("internal fun SpotPoster"), homes.indexOf("internal fun SpotPoster") + 2500)
++        assertTrue(spot.contains("(ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it)"))
++        for (f in listOf("WinScenesHomes2.kt", "WinScenesConsole.kt"))
++            assertFalse(f, Regex("\\(ctx\\.backdrop \\?: ctx\\.wide[^)]*\\)\\?\\.let \\{ AsyncImage\\(rememberStyleArtRequest").containsMatchIn(src(f)))
++    }
++
++    // D262: Storage's details page on the plain paper — kept through the game-colour tint (476a lost it there: hardware
++    // run k476a still showed 'Details' at 1.1 : 1).
++    @Test fun storagePageKeepsItsPlainPaperThroughTheTint() {
++        val s = src("GameWindow.kt")
++        assertTrue(s.contains("keepsPalette = true, bandedPanel = true"))
++        assertTrue(s.contains("stripes = stripes, keepsPalette = true, bandedPanel = bandedPanel"))
++        assertTrue(s.contains("(if (look.bandedPanel) look.paper?.let { solid(it) } else null) ?: look.panel"))
++    }
++
++    // D254: the hero info plate is drawn whatever the picture layers (476a drew it only over a layered pane).
++    @Test fun heroInfoAlwaysHasItsPlate() {
++        val s = src("HeroCarousel.kt")
++        assertTrue(s.contains(".background(heroTextPlate(right), RoundedCornerShape(14.dp))"))
++        assertFalse(s.contains("if (layered) Modifier.background(heroTextPlate"))
++    }
++
++    @Test fun theCueIsReadableOnLightAndDarkWindows() {
++        assertTrue(sceneCueBack(androidx.compose.ui.graphics.Color.White).red < 0.1f)
++        assertTrue(sceneCueBack(androidx.compose.ui.graphics.Color(0xFF1E2A3A)).red > 0.9f)
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt b/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt

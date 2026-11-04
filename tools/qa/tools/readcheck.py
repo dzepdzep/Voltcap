@@ -2,7 +2,8 @@
 """Update 476 — readability and content continuity, graded SEPARATELY from geometry (QA improvements 1 and 2).
 
 Geometry says a text is whole and inside its box; this says whether it can be read where it is drawn:
-  facts      FAIL  a window text laid out with no size (a fact the window doesn't show — not a deliberate give-way)
+  facts      FAIL  a window text laid out with no size, or measured but never placed (a fact the window doesn't show —
+                   not a deliberate give-way)
   overlap    FAIL  two texts drawn over each other (more than half of the smaller one covered) in the same window — not a
                    scrolling / paged / giving-way text (their hidden parts are clipped, not drawn)
   contrast   WARN  the text's ink against its own background in the screenshot is under 3 : 1 (WCAG large-text minimum),
@@ -153,9 +154,13 @@ def missing(dump, baseline=None):
     for w, own in own_texts(dump, baseline):
         for t in own:
             f = t.get("full") or []
-            if (t.get("text") or "").strip() and len(f) == 4 and (f[2] <= 0 or f[3] <= 0) \
-                    and not t.get("giveway") and not t.get("scroll") and not t.get("paged"):
+            if not (t.get("text") or "").strip() or t.get("giveway") or t.get("scroll") or t.get("paged"):
+                continue
+            if len(f) == 4 and (f[2] <= 0 or f[3] <= 0):
                 out.append(f"'{t['text'][:30]}' has no room (laid out {f[2]} x {f[3]} px): not shown")
+            # (Update 477: dropped by a full row / column — measured, never placed, its box a stale one: k477e's chips.)
+            elif t.get("placed") is False:
+                out.append(f"'{t['text'][:30]}' not placed (a full row / column dropped it): not shown")
     return out
 
 

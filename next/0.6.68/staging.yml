@@ -64,13 +64,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           set -o pipefail
+          sudo apt-get install -y -qq ffmpeg > /dev/null || echo "::warning title=QA self-test::ffmpeg not installed: the video tests are skipped"
           python -m pip install --quiet numpy pillow
           # (Update 477: what failed is put in the run's annotations — public — not only in the sign-in-only log.)
-          st=0
+          st=0; ss=0
           python tools/qa/selftest/test_qa.py 2>&1 | tee selftest.log || st=1
-          grep -E "^(FAIL|ERROR):|Error|assert" selftest.log | head -20 | while IFS= read -r l; do echo "::error title=QA self-test::$l"; done
-          python tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher --strict --min-files 100 2>&1 | tee static.log || st=1
-          grep -E "^HIGH|FAIL|INFRA" static.log | head -20 | while IFS= read -r l; do echo "::error title=Static check::$l"; done
+          if [ $st != 0 ]; then grep -E "^(FAIL|ERROR):|^[A-Za-z.]*(Error|Exception):" selftest.log | head -20 | while IFS= read -r l; do echo "::error title=QA self-test::$l"; done || true; fi
+          python tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher --strict --min-files 100 2>&1 | tee static.log || ss=1
+          if [ $ss != 0 ]; then grep -E "^HIGH|FAIL|INFRA" static.log | head -20 | while IFS= read -r l; do echo "::error title=Static check::$l"; done || true; st=1; fi
           exit $st
       - name: Job summary (what was tested)
         if: ${{ always() }}

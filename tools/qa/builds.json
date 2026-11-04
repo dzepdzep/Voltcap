@@ -110,6 +110,50 @@
    "patch_sha256": "90007cf8b97fffc858aed141ecdd8cf539828f0070d329f0e44f69a6e5bd3002",
    "tree_hash": "146d5d792d87485f0c9d7c5baf55ef88cda706c92707ac1afeeade1b7ad8d319",
    "note": "update 476: 476b + D259 done right - each window button measures the size its word fits at and the row shares the smallest (476b read auto-size's asked size back: the TV still showed three sizes on hardware); never published"
+  },
+  {
+   "id": "qa-0.6.68-477a",
+   "apk_sha256": "2b13858482295f4218a6bd143f4377ca437e80b4e12aad2523f939bf05ac9200",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "e03b09ff24e8eff84ffb62e4373525e536916b2f",
+   "patch_sha256": "8d4f8554f200a145e706d81f395fa8d2c30ed86b77f8eda5891265f10935cb73",
+   "tree_hash": "14532ebaacfa6c16ffc572fe58b2e3e6fae5bb8a9430bc739a9f4f9b7850b2ad",
+   "note": "update 477: 476c + D266 Airy More (secondary keys in the well) + D252 key / touch-mode trace (QA log only); never published"
+  },
+  {
+   "id": "qa-0.6.68-477b",
+   "apk_sha256": "15eb65c95b1a6dad03bea9175fc6f3a4af1de0d772566e636f6d0792c009eb30",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "e03b09ff24e8eff84ffb62e4373525e536916b2f",
+   "patch_sha256": "8872ae48ef23f209df7613fbfb2f66ebaf629d4c599f66146c9e7bf0b9229432",
+   "tree_hash": "1192d738a9d9c0ec12d26237515652d15957cdc224387ef787d150589834ee81",
+   "note": "update 477: 477a + D266 Airy More-open keys in the bottom row (the well squeezed them on the KONKR) + D252 fix: a navigation key leaves touch mode before Android's view root consumes it (KeyRootComposeView); never published"
+  },
+  {
+   "id": "qa-0.6.68-477c",
+   "apk_sha256": "f55f314fae700e7e7780898eefb4d72f743b81da394238757b306cf0aa4f3736",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "e03b09ff24e8eff84ffb62e4373525e536916b2f",
+   "patch_sha256": "87c852499e8229a0df43aece8c81c7cd7c1333e32119e03565040547cdd84e73",
+   "tree_hash": "b8a7d81f84dbbb187fca7cc28be49b842159877b522f4cb89e7821cfb97cc166",
+   "note": "update 477: 477b + D266 Airy More-open keys as a pill row under the round keys (477b's single row wrapped and dropped the chips' 2nd line on the KONKR), Airy name 2 lines shrink-then-slide (never cut), QaClip 'placed' per text (readcheck facts FAILs a dropped text); never published"
+  },
+  {
+   "id": "qa-0.6.68-477d",
+   "apk_sha256": "677a58bc578b9ca20ebc925c756d9d9853a5e448cd9c8233bd9f651fb22879a3",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "e03b09ff24e8eff84ffb62e4373525e536916b2f",
+   "patch_sha256": "225800de0b2df3421bec04c674bfe7e070a1f89bb89c75540720c0a4c5b81cfb",
+   "tree_hash": "29ad0ebcfc8ff417220358700f1453cab16a59aef88b9984fde71e4037c205af",
+   "note": "update 477: 477c + D266 room with More open on the KONKR (LCD 74x56, pill row 32 dp, tighter gaps) + QaClip marks sliding (marquee) texts so the gate doesn't read them as cut; never published"
   }
  ]
 }

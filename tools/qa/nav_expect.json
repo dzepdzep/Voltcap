@@ -38,12 +38,54 @@
   "POCKET_RIBBON": {
    "animated_art": true,
    "pulse": true,
-   "why": "the disc spins — o475w6"
+   "why": "the disc spins — o475w6; update 477: the console label sits after the title and moves with its length (expected text motion, o477t)",
+   "moving_texts": [
+    "Android",
+    "Other apps",
+    "Nintendo 64",
+    "Xbox 360"
+   ]
   },
   "FILESELECT": {
    "animated_art": true,
    "pulse": true,
    "why": "the selected file card bounces (fs_bounce) — o475w7"
+  },
+  "CAMERA": {
+   "moving_pattern": "\\d{3}",
+   "why": "Update 477 T5 triage: the viewfinder's frame counter ('002', '003') counts by design — deliberate animation (k477t recording: no flash, counter only)"
+  },
+  "TERMINAL": {
+   "moving_texts": [
+    "►"
+   ],
+   "why": "Update 477 T5 triage: '►' is the selection pointer — it moves with the selection by design (expected). The Odin's 6 px preview shift on one return (o477t s2, pixels confirmed; s4 same as s0) is a real jump: D268"
+  },
+  "TWIN_ICONS": {
+   "moving_texts": [
+    "Open"
+   ],
+   "why": "Update 477 T5 triage: 'Open' is the label under the focused icon — it follows the focus by design (k477t / o477t)"
+  },
+  "COVERDETAILS": {
+   "pages": true,
+   "moving_texts": [
+    "ACHIEVEMENTS",
+    "Other apps",
+    "Android"
+   ],
+   "why": "Update 477 T5 triage: the details panel rolls by itself (rolling story / facts, D263 deferred) — the achievements block is at another place each time; the console label follows the title (k477t / o477t)"
+  },
+  "ARCTIC": {
+   "moves": false,
+   "slot_free": true,
+   "why": "Update 477 T5 triage: the row scrolls only as far as needed (bring-into-view): after ▶ ◀ the same game sits one slot further left (k477t: the screenshot confirms; no flash or jump in the recording). Expected for a minimal-scroll row; a fixed-slot row would be a design change (recommendation)"
+  },
+  "TWIN_DESK": {
+   "vertical": true,
+   "no_prelude": true,
+   "moves": true,
+   "why": "Update 477 T5 triage: the games are a list walked ▼ ▲ (QA_VERTICAL); ◀ ▶ go to the desk's other panes (calendar, toolbar), so the ◀ ▶ prelude put the walk outside the list (k477t 'stuck focus' = harness); walked ▼ ▲ without the prelude it moves and comes back (k477p); the list's other names scroll with it (QA_NOPRELUDE)"
   }
  }
 }

@@ -490,6 +490,8 @@ class TestRuncheck(Base):
             f.write("E AndroidRuntime: FATAL EXCEPTION: main\n")
         self.assertEqual(qalib.verdict(self.check(out)), FAIL)
 
+    # (Update 477: its second half makes a video: CI without ffmpeg errored here — skipped there, run where ffmpeg is.)
+    @unittest.skipUnless(HAVE_FFMPEG, "ffmpeg not installed")
     def test_skip_is_not_a_pass_and_empty_is_not_tested(self):
         res = self.check(self.build(skip="picker"))
         self.assertEqual(qalib.verdict(res), SKIP)
@@ -1364,6 +1366,27 @@ class TestReadcheck476(unittest.TestCase):
         # clipped out by a parent (its own layout has a size) or giving way on purpose: not this check's failure
         d = self.dump(self.t("Never played", [0, 0, 0, 0], full=[255, 550, 115, 36]),
                       self.t("story", [0, 0, 0, 0], full=[10, 10, 0, 0], giveway=True))
+        self.assertEqual([x for x in readcheck.evaluate(d) if x.name.endswith("facts")][0].status, PASS)
+
+    def test_navclip_same_pixels_overrules_a_stale_card_box(self):
+        # Update 477 (o477t Cinema): the dump's card box was taken mid-glide; the screenshots are the same where it was.
+        import navclip
+        from PIL import Image
+        tmp = tempfile.mkdtemp()
+        a, b, c = (os.path.join(tmp, n) for n in ("a.png", "b.png", "c.png"))
+        Image.new("RGB", (200, 100), (10, 10, 10)).save(a); Image.new("RGB", (200, 100), (10, 10, 10)).save(b)
+        im = Image.new("RGB", (200, 100), (10, 10, 10)); im.paste((250, 250, 250), (40, 20, 120, 80)); im.save(c)
+        self.assertTrue(navclip.same_pixels(a, b, [30, 10, 100, 60]))
+        self.assertFalse(navclip.same_pixels(a, c, [30, 10, 100, 60]))
+
+    def test_a_fact_a_full_row_dropped_fails(self):
+        # Update 477 (k477e): Airy's chips with More open — measured, never placed; their boxes are stale and look fine.
+        import readcheck
+        d = self.dump(self.t("2000", [277, 201, 44, 36], placed=True), self.t("Played Never played", [277, 258, 178, 36], placed=False))
+        r = [x for x in readcheck.evaluate(d) if x.name.endswith("facts")][0]
+        self.assertEqual(r.status, FAIL); self.assertIn("not placed", r.reason)
+        # older dumps have no 'placed': not graded on it
+        d = self.dump(self.t("Played Never played", [277, 258, 178, 36]))
         self.assertEqual([x for x in readcheck.evaluate(d) if x.name.endswith("facts")][0].status, PASS)
 
     def test_small_source_picture_warns(self):

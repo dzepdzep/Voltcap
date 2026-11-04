@@ -32,7 +32,13 @@ for lay in $LAYS; do
   # to leave it; some layouts also take focus only on the first key after a switch. The walk measures moving between
   # games, so it starts from settled controller focus: one ◀ and one ▶ first (NAV_PRELUDE=0 turns it off). The first-press
   # behaviour itself is checked by device/touchkey.sh and device/firstvisit.sh.)
-  [ "${NAV_PRELUDE:-1}" = 1 ] && { k DPAD_LEFT; sleep 0.8; k DPAD_RIGHT; sleep 1.4; echo "$lay prelude LEFT RIGHT" >> $OUT/steps.txt; }
+  # (Update 477: QA_NOPRELUDE="TWIN_DESK ..." — layouts where ◀ ▶ leave the game list for another pane (Twin desk's toolbar,
+  # k477t): the prelude would start the walk outside the games.)
+  pre=${NAV_PRELUDE:-1}; case " $QA_NOPRELUDE " in *" $lay "*) pre=0;; esac
+  [ "$pre" = 1 ] && { k DPAD_LEFT; sleep 0.8; k DPAD_RIGHT; sleep 1.4; echo "$lay prelude LEFT RIGHT" >> $OUT/steps.txt; }
+  # (Update 477, T5 triage: QA_REC=1 records the walk — $OUT/${lay}.mp4, 12 s — for tools/frames.py: whether a moved card or
+  # text jumps, slides on purpose or was caught mid-animation by the settled screenshot.)
+  [ -n "$QA_REC" ] && { rm -f $OUT/${lay}.mp4; (screenrecord --bit-rate 20000000 --time-limit 12 $OUT/${lay}.mp4 > /dev/null 2>&1 &); sleep 0.8; }
   s=0; screencap -p $OUT/${lay}_s0.png; dump ${lay}_s0
   # (Update 475: QA_VERTICAL="CROSS ..." — layouts whose games run up and down (◀ ▶ change something else: Cross's category
   # columns) are walked with ▼ ▲ from the start. The walk is R L L R: back on the first game at s2 and s4, a row's end
@@ -53,6 +59,7 @@ for lay in $LAYS; do
       echo "$lay s1 key=DPAD_DOWN early_ms=150" >> $OUT/steps.txt
     fi
   done
+  [ -n "$QA_REC" ] && { i=0; while pidof screenrecord > /dev/null && [ $i -lt 30 ]; do sleep 0.5; i=$((i+1)); done; }
   fg=$(dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity")
   case "$fg" in *com.shelf.launcher*) ;; *) echo "STOP: not Voltcap in front after $lay" >> $OUT/log.txt; break;; esac
   echo "$lay done" >> $OUT/log.txt
