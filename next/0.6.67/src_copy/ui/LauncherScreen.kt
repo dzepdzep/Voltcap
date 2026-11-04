@@ -2527,7 +2527,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; GameOrigin.rect = null /* (Update 421: the old layout's card never counts as this one's row) */; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
+    // (Update 421: the old layout's card never counts as this one's row.) Update 471 (D243): cleared while the new layout
+    // composes, not in the effect after it — the effect ran after the new layout's card had already marked itself, and a
+    // card that doesn't move never marks again: Row opens / Row reveal / Shared fell back to the layout's own window until
+    // the first D-pad move (Rental shop, Card binder, Orbit, Arcade, Stacks).
+    remember(state.appearance.homeLayout) { GameOrigin.rect = null; 0 }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.

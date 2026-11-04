@@ -1,3 +1,41 @@
+# Update 471 (4 Nov 2026) — v0.6.67 small stabilization: Cover details metadata, Cardboard box story, small visual fixes, Case flow clip opt-in, full 318 popup matrix
+
+**Owner request (470 PDF review):** Cover details More hid the MADE BY / GENRE values; Cardboard box story viewport and
+return to Play; Box Details word splits, Bubbles title on the art, Magazine 1.3 arrow, Arcade / Memory card touch;
+Stadium 2 video in Case flow; reconcile 470's 85 combinations with 318; build, check on both devices, restore, PDF.
+
+**Changes (staging only, v0.6.66 unchanged):**
+- Cover details (D232): header line has console · year (not repeated); with More every fact is in two plain lines under the
+  name (console · year · developer · genres / played · last · trophies) — nothing can sit under the fold at 1.0, 1.3, 280 dpi.
+  Panel fully opaque. `ui/WinScenesStyled.kt`, `ui/WinScenesMore.kt` (SceneFactsBody omit / inline / auto-tight).
+- Cardboard box (D234 / D235): whole-sentence story lead (story first on short sheets), full story in Contents; story box
+  focusable only when it scrolls; DOWN at its end goes to Play; "Tap the case to open it" only with Inspect. `ui/WinScenes.kt`
+  (sceneReadable exitDown, storyLead), `ui/GameWindow.kt`, `ui/MediaInspectView.kt`.
+- Box Details names never split mid-word (D236, `WholeWordsText` in `ui/FitText.kt`); Bubbles name under the banner on short
+  windows (D237, `ui/GameDetailsOverlay.kt`); Magazine arrow in the word's row (D238, `ui/WinScenesConsole.kt`); Blades facts
+  step down to fit (D240); Row opens +N on one line (D241, `ui/RowRevealWindow.kt`).
+- Case flow (D239): sharp still backdrop by default, "Watch clip" plays the original clip fitted (no stretch), Stop returns
+  to the still; no decode while idle; off when the owner's video previews pref is off. `ui/WinScenes.kt` CaseFlowMedia.
+- Arcade / Memory card: visuals kept, touch areas stay 24 dp (rows 25–27 dp apart; 48 dp would overlap) — documented limit.
+- Row styles (D243): a chosen Row opens / Row reveal / Shared opened as the layout's own window until the first D-pad move
+  (Rental shop, Card binder, Orbit, Arcade, Stacks) — the "game you're on" mark was cleared after the new layout had set it;
+  now cleared while the new layout composes. `ui/LauncherScreen.kt`.
+- Cover details · More at 280 dpi (D244): second info line cut / played line squeezed — compact keys on a short panel.
+- QA: geomcheck `facts` check (label shown, value hidden → FAIL) + selftest fixtures from the 470 dump (98 OK);
+  unit test `Fixtures471Test` (6/6); D242 test path (first style after a layout switch could be lost → OWN first, SKIPs
+  checked against the full run).
+
+**Checked (both devices, USB, launches blocked):** full 53 layouts × 6 styles = 318 per device: KONKR 296 PASS / 0 FAIL /
+1 NOT TESTED (CHAN · Banner visual) / 21 n/a; Odin 297 / 0 / 0 / 21 n/a (row styles re-run on build F, Cover details on G). Font 1.3 15/15 each, display size larger 15/15
+each, long names KONKR 42/42 (missing metadata game separate: 14/14). testDebugUnitTest green (build E; F / G changes compiled with assembleRelease). 470's "85" was a subset
+(53 Own + 8 × 4 styles) — see `tools/qa/POPUP_AUDIT_471.md`.
+**Not tested:** Odin long names (one game, no safe fixture).
+**Remaining:** Row opens story preview ends with "…" (full text in Details) and its facts give way on the KONKR; Bubbles
+logo gap; small Box story viewport at 280 dpi; 24 dp (not 48 dp) Arcade / Memory card rows; the gate can't see text cut
+inside its own box (D244 was found by eye).
+
+**Copy:** `next/0.6.67/` (patch + src_copy / project_copy). Settings restored to the recorded baseline; RC 0.6.66 reinstalled.
+
 # Update 470 (4 Nov 2026) — v0.6.67 final targeted stabilization: Box actions fixed in place, long-name runs, PDF findings, D212 touch rooms
 
 **Owner request (469 PDF review):** D222 Box; rerun long / missing details with a working game fixture; Cover details Year /

@@ -1247,7 +1247,7 @@ internal fun InspectStick(motion: InspectMotion) {
  * own outside the piece).
  */
 @Composable
-internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int) {
+internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int, hint: Boolean = true) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     // Update 292: Inspect is on screen (for the freeze snapshot of a crash report).
@@ -1402,7 +1402,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             val content = piece.content
             if (content != null && piece.kind == InspectKind.BOX) InspectContent(piece, content, motion, left - win[0], top - win[1], w, h, aspect, scope)
             // Update 189: how to open it, said once it's out.
-            if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
+            if (hint && piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
                 motion, left - win[0], top + h - win[1], w,
                 // (Update 260: a PSP game's is a UMD, not a cartridge.)
                 when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform?.let { MediaShell.of(it) } == MediaShell.UMD) "UMD" else if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },

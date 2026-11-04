@@ -554,7 +554,11 @@ internal fun RowMotionWindow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 if (badges.isNotEmpty()) {
-                    badges.forEach { (url, unlocked) ->
+                    // (Update 471, found in the 471 sweep — KONKR, Row opens: the badges filled the strip and "+99" was squeezed to
+                    // one letter a line. As many badges as fit with room for the count; the count on one line.)
+                    val room = with(d) { (W - buttonsTo.x - pad).coerceAtLeast(0f).toDp() }
+                    val fit = if (total > badges.size || ((badges.size * 52).dp > room)) (((room - 52.dp) / 52.dp).toInt()).coerceIn(0, badges.size) else badges.size
+                    badges.take(fit).forEach { (url, unlocked) ->
                         AsyncImage(
                             url, null, contentScale = ContentScale.Crop,
                             modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))
@@ -562,7 +566,8 @@ internal fun RowMotionWindow(
                                 .border(1.dp, if (unlocked) accent.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
                         )
                     }
-                    if (total > badges.size) Text("+${total - badges.size}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (total > fit) Text("+${total - fit}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, softWrap = false)
                 } else shots.forEach { url ->
                     AsyncImage(
                         url, null, contentScale = ContentScale.Crop,

@@ -245,3 +245,31 @@ internal fun StableFullText(
         )
     }
 }
+
+/**
+ * Update 471 (owner review, Box Details page: "(Parmentat / ion)"): a wrapping text whose size steps down until its longest
+ * word fits a line — so normal words are never split across lines — down to the readable minimum ([fitMin]); only a word
+ * longer than a line at that size still breaks. Wraps freely otherwise (no line limit, nothing hidden).
+ */
+@Composable
+internal fun WholeWordsText(
+    text: String, color: Color, fontSize: TextUnit, modifier: Modifier = Modifier, fontWeight: FontWeight? = null,
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, lineHeight: TextUnit = TextUnit.Unspecified
+) {
+    BoxWithConstraints(modifier) {
+        val measurer = rememberTextMeasurer(cacheSize = 8)
+        val base = androidx.compose.material3.LocalTextStyle.current
+        val w = constraints.maxWidth
+        val size = remember(text, w, fontSize, fontWeight, fontFamily, base) {
+            val longest = text.split(' ', '\n').maxByOrNull { it.length } ?: ""
+            var s = fontSize.value
+            val bottom = fitMin(fontSize).value
+            fun width(v: Float) = measurer.measure(longest, base.copy(fontSize = v.sp, fontWeight = fontWeight ?: base.fontWeight,
+                fontFamily = fontFamily ?: base.fontFamily), softWrap = false, maxLines = 1).size.width
+            if (w > 0 && w != Constraints.Infinity && longest.isNotEmpty()) while (s > bottom && width(s) > w) s = maxOf(bottom, s - 1f)
+            s
+        }
+        val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
+        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily)
+    }
+}

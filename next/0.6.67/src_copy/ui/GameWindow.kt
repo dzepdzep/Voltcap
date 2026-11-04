@@ -1429,7 +1429,9 @@ internal fun GameWindow(
             }
           }
             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
-            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
+            // (Update 471, owner review: "Tap the case to open it" sat under the case while its window was already open beside
+            // it — the hint now only comes with Inspect asked for, not with a window that opens by taking the case out.)
+            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay, hint = askedInspect)
         }
         }
     }
@@ -2683,7 +2685,9 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
             // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
             // scrolls, so the name and the facts wrap in full.)
-            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null)
+            // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
+            WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
+                modifier = Modifier.fillMaxWidth())
             val facts = listOfNotNull(
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                 meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }

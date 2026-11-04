@@ -267,6 +267,23 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
                 if a[0] >= b[0] - 1 and a[1] >= b[1] - 1 and a[0] + a[2] <= b[0] + b[2] + 1 and a[1] + a[3] <= b[1] + b[3] + 1: continue
                 if b[0] >= a[0] - 1 and b[1] >= a[1] - 1 and b[0] + b[2] <= a[0] + a[2] + 1 and b[1] + b[3] <= a[1] + a[3] + 1: continue
                 runs.append(f"{_label(t)[:30]} / {_label(c)} {ix:g}x{iy:g} px")
+    # (Update 471, owner review of the 470 PDF: Cover details with More open showed "MADE BY" / "GENRE" and their values were
+    # scrolled away under the keys — every action whole, so the gate passed while the facts were missing. A fact's label
+    # shown (in capitals, the facts' style) with the value right under it not shown is a FAIL: information lost at rest.)
+    facts = []
+    txtn = [(w, n) for w, n in nodes if n.get("kind") == "text" and n.get("full") and n.get("shown")]
+    for w, lab_n in txtn:
+        lt = _label(lab_n); lf, ls = lab_n["full"], lab_n["shown"]
+        LAB = r"[A-Z][A-Z .&/'-]{1,21}"
+        if not re.fullmatch(LAB, lt) or ls[3] < lf[3] * 0.5: continue
+        # (A label with its value beside it on the same line — the Box sheet's "KIND ....... Simulator" — is not this kind.)
+        if any(w2 is w and v is not lab_n and abs(v["full"][1] - lf[1]) <= 8 and v["full"][0] >= lf[0] + lf[2] - 2 for w2, v in txtn): continue
+        under = [v for w2, v in txtn if w2 is w and v is not lab_n and abs(v["full"][0] - lf[0]) <= 6
+                 and lf[1] + lf[3] - 8 <= v["full"][1] <= lf[1] + lf[3] + 12 and not re.fullmatch(LAB, _label(v))]
+        if not under: continue
+        v = min(under, key=lambda x: x["full"][1])
+        if v["shown"][3] < v["full"][3] * 0.6:
+            facts.append(f"{lt} shown, its value '{_label(v)[:30]}' {'hidden' if v['shown'][3] <= 0 else 'cut (%d of %d px)' % (v['shown'][3], v['full'][3])}")
     out = []
     def res(name, probs, ok, status=qalib.FAIL):
         out.append(qalib.Result(name, status if probs else qalib.PASS,
@@ -276,6 +293,7 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     if hidden:
         out.append(qalib.Result("hidden-text", qalib.PASS, f"{len(hidden)} text node(s) wholly out of view (paged / folded, not drawn cut): " + ", ".join(hidden[:5])))
     out.append(qalib.Result("scroll-clip", qalib.PASS, (f"{len(scut)} node(s) partly scrolled out of their list (reachable): " + "; ".join(scut[:3])) if scut else "nothing inside a scrolling list is cut"))
+    res("facts", facts, "every fact label shown has its value in view")
     res("screen", off, "every control inside the screen")
     res("overlap", ovl, "no overlapping controls")
     # (Text boxes crossing a button: noted, not failed — a text box can be taller than its drawn lines, e.g. a clipped last

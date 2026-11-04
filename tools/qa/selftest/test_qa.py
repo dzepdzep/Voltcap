@@ -856,6 +856,25 @@ class TestClipGate(unittest.TestCase):
         self.assertEqual(geomcheck._label({"label": "Save sync SAVE SYNC"}), "Save sync")
         self.assertEqual(geomcheck._label({"label": "Play Played"}), "Play Played")
 
+    def test_fact_label_without_its_value_fails(self):
+        # Update 471 (owner review of the 470 PDF): Cover details · More at font 1.3 on the KONKR (k470fs) — "MADE BY" /
+        # "GENRE" shown, their values scrolled away under the keys. Every action was whole, so the gate passed; now "facts" FAILs.
+        import geomcheck
+        d = self.load("facts_cover_more_470.json"); b = self.load("facts_cover_home_470.json")
+        st = {r.name: r.status for r in geomcheck.clip_evaluate(d, baseline=b)}
+        self.assertEqual(st["facts"], "FAIL")
+        # The same facts all in view pass; a label with its value BESIDE it (the Box sheet's dotted lines) is not this kind.
+        for w in d["windows"]:
+            for n in w["nodes"]:
+                if n.get("kind") == "text": n["shown"] = list(n["full"])
+        self.assertEqual({r.name: r.status for r in geomcheck.clip_evaluate(d, baseline=b)}["facts"], "PASS")
+        box = {"screen": [960, 640], "density": 1.5, "windows": [{"at": [0, 0, 960, 640], "nodes": [
+            {"label": "Play", "kind": "control", "full": [500, 500, 120, 60], "shown": [500, 500, 120, 60]},
+            {"label": "KIND", "kind": "text", "full": [500, 200, 50, 20], "shown": [500, 200, 50, 20], "scroll": True},
+            {"label": "Simulator", "kind": "text", "full": [700, 200, 100, 20], "shown": [700, 200, 100, 20], "scroll": True},
+            {"label": "PLAYED", "kind": "text", "full": [500, 222, 60, 20], "shown": [0, 0, 0, 0], "scroll": True}]}]}
+        self.assertEqual({r.name: r.status for r in geomcheck.clip_evaluate(box)}["facts"], "PASS")
+
     def test_pixels_wide_flat_text_is_not_a_cut(self):
         # Update 470 (k470f ARCADE): PRESS START in a pixel font — flat-bottomed dark letters across ~80 % of a yellow bar,
         # scan lines over it. The line where the letters end changes the whole width, but the fill goes on to the bar's

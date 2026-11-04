@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -355,19 +358,25 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
  * ▲ ▼ scroll it while it has focus, and at its top / bottom the press goes on to the next control. A thin ring shows it is
  * the one the D-pad is on. Put it before sceneFadeEdges / verticalScroll(state).
  */
-internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color): Modifier = this.composed {
+internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color, onlyWhenScrolls: Boolean = false,
+    exitDown: androidx.compose.ui.focus.FocusRequester? = null): Modifier = this.composed {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val step = if (onlyWhenScrolls) 0.9f else 0.6f
     var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     androidx.compose.ui.Modifier.onFocusChanged { on = it.isFocused }
         .onPreviewKeyEvent { e ->
             if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when (e.key) {
-                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * 0.6f) }; true } else false
-                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * 0.6f) }; true } else false
+                // (Update 471: at the end, [exitDown] — the window's Play — rather than whatever key is nearest below.)
+                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * step) }; true }
+                    else if (exitDown != null) runCatching { exitDown.requestFocus() }.isSuccess else false
+                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * step) }; true } else false
                 else -> false
             }
         }
-        .then(androidx.compose.ui.Modifier.focusable())
+        // (Update 471: [onlyWhenScrolls] — a box whose text fits is no stop for the D-pad at all, and a short one moves a
+        // whole view per press, so the way back to Play is one or two presses, not a page-by-page walk.)
+        .then(if (!onlyWhenScrolls || state.maxValue > 0) androidx.compose.ui.Modifier.focusable() else androidx.compose.ui.Modifier)
         .border(if (on) 2.dp else 0.dp, if (on) ring else Color.Transparent, RoundedCornerShape(6.dp))
         .padding(4.dp) // (the same room with or without the ring: the text never jumps when it is reached)
 }
@@ -457,7 +466,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
             Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent).sceneFadeEdges(scroll).verticalScroll(scroll)) {
+            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus).sceneFadeEdges(scroll).verticalScroll(scroll)) {
             if (ctx.page == WinPage.MAIN) {
                 @Composable
                 fun line(label: String, value: String?) {
@@ -473,16 +482,29 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
                     }
                 }
+                // (Update 471, owner review: the whole story under the facts left it a sliver of the sheet to be read in. The
+                // sheet shows the story's opening sentences — on a short sheet first, above the facts, so it is what the window
+                // opens on — and CONTENTS has all of it, said on the sheet, never cut silently. The facts follow in full.)
+                val shortSheet = ctx.maxH < 480.dp
+                @Composable
+                fun story(gapTop: Boolean) {
+                    ctx.summary?.let {
+                        val (lead, more) = storyLead(it, if (shortSheet) 150 else 220)
+                        if (gapTop) Spacer(Modifier.height(8.dp))
+                        Text(lead, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
+                        if (more) Text("THE WHOLE STORY: CONTENTS", color = SheetMuted, fontSize = 10.sp, fontFamily = mono, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp))
+                        if (!gapTop) Spacer(Modifier.height(8.dp))
+                    }
+                }
+                if (shortSheet) story(false)
                 line("Released", ctx.year)
                 line("Made by", ctx.developer)
                 line("Kind", ctx.genres)
                 line("Played", ctx.played)
                 line("Last played", ctx.last)
                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
-                ctx.summary?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
-                }
+                if (!shortSheet) story(true)
             } else {
                 // The other pages, on the same paper.
                 ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
@@ -948,10 +970,27 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
         ) {
             if (ctx.page == WinPage.MAIN) {
                 val pick = shots.getOrNull(shown)
-                if (pick != null) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                else {
-                    (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                    VideoCrossfade(ctx.state.videoUrls[ctx.g.stableKey], ctx.state.appearance.videoSound, Modifier.fillMaxSize())
+                // (Update 471, owner decision on the soft Stadium 2 window: the gameplay clip (640x480 for an N64 game) was
+                // cropped and zoomed into this wide band. The window now opens on the sharp still — decoded at the screen's
+                // size — and plays the clip only when asked ("Watch clip"), whole, in its own shape with black bars, never
+                // stretched. Nothing is decoded or played while it isn't asked for. The Video previews setting still decides
+                // whether there is a clip at all.)
+                val clipUrl = ctx.state.videoUrls[ctx.g.stableKey]?.takeIf { ctx.state.appearance.videoPreviews }
+                var clipOn by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
+                if (pick != null && !clipOn) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                if (clipOn && clipUrl != null) VideoBackdrop(clipUrl, ctx.state.appearance.videoSound, Modifier.fillMaxSize(), fit = true, shade = false)
+                if (clipUrl != null) SceneControl(
+                    WinAction(if (clipOn) "Stop clip" else "Watch clip", if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, { clipOn = !clipOn }),
+                    Modifier.align(Alignment.TopEnd).padding(8.dp).zIndex(2f)
+                ) { on ->
+                    Row(Modifier.clip(RoundedCornerShape(50)).background(if (on) accent else Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(50)).heightIn(min = 32.dp).padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, null, tint = if (on) onAccent else Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text(if (clipOn) "Stop clip" else "Watch clip", color = if (on) onAccent else Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 // The glass's shine.
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
@@ -1540,4 +1579,17 @@ private fun NightStatus(ctx: WinSceneCtx) {
             }
         }
     }
+}
+
+/**
+ * Update 471: the opening of a story for a sheet with little room — whole sentences up to about [max] characters (at least
+ * the first one), and whether more follows. Never cut mid-word and never with "…": the window says where the rest is.
+ */
+internal fun storyLead(story: String, max: Int = 200): Pair<String, Boolean> {
+    val t = story.trim()
+    if (t.length <= max) return t to false
+    val ends = Regex("[.!?](\\s|$)").findAll(t).map { it.range.first + 1 }.toList()
+    val cut = ends.lastOrNull { it <= max } ?: ends.firstOrNull { it <= max * 2 } ?: t.lastIndexOf(' ', max).takeIf { it > max / 2 } ?: return t to false
+    val lead = t.substring(0, cut).trim()
+    return lead to (lead.length < t.length)
 }

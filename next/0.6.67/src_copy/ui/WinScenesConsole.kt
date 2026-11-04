@@ -31,6 +31,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -210,19 +212,28 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             }
                             Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f).then(fadeScroll())) {
+                            // (Update 471, facts gate: beside the cover the facts ran past the column at rest — "KIND" shown, its
+                            // value cut on the KONKR. When they don't fit, they step down in size (to 80 %), measured once more
+                            // after each step; the column still scrolls if even that isn't enough.)
+                            var viewH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+                            var factsH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+                            var k by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableFloatStateOf(1f) }
+                            androidx.compose.runtime.LaunchedEffect(viewH, factsH, k) { if (viewH > 0 && factsH > viewH && k > 0.81f) k = (k - 0.05f).coerceAtLeast(0.8f) }
+                            Column(Modifier.weight(1f).onSizeChanged { viewH = it.height }.then(fadeScroll())) {
+                            Column(Modifier.onSizeChanged { factsH = it.height }) {
                                 @Composable
                                 fun fact(label: String, value: String?) {
                                     if (value.isNullOrBlank()) return
-                                    Text(label.uppercase(), color = lerp(p.glow, Color.White, 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    Text(value, color = Color.White, fontSize = 14.sp, maxLines = 3)
-                                    Spacer(Modifier.height(6.dp))
+                                    Text(label.uppercase(), color = lerp(p.glow, Color.White, 0.4f), fontSize = 10.sp * k, lineHeight = 13.sp * k, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Text(value, color = Color.White, fontSize = 14.sp * k, lineHeight = 18.sp * k, maxLines = 3)
+                                    Spacer(Modifier.height(6.dp * k))
                                 }
                                 fact("Played", ctx.played)
                                 fact("Last played", ctx.last)
                                 fact("Released", ctx.year)
                                 fact("Made by", ctx.developer)
                                 fact("Kind", ctx.genres)
+                            }
                             }
                         }
                         if (ctx.total > 0) {
@@ -678,12 +689,15 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                         SceneControl(a, Modifier) { on ->
                                             // (Update 470, rule 11: at font 1.3 on the KONKR "▸ ACHIEVEMENTS" broke into "▸ / ACHIEVEMENT / S" with
                                             // the S on a hidden third line — a callout now shrinks a step or two to fit its two lines.)
+                                            // (Update 471: the arrow stays beside the word — 470 left "▸" alone on a line above ACHIEVEMENTS — and
+                                            // the word steps down a size rather than break; see WholeWordsText.)
                                             val cs = if (compact) 12.sp else 14.sp
-                                            Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
-                                                fontSize = cs, letterSpacing = 0.5.sp, maxLines = 2,
-                                                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(cs), maxFontSize = cs),
-                                                modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
-                                                    .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
+                                            val ink = if (a.urgent) st.accent else st.ink
+                                            Row(Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
+                                                .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp), verticalAlignment = Alignment.Top) {
+                                                Text("▸ ", color = ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = cs)
+                                                WholeWordsText(a.label.uppercase(), color = ink, fontSize = cs, fontWeight = FontWeight.Bold, fontFamily = st.head)
+                                            }
                                         }
                                     }
                                 }

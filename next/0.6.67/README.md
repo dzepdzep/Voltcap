@@ -169,6 +169,13 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
     clip-size QA log (`ui/VideoPreview.kt`); test Fixtures469Test (new). The patch is now app/ only (tools/qa is on main).
     StyleMemoryCard.kt is CRLF in git. Evidence tools/qa/POPUP_AUDIT_470.md.
 
+30. **Update 471.** Cover details facts in view (`ui/WinScenesStyled.kt`, `ui/WinScenesMore.kt`, D232), Cardboard box story
+    lead / D-pad to Play / hint only with Inspect (`ui/WinScenes.kt`, `ui/GameWindow.kt`, `ui/MediaInspectView.kt`, D234-D235),
+    whole-word names (`ui/FitText.kt` WholeWordsText, D236), Bubbles name under the banner (`ui/GameDetailsOverlay.kt`, D237),
+    Magazine arrow / Blades facts (`ui/WinScenesConsole.kt`, D238 / D240), Case flow still + Watch clip (`ui/WinScenes.kt`,
+    D239), Row opens +N (`ui/RowRevealWindow.kt`, D241), row styles on the first press after a layout change (`ui/LauncherScreen.kt`,
+    D243), Cover details More at 280 dpi (D244); test Fixtures471Test (new). Evidence tools/qa/POPUP_AUDIT_471.md.
+
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there
   (a saved choice is kept). If you want Midnight there, pick it in Settings (or QA: `--es voltcap_test_pref picker_look=MIDNIGHT`).

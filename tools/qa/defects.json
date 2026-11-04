@@ -2661,6 +2661,203 @@
    "root_cause": "/sdcard is case-insensitive; the end-of-run copy globbed case-sensitively.",
    "fix": "recovered by hand (copied under the right tag); later runs use tags that differ by more than case (o470h, k470k).",
    "verified": "o470F graded from the recovered dumps"
+  },
+  {
+   "id": "D232",
+   "title": "Cover details · More: Made by / Genre / Played / Trophies labels shown, their values scrolled away under the keys",
+   "rule": "R26",
+   "severity": "high",
+   "status": "verified",
+   "found": "2026-11-04 owner + ChatGPT review of the 470 PDF (page 6); confirmed in k470f / k470fs dumps",
+   "where": "COVERDETAILS · Own, More open (KONKR 1.0 and 1.3; also main at 280 dpi and Row reveal)",
+   "evidence": [
+    "k470fs COVERDETAILS_OWN_more.json: HAL Laboratory / Simulator, Strategy shown 0 px",
+    "k470f: Never played / 0 / 109 shown 0 px"
+   ],
+   "root_cause": "the facts box gave its room to the extra keys and scrolled; the gate only required the actions to be whole.",
+   "fix": "console / year not repeated (header line); with More open the facts sit label-beside-value and played / trophies move to their own line under the console (all four in view at 1.3); any SceneFactsBody switches to one-line facts by itself when its two-column facts don't fit.",
+   "verified": "k471c/o471c + k471fs/o471fs (1.3) + k471cd (280 dpi) PASS; facts gate check; Fixtures471Test; re-run on build G: k471g/gf/gd/gl/gm, o471g/gf/gd"
+  },
+  {
+   "id": "D233",
+   "title": "Gate: a fact label shown with its value not shown passed",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 (D232)",
+   "where": "tools/qa/tools/geomcheck.py",
+   "evidence": [
+    "selftest test_fact_label_without_its_value_fails (real k470fs dump)"
+   ],
+   "root_cause": "geometry checked controls, clipping and overlaps, never whether information sat in view.",
+   "fix": "new 'facts' check: a capitals fact label shown >= 50 % with the value directly under it < 60 % shown FAILs; labels with the value beside them (Box) excluded. It also found Resume, Cards, Pocket (More), Pocket classic, Blades at 1.0 / 1.3 / 280 dpi — fixed by D232's automatic one-line facts and D240.",
+   "verified": "test_qa.py 98 OK"
+  },
+  {
+   "id": "D234",
+   "title": "Cardboard box: the story had a sliver of the sheet; back to Play took several DOWN presses",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 owner review (470 PDF page 1)",
+   "where": "BOX · Own",
+   "evidence": [
+    "470 k470f BOX_OWN_main, box470 D-pad frames"
+   ],
+   "root_cause": "the whole story sat after six fact lines in a 100 dp box; the box was a D-pad stop that scrolled 0.6 page per press and handed DOWN to the nearest key.",
+   "fix": "the sheet shows the story's opening sentences (whole sentences, no '…') — first on short sheets — with 'THE WHOLE STORY: CONTENTS'; Contents has all of it. The box is a D-pad stop only when it scrolls, moves 0.9 view per press, and DOWN at its end goes to Play.",
+   "verified": "k471b/o471b PASS; g471 D-pad: UP story, DOWN end, DOWN again Play (A -> launch blocked, Stadium 2)"
+  },
+  {
+   "id": "D235",
+   "title": "Box / case windows: 'Tap the case to open it' shown while the window is already open beside the case",
+   "rule": "—",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-04 owner review",
+   "where": "windows that open by taking the case out (Box, Case flow…)",
+   "evidence": [
+    "470 PDF page 1"
+   ],
+   "root_cause": "Inspect's hint came with every piece taken out, also when the window itself opened that way.",
+   "fix": "the hint only comes with Inspect asked for.",
+   "verified": "k471b BOX main: no hint while the window is open (only with Inspect)"
+  },
+  {
+   "id": "D236",
+   "title": "Details page: normal words split across lines ('(Parmentat / ion)')",
+   "rule": "R18",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-04 owner review (470 PDF)",
+   "where": "WindowDetails (Box Details page and the other windows' Details pages)",
+   "evidence": [
+    "k470L1 BOX_OWN_page"
+   ],
+   "root_cause": "a 19 sp name in a narrow column next to the cover; a word longer than the column broke mid-word.",
+   "fix": "WholeWordsText: the size steps down until the longest word fits a line (down to the readable minimum); wraps freely otherwise.",
+   "verified": "k471a details pages: Box Details name whole words (WholeWordsText)"
+  },
+  {
+   "id": "D237",
+   "title": "Full details (Bubbles): the name sat on the banner art's characters",
+   "rule": "—",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-04 owner review (470 PDF page 14)",
+   "where": "GameDetailsOverlay, short windows (< 480 dp: KONKR, Odin)",
+   "evidence": [
+    "k470f BUBBLES_OWN_page"
+   ],
+   "root_cause": "name drawn over the lower part of the art.",
+   "fix": "on a short window the name goes under the banner on the page; the art is shown whole (still the full-size decode). Tall windows unchanged.",
+   "verified": "k471a/o471a BUBBLES PASS; name under the banner on short windows"
+  },
+  {
+   "id": "D238",
+   "title": "Magazine at 1.3: the arrow stood alone above ACHIEVEMENTS",
+   "rule": "—",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-04 (470 shortcoming)",
+   "where": "MAGAZINE · Own · font 1.3",
+   "evidence": [
+    "k470ks MAGAZINE_OWN_main"
+   ],
+   "root_cause": "arrow and word in one wrapping text.",
+   "fix": "arrow and word side by side; the word steps down rather than break (WholeWordsText).",
+   "verified": "k471fs/o471fs MAGAZINE PASS (arrow beside the word)"
+  },
+  {
+   "id": "D239",
+   "title": "Case flow window opened on the game's gameplay clip, cropped and zoomed (soft Stadium 2 banner)",
+   "rule": "—",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 (470 trace; owner decision 471)",
+   "where": "CASEFLOW · Own (CaseFlowMedia)",
+   "evidence": [
+    "log 'clip size 640x480 in 852x193'"
+   ],
+   "root_cause": "the clip played automatically, cropped to fill the wide band.",
+   "fix": "opens on the still (decoded at screen size: 'backdrop 960x310 for 960x616'); 'Watch clip' plays it whole in its own shape (black bars), 'Stop clip' goes back; nothing decoded until asked; the Video previews setting still decides whether a clip exists.",
+   "verified": "f471: idle = still, no clip decode; Watch clip 640x480 fit with bars; Stop back to the still"
+  },
+  {
+   "id": "D240",
+   "title": "Blades: facts beside the cover ran past the column at rest ('KIND' shown, its value cut)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 facts gate (k470f, k470fs, o470fs)",
+   "where": "BLADES · Own",
+   "evidence": [
+    "k471s BLADES_OWN_main facts FAIL"
+   ],
+   "root_cause": "five label-over-value facts in a column as tall as the cover.",
+   "fix": "they step down in size (to 80 %) until they fit, measured after each step.",
+   "verified": "k471a/o471a BLADES PASS (facts gate)"
+  },
+  {
+   "id": "D241",
+   "title": "Row opens: the +N count beside the badges squeezed one character per line ('+ 9 9')",
+   "rule": "R26",
+   "severity": "low",
+   "status": "verified",
+   "found": "2026-11-04 k471a ROW_OPENS (KONKR)",
+   "where": "Row opens · every layout",
+   "evidence": [
+    "k471a *_ROW_OPENS_main"
+   ],
+   "root_cause": "a fixed number of badges left the count a few dp, and it wrapped per character.",
+   "fix": "the strip shows as many badges as fit; the count is one line.",
+   "verified": "k471r/o471r ROW_OPENS PASS (+ k471ro/o471ro)"
+  },
+  {
+   "id": "D242",
+   "title": "Test path: a run with only a row style sometimes kept the layout's own popup (style pref set while the layout loaded) and graded the combo n/a",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 popmerge k471a vs k471r",
+   "where": "popclip.sh, first style per layout",
+   "evidence": [
+    "k471r CARDS/ORBIT/SHOP, o471r ARCADE/CARDS/SHOP/STACKS ROW_OPENS: hasRow false, OWN popup in the screenshot"
+   ],
+   "root_cause": "the first style set right after a layout switch can be lost; with OWN first (every full run) it never showed.",
+   "fix": "subset runs put OWN first; SKIP rows checked against the full run (a combo PASS before and SKIP now is re-run).",
+   "verified": "k471ro/o471ro"
+  },
+  {
+   "id": "D243",
+   "title": "Row opens / Row reveal / Shared chosen for a layout opened as the layout's own window until the first D-pad move (Rental shop, Card binder, Orbit, Arcade, Stacks)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 k471r / o471r (D242 follow-up), reproduced by hand on the KONKR (Rental shop: A = own tag; RIGHT, LEFT, A = Row opens)",
+   "where": "ui/LauncherScreen.kt (GameOrigin on a layout change)",
+   "evidence": [
+    "k471ro SHOP_ROW_OPENS_main (own tag)",
+    "o471ro ARCADE/CARDS/SHOP/STACKS_ROW_OPENS (own window)"
+   ],
+   "root_cause": "the layout-change effect cleared GameOrigin after the new layout's card had already marked itself; a card that doesn't move never marks again, so no row was known and the row style fell back.",
+   "fix": "cleared while the new layout composes (remember keyed by the layout), before its card marks.",
+   "verified": "k471rf / o471rf: 7 layouts x Row opens / Row reveal / Shared with the row style first, 21/21 PASS each device"
+  },
+  {
+   "id": "D244",
+   "title": "Cover details · More at display size larger (KONKR 280 dpi): the second info line cut, the played / trophies line squeezed to nothing",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified",
+   "found": "2026-11-04 PDF review of k471cd (the gate graded PASS: a line cut inside its own text box and a zero-height line are not seen by geomcheck)",
+   "where": "ui/WinScenesStyled.kt CoverDetailPanel",
+   "evidence": [
+    "k471cd COVERDETAILS_OWN_more"
+   ],
+   "root_cause": "nine keys in six rows left the two lines 40 px short.",
+   "fix": "on a short panel with More open the keys are compact (26 dp, 4 dp apart, touch >= 24 dp); the facts / story under the lines are what gives way.",
+   "verified": "k471gd (280 dpi) both lines whole, PASS; k471g / k471gf / k471gl / k471gm, o471g / o471gf / o471gd PASS (build G)"
   }
  ]
 }

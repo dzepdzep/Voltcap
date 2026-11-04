@@ -5906,7 +5906,7 @@ index 6c83729..0605b4c 100644
          val outerWidth = 2.5.dp.toPx()
          // Something can be focused while it's still (or again) zero-sized —
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
-index 0e7220a..1d3183e 100644
+index 0e7220a..11b8faf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 @@ -2,6 +2,7 @@ package com.shelf.launcher.ui
@@ -6008,7 +6008,7 @@ index 0e7220a..1d3183e 100644
  /**
   * Update 363 (Cinema / Arctic hub, Thor): [FullText] whose size that fits is worked out in the same layout pass as the room it
   * gets — [FullText]'s own auto-size draws nothing for a few frames after each change while it fits itself, so a name in a
-@@ -172,21 +220,28 @@ internal fun StableFullText(
+@@ -172,21 +220,56 @@ internal fun StableFullText(
          val top = fontSize.value
          val bottom = fitMin(fontSize).value
          val ratio = if (lineHeight.isSp && top > 0f) lineHeight.value / top else 1.2f
@@ -6045,6 +6045,34 @@ index 0e7220a..1d3183e 100644
          )
      }
  }
++
++/**
++ * Update 471 (owner review, Box Details page: "(Parmentat / ion)"): a wrapping text whose size steps down until its longest
++ * word fits a line — so normal words are never split across lines — down to the readable minimum ([fitMin]); only a word
++ * longer than a line at that size still breaks. Wraps freely otherwise (no line limit, nothing hidden).
++ */
++@Composable
++internal fun WholeWordsText(
++    text: String, color: Color, fontSize: TextUnit, modifier: Modifier = Modifier, fontWeight: FontWeight? = null,
++    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, lineHeight: TextUnit = TextUnit.Unspecified
++) {
++    BoxWithConstraints(modifier) {
++        val measurer = rememberTextMeasurer(cacheSize = 8)
++        val base = androidx.compose.material3.LocalTextStyle.current
++        val w = constraints.maxWidth
++        val size = remember(text, w, fontSize, fontWeight, fontFamily, base) {
++            val longest = text.split(' ', '\n').maxByOrNull { it.length } ?: ""
++            var s = fontSize.value
++            val bottom = fitMin(fontSize).value
++            fun width(v: Float) = measurer.measure(longest, base.copy(fontSize = v.sp, fontWeight = fontWeight ?: base.fontWeight,
++                fontFamily = fontFamily ?: base.fontFamily), softWrap = false, maxLines = 1).size.width
++            if (w > 0 && w != Constraints.Infinity && longest.isNotEmpty()) while (s > bottom && width(s) > w) s = maxOf(bottom, s - 1f)
++            s
++        }
++        val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
++        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily)
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt b/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt
 index 4c42120..49ee8e4 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FocusEffects.kt
@@ -6509,7 +6537,7 @@ index 4c42120..49ee8e4 100644
 +        }
 +    }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameDetailsOverlay.kt b/app/src/main/java/com/shelf/launcher/ui/GameDetailsOverlay.kt
-index c2aa32c..a0600c2 100644
+index c2aa32c..ae78f6c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameDetailsOverlay.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameDetailsOverlay.kt
 @@ -1,5 +1,7 @@
@@ -6532,7 +6560,36 @@ index c2aa32c..a0600c2 100644
              val windowW = maxWidth
              // The chosen backdrop (Appearance › Details window), very faint behind the page.
              DetailsBackdropLayer(
-@@ -418,7 +423,8 @@ fun GameDetailsOverlay(
+@@ -394,6 +399,28 @@ fun GameDetailsOverlay(
+                 modifier = Modifier.matchParentSize()
+             )
+ 
++            // (Update 471, owner review — Bubbles' Details on the KONKR: the name sat on the banner's characters. On a short window
++            // it goes under the banner, on the page, and the art is shown whole; tall windows keep it on the art.)
++            val nameUnder = maxHeight < 480.dp
++            val BannerTitle: @Composable (Modifier) -> Unit = { mod ->
++                    LogoAndName(
++                            logoUrl = if (titles.showLogos) logoUrl else null,
++                            placement = titles.logoPlacement,
++                            logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
++                            logoMaxWidth = 300.dp,
++                            modifier = mod
++                        ) { m ->
++                            Text(
++                                titles.display(game.name),
++                                color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
++                                maxLines = 2, overflow = TextOverflow.Ellipsis,
++                                style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
++                                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
++                                )),
++                                modifier = m.widthIn(max = 520.dp)
++                            )
++                        }
++            }
+             Column(
+                 Modifier
+                     .fillMaxSize()
+@@ -418,27 +445,12 @@ fun GameDetailsOverlay(
                      Box(
                          Modifier.fillMaxSize().background(
                              Brush.verticalGradient(
@@ -6542,7 +6599,37 @@ index c2aa32c..a0600c2 100644
                              )
                          )
                      )
-@@ -1271,7 +1277,10 @@ private fun hueBrush(hue: Int): Brush = Brush.radialGradient(
+-                    LogoAndName(
+-                        logoUrl = if (titles.showLogos) logoUrl else null,
+-                        placement = titles.logoPlacement,
+-                        logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
+-                        logoMaxWidth = 300.dp,
+-                        modifier = Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp)
+-                    ) { m ->
+-                        Text(
+-                            titles.display(game.name),
+-                            color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
+-                            maxLines = 2, overflow = TextOverflow.Ellipsis,
+-                            style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
+-                                shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
+-                            )),
+-                            modifier = m.widthIn(max = 520.dp)
+-                        )
+-                    }
++                    if (!nameUnder) BannerTitle(Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp))
+                     if (playStatus != null) {
+                         Text(
+                             "${playStatus.glyph}  ${playStatus.label}",
+@@ -453,6 +465,8 @@ fun GameDetailsOverlay(
+                     }
+                 }
+ 
++                if (nameUnder) BannerTitle(Modifier.padding(start = 28.dp, end = 20.dp, top = 4.dp, bottom = 2.dp))
++
+                 // ---- Play, the numbers, and the square buttons on the right ----
+                 // Small windows (the lower screen of a dual-screen handheld, 3.5" handhelds): the buttons
+                 // share the first line with Play and the numbers wrap onto the lines under it, so nothing
+@@ -1271,7 +1285,10 @@ private fun hueBrush(hue: Int): Brush = Brush.radialGradient(
  @Composable
  private fun Modifier.tapToRun(onClick: () -> Unit): Modifier {
      val latest = androidx.compose.runtime.rememberUpdatedState(onClick)
@@ -7571,7 +7658,7 @@ index 7b63874..920f03a 100644
 +}
 +
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 3ce9e16..465aa7e 100644
+index 3ce9e16..169d875 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -46,6 +46,8 @@ import androidx.compose.foundation.rememberScrollState
@@ -7677,7 +7764,18 @@ index 3ce9e16..465aa7e 100644
                  MediaInspect.force = g.stableKey
                  askedInspect = true
              }) else null
-@@ -1694,7 +1721,7 @@ private fun TvWindowBody(
+@@ -1402,7 +1429,9 @@ internal fun GameWindow(
+             }
+           }
+             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
+-            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
++            // (Update 471, owner review: "Tap the case to open it" sat under the case while its window was already open beside
++            // it — the hint now only comes with Inspect asked for, not with a window that opens by taking the case out.)
++            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay, hint = askedInspect)
+         }
+         }
+     }
+@@ -1694,7 +1723,7 @@ private fun TvWindowBody(
          val roomy = maxWidth > 380.dp
          when (page) {
              WinPage.MAIN -> {
@@ -7686,7 +7784,7 @@ index 3ce9e16..465aa7e 100644
                  val video = state.videoUrls[g.stableKey]
                  VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                  if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
-@@ -1900,7 +1927,7 @@ private fun WindowBody(
+@@ -1900,7 +1929,7 @@ private fun WindowBody(
              ) { pg ->
                  when (pg) {
                      WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
@@ -7695,7 +7793,7 @@ index 3ce9e16..465aa7e 100644
                          val video = state.videoUrls[g.stableKey]
                          VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                          if (showName) {
-@@ -2117,11 +2144,26 @@ private fun SceneBody(
+@@ -2117,11 +2146,26 @@ private fun SceneBody(
          kotlinx.coroutines.delay(120)
          runCatching { f.requestFocus() }
      }
@@ -7723,7 +7821,7 @@ index 3ce9e16..465aa7e 100644
                  add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
                  add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
              }
-@@ -2130,20 +2172,28 @@ private fun SceneBody(
+@@ -2130,20 +2174,28 @@ private fun SceneBody(
              WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
          }
      }
@@ -7755,7 +7853,7 @@ index 3ce9e16..465aa7e 100644
      val list = state.raAchievementDetails[g.stableKey].orEmpty()
      val p = state.raProgress[g.stableKey]
      val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
-@@ -2179,6 +2229,24 @@ private fun SceneBody(
+@@ -2179,6 +2231,24 @@ private fun SceneBody(
      else DrawWinScene(scene, ctx)
  }
  
@@ -7780,7 +7878,7 @@ index 3ce9e16..465aa7e 100644
  internal fun winPageTitle(page: WinPage): String = when (page) {
      WinPage.MAIN -> ""
      WinPage.DETAILS -> "Details"
-@@ -2263,7 +2331,7 @@ private fun WinStatusLine(look: WinLook) {
+@@ -2263,7 +2333,7 @@ private fun WinStatusLine(look: WinLook) {
      // each other, each in full — they were cut with "…" and, on the Thor's top screen, cut off by the window's edge.)
      androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
          val sv = st.sync
@@ -7789,14 +7887,16 @@ index 3ce9e16..465aa7e 100644
          st.perf?.let { p ->
              WinStatusChip(look, androidx.compose.material.icons.Icons.Filled.Speed, p.perf.summary, urgent = false, onClick = st.onPerf)
          }
-@@ -2613,12 +2681,14 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+@@ -2613,12 +2683,16 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
          }
          Spacer(Modifier.width(14.dp))
          Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
 -            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
 +            // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
 +            // scrolls, so the name and the facts wrap in full.)
-+            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null)
++            // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
++            WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
++                modifier = Modifier.fillMaxWidth())
              val facts = listOfNotNull(
                  titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                  meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
@@ -9390,7 +9490,7 @@ index 0000000..8e4cf6e
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index 0b73fb5..d6c9a05 100644
+index 0b73fb5..eca8853 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -9595,7 +9695,21 @@ index 0b73fb5..d6c9a05 100644
          }
      }
      // The companion shows music, so keep it fresh while a second screen is up.
-@@ -2883,6 +2981,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2429,7 +2527,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
+     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
+     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
+-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; GameOrigin.rect = null /* (Update 421: the old layout's card never counts as this one's row) */; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
++    // (Update 421: the old layout's card never counts as this one's row.) Update 471 (D243): cleared while the new layout
++    // composes, not in the effect after it — the effect ran after the new layout's card had already marked itself, and a
++    // card that doesn't move never marks again: Row opens / Row reveal / Shared fell back to the layout's own window until
++    // the first D-pad move (Rental shop, Card binder, Orbit, Arcade, Stacks).
++    remember(state.appearance.homeLayout) { GameOrigin.rect = null; 0 }
++    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
+     // Update 181: the Pocket layouts play their sounds through the home screen's.
+     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
+     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
+@@ -2883,6 +2986,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              com.shelf.launcher.data.Features.discCalm.state.value
          val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
              showAppsLibrary || showAppDrawer || showFirstRun)
@@ -9610,7 +9724,7 @@ index 0b73fb5..d6c9a05 100644
          // The second screen only gets the scene while the animated background is on.
          if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
          // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
-@@ -3001,7 +3107,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3001,7 +3112,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      }
                      androidx.compose.runtime.CompositionLocalProvider(
                          LocalSceneAvoid provides sceneAvoid,
@@ -9620,7 +9734,7 @@ index 0b73fb5..d6c9a05 100644
                          LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                          // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                          LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
-@@ -3142,7 +3249,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3142,7 +3254,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              if (wantsCrt) CrtArtOverlay(glow)
              if (ambience != null) GameAmbienceLayer(
                  ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
@@ -9629,7 +9743,7 @@ index 0b73fb5..d6c9a05 100644
              )
          }
  
-@@ -3211,7 +3318,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3211,7 +3323,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  val total = p.NumPossibleAchievements ?: 0
                  if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
              }
@@ -9638,7 +9752,7 @@ index 0b73fb5..d6c9a05 100644
          }
  
          // Video preview: rest on a game for two seconds and its clip fades in.
-@@ -3256,7 +3363,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3256,7 +3368,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -9647,7 +9761,7 @@ index 0b73fb5..d6c9a05 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3296,7 +3403,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3296,7 +3408,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -9656,7 +9770,7 @@ index 0b73fb5..d6c9a05 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -3738,6 +3845,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3738,6 +3850,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                  when (state.appearance.categoryBarHere) {
                      com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
@@ -9670,7 +9784,7 @@ index 0b73fb5..d6c9a05 100644
                          bottomGap = state.appearance.infoSpacing.dp.dp,
                          platforms = state.availablePlatforms,
                          order = state.categoryOrder,
-@@ -4956,7 +5070,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4956,7 +5075,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
              onDsCase = if (game.platform == "NDS") ({ optionsForGame = null; dsCaseForGame = game }) else null,
              onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
@@ -9679,7 +9793,7 @@ index 0b73fb5..d6c9a05 100644
              onShowDetails = {
                  optionsForGame = null
                  if (!showDetails) openDetails()
-@@ -4996,7 +5110,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4996,7 +5115,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
              onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                  { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
@@ -9694,7 +9808,7 @@ index 0b73fb5..d6c9a05 100644
          )
      }
  
-@@ -6014,7 +6134,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6014,7 +6139,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                  }
              },
@@ -9707,7 +9821,7 @@ index 0b73fb5..d6c9a05 100644
          )
      }
  
-@@ -6169,6 +6293,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6169,6 +6298,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              .onPreviewKeyEvent { event ->
                  lastInputAt = System.currentTimeMillis()
                  // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
@@ -9722,7 +9836,7 @@ index 0b73fb5..d6c9a05 100644
                  HomeKeyGuard.trackA(event.key, event.type)
                  if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                  when {
-@@ -6242,6 +6374,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -6242,6 +6379,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                  // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                  // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
@@ -9737,7 +9851,7 @@ index 0b73fb5..d6c9a05 100644
                  if (event.key == Key.ButtonB || event.key == Key.Back) {
                      if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                      else if (event.type == KeyEventType.KeyUp) {
-@@ -7252,6 +7392,8 @@ internal object HomeKeyGuard {
+@@ -7252,6 +7397,8 @@ internal object HomeKeyGuard {
       * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
       */
      @Volatile var aDown = false
@@ -9746,7 +9860,7 @@ index 0b73fb5..d6c9a05 100644
      fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
          k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
              k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
-@@ -7263,3 +7405,21 @@ internal object HomeKeyGuard {
+@@ -7263,3 +7410,21 @@ internal object HomeKeyGuard {
      /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
      fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
  }
@@ -9783,7 +9897,7 @@ index eac242c..e923f28 100644
      @Volatile var testPose: FloatArray? = null
  }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 145a2a2..9ceed82 100644
+index 145a2a2..5182f80 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 @@ -1,5 +1,6 @@
@@ -9828,6 +9942,24 @@ index 145a2a2..9ceed82 100644
      }
      val small = Features.bigGcDiscs.state.value.not()
      val mixed = mixedConsoles(state.visibleGames)
+@@ -1231,7 +1247,7 @@ internal fun InspectStick(motion: InspectMotion) {
+  * own outside the piece).
+  */
+ @Composable
+-internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int) {
++internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int, hint: Boolean = true) {
+     val density = LocalDensity.current
+     val scope = rememberCoroutineScope()
+     // Update 292: Inspect is on screen (for the freeze snapshot of a crash report).
+@@ -1386,7 +1402,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
+             val content = piece.content
+             if (content != null && piece.kind == InspectKind.BOX) InspectContent(piece, content, motion, left - win[0], top - win[1], w, h, aspect, scope)
+             // Update 189: how to open it, said once it's out.
+-            if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
++            if (hint && piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
+                 motion, left - win[0], top + h - win[1], w,
+                 // (Update 260: a PSP game's is a UMD, not a cartridge.)
+                 when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform?.let { MediaShell.of(it) } == MediaShell.UMD) "UMD" else if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },
 @@ -1558,6 +1574,7 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
          kotlinx.coroutines.withTimeoutOrNull(3_500) { snapshotFlow { motion.out.floatValue > 0.05f || motion.lid.floatValue < 0.9f }.first { it } }
          shown.animateTo(0f, tween(400))
@@ -18821,7 +18953,7 @@ index 2a91957..8ea7122 100644
 +
 +internal val CaseArtPlaceholder = androidx.compose.ui.graphics.Brush.verticalGradient(listOf(androidx.compose.ui.graphics.Color(0xFF2A2D38), androidx.compose.ui.graphics.Color(0xFF181A22)))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt b/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
-index 6bbc552..d691044 100644
+index 6bbc552..418ffc1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
 @@ -320,10 +320,13 @@ internal fun RowMotionWindow(
@@ -18840,7 +18972,30 @@ index 6bbc552..d691044 100644
                      }
                  }
                  Canvas(Modifier.fillMaxSize()) {
-@@ -603,6 +606,18 @@ private fun RevealButton(label: String, main: Boolean = false, accent: Color, on
+@@ -551,7 +554,11 @@ internal fun RowMotionWindow(
+                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
+             ) {
+                 if (badges.isNotEmpty()) {
+-                    badges.forEach { (url, unlocked) ->
++                    // (Update 471, found in the 471 sweep — KONKR, Row opens: the badges filled the strip and "+99" was squeezed to
++                    // one letter a line. As many badges as fit with room for the count; the count on one line.)
++                    val room = with(d) { (W - buttonsTo.x - pad).coerceAtLeast(0f).toDp() }
++                    val fit = if (total > badges.size || ((badges.size * 52).dp > room)) (((room - 52.dp) / 52.dp).toInt()).coerceIn(0, badges.size) else badges.size
++                    badges.take(fit).forEach { (url, unlocked) ->
+                         AsyncImage(
+                             url, null, contentScale = ContentScale.Crop,
+                             modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))
+@@ -559,7 +566,8 @@ internal fun RowMotionWindow(
+                                 .border(1.dp, if (unlocked) accent.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                         )
+                     }
+-                    if (total > badges.size) Text("+${total - badges.size}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
++                    if (total > fit) Text("+${total - fit}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
++                        maxLines = 1, softWrap = false)
+                 } else shots.forEach { url ->
+                     AsyncImage(
+                         url, null, contentScale = ContentScale.Crop,
+@@ -603,6 +611,18 @@ private fun RevealButton(label: String, main: Boolean = false, accent: Color, on
   * Update 249 (#119): Row reveal's shade over the home screen's art, under its rows (LauncherScreen draws it before them):
   * deepest at the top, for the words the game window lays over it.
   */
@@ -45447,10 +45602,20 @@ index 19a4ac7..f7cf41e 100644
              ps.forEach { it.placeRelative(0, y); y += it.height }
          }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-index 5791282..5384ca5 100644
+index 5791282..ce010b0 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-@@ -74,6 +74,7 @@ import androidx.compose.ui.input.key.type
+@@ -1,6 +1,9 @@
+ package com.shelf.launcher.ui
+ 
+ import androidx.compose.material.icons.filled.Stop
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.PlayCircle
++import androidx.compose.ui.zIndex
+ import androidx.compose.foundation.basicMarquee
+ import androidx.compose.animation.core.Spring
+ import androidx.compose.animation.core.animateFloatAsState
+@@ -74,6 +77,7 @@ import androidx.compose.ui.input.key.type
  import androidx.compose.ui.layout.ContentScale
  import androidx.compose.ui.layout.boundsInWindow
  import androidx.compose.ui.layout.onGloballyPositioned
@@ -45458,7 +45623,7 @@ index 5791282..5384ca5 100644
  import androidx.compose.ui.text.TextStyle
  import androidx.compose.ui.text.font.FontFamily
  import androidx.compose.ui.text.font.FontWeight
-@@ -333,7 +334,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
+@@ -333,7 +337,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
   * draws it lit or not.
   */
  @Composable
@@ -45467,7 +45632,7 @@ index 5791282..5384ca5 100644
      val source = remember { MutableInteractionSource() }
      val focused by source.collectIsFocusedAsState()
      val sounds = LocalUiSounds.current
-@@ -341,6 +342,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
+@@ -341,6 +345,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
      Box(
          modifier
              .then(if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier)
@@ -45477,7 +45642,37 @@ index 5791282..5384ca5 100644
              .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
          contentAlignment = Alignment.Center
      ) { content(focused) }
-@@ -437,8 +441,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+@@ -351,19 +358,25 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
+  * ▲ ▼ scroll it while it has focus, and at its top / bottom the press goes on to the next control. A thin ring shows it is
+  * the one the D-pad is on. Put it before sceneFadeEdges / verticalScroll(state).
+  */
+-internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color): Modifier = this.composed {
++internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color, onlyWhenScrolls: Boolean = false,
++    exitDown: androidx.compose.ui.focus.FocusRequester? = null): Modifier = this.composed {
+     val scope = androidx.compose.runtime.rememberCoroutineScope()
++    val step = if (onlyWhenScrolls) 0.9f else 0.6f
+     var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+     androidx.compose.ui.Modifier.onFocusChanged { on = it.isFocused }
+         .onPreviewKeyEvent { e ->
+             if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+             when (e.key) {
+-                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * 0.6f) }; true } else false
+-                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * 0.6f) }; true } else false
++                // (Update 471: at the end, [exitDown] — the window's Play — rather than whatever key is nearest below.)
++                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * step) }; true }
++                    else if (exitDown != null) runCatching { exitDown.requestFocus() }.isSuccess else false
++                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * step) }; true } else false
+                 else -> false
+             }
+         }
+-        .then(androidx.compose.ui.Modifier.focusable())
++        // (Update 471: [onlyWhenScrolls] — a box whose text fits is no stop for the D-pad at all, and a short one moves a
++        // whole view per press, so the way back to Play is one or two presses, not a page-by-page walk.)
++        .then(if (!onlyWhenScrolls || state.maxValue > 0) androidx.compose.ui.Modifier.focusable() else androidx.compose.ui.Modifier)
+         .border(if (on) 2.dp else 0.dp, if (on) ring else Color.Transparent, RoundedCornerShape(6.dp))
+         .padding(4.dp) // (the same room with or without the ring: the text never jumps when it is reached)
+ }
+@@ -437,8 +450,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                      drawLine(SheetRed.copy(alpha = 0.35f), Offset(30.dp.toPx(), 0f), Offset(30.dp.toPx(), size.height), 1.5f)
                  }
                  .padding(start = 40.dp, end = 18.dp, top = 20.dp, bottom = 14.dp)
@@ -45489,15 +45684,46 @@ index 5791282..5384ca5 100644
              Row(verticalAlignment = Alignment.CenterVertically) {
                  Text("INSERT · " + (if (ctx.page == WinPage.MAIN) "CONTENTS" else pageName(ctx.page).uppercase()), color = SheetMuted, fontSize = 11.sp,
                      fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-@@ -451,6 +457,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+@@ -451,6 +466,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
              Spacer(Modifier.height(6.dp))
              Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
              Spacer(Modifier.height(8.dp))
-+            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent).sceneFadeEdges(scroll).verticalScroll(scroll)) {
++            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus).sceneFadeEdges(scroll).verticalScroll(scroll)) {
              if (ctx.page == WinPage.MAIN) {
                  @Composable
                  fun line(label: String, value: String?) {
-@@ -480,6 +487,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+@@ -466,20 +482,34 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+                             textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
+                     }
+                 }
++                // (Update 471, owner review: the whole story under the facts left it a sliver of the sheet to be read in. The
++                // sheet shows the story's opening sentences — on a short sheet first, above the facts, so it is what the window
++                // opens on — and CONTENTS has all of it, said on the sheet, never cut silently. The facts follow in full.)
++                val shortSheet = ctx.maxH < 480.dp
++                @Composable
++                fun story(gapTop: Boolean) {
++                    ctx.summary?.let {
++                        val (lead, more) = storyLead(it, if (shortSheet) 150 else 220)
++                        if (gapTop) Spacer(Modifier.height(8.dp))
++                        Text(lead, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
++                        if (more) Text("THE WHOLE STORY: CONTENTS", color = SheetMuted, fontSize = 10.sp, fontFamily = mono, fontWeight = FontWeight.Bold,
++                            modifier = Modifier.padding(top = 4.dp))
++                        if (!gapTop) Spacer(Modifier.height(8.dp))
++                    }
++                }
++                if (shortSheet) story(false)
+                 line("Released", ctx.year)
+                 line("Made by", ctx.developer)
+                 line("Kind", ctx.genres)
+                 line("Played", ctx.played)
+                 line("Last played", ctx.last)
+                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
+-                ctx.summary?.let {
+-                    Spacer(Modifier.height(8.dp))
+-                    Text(it, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
+-                }
++                if (!shortSheet) story(true)
+             } else {
                  // The other pages, on the same paper.
                  ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
              }
@@ -45505,7 +45731,7 @@ index 5791282..5384ca5 100644
              Spacer(Modifier.height(12.dp))
              // The actions, stamped.
              FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-@@ -516,7 +524,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+@@ -516,7 +546,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
              }
              if (ctx.chips.isNotEmpty()) {
                  Spacer(Modifier.height(8.dp))
@@ -45516,7 +45742,7 @@ index 5791282..5384ca5 100644
                      ctx.chips.forEach { a ->
                          SceneControl(a, Modifier) { on ->
                              Row(Modifier.background(if (on) accent.copy(alpha = 0.18f) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
-@@ -749,7 +759,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+@@ -749,7 +781,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
              if (w >= 640.dp) Text("STORED ENTRY", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
                  modifier = Modifier.padding(bottom = 8.dp))
              Spacer(Modifier.weight(1f))
@@ -45528,7 +45754,7 @@ index 5791282..5384ca5 100644
              tabs.forEach { t ->
                  val sel = ctx.page == t
                  val a = WinAction(pageName(t), androidx.compose.material.icons.Icons.Filled.Info, { openTab(t) })
-@@ -757,14 +770,14 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+@@ -757,14 +792,14 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                      Box(
                          Modifier.clip(CutCornerShape(topStart = 6.dp, topEnd = 6.dp))
                              .background(if (sel) RecPanel else if (on) red else RecNavy)
@@ -45547,7 +45773,7 @@ index 5791282..5384ca5 100644
          }
          Row(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
              // The sprite on its stand, the name plate, the console tag.
-@@ -836,7 +849,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+@@ -836,7 +871,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                      Spacer(Modifier.height(8.dp))
                      // The menu with its pointer.
                      Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp)) {
@@ -45558,7 +45784,7 @@ index 5791282..5384ca5 100644
                              (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
                                  SceneControl(a, Modifier.weight(1f)) { on ->
                                      Row(
-@@ -844,8 +859,15 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+@@ -844,8 +881,15 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                          verticalAlignment = Alignment.CenterVertically
                                      ) {
                                          Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
@@ -45576,7 +45802,7 @@ index 5791282..5384ca5 100644
                                      }
                                  }
                              }
-@@ -911,9 +933,15 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+@@ -911,19 +955,42 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
              .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
              .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
              .padding(14.dp)
@@ -45594,7 +45820,38 @@ index 5791282..5384ca5 100644
          Box(
              Modifier.fillMaxWidth().height(mediaH).clip(RoundedCornerShape(10.dp)).background(Color.Black)
                  .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
-@@ -970,6 +998,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+         ) {
+             if (ctx.page == WinPage.MAIN) {
+                 val pick = shots.getOrNull(shown)
+-                if (pick != null) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+-                else {
+-                    (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+-                    VideoCrossfade(ctx.state.videoUrls[ctx.g.stableKey], ctx.state.appearance.videoSound, Modifier.fillMaxSize())
++                // (Update 471, owner decision on the soft Stadium 2 window: the gameplay clip (640x480 for an N64 game) was
++                // cropped and zoomed into this wide band. The window now opens on the sharp still — decoded at the screen's
++                // size — and plays the clip only when asked ("Watch clip"), whole, in its own shape with black bars, never
++                // stretched. Nothing is decoded or played while it isn't asked for. The Video previews setting still decides
++                // whether there is a clip at all.)
++                val clipUrl = ctx.state.videoUrls[ctx.g.stableKey]?.takeIf { ctx.state.appearance.videoPreviews }
++                var clipOn by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
++                if (pick != null && !clipOn) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
++                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
++                if (clipOn && clipUrl != null) VideoBackdrop(clipUrl, ctx.state.appearance.videoSound, Modifier.fillMaxSize(), fit = true, shade = false)
++                if (clipUrl != null) SceneControl(
++                    WinAction(if (clipOn) "Stop clip" else "Watch clip", if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, { clipOn = !clipOn }),
++                    Modifier.align(Alignment.TopEnd).padding(8.dp).zIndex(2f)
++                ) { on ->
++                    Row(Modifier.clip(RoundedCornerShape(50)).background(if (on) accent else Color.Black.copy(alpha = 0.55f))
++                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(50)).heightIn(min = 32.dp).padding(horizontal = 10.dp),
++                        verticalAlignment = Alignment.CenterVertically) {
++                        Icon(if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, null, tint = if (on) onAccent else Color.White, modifier = Modifier.size(16.dp))
++                        Spacer(Modifier.width(5.dp))
++                        Text(if (clipOn) "Stop clip" else "Watch clip", color = if (on) onAccent else Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
++                    }
+                 }
+                 // The glass's shine.
+                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
+@@ -970,6 +1037,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                  Text(it, color = Color(0xFFB9BEC9), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3)
              }
          }
@@ -45602,7 +45859,7 @@ index 5791282..5384ca5 100644
          Spacer(Modifier.height(12.dp))
          // Glossy pills, each with its reflection on the stage's floor.
          FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-@@ -1099,7 +1128,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
+@@ -1099,7 +1167,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
          OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
          // The keys, fanned out on an arc to the disc's right.
          val n = acts.size
@@ -45612,7 +45869,7 @@ index 5791282..5384ca5 100644
          val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
          acts.forEachIndexed { i, a ->
              val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
-@@ -1448,7 +1478,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
+@@ -1448,7 +1517,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                  fun stat(label: String, value: String?) {
                      Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                          Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(96.dp))
@@ -45625,7 +45882,7 @@ index 5791282..5384ca5 100644
                      }
                  }
                  stat("PLAY TIME", ctx.played)
-@@ -1464,7 +1498,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
+@@ -1464,7 +1537,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
                  stat("KIND", ctx.genres)
                  stat("SYSTEM", ctx.console)
                  Spacer(Modifier.height(6.dp))
@@ -45637,7 +45894,7 @@ index 5791282..5384ca5 100644
                      SceneControl(a, Modifier) { on ->
                          Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
                              textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
-@@ -1474,7 +1511,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
+@@ -1474,7 +1550,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
          }
          // The commands.
          Column(
@@ -45649,6 +45906,23 @@ index 5791282..5384ca5 100644
              verticalArrangement = Arrangement.spacedBy(2.dp)
          ) {
              (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->
+@@ -1501,3 +1580,16 @@ private fun NightStatus(ctx: WinSceneCtx) {
+         }
+     }
+ }
++
++/**
++ * Update 471: the opening of a story for a sheet with little room — whole sentences up to about [max] characters (at least
++ * the first one), and whether more follows. Never cut mid-word and never with "…": the window says where the rest is.
++ */
++internal fun storyLead(story: String, max: Int = 200): Pair<String, Boolean> {
++    val t = story.trim()
++    if (t.length <= max) return t to false
++    val ends = Regex("[.!?](\\s|$)").findAll(t).map { it.range.first + 1 }.toList()
++    val cut = ends.lastOrNull { it <= max } ?: ends.firstOrNull { it <= max * 2 } ?: t.lastIndexOf(' ', max).takeIf { it > max / 2 } ?: return t to false
++    val lead = t.substring(0, cut).trim()
++    return lead to (lead.length < t.length)
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
 index 04c5ec8..1f14765 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
@@ -45673,7 +45947,7 @@ index 04c5ec8..1f14765 100644
              Modifier.fillMaxWidth().background(if (on) ArcYellow else Color.Transparent, RoundedCornerShape(3.dp))
                  .padding(horizontal = 6.dp, vertical = if (a.primary) (if (compact) 3.dp else 6.dp) else (if (compact) 1.dp else 2.dp)),
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-index b363ae3..389f1ab 100644
+index b363ae3..96dda3b 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 @@ -1,5 +1,6 @@
@@ -45692,7 +45966,16 @@ index b363ae3..389f1ab 100644
  import androidx.compose.foundation.layout.offset
  import androidx.compose.foundation.layout.padding
  import androidx.compose.foundation.layout.size
-@@ -168,7 +171,11 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+@@ -28,6 +31,8 @@ import androidx.compose.material3.Icon
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.getValue
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.layout.onSizeChanged
+ import androidx.compose.runtime.remember
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+@@ -168,7 +173,11 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                          SceneControl(a, Modifier.fillMaxWidth()) { on ->
                              val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgRow")
                              Row(
@@ -45705,7 +45988,41 @@ index b363ae3..389f1ab 100644
                                      .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                      .padding(horizontal = 10.dp),
                                  verticalAlignment = Alignment.CenterVertically
-@@ -525,7 +532,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -203,13 +212,21 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+                                 if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                             }
+                             Spacer(Modifier.width(12.dp))
+-                            Column(Modifier.weight(1f).then(fadeScroll())) {
++                            // (Update 471, facts gate: beside the cover the facts ran past the column at rest — "KIND" shown, its
++                            // value cut on the KONKR. When they don't fit, they step down in size (to 80 %), measured once more
++                            // after each step; the column still scrolls if even that isn't enough.)
++                            var viewH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
++                            var factsH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
++                            var k by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableFloatStateOf(1f) }
++                            androidx.compose.runtime.LaunchedEffect(viewH, factsH, k) { if (viewH > 0 && factsH > viewH && k > 0.81f) k = (k - 0.05f).coerceAtLeast(0.8f) }
++                            Column(Modifier.weight(1f).onSizeChanged { viewH = it.height }.then(fadeScroll())) {
++                            Column(Modifier.onSizeChanged { factsH = it.height }) {
+                                 @Composable
+                                 fun fact(label: String, value: String?) {
+                                     if (value.isNullOrBlank()) return
+-                                    Text(label.uppercase(), color = lerp(p.glow, Color.White, 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+-                                    Text(value, color = Color.White, fontSize = 14.sp, maxLines = 3)
+-                                    Spacer(Modifier.height(6.dp))
++                                    Text(label.uppercase(), color = lerp(p.glow, Color.White, 0.4f), fontSize = 10.sp * k, lineHeight = 13.sp * k, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
++                                    Text(value, color = Color.White, fontSize = 14.sp * k, lineHeight = 18.sp * k, maxLines = 3)
++                                    Spacer(Modifier.height(6.dp * k))
+                                 }
+                                 fact("Played", ctx.played)
+                                 fact("Last played", ctx.last)
+@@ -217,6 +234,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+                                 fact("Made by", ctx.developer)
+                                 fact("Kind", ctx.genres)
+                             }
++                            }
+                         }
+                         if (ctx.total > 0) {
+                             Spacer(Modifier.height(8.dp))
+@@ -525,7 +543,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                      rows.forEach { a ->
                          SceneControl(a, Modifier.fillMaxWidth()) { on ->
                              Row(
@@ -45715,7 +46032,7 @@ index b363ae3..389f1ab 100644
                                      .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                  verticalAlignment = Alignment.CenterVertically
                              ) {
-@@ -594,7 +602,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+@@ -594,7 +613,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
      val h = minOf(ctx.maxH, 500.dp)
      val compact = h < 380.dp
      Box(
@@ -45726,7 +46043,7 @@ index b363ae3..389f1ab 100644
              // (Update 347: the torn page is lifted off the issue — it comes up tilted back from its bottom edge, turning,
              // and settles crooked on top; closing lays it back down.)
              val k = ctx.reveal().coerceIn(0f, 1f)
-@@ -660,13 +670,18 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+@@ -660,15 +681,23 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                          // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
                          val callouts = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                          val half = (callouts.size + 1) / 2
@@ -45737,17 +46054,25 @@ index b363ae3..389f1ab 100644
                                  Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                      col.forEach { a ->
                                          SceneControl(a, Modifier) { on ->
+-                                            Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
+-                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 2,
+-                                                modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
+-                                                    .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
 +                                            // (Update 470, rule 11: at font 1.3 on the KONKR "▸ ACHIEVEMENTS" broke into "▸ / ACHIEVEMENT / S" with
 +                                            // the S on a hidden third line — a callout now shrinks a step or two to fit its two lines.)
++                                            // (Update 471: the arrow stays beside the word — 470 left "▸" alone on a line above ACHIEVEMENTS — and
++                                            // the word steps down a size rather than break; see WholeWordsText.)
 +                                            val cs = if (compact) 12.sp else 14.sp
-                                             Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
--                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 2,
-+                                                fontSize = cs, letterSpacing = 0.5.sp, maxLines = 2,
-+                                                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(cs), maxFontSize = cs),
-                                                 modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
-                                                     .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
++                                            val ink = if (a.urgent) st.accent else st.ink
++                                            Row(Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
++                                                .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp), verticalAlignment = Alignment.Top) {
++                                                Text("▸ ", color = ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = cs)
++                                                WholeWordsText(a.label.uppercase(), color = ink, fontSize = cs, fontWeight = FontWeight.Bold, fontFamily = st.head)
++                                            }
                                          }
-@@ -707,10 +722,16 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+                                     }
+                                 }
+@@ -707,10 +736,16 @@ internal fun RentalTag(ctx: WinSceneCtx) {
      val w = minOf(ctx.maxW, 460.dp)
      val h = minOf(ctx.maxH, 520.dp)
      // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
@@ -45767,7 +46092,7 @@ index b363ae3..389f1ab 100644
              // (Update 347: the tag swings in on the string through its hole as the case comes off the shelf — past
              // straight and back, once — and swings away as the case goes back.)
              val k = ctx.reveal().coerceIn(0f, 1f)
-@@ -720,18 +741,20 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -720,18 +755,20 @@ internal fun RentalTag(ctx: WinSceneCtx) {
              alpha = (k * 2f).coerceIn(0f, 1f)
          }
      ) {
@@ -45792,7 +46117,7 @@ index b363ae3..389f1ab 100644
              if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
              Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
                  maxLines = if (short) 2 else 3)
-@@ -756,11 +779,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -756,11 +793,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                      }
                  }
                  Spacer(Modifier.height(if (short) 4.dp else 8.dp))
@@ -45808,7 +46133,7 @@ index b363ae3..389f1ab 100644
                                  verticalAlignment = Alignment.CenterVertically) {
                                  // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
                                  val tight = !a.primary && w < 340.dp
-@@ -792,7 +817,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -792,7 +831,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                      }
                  }
              } else {
@@ -45817,7 +46142,7 @@ index b363ae3..389f1ab 100644
                  Spacer(Modifier.height(4.dp))
                  ctx.buttons.forEach { a ->
                      SceneControl(a, Modifier) { on ->
-@@ -882,13 +907,15 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
+@@ -882,13 +921,15 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                  rows.forEach { a ->
                      SceneControl(a, Modifier.fillMaxWidth()) { on ->
                          Text((if (on) "► " else "  ") + a.label.uppercase(), style = if (on) style.copy(color = tc.hiInk, shadow = null) else style.copy(color = if (a.urgent) tc.accent else tc.fg),
@@ -45978,33 +46303,90 @@ index a30bc6d..d320f64 100644
                      ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
                  }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
-index 0b593a1..925a2dc 100644
+index 0b593a1..00bae26 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  package com.shelf.launcher.ui
  
 +import androidx.compose.ui.layout.layout
++import androidx.compose.ui.layout.onSizeChanged
  import androidx.compose.foundation.Canvas
  import androidx.compose.foundation.background
  import androidx.compose.foundation.border
-@@ -119,7 +120,13 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+@@ -30,6 +32,8 @@ import androidx.compose.foundation.verticalScroll
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.setValue
+ import androidx.compose.ui.Alignment
+ import androidx.compose.ui.Modifier
+ import androidx.compose.ui.draw.clip
+@@ -71,6 +75,10 @@ internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNo
+     if (ctx.total > 0) "Trophies" to "${ctx.earned} / ${ctx.total}" else null
+ )
+ 
++/** Update 471: the facts a window lists, without those it already shows elsewhere ([omit], by label). */
++internal fun shownFacts(ctx: WinSceneCtx, omit: Set<String>): List<Pair<String, String>> = shownFacts(sceneFacts(ctx), omit)
++internal fun shownFacts(facts: List<Pair<String, String>>, omit: Set<String>): List<Pair<String, String>> = facts.filter { it.first !in omit }
++
+ /** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips. */
+ internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
+     ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())
+@@ -115,12 +123,39 @@ internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit()
+ 
+ /** The first page's facts, label over value in two columns, or the other page's body. */
+ @Composable
+-internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true) {
++internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true,
++    omit: Set<String> = emptySet(), inline: Boolean = false) {
      if (ctx.page == WinPage.MAIN) {
          // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
          val sc = rememberScrollState()
 -        Column(Modifier.weight(1f, fill = false).sceneFadeEdges(sc).verticalScroll(sc)) {
+-            sceneFacts(ctx).chunked(2).forEach { pair ->
 +        // (Update 467, popup gate: with large text the keys can leave the facts a sliver that shows the tops of one row
 +        // — "CONSOLE YEAR" cut in half on the KONKR at 1.3×. Under one whole row's room the box gives its space away
 +        // instead; the facts stay on the Details page.)
 +        val minRow = with(androidx.compose.ui.platform.LocalDensity.current) { (9.sp.toDp() + 14.sp.toDp() + 8.dp).roundToPx() }
++        // (Update 471, owner review of the 470 PDF: with More open the facts box showed "MADE BY" / "GENRE" and their values
++        // were scrolled away under the keys — the actions fitted, the information didn't. [omit] leaves out facts the window
++        // already shows (Cover details' header line has the console and year); [inline] puts label and value on one line.
++        // A window that doesn't ask for it gets it too when its two-column facts don't fit the room they have: measured once,
++        // switched for the next frame, again when the window's keys change (More / Less).)
++        var viewH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
++        var factsH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
++        var tight by androidx.compose.runtime.remember(ctx.g.stableKey, ctx.tools.size, ctx.chips.size) { androidx.compose.runtime.mutableStateOf(false) }
++        val asLines = inline || tight
++        androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
 +        Column(Modifier.weight(1f, fill = false).layout { m, c ->
 +            if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
-+        }.sceneFadeEdges(sc).verticalScroll(sc)) {
-             sceneFacts(ctx).chunked(2).forEach { pair ->
++        }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
++            val facts = shownFacts(ctx, omit)
++            Column(Modifier.onSizeChanged { factsH = it.height }) {
++            if (asLines) facts.forEach { (l, v) ->
++                Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Top) {
++                    // (Its own line height — the theme's tall one made every row half as tall again as its value: 470's KONKR
++                    // run showed three facts of four.)
++                    Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font,
++                        softWrap = false, modifier = Modifier.width(78.dp).padding(top = 3.dp))
++                    Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
++                }
++            } else facts.chunked(2).forEach { pair ->
                  Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                      pair.forEach { (l, v) ->
+                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
+@@ -131,6 +166,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+                     if (pair.size == 1) Spacer(Modifier.weight(1f))
+                 }
+             }
++            }
+             ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
+         }
+     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
-index db68617..2de9a74 100644
+index db68617..9695f77 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
 @@ -164,19 +164,41 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
@@ -46052,7 +46434,7 @@ index db68617..2de9a74 100644
          }
      }
  }
-@@ -275,11 +297,24 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
+@@ -275,12 +297,39 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
      val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
      Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
          Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
@@ -46061,7 +46443,9 @@ index db68617..2de9a74 100644
 -            Text(ctx.console, color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
 -            Spacer(Modifier.height(10.dp))
 -            FactsAndKeys(ctx, muted, ink, null) { k ->
-+            .background(Color(0xFF0E0F13).copy(alpha = 0.97f)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
+-                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp), size = 12.sp)
++            // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
++            .background(Color(0xFF0E0F13)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
 +            // (Update 469, D215: the panel was 86 % opaque — the home screen's own title and facts, right under it, showed through
 +            // as a second faded title behind the keys (worst with More open at 1.3×). It hides what it covers now.)
 +            // (Update 469, display size larger — KONKR at 280 dpi: with More open the keys ran past the panel's foot. A weighted name
@@ -46073,15 +46457,44 @@ index db68617..2de9a74 100644
 +            Column(Modifier.weight(1f, fill = false)) {
 +                StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
 +                // (The year beside the console: with More open the facts give way to the keys and the year went with them.)
-+                Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-+                Spacer(Modifier.height(10.dp))
-+                SceneFactsBody(ctx, muted, ink, null)
++                // (Update 471: console and year are on this line — not repeated in the facts. With More open every fact moves up
++                // into two plain lines — console · year · maker · genre, then what you've played — so all of them stay in view over
++                // the extra keys, also with large text and display size larger (KONKR at 280 dpi left the label rows no room).)
++                val moreOpen = ctx.tools.any { it.label == "Less" }
++                Text(if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
++                if (moreOpen) Text(coverPlayedLine(ctx), color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
++                Spacer(Modifier.height(if (moreOpen) 6.dp else 10.dp))
++                // (Update 471: the facts / story under the lines are what gives way — never the lines themselves.)
++                Column(Modifier.weight(1f, fill = false)) {
++                    SceneFactsBody(ctx, muted, ink, null, omit = if (moreOpen) COVER_DETAIL_OMIT_MORE else COVER_DETAIL_OMIT, inline = moreOpen)
++                }
 +            }
 +            Spacer(Modifier.height(8.dp))
-+            KeyRow(sceneKeys(ctx), 6.dp) { k ->
-                 SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp), size = 12.sp)
++            // (Update 471, D244: KONKR at 280 dpi with More open — nine keys in six rows left the two lines above them 40 px short:
++            // the second line was cut and "Never played · 0 / 109 trophies" got no height. On a short panel with More open the
++            // keys are a little more compact — 26 dp tall (touch stays >= 24 dp), 4 dp apart — so both lines stay whole.)
++            val compact = shortPanel && ctx.tools.any { it.label == "Less" }
++            KeyRow(sceneKeys(ctx), if (compact) 4.dp else 6.dp) { k ->
++                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
++                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp)
              }
          }
+     }
+@@ -289,3 +338,14 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
+ /** Update 425: the Disc station window's labels for what the game really comes on. */
+ internal fun discPanelLabels(platform: String): Pair<String, String> =
+     if (mediaKind(platform) == "disc") "COMPACT DISC  DIGITAL" to "TRACK 01" else "CARTRIDGE" to "SLOT A"
++
++/** Update 471: Cover details' header line already shows these. */
++internal val COVER_DETAIL_OMIT = setOf("Console", "Year")
++/** With More open: what you've played is on its own line under the console (coverPlayedLine). */
++internal val COVER_DETAIL_OMIT_MORE = COVER_DETAIL_OMIT + setOf("Made by", "Genre", "Played", "Last played", "Trophies")
++internal fun coverInfoLine(ctx: WinSceneCtx): String = coverInfoLine(ctx.console, ctx.year, ctx.developer, ctx.genres)
++internal fun coverInfoLine(console: String, year: String?, developer: String?, genres: String?): String =
++    listOfNotNull(console, year, developer, genres).filter { it.isNotBlank() }.joinToString(" · ")
++internal fun coverPlayedLine(ctx: WinSceneCtx): String = coverPlayedLine(ctx.played, ctx.last, ctx.earned, ctx.total)
++internal fun coverPlayedLine(played: String, last: String?, earned: Int, total: Int): String =
++    listOfNotNull(if (played.startsWith("Never")) played else "Played $played", last?.let { "last $it" }, if (total > 0) "$earned / $total trophies" else null).joinToString("  ·  ")
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesWii.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesWii.kt
 index fe885b9..54cb01c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesWii.kt
@@ -46775,6 +47188,73 @@ index 0000000..42e2dfd
 +    @Test fun savesLineSaysSavesOnce() {
 +        assertEquals("Saves: up to date · 2 min ago", savesLabel("Saves up to date · 2 min ago"))
 +        assertEquals("Saves: Not checked yet", savesLabel("Not checked yet"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Fixtures471Test.kt b/app/src/test/java/com/shelf/launcher/ui/Fixtures471Test.kt
+new file mode 100644
+index 0000000..a39c183
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Fixtures471Test.kt
+@@ -0,0 +1,61 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Update 471: Cover details' facts keep every value (the header line has the console and year, so those two are not
++ * repeated — nothing else is dropped), and the Box sheet's story opening is whole sentences, never cut mid-word.
++ */
++class Fixtures471Test {
++    private val facts = listOf(
++        "Console" to "Nintendo 64", "Year" to "2000", "Made by" to "HAL Laboratory",
++        "Genre" to "Simulator, Strategy", "Played" to "Never played", "Trophies" to "0 / 109"
++    )
++
++    @Test fun coverDetailsKeepsEveryOtherFact() {
++        val shown = shownFacts(facts, COVER_DETAIL_OMIT)
++        assertEquals(listOf("Made by", "Genre", "Played", "Trophies"), shown.map { it.first })
++        assertEquals("HAL Laboratory", shown.first { it.first == "Made by" }.second)
++        assertEquals("Simulator, Strategy", shown.first { it.first == "Genre" }.second)
++    }
++
++    @Test fun coverDetailsMoreMovesWhatYouPlayedToItsOwnLine() {
++        // With More open every fact is on the two lines under the name: nothing left in the list, nothing lost.
++        assertEquals(emptyList<String>(), shownFacts(facts, COVER_DETAIL_OMIT_MORE).map { it.first })
++        assertEquals("Nintendo 64 · 2000 · HAL Laboratory · Simulator, Strategy", coverInfoLine("Nintendo 64", "2000", "HAL Laboratory", "Simulator, Strategy"))
++        assertEquals("Nintendo 64", coverInfoLine("Nintendo 64", null, null, " "))
++        assertEquals("Never played  ·  0 / 109 trophies", coverPlayedLine("Never played", null, 0, 109))
++        assertEquals("Played 3 h  ·  last Yesterday", coverPlayedLine("3 h", "Yesterday", 0, 0))
++    }
++
++    @Test fun nothingOmittedMeansEverything() {
++        assertEquals(facts, shownFacts(facts, emptySet()))
++    }
++
++    @Test fun storyLeadIsWholeSentences() {
++        val story = "While Pokémon Stadium 2 does have a storyline, progress in the game can be made by winning Cups in the Stadium. " +
++            "When all Cups have been won and the Gym Leader Castle completed, the player's Rival will appear. Defeating the Rival unlocks Round 2."
++        val (lead, more) = storyLead(story)
++        assertTrue(more)
++        assertTrue(lead.endsWith("."))
++        assertTrue(story.startsWith(lead))
++        assertFalse(lead.contains('…'))
++    }
++
++    @Test fun shortStoryIsWhole() {
++        val (lead, more) = storyLead("A short story.")
++        assertEquals("A short story.", lead)
++        assertFalse(more)
++    }
++
++    @Test fun noSentenceEndCutsAtAWord() {
++        val story = (1..80).joinToString(" ") { "word$it" }
++        val (lead, more) = storyLead(story)
++        assertTrue(more)
++        assertTrue(story.startsWith(lead))
++        assertTrue(story[lead.length] == ' ')
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt b/app/src/test/java/com/shelf/launcher/ui/GbBoard468Test.kt

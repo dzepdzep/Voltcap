@@ -399,6 +399,28 @@ fun GameDetailsOverlay(
                 modifier = Modifier.matchParentSize()
             )
 
+            // (Update 471, owner review — Bubbles' Details on the KONKR: the name sat on the banner's characters. On a short window
+            // it goes under the banner, on the page, and the art is shown whole; tall windows keep it on the art.)
+            val nameUnder = maxHeight < 480.dp
+            val BannerTitle: @Composable (Modifier) -> Unit = { mod ->
+                    LogoAndName(
+                            logoUrl = if (titles.showLogos) logoUrl else null,
+                            placement = titles.logoPlacement,
+                            logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
+                            logoMaxWidth = 300.dp,
+                            modifier = mod
+                        ) { m ->
+                            Text(
+                                titles.display(game.name),
+                                color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
+                                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
+                                )),
+                                modifier = m.widthIn(max = 520.dp)
+                            )
+                        }
+            }
             Column(
                 Modifier
                     .fillMaxSize()
@@ -428,23 +450,7 @@ fun GameDetailsOverlay(
                             )
                         )
                     )
-                    LogoAndName(
-                        logoUrl = if (titles.showLogos) logoUrl else null,
-                        placement = titles.logoPlacement,
-                        logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
-                        logoMaxWidth = 300.dp,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp)
-                    ) { m ->
-                        Text(
-                            titles.display(game.name),
-                            color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis,
-                            style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
-                            )),
-                            modifier = m.widthIn(max = 520.dp)
-                        )
-                    }
+                    if (!nameUnder) BannerTitle(Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp))
                     if (playStatus != null) {
                         Text(
                             "${playStatus.glyph}  ${playStatus.label}",
@@ -458,6 +464,8 @@ fun GameDetailsOverlay(
                         )
                     }
                 }
+
+                if (nameUnder) BannerTitle(Modifier.padding(start = 28.dp, end = 20.dp, top = 4.dp, bottom = 2.dp))
 
                 // ---- Play, the numbers, and the square buttons on the right ----
                 // Small windows (the lower screen of a dual-screen handheld, 3.5" handhelds): the buttons
