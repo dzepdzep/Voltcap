@@ -8,7 +8,7 @@ name: Staging build (next/0.6.68)
 on:
   push:
     branches: [main]
-    paths: ['next/0.6.68/**', 'app/**', '.github/workflows/staging.yml']
+    paths: ['next/0.6.68/**', 'app/**', 'tools/qa/**', '.github/workflows/staging.yml']
   workflow_dispatch:
 
 permissions:
