@@ -3,7 +3,7 @@
 # recorded nothing, or that ran on the "Who's playing?" picker can then never read as a pass.
 #   man_start RUN        start <epoch>                 (the host rejects recordings older than this: stale evidence)
 #   man_expect RUN NAME  expect NAME                   (declared up front: a name that never gets done/skip = INFRA)
-#   man_screen RUN NAME  screen NAME HOME|PICKER|UNKNOWN   (picker.sh: Voltcap's blue "Who's playing?" corner)
+#   man_screen RUN NAME  screen NAME HOME|PICKER|UNKNOWN   (picker.sh: Voltcap's own voltcap_qa_screen mark; old builds: the blue corner)
 #   man_done / man_skip RUN NAME [why] / man_end RUN   done NAME | skip NAME why | end <epoch>
 # Only writes inside out/ (QA scratch); never touches app data, saves or settings.
 man_file() { echo out/$1_manifest.txt; }

@@ -589,6 +589,13 @@ class TestDeviceScreenScripts(unittest.TestCase):
         # A stale mark (Voltcap restarted: another pid) is ignored: the old check decides (grey = HOME, black = UNKNOWN).
         self.assertEqual(self.marked("PICKER 1\n", grey), "HOME")
         self.assertEqual(self.marked("PICKER 1\n", black), "UNKNOWN")
+        # Update 473: a stale mark doesn't let the fallback pass an asleep display or another app in front either.
+        self.assertEqual(self.marked("HOME 1\n", grey, awake="0"), "UNKNOWN")
+        self.assertEqual(self.marked("PICKER 1\n", grey, top="0"), "UNKNOWN")
+        # The mark's pid must match exactly: no prefix / empty-pid tricks.
+        self.assertEqual(self.marked("HOME 42\n", grey, pid="4242"), "HOME")      # stale -> fallback (grey = HOME by colour)
+        self.assertEqual(self.marked("PICKER\n", grey), "HOME")                   # no pid -> not trusted -> fallback
+        self.assertEqual(self.marked("PICKER 4242\n", grey, pid=""), "HOME")     # no live Voltcap pid -> not trusted
 
     def test_pop_requires_verified_home(self):
         src = open(os.path.join(self.DEV, "pop.sh"), encoding="utf-8").read()

@@ -1,3 +1,19 @@
+# Update 473 (4 Nov 2026) — CI fix: picker.sh screen marks (QA tooling only; app code unchanged)
+
+GitHub "QA tooling checks" had failed since update 469 (runs #123-#127): main still had the pre-447 `tools/qa/device/picker.sh`
+(colour-only), while `test_qa.py` already tested the app's own screen mark (`voltcap_qa_screen` = "PICKER|HOME <pid>",
+written by TestHooks.markScreen with the hooks file). Two tests failed: test_mark_decides_whatever_the_colours,
+test_mark_never_passes_a_bad_screen (reproduced locally with main's picker.sh: the same 2 failures).
+**Fix:** picker.sh trusts the mark only when its pid is Voltcap's live pid, the display is awake and Voltcap is in front
+(PICKER; HOME also needs a lit, whole capture). A stale mark (another pid / no pid / no live Voltcap) is never trusted; the
+old colour check decides and now also only while awake with Voltcap in front. Black / missing / short / malformed captures
+stay UNKNOWN. test_qa.py: 5 more stale-mark assertions (asleep, not in front, wrong pid, no pid, no live pid); 98 tests OK.
+**On hardware** (both handhelds, a v0.6.67-code QA build at versionCode 73, then RC 0.6.66 reinstalled, SHA-256 f79aa2a7…):
+after force-stop UNKNOWN; picker up -> mark "PICKER <live pid>" -> PICKER; B -> "HOME <pid>" -> HOME; asleep -> UNKNOWN;
+Settings in front -> UNKNOWN; stale mark (pid 1) -> fallback HOME when awake on Voltcap, UNKNOWN asleep. On the Odin the
+HOME key opens its stock launcher: picker.sh correctly said UNKNOWN until Voltcap was in front again.
+Settings read back equal; hooks file and scripts removed. Release APKs unchanged (no app file touched).
+
 # Update 472 (4 Nov 2026) — v0.6.67 release gate (verification only, nothing changed, NOT published)
 
 Final staging source (dev 6c717b7) built and tested on the PC: testDebugUnitTest 759 / 0 failures, QA self-tests 98 OK,
