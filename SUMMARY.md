@@ -1,3 +1,15 @@
+# Update 472 (4 Nov 2026) — v0.6.67 release gate (verification only, nothing changed, NOT published)
+
+Final staging source (dev 6c717b7) built and tested on the PC: testDebugUnitTest 759 / 0 failures, QA self-tests 98 OK,
+strict static checks PASS, coverage PASS; assembleRelease + assembleCompat at 0.6.67 / 74 SUCCESS.
+Release APK Voltcap-0.6.67-release.apk SHA-256 c86a9b0d264232836125dfe923e7bf5671a7030f7242693610708a3b41fc63bb, compat
+224f9f02e788d11e10863b2dececc266695a7ad7c5c1837b3266de32f0e0c447, signer 88ce4b67… (not installed anywhere).
+KONKR Channel · Banner re-run: PASS (6/6 categories). Smoke on both handhelds (Channel, Cover details, Box, Case flow,
+Rental shop, Card binder × Own / Row opens / Banner): all PASS, 1 n/a each. Settings read back equal; RC 0.6.66 reinstalled.
+Note: a sync copied stale project_copy docs over the root once; restored from c9b4248 (root and project_copy now equal).
+Details + how the patch becomes the release: `tools/qa/RELEASE_GATE_472.md`. Follow-ups: `tools/qa/NEXT_OVERHAUL.md`.
+**Verdict: PASS, waiting for the owner's approval to publish.**
+
 # Update 471 (4 Nov 2026) — v0.6.67 small stabilization: Cover details metadata, Cardboard box story, small visual fixes, Case flow clip opt-in, full 318 popup matrix
 
 **Owner request (470 PDF review):** Cover details More hid the MADE BY / GENRE values; Cardboard box story viewport and
