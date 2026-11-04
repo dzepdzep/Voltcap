@@ -2942,16 +2942,17 @@
    "title": "Blades: the window opens for another game than the one Voltcap has in focus (and on the KONKR the first A opened nothing)",
    "rule": "R23 / R26",
    "severity": "medium",
-   "status": "open (reproduced on both devices, two runs each; not analysed)",
+   "status": "closed - not an app bug: QA harness assumption (update 477)",
    "found": "2026-11-04 update 475 popup sweep k475P1 (KONKR) + o475P1 (Odin), build qa-0.6.68-475a: open FAIL 'the first A opened nothing (a second A did)'; re-run k475r1 / o475r1 (game re-selected before the combination): open FAIL 'the window shows another game' — home focus Pokemon Stadium 2 / WWE, window Activision Anthology / Asobi (the first item of Blades' own list)",
    "where": "Blades home / its window (not analysed)",
    "evidence": [
     "k475P1 / o475P1 BLADES_OWN",
     "k475r1 / o475r1 BLADES_OWN"
    ],
-   "root_cause": "likely: Blades keeps its own selection (the first item of its Games blade) instead of following the app's focused game after a programmatic focus (the QA hook) — whether a user can reach this (resume, category switch, second screen) is not established yet",
-   "fix": "",
-   "verified": "476a and 476c full sweeps: BLADES PASS on both devices - not reproduced"
+   "root_cause": "On Blades, ▶ moves from the Games blade to the Systems blade (hint 'Open its games', first system highlighted) while the view model's focused game stays the run's game; A there opens that system's game list (no window) and the next A opened the window for the game then focused (Activision Anthology / Asobi). The test hook voltcap_test_game selects the game but does not bring Blades back to its Games blade, so later key sequences acted on whatever blade was active (k477b round 2: Media blade -> Music -> Spotify page).",
+   "fix": "QA: popclip grades a window opened after the first A changed the selection as INFRA, the Play tap is checked against the window's own game (f71c809); d250.sh documents the trace. App unchanged.",
+   "verified": "k477b / o477b (qa-0.6.68-477a): reproduced on both devices with focus / popup identity traced per key; the app does what its UI shows. UX note for the owner: the Systems blade highlights its first system, not the focused game's system (recommendation, not changed).",
+   "kind": "QA expectation corrected"
   },
   {
    "id": "D251",
@@ -2974,16 +2975,16 @@
    "title": "After a touch, the first D-pad press is lost (Android touch mode): the focus does not move",
    "rule": "R23",
    "severity": "medium",
-   "status": "open — owner decision on the fix (see fix)",
+   "status": "fixed in staging (qa-0.6.68-477b, kept in 477d) - verified on the KONKR with ADB key events; physical controller NOT TESTED",
    "found": "2026-11-04 update 475 touchkey.sh k475t (CLASSIC, 3 rounds) / k475u (ARCTIC, 2 rounds), KONKR: without a touch the first RIGHT moved 5 / 5; after one tap on the screen's corner it moved 0 / 5",
    "where": "Android ViewRootImpl leaves touch mode on the first navigation key and consumes it (before the activity's dispatchKeyEvent); update 467 already handles A / B / X / Y (MainActivity requestFocusFromTouch), not the D-pad",
    "evidence": [
     "k475t trials.txt + screenshots",
     "k475u trials.txt"
    ],
-   "root_cause": "platform touch mode",
-   "fix": "options (owner decision): (a) leave touch mode right after a touch ends (decorView.requestFocusFromTouch on ACTION_UP) — the first D-pad then moves, but the focus ring shows after every tap; (b) leave touch mode only on controller input from a gamepad source before it reaches the view tree (an InputDevice listener) — not reachable for injected keys; (c) accept and document. QA harness: navclip starts each walk from settled controller focus (◀ ▶ prelude).",
-   "verified": ""
+   "root_cause": "Android 12 (KONKR): in touch mode ViewRootImpl consumes the first navigation key to leave touch mode before the activity sees it (trace k477a: after a tap, 1 of 2 RIGHT presses reached the activity, focus did not move on the first). A / B were already handled (update 467). Odin (Android 13): both keys reached the activity (o477a); movement not measurable there (one-game category).",
+   "fix": "KeyRootComposeView (ui/KeyInput.kt): in dispatchKeyEventPreIme a D-pad / navigation key while in touch mode first leaves touch mode itself (requestFocusFromTouch on the focused view) so the key is delivered; MainActivity uses setKeyRootContent. Input477Test. Limitation: dialog windows have their own view root (not covered).",
+   "verified": "k477d (qa-0.6.68-477b): after a tap the first RIGHT moved the focus in 2/2 rounds (before: 0/3, k477a), both keys reached the activity, A and UP unchanged, keys-only walks unchanged. Physical controller: NOT TESTED (nobody to press it)."
   },
   {
    "id": "D253",
@@ -3055,7 +3056,7 @@
    "rule": "R26 / rule 11 (readability)",
    "severity": "medium",
    "kind": "recommendation (owner decision)",
-   "status": "not changed: subjective (light design) - stop for review",
+   "status": "not changed: subjective (light design) - stop for review | update 477: deferred by the owner (recorded only)",
    "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
    "where": "Tiles popup",
    "evidence": [
@@ -3151,7 +3152,7 @@
    "rule": "R26 / rule 11",
    "severity": "low",
    "kind": "recommendation (motion)",
-   "status": "deliberate continuous roll with fade edges (RollingStory); line-step rolling is an owner decision",
+   "status": "deliberate continuous roll with fade edges (RollingStory); line-step rolling is an owner decision | update 477: deferred by the owner (recorded only)",
    "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
    "where": "Cover details home",
    "evidence": [
@@ -3183,7 +3184,7 @@
    "rule": "R26 / rule 11",
    "severity": "low",
    "kind": "recommendation (continuity)",
-   "status": "deliberate auto-paging; a page indicator (1 / 3) would show more follows - owner decision",
+   "status": "deliberate auto-paging; a page indicator (1 / 3) would show more follows - owner decision | update 477: deferred by the owner (recorded only)",
    "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
    "where": "Twin layouts window",
    "evidence": [
@@ -3199,13 +3200,91 @@
    "rule": "R26 / rule 11",
    "severity": "medium",
    "kind": "defect (missing facts)",
-   "status": "open: needs room - the round keys wrap to 2 rows (D247); owner decision on the key gap / chip size",
+   "status": "fixed in staging (qa-0.6.68-477d) - verified on both devices",
    "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
    "where": "Airy window",
    "evidence": [
     "k475r1 / o475r1 screenshots and dumps"
    ],
+   "root_cause": "On the KONKR the Airy window's round keys took two rows and the facts' FlowRow dropped its second line (Played, achievements) - measured but never placed, so even the dump's boxes looked fine (k477e/h).",
+   "fix": "Airy is a compact More window: the round keys always shown (Play, Details, Back, Inspect, More/Less) along the bottom; with More open the other keys (Options, Achievements, Save sync, Manual) as one row of rounded pills under them; LCD a little smaller and tighter gaps while More is open; the name 2 lines then shrinks / slides (never cut). Text and touch sizes kept (pills 32 dp, round keys 50-58 dp). QA: QaClip records whether each text was placed; readcheck 'facts' FAILs a dropped or zero-size fact (was WARN-only).",
+   "verified": "qa-0.6.68-477d: k477l/m/n and o477l/m/n (real, long names, no metadata) - facts PASS in main and More states, geometry PASS; every key reached by controller (k477k/o477k walk). Larger system text: NOT TESTED (needs the system font-scale changed - owner to set). 477a/b/c attempts failed on hardware and are recorded in builds.json."
+  },
+  {
+   "id": "D267",
+   "title": "Arctic: after ▶ ◀ the same game sits one slot further left (the row scrolls only as far as needed)",
+   "rule": "R23",
+   "severity": "low",
+   "kind": "recommendation (owner decision)",
+   "status": "not changed: expected minimal-scroll behaviour; a fixed-slot row would be a design change",
+   "found": "update 477 T5 triage k477t (and k475x2)",
+   "where": "Arctic home row",
+   "evidence": [
+    "k477t ARCTIC_s0/s2 + ARCTIC.mp4 (no flash, no jump: a smooth scroll)"
+   ],
+   "root_cause": "bring-into-view scrolling",
+   "fix": "",
+   "verified": "nav_expect ARCTIC slot_free"
+  },
+  {
+   "id": "D268",
+   "title": "Terminal (Odin): on one return to the same game the preview's facts sat 6 px lower",
+   "rule": "R23",
+   "severity": "low",
+   "kind": "defect (position jump)",
+   "status": "open - cause not isolated (once in o477t s2; s4 identical to s0)",
+   "found": "update 477 T5 triage o477t",
+   "where": "Terminal preview pane",
+   "evidence": [
+    "o477t TERMINAL_s0 / s2 (pixel shift -6 confirmed), TERMINAL.mp4"
+   ],
    "root_cause": "",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D269",
+   "title": "Cinema (Odin): GameOrigin (the focused card's box) reported mid-glide - 11-17 px off while the screen shows the card in place",
+   "rule": "R23",
+   "severity": "low",
+   "kind": "QA measurement (possible app impact)",
+   "status": "QA corrected: navclip cross-checks the screenshot pixels; app impact on the row-opening window origin NOT TESTED",
+   "found": "update 477 T5 triage o477t",
+   "where": "Cinema row",
+   "evidence": [
+    "o477t CINEMA_s0..s4: card border at x=121 in every screenshot; dump origin 109 / 137"
+   ],
+   "root_cause": "origin captured during the row's glide",
+   "fix": "navclip.same_pixels",
+   "verified": "o477t regraded PASS"
+  },
+  {
+   "id": "D270",
+   "title": "Pocket Ribbon: the game's title shown on both screens (duplicate)",
+   "rule": "",
+   "severity": "low",
+   "kind": "recommendation (deferred by the owner)",
+   "status": "deferred (owner, update 477) - recorded only",
+   "found": "owner review update 476",
+   "where": "Pocket Ribbon",
+   "evidence": [],
+   "root_cause": "",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D271",
+   "title": "Very long game names cut at the window's line limit (no shrink / slide) in about a dozen window scenes",
+   "rule": "rule 11 / R26",
+   "severity": "medium",
+   "kind": "defect (truncated text)",
+   "status": "open - found by T3 set A on 477d; same fix as Airy (FullText: shrink then slide)",
+   "found": "update 477 T3 k477T3A / o477T3A (names=long fixture)",
+   "where": "KONKR: Arcade, Box, Camera, Custom, File select, Magazine, Night, Panels, Shop, Storage, Terminal, TV (+ Orbit's own slide read as cut); Odin: Camera, Custom, Night (+ Orbit)",
+   "evidence": [
+    "k477T3A / o477T3A popclip geometry 'text cut inside its own box (stopped at maxLines N)'"
+   ],
+   "root_cause": "Text(ctx.name, maxLines = 2..3) in the scene, not FullText",
    "fix": "",
    "verified": ""
   }

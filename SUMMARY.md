@@ -1,3 +1,22 @@
+# Update 477 (4 Nov 2026) — staging CI green, D250 / D252 / D266, T5 triage, T3 content run (staging 0.6.68)
+
+Report: `tools/qa/QA_PHASE2_477.md`. Staging only (`next/0.6.68/staging.patch` = **qa-0.6.68-477d**, APK 677a58bc…, never
+published); main's app, v0.6.67 untouched. Devices back on the 0.6.66 RC, the owner's settings byte-identical (md5).
+- **Staging CI active and green** (`.github/workflows/staging.yml`, run on 9c2d393): patch applies, compile, JVM unit tests,
+  debug APK, QA self-tests, strict static checks. Earlier failures fixed: reportlab import, ffmpeg-only test, empty grep.
+- **D250** not an app bug: Blades' ▶ goes to the Systems blade; the QA harness assumed the Games blade. Grading fixed.
+- **D252 fixed** (KeyRootComposeView, ui/KeyInput.kt + MainActivity setKeyRootContent): the first D-pad press after a touch
+  now moves (KONKR 0/3 → 2/2). Physical controller NOT TESTED.
+- **D266 fixed** (WinScenes AiryPanel): round keys along the bottom, More shows a pill row, name shrinks / slides, nothing
+  removed; KONKR + Odin PASS with real, long and missing metadata. Larger system text NOT TESTED.
+- QA: readcheck `facts` FAILs a dropped (never placed) or zero-size fact (QaClip `placed`); sliding texts marked
+  (QaClip.Slides); navclip pixel cross-check, `moving_pattern`, `slot_free`, QA_NOPRELUDE, QA_REC recordings; T5 triage of
+  8 layouts (nav_expect.json); new D267–D271 (D271: long names cut in ~12 window scenes — next pass).
+- Not done: T1 other styles, T2 (needs system font scale), T4, T6 — NOT TESTED.
+Files (staging, in the patch): MainActivity.kt, device/FrameWatch.kt, ui/KeyInput.kt, ui/WinScenes.kt, ui/GameWindow.kt,
+ui/QaClip.kt, ui/FitText.kt, tests Airy477Test, Input477Test, PopupMore451Test. Root: tools/qa/** (readcheck, navclip,
+test_qa, builds.json, nav_expect.json, defects.json, device d250 / d252 / airykeys / navclip.sh), next/0.6.68/*, .gitignore.
+
 # Update 476 (4 Nov 2026) — QA phase 2: review findings ranked, volumes 3–9, objective fixes in staging 0.6.68 with before / after
 
 Report: `tools/qa/QA_PHASE2_476.md`. Staging only (`next/0.6.68/staging.patch`, builds qa-0.6.68-476a / b / c, never published);
