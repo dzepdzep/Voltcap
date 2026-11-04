@@ -1175,6 +1175,12 @@ class TestQa474(unittest.TestCase):
         self.assertEqual(g[0], "FAIL"); self.assertIn("another game", g[1])
         m["popupGame"] = "rom:/r/n64/Pokemon Stadium 2 (USA).z64"; json.dump(m, open(p, "w"))
         self.assertNotIn("another game", popclip.grade(d, "CASEFLOW_OWN")["open"][1])
+        # (D250: the first A changed the selection — a system's game list — and the second A opened another game: INFRA.)
+        m["popupGame"] = "rom:/r/gba/Activision Anthology (USA).gba"; json.dump(m, open(p, "w"))
+        with open(os.path.join(d, "log.txt"), "a") as f:
+            f.write("CASEFLOW_OWN first A opened nothing\n")
+        g = popclip.grade(d, "CASEFLOW_OWN")["open"]
+        self.assertEqual(g[0], "INFRA", g); self.assertIn("first A changed the selection", g[1])
 
     # --- art fit: QA fixture picture drawn as QaFixture does --------------------------------------------------------
     def fixture_png(self, w, h, sx=1.0, sy=1.0, crop=0):
@@ -1350,6 +1356,16 @@ class TestReadcheck476(unittest.TestCase):
         self.assertEqual(ov.status, PASS)
         self.assertTrue(ov.reason.startswith("WARN"))
 
+    def test_a_fact_with_no_room_fails(self):
+        import readcheck
+        d = self.dump(self.t("2000", [266, 201, 44, 30]), self.t("★ 0 / 109", [0, 0, 0, 0], full=[248, 195, 0, 0]))
+        r = [x for x in readcheck.evaluate(d) if x.name.endswith("facts")][0]
+        self.assertEqual(r.status, FAIL); self.assertIn("★ 0 / 109", r.reason)
+        # clipped out by a parent (its own layout has a size) or giving way on purpose: not this check's failure
+        d = self.dump(self.t("Never played", [0, 0, 0, 0], full=[255, 550, 115, 36]),
+                      self.t("story", [0, 0, 0, 0], full=[10, 10, 0, 0], giveway=True))
+        self.assertEqual([x for x in readcheck.evaluate(d) if x.name.endswith("facts")][0].status, PASS)
+
     def test_small_source_picture_warns(self):
         import readcheck
         rs = readcheck.evaluate(self.dump(images=[{"tok": "x", "want": [1039, 586], "got": [400, 225], "ok": True}]))
@@ -1378,7 +1394,7 @@ class TestReadcheck476(unittest.TestCase):
 class TestVisualpdfMissingSteps476(unittest.TestCase):
     """Update 476 (QA improvement 3): an empty step says why — not offered, NOT CAPTURED or NOT TESTED."""
     def test_reasons(self):
-        import visualpdf
+        import stepreason as visualpdf   # (no PDF library: runs in CI too)
         tmp = tempfile.mkdtemp()
         self.assertTrue(visualpdf.missing_reason(None, "X", "OWN", "more").startswith("NOT TESTED"))
         os.makedirs(os.path.join(tmp, "qa_clip"))

@@ -125,7 +125,16 @@ def grade(run, n):
     if hf and want_g and want_full not in re.sub(r"[^a-z0-9]", "", hf.lower()) and want_g not in re.sub(r"[^a-z0-9]", "", hf.lower()):
         return {k: (qalib.INFRA, f"the home screen was on another game ('{hf[-40:]}'), not the run's '{want_g}': this content was not tested") for k in CATS}
     if opened and hf and pg and hf != pg and not hf.endswith(pg) and not pg.endswith(hf):
-        out["open"] = (qalib.FAIL, f"the window shows another game: home on '{hf[-40:]}', window '{pg[-40:]}'")
+        # (Update 477, D250: Blades' home was on its SYSTEMS blade — the selected item was a system, not a game. The first A
+        # did what its hint says ("A Open its games": the system's game list, no popup); the second A opened the window for the
+        # game that list then focused. The app was right; the gate had taken the view model's game for the selected item. A
+        # window for another game after a first A that changed the selection is INFRA (the run's game was not tested), not a
+        # FAIL; one that opens on the FIRST A for another game stays a FAIL.)
+        if first_a:
+            out["open"] = (qalib.INFRA, f"the first A changed the selection (e.g. Blades' Systems blade: A opens the system's games), "
+                                        f"the second A opened '{pg[-40:]}' — the run's game '{hf[-40:]}' was not tested")
+        else:
+            out["open"] = (qalib.FAIL, f"the window shows another game: home on '{hf[-40:]}', window '{pg[-40:]}'")
     if not opened:
         for k in CATS[1:]:
             out[k] = (qalib.NOT_TESTED, "popup did not open")
@@ -189,7 +198,12 @@ def grade(run, n):
         keys = re.findall(r"^key=(.*)$", txt, re.M)
         gf = os.path.join(run, "game.txt")
         want = re.sub(r"[^a-z0-9]", "", open(gf, encoding="utf-8").read().lower()) if os.path.exists(gf) else ""
-        wrong = [k for k in keys if want and want not in re.sub(r"[^a-z0-9]", "", k.lower())]
+        # (Update 477, D250: the launch must be for the game the WINDOW shows — when the window's game is known, that is the
+        # reference; the run's game only when it isn't. Whether the window shows the right game is the "open" check's job.)
+        win = re.sub(r"[^a-z0-9]", "", (pg or "").lower())
+        norm = lambda k: re.sub(r"[^a-z0-9]", "", k.lower())
+        wrong = [k for k in keys if (win and norm(k) != win and not norm(k).endswith(win) and not win.endswith(norm(k)))
+                 or (not win and want and want not in norm(k))]
         if m and int(m.group(1)) > 0 and wrong: probs.append("a tap on Play asked to launch another game")
         elif m and int(m.group(1)) > 0: notes.append("a tap on Play asks for the launch (blocked)" + (" of the right game" if keys and want else ""))
         else: probs.append("a tap on Play asked for no launch")

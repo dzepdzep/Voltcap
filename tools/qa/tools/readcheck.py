@@ -2,6 +2,7 @@
 """Update 476 — readability and content continuity, graded SEPARATELY from geometry (QA improvements 1 and 2).
 
 Geometry says a text is whole and inside its box; this says whether it can be read where it is drawn:
+  facts      FAIL  a window text laid out with no size (a fact the window doesn't show — not a deliberate give-way)
   overlap    FAIL  two texts drawn over each other (more than half of the smaller one covered) in the same window — not a
                    scrolling / paged / giving-way text (their hidden parts are clipped, not drawn)
   contrast   WARN  the text's ink against its own background in the screenshot is under 3 : 1 (WCAG large-text minimum),
@@ -144,9 +145,27 @@ def lowres(dump, k=0.5):
     return out
 
 
+def missing(dump, baseline=None):
+    """Update 477 (D266): a window text laid out with NO size — width or height 0 in its own layout, not merely clipped by a
+    parent or scrolled away — is a fact the window does not show (Airy's '★ 0 / 109' on the KONKR: the chips' second line got
+    no room). Texts that give way on purpose (StoryLines / WholeRows mark them) and scrolling / paged ones are left out."""
+    out = []
+    for w, own in own_texts(dump, baseline):
+        for t in own:
+            f = t.get("full") or []
+            if (t.get("text") or "").strip() and len(f) == 4 and (f[2] <= 0 or f[3] <= 0) \
+                    and not t.get("giveway") and not t.get("scroll") and not t.get("paged"):
+                out.append(f"'{t['text'][:30]}' has no room (laid out {f[2]} x {f[3]} px): not shown")
+    return out
+
+
 def evaluate(dump, png=None, step="", baseline=None):
     """[baseline]: the home step's dump — its texts (under the veil, the status bar) are not the window's and not graded."""
     rs = []
+    # (The window's steps only: a home screen's tickers and rails collapse items they aren't showing by design.)
+    gone = missing(dump, baseline) if step != "home" else []
+    if step != "home": rs.append(qalib.Result(f"{step} facts", qalib.FAIL if gone else qalib.PASS,
+                           "; ".join(gone[:4]) if gone else "every window text has room"))
     ov = overlaps(dump, baseline)
     sure = [t for _, t, k in ov if k]
     maybe = [t for _, t, k in ov if not k]
