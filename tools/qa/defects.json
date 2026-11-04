@@ -2864,77 +2864,140 @@
    "title": "Row opens / Row reveal window: the facts line (developer, genre, year) and the achievements line get no height, and the story ends in an ellipsis",
    "rule": "R26, rule 11",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed in staging (475a), verified on hardware",
    "found": "2026-11-04 update 474 squeezed check re-run on the update 471 sweeps (graded PASS by the old gate): KONKR 17 combinations (k471a / k471r: *_ROW_OPENS on 15 layouts, TV / CROSS ROW_REVEAL), Odin 5 (ARCADE / ARCTIC / CINEMA / CROSS ROW_OPENS, CROSS / TV ROW_REVEAL)",
    "where": "ui/RowRevealWindow.kt info room (Column of fixed height infoH: summary maxLines 3 / 5 with TextOverflow.Ellipsis, then the facts Row and the achievements line)",
    "evidence": [
     "k471r DASH_ROW_OPENS_main (screenshot: Nintendo 64 · Never played, the story cut with an ellipsis, no facts, no achievements line)",
     "o471a CINEMA_ROW_OPENS_main"
    ],
-   "root_cause": "the fixed-height column gives the story first claim; what doesn't fit below it is laid out with zero height (silently gone) instead of the story giving way or the room scrolling.",
-   "fix": "not fixed (phase 1 records only)",
-   "verified": ""
+   "root_cause": "RowRevealWindow's info room is a fixed-height Column: the story (3-5 lines) was laid out first and the facts Row and the achievements line under it got the height that was left — none on the KONKR.",
+   "fix": "update 475: facts (developer, genre, year and the achievements count as a fact) are laid out first; the story takes the room left in whole lines (StoryLines, gives way entirely on a short screen — the whole story is on Details); the achievements bar only when the room is tall. Same look otherwise.",
+   "verified": "k475v (KONKR): DASH / TV / CROSS / AIRY / STORAGE / CLASSIC ROW_OPENS + ROW_REVEAL geometry PASS (were FAIL); o475v (Odin): ARCADE / ARCTIC / CINEMA / CROSS / TV / STORAGE / AIRY ROW_OPENS + ROW_REVEAL all PASS. RevealFacts475Test."
   },
   {
    "id": "D246",
    "title": "Storage window (OWN): every fact row after RELEASED (KIND, PLAYED, LAST PLAYED, ACHIEVED) has no height",
    "rule": "R26",
    "severity": "low",
-   "status": "open (triage: a deliberate paged summary — the dots under RELEASED — or a defect; owner decision)",
+   "status": "fixed in staging (475a), verified on hardware",
    "found": "2026-11-04 update 474 squeezed check on k471a, k471L1 / L2 / L3 (KONKR) and o471a (Odin): graded PASS before",
    "where": "Storage layout's own window (facts panel)",
    "evidence": [
     "k471a STORAGE_OWN_main",
     "o471a STORAGE_OWN_main"
    ],
-   "root_cause": "not analysed yet",
-   "fix": "",
-   "verified": ""
+   "root_cause": "the Storage window's facts sit in a Column given the height the menu leaves (weight, no scroll): on the KONKR only RELEASED fitted; the rows after it were laid out with no height and PLAYED with 10 of its 36 px.",
+   "fix": "update 475: WholeRows — the facts show whole or not at all (every fact is on the Details page); marked as giving way. Design unchanged.",
+   "verified": "k475v STORAGE_OWN geometry PASS (KONKR), o475v PASS (Odin). WholeRows475Test."
   },
   {
    "id": "D247",
    "title": "Airy window (OWN) on the KONKR: the story text is laid out with no height (no description at all)",
    "rule": "R26",
    "severity": "low",
-   "status": "open (triage: deliberate give-way when the keys wrap to two lines, then it needs the GivesWay mark; otherwise a defect)",
+   "status": "triaged: deliberate give-way (now explicit), verified",
    "found": "2026-11-04 update 474 squeezed check on k471a (KONKR, 240 dpi): graded PASS before; not on the Odin",
    "where": "Airy layout's own window",
    "evidence": [
     "k471a AIRY_OWN_main"
    ],
-   "root_cause": "not analysed yet",
-   "fix": "",
-   "verified": ""
+   "root_cause": "Airy's story Text (maxLines 4) came after the chips in a full-height column; when the 8 round keys wrap to a second row (KONKR width) no room was left and it was laid out with no height.",
+   "fix": "update 475: StoryLines — whole lines in the room the chips leave, none when no line fits (Details has the story), marked as giving way. Owner decision (recommendation, not done): 10 dp instead of 14 dp between the round keys keeps all 8 on one row on the KONKR, which would leave room for 1-2 story lines.",
+   "verified": "k475v AIRY_OWN PASS (KONKR), o475v PASS (Odin, story shown)."
   },
   {
    "id": "D248",
    "title": "Voltcap row (CLASSIC): the focused game's title drawn at x 204 instead of 63 on arrival, then snaps to 63 after the first move (jumping title)",
    "rule": "R21 / R24",
    "severity": "low",
-   "status": "open (intermittent: 1 of 5 runs; seen when CLASSIC came right after TILES)",
+   "status": "fixed in staging (475a); the original sequence (first visit after a start) still to be re-run",
    "found": "2026-11-04 update 474 navclip k474r (KONKR, build qa-0.6.68-474c): jump FAIL, same game, its title 141 px elsewhere at s0 than at s4",
    "where": "ui/GameDock.kt / GameCard.kt (the name row under the capsule) — not analysed",
    "evidence": [
     "k474r CLASSIC_s0 / CLASSIC_s4 (+ dumps)"
    ],
-   "root_cause": "not analysed yet (possibly the name row's slide-in left offset after a layout switch with a programmatic focus — the test hook's game select)",
-   "fix": "",
-   "verified": ""
+   "root_cause": "LogoAndName reserves the logo's slot before it loads: its real width when the shape is known, else the full logo width. Shapes were known for the session only, so the FIRST time a game's logo showed after a start its title sat after a 120 dp slot (x 204) and every later time after the logo's own width (x 63).",
+   "fix": "update 475: the logo shapes are kept in cache/logo_aspects.txt (hashed address + shape, never the address) and read at the first look-up. LogoAspects475Test.",
+   "verified": "k475n2 / k475n3: CLASSIC after GRID / SHELF title at x 63 on arrival and after the walk (PASS). NOT TESTED yet: force-stop + start straight onto Voltcap row (the k474r case)."
   },
   {
    "id": "D249",
    "title": "Home navigation: the first D-pad key of a run is sometimes ignored (focus doesn't move; the next ones do)",
    "rule": "R23",
    "severity": "low",
-   "status": "open (triage: a real one-press bug or the test hook's first focus; seen in the first layout of 3 KONKR walks: CLASSIC k474m, GRID k474p; not in k474r / k474w)",
+   "status": "not an app defect: QA harness (fixed)",
    "found": "2026-11-04 update 474 navclip (KONKR)",
    "where": "not analysed",
    "evidence": [
     "k474m CLASSIC (no key moved at all)",
     "k474p GRID log 'RIGHT moved nothing'"
    ],
-   "root_cause": "not analysed",
+   "root_cause": "after a fresh start (install, force-stop) \"Who's playing?\" is up; the walk's keys went to the picker (the app's own mark said PICKER) and the home focus didn't move. d249 trials k475e: fresh start hook / plain arrivals moved=0 with the mark PICKER; the HOME key closed the picker and every later press moved (12 / 12).",
+   "fix": "navclip.sh closes the picker (B) whenever the mark says PICKER before each layout and logs the mark; navclip.py grades a walk begun on the picker INFRA (self-test).",
+   "verified": "k475e trials + marks; d249.sh kept as the device check."
+  },
+  {
+   "id": "D250",
+   "title": "Blades: the window opens for another game than the one Voltcap has in focus (and on the KONKR the first A opened nothing)",
+   "rule": "R23 / R26",
+   "severity": "medium",
+   "status": "open (reproduced on both devices, two runs each; not analysed)",
+   "found": "2026-11-04 update 475 popup sweep k475P1 (KONKR) + o475P1 (Odin), build qa-0.6.68-475a: open FAIL 'the first A opened nothing (a second A did)'; re-run k475r1 / o475r1 (game re-selected before the combination): open FAIL 'the window shows another game' — home focus Pokemon Stadium 2 / WWE, window Activision Anthology / Asobi (the first item of Blades' own list)",
+   "where": "Blades home / its window (not analysed)",
+   "evidence": [
+    "k475P1 / o475P1 BLADES_OWN",
+    "k475r1 / o475r1 BLADES_OWN"
+   ],
+   "root_cause": "likely: Blades keeps its own selection (the first item of its Games blade) instead of following the app's focused game after a programmatic focus (the QA hook) — whether a user can reach this (resume, category switch, second screen) is not established yet",
    "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D251",
+   "title": "QA harness: a popup sweep kept measuring after the home had moved to another game (every combination after Blades on both devices)",
+   "rule": "R26 (QA)",
+   "severity": "high (QA)",
+   "status": "fixed (QA tools)",
+   "found": "2026-11-04 k475P1 / o475P1: 37 combinations graded INFRA by the new 'home on another game' rule — before update 474 they would have been graded on the wrong content",
+   "where": "tools/qa/device/popclip.sh",
+   "evidence": [
+    "k475P1",
+    "o475P1"
+   ],
+   "root_cause": "the run's game was selected once, at the start; after a window that misbehaved (Blades' first A) the home stayed on another game / category.",
+   "fix": "popclip.sh selects the run's game again before every combination; popclip.py grades a combination whose home was on another game INFRA (update 474); self-test.",
+   "verified": "re-run k475r1 / o475r1"
+  },
+  {
+   "id": "D252",
+   "title": "After a touch, the first D-pad press is lost (Android touch mode): the focus does not move",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "open — owner decision on the fix (see fix)",
+   "found": "2026-11-04 update 475 touchkey.sh k475t (CLASSIC, 3 rounds) / k475u (ARCTIC, 2 rounds), KONKR: without a touch the first RIGHT moved 5 / 5; after one tap on the screen's corner it moved 0 / 5",
+   "where": "Android ViewRootImpl leaves touch mode on the first navigation key and consumes it (before the activity's dispatchKeyEvent); update 467 already handles A / B / X / Y (MainActivity requestFocusFromTouch), not the D-pad",
+   "evidence": [
+    "k475t trials.txt + screenshots",
+    "k475u trials.txt"
+   ],
+   "root_cause": "platform touch mode",
+   "fix": "options (owner decision): (a) leave touch mode right after a touch ends (decorView.requestFocusFromTouch on ACTION_UP) — the first D-pad then moves, but the focus ring shows after every tap; (b) leave touch mode only on controller input from a gamepad source before it reaches the view tree (an InputDevice listener) — not reachable for injected keys; (c) accept and document. QA harness: navclip starts each walk from settled controller focus (◀ ▶ prelude).",
+   "verified": ""
+  },
+  {
+   "id": "D253",
+   "title": "Cross: the details page's text column is 61 dp wide on the KONKR — words break mid-word ('HAL Laborator / y', 'Achievem / ents'), the story runs 114 lines",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "medium",
+   "status": "open (layout change needed: owner review of the design)",
+   "found": "2026-11-04 update 475 k475r1 CROSS_OWN page (KONKR 960 x 640): the gate passed it (every text whole in a scrolling column); new warning 'warn-narrow-text'. Odin: the column is wide enough",
+   "where": "Cross (XMB) details page",
+   "evidence": [
+    "k475r1 CROSS_OWN_page.png + dump"
+   ],
+   "root_cause": "the page splits its width between the cover, the text column and the key list by fixed shares; at 640 dp the text column gets 61 dp",
+   "fix": "recommendation: a minimum text width (~180 dp) with the cover shrinking first, or the cover above the text on a narrow screen",
    "verified": ""
   }
  ]

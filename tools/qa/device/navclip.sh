@@ -1,4 +1,4 @@
-# Update 474 — home-screen navigation evidence (QA tier T5): per layout, the game you're on is moved RIGHT, RIGHT, LEFT, LEFT
+# Update 474 — home-screen navigation evidence (QA tier T5): per layout, the game you're on is moved RIGHT, LEFT, LEFT, RIGHT (475)
 # (DOWN / UP where RIGHT doesn't move it), and after every key: an early raw screenshot (~0.15 s + capture, no PNG encoding) and, once settled (1.4 s), a
 # screenshot + QaClip dump. tools/qa/tools/navclip.py then checks: the same game comes back with its title / art in the same
 # place (jumping), its picture is the same as before (stale / wrong art) and differs from the neighbour's, the picture was
@@ -28,9 +28,18 @@ for lay in $LAYS; do
   # the mark at the start is logged, and navclip.py grades a walk that began on the picker INFRA.)
   for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B; sleep 1.5; echo "$lay picker closed with B" >> $OUT/log.txt; done
   echo "$lay mark=$(cut -d' ' -f1 $F/voltcap_qa_screen 2>/dev/null)" >> $OUT/steps.txt
+  # (Update 475, D252: after a touch (popclip's taps, a finger) Android is in touch mode and swallows the next D-pad press
+  # to leave it; some layouts also take focus only on the first key after a switch. The walk measures moving between
+  # games, so it starts from settled controller focus: one ◀ and one ▶ first (NAV_PRELUDE=0 turns it off). The first-press
+  # behaviour itself is checked by device/touchkey.sh and device/firstvisit.sh.)
+  [ "${NAV_PRELUDE:-1}" = 1 ] && { k DPAD_LEFT; sleep 0.8; k DPAD_RIGHT; sleep 1.4; echo "$lay prelude LEFT RIGHT" >> $OUT/steps.txt; }
   s=0; screencap -p $OUT/${lay}_s0.png; dump ${lay}_s0
+  # (Update 475: QA_VERTICAL="CROSS ..." — layouts whose games run up and down (◀ ▶ change something else: Cross's category
+  # columns) are walked with ▼ ▲ from the start. The walk is R L L R: back on the first game at s2 and s4, a row's end
+  # either side shows as a key that changed nothing next to one that did.)
   axis=RIGHT; back=LEFT
-  for key in A1 A2 B1 B2; do
+  case " $QA_VERTICAL " in *" $lay "*) axis=DOWN; back=UP; echo "$lay walked DOWN / UP (QA_VERTICAL)" >> $OUT/log.txt;; esac
+  for key in A1 B1 B2 A2; do
     s=$((s+1))
     case $key in A*) kk=DPAD_$axis;; *) kk=DPAD_$back;; esac
     t0=$(date +%s%N 2>/dev/null | cut -c1-13); k $kk
@@ -38,7 +47,7 @@ for lay in $LAYS; do
     sleep 1.25; screencap -p $OUT/${lay}_s${s}.png; dump ${lay}_s${s}
     echo "$lay s$s key=$kk early_ms=$((t1 - t0))" >> $OUT/steps.txt
     # (The first move that changes nothing: this layout moves the other way — DOWN / UP — and the walk starts again.)
-    if [ $s -eq 1 ] && [ "$(foc ${lay}_s1)" = "$(foc ${lay}_s0)" ] && [ $axis = RIGHT ]; then
+    if [ $s -eq 1 ] && [ "$(foc ${lay}_s1)" = "$(foc ${lay}_s0)" ] && [ $axis = RIGHT ] && [ "$NO_SWITCH" != 1 ]; then
       axis=DOWN; back=UP; echo "$lay RIGHT moved nothing: DOWN / UP" >> $OUT/log.txt
       s=1; k DPAD_DOWN; sleep 0.15; screencap $OUT/${lay}_s1e.raw; sleep 1.25; screencap -p $OUT/${lay}_s1.png; dump ${lay}_s1
       echo "$lay s1 key=DPAD_DOWN early_ms=150" >> $OUT/steps.txt

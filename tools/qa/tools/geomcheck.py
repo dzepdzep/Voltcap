@@ -354,6 +354,17 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         res("text", tcut + tell, "every text whole inside its own box, no ellipsis")
     else:
         out.append(qalib.Result("text", qalib.NOT_TESTED, "dump has no text layout (\"texts\": a build before update 474): cut-inside-the-box not checked"))
+    # (Update 475, D253: a text column so narrow its words break mid-word — Cross's details page on the KONKR, 61 dp wide,
+    # "HAL Laborator / y", the story 114 lines. Fewer than 10 characters a line over 3+ lines: a warning (a design matter,
+    # no universal width), listed so the report shows it.)
+    narrow = []
+    for w in wins:
+        for t in w.get("texts") or []:
+            ln, n_ = t.get("lines") or 0, t.get("len") or len(t.get("text") or "")
+            if ln >= 3 and n_ >= 20 and n_ / ln < 10 and " " in (t.get("text") or ""):
+                narrow.append(f"'{(t.get('text') or '')[:24]}' {n_} characters on {ln} lines ({(t.get('full') or [0, 0, 0])[2]} px wide)")
+    if has_texts and narrow:
+        out.append(qalib.Result("warn-narrow-text", qalib.PASS, "WARN: text column too narrow, words may break mid-word: " + "; ".join(narrow[:3])))
     if has_texts and tsum:
         out.append(qalib.Result("warn-summary", qalib.PASS, f"WARN: {len(tsum)} deliberate summary(ies): " + "; ".join(tsum[:3])))
     if has_texts and tunc:

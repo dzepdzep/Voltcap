@@ -64,6 +64,10 @@ for lay in $LAYS; do
       grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
+    # (Update 475: the run's game again before every combination — after a combination whose window misbehaved (Blades'
+    # "first A opened nothing", k475P1) the home was left on another game / category and every later combination measured
+    # other content: popclip.py now grades that INFRA, and this keeps it from happening.)
+    [ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 2; }
     logcat -c
     A --es voltcap_test_pref "popup_style_by_layout=$lay=$st"; sleep 1.2
     # (Update 474, D242: the app's own answer that the style is set — a SKIP (style not offered) only counts with it.)

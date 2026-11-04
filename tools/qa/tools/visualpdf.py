@@ -119,12 +119,20 @@ def grade_device(dv, lay):
     import popclip, navclip
     st = dv.get("style", "OWN")
     pr, nr = dv.get("popclip"), dv.get("navclip")
+    if isinstance(nr, list):   # (several walk runs: the one that walked this layout)
+        nr = next((r for r in nr if os.path.exists(os.path.join(r, f"{lay}_s0.png"))), None)
     g = popclip.grade(pr, f"{lay}_{st}") if pr and os.path.exists(os.path.join(pr, f"{lay}_{st}_main.png")) else None
     if g is not None:
         ev = evidence.check_run(pr)
         if ev[0] != qalib.PASS:
             g = {k: (qalib.INFRA, "evidence: " + ev[2]) for k in g}
     ng = None
+    saved = (nr.rstrip("/") + ".json") if nr else None
+    if saved and os.path.exists(saved):
+        # (The grades made when the run was pulled — with its early raw shots, which are not kept.)
+        lj = json.load(open(saved, encoding="utf-8")).get("layouts", {}).get(lay)
+        if lj:
+            return g, {k: tuple(v) for k, v in lj.items()}
     if nr and os.path.exists(os.path.join(nr, f"{lay}_s0.png")):
         exp = json.load(open(navclip.EXPECT, encoding="utf-8")).get("layouts", {}) if os.path.exists(navclip.EXPECT) else {}
         ng = navclip.grade_layout(nr, lay, exp.get(lay, {}))
@@ -144,6 +152,8 @@ def layout_page(c, spec, lay, notes, page_no, di, dv):
     c.setFont(FONT, 6.8)
     c.drawString(M, H - M - 21, ("Build / device: " + evidence.label(ev_info)) if ev_st == qalib.PASS else f"popup run evidence {ev_st}: {ev_why}")
     nr = dv.get("navclip")
+    if isinstance(nr, list):
+        nr = next((r for r in nr if os.path.exists(os.path.join(r, f"{lay}_s0.png"))), None)
     if nr:
         ne = evidence.check_run(nr)
         c.drawString(M, H - M - 30, ("Navigation run: " + evidence.label(ne[1])) if ne[0] == qalib.PASS else f"navigation run evidence {ne[0]}: {ne[2]}")
@@ -211,6 +221,33 @@ def coverage_page(c, spec):
     for line in (spec.get("coverage_note") or "").split("\n"):
         y = wrap(c, line, M, y, W - 2 * M, FONT, 8.5, 11)
     c.showPage()
+    cp = spec.get("coverage_table")
+    if cp and os.path.exists(cp):
+        # (The whole sweep, every layout: tools/sweepcov.py's table — the worst status per tier, NOT TESTED where nothing ran.)
+        j = json.load(open(cp, encoding="utf-8"))
+        rows = list(j["table"].items())
+        cols = list(rows[0][1].keys()) if rows else []
+        c.setFont(BOLD, 12); c.drawString(M, H - M - 8, "Coverage — all layouts, every tier (sweepcov.py)")
+        x0, y = M + 95, H - M - 28
+        cw = (W - x0 - M) / max(1, len(cols))
+        short = {qalib.NOT_TESTED: "NT", qalib.PASS: "PASS", qalib.FAIL: "FAIL", qalib.INFRA: "INFRA", qalib.SKIP: "n/a"}
+        c.setFont(FONT, 6.5); c.setFillColorRGB(0.2, 0.2, 0.2)
+        c.drawString(M, H - M - 18, "NT = NOT TESTED (did not run). Worst status per layout and tier; n/a rows (style not offered) left out.")
+        c.setFont(BOLD, 5.6); c.setFillColorRGB(0, 0, 0)
+        for i, col in enumerate(cols):
+            d_, t_ = col.split("|", 1)
+            c.drawString(x0 + i * cw, y + 6, d_[:10]); c.drawString(x0 + i * cw, y, t_[:16])
+        y -= 9
+        for lay, row in rows:
+            c.setFont(FONT, 6.2); c.setFillColorRGB(0, 0, 0); c.drawString(M, y, lay)
+            for i, col in enumerate(cols):
+                status_cell(c, x0 + i * cw, y, row[col], short.get(row[col], row[col]))
+            y -= 8.6
+        c.setFont(BOLD, 6); c.setFillColorRGB(0, 0, 0)
+        for i, col in enumerate(cols):
+            t = j["totals"].get(col, {})
+            c.drawString(x0 + i * cw, y - 4, " ".join(f"{short.get(k, k)} {v}" for k, v in sorted(t.items()))[:40])
+        c.showPage()
 
 
 def main():

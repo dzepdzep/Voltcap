@@ -1,3 +1,18 @@
+# Update 475 (4 Nov 2026) — QA overhaul phase 2 (first part): D245–D249 triaged / fixed in staging, full T1 OWN + T5 sweeps, visual PDF volumes 1–2
+
+Report: `tools/qa/QA_PHASE2_475.md`. Staging only (`next/0.6.68/staging.patch`, build qa-0.6.68-475a); main's app, v0.6.67 and its assets untouched.
+- **Fixed in staging:** D245 (row-style window: facts first, story in whole lines), D246 (Storage facts in whole rows), D247 (Airy story
+  in whole lines, explicit give-way), D248 (logo shapes kept on disk: the title no longer moves on a first visit) + RevealFacts475Test /
+  WholeRows475Test / LogoAspects475Test. New shared helpers `ui/WholeRows.kt` (`WholeRows`, `StoryLines`).
+- **D249** was the QA harness (the profile picker took the keys); **D251** (QA): popup sweeps kept measuring after the home moved to
+  another game — game re-selected per combination. New defects: **D250** Blades opens another game's window, **D252** after a touch the
+  first D-pad press is lost (owner decision on the fix), **D253** Cross Details page 61 dp text column on the KONKR.
+- **Sweeps** (KONKR + Odin, USB): T1 OWN 52 / 53 PASS on each (Blades FAIL); T5 38 PASS each, the FAILs listed for triage.
+  T2 / T3 / T4 / T6 NOT TESTED. Owner settings snapshot identical before / after on both; RC 0.6.66 back on both.
+- **Tools:** navclip walk / scroll / paging / picker / prelude rules, popclip game re-selection, geomcheck narrow-text warning,
+  `visualpdf.py`, `sweepcov.py`, `touchkey.sh`, `firstvisit.sh`, `d249.sh`; 121 self-tests.
+- **CI:** `next/0.6.68/staging-ci.yml` still has to be copied to `.github/workflows/staging.yml` (the remote tools can't write `.github`).
+
 # Update 474 (4 Nov 2026) — QA overhaul phase 1: traceable, harder-to-fool QA (tools + staging 0.6.68; v0.6.67 untouched)
 
 Report: `tools/qa/QA_PHASE1_474.md` (old vs new, hardware runs, limitations). Plan: `tools/qa/QA_OVERHAUL_474.md`.

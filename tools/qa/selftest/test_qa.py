@@ -1118,6 +1118,12 @@ class TestQa474(unittest.TestCase):
         st = self.clip(self.text_dump(ellipsis=True, maxLines=3, lines=2, textH=56, boxH=56))   # a short text: trusted ellipsis
         self.assertEqual(st["text"][0], "FAIL")
 
+    def test_narrow_column_breaking_words_is_a_warning(self):
+        """Update 475, D253: Cross's details page on the KONKR — 63 characters on 7 lines, 92 px wide."""
+        st = self.clip(self.text_dump(text="Nintendo 64 · 2000 · HAL Laboratory · Simulator, Strategy ok", len=63, lines=7, full=[367, 265, 92, 252], shown=[367, 265, 92, 252], textH=252, boxH=252))
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("too narrow", st["warn-narrow-text"][1])
+        self.assertNotIn("warn-narrow-text", self.clip(self.text_dump()))
+
     def test_long_story_shortened_beside_details_is_a_summary_warning(self):
         story = "While the game does have a storyline, progress is made by winning cups. " * 6
         d = self.text_dump(text=story, len=len(story), ovH=True, maxLines=3, lines=3, textH=56, boxH=56)
@@ -1295,6 +1301,12 @@ class TestQa474(unittest.TestCase):
         bad = visualpdf.auto_marks(self.fx("coverdetails_471_k471cd_more.json"))
         self.assertTrue(any("trophies" in t for _, t in bad))
         self.assertFalse(any("trophies" in t for _, t in visualpdf.auto_marks(self.fx("coverdetails_471_k471gd_more.json"))))
+
+    def test_popclip_reselects_the_game_before_every_combination(self):
+        """Update 475: k475P1 — after Blades' window misbehaved, 37 later combinations measured another game (INFRA now)."""
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        loop = sh[sh.index("for st in $STYLES; do"):]
+        self.assertLess(loop.index('voltcap_test_game "$GAME"'), loop.index("popup_style_by_layout="))
 
     # --- D242: a row style claimed "not offered" without the app confirming the style was set --------------------
     def test_style_set_note_required_for_skip(self):

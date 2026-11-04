@@ -1,4 +1,49 @@
 {
- "_note": "Update 474: per-layout expectations for tools/navclip.py (T5). moves = the focused card / title glides to a new place by design (carousels): fixed-text drift is not a failure there; animated_art = the focused picture plays (looser picture match); moving_texts = texts that move on purpose; skip = not walkable, with the reason. Only layouts listed here differ from the default (everything must stay put; same game = same picture). Edit with evidence.",
- "layouts": {}
+ "_note": "Update 475: per-layout expectations for tools/navclip.py — what a layout does BY DESIGN while you move between games, from the update 475 hardware walks (screenshots). moves: the game list glides (carousel) — fixed-text check off; pages: the focused game's info panel turns its pages by itself — only the card is compared for jumps; animated_art: the focused picture plays; vertical: walk with DOWN / UP (also pass it to navclip.sh in QA_VERTICAL); skip: not walkable (reason).",
+ "layouts": {
+  "HERO": {
+   "moves": true,
+   "pages": true,
+   "vertical": true,
+   "why": "vertical carousel; the info panel pages itself (Overview 1/6, Achievements 2/6 ...) — k475N1"
+  },
+  "CROSS": {
+   "vertical": true,
+   "why": "XMB: left / right change the category column, up / down the game — k475N1, o475N1; the game column slides under the fixed focus (k475x1)",
+   "moves": true
+  },
+  "TV": {
+   "moves": true,
+   "why": "the game grid beside the TV pages by rows as the focus moves (k475N1)"
+  },
+  "BLADES": {
+   "vertical": true,
+   "why": "◀ ▶ change the blade (Games / Systems / ...), ▲ ▼ the game — o475w3, k475w2"
+  },
+  "ORBIT": {
+   "animated_art": true,
+   "pulse": true,
+   "why": "the focused planet pulses (scale) — o475w2"
+  },
+  "DISCS": {
+   "animated_art": true,
+   "pulse": true,
+   "why": "the focused disc spins — o475w5"
+  },
+  "POCKET": {
+   "animated_art": true,
+   "pulse": true,
+   "why": "the disc on the focused card spins — o475w6"
+  },
+  "POCKET_RIBBON": {
+   "animated_art": true,
+   "pulse": true,
+   "why": "the disc spins — o475w6"
+  },
+  "FILESELECT": {
+   "animated_art": true,
+   "pulse": true,
+   "why": "the selected file card bounces (fs_bounce) — o475w7"
+  }
+ }
 }

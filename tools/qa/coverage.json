@@ -503,9 +503,9 @@
    "test": "popclip.sh + popclip.py (qa-0.6.68-474a/b)",
    "device": "KONKR GT78 BW0306N230000845 + Odin 2 Portal b92036fb (USB)",
    "status": "FAIL",
-   "evidence": "runs k474a, k474f, k474g, o474b (manifests bound to builds.json)",
-   "device_run": "k474a k474g o474b",
-   "limits": "Representative only: 5 layouts x OWN / ROW_OPENS at default config (+ long-name / no-metadata fixture on 4 layouts, KONKR). FAIL = real defects D245 (Row opens facts squeezed, both devices), D246 (Storage facts squeezed, both), D247 (Airy story squeezed, KONKR). Cover details (D244 fixed) PASS on both. o474a INFRA (run's home on another game). Full T1 sweep with the new checks: NOT TESTED (phase 2)."
+   "evidence": "update 475 full T1 OWN sweep: k475r1 (KONKR) 52 PASS / 1 FAIL, o475r1 (Odin) 52 PASS / 1 FAIL (Blades, D250), build qa-0.6.68-475a",
+   "device_run": "k475r1 o475r1",
+   "limits": "OWN style on all 53 layouts, both devices, default config. Odin BANNER + CLASSIC 106 / 106 PASS (o475q2); KONKR other styles and the 3 row styles in a full sweep NOT TESTED; T2 / T3 NOT TESTED. D245-D247 fixed and verified in k475v / o475v."
   },
   {
    "mode": "automated",
@@ -515,9 +515,9 @@
    "test": "navclip.sh + navclip.py (qa-0.6.68-474c)",
    "device": "KONKR GT78 + Odin 2 Portal (USB)",
    "status": "FAIL",
-   "evidence": "k474r (real art, 6 layouts), k474w (wide fixture art, 4), o474r (square fixture art, category All, 3)",
-   "device_run": "k474r k474w o474r",
-   "limits": "FAIL = D248 (Voltcap row title drawn at x 204 instead of 63 after switching from Tiles, 1 of 5 runs, intermittent). 'late' is a WARN only (early raw shot ~0.35 s after the key, screencap latency). Odin walks only with a fixture and in All (its consoles hold 1-2 games). Category-switch and 47 other layouts NOT TESTED."
+   "evidence": "update 475 T5 on all 53 layouts: k475x1-x4 (KONKR, controller focus settled first) 38 PASS / 11 FAIL / 4 NOT TESTED; o475w1-w8 (Odin, All category) 38 PASS / 9 FAIL / 6 NOT TESTED",
+   "device_run": "k475x1 k475x2 k475x3 k475x4 o475w1",
+   "limits": "FAILs are triage items (by-design motion not yet in nav_expect.json vs real jumps); D248 fixed; D252 (touch -> first D-pad lost) found by touchkey.sh. Odin walk ran before the prelude fix."
   },
   {
    "mode": "automated",
