@@ -2352,18 +2352,18 @@
   },
   {
    "id": "D212",
-   "title": "Owner decision: small touch rows / boxes that cross by design",
+   "title": "Owner decision: small touch rows / boxes that cross by design — 470: touch rooms enlarged, looks kept",
    "rule": "R26",
    "severity": "low",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
    "where": "ARCADE (rows 17 dp, PRESS START bar), MEMCARD (status 14 dp), NIGHT (slanted keys' boxes cross 13 px), ORBIT (round keys 9×18 px), MAGAZINE (3–6 px)",
    "evidence": [
     "k467f / o467f"
    ],
    "root_cause": "design of those windows",
-   "fix": "not changed — owner to choose",
-   "verified": "—"
+   "fix": "Arcade menu lines and the Memory card Saves line: SceneControl(minTouch = 24 dp) — the touch box is 24 dp, the drawn row unchanged and centred in it (the gap between rows grows). Orbit: 22° between keys (was 17°), so neighbouring keys' boxes no longer cross. Night: status lines 10 dp apart; its command keys and Magazine's page are drawn turned 4° / 2° — their laid-out boxes are 2-3 px apart, only the screen-aligned boxes of the turned rows cross, so they are marked tilted for the gate (as the rental tag in 467). No touch target is under 24 dp now.",
+   "verified": "k470h / o470h (font 1.0) and k470hs / o470hs (1.3): ARCADE, MEMCARD, NIGHT, ORBIT, MAGAZINE all six categories PASS (k470hs Magazine 1.3 fixed by D229, rerun k470ks)"
   },
   {
    "id": "D213",
@@ -2515,15 +2515,15 @@
    "title": "Cardboard box window: the actions live inside the scrolling note card; the tools row and the Saves line start below the screen",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-04 update 469 sweep (BOX_OWN buttons NOT TESTED: the Play tap after the Details page found no Play on screen)",
    "where": "BOX · Own · KONKR 960x640 (and Odin at 1.3)",
    "evidence": [
     "k469g BOX_OWN_main.json: Options / Achievements / Save sync / Manual / Saves shown 0 px (y 609-725 on a 640 px screen)"
    ],
    "root_cause": "the note card scrolls as one; R26 says actions never live inside a scrolling column.",
-   "fix": "NOT FIXED (layout rework of the Box window; reachable by D-pad scroll)",
-   "verified": "—"
+   "fix": "header, title and the stamped actions (Play / Contents / Back, tools, Saves) stay put; only the facts and the story scroll between them (sceneReadable: the D-pad scrolls the story, then goes on to the actions). Update 470: the status lines 12 dp apart (the turned sheet crossed their boxes).",
+   "verified": "k470f / k470h / k470hs (KONKR), o470F / o470Ffs / o470h / o470hs (Odin): BOX_OWN all six PASS, Play tap blocked for the right game"
   },
   {
    "id": "D223",
@@ -2554,6 +2554,113 @@
    "root_cause": "the layers were recorded inside the whole-piece buffer at the buffer's size, so they turned round the buffer's middle.",
    "fix": "recorded at the node's own size, as the sides' layers.",
    "verified": "q469h4 0-180"
+  },
+  {
+   "id": "D225",
+   "title": "Long names slid sideways on one line although the room under them was free",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 long-name runs (k470L1-3: 'Yume no Luffy' / 'Bizarre Pokeventure' / 'Advance Wars 2 - Black Hole')",
+   "where": "Pocket Quest, Cover details, Resume, Bubbles LiveArea; any StableFullText",
+   "evidence": [
+    "device log 'slide ... lines=3/3 oh=true'"
+   ],
+   "root_cause": "StableFullText measured with letterSpacing Unspecified, narrower than the theme draws it: 'fits in 3 lines' in the measure, 4 on screen, so it slid.",
+   "fix": "measure with the theme's letter spacing; one more line (up to maxLines+1) before sliding; FullText slides only at the width it overflowed.",
+   "verified": "k470L1 / L2 / L3: 14 layouts each, all PASS, 0 slides"
+  },
+  {
+   "id": "D226",
+   "title": "Cardboard box / Night: status lines' boxes crossed on the turned sheet",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 (o470fs / o470d BOX_OWN, o470F NIGHT_OWN)",
+   "where": "BOX · Own, NIGHT · Own (Odin, font 1.3 / 420 dpi)",
+   "evidence": [
+    "o470fs BOX: Saves / perf lines 509x19 px",
+    "o470F NIGHT 282x19 px"
+   ],
+   "root_cause": "two lines laid out edge to edge on a sheet turned 1-2°.",
+   "fix": "12 dp (Box) / 10 dp (Night) between the lines.",
+   "verified": "o470h / o470hs / k470h / k470hs PASS"
+  },
+  {
+   "id": "D227",
+   "title": "Night window: maker 'HAL Laboratory' shown as 'HAL Laborator' (the y on a hidden third line)",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 own screenshot review (k470h NIGHT_OWN_main)",
+   "where": "NIGHT · Own · KONKR",
+   "evidence": [
+    "k470h NIGHT_OWN_main.png"
+   ],
+   "root_cause": "value Text maxLines = 2 broke the long word over three lines.",
+   "fix": "the value shrinks to fit its two lines (TextAutoSize, readable minimum).",
+   "verified": "k470k / k470ks screenshots"
+  },
+  {
+   "id": "D228",
+   "title": "Magazine at font 1.3: '▸ ACHIEVEMENTS' broke into '▸ / ACHIEVEMENT / S' (S hidden); its box touched the next column",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 k470hs MAGAZINE_OWN (geometry FAIL 3x59 px)",
+   "where": "MAGAZINE · Own · KONKR font 1.3",
+   "evidence": [
+    "k470hs MAGAZINE_OWN_main.png"
+   ],
+   "root_cause": "maxLines = 2 with no shrink; the two callout columns had no gutter.",
+   "fix": "callouts shrink to fit two lines; 8 dp gutter.",
+   "verified": "k470ks"
+  },
+  {
+   "id": "D229",
+   "title": "Popup backdrops drawn from a small in-memory copy (Stadium 2 popup soft, Bubbles sharp)",
+   "rule": "—",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 owner review of the 469 PDF (pages 14 vs Stadium 2 popup)",
+   "where": "GameWindow / Banner backdrops, Twin hinge picture, Homes, Wii wide art",
+   "evidence": [
+    "before_twin_odin vs o470_twin_after (crop)",
+    "VoltcapQA backdrop log"
+   ],
+   "root_cause": "AsyncImage(url) is Coil's INEXACT request keyed by the address only: it reused the home screen's 360-720 px decode of the same picture.",
+   "fix": "rememberBackdropRequest: decoded to the screen's long side under its own memory key, the thumbnail only as a placeholder; logs the drawn size.",
+   "verified": "Odin: 'backdrop 920x430 for 1920x1025' (= the source's own size); KONKR see k470k/backdrop.txt"
+  },
+  {
+   "id": "D230",
+   "title": "Gate false positives: wide flat-bottomed text / scan lines read as a cut button (Arcade PRESS START)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 k470f / o470F ARCADE visual FAIL",
+   "where": "tools/qa/tools/geomcheck.py pixel_check",
+   "evidence": [
+    "k470f ARCADE: rows 142-148 letters, 149-161 fill (bar whole to 161)"
+   ],
+   "root_cause": "a row where nearly the whole width changes was taken as the fill's end; a pixel font's letter bottoms and the tube's scan lines do that with fill below.",
+   "fix": "a candidate cut is ignored when the row below it is still the button's own fill (every shade read at its sides, minus colours found just outside it). Selftests: real Stadium 2 cut and a synthetic 12 px cut still FAIL; the wide-text bar PASSES.",
+   "verified": "test_qa.py 96 OK; 224 main screenshots of 470 rerun: 0 false cuts"
+  },
+  {
+   "id": "D231",
+   "title": "Test path: run tags differing only in case overwrote each other's dumps (shared storage is case-insensitive)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed",
+   "found": "2026-11-04 update 470 o470F (dumps saved over o470f_*, copied 0)",
+   "where": "tools/qa/device/popclip.sh (tags)",
+   "evidence": [
+    "o470F qa_clip empty; o470f_ARCADE_OWN_main.json 06:16"
+   ],
+   "root_cause": "/sdcard is case-insensitive; the end-of-run copy globbed case-sensitively.",
+   "fix": "recovered by hand (copied under the right tag); later runs use tags that differ by more than case (o470h, k470k).",
+   "verified": "o470F graded from the recovered dumps"
   }
  ]
 }

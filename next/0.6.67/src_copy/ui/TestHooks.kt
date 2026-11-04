@@ -25,6 +25,16 @@ internal object TestHooks {
     val look = mutableStateOf<String?>(null)
     @Volatile var previewOnly = false
 
+    /** Update 469: the game a test asks for — its name or ROM file name holding [q], compared on letters and digits only. */
+    fun matchGame(games: List<com.shelf.launcher.data.Game>, q: String): com.shelf.launcher.data.Game? {
+        fun n(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
+        val k = n(q)
+        if (k.isEmpty()) return null
+        return games.firstOrNull { n(it.name) == k }
+            ?: games.firstOrNull { n(it.name).contains(k) }
+            ?: games.firstOrNull { g -> g.romPath?.let { n(it.substringAfterLast('/')).contains(k) } == true }
+    }
+
     /** Update 326: the flag file is there (read once): the test-only logging may run. */
     @Volatile private var enabledCache: Boolean? = null
     /**
@@ -370,6 +380,20 @@ internal object TestHooks {
                 val cp = context.getSharedPreferences("categories", android.content.Context.MODE_PRIVATE)
                 java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
                     .writeText((cp.getString("order", "") ?: "") + "\n" + (cp.getStringSet("hidden", null)?.joinToString(",") ?: "\u0000"))
+                // Update 469: the Look settings too (the home layout lives there, not in Features — a test once left the KONKR on
+                // File select and the Odin's layout before the tests was never known). Every value with its type.
+                runCatching {
+                    val o = org.json.JSONObject()
+                    context.getSharedPreferences("appearance", android.content.Context.MODE_PRIVATE).all.forEach { (k, v) ->
+                        when (v) {
+                            is Boolean -> o.put(k, "b:$v"); is Int -> o.put(k, "i:$v"); is Long -> o.put(k, "l:$v")
+                            is Float -> o.put(k, "f:$v"); is String -> o.put(k, "s:$v")
+                            is Set<*> -> o.put(k, "z:" + org.json.JSONArray(v.map { it.toString() }).toString())
+                        }
+                    }
+                    java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_appearance.json").writeText(o.toString())
+                    android.util.Log.e("VoltcapTest", "appearance saved: home_layout=${o.optString("home_layout")}")
+                }
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
@@ -387,6 +411,25 @@ internal object TestHooks {
                 if (vf.exists()) restoreViewState?.invoke(org.json.JSONObject(vf.readText())) { result ->
                     runCatching { verify.writeText(result + "\n") }
                     android.util.Log.e("VoltcapTest", "view state $result")
+                }
+                // Update 469: the Look settings back exactly as saved (keys added since removed); restart Voltcap afterwards so the
+                // screen reads them (the caller force-stops and starts it).
+                val af = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_appearance.json")
+                if (af.exists()) runCatching {
+                    val o = org.json.JSONObject(af.readText())
+                    val sp = context.getSharedPreferences("appearance", android.content.Context.MODE_PRIVATE)
+                    val e = sp.edit()
+                    sp.all.keys.filter { !o.has(it) }.forEach { e.remove(it) }
+                    o.keys().forEach { k ->
+                        val v = o.getString(k); val x = v.substring(2)
+                        when (v.take(2)) {
+                            "b:" -> e.putBoolean(k, x.toBoolean()); "i:" -> e.putInt(k, x.toInt()); "l:" -> e.putLong(k, x.toLong())
+                            "f:" -> e.putFloat(k, x.toFloat()); "s:" -> e.putString(k, x)
+                            "z:" -> { val a = org.json.JSONArray(x); e.putStringSet(k, (0 until a.length()).map { a.getString(it) }.toSet()) }
+                        }
+                    }
+                    e.commit()
+                    android.util.Log.e("VoltcapTest", "appearance restored: home_layout=${o.optString("home_layout")}")
                 }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }

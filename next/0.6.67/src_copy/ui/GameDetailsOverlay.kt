@@ -380,7 +380,10 @@ fun GameDetailsOverlay(
                 // Swallow taps on the window itself so they don't close it.
                 .pointerInput(Unit) { detectTapGestures { } }
         ) {
-            val bannerH = (maxHeight * 0.42f).coerceIn(140.dp, 340.dp)
+            // (Update 469, owner review — Bubbles' Details on the KONKR: the banner took 42 % and the Achievements heading was cut
+            // in half at the window's foot. On a short window the banner is a little lower, so Play, the numbers, the facts
+            // line and the next heading open whole; the page still scrolls for the rest.)
+            val bannerH = (maxHeight * if (maxHeight < 480.dp) 0.36f else 0.42f).coerceIn(140.dp, 340.dp)
             val windowW = maxWidth
             // The chosen backdrop (Appearance › Details window), very faint behind the page.
             DetailsBackdropLayer(
@@ -420,7 +423,8 @@ fun GameDetailsOverlay(
                     Box(
                         Modifier.fillMaxSize().background(
                             Brush.verticalGradient(
-                                0f to Color.Transparent, 0.55f to Color.Transparent, 1f to pageColor
+                                // (Update 469: a deeper scrim under the name — it sat straight on the art's characters.)
+                                0f to Color.Transparent, 0.45f to Color.Transparent, 0.78f to pageColor.copy(alpha = 0.6f), 1f to pageColor
                             )
                         )
                     )

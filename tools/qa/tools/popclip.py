@@ -156,8 +156,15 @@ def grade(run, n):
     # The touch tap on Play (popclip.sh, launches blocked): it must ask for the launch.
     pf = os.path.join(run, f"{n}_play.txt")
     if os.path.exists(pf):
-        m = re.search(r"blocked=(\d+)", open(pf, encoding="utf-8").read())
-        if m and int(m.group(1)) > 0: notes.append("a tap on Play asks for the launch (blocked)")
+        txt = open(pf, encoding="utf-8").read()
+        m = re.search(r"blocked=(\d+)", txt)
+        # (Update 469: the blocked launch must be for the game the run is on — popclip.sh writes the logged key and game.txt.)
+        keys = re.findall(r"^key=(.*)$", txt, re.M)
+        gf = os.path.join(run, "game.txt")
+        want = re.sub(r"[^a-z0-9]", "", open(gf, encoding="utf-8").read().lower()) if os.path.exists(gf) else ""
+        wrong = [k for k in keys if want and want not in re.sub(r"[^a-z0-9]", "", k.lower())]
+        if m and int(m.group(1)) > 0 and wrong: probs.append("a tap on Play asked to launch another game")
+        elif m and int(m.group(1)) > 0: notes.append("a tap on Play asks for the launch (blocked)" + (" of the right game" if keys and want else ""))
         else: probs.append("a tap on Play asked for no launch")
     else:
         notes.append("Play tap not recorded")

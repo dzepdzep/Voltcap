@@ -104,3 +104,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/GbSide469Test.kt
 /app/src/test/java/com/shelf/launcher/ui/SnapRows469Test.kt
 /qa_pull/
+/app/src/test/java/com/shelf/launcher/ui/Fixtures469Test.kt

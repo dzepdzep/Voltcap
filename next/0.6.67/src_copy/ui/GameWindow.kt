@@ -1721,7 +1721,7 @@ private fun TvWindowBody(
         val roomy = maxWidth > 380.dp
         when (page) {
             WinPage.MAIN -> {
-                if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                 val video = state.videoUrls[g.stableKey]
                 VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
@@ -1927,7 +1927,7 @@ private fun WindowBody(
             ) { pg ->
                 when (pg) {
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
-                        if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                         val video = state.videoUrls[g.stableKey]
                         VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                         if (showName) {
@@ -2182,7 +2182,7 @@ private fun SceneBody(
     val allChips = buildList {
         status?.let { st ->
             val sv = st.sync
-            add(WinAction("Saves: " + sv.text, sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
+            add(WinAction(savesLabel(sv.text), sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
             st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf)) }
         }
     }
@@ -2331,7 +2331,7 @@ private fun WinStatusLine(look: WinLook) {
     // each other, each in full — they were cut with "…" and, on the Thor's top screen, cut off by the window's edge.)
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val sv = st.sync
-        WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
+        WinStatusChip(look, sv.icon, savesLabel(sv.text), urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
         st.perf?.let { p ->
             WinStatusChip(look, androidx.compose.material.icons.Icons.Filled.Speed, p.perf.summary, urgent = false, onClick = st.onPerf)
         }
@@ -2681,12 +2681,14 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
-            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
+            // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
+            // scrolls, so the name and the facts wrap in full.)
+            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null)
             val facts = listOfNotNull(
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                 meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
             ).joinToString("  ·  ")
-            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp, maxLines = 2)
+            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp)
             Spacer(Modifier.height(8.dp))
             val list = state.raAchievementDetails[g.stableKey].orEmpty()
             val p = state.raProgress[g.stableKey]

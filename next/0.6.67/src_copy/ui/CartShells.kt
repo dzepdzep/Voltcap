@@ -127,14 +127,22 @@ internal object CartShells {
 
     val all: List<CartShell> = listOf(
         // ── Nintendo ──
-        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f, rect(120f, 134f, 2f, 1f), lab(11.5f, 1f, 97f, 48f),
-            listOf(rid(8f, 70f, 104f, 58f, 12)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
-            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), check = CaseCheck.ESTIMATED,
+        // (Update 468, batch 4 — measured off https://commons.wikimedia.org/wiki/File:NES-Cartridge.jpg (Evan-Amos, public
+        // domain, straight-on front, no label): the sticker stands upright down the right half (its recess 47.8 mm in from
+        // the left, 56.8 mm wide, from the top edge down 90.7 mm — the 55 × 97 mm sticker, 7 mm over the top), the grip
+        // grooves are a column on the left (18.4 – 44.5 mm, ~24 grooves top to foot), a moulded arrow under the sticker points
+        // in, and the foot narrows to the connector from 109 mm down (6.9 mm in each side). It was drawn with the sticker
+        // across the top and the grooves across the bottom half — what 463 found in every NES cartridge photo.)
+        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f,
+            o(0f, 0f, 1f, 120f, 0f, 1f, 120f, 109.2f, 0.5f, 113.3f, 109.2f, 0.5f, 113.3f, 134f, 0.8f, 6.9f, 134f, 0.8f, 6.9f, 109.2f, 0.5f, 0f, 109.2f, 0.5f),
+            lab(48.7f, 0.5f, 55f, 90f),
+            listOf(rid(18.4f, 1f, 26.1f, 118f, 24)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
+            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), extras = listOf(ShellExtra(ShellExtra.ARROW, 55.1f, 98.9f, 9.4f, 9.3f)), check = CaseCheck.ESTIMATED,
             // (Update 240, #90: checked, not an axis bug — the 55 × 97 sticker is 97 wide and 55 tall, 7 mm of it over the
             // top edge, so 97 × 48 on the front, centred ((120 − 97) / 2 = 11.5). Only the fold is new: a scan of the whole
             // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
             labelFold = 7f,
-            note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
+            note = "Size and label (55×97 mm upright, 7 mm over the top) measured (NESdev, ConsoleMods; front layout from Evan-Amos's photo, update 468); back screw places and radii estimated."),
         // (Update 466, tools/qa/BACKS_466.md: the real cassette's narrower connector tab — measured off a straight-on front
         // photo, Wikimedia Commons "Famicom 'Devil World' cartridge (5158740395).jpg", Bryan Ochalla, CC BY-SA 2.0, and the
         // Jaleco back photo: the body 62 mm tall, the tab 7.1 mm in from each side and 9 mm tall. The shell was a plain
@@ -198,9 +206,9 @@ internal object CartShells {
         CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), GB_LABEL,
             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)), extras = GB_EXTRAS,
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
-        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
+        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 7.8f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)), extras = GB_EXTRAS,
-            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured, layout estimated."),
+            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured (update 468: 7.8 mm thick, the GBC Game Pak side photos — it was 9), layout estimated."),
         CartShell("gba", "Game Boy Advance Game Pak", ShellGroup.NINTENDO, 60f, 35f, 8f,
             o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f),
             // (Update 240, #90: the sticker 43 × 22 mm with 1 mm corners — ConsoleMods' Cart Labels table, test-fitted on an
@@ -902,7 +910,9 @@ internal object CartShells {
         // printed Game Boy sticker — GeneratedLabels.printed — on the same shell; your own label or a scan still comes first.)
         val kindNow = GeneratedLabels.kindOf(s.id)
         val labelKind = if ((GeneratedLabels.enabled || GeneratedLabels.printed(kindNow)) && !scan && art != null && head == null && frame == null && !paperOn) kindNow else null
-        val key = "f12|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 468: which parts the clear pak's board has — its ROM header's cartridge type, GbBoard.)
+        val boardType = if (colour.opacity < 0.85f && CartBacks.of(s.id)?.board != null) com.shelf.launcher.data.LabelIds.of(title)?.cartType else null
+        val key = "f13|${boardType ?: ""}|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -913,16 +923,29 @@ internal object CartShells {
         val path = outlinePath(s, k)
         val base = colour.argb
         val op = colour.opacity
-        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), op), withAlpha(shade(base, -0.12f), op), Shader.TileMode.CLAMP)
+        // (Update 468: a measured clear pak's board — GbBoard, drawn from the Pokémon Silver board photos — under the plastic,
+        // the plastic's tint over it; it was a flat green rectangle with a grey block on top.)
+        val measuredBoard = if (op < 0.85f) CartBacks.of(s.id)?.board else null
+        if (measuredBoard != null) {
+            val m = measuredBoard
+            c.save(); c.clipPath(path)
+            p.color = withAlpha(shade(base, -0.55f), 0.55f); c.drawPath(path, p)
+            val rb = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
+            // (The back's millimetres are seen from behind: from the front the board sits mirrored across the shell.)
+            val rf = RectF(bw - rb.right, rb.top, bw - rb.left, rb.bottom)
+            val pcb = GbBoard.chipSide(boardType, rf.width().toInt(), rf.height().toInt())
+            p.alpha = 235; c.drawBitmap(pcb, null, rf, p); p.alpha = 255
+            c.restore()
+        }
+        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), if (measuredBoard != null) op * 0.5f else op), withAlpha(shade(base, -0.12f), if (measuredBoard != null) op * 0.5f else op), Shader.TileMode.CLAMP)
         c.drawPath(path, p)
         p.shader = null
         c.save(); c.clipPath(path)
         // A see-through shell shows its board (green PCB, a chip) inside.
-        if (op < 0.85f) {
+        if (op < 0.85f && measuredBoard == null) {
             // (Update 466: where it was measured, the board where the real one is — CartBack.board, the same board seen
             // from the front, so front, sides and back agree.)
-            val board = CartBacks.of(s.id)?.board?.let { m -> RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k) }
-                ?: RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
             p.color = withAlpha(0xFF1E5F3A.toInt(), 0.55f * (1f - op))
             c.drawRect(board, p)
             p.color = withAlpha(0xFF111111.toInt(), 0.6f * (1f - op))
@@ -1163,13 +1186,15 @@ internal object CartShells {
      * the same shape, screws, panels and contacts without the maker's text and stickers (a game on another console's
      * shell). Shells without researched backs keep the plain one. The front is never touched.
      */
-    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null): Bitmap {
+    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null,
+        /** Update 468: a clear pak's board parts — its ROM header's cartridge type (GbBoard); null: the photographed board's. */
+        boardType: Int? = null): Bitmap {
         val data = CartBacks.of(s.id)
         val plainText = neutral && data?.neutralOk != false
         // (Update 306: [brand] — the game's own console, on another console's shell: the maker's name and model numbers
         // moulded on the back become that console's name; the rest of the shell — screws, panels, stickers — stays.)
         val rebrand = brand?.takeIf { !plainText && data != null && !belongsTo(s.id, it) }
-        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}"
+        val key = "b2|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}|${boardType ?: ""}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -1194,7 +1219,9 @@ internal object CartShells {
             if (m != null) {
                 // (In the back's own millimetres, seen from behind, like everything drawBack draws — the canvas mirrors it.)
                 val board = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
-                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+                // (Update 468: its solder side — traces, vias, test pads, finger stubs — GbBoard, from the photo of the
+                // Silver board's back; drawn reading right from behind, like everything drawBack draws.)
+                c.drawBitmap(GbBoard.solderSide(boardType, board.width().toInt(), board.height().toInt()), null, board, p)
             } else {
                 val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
                 p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
@@ -1256,11 +1283,11 @@ internal object CartShells {
      * console's name in place of the maker's (Auto used to leave the markings off there; Authentic left Nintendo's on a
      * PlayStation game). [console] null: not known — Authentic keeps the markings, Auto leaves them off.
      */
-    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle): Bitmap = when {
-        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true)
-        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO)
-        belongsTo(s.id, console) -> back(s, colour, maxPx)
-        else -> back(s, colour, maxPx, brand = console)
+    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle, boardType: Int? = null): Bitmap = when {
+        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true, boardType = boardType)
+        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO, boardType = boardType)
+        belongsTo(s.id, console) -> back(s, colour, maxPx, boardType = boardType)
+        else -> back(s, colour, maxPx, brand = console, boardType = boardType)
     }
 
     /** Update 306: a strip the Switch header's shape in dark plastic grey with [brand] (a console's name) on it. */

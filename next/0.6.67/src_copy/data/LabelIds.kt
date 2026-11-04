@@ -14,7 +14,9 @@ package com.shelf.launcher.data
  * ([version]). Nothing is written anywhere.
  */
 object LabelIds {
-    data class Id(val code: String?, val unofficial: String?, val region: String?)
+    data class Id(val code: String?, val unofficial: String?, val region: String?,
+        /** Update 468: a Game Boy / Color ROM's cartridge type byte (0x0147, Pan Docs) — which parts its board has (GbBoard). */
+        val cartType: Int? = null)
 
     private val map = java.util.concurrent.ConcurrentHashMap<String, Id>()
     /** Bumped when header codes come in, so generated labels are drawn again with them. */
@@ -94,6 +96,15 @@ object LabelIds {
         }
     }.getOrNull()
 
+    /** Update 468: the cartridge type byte of a Game Boy [head], when its header checksum matches (pure — unit-tested). */
+    fun gbCartType(head: ByteArray): Int? {
+        if (head.size < 0x150) return null
+        var x = 0
+        for (i in 0x134..0x14C) x = (x - (head[i].toInt() and 0xFF) - 1) and 0xFF
+        if (x != (head[0x14D].toInt() and 0xFF)) return null
+        return head[0x147].toInt() and 0xFF
+    }
+
     /** Reads what the labels need for [games], once per library, in the background. */
     suspend fun index(games: List<Game>) {
         val tag = games.size * 31 + (games.firstOrNull()?.romPath?.hashCode() ?: 0)
@@ -107,8 +118,10 @@ object LabelIds {
                 val region = regionOf(path?.substringAfterLast('/') ?: g.name) ?: regionOf(g.name)
                 val ext = path?.substringAfterLast('.', "")?.lowercase().orEmpty()
                 val code = if (un != null || path == null || ext !in HEADER_EXT) null else readHead(path)?.let { codeFromHeader(ext, it) }
-                val id = Id(code, un, region ?: code?.substringAfterLast('-')?.takeIf { it.length == 3 })
-                if (id.code != null || id.unofficial != null || id.region != null) {
+                val head = if (path != null && (ext == "gb" || ext == "gbc")) readHead(path) else null
+                val type = head?.let { gbCartType(it) }
+                val id = Id(code, un, region ?: code?.substringAfterLast('-')?.takeIf { it.length == 3 }, type)
+                if (id.code != null || id.unofficial != null || id.region != null || id.cartType != null) {
                     map[norm(g.name)] = id
                     map[norm(com.shelf.launcher.ui.gameDisplayName(g.name))] = id
                 }

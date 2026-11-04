@@ -1065,7 +1065,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val testGame = TestHooks.game.value
     LaunchedEffect(testGame) {
         val q = testGame ?: return@LaunchedEffect
-        val g = state.games.firstOrNull { it.name.contains(q, ignoreCase = true) } ?: run { TestHooks.game.value = null; return@LaunchedEffect }
+        // (Update 469: matched by TestHooks.matchGame — letters and digits only, name or ROM file — and logged, so a run can check
+        // it is on the game it asked for: "Kirby - Tilt" and "One Piece - Yume" matched nothing and the run stayed on the old game.)
+        val g = TestHooks.matchGame(state.games, q)
+        android.util.Log.e("VoltcapTest", "game '$q' -> ${g?.name ?: "NO MATCH"}")
+        if (g == null) { TestHooks.game.value = null; return@LaunchedEffect }
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
         viewModel.setSearchQuery("")
         viewModel.setPlatformFilter(g.platform)

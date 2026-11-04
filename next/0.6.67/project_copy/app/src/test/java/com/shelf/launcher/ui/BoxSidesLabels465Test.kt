@@ -24,23 +24,33 @@ class BoxSidesLabels465Test {
         assertEquals(listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR"), com.shelf.launcher.data.Features.BoxSides.values().map { it.name })
     }
 
-    @Test fun migrationOnlyMovesAnUnpickedFill() {
+    /** Update 467: no saved value ever changes; an existing install without one keeps Fill; only a new install gets Plain colour. */
+    @Test fun migrationNeverOverwritesAStoredValue() {
         val F = com.shelf.launcher.data.Features
-        fun run(saved: String?, chosen: Boolean): String? {
+        fun run(saved: String?, existing: Boolean): String? {
             val p = FakePrefs(saved?.let { mutableMapOf<String, Any?>("box_sides" to it) } ?: mutableMapOf())
-            F.boxSidesChosen.state.value = chosen
             F.boxSides.state.value = saved?.let { n -> com.shelf.launcher.data.Features.BoxSides.values().first { it.name == n } } ?: F.boxSides.default
-            F.migrate466(p)
+            F.migrate467(p, existing)
             return p.m["box_sides"] as String?
         }
-        assertEquals(null, run("FILL", chosen = false))          // never picked → the new default
-        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
-        assertEquals("FILL", run("FILL", chosen = true))         // picked in Settings → kept
+        for (v in listOf("FILL", "AUTHENTIC", "PLAIN", "COLOUR")) {
+            assertEquals(v, run(v, existing = true)); assertEquals(v, run(v, existing = false))
+        }
+        assertEquals("FILL", run(null, existing = true))          // upgraded install: keeps what it showed
         assertEquals(com.shelf.launcher.data.Features.BoxSides.FILL, F.boxSides.state.value)
-        assertEquals("PLAIN", run("PLAIN", chosen = false))      // any other saved style is a choice → kept
-        assertEquals("AUTHENTIC", run("AUTHENTIC", chosen = false))
-        assertEquals(null, run(null, chosen = false))            // new install → default, nothing written
-        F.boxSidesChosen.state.value = false; F.boxSides.state.value = F.boxSides.default
+        assertEquals(null, run(null, existing = false))           // new install: Plain colour default, nothing written
+        assertEquals(com.shelf.launcher.data.Features.BoxSides.COLOUR, F.boxSides.state.value)
+        val once = FakePrefs(mutableMapOf("m467_box_sides_done" to true))
+        F.migrate467(once, true); assertEquals(null, once.m["box_sides"]) // runs once only
+        F.boxSides.state.value = F.boxSides.default
+    }
+
+    /** Update 467: Stadium 2's plain sides are its own dark indigo background, not its red logo; other covers unchanged. */
+    @Test fun stadium2SidesAreItsIndigoBackground() {
+        assertEquals(0xFF120123.toInt(), BoxSides.measuredColour("Pokemon Stadium 2", "n64"))
+        assertEquals(0xFF120123.toInt(), BoxSides.measuredColour("Pokémon Stadium 2", "N64"))
+        assertEquals(null, BoxSides.measuredColour("Pokemon Stadium", "n64"))
+        assertEquals(null, BoxSides.measuredColour("Pokemon Stadium 2", "gbc"))
     }
 
     private class FakePrefs(val m: MutableMap<String, Any?>) : android.content.SharedPreferences {

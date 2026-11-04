@@ -83,8 +83,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
             // The art: the game's backdrop with a slow drift in, fading into the page.
             Box(Modifier.fillMaxWidth().height(h * (if (ctx.page == WinPage.MAIN) 0.42f else 0.34f)).clipToBounds()) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
+                // (Update 469: the window-wide backdrop at the screen's size — rememberBackdropRequest — not the 360–720 px card decode.)
                 if (art != null) AsyncImage(
-                    rememberStyleArtRequest(art), null, Modifier.fillMaxSize().graphicsLayer {
+                    if (art == ctx.cover) rememberStyleArtRequest(art) else rememberBackdropRequest(art), null, Modifier.fillMaxSize().graphicsLayer {
                         val k = ctx.reveal().coerceIn(0f, 1f); val z = 1.14f - 0.14f * k; scaleX = z; scaleY = z
                     }, contentScale = ContentScale.Crop
                 )
@@ -196,6 +197,20 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 900.dp)
     val h = minOf(ctx.maxH, 560.dp)
     val compact = h < 400.dp
+    // (Update 469, D213: with larger text (1.3×) on a short screen — the KONKR, 427 dp — the eight action rows didn't fit beside
+    // the facts and Back was cut. Then the actions take the drawer's whole width in two columns; the facts stay on Details.)
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    // (Recheck at 1.3× on the KONKR: its drawer is compact (< 400 dp) — the first fix tested !compact and missed it; Back was
+    // still cut by the list's scroll. Compact or not, larger text on a short drawer takes the two columns.)
+    val big = fontScale > 1.1f && h < 480.dp
+    // (Two columns only where each gets ~150 dp: beside the inspected case the drawer is ~230 dp and the words were cut
+    // ("ls D", "syn"). There one column with tighter rows — eight rows of 1.3× text fit a 400 dp drawer.)
+    val tight = big && (w * 0.66f - 44.dp) >= 300.dp
+    // (Also a compact drawer whose rows don't fit at the normal height — the Odin at display size larger, its Performance key
+    // in the list: Back cut by 12 px. Rows ~ line + 12 dp padding + 2 dp gap; the logo, title and rule take ~130 dp.)
+    val lineDp = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
+    val rowsNeed = (lineDp + 14.dp) * (ctx.buttons.size + ctx.tools.size)
+    val dense = (big && !tight) || (compact && rowsNeed > h - 130.dp)
     val accent = ctx.accent
     Box(Modifier.width(w).height(h)) {
         // The poster you picked, standing on the left as the drawer comes out past it.
@@ -227,12 +242,12 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                 Row(Modifier.weight(1f)) {
                     // The actions as a media-centre list.
                     val s = rememberScrollState()
-                    Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
-                            SceneControl(a, Modifier.fillMaxWidth()) { on ->
+                    val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                    @Composable fun actionRow(a: WinAction, m: Modifier) {
+                            SceneControl(a, m) { on ->
                                 Row(
                                     Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (compact || h < 500.dp) 6.dp else 9.dp),
+                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(a.icon, null, tint = if (on) Color.Black else if (a.urgent) accent else Color.White.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
@@ -242,9 +257,20 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                                     FullText(a.label, color = if (on) Color.Black else Color.White, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = if (a.primary || on) FontWeight.Bold else FontWeight.Medium)
                                 }
                             }
-                        }
                     }
-                    if (!compact) {
+                    if (tight) {
+                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            acts.chunked(2).forEach { pair ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    pair.forEach { a -> actionRow(a, Modifier.weight(1f)) }
+                                    if (pair.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    } else Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth()) }
+                    }
+                    if (!compact && !tight) {
                         Spacer(Modifier.width(18.dp))
                         // The info list and the plot.
                         val s2 = rememberScrollState()

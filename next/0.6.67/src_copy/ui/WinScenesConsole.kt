@@ -173,7 +173,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                             Row(
                                 // (Update 467, popup gate: on a short screen — the KONKR — the eight commands ran past the blade's
                                 // bottom and Back was cut in half; shorter rows there keep the whole list on the blade.)
-                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 440.dp) 38.dp else 44.dp) else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
+                                // (Update 469, display size larger — KONKR at 280 dpi, a 366 dp screen: Back cut by 14 px again;
+                                // one more step there, rows still >= 24 dp.)
+                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 380.dp) 32.dp else if (h < 440.dp) 38.dp else 44.dp) else if (h < 380.dp) 25.dp else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
                                     .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                     .padding(horizontal = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -600,7 +602,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 500.dp)
     val compact = h < 380.dp
     Box(
-        Modifier.size(w, h).graphicsLayer {
+        // (Update 470, QA only: the page settles turned 2° — its rows' straight boxes cross by a few px though the turned rows
+        // don't (k470f: laid-out boxes 2 px apart). Marked like the rental tag; the tap test checks the crossing strip.)
+        Modifier.size(w, h).then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
             // (Update 347: the torn page is lifted off the issue — it comes up tilted back from its bottom edge, turning,
             // and settles crooked on top; closing lays it back down.)
             val k = ctx.reveal().coerceIn(0f, 1f)
@@ -666,13 +670,18 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
                         val callouts = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                         val half = (callouts.size + 1) / 2
-                        Row(Modifier.fillMaxWidth()) {
+                        // (Update 470: a gutter between the two columns — at font 1.3 a wrapped callout reached the next column's edge.)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             for (col in listOf(callouts.take(half), callouts.drop(half))) {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     col.forEach { a ->
                                         SceneControl(a, Modifier) { on ->
+                                            // (Update 470, rule 11: at font 1.3 on the KONKR "▸ ACHIEVEMENTS" broke into "▸ / ACHIEVEMENT / S" with
+                                            // the S on a hidden third line — a callout now shrinks a step or two to fit its two lines.)
+                                            val cs = if (compact) 12.sp else 14.sp
                                             Text("▸ " + a.label.uppercase(), color = if (a.urgent) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold,
-                                                fontSize = if (compact) 12.sp else 14.sp, letterSpacing = 0.5.sp, maxLines = 2,
+                                                fontSize = cs, letterSpacing = 0.5.sp, maxLines = 2,
+                                                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(cs), maxFontSize = cs),
                                                 modifier = Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                                     .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp))
                                         }
@@ -713,11 +722,16 @@ internal fun RentalTag(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 460.dp)
     val h = minOf(ctx.maxH, 520.dp)
     // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
-    val short = h < 380.dp
-    val tear = if (short) 0.1f else 0.15f
+    // (Update 469, D214: with larger text (1.3×) on a short screen — the KONKR — the title and facts grew and pushed BACK under
+    // the tag's foot. Then the tag takes its short-screen layout: one line of facts, a two-line title, three keys across.)
+    // (Update 469: 480 at 1.3× — the Odin's 445 dp screen with its extra Performance key cut BACK under the tag's foot.)
+    val short = h < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && h < 480.dp)
+    // (Update 469, owner review: the tag was always as tall as the screen allows — the keys sat at the top and a large yellow
+    // field stayed empty under them. The tag is now as tall as its content (up to the screen), the tear-off a fixed strip.)
+    val tearDp = if (short) 44.dp else 64.dp
     Box(
         // (Update 467, QA only: the tag hangs tilted — its rows' boxes cross a little — marked so the geometry gate allows it.)
-        Modifier.size(w, h).then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
+        Modifier.width(w).heightIn(max = h).then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
             // (Update 347: the tag swings in on the string through its hole as the case comes off the shelf — past
             // straight and back, once — and swings away as the case goes back.)
             val k = ctx.reveal().coerceIn(0f, 1f)
@@ -727,18 +741,20 @@ internal fun RentalTag(ctx: WinSceneCtx) {
             alpha = (k * 2f).coerceIn(0f, 1f)
         }
     ) {
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(Modifier.matchParentSize()) {
             translate(left = 8f, top = 10f) { drawRect(Color.Black.copy(alpha = 0.35f)) }
             drawRect(yellow)
             // The hole it hung from and the perforation above the tear-off.
             drawCircle(ink, 9f, Offset(size.width / 2f, 22f))
+            val t = tearDp.toPx()
+            val perf = size.height - t + 0.13f * t
             var x = 10f
-            while (x < size.width - 10f) { drawCircle(ink.copy(alpha = 0.6f), 2.5f, Offset(x, size.height * (1f - tear + 0.02f))); x += 12f }
+            while (x < size.width - 10f) { drawCircle(ink.copy(alpha = 0.6f), 2.5f, Offset(x, perf)); x += 12f }
             // The barcode.
             var bx = 18f; var i = 0
-            while (bx < size.width * 0.6f) { val bw = if (i % 3 == 0) 6f else 3f; drawRect(ink, Offset(bx, size.height * (1f - tear + 0.045f)), Size(bw, size.height * (tear - 0.07f))); bx += bw + 3f + (i % 2) * 2f; i++ }
+            while (bx < size.width * 0.6f) { val bw = if (i % 3 == 0) 6f else 3f; drawRect(ink, Offset(bx, perf + 0.17f * t), Size(bw, 0.55f * t)); bx += bw + 3f + (i % 2) * 2f; i++ }
         }
-        Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = h * tear)) {
+        Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = tearDp)) {
             if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
             Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
                 maxLines = if (short) 2 else 3)
@@ -765,7 +781,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(if (short) 4.dp else 8.dp))
                 // (Update 467, popup gate: on the KONKR the last row — BACK — ended 10 dp under the tag's foot; short tags
                 // space the rows closer and make them 24 dp, still a whole touch size.)
-                Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(if (h < 440.dp) 2.dp else 4.dp)) {
+                Column(Modifier.weight(1f, fill = false).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(if (h < 440.dp) 2.dp else 4.dp)) {
                     @Composable
                     fun key(a: WinAction, m: Modifier) {
                         SceneControl(a, m) { on ->
@@ -801,7 +817,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                     }
                 }
             } else {
-                Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ink)) { ctx.pageBody(Modifier.fillMaxSize()) }
+                Box(Modifier.weight(1f, fill = false).fillMaxWidth().heightIn(min = (h * 0.45f).coerceAtMost(260.dp)).border(2.dp, ink)) { ctx.pageBody(Modifier.fillMaxSize()) }
                 Spacer(Modifier.height(4.dp))
                 ctx.buttons.forEach { a ->
                     SceneControl(a, Modifier) { on ->

@@ -848,6 +848,33 @@ class TestClipGate(unittest.TestCase):
         p2 = os.path.join(os.path.dirname(p), "whole.png"); im2.save(p2)
         self.assertEqual(self.status(d, png=p2)["pixels"], "PASS")
 
+    def test_label_doubled_in_another_case_is_one_word(self):
+        # Update 470 (k470m ORBIT at 280 dpi): the narrow keys' label is "Play PLAY" — the popup opened, the gate said it didn't.
+        import geomcheck
+        self.assertEqual(geomcheck._label({"label": "Play PLAY"}), "Play")
+        self.assertTrue(geomcheck.PLAY_RE.match(geomcheck._label({"label": "Play PLAY"})))
+        self.assertEqual(geomcheck._label({"label": "Save sync SAVE SYNC"}), "Save sync")
+        self.assertEqual(geomcheck._label({"label": "Play Played"}), "Play Played")
+
+    def test_pixels_wide_flat_text_is_not_a_cut(self):
+        # Update 470 (k470f ARCADE): PRESS START in a pixel font — flat-bottomed dark letters across ~80 % of a yellow bar,
+        # scan lines over it. The line where the letters end changes the whole width, but the fill goes on to the bar's
+        # bottom: not a cut. The same bar really cut 12 px short still fails.
+        from PIL import Image, ImageDraw
+        import tempfile
+        d = {"screen": [960, 640], "density": 1.5, "windows": [{"at": [0, 0, 960, 640], "nodes": [
+            {"label": "PRESS START", "kind": "control", "full": [463, 116, 413, 46], "shown": [463, 116, 413, 46]}]}]}
+        def bar(cut):
+            im = Image.new("RGB", (960, 640), (4, 4, 16)); dr = ImageDraw.Draw(im)
+            dr.rectangle([463, 116, 875, 161 - cut], fill=(255, 226, 61))
+            dr.rectangle([500, 124, 840, 148], fill=(26, 19, 0))
+            for y in range(116, 162 - cut, 3):   # the tube's scan lines darken the fill and the letters alike
+                dr.line([463, y, 875, y], fill=(214, 190, 51))
+                if 124 <= y <= 148: dr.line([500, y, 840, y], fill=(22, 16, 0))
+            p = os.path.join(tempfile.mkdtemp(), "bar.png"); im.save(p); return p
+        self.assertEqual(self.status(d, png=bar(0))["pixels"], "PASS")
+        self.assertEqual(self.status(d, png=bar(12))["pixels"], "FAIL")
+
 
 class TestPopupGate(unittest.TestCase):
     """Update 467 (R26): the popup gate grades categories separately and never passes on missing evidence."""
@@ -874,6 +901,17 @@ class TestPopupGate(unittest.TestCase):
         g = popclip.grade(self.run_dir(before=False), "CASEFLOW_OWN")
         self.assertEqual(g["geometry"][0], "PASS")
         self.assertNotEqual(g["buttons"][0], "PASS")   # no More / Details steps recorded: never a pass
+
+    def test_play_for_another_game_fails(self):
+        # Update 469: the blocked launch must be the run's own game.
+        import popclip
+        d = self.run_dir(before=False)
+        open(os.path.join(d, "game.txt"), "w").write("Pokemon Stadium 2\n")
+        open(os.path.join(d, "CASEFLOW_OWN_play.txt"), "w").write("blocked=1\nkey=rom:/r/n64/Pokemon Snap (USA).z64\n")
+        g = popclip.grade(d, "CASEFLOW_OWN")["buttons"]
+        self.assertEqual(g[0], "FAIL"); self.assertIn("another game", g[1])
+        open(os.path.join(d, "CASEFLOW_OWN_play.txt"), "w").write("blocked=1\nkey=rom:/r/n64/Pokemon Stadium 2 (USA).z64\n")
+        self.assertNotIn("another game", popclip.grade(d, "CASEFLOW_OWN")["buttons"][1])
 
     def test_missing_main_is_infra(self):
         import popclip

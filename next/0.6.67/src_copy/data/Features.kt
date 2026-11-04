@@ -110,7 +110,7 @@ object Features {
         runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
-        migrate466(p) // Update 466
+        migrate467(p, FirstRun.isDone(context.applicationContext)) // Update 467 (replaces 466's)
         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
         run {
             val existing = FirstRun.isDone(context.applicationContext)
@@ -162,12 +162,21 @@ object Features {
      * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
      * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
      */
-    /** Update 466: a saved "Fill missing sides" that was never picked in Settings follows the new default (Plain colour). */
-    internal fun migrate466(p: android.content.SharedPreferences) {
-        if (!boxSidesChosen.value && p.getString("box_sides", null) == BoxSides.FILL.name) {
-            p.edit().remove("box_sides").apply()
-            boxSides.state.value = boxSides.default
+    /**
+     * Update 467 (owner: "if historical explicit choices cannot be distinguished from an old saved default, preserve
+     * existing installations' stored value and use Plain for new installations"): Plain colour is the default only for a new
+     * installation. A saved box-sides value is never changed; an installation from before 0.6.67 that never saved one keeps
+     * what it showed — Fill missing sides, the old default — written once so it no longer follows the new default.
+     * (Update 466's version turned a saved Fill into Plain colour; that could overwrite a real choice, so it is gone.)
+     */
+    internal fun migrate467(p: android.content.SharedPreferences, existingInstall: Boolean) {
+        if (p.getBoolean("m467_box_sides_done", false)) return
+        val e = p.edit().putBoolean("m467_box_sides_done", true)
+        if (existingInstall && !p.contains("box_sides")) {
+            e.putString("box_sides", BoxSides.FILL.name)
+            boxSides.state.value = BoxSides.FILL
         }
+        e.apply()
     }
 
     private fun migrate166(p: android.content.SharedPreferences) {
@@ -1145,9 +1154,8 @@ object Features {
     /** Update 466 (owner: "make Plain colour from the box art the new default … preserve any explicitly saved preference"). */
     val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())
     /**
-     * Update 466: true once a box-sides style was picked in Settings. Before 0.6.67 a saved "FILL" can't be told apart from
-     * the old default written back by a settings snapshot / backup, so a saved FILL without this mark follows the new default
-     * ([migrate466]); every other saved style (Authentic only, Plain cardboard) is a choice and stays.
+     * Update 466: true once a box-sides style was picked in Settings (kept for later decisions; since update 467 no saved
+     * value is ever changed because of it — [migrate467]).
      */
     val boxSidesChosen = BoolPref("box_sides_chosen", false)
     /**

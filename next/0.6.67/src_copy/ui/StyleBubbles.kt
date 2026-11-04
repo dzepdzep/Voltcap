@@ -767,7 +767,7 @@ private fun LiveAreaBody(c: StyleCtx, g: Game, compact: Boolean) {
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        FullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 18.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = if (compact) 20.sp else 27.sp)
+                        StableFullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 18.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = if (compact) 20.sp else 27.sp) // (Update 470: shrinks, then a third line, before it slides)
                         Text(if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform), color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 1)
                     }
                 }

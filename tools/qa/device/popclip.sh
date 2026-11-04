@@ -30,13 +30,22 @@ shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.1;
 k WAKEUP 0.5
 # (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
 # run logged "first A opened nothing". The picker is answered with B (keep the profile) first; the app's own mark says so.)
+# (Update 470: the mark is only trusted once it carries the running Voltcap's pid — just after an install it still held the
+# old process's "HOME" and the first A went to the picker again.)
+pid=$(pidof $P); for i in 1 2 3 4 5 6 7 8; do grep -q " $pid\$" $F/voltcap_qa_screen 2>/dev/null && break; sleep 0.8; done
 for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
-[ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 3; }
+[ -n "$GAME" ] && { logcat -c; A --es voltcap_test_game "$GAME"; sleep 3; echo "$GAME" > $OUT/game.txt
+  # (Update 469: the hook logs which game it found — a run on the wrong game is stopped, not graded.)
+  logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME'" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
+  logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed 's/.*VoltcapTest: //' >> $OUT/log.txt; }
 touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
 for lay in $LAYS; do
   # (Asleep = no focused window: every key would end in an ANR. Preview keeps the screen on; this is the backstop.)
   dumpsys power | grep -q "mWakefulness=Awake" || { k WAKEUP 1.5; echo "woke the screen before $lay" >> $OUT/log.txt; }
+  # (Update 470: preview asked again before every layout — a Voltcap restart (a crash, a font change) dropped it and the
+  # next layouts were SAVED: the KONKR ended on File select, the Odin on Art library after the 469 runs.)
+  A --ez voltcap_test_preview true
   A --es voltcap_test_layout $lay; sleep 3.5
   # (Update 469: Card binder and Pocket Quest play on A by default (cards_a_plays / pq_a_plays) — their window opens on A only
   # with that option off, so it is switched off for the sweep; the caller's voltcap_test_snapshot restore puts the owner's
@@ -84,6 +93,8 @@ for lay in $LAYS; do
       logcat -c
       if tapat "$PLAYW" probe; then sleep 1.3
         echo "blocked=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" > $OUT/${n}_play.txt
+        # (Update 469: which game it asked for — the key after "LAUNCH blocked <where>"; popclip.py checks it is the run's game.)
+        logcat -d -s VoltcapQA | grep 'LAUNCH blocked' | sed 's/.*LAUNCH blocked [^ ]* \(.*\) popup=.*/key=\1/;s/https[^ ]*//g' >> $OUT/${n}_play.txt
       fi
     fi
     # Controller: B closes the popup.

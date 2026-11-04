@@ -159,7 +159,9 @@ def _label(n):
     # pointer column joins in as "▶/PLAY": the word once, after the pointer.)
     stripped = re.sub(r"^[^\w]*/", "", stripped).strip() or stripped
     w = stripped.split(" ")
-    if len(w) % 2 == 0 and w[:len(w) // 2] == w[len(w) // 2:]: stripped = " ".join(w[:len(w) // 2])
+    # (Update 470: in either case — Orbit's narrow keys read "Play PLAY": the icon's description, then the caps label.)
+    lw = [x.lower() for x in w]
+    if len(w) % 2 == 0 and lw[:len(w) // 2] == lw[len(w) // 2:]: stripped = " ".join(w[:len(w) // 2])
     return stripped or lab or "?"
 
 
@@ -316,10 +318,23 @@ def pixel_check(dump, png, home=frozenset()):
             # (A cut is one row where nearly the whole width changes at once — fill above, backdrop below — well above
             # the laid-out bottom; a rounded end changes a few columns per row, and text never spans the width.)
             ym = (y0 + y1) // 2
+            # (Update 470: the button's own fill, read at its two side columns in its upper half, where a label rarely is. A
+            # line where wide text ends — ARCADE's PRESS START in a pixel font, flat-bottomed letters across 80 % of the bar —
+            # changes the whole width too, but what lies below it is still that fill; below a real cut lies something else.)
+            # (Below its rounded corners; a colour also found just outside the button is backdrop, never fill.)
+            out_c = [px[x, min(H - 1, y1 + 1)] for x in range(x0, x1, max(1, (x1 - x0) // 12))]
+            fill = [c for c in (px[x, y] for x in (x0, x1 - 1) for y in range(y0 + max(2, int(f[3] * 0.3)), ym))
+                    if all(d(c, o) > 60 for o in out_c)]
+            def fill_like(y):
+                # (Every shade the fill shows — a tube's scan lines alternate 250 / 210 rows on the Odin, a change across the
+                # whole width at each line.)
+                return sum(1 for x in range(x0, x1) if any(d(px[x, y], c) <= 40 for c in refs)) / max(1, x1 - x0) > 0.5
+            refs = list({(c[0] // 8 * 8 + 4, c[1] // 8 * 8 + 4, c[2] // 8 * 8 + 4) for c in fill})
             cut_at = None
             for y in range(ym, y1 - 1):
                 ch = sum(1 for x in range(x0, x1) if d(px[x, y], px[x, y + 1]) > 80) / max(1, x1 - x0)
                 if ch > 0.75 and (y1 - 1 - y) > max(4, f[3] * 0.2):
+                    if fill and fill_like(y + 1): continue
                     cut_at = y; break
             if cut_at is not None:
                 bad.append(f"{_label(n)}: drawn edge cut straight across {y1 - 1 - cut_at} px above its laid-out bottom")

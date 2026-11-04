@@ -94,6 +94,18 @@ internal object BoxSides {
      * beat its blue). The winning bucket's own pixels are averaged; a touch muted, as
      * card takes ink. Null: unreadable.
      */
+    /**
+     * Update 467 (owner: "use the genuine near-black indigo background instead of logo-derived red"): covers whose own
+     * background colour the reading above misses because a big logo out-counts it — the colour measured from the real
+     * cover (Pokémon Stadium 2: its dark indigo background, the average of those pixels in the US scan as shown on the
+     * KONKR, 18 / 1 / 35). Keyed by the printed title and the console; nothing else changes.
+     */
+    private val measured = mapOf(
+        "pokemon stadium 2|n64" to 0xFF120123.toInt()
+    )
+    fun measuredColour(title: String, platform: String?): Int? =
+        measured["${title.lowercase().replace("é", "e").trim()}|${platform?.lowercase()}"]
+
     fun boxColour(front: Bitmap, platform: String? = null): Int? = runCatching {
         val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
         val w = f.width; val h = f.height
@@ -351,7 +363,8 @@ internal fun rememberBoxSides(
                         val base = if (side == BoxSide.RIGHT) look.edge else look.top
                         DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
                     } else if (oneColour && front != null) {
-                        val col = DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
+                        val col = BoxSides.measuredColour(title, platform)
+                            ?: DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
         BoxColourQa.dump(g.name, front, col)
                         col?.let { c -> DerivedArt.named("sidecard|$i|$w|$h|$c") { BoxSides.card(side, w, h, c) } }
                     } else if (side.name in colorSides && front != null) {

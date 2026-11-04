@@ -345,7 +345,10 @@ internal fun HubPlate(ctx: WinSceneCtx) {
 internal fun DiscoverCard(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 700.dp)
-    val h = minOf(ctx.maxH, 380.dp)
+    // (Update 469, Odin at 1.3× text with its Performance key: the status line under the keys was cut at the card's foot —
+    // with larger text the card may take more of the screen and the keys are a little lower.)
+    val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
+    val h = minOf(ctx.maxH, if (big) 460.dp else 380.dp)
     Row(Modifier.width(w).height(h).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.12f
@@ -368,7 +371,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
             Spacer(Modifier.weight(0.01f))
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
-                    Color.Transparent, a, RoundedCornerShape(50), height = 36.dp)
+                    Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
             }
         }
     }

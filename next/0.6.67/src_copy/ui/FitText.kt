@@ -17,9 +17,11 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.layout
 
 /**
  * Text that shrinks (from [maxSize] down to [minSize]) until it fits the room it's given in at most
@@ -145,15 +147,29 @@ internal fun FullText(
      */
     reserve: Boolean = true
 ) {
-    var slide by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableStateOf(false) }
+    // (Update 470, long-name run: the slide was decided once and kept — a window's first layout pass, narrower while it opens
+    // beside an inspected piece, made a name overflow and it then slid for good on one line although its full width had room
+    // for the wrapped lines (Pocket Quest, Cover details, Resume). The width it slid at is kept; a wider one tries again.)
+    var slideAt by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableIntStateOf(-1) }
+    val cw = androidx.compose.runtime.remember { IntArray(1) }
+    val widthMod = Modifier.layout { m, c ->
+        cw[0] = c.maxWidth
+        if (slideAt >= 0 && c.maxWidth > slideAt) slideAt = -1
+        val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) }
+    }
     val reserveMod = if (reserve) Modifier.heightIn(min = reservedLinesHeight(fontSize, lineHeight, fontWeight, fontFamily, letterSpacing, style, maxLines)) else Modifier
-    if (slide) FullTextMarquee(text, color, fontSize, modifier.then(reserveMod), fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
+    if (slideAt >= 0) FullTextMarquee(text, color, fontSize, modifier.then(widthMod).then(reserveMod), fontWeight, fontFamily, letterSpacing, lineHeight, textAlign, style)
     else Text(
         text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = maxLines, overflow = TextOverflow.Clip,
         autoSize = if (autoFit) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(fontSize), maxFontSize = fontSize) else null,
-        onTextLayout = { if (it.hasVisualOverflow) slide = true },
-        modifier = modifier.then(reserveMod)
+        onTextLayout = {
+            if (it.hasVisualOverflow) {
+                slideAt = cw[0].coerceAtLeast(0)
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "slide '${text.take(24)}' w=${cw[0]} lines=${it.lineCount}/$maxLines size=${it.size} ow=${it.didOverflowWidth} oh=${it.didOverflowHeight} c=${it.layoutInput.constraints}")
+            }
+        },
+        modifier = modifier.then(widthMod).then(reserveMod)
     )
 }
 
@@ -204,21 +220,28 @@ internal fun StableFullText(
         val top = fontSize.value
         val bottom = fitMin(fontSize).value
         val ratio = if (lineHeight.isSp && top > 0f) lineHeight.value / top else 1.2f
+        // (Update 470, long-name run: "From TV Animation One Piece Yume No Luffy Kaizokudan Tanjou!" still overflowed three lines at
+        // the smallest readable size and slid sideways in Pocket Quest, Cover details, Resume and Bubbles although the room
+        // under it was free. Where the height allows, one more line is used before the text slides.)
         val fit = remember(text, w, h, top, bottom, maxLines, fontWeight, base, ratio, letterSpacing) {
+            fun over(s: Float, lines: Int) = measurer.measure(
+                // (Update 470: the theme's own letter spacing when none is given — copy(letterSpacing = Unspecified) measured
+                // the name without it, narrower than the Text draws it: "fits in 3 lines" here, 4 on screen, and it slid.)
+                text, base.copy(fontSize = s.sp, lineHeight = (s * ratio).sp, fontWeight = fontWeight ?: base.fontWeight,
+                    letterSpacing = if (letterSpacing.isSpecified) letterSpacing else base.letterSpacing),
+                overflow = TextOverflow.Clip, maxLines = lines, constraints = Constraints(maxWidth = w, maxHeight = h)
+            ).hasVisualOverflow
             var s = top
             while (s > bottom && w > 0 && w != Constraints.Infinity) {
-                val r = measurer.measure(
-                    text, base.copy(fontSize = s.sp, lineHeight = (s * ratio).sp, fontWeight = fontWeight ?: base.fontWeight, letterSpacing = letterSpacing),
-                    overflow = TextOverflow.Clip, maxLines = maxLines, constraints = Constraints(maxWidth = w, maxHeight = h)
-                )
-                if (!r.hasVisualOverflow) break
+                if (!over(s, maxLines)) break
                 s = maxOf(bottom, s - 1f)
             }
-            s
+            val lines = if (maxLines in 2..3 && w > 0 && w != Constraints.Infinity && over(s, maxLines) && !over(s, maxLines + 1)) maxLines + 1 else maxLines
+            s to lines
         }
         FullText(
-            text, color = color, fontSize = fit.sp, maxLines = maxLines, fontWeight = fontWeight,
-            lineHeight = (fit * ratio).sp, letterSpacing = letterSpacing, autoFit = false
+            text, color = color, fontSize = fit.first.sp, maxLines = fit.second, fontWeight = fontWeight,
+            lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false
         )
     }
 }

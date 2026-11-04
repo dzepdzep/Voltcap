@@ -1,3 +1,32 @@
+# Update 470 (4 Nov 2026) — v0.6.67 final targeted stabilization: Box actions fixed in place, long-name runs, PDF findings, D212 touch rooms
+
+**Owner request (469 PDF review):** D222 Box; rerun long / missing details with a working game fixture; Cover details Year /
+gap / Saves wrap, Pocket Quest values, Rental shop balance, Bubbles first view, Stadium 2 soft background traced, GB pak at
+75-90° one object; D212 larger touch areas with the looks kept; honest popup QA on both devices; protect preferences; a
+small follow-up PDF. Staging only; RC v0.6.66 unchanged and reinstalled; nothing published.
+**Fixed:** D222 Box — header, title, stamped actions stay put, facts / story scroll between them (D-pad reaches the story,
+then the actions); D225 long names slid (StableFullText measured without the theme letter spacing; one more line before a
+slide); test hook matches games exactly / contains / ROM name and logs NO MATCH; Cover details name block gives way (Year kept),
+"Saves: …" label; Pocket Quest smaller art at large text; rental tag as tall as its content; Bubbles banner / scrim; D229 popup
+backdrops decoded at screen size under their own key; clear GB wall fades in edge-on (no second plane at 85°); D212: Arcade /
+Memory card touch 24 dp (SceneControl minTouch, drawn rows unchanged), Orbit 22° fan, Night / Magazine marked tilted (laid-out
+boxes apart), Night status lines 10 dp, Box 12 dp (D226); D227 Night "HAL Laborator|y"; D228 Magazine 1.3 "ACHIEVEMENT|S".
+Gate: D230 pixel check false cut (flat letters / scan lines), "Play PLAY" read as one word, D231 case-only tag collision.
+**Stadium 2 soft background:** Case flow's window plays the game's clip — 640x480 (N64 at 320x240) in an 852x193 band: soft by
+source, not decode / cache (log "clip size"). Popup stills were decode-limited (fixed, D229). Not hidden with blur — owner to choose.
+**Sweeps (latest per combination, final code):** KONKR 81 PASS / 0 FAIL / 0 NT / 4 n/a of 85; Odin the same; font 1.3 15/15
+both; display size larger KONKR 15/15 (280 dpi), Odin 13/13 (420 dpi); long names KONKR 42/42 (3 games x 14). Odin long
+names NOT TESTED (one game). Every Play tap asked for the run's game (key check). Tap test KONKR 5/5. Details
+tools/qa/POPUP_AUDIT_470.md; PDF `Claude outputs/qa470/Update470_repairs.pdf`, originals qa470/orig + qa470/after.
+**Remaining concerns:** Bubbles title still on the art's lower edge; Box Details page mono name breaks "(Parmentat|ion)";
+Magazine 1.3 arrow alone on a line; Box story needs several DOWN presses back to Play; Arcade / Memory card rows 24 dp, not 48.
+**Devices:** USB only. Baseline read before any change, all equal after (KONKR Case flow / N64 / Pokémon Snap, 60 s; Odin
+Artwork library, 30 min) — but those are the values found at 470's start, **not proven owner originals**. Snapshot now
+includes the "appearance" prefs. RC 0.6.66 rebuilt (identical inputs, cache) and reinstalled on both; test files removed.
+**Build / tests:** staging assembleRelease + testDebugUnitTest PASS (Fixtures469Test new); QA selftest 97 OK; static checks
+PASS. Patch next/0.6.67 regenerated (item 29, app only).
+**Copy:** staging lives on cloud dev / next/0.6.67; PC app/ = RC.
+
 # Update 469 (4 Nov 2026) — v0.6.67 release stabilization: home-screen Game Boy pak sides, 467 popup bugs closed, full re-sweep
 
 **Owner request:** Inspect's GB / black GBC / clear GBC sides on the home screen's turned cartridges; GBA side only with evidence;

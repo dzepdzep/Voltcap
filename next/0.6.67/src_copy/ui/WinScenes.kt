@@ -74,6 +74,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -333,7 +334,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
  * draws it lit or not.
  */
 @Composable
-internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable BoxScope.(Boolean) -> Unit) {
+internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp, content: @Composable BoxScope.(Boolean) -> Unit) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -341,6 +342,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
     Box(
         modifier
             .then(if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier)
+            // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
+            // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
+            .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
             .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
@@ -437,8 +441,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     drawLine(SheetRed.copy(alpha = 0.35f), Offset(30.dp.toPx(), 0f), Offset(30.dp.toPx(), size.height), 1.5f)
                 }
                 .padding(start = 40.dp, end = 18.dp, top = 20.dp, bottom = 14.dp)
-                .verticalScroll(scroll)
         ) {
+            // (Update 469, D222: the whole sheet was one scroll — on the KONKR Play / Contents / Back sat under the story and the
+            // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
+            // header, the title and the stamped actions stay put.)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("INSERT · " + (if (ctx.page == WinPage.MAIN) "CONTENTS" else pageName(ctx.page).uppercase()), color = SheetMuted, fontSize = 11.sp,
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -451,6 +457,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
             Spacer(Modifier.height(8.dp))
+            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent).sceneFadeEdges(scroll).verticalScroll(scroll)) {
             if (ctx.page == WinPage.MAIN) {
                 @Composable
                 fun line(label: String, value: String?) {
@@ -479,6 +486,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             } else {
                 // The other pages, on the same paper.
                 ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
+            }
             }
             Spacer(Modifier.height(12.dp))
             // The actions, stamped.
@@ -516,7 +524,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             }
             if (ctx.chips.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                // (Update 470: a gap between the status lines — the sheet lies tilted, and two lines touching edge to edge
+                // crossed each other's box by up to 19 px on the Odin at font 1.3; 12 dp clears it.)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(Modifier.background(if (on) accent.copy(alpha = 0.18f) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
@@ -849,8 +859,15 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black,
-                                            fontFamily = FontFamily.Monospace, maxLines = 2)
+                                        // (Update 469: "ACHIEVEMENTS" broke mid-word, "ACHIEVEME / NTS", on the KONKR — long keys a
+                                        // little smaller. Not FitText: it is a SubcomposeLayout, and FlowRow's weighted items ask for
+                                        // intrinsic sizes — that crashed Voltcap on A (IllegalStateException, Odin + KONKR sweep).
+                                        // Still two lines at most, never cut.)
+                                        // (Recheck: 10 sp still broke "ACHIEVEMENT / S" in the KONKR's 100 dp cell — Compose's own
+                                        // step auto-size (a text node, no subcomposition), one line, 13 → 8 sp.)
+                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp,
+                                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 13.sp, stepSize = 0.5.sp),
+                                            fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
                                     }
                                 }
                             }
@@ -1111,7 +1128,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
         OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
         // The keys, fanned out on an arc to the disc's right.
         val n = acts.size
-        val span = minOf(150f, (n - 1).coerceAtLeast(1) * 17f)
+        // (Update 470, D212: 22° between keys, was 17° — neighbours' touch boxes crossed by 9 x 18 px at the fan's ends.)
+        val span = minOf(156f, (n - 1).coerceAtLeast(1) * 22f)
         val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
         acts.forEachIndexed { i, a ->
             val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
@@ -1460,7 +1478,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 fun stat(label: String, value: String?) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(96.dp))
-                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                        // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
+                        // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
+                        // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
+                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 15.sp))
                     }
                 }
                 stat("PLAY TIME", ctx.played)
@@ -1476,7 +1498,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 stat("KIND", ctx.genres)
                 stat("SYSTEM", ctx.console)
                 Spacer(Modifier.height(6.dp))
-                ctx.chips.forEach { a ->
+                ctx.chips.forEachIndexed { i, a ->
+                    // (Update 470: 10 dp between the status lines — they touched edge to edge on the turned panel, and their boxes
+                    // crossed by 19 px on the Odin, o470F.)
+                    if (i > 0) Spacer(Modifier.height(10.dp))
                     SceneControl(a, Modifier) { on ->
                         Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
                             textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
@@ -1486,7 +1511,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
         }
         // The commands.
         Column(
-            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f).graphicsLayer { rotationZ = -4f },
+            // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
+            // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f)
+                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->

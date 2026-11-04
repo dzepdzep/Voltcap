@@ -161,6 +161,14 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
     (`ui/WinScenesStyled.kt`), Discover card (`ui/WinScenesHomes2.kt`), Twin facts box one height (`ui/WinSceneTwin.kt`, D211 /
     D221); tests GbSide469Test, SnapRows469Test (new). Evidence tools/qa/CARTS_469.md, tools/qa/POPUP_AUDIT_469.md.
 
+29. **Update 470.** Box window actions out of the scroll (`ui/WinScenes.kt` BoxInsertSheet, D222), long names (`ui/FitText.kt`,
+    D225), popup compositions (`ui/WinScenesStyled.kt`, `ui/WinScenesConsole.kt`, `ui/GameDetailsOverlay.kt`, `ui/StyleBubbles.kt`),
+    full-size backdrops (`ui/StyleArtRequests.kt` rememberBackdropRequest, D229), Saves label (`ui/GamePopupStatus.kt`), clear GB
+    wall (`ui/SolidPiece.kt`), D212 touch rooms (`ui/WinScenes.kt` SceneControl minTouch / Orbit / Night, `ui/WinScenesArcade.kt`,
+    `ui/StyleMemoryCard.kt`, `ui/WinScenesConsole.kt` Magazine), test hooks (`ui/TestHooks.kt`, `ui/LauncherScreen.kt`),
+    clip-size QA log (`ui/VideoPreview.kt`); test Fixtures469Test (new). The patch is now app/ only (tools/qa is on main).
+    StyleMemoryCard.kt is CRLF in git. Evidence tools/qa/POPUP_AUDIT_470.md.
+
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there
   (a saved choice is kept). If you want Midnight there, pick it in Settings (or QA: `--es voltcap_test_pref picker_look=MIDNIGHT`).
