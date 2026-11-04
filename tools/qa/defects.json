@@ -2951,7 +2951,7 @@
    ],
    "root_cause": "likely: Blades keeps its own selection (the first item of its Games blade) instead of following the app's focused game after a programmatic focus (the QA hook) — whether a user can reach this (resume, category switch, second screen) is not established yet",
    "fix": "",
-   "verified": ""
+   "verified": "476a and 476c full sweeps: BLADES PASS on both devices - not reproduced"
   },
   {
    "id": "D251",
@@ -2989,15 +2989,224 @@
    "id": "D253",
    "title": "Cross: the details page's text column is 61 dp wide on the KONKR — words break mid-word ('HAL Laborator / y', 'Achievem / ents'), the story runs 114 lines",
    "rule": "R26 / rule 11 (readability)",
-   "severity": "medium",
-   "status": "open (layout change needed: owner review of the design)",
+   "severity": "high",
+   "status": "fixed in staging (476a); verified",
    "found": "2026-11-04 update 475 k475r1 CROSS_OWN page (KONKR 960 x 640): the gate passed it (every text whole in a scrolling column); new warning 'warn-narrow-text'. Odin: the column is wide enough",
    "where": "Cross (XMB) details page",
    "evidence": [
     "k475r1 CROSS_OWN_page.png + dump"
    ],
-   "root_cause": "the page splits its width between the cover, the text column and the key list by fixed shares; at 640 dp the text column gets 61 dp",
-   "fix": "recommendation: a minimum text width (~180 dp) with the cover shrinking first, or the cover above the text on a narrow screen",
+   "root_cause": "WindowDetails: a full-height cover (0.72 x page height) beside the text; Cross's column (298 dp) left the text 61 dp. Same page in the half-width cards (Stacks, Box, Discs Odin, Pocket)",
+   "fix": "detailsCoverFit: text keeps >= 200 dp, the cover shrinks first (top-aligned), cover above the text when even 64 dp doesn't fit; nothing hidden. Readability476Test",
+   "verified": "k476d / o476d CROSS, STACKS, BOX, POCKET, TV page (476c): text column >= 200 dp or cover above; Readability476Test",
+   "kind": "defect (objective)"
+  },
+  {
+   "id": "D254",
+   "title": "Hero (KONKR): the home title overlaps the neighbouring art; the game info sits on a busy screenshot with its own text",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "high",
+   "kind": "defect (readability)",
+   "status": "fixed in staging (476b); verified",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Hero home",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "Hero info region: page text drawn straight on the layered picture (screenshot with its own HUD text, cover small print). The cover column's names were measured: each ends left of its cover (no overlap found on k475r1)",
+   "fix": "a soft dark plate (28-62 % black gradient) behind the info text only when a picture is layered; carousel, pictures and placement unchanged",
+   "verified": "k476d HERO home: plate behind the info text (476a drew it only over a layered pane - hardware showed it missing)"
+  },
+  {
+   "id": "D255",
+   "title": "Dashboard: the title is drawn over art that already carries the logo; the summary stops with no Details cue",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "medium",
+   "kind": "defect (continuity) + readability",
+   "status": "fixed in staging (476a); verified",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Dash card",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "Dash: story Text maxLines 3 with no overflow - cut silently mid-sentence; name drawn over the art strip's lower part where the art's own logo sits",
+   "fix": "StoryWithCue: whole lines, last line 'Full story on Details ›' when longer; name moved under the art strip (art unchanged)",
+   "verified": "k476d / o476d DASH main: name under the art, story cue"
+  },
+  {
+   "id": "D256",
+   "title": "Spotlight + Hero: the popup background looks low-resolution — audit the source image, decode size and cache; a sharp still where one exists",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "medium",
+   "kind": "defect (objective: decode size)",
+   "status": "fixed in staging (476a); verified (decode size)",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Spotlight, Hero popup",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "QaArt (k475r1 / o475r1 SPOT main): the poster picture decoded 360x231 (KONKR) / 512x165 (Odin) - the cards' request size - and drawn across a 960 / 1920 px window (2.7-3.8x upscale). Hero's popup background (Odin) is decoded at the screen size but its source file is 555x312: source-limited, not fixable in code",
+   "fix": "window-wide scene pictures (Spotlight, Dash, Side drawer, banner, console scenes: 7 places) use rememberBackdropRequest (screen long side); a sharper still is the owner's artwork choice",
+   "verified": "o476d SPOT: request = screen size; QaArt records the source size; Hero Odin background source-limited 555x312"
+  },
+  {
+   "id": "D257",
+   "title": "Tiles: Play has low contrast; More sits alone away from the other actions",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "medium",
+   "kind": "recommendation (owner decision)",
+   "status": "not changed: subjective (light design) - stop for review",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Tiles popup",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D258",
+   "title": "Bar: the performance status label wraps to 4 lines; the full info should be on focus or in More",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "medium",
+   "kind": "defect (objective)",
+   "status": "fixed in staging (476a); verified",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Bar (Dock flyout)",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "Bar dock keys are 78 dp wide; status chips' whole text wrapped to 3-4 lines",
+   "fix": "dockShortLabel (first part) under the icon; the whole text on one reserved line under the dock while the key is focused (nothing moves)",
+   "verified": "k476d / o476d BAR main: 'Saves: up to date' / 'Balanced' under the icons"
+  },
+  {
+   "id": "D259",
+   "title": "TV Details: Play / Full Details / Back use different text sizes",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "low",
+   "kind": "defect (objective)",
+   "status": "fixed in staging (476c); verified",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "TV popup",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "WinButton auto-sizes each label on its own: 'Full details' shrank, Play / Back did not",
+   "fix": "ButtonRow: the buttons of one row share the smallest size any of them needed",
+   "verified": "k476e / o476d TV page: one size (476a/b showed three sizes on hardware: auto-size reports the asked size)"
+  },
+  {
+   "id": "D260",
+   "title": "Classic: the story fades with no continuation cue",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "low",
+   "kind": "defect (continuity)",
+   "status": "fixed in staging (476a); verified",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Classic (Volt panel)",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "SceneFactsBody (Classic and other scenes) fades the story at the box edge with no cue",
+   "fix": "'Full story on Details ›' at the box's bottom edge while it can scroll further",
+   "verified": "k476b / k476d CLASSIC main: cue at the box edge"
+  },
+  {
+   "id": "D261",
+   "title": "Spotlight: no text title when the game has no logo",
+   "rule": "R26 / rule 11 (readability)",
+   "severity": "low",
+   "kind": "defect (objective)",
+   "status": "fixed in staging (476a); NOT TESTED on hardware",
+   "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
+   "where": "Spotlight popup",
+   "evidence": [
+    "vol1 / vol2 pages (k475r1 / o475r1)"
+   ],
+   "root_cause": "Spotlight already falls back to the name with no logo; a logo address that fails to load left no name",
+   "fix": "name shown when the logo fails to load (onError)",
+   "verified": "a failing logo address can't be produced without changing artwork"
+  },
+  {
+   "id": "D262",
+   "title": "Storage Details page: header 'Details' and console on the panel's blue band at very low contrast (measured 1.1 : 1)",
+   "rule": "R26 / rule 11",
+   "severity": "medium",
+   "kind": "defect (contrast)",
+   "status": "fixed in staging (476b); verified",
+   "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
+   "where": "Storage Details page",
+   "evidence": [
+    "k475r1 / o475r1 screenshots and dumps"
+   ],
+   "root_cause": "",
+   "fix": "",
+   "verified": "k476c / o476c STORAGE page: readcheck contrast clean (476a: still 1.1 : 1 - flag lost in the tint)"
+  },
+  {
+   "id": "D263",
+   "title": "Cover details (Odin home): the rolling story shows cut lines mid-roll",
+   "rule": "R26 / rule 11",
+   "severity": "low",
+   "kind": "recommendation (motion)",
+   "status": "deliberate continuous roll with fade edges (RollingStory); line-step rolling is an owner decision",
+   "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
+   "where": "Cover details home",
+   "evidence": [
+    "k475r1 / o475r1 screenshots and dumps"
+   ],
+   "root_cause": "",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D264",
+   "title": "Arcade window: wrapped status lines touch (pixel font taller than the line height)",
+   "rule": "R26 / rule 11",
+   "severity": "low",
+   "kind": "defect (overlap)",
+   "status": "fixed in staging (476a); verified",
+   "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
+   "where": "Arcade window",
+   "evidence": [
+    "k475r1 / o475r1 screenshots and dumps"
+   ],
+   "root_cause": "",
+   "fix": "",
+   "verified": "k476d / o476d ARCADE main: lines apart"
+  },
+  {
+   "id": "D265",
+   "title": "Twin desk / icons / showcase: the window's story pages by itself (update 469 D221); screenshots caught mid-page and a last page of one line",
+   "rule": "R26 / rule 11",
+   "severity": "low",
+   "kind": "recommendation (continuity)",
+   "status": "deliberate auto-paging; a page indicator (1 / 3) would show more follows - owner decision",
+   "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
+   "where": "Twin layouts window",
+   "evidence": [
+    "k475r1 / o475r1 screenshots and dumps"
+   ],
+   "root_cause": "",
+   "fix": "",
+   "verified": ""
+  },
+  {
+   "id": "D266",
+   "title": "Airy window (KONKR): the chips' second line ('Played Never played', '★ 0 / 109') is not shown - two facts missing",
+   "rule": "R26 / rule 11",
+   "severity": "medium",
+   "kind": "defect (missing facts)",
+   "status": "open: needs room - the round keys wrap to 2 rows (D247); owner decision on the key gap / chip size",
+   "found": "2026-11-04 update 476 review of volumes 3-9 (k475r1 / o475r1) + readcheck",
+   "where": "Airy window",
+   "evidence": [
+    "k475r1 / o475r1 screenshots and dumps"
+   ],
+   "root_cause": "",
+   "fix": "",
    "verified": ""
   }
  ]

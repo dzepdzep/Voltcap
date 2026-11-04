@@ -23,11 +23,12 @@ import glob, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import qalib
 import geomcheck
+import readcheck
 
 STEPS = ("home", "main", "more", "page", "closed")
 NOSHOTS = "--steps-without-shots" in sys.argv
 ROW = ("ROW_OPENS", "ROW_REVEAL", "SHARED")
-CATS = ("open", "geometry", "visual", "focus", "buttons", "settle")
+CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability")
 ACT = geomcheck.PLAY_RE  # the window's Play / Continue in every layout's own word
 
 
@@ -86,7 +87,7 @@ def grade(run, n):
     # steps' pixels are then NOT TESTED.)
     d = {s: load(run, f"{n}_{s}") if (os.path.exists(png[s]) or (NOSHOTS and s != "main")) else None for s in STEPS}
     if d["main"] is None or not os.path.exists(png["main"]):
-        return {k: (qalib.INFRA, "no main screenshot / dump") for k in ("open", "geometry", "visual", "focus", "buttons", "settle")}
+        return {k: (qalib.INFRA, "no main screenshot / dump") for k in CATS}
     # A row style (Opens / Reveal / Shared) where the layout draws no row is not offered (PopupStyle.offered): SKIP, n/a.
     style = n.rsplit("_", 1)[-1] if n.rsplit("_", 1)[-1] in ("OWN", "BANNER", "CLASSIC") else next((s for s in ROW if n.endswith("_" + s)), "")
     if style in ROW and not any((d[s] or {}).get("hasRow") for s in STEPS):
@@ -126,7 +127,7 @@ def grade(run, n):
     if opened and hf and pg and hf != pg and not hf.endswith(pg) and not pg.endswith(hf):
         out["open"] = (qalib.FAIL, f"the window shows another game: home on '{hf[-40:]}', window '{pg[-40:]}'")
     if not opened:
-        for k in ("geometry", "visual", "focus", "buttons", "settle"):
+        for k in CATS[1:]:
             out[k] = (qalib.NOT_TESTED, "popup did not open")
         return out
     geo, vis = [], []
@@ -148,6 +149,19 @@ def grade(run, n):
         st = qalib.verdict(rs)
         return (st, "; ".join(f"{r.name}: {r.reason}" for r in bad)[:400] if bad else "all steps pass")
     out["geometry"] = fold(geo)
+    # (Update 476, QA improvement 1: readability / continuity graded on its own — text drawn over text (FAIL, from the dump),
+    # contrast on the screenshot and small source pictures (WARN: pixel heuristics). The home step is read too (its own
+    # texts on its own pictures); the window's steps only for the window's own texts.)
+    rd = []
+    for s in ("home", "main", "more", "page"):
+        if d[s] is None:
+            continue
+        rd += readcheck.evaluate(d[s], png[s] if os.path.exists(png[s]) else None, step=s,
+                                 baseline=None if s == "home" else (d["home"] or d["closed"]))
+    out["readability"] = (qalib.verdict(rd), "; ".join(f"{r.name}: {r.reason}" for r in rd
+                          if r.status != qalib.PASS or r.reason.startswith("WARN"))[:400] or "all steps pass")
+    if out["readability"][0] == qalib.PASS and "WARN" in out["readability"][1]:
+        out["readability"] = (qalib.PASS, "WARN: " + out["readability"][1].replace("WARN: ", ""))
     out["visual"] = fold(vis)
     foc = [geomcheck._label(x) for w in d["main"].get("windows") or [] for x in w.get("nodes") or [] if x.get("focused")]
     # (The home screen's game can stay focused under a popup drawn in the same window; the popup's own focus is what counts.)

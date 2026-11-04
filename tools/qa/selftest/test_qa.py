@@ -1316,5 +1316,80 @@ class TestQa474(unittest.TestCase):
         self.assertIn("never confirmed the style was set (D242)", src)
 
 
+class TestReadcheck476(unittest.TestCase):
+    """Update 476: readability / continuity graded apart from geometry (QA improvements 1 and 2)."""
+    @staticmethod
+    def t(text, box, **k):
+        d = dict(text=text, shown=box, full=box, lines=1, textH=box[3], boxH=box[3])
+        d.update(k)
+        return d
+
+    def dump(self, *texts, images=None):
+        return {"windows": [{"nodes": [], "texts": list(texts)}], "images": images or []}
+
+    def test_text_over_text_fails(self):
+        import readcheck
+        rs = readcheck.evaluate(self.dump(self.t("Play", [10, 10, 80, 20]), self.t("Never played", [20, 12, 90, 20])))
+        self.assertEqual(qalib.verdict(rs), FAIL)
+
+    def test_lcd_ghost_watermark_turned_and_home_texts_are_not_graded(self):
+        import readcheck
+        home = self.dump(self.t("4 Wed 17:07", [0, 0, 120, 20]))
+        d = self.dump(self.t("4 Wed 17:07", [0, 0, 120, 20]), self.t("8 Wed 88:88", [0, 0, 120, 20]),
+                      self.t("NINTENDO 64", [0, 100, 900, 212]), self.t("MARIO KART 64", [600, 120, 300, 32]),
+                      self.t("Paper Mario", [18, 251, 131, 55], textH=19), self.t("Mario Kart 64", [18, 273, 38, 63], textH=19))
+        ov = [r for r in readcheck.evaluate(d, baseline=home) if r.name.endswith("overlap")][0]
+        self.assertEqual((ov.status, ov.reason), (PASS, "no text drawn over another"))
+        self.assertTrue(readcheck._lcd_ghost("8 Wed  88:88", "4 Wed  17:07"))
+        self.assertFalse(readcheck._lcd_ghost("Play", "Back"))
+
+    def test_sliding_or_autosized_overlap_is_only_a_warning(self):
+        import readcheck
+        rs = readcheck.evaluate(self.dump(self.t("GAMES · NINTENDO 64", [405, 71, 225, 36], ovW=True), self.t("7 / 9", [604, 71, 50, 36])))
+        ov = [r for r in rs if r.name.endswith("overlap")][0]
+        self.assertEqual(ov.status, PASS)
+        self.assertTrue(ov.reason.startswith("WARN"))
+
+    def test_small_source_picture_warns(self):
+        import readcheck
+        rs = readcheck.evaluate(self.dump(images=[{"tok": "x", "want": [1039, 586], "got": [400, 225], "ok": True}]))
+        self.assertTrue(any(r.name.endswith("lowres") and r.reason.startswith("WARN") for r in rs))
+        rs = readcheck.evaluate(self.dump(images=[{"tok": "x", "want": [512, 512], "got": [512, 165], "ok": True}]))
+        self.assertFalse(any(r.name.endswith("lowres") and r.reason.startswith("WARN") for r in rs))
+
+    def test_low_contrast_on_the_screenshot_warns(self):
+        import readcheck
+        from PIL import Image, ImageDraw
+        tmp = tempfile.mkdtemp()
+        p = os.path.join(tmp, "s.png")
+        im = Image.new("RGB", (200, 60), (76, 106, 142))
+        ImageDraw.Draw(im).text((12, 18), "Details", fill=(120, 120, 60))
+        im.save(p)
+        rs = readcheck.evaluate(self.dump(self.t("Details", [8, 14, 80, 24])), p)
+        self.assertTrue(any(r.name.endswith("contrast") and r.reason.startswith("WARN") for r in rs))
+        im = Image.new("RGB", (200, 60), (20, 20, 20))
+        ImageDraw.Draw(im).text((12, 18), "Details", fill=(255, 255, 255))
+        im.save(p)
+        rs = readcheck.evaluate(self.dump(self.t("Details", [8, 14, 80, 24])), p)
+        self.assertFalse(any(r.name.endswith("contrast") and r.reason.startswith("WARN") for r in rs))
+        shutil.rmtree(tmp)
+
+
+class TestVisualpdfMissingSteps476(unittest.TestCase):
+    """Update 476 (QA improvement 3): an empty step says why — not offered, NOT CAPTURED or NOT TESTED."""
+    def test_reasons(self):
+        import visualpdf
+        tmp = tempfile.mkdtemp()
+        self.assertTrue(visualpdf.missing_reason(None, "X", "OWN", "more").startswith("NOT TESTED"))
+        os.makedirs(os.path.join(tmp, "qa_clip"))
+        run = tmp
+        name = os.path.basename(tmp)
+        main = {"windows": [{"nodes": [{"kind": "control", "label": "Play", "full": [0, 0, 50, 30]}], "texts": []}]}
+        json.dump(main, open(os.path.join(tmp, "qa_clip", f"{name}_X_OWN_main.json"), "w"))
+        r = visualpdf.missing_reason(run, "X", "OWN", "more")
+        self.assertTrue(r.startswith("not offered") or r.startswith("NOT CAPTURED"), r)
+        shutil.rmtree(tmp)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

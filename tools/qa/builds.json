@@ -77,6 +77,39 @@
    "patch_sha256": "8d4f8554f200a145e706d81f395fa8d2c30ed86b77f8eda5891265f10935cb73",
    "tree_hash": "82f9f2b82107566ee03709643d38d8d7ea464326af9f97661adbbb3e597ddb94",
    "note": "update 475: 474c + D245 (row-style facts first, story in whole lines), D246 (Storage facts whole rows), D247 (Airy story whole lines), D248 (logo shapes kept on disk); main's app source = ebc96ea (main HEAD 519be56 changed no app file); never published"
+  },
+  {
+   "id": "qa-0.6.68-476a",
+   "apk_sha256": "b95eceab9727a5423e623502850bb2b4912a83db568a98a9879239d044dc10e1",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "59b45fc60f862afe10bc5af60e7944fc6a03e201",
+   "patch_sha256": "7cd006d99308034cf4b101f3a4d6f5f48ef1183bd5d3fc78b0ee78e1a1baa2bb",
+   "tree_hash": "f5326b752bbcb3981f115f8d6ad6534635735587ab160a71099bbef0edbdb229",
+   "note": "update 476: 475a + D253 details page keeps a 200 dp text column, D254 hero text plate, D255 Dash story cue + name under the art, D256 window-wide scene pictures at screen size, D258 Bar status keys short + whole text on focus, D259 one size per button row, D260 story cue in scene facts, D261 Spotlight name when the logo fails, D262 Storage page paper, D264 Arcade line height; never published"
+  },
+  {
+   "id": "qa-0.6.68-476b",
+   "apk_sha256": "3a609b6f16953e373378d33c40f21e9e2a12644abf96b8e37a7ea2faaf15dc9d",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "59b45fc60f862afe10bc5af60e7944fc6a03e201",
+   "patch_sha256": "8a06bee4cfa3387190d791ed0e2eb03e926d6a9549294d9969da8290e8e50d21",
+   "tree_hash": "a5affe38cc9b74d50186bb9a2f38e5919ed93e7a5502c6cfc3455547284b28bd",
+   "note": "update 476: 476a + the fixes its hardware run showed incomplete: D259 the TV strip's and the narrow shared row's buttons share one size too, D262 Storage page paper kept through the game-colour tint, D254 hero text plate whatever the picture layers; never published"
+  },
+  {
+   "id": "qa-0.6.68-476c",
+   "apk_sha256": "19690613b28968d24ae92d8eedfdc14420470a6e861f57a1b0606076b643cb18",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "59b45fc60f862afe10bc5af60e7944fc6a03e201",
+   "patch_sha256": "90007cf8b97fffc858aed141ecdd8cf539828f0070d329f0e44f69a6e5bd3002",
+   "tree_hash": "146d5d792d87485f0c9d7c5baf55ef88cda706c92707ac1afeeade1b7ad8d319",
+   "note": "update 476: 476b + D259 done right - each window button measures the size its word fits at and the row shares the smallest (476b read auto-size's asked size back: the TV still showed three sizes on hardware); never published"
   }
  ]
 }

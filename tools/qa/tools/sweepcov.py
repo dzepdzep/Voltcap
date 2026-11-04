@@ -3,7 +3,8 @@
 reports (popclip / navclip --json), and NOT TESTED for everything that did not run. Nothing is inferred.
 
   python3 sweepcov.py SPEC.json [--md OUT.md] [--json OUT.json]
-SPEC: {"layouts": [...], "devices": {"KONKR": {"T1 OWN": ["run.json", ...], "T1 other styles": [...], "T5": [...]}, ...},
+SPEC: {"layouts": [...], "devices": {"KONKR": {"T1 OWN": ["run.json", ...], "T1 other styles": [...], "T5": [...],
+                                             "games": N (optional: the shortest game list the T5 walk ran on)}, ...},
        "tiers": ["T1 OWN", "T1 other styles", "T5", "T2 font / size", "T3 content", "T4 pairwise", "T6 settings"]}
 A layout's cell for a tier is the worst status over its rows in those reports (n/a rows — SKIP — left out); a layout no
 report names is NOT TESTED.
@@ -37,6 +38,10 @@ def main():
             for t in tiers:
                 st = statuses(tr.get(t, []), lay)
                 v = qalib.verdict(st) if st else qalib.NOT_TESTED
+                # (Update 476, QA improvement 5: a walk over a list of one or two games can't show scrolling — its PASS
+                # says so instead of standing for full scrolling coverage. "games": the shortest list the walk ran on.)
+                if t.startswith("T5") and v == qalib.PASS and (tr.get("games") or 99) < 3:
+                    v = f"PASS · {tr['games']} game(s): no scroll claim"
                 table.setdefault(lay, {})[(dev, t)] = v
                 totals.setdefault((dev, t), {}).setdefault(v, 0)
                 totals[(dev, t)][v] += 1

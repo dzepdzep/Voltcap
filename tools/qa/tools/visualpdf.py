@@ -13,11 +13,12 @@ SPEC: {"title": "...", "volume": "1 of N", "layouts": ["CLASSIC", ...],
        "coverage_note": "..."}
 A screenshot missing for a step is printed as "not captured" — never replaced by another step's picture.
 """
-import json, os, sys
+import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import evidence
 import qalib
+import geomcheck
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
@@ -70,12 +71,41 @@ def auto_marks(dump):
     return out
 
 
-def shot(c, path, x, y, w, h, marks, label, start_no):
+STEP_KEY = {"more": re.compile(r"(?i)(more|\u22ef)$"), "page": re.compile(r"(?i)^(details|info|game info|type nfo|summary|the story|catalogue card|card text|sleeve notes|contents|turn over|status)$")}
+
+
+def missing_reason(run, lay, style, step):
+    """Update 475 (QA improvement 3): why a step has no screenshot — the layout doesn't offer it (n/a), or the evidence is
+    missing / the tool couldn't reach it (NOT CAPTURED), or the run never happened (NOT TESTED). Never guessed as a pass."""
+    if not run or not os.path.isdir(run):
+        return "NOT TESTED: no run"
+    name = f"{lay}_{style}"
+    log = ""
+    lp = os.path.join(run, "log.txt")
+    if os.path.exists(lp):
+        log = open(lp, encoding="utf-8", errors="replace").read()
+    if os.path.exists(os.path.join(run, f"{name}_{step}.png")):
+        return None
+    if load(run, f"{name}_{step}") is not None:
+        return "NOT CAPTURED: the dump exists, the screenshot is missing (evidence failure)"
+    main = load(run, f"{name}_main")
+    if main is None:
+        return "NOT CAPTURED: the window itself was not recorded"
+    labs = [geomcheck._label(x) for w in main.get("windows") or [] for x in w.get("nodes") or []]
+    key = STEP_KEY.get(step)
+    if key is not None and not any(key.search((l or "").strip()) for l in labs):
+        return "not offered: this layout's window has no " + ("More key" if step == "more" else "Details key")
+    if step == "more" and f"{name} More not on screen" in log:
+        return "NOT CAPTURED: More is scrolled out of view (the tool could not tap it)"
+    return "NOT CAPTURED: the key exists but no step was recorded (tool / evidence failure)"
+
+
+def shot(c, path, x, y, w, h, marks, label, start_no, why=None):
     """The screenshot at its own pixels, scaled into the cell (aspect kept), numbered red boxes on it."""
     c.setFont(BOLD, 7.5); c.setFillColorRGB(0.15, 0.15, 0.15); c.drawString(x, y + h + 3, label)
     if not path or not os.path.exists(path):
         c.setStrokeColorRGB(0.7, 0.7, 0.7); c.rect(x, y, w, h); c.setFont(FONT, 8)
-        c.drawCentredString(x + w / 2, y + h / 2, "not captured"); return start_no
+        c.drawCentredString(x + w / 2, y + h / 2, why or "NOT CAPTURED"); return start_no
     ir = ImageReader(path)
     iw, ih = ir.getSize()
     k = min(w / iw, h / ih)
@@ -188,7 +218,10 @@ def layout_page(c, spec, lay, notes, page_no, di, dv):
             if nt.get("device") == di and nt.get("step") == sk:
                 marks.append((nt.get("box"), f"{nt.get('kind', 'note')}: {nt['text']}"))
         first = n
-        n = shot(c, os.path.join(pr, f"{lay}_{st}_{sk}.png") if pr else None, cx, cy, cell_w, cell_h, marks, lab, n)
+        why = missing_reason(pr, lay, st, sk)
+        n = shot(c, os.path.join(pr, f"{lay}_{st}_{sk}.png") if pr else None, cx, cy, cell_w, cell_h, marks, lab, n, why)
+        if why and not why.startswith("not offered"):
+            findings.append(f"[–] {lab}: {why}")
         for j, (bx, t) in enumerate(m for m in marks if m[0]):
             findings.append(f"[{first + j}] {lab}: {t}")
         findings += [f"[–] {lab}: {t}" for bx, t in marks if not bx]

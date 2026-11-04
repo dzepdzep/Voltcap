@@ -1,3 +1,22 @@
+# Update 476 (4 Nov 2026) — QA phase 2: review findings ranked, volumes 3–9, objective fixes in staging 0.6.68 with before / after
+
+Report: `tools/qa/QA_PHASE2_476.md`. Staging only (`next/0.6.68/staging.patch`, builds qa-0.6.68-476a / b / c, never published);
+main's app, v0.6.67 and its assets untouched. Devices back on the 0.6.66 RC, owner settings byte-identical before / after.
+- **Fixed in staging (verified on KONKR + Odin):** D253 details page keeps a ≥ 200 dp text column (cover shrinks / goes above —
+  Cross, Stacks, Box, Discs, Pocket, TV), D254 hero info text plate, D255 Dash name under the art + story cue, D256 window-wide
+  scene pictures decoded at screen size, D258 Bar status keys short + whole text on focus, D259 one text size per window button
+  row (measured), D260 "Full story on Details ›" cue in the scene facts box, D262 Storage Details page on plain paper, D264
+  Arcade line height. D261 Spotlight name when the logo fails to load (not testable on hardware). Tests: `Readability476Test`.
+- **Owner decisions:** D266 Airy chips' 2nd line hidden on the KONKR (needs room), D257 Tiles, D265 Twin paging cue, D263
+  rolling story, D252 (475). D250 (Blades) not reproduced in two full sweeps.
+- **QA tools:** `readcheck.py` (readability category in popclip: text over text, contrast, low-res upscale), visualpdf empty-step
+  reasons (not offered / NOT CAPTURED / NOT TESTED), sweepcov few-games note, `beforeafter.py`; 127 self-tests.
+- **Deliverables (Claude outputs\qa476):** `VoltCap_visual_QA_476_vol1…9.pdf`, `VoltCap_before_after_476.pdf`.
+- **Copy (staging QA build only, not for main):** src_copy MainActivity.kt, data/ArtStorage.kt, ui/GameCard.kt, GameWindow.kt,
+  HeroCarousel.kt, LauncherScreen.kt, QaArt.kt, QaClip.kt, QaFixture.kt, RowRevealWindow.kt, TestHooks.kt, WholeRows.kt,
+  WinScenes.kt, WinScenesArcade.kt, WinScenesConsole.kt, WinScenesHomes2.kt, WinScenesMore.kt; tests QaFixture474Test,
+  RevealFacts475Test, Readability476Test. Main stays as it is (the patch is the source of truth).
+
 # Update 475 (4 Nov 2026) — QA overhaul phase 2 (first part): D245–D249 triaged / fixed in staging, full T1 OWN + T5 sweeps, visual PDF volumes 1–2
 
 Report: `tools/qa/QA_PHASE2_475.md`. Staging only (`next/0.6.68/staging.patch`, build qa-0.6.68-475a); main's app, v0.6.67 and its assets untouched.
