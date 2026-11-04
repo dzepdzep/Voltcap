@@ -73,6 +73,10 @@ for lay in $LAYS; do
     # (Update 474, D242: the app's own answer that the style is set — a SKIP (style not offered) only counts with it.)
     ev_note $OUT "style_set $n $(logcat -d -s VoltcapTest | grep 'pref popup_style_by_layout' | grep -c "$lay=$st")"
     k WAKEUP 0.3
+    # (Update 478: "Who's playing?" comes up again after an install / restart, between layouts too — the first A of the
+    # first layout picked a profile there and the gate failed "open" (TV / Arcade / Classic, o478C / o478E). Closed with B
+    # whenever the app's own mark says PICKER, right before the home shot, and logged.)
+    for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "$lay: profile picker closed with B" >> $OUT/log.txt; done
     # The home screen before the popup (what "closed" must come back to).
     shot ${n}_home
     # Controller: A opens the popup.

@@ -84,7 +84,7 @@ index 8f84258..812e91c 100644
          val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
          listener = l
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
-index 11b8faf..0edb216 100644
+index 11b8faf..501b41c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 @@ -22,6 +22,7 @@ import androidx.compose.foundation.basicMarquee
@@ -106,6 +106,53 @@ index 11b8faf..0edb216 100644
      )
  }
  
+@@ -210,11 +213,18 @@ internal fun StableFullText(
+     maxLines: Int = 1,
+     fontWeight: FontWeight? = null,
+     lineHeight: TextUnit = TextUnit.Unspecified,
+-    letterSpacing: TextUnit = TextUnit.Unspecified
++    letterSpacing: TextUnit = TextUnit.Unspecified,
++    // (Update 478, D271: the window scenes' own type — a mono / pixel face, italic, an outline or glow — so their names could
++    // move from a plain Text cut at maxLines to this one without changing how they look.)
++    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
++    textAlign: TextAlign? = null,
++    style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
++    /** Update 478: keep the height of [maxLines] lines whatever the text needs (home rows); a window's own text: false. */
++    reserve: Boolean = true
+ ) {
+     BoxWithConstraints(modifier) {
+         val measurer = rememberTextMeasurer(cacheSize = 8)
+-        val base = androidx.compose.material3.LocalTextStyle.current
++        val base = if (fontFamily != null) style.copy(fontFamily = fontFamily) else style
+         val w = constraints.maxWidth
+         val h = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
+         val top = fontSize.value
+@@ -241,11 +251,24 @@ internal fun StableFullText(
+         }
+         FullText(
+             text, color = color, fontSize = fit.first.sp, maxLines = fit.second, fontWeight = fontWeight,
+-            lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false
++            lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false,
++            fontFamily = fontFamily, textAlign = textAlign, style = style, reserve = reserve
+         )
+     }
+ }
+ 
++/**
++ * Update 478 (D271): a window's name or line — [StableFullText] without the reserved height, so a short name takes one line
++ * and the window's other parts keep their room (the Blades guide's Back was pushed under its edge by a reserved 2nd line).
++ */
++@Composable
++internal fun WinFullText(
++    text: String, color: Color, fontSize: TextUnit, modifier: Modifier = Modifier, maxLines: Int = 1, fontWeight: FontWeight? = null,
++    lineHeight: TextUnit = TextUnit.Unspecified, letterSpacing: TextUnit = TextUnit.Unspecified,
++    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, textAlign: TextAlign? = null,
++    style: TextStyle = androidx.compose.material3.LocalTextStyle.current
++) = StableFullText(text, color, fontSize, modifier, maxLines, fontWeight, lineHeight, letterSpacing, fontFamily, textAlign, style, reserve = false)
++
+ /**
+  * Update 471 (owner review, Box Details page: "(Parmentat / ion)"): a wrapping text whose size steps down until its longest
+  * word fits a line — so normal words are never split across lines — down to the readable minimum ([fitMin]); only a word
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt b/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
 index c5dcaf5..f746344 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameCard.kt
@@ -186,7 +233,7 @@ index c5dcaf5..f746344 100644
                  modifier = Modifier.width(slotWidth).height(logoHeight)
              )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 169d875..1dcbb43 100644
+index 169d875..ad6c5e3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -323,7 +323,10 @@ private class WinLook(
@@ -306,7 +353,47 @@ index 169d875..1dcbb43 100644
      val ink = if (own) look.ink else Color.White
      val muted = if (own) look.muted else Color.White.copy(alpha = 0.7f)
      val compact = maxH < 420.dp
-@@ -2656,17 +2663,55 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
+@@ -2349,7 +2356,9 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
+     val shape = RoundedCornerShape(50)
+     val warn = Color(0xFFFFB74D)
+     Row(
+-        Modifier.clip(shape)
++        // (Update 478: 24 dp at least — a touch target — whatever the line height of its text: WinFullText's tighter line
++        // made the chip 45 px on the Odin, under the gate's 24 dp.)
++        Modifier.heightIn(min = 24.dp).clip(shape)
+             .background(if (focused) look.btnOnFill else solid(if (urgent) warn.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.22f)))
+             .then(if (urgent && !focused) Modifier.border(1.dp, warn.copy(alpha = 0.7f), shape) else Modifier)
+             .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+@@ -2359,7 +2368,8 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
+         val ink = if (focused) look.btnOnInk else if (urgent) warn else Color.White.copy(alpha = 0.82f)
+         androidx.compose.material3.Icon(icon, null, tint = ink, modifier = Modifier.size(13.dp))
+         Spacer(Modifier.width(5.dp))
+-        androidx.compose.material3.Text(
++        // (Update 478, D271: a long status — "Saves: up to date · 14 min ago" on a narrow key — slides instead of being cut.)
++        WinFullText(
+             text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 2,
+             fontFamily = if (look.mono) FontFamily.Monospace else null
+         )
+@@ -2604,13 +2614,12 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
+ 
+ @Composable
+ private fun WinText(look: WinLook, text: String, color: Color, size: Int, weight: FontWeight, shadow: Boolean = false) {
+-    androidx.compose.material3.Text(
+-        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight,
+-        // (Update 285, Toni: everything to be seen — "Pokemon Sil…", "4 h …": up to two lines, smaller until it fits.)
+-        maxLines = 2,
+-        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (size * 0.55f).coerceAtLeast(9f).sp, maxFontSize = size.sp),
++    // (Update 285, Toni: everything to be seen — up to two lines, smaller until it fits. Update 478, D271: then it slides —
++    // a very long name stopped at two lines, cut, in the TV / Layout Studio windows.)
++    WinFullText(
++        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight, maxLines = 2,
+         fontFamily = if (look.mono) FontFamily.Monospace else null,
+-        style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.ui.text.TextStyle.Default
++        style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.material3.LocalTextStyle.current
+     )
+ }
+ 
+@@ -2656,17 +2665,55 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
                  fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                  style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
              )
@@ -369,7 +456,7 @@ index 169d875..1dcbb43 100644
  /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
  @Composable
  private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
-@@ -2676,13 +2721,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+@@ -2676,13 +2723,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
      val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
      val meta = state.metadata[g.stableKey]
      val titles = LocalTitleOptions.current
@@ -403,7 +490,7 @@ index 169d875..1dcbb43 100644
              // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
              // scrolls, so the name and the facts wrap in full.)
              // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
-@@ -2710,4 +2772,24 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+@@ -2710,4 +2774,24 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
              androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
          }
      }
@@ -521,7 +608,7 @@ index 2f264a2..c4d07e0 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..eaff39e 100644
+index eca8853..55ee180 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -370,7 +370,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
@@ -534,6 +621,35 @@ index eca8853..eaff39e 100644
      // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
      // Update 422: Settings › Library › ES-DE artwork works through the view model.
      androidx.compose.runtime.SideEffect {
+@@ -1071,6 +1072,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         android.util.Log.e("VoltcapTest", "game '$q' -> ${g?.name ?: "NO MATCH"}")
+         if (g == null) { TestHooks.game.value = null; return@LaunchedEffect }
+         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
++        // (Update 478, QA: the run's game is on the Games blade — Blades keeps the blade it was on, and a run after one that
++        // ended on Systems / Media pressed A there (D250 class, T3 Blades "did not open").)
++        BladesNav.blade = BladesNav.GAMES; BladesNav.gamesFromSystems = false
+         viewModel.setSearchQuery("")
+         viewModel.setPlatformFilter(g.platform)
+         kotlinx.coroutines.delay(400)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
+index 897cce8..35c10a6 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
+@@ -183,8 +183,12 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
+                 val meta = listOfNotNull(titles.console(g.platform), year?.toString(),
+                     c.lastPlayed(g)?.let { "Played " + lastPlayedLabel(it).let { l -> if (l == "Today" || l == "Yesterday") l.lowercase() else l } }).joinToString("  ·  ")
+                 val capTop = top + 4f + (fh - 8f) * (1f - RIBBON_CAPTION)
+-                PocketText(this, titles.display(g.name), 28f, capTop, 200f, 15f, 9f, RInk, font, TextAlign.Center)
+-                PocketText(this, meta, 28f, capTop + 15f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
++                // (Update 478, D270: with the two screens apart the lower screen's ribbon already names the game — the upper
++                // screen keeps the piece and the quiet line only. On one screen (framed) both parts show together: the name stays.)
++                if (framed) {
++                    PocketText(this, titles.display(g.name), 28f, capTop, 200f, 15f, 9f, RInk, font, TextAlign.Center)
++                    PocketText(this, meta, 28f, capTop + 15f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
++                } else if (meta.isNotEmpty()) PocketText(this, meta, 28f, capTop + 8f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
+             }
+             // Small captions under the picture: the category, and where you are in it.
+             // (Update 315: off for this layout — Categories tile / Settings — no caption.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/QaArt.kt b/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
 new file mode 100644
 index 0000000..5527ac4
@@ -897,6 +1013,25 @@ index 418ffc1..a3111b1 100644
 +    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
+index 977fe34..430f9da 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
+@@ -564,7 +564,13 @@ private fun TermPrompt(c: StyleCtx, tc: TermColors, style: TextStyle, clock: and
+     }
+     val shown = cmd.take((cmd.length * typed.value).toInt())
+     val blink = (clock.floatValue * 2f).toInt() % 2 == 0 || reduced
+-    Text(termPath(c) + "> " + shown + (if (blink) "█" else " "), style = style, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
++    // (Update 478, D268: the block is always laid out and only its colour blinks — "█" comes from a fallback font with a
++    // taller line than " ", so the command line grew and shrank with every blink and the preview above moved 6 px (Odin).)
++    val text = androidx.compose.ui.text.buildAnnotatedString {
++        append(termPath(c) + "> " + shown)
++        pushStyle(androidx.compose.ui.text.SpanStyle(color = if (blink) androidx.compose.ui.graphics.Color.Unspecified else androidx.compose.ui.graphics.Color.Transparent)); append("█"); pop()
++    }
++    Text(text, style = style, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
+ }
+ 
+ /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 index 536f473..3b53bf0 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
@@ -1032,10 +1167,40 @@ index 0000000..885cc81
 +    else -> (room - 1) to true
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-index ce010b0..0739126 100644
+index ce010b0..02742be 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-@@ -848,7 +848,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+@@ -462,7 +462,8 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
+             Spacer(Modifier.height(4.dp))
+             // (Update 424, rule 11: the sheet scrolls, so its title, values and description are never cut with "…" — seen on the Thor
+             // with "Role-playing (RPG), Turn-based strat…" and the description's last words.)
+-            Text(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 3)
++            // (Update 478, D271: shrinks to the readable minimum, then slides — a long name was cut at 3 lines.)
++            WinFullText(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 3)
+             Spacer(Modifier.height(6.dp))
+             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
+             Spacer(Modifier.height(8.dp))
+@@ -626,8 +627,8 @@ private fun FileCardBack(ctx: WinSceneCtx) {
+                     }
+                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
+                     Column(Modifier.weight(1f).fillMaxHeight()) {
+-                        Text(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 3,
+-                            style = if (ink == Color.White) FsOutline else TextStyle())
++                        WinFullText(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 3,
++                            style = if (ink == Color.White) FsOutline else androidx.compose.material3.LocalTextStyle.current)
+                         Spacer(Modifier.height(4.dp))
+                         Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
+                             fontWeight = FontWeight.SemiBold)
+@@ -826,7 +827,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+                 }
+                 Spacer(Modifier.height(8.dp))
+                 Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = 5.dp)) {
+-                    Text(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
++                    WinFullText(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                 }
+                 Spacer(Modifier.height(6.dp))
+@@ -848,7 +849,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                              Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                          }
                      }
@@ -1046,7 +1211,27 @@ index ce010b0..0739126 100644
                          cell("Released", ctx.year)
                          cell("Made by", ctx.developer)
                          cell("Kind", ctx.genres)
-@@ -1400,6 +1402,10 @@ private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this)
+@@ -996,8 +999,8 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
+                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.7f)))))
+                 Column(Modifier.align(Alignment.BottomStart).padding(12.dp)) {
+-                    Text(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 3,
+-                        style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.8f), Offset(0f, 2f), 6f)))
++                    WinFullText(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 3,
++                        style = androidx.compose.material3.LocalTextStyle.current.copy(shadow = Shadow(Color.Black.copy(alpha = 0.8f), Offset(0f, 2f), 6f)))
+                     Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 2,
+                         )
+                 }
+@@ -1321,7 +1324,7 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
+             }
+             Spacer(Modifier.height(2.dp))
+             Text(ctx.name.uppercase(), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+-                maxLines = 1, modifier = Modifier.basicMarquee(), style = TextStyle(shadow = Shadow(glow.copy(alpha = 0.8f), Offset.Zero, 12f)))
++                maxLines = 1, modifier = Modifier.basicMarquee().semantics { this[QaClip.Slides] = true }, style = TextStyle(shadow = Shadow(glow.copy(alpha = 0.8f), Offset.Zero, 12f)))
+             Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.5.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0.05f)))))
+             @Composable
+             fun readout(k: String, v: String?) {
+@@ -1400,6 +1403,10 @@ private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this)
  @OptIn(ExperimentalLayoutApi::class)
  private fun AiryPanel(ctx: WinSceneCtx) {
      val accent = Color(com.shelf.launcher.data.Features.ahAccent.state.value.argb)
@@ -1057,7 +1242,7 @@ index ce010b0..0739126 100644
      val w = minOf(ctx.maxW * 0.92f, 860.dp)
      val h = minOf(ctx.maxH * 0.9f, 480.dp)
      Column(
-@@ -1420,43 +1426,41 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+@@ -1420,43 +1427,41 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                  if (ctx.page == WinPage.MAIN) {
                      Row(verticalAlignment = Alignment.Top) {
                          Column(Modifier.weight(1f)) {
@@ -1119,7 +1304,7 @@ index ce010b0..0739126 100644
          }
          if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
              ctx.chips.forEach { a ->
-@@ -1468,6 +1472,48 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+@@ -1468,6 +1473,48 @@ private fun AiryPanel(ctx: WinSceneCtx) {
      }
  }
  
@@ -1168,11 +1353,28 @@ index ce010b0..0739126 100644
  // ---------------------------------------------------------------------------------------------------------------------
  // Night menu: the status screen
  // ---------------------------------------------------------------------------------------------------------------------
+@@ -1495,8 +1542,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
+             Row(verticalAlignment = Alignment.CenterVertically) {
+                 Text("STATUS", color = hi.copy(alpha = 1f).let { mixS(it, Color.Black, 0.45f) }, fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                 Spacer(Modifier.width(16.dp))
+-                Text(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+-                    maxLines = 2)
++                WinFullText(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, maxLines = 2,
++                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
+             }
+         }
+         // The cover in its slanted frame.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
-index 1f14765..5ee8479 100644
+index 1f14765..e801c9b 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesArcade.kt
-@@ -103,7 +103,7 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
+@@ -99,11 +99,12 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
+             Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 14.dp else 22.dp, vertical = if (compact) 8.dp else 14.dp)) {
+                 // The top line: the game, like a high-score table's header.
+                 Row(verticalAlignment = Alignment.CenterVertically) {
+-                    Text(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(big), maxFontSize = big), style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
++                    // (Update 478, D271: shrinks, then slides — a long name was cut at 2 lines.)
++                    WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
                      if (ctx.page != WinPage.MAIN) Text(" " + arcadePageName(ctx.page), color = ArcCyan, fontSize = small, style = glow, maxLines = 1)
                  }
                  Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
@@ -1181,7 +1383,7 @@ index 1f14765..5ee8479 100644
                  Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                  Row(Modifier.weight(1f).fillMaxWidth()) {
                      // The picture, INSERT COIN under it.
-@@ -135,7 +135,9 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
+@@ -135,7 +136,9 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                                      ctx.chips.forEach { a ->
                                          SceneControl(a, Modifier.fillMaxWidth(), minTouch = 24.dp) { on ->
                                              Text(sceneLabel(a.label).uppercase(), color = if (on) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcDim, fontSize = small, maxLines = 3,
@@ -1192,7 +1394,7 @@ index 1f14765..5ee8479 100644
                                          }
                                      }
                                  }
-@@ -192,3 +194,7 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
+@@ -192,3 +195,7 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
  private fun arcadePageName(p: WinPage) = when (p) {
      WinPage.MAIN -> ""; WinPage.DETAILS -> "GAME INFO"; WinPage.OPTIONS -> "OPTIONS"; WinPage.TROPHIES -> "ACHIEVEMENTS"; WinPage.PERF -> "PERFORMANCE"
  }
@@ -1201,10 +1403,21 @@ index 1f14765..5ee8479 100644
 +/** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
 +internal const val ARCADE_LINE = 1.35f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-index 96dda3b..28dd380 100644
+index 96dda3b..5ed0638 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-@@ -301,7 +301,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+@@ -159,7 +159,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+             drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
+         }
+         Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
+-            Text(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 2)
++            // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
++            // edge on the Odin with a long name, T3 o478D.)
++            WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1)
+             Text(
+                 ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""),
+                 color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1
+@@ -301,7 +303,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
              drawPeelFlap(pk)
          }.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0D1520))
      ) {
@@ -1213,7 +1426,26 @@ index 96dda3b..28dd380 100644
          Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
          Row(Modifier.fillMaxSize().padding(18.dp)) {
              Column(Modifier.weight(0.5f).fillMaxHeight()) {
-@@ -529,7 +529,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -312,8 +314,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+                     }
+                     Spacer(Modifier.width(10.dp))
+                     Column {
+-                        Text(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3,
+-                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = if (compact) 17.sp else 21.sp))
++                        WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3)
+                         Text(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
+                     }
+                 }
+@@ -460,7 +461,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
+             }
+             Spacer(Modifier.width(u * 6))
+             Column(Modifier.weight(1f).fillMaxHeight()) {
+-                Text(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
++                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
+                 Spacer(Modifier.height(u))
+                 Box(Modifier.fillMaxWidth().height(u).background(c0))
+                 Spacer(Modifier.height(u * 3))
+@@ -529,10 +530,10 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
          Column(Modifier.fillMaxSize()) {
              // The art strip with the name.
              Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
@@ -1221,7 +1453,76 @@ index 96dda3b..28dd380 100644
 +                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                  Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
-                     Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+-                    Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
++                    WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                     Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
+                 }
+                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
+@@ -651,10 +652,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+             Column(Modifier.weight(1f).fillMaxHeight()) {
+                 Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
+                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
+-                Text(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
+-                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = 3,
+-                    // (Update 424, rule 11: the headline wraps — "POKEMON SILVER VERSION (GB CO…" at 1280×720 — and shrinks a step when long.)
+-                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = if (compact) 14.sp else 18.sp, maxFontSize = if (compact) 20.sp else 26.sp))
++                // (Update 424, rule 11: the headline wraps and shrinks a step when long; update 478, D271: then slides — it was cut.)
++                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
++                    maxLines = 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
++                        fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal))
+                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
+                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
+                 if (ctx.page == WinPage.MAIN) {
+@@ -770,7 +771,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+         }
+         Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = tearDp)) {
+             if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+-            Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
++            WinFullText(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
+                 maxLines = if (short) 2 else 3)
+             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+             Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
+@@ -901,7 +902,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
+             Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
+                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
+                 Spacer(Modifier.height(4.dp))
+-                Text(ctx.name.uppercase(), style = style.copy(color = tc.accent), maxLines = 3)
++                WinFullText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, lineHeight = style.lineHeight, maxLines = 3, style = style)
+                 @Composable
+                 fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 2) }
+                 line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
+index 876c06e..d16dbae 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
+@@ -126,10 +126,11 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                             }
+                         }
+                         Spacer(Modifier.height(10.dp))
+-                        // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate").
+-                        // One line of keys that scrolls sideways: the key you move to is brought into view, so every action is
+-                        // reachable however many a game has; each key is as wide as its name, which stays whole on one line.
+-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                        // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate");
++                        // each key is as wide as its name, which stays whole on one line.
++                        // (Update 478, R26: they wrap to a second line instead of scrolling sideways — a key half under the
++                        // window's edge measured 18 px wide on the Odin (T3 o477T3A), and actions never sit in a scrolling row.)
++                        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                             (rest + back).forEach { a ->
+                                 SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
+                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+@@ -167,7 +168,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                     Column(Modifier.weight(1f).fillMaxHeight()) {
+                         val s = rememberScrollState()
+                         // (Update 428, D107: reachable with the D-pad — it only scrolled by touch.)
+-                        Column(Modifier.weight(1f).sceneReadable(s, ctx.accent).sceneFadeEdges(s).verticalScroll(s)) {
++                        // (Update 478: a focus stop only when there is something to read — with no story / maker / kinds it
++                        // was an empty control 18 px wide (T3 meta=none, Odin), under the gate's 24 dp.)
++                        val readable = !ctx.summary.isNullOrBlank() || ctx.developer != null || ctx.genres != null
++                        Column(Modifier.weight(1f).fillMaxWidth().then(if (readable) Modifier.sceneReadable(s, ctx.accent) else Modifier).sceneFadeEdges(s).verticalScroll(s)) {
+                             ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 19.sp) }
+                             Spacer(Modifier.height(8.dp))
+                             Text(listOfNotNull(ctx.developer?.let { "Developer: $it" }, ctx.genres?.let { "Genres: $it" }).joinToString("\n"),
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 index d320f64..c90611e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
@@ -1454,6 +1755,82 @@ index 0000000..61da863
 +
 +    @Test fun airyIsACompactMoreWindow() {
 +        assertTrue(WinScene.AIRY_PANEL in MORE_SCENES)
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
+new file mode 100644
+index 0000000..9f0f54a
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
+@@ -0,0 +1,70 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 478: D271 (window names never cut) and D268 (Terminal's blinking cursor no longer resizes its line). */
++class Batch478Test {
++    private fun src(name: String): String =
++        listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
++            .map(::File).first { it.exists() }.readText()
++
++    // D271 (T3 k477T3A): a very long name stopped at maxLines in a dozen window scenes. Names go through StableFullText
++    // (shrink, one more line, then slide) or a marked marquee.
++    @Test fun noWindowSceneCutsTheNameAtALineLimit() {
++        for (f in listOf("WinScenes.kt", "WinScenesConsole.kt", "WinScenesArcade.kt", "WinScenesHomes2.kt", "WinScenesMore.kt")) {
++            val s = src(f)
++            val bad = Regex("""(?<![A-Za-z])Text\(\s*ctx\.name""").findAll(s).map { m ->
++                val tail = s.substring(m.range.last + 1, minOf(s.length, m.range.last + 400))
++                val end = Regex("""\n\s*(\w+\(|Spacer|Box|Row|Column|[}@])""").find(tail.substringAfter('\n', ""))?.let { tail.indexOf('\n') + 1 + it.range.first } ?: tail.length
++                tail.substring(0, end)
++            }.filter { Regex("""maxLines = [2-9]""").containsMatchIn(it) }.toList()
++            assertTrue("$f: $bad", bad.isEmpty())
++        }
++    }
++
++    @Test fun theGenericWindowNameSlidesInsteadOfBeingCut() {
++        val s = src("GameWindow.kt")
++        val w = s.substring(s.indexOf("private fun WinText("), s.indexOf("private fun WinText(") + 900)
++        assertTrue(w.contains("WinFullText("))
++    }
++
++    // 478a regression (o478A Blades): the reserved 2nd line of a short name pushed the guide's Back under its edge.
++    @Test fun windowNamesDoNotReserveLinesTheyDoNotUse() {
++        assertTrue(src("FitText.kt").contains("style, reserve = false)"))
++        for (f in listOf("WinScenes.kt", "WinScenesConsole.kt", "WinScenesArcade.kt"))
++            assertFalse(f, src(f).contains("StableFullText("))
++    }
++
++    // D268 (o477t): "█" vs " " changed the command line's height every blink.
++    @Test fun terminalCursorBlinksByColourNotByCharacter() {
++        val s = src("StyleTerminal.kt")
++        assertFalse(s.contains("""(if (blink) "█" else " ")"""))
++        assertTrue(s.contains("Color.Transparent)); append(\"█\"); pop()"))
++    }
++
++    // D270 (owner): on two screens the upper one no longer repeats the name the lower ribbon shows; one screen keeps it.
++    @Test fun pocketRibbonUpperScreenNamesTheGameOnlyWhenBothPartsShareOneScreen() {
++        val s = src("PocketRibbon.kt")
++        val cap = s.substring(s.indexOf("Update 478, D270"), s.indexOf("Update 478, D270") + 700)
++        assertTrue(cap.contains("if (framed) {"))
++        assertTrue(cap.contains("PocketText(this, titles.display(g.name)"))
++    }
++
++    // R26 (o477T3A): Cinema's round keys sat in a sideways-scrolling row — one half under the edge, 18 px wide.
++    @Test fun cinemaKeysWrapInsteadOfScrolling() {
++        val s = src("WinScenesHomes.kt")
++        val c = s.substring(s.indexOf("internal fun CinemaPremiere"), s.indexOf("internal fun CinemaPremiere") + 9000)
++        assertFalse(c.contains("Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp))"))
++        assertTrue(c.contains("FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp))"))
++    }
++
++    // o478D: a long name's 2nd line pushed the Blades guide's Back under the blade; Cinema's empty story was a 18 px stop.
++    @Test fun bladesNameIsOneLineAndCinemaStoryOnlyAStopWithText() {
++        assertTrue(src("WinScenesConsole.kt").contains("fontWeight = FontWeight.Light, maxLines = 1)"))
++        assertTrue(src("WinScenesHomes.kt").contains("if (readable) Modifier.sceneReadable(s, ctx.accent) else Modifier"))
++        assertTrue(src("GameWindow.kt").contains("Modifier.heightIn(min = 24.dp).clip(shape)"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

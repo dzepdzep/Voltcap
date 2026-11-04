@@ -154,6 +154,50 @@
    "patch_sha256": "225800de0b2df3421bec04c674bfe7e070a1f89bb89c75540720c0a4c5b81cfb",
    "tree_hash": "29ad0ebcfc8ff417220358700f1453cab16a59aef88b9984fde71e4037c205af",
    "note": "update 477: 477c + D266 room with More open on the KONKR (LCD 74x56, pill row 32 dp, tighter gaps) + QaClip marks sliding (marquee) texts so the gate doesn't read them as cut; never published"
+  },
+  {
+   "id": "qa-0.6.68-478a",
+   "apk_sha256": "8ec40bd02a009a72616f03dfb7db3eb7557ae6c06c1575e414b3bf72b66009b8",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "2ccb83c7421588f5d1094bc2fb2c89b5424dd2cd166aa140f99b4f4c9eb6e44f",
+   "tree_hash": "c625642732de9b8c0eff9d11da353c474e55e0c65b5336d3997c047a5a1a6e3c",
+   "note": "update 478: 477d + D271 window names through StableFullText (shrink, extra line, slide), D268 Terminal cursor blinks by colour, D270 Pocket Ribbon upper screen without the name on two screens, QA hook puts Blades on its Games blade; never published"
+  },
+  {
+   "id": "qa-0.6.68-478b",
+   "apk_sha256": "2b956fbdfb0490da63d73d976086e99edfabad7869b697e853c1c5d765f41a95",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "146e89228e34e904e2f3b76e7d87536ae2839c43ebdb2cab1f8a0297711a5f28",
+   "tree_hash": "e798ce2df1367fea1224844d95f3ce20d0ad406f5e84efc21afe6fad9f8d3b15",
+   "note": "update 478: 478a + WinFullText (no reserved lines: Blades guide Back back on the blade), Cinema round keys wrap instead of scrolling (R26); never published"
+  },
+  {
+   "id": "qa-0.6.68-478c",
+   "apk_sha256": "ed02bf42f1b2d406cd5681be588e5d4d33bbdcb91419cb1797f79861e3d51070",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "",
+   "tree_hash": "",
+   "note": "update 478: 478b + window status chips at least 24 dp tall; tested on the Odin only; patch not archived (superseded by 478d)"
+  },
+  {
+   "id": "qa-0.6.68-478d",
+   "apk_sha256": "77ae98f91206afc32d3525f42a755b0710f1be4d1e5e5c4a8d6cb58d8318b24a",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
+   "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
   }
  ]
 }

@@ -3232,15 +3232,15 @@
    "rule": "R23",
    "severity": "low",
    "kind": "defect (position jump)",
-   "status": "open - cause not isolated (once in o477t s2; s4 identical to s0)",
+   "status": "fixed in staging (qa-0.6.68-478a) - Odin 2/2 walks PASS; KONKR NOT TESTED",
    "found": "update 477 T5 triage o477t",
    "where": "Terminal preview pane",
    "evidence": [
     "o477t TERMINAL_s0 / s2 (pixel shift -6 confirmed), TERMINAL.mp4"
    ],
-   "root_cause": "",
-   "fix": "",
-   "verified": ""
+   "root_cause": "Terminal's command line drew '█' or ' ' each blink; '█' comes from a fallback font with a taller line, so the line (and the preview above it) changed height every blink.",
+   "fix": "the block is always laid out; only its colour blinks (StyleTerminal TermPrompt)",
+   "verified": "o478T / o478U navclip TERMINAL jump PASS"
   },
   {
    "id": "D269",
@@ -3264,7 +3264,7 @@
    "rule": "",
    "severity": "low",
    "kind": "recommendation (deferred by the owner)",
-   "status": "deferred (owner, update 477) - recorded only",
+   "status": "PARTIAL - code in staging (478a): the upper screen shows the piece + 'platform · year · played' when the screens are apart; one screen keeps the name. Two-screen check NOT TESTED (Thor not on USB)",
    "found": "owner review update 476",
    "where": "Pocket Ribbon",
    "evidence": [],
@@ -3278,15 +3278,31 @@
    "rule": "rule 11 / R26",
    "severity": "medium",
    "kind": "defect (truncated text)",
-   "status": "open - found by T3 set A on 477d; same fix as Airy (FullText: shrink then slide)",
+   "status": "PARTIAL - fixed in staging qa-0.6.68-478d, verified on the Odin (real + long-name fixture, 17 window scenes); KONKR NOT TESTED (off USB this session)",
    "found": "update 477 T3 k477T3A / o477T3A (names=long fixture)",
    "where": "KONKR: Arcade, Box, Camera, Custom, File select, Magazine, Night, Panels, Shop, Storage, Terminal, TV (+ Orbit's own slide read as cut); Odin: Camera, Custom, Night (+ Orbit)",
    "evidence": [
     "k477T3A / o477T3A popclip geometry 'text cut inside its own box (stopped at maxLines N)'"
    ],
    "root_cause": "Text(ctx.name, maxLines = 2..3) in the scene, not FullText",
-   "fix": "",
-   "verified": ""
+   "fix": "WinFullText (StableFullText without reserved lines: shrink to the readable minimum, one more line where there is room, then slide) for the names in Box, Shop, Camera, Cinema, File select, Night, Magazine, Storage, Panels, Blades (one line), Terminal, Green core, Arcade, generic WinText (TV / Layout Studio) and the window's status keys; Orbit's marquee marked QaClip.Slides. Batch478Test.",
+   "verified": "o478A/C/D/F/G (Odin) - see SUMMARY 478"
+  },
+  {
+   "id": "D272",
+   "title": "Cinema window: round keys in a sideways-scrolling row (a key half under the edge) and an empty story column as an 18 px focus stop",
+   "rule": "R26",
+   "severity": "low",
+   "kind": "defect",
+   "status": "fixed in staging (478b/478d) - Odin; KONKR NOT TESTED",
+   "found": "update 477 T3 o477T3A",
+   "where": "Cinema premiere window",
+   "evidence": [
+    "o477T3A / o478D CINEMA_OWN geometry"
+   ],
+   "root_cause": "horizontalScroll key row; sceneReadable on an empty column",
+   "fix": "FlowRow keys; focus stop only with text",
+   "verified": "o478F/G"
   }
  ]
 }

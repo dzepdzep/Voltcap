@@ -1,3 +1,25 @@
+# Update 478 (4 Nov 2026) — master request v0.7.0: roadmap + Batch A (checkpoint 1)
+
+**Read first:** `ROADMAP_070.md` (every item of the owner's master request with status), then this entry.
+Base: main f0dfe14. Staging patch = **qa-0.6.68-478d** (APK 77ae98f9…, Odin-tested). KONKR left the USB link during this
+session (still on RC f79aa2a7, settings verified in update 477): every KONKR result here is NOT TESTED.
+- **A1 D271 — PARTIAL (Odin DONE, KONKR NOT TESTED):** window names / status keys through `WinFullText` (StableFullText
+  without reserved lines: shrink to the readable minimum, one more line, then slide) in Box, Shop, Camera, Cinema, File
+  select, Night, Magazine, Storage, Panels, Blades (one line), Terminal, Green core, Arcade, generic WinText (TV / Layout
+  Studio); Orbit's marquee marked for the gate. Odin: 17 window scenes real + long names (o478C/D), final 5 (o478F/G) PASS.
+- **A2 D268 — fixed (Odin):** Terminal's blinking cursor glyph changed the command line's height → only its colour blinks.
+- **A3 — PARTIAL:** Blades: QA hook puts Blades on its Games blade (window opens again). Cinema: keys wrap (FlowRow, no
+  sideways scroll), empty story column no longer an 18 px focus stop (D272). Window status chips ≥ 24 dp. First-A misses
+  were the "Who's playing?" picker after an install taking the A: popclip.sh now closes it with B before every combination.
+  Tiles missing evidence (KONKR) not re-run.
+- **A4 D270 — code done, two-screen NOT TESTED (Thor):** Pocket Ribbon's upper screen without the name when apart.
+- Tests: Batch478Test (8), unit tests SUCCESS, static strict PASS, QA self-tests 130 OK. Builds 478a–d in builds.json.
+- Device: Odin back on RC f79aa2a7; settings files byte-identical to before update 476; the home's focused item is the one
+  it had at this session's start (changed between sessions, not by QA). Snapshot dirs: /sdcard/pc/snap478o, rc478o.
+- **Next action:** KONKR when on USB: install a 478d build (rebuild from this patch), run `c478_k.sh` (Claude outputs\qa477)
+  with the updated popclip.sh; then A5 category logos (GBA / Sega CD need the KONKR's library), A6, then Batch B (B2 video
+  suspension, B1 full-screen audit, B3 status bars, B4 animations).
+
 # Update 477 (4 Nov 2026) — staging CI green, D250 / D252 / D266, T5 triage, T3 content run (staging 0.6.68)
 
 Report: `tools/qa/QA_PHASE2_477.md`. Staging only (`next/0.6.68/staging.patch` = **qa-0.6.68-477d**, APK 677a58bc…, never
