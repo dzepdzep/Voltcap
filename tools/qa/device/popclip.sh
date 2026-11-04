@@ -28,6 +28,9 @@ tapat() {
 }
 shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.1; }
 k WAKEUP 0.5
+# (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
+# run logged "first A opened nothing". The picker is answered with B (keep the profile) first; the app's own mark says so.)
+for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
 [ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 3; }
 touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
@@ -35,6 +38,16 @@ for lay in $LAYS; do
   # (Asleep = no focused window: every key would end in an ANR. Preview keeps the screen on; this is the backstop.)
   dumpsys power | grep -q "mWakefulness=Awake" || { k WAKEUP 1.5; echo "woke the screen before $lay" >> $OUT/log.txt; }
   A --es voltcap_test_layout $lay; sleep 3.5
+  # (Update 469: Card binder and Pocket Quest play on A by default (cards_a_plays / pq_a_plays) — their window opens on A only
+  # with that option off, so it is switched off for the sweep; the caller's voltcap_test_snapshot restore puts the owner's
+  # value back. Before, these combos were "A plays" = NOT TESTED.)
+  case $lay in CARDS) A --es voltcap_test_pref "cards_a_plays=false"; sleep 1; echo "$lay: cards_a_plays=false for the sweep" >> $OUT/log.txt;;
+    POCKET) A --es voltcap_test_pref "pq_a_plays=false"; sleep 1; echo "$lay: pq_a_plays=false for the sweep" >> $OUT/log.txt;;
+    # (Green Core's home is its own menu — GAMES / SYSTEMS / ... — A enters the games first; the first combo logged "first
+    # A opened nothing" for it.)
+    # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
+    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; sleep 1.1
+      grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
     A --es voltcap_test_pref "popup_style_by_layout=$lay=$st"; sleep 1.2
@@ -45,11 +58,18 @@ for lay in $LAYS; do
     logcat -c; k BUTTON_A 1.9
     # (A first A that opened nothing is recorded — the gate fails "open" on it — and A is pressed once more to go on.)
     up || { if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
-      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png; k BUTTON_A 1.9; fi; }
+      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+        # (Update 469: a crash left the system's "has stopped" dialog / launcher in front and the next keys went to App info
+        # and Android Settings — never press on outside Voltcap.)
+        case "$(dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity')" in *com.shelf.launcher*) ;;
+          *) echo "STOP: not Voltcap in front after the first A of $n (crash?)" >> $OUT/log.txt; logcat -d -b crash > $OUT/${n}_crash.txt; break 2;; esac
+        k BUTTON_A 1.9; fi; }
     shot ${n}_main
     # Touch: taps go to the middle of the part of a control that SHOWS (the dump's "shown" box of the main step).
     # Details opens its page; B goes back.
-    if tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
+    # (Update 469: "Details" itself first — Storage's tabs are INFO / DETAILS / …, and the list's "Info" matched INFO, the tab
+    # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
+    if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     if grep -qiE '"label":"[^"]*(More|⋯)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
@@ -77,5 +97,5 @@ for lay in $LAYS; do
 done
 A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
-mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $F/qa_tap_home.txt
+mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
 echo DONE >> $OUT/log.txt

@@ -35,6 +35,31 @@ def labels(d):
     return [geomcheck._label(n) for w in (d or {}).get("windows") or [] for n in w.get("nodes") or [] if n.get("kind") == "control"]
 
 
+def covering_sheet(page, main):
+    """True when the page step has a control the main step didn't, covering >= 90 % of the screen (a full-screen sheet)."""
+    sw, sh = ((page or {}).get("screen") or [0, 0])[:2]
+    if sw <= 0 or sh <= 0: return False
+    mk = {geomcheck._key(n) for w in (main or {}).get("windows") or [] for n in w.get("nodes") or []}
+    for w in page.get("windows") or []:
+        for n in w.get("nodes") or []:
+            f = n.get("full") or []
+            if n.get("kind") == "control" and len(f) == 4 and geomcheck._key(n) not in mk and f[2] * f[3] >= 0.9 * sw * sh:
+                return True
+    return False
+
+
+def under_sheet(page, main, tol=16):
+    """The page's nodes that are the main step's (same label, box within [tol] px: a focus scale moves them a little)."""
+    mn = [(geomcheck._label(n), n.get("full") or []) for w in (main or {}).get("windows") or [] for n in w.get("nodes") or []]
+    out = []
+    for w in page.get("windows") or []:
+        for n in w.get("nodes") or []:
+            f = n.get("full") or []
+            if len(f) == 4 and any(l == geomcheck._label(n) and len(g) == 4 and all(abs(a - b) <= tol for a, b in zip(f, g)) for l, g in mn):
+                out.append(n)
+    return out
+
+
 def own_labels(d, home):
     """The controls of d that the home step didn't have (Custom's home has a Play and a Details button of its own)."""
     hk = {geomcheck._key(n) for w in (home or {}).get("windows") or [] for n in w.get("nodes") or []}
@@ -96,7 +121,13 @@ def grade(run, n):
         if d[s] is None:
             if s == "main": geo.append(qalib.Result(s, qalib.INFRA, "no dump"))
             continue
-        rs = geomcheck.clip_evaluate(d[s], png=png[s] if os.path.exists(png[s]) else None, baseline=d["home"] or d["closed"])
+        base = d["home"] or d["closed"]
+        # (Update 469: a page that is a full-screen sheet over the popup — Bubbles' LiveArea opens the full details over itself
+        # in the same window — leaves the popup's own keys composed under it; they are covered, not overlapping. Only when
+        # the page brings a new control covering >= 90 % of the screen are the main step's nodes left out too.)
+        if s == "page" and d["main"] is not None and covering_sheet(d["page"], d["main"]):
+            base = {"windows": ((base or {}).get("windows") or []) + [{"nodes": under_sheet(d["page"], d["main"])}]}
+        rs = geomcheck.clip_evaluate(d[s], png=png[s] if os.path.exists(png[s]) else None, baseline=base)
         for r in rs:
             (vis if r.name == "pixels" else geo).append(qalib.Result(f"{s} {r.name}", r.status, r.reason))
     def fold(rs):

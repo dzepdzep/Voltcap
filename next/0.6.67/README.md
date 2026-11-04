@@ -155,6 +155,11 @@ assembleRelease, device QA `pickdetect.sh`, `pickerlooks.sh`, `pickerux.sh`, `tw
 27. **Update 468.** Game Boy pak sides in Inspect (`ui/MediaInspectView.kt` SlabSide), clear GBC board (`ui/GbBoard.kt`, new;
     `data/LabelIds.kt` cartridge type), clear pak 7.8 mm + NES front (`ui/CartShells.kt`); tests GbBoard468Test (new),
     Cartridges300Test. Evidence tools/qa/CARTS_468.md.
+28. **Update 469.** Home-screen Game Boy pak sides (`ui/SolidPiece.kt` GbSide: seam, clear walls + board, clear back opaque);
+    popup fixes — Storage keys (crash D220 fixed, one line), Arctic drawer at large text / 9 actions (`ui/WinScenesHomes.kt`),
+    rental tag + Blades (`ui/WinScenesConsole.kt`), Cover details opaque + name gives way, Pocket Quest keys under the art
+    (`ui/WinScenesStyled.kt`), Discover card (`ui/WinScenesHomes2.kt`), Twin facts box one height (`ui/WinSceneTwin.kt`, D211 /
+    D221); tests GbSide469Test, SnapRows469Test (new). Evidence tools/qa/CARTS_469.md, tools/qa/POPUP_AUDIT_469.md.
 
 ## Notes
 - The Odin 2 Portal saved `picker_look = AURORA` during update 446's Settings-preview test, so 0.6.67 would show Aurora there

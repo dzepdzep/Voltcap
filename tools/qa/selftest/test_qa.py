@@ -561,6 +561,35 @@ class TestDeviceScreenScripts(unittest.TestCase):
         self.assertEqual(self.picker(home), "HOME")
         self.assertEqual(self.state(home), "HOME")
 
+    # Update 447 (D144): the app's own mark decides PICKER / HOME, whatever the picker's colours (six looks).
+    def marked(self, text, raw, pid="4242", awake="1", top="1"):
+        m = os.path.join(self.tmp, "mark")
+        with open(m, "w") as f:
+            f.write(text)
+        env = dict(os.environ, PK_RAW=raw, PK_MARK=m, PK_PID=pid, PK_AWAKE=awake, PK_TOP=top)
+        r = subprocess.run(["sh", os.path.join(self.DEV, "picker.sh")], capture_output=True, text=True, env=env)
+        return r.stdout.strip()
+
+    def test_mark_decides_whatever_the_colours(self):
+        black = self.raw("oled.raw", lambda x, y: (0, 0, 0))            # Minimal OLED picker: black corner
+        grey = self.raw("console.raw", lambda x, y: (40, 42, 46))       # Console classic: graphite
+        blue = self.raw("blue.raw", lambda x, y: (10, 30, 140))         # home that happens to be blue
+        self.assertEqual(self.marked("PICKER 4242\n", black), "PICKER")
+        self.assertEqual(self.marked("PICKER 4242\n", grey), "PICKER")
+        self.assertEqual(self.marked("HOME 4242\n", blue), "HOME")
+        self.assertEqual(self.marked("HOME 4242\n", grey), "HOME")
+
+    def test_mark_never_passes_a_bad_screen(self):
+        black = self.raw("black.raw", lambda x, y: (0, 0, 0))
+        grey = self.raw("grey.raw", lambda x, y: (90, 90, 90))
+        self.assertEqual(self.marked("HOME 4242\n", black), "UNKNOWN")           # black is never HOME
+        self.assertEqual(self.marked("PICKER 4242\n", grey, awake="0"), "UNKNOWN")  # display asleep
+        self.assertEqual(self.marked("HOME 4242\n", grey, top="0"), "UNKNOWN")     # another app in front
+        self.assertEqual(self.marked("SOMETHING 4242\n", grey), "UNKNOWN")
+        # A stale mark (Voltcap restarted: another pid) is ignored: the old check decides (grey = HOME, black = UNKNOWN).
+        self.assertEqual(self.marked("PICKER 1\n", grey), "HOME")
+        self.assertEqual(self.marked("PICKER 1\n", black), "UNKNOWN")
+
     def test_pop_requires_verified_home(self):
         src = open(os.path.join(self.DEV, "pop.sh"), encoding="utf-8").read()
         self.assertIn("screen_state", src)
@@ -754,6 +783,193 @@ class TestGeomcheck(Base):
         self.assertEqual(verdict([10, 13, 16, 13], step=3), 0)        # Channel grid: three games per column
         self.assertEqual(verdict([5, 6, 7, 0, 7], seq="R R R R L"), 0)  # Endless: the last game to the first is one step
         self.assertEqual(verdict([0, 1], seq=""), 2)                         # no MARK seq: NO DATA, never a pass
+
+
+class TestClipGate(unittest.TestCase):
+    """Update 467 (QA rule R26): the clipping gate must catch the Pokémon Stadium 2 window's cut action row, and pass it fixed."""
+    def load(self, n):
+        with open(os.path.join(HERE, "fixtures", n), encoding="utf-8") as fh: return json.load(fh)
+
+    def status(self, d, png=None):
+        import geomcheck
+        return {r.name: r.status for r in geomcheck.clip_evaluate(d, png=png)}
+
+    def test_stadium2_clipped_buttons_fail(self):
+        st = self.status(self.load("clip_stadium2_before.json"))
+        self.assertEqual(st["clip"], "FAIL")
+        self.assertEqual(st["focus"], "FAIL")   # Play has focus and is cut
+
+    def test_stadium2_fixed_passes_layout(self):
+        st = self.status(self.load("clip_stadium2_after.json"))
+        for k in ("clip", "screen", "overlap", "touch", "focus"):
+            self.assertEqual(st[k], "PASS", k)
+        self.assertEqual(st["pixels"], "NOT TESTED")   # no screenshot: never a pass
+
+    def test_empty_dump_is_infra(self):
+        import geomcheck
+        self.assertEqual(geomcheck.clip_evaluate({"windows": []})[0].status, "INFRA")
+
+    def test_scrolled_text_is_not_a_failure_but_a_cut_action_is(self):
+        d = self.load("clip_stadium2_after.json")
+        d["windows"][0]["nodes"].append({"label": "a long story", "kind": "text", "full": [434, 300, 400, 300], "shown": [434, 300, 400, 120], "scroll": True, "focused": False})
+        self.assertEqual(self.status(d)["clip"], "PASS")
+        d["windows"][0]["nodes"].append({"label": "Back", "kind": "control", "full": [434, 600, 100, 60], "shown": [434, 600, 100, 20], "scroll": True, "focused": False})
+        self.assertEqual(self.status(d)["clip"], "FAIL")
+
+    def test_overlap_and_small_touch_targets_fail(self):
+        d = self.load("clip_stadium2_after.json")
+        n = d["windows"][0]["nodes"]
+        n.append({"label": "x", "kind": "control", "full": [540, 520, 30, 30], "shown": [540, 520, 30, 30], "scroll": False, "focused": False})
+        st = self.status(d)
+        self.assertEqual(st["overlap"], "FAIL"); self.assertEqual(st["touch"], "FAIL")
+
+    def test_real_stadium2_screenshot_is_caught_by_pixels(self):
+        # The owner's case on hardware (KONKR, staging 466): the action row cropped from the real screenshot (x 420.., y 530..);
+        # Play laid out 69 px tall but drawn only to the window's inner edge.
+        d = {"screen": [480, 100], "density": 1.5, "windows": [{"at": [-420, -530, 960, 640], "nodes": [
+            {"label": "Play", "kind": "control", "full": [438, 552, 124, 69], "shown": [438, 552, 124, 69]}]}]}
+        self.assertEqual(self.status(d, png=os.path.join(HERE, "fixtures", "stadium2_actionrow_before.png"))["pixels"], "FAIL")
+
+    def test_pixels_catch_a_button_drawn_short(self):
+        # A deliberately clipped button: its fill stops 14 px above its laid-out bottom (a draw clip the layout can't see).
+        from PIL import Image, ImageDraw
+        import tempfile
+        d = self.load("clip_stadium2_after.json")
+        im = Image.new("RGB", (960, 640), (20, 22, 26)); dr = ImageDraw.Draw(im)
+        for nd in d["windows"][0]["nodes"]:
+            if nd["kind"] == "control":
+                x, y, w, h = nd["full"]; dr.rounded_rectangle([x, y, x + w, y + h - 14], 18, fill=(200, 200, 190))
+        p = os.path.join(tempfile.mkdtemp(), "cut.png"); im.save(p)
+        self.assertEqual(self.status(d, png=p)["pixels"], "FAIL")
+        im2 = Image.new("RGB", (960, 640), (20, 22, 26)); dr = ImageDraw.Draw(im2)
+        for nd in d["windows"][0]["nodes"]:
+            if nd["kind"] == "control":
+                x, y, w, h = nd["full"]; dr.rounded_rectangle([x, y, x + w, y + h], 18, fill=(200, 200, 190))
+        p2 = os.path.join(os.path.dirname(p), "whole.png"); im2.save(p2)
+        self.assertEqual(self.status(d, png=p2)["pixels"], "PASS")
+
+
+class TestPopupGate(unittest.TestCase):
+    """Update 467 (R26): the popup gate grades categories separately and never passes on missing evidence."""
+    def run_dir(self, before=True, with_closed=True):
+        import shutil
+        from PIL import Image
+        d = os.path.join(tempfile.mkdtemp(), "t"); os.makedirs(os.path.join(d, "qa_clip"))
+        src = os.path.join(HERE, "fixtures", "clip_stadium2_%s.json" % ("before" if before else "after"))
+        Image.new("RGB", (960, 640), (20, 20, 20)).save(os.path.join(d, "CASEFLOW_OWN_main.png"))
+        shutil.copy(src, os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_main.json"))
+        if with_closed:
+            Image.new("RGB", (960, 640), (20, 20, 20)).save(os.path.join(d, "CASEFLOW_OWN_closed.png"))
+            with open(os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_closed.json"), "w") as fh:
+                json.dump({"windows": [{"at": [0, 0, 960, 640], "focus": True, "nodes": [{"label": "home", "kind": "control", "full": [0, 0, 960, 640], "shown": [0, 0, 960, 640]}]}]}, fh)
+        return d
+
+    def test_clipped_action_row_fails_geometry_but_opens(self):
+        import popclip
+        g = popclip.grade(self.run_dir(), "CASEFLOW_OWN")
+        self.assertEqual(g["open"][0], "PASS"); self.assertEqual(g["geometry"][0], "FAIL")
+
+    def test_fixed_row_passes_geometry_never_overall_without_pages(self):
+        import popclip
+        g = popclip.grade(self.run_dir(before=False), "CASEFLOW_OWN")
+        self.assertEqual(g["geometry"][0], "PASS")
+        self.assertNotEqual(g["buttons"][0], "PASS")   # no More / Details steps recorded: never a pass
+
+    def test_missing_main_is_infra(self):
+        import popclip
+        d = self.run_dir(); os.remove(os.path.join(d, "CASEFLOW_OWN_main.png"))
+        self.assertTrue(all(v[0] == "INFRA" for v in popclip.grade(d, "CASEFLOW_OWN").values()))
+
+    def test_squeezed_scroll_box_fails(self):
+        """Update 467: Resume's facts box squeezed to half a line on the KONKR (real dump) fails; the fixed Stadium 2 passes."""
+        import geomcheck
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_resume_tinyscroll.json"), encoding="utf-8"))
+        clip = [r for r in geomcheck.clip_evaluate(d) if r.name == "clip"][0]
+        self.assertEqual(clip.status, "FAIL"); self.assertIn("no whole one", clip.reason)
+
+    def test_played_fact_is_not_an_action(self):
+        import geomcheck
+        self.assertFalse(geomcheck._is_action({"label": "Played"}))
+        self.assertTrue(geomcheck._is_action({"label": "▶ Play"}))
+        self.assertTrue(geomcheck._is_action({"label": "Continue"}))
+
+    def _row_dir(self, has_row):
+        import shutil
+        d = self.run_dir()
+        for st in ("main", "closed"):
+            p = os.path.join(d, "qa_clip", "t_CASEFLOW_OWN_%s.json" % st)
+            j = json.load(open(p)); j["hasRow"] = has_row
+            with open(os.path.join(d, "qa_clip", "t_CASEFLOW_ROW_REVEAL_%s.json" % st), "w") as fh: json.dump(j, fh)
+        shutil.copy(os.path.join(d, "CASEFLOW_OWN_main.png"), os.path.join(d, "CASEFLOW_ROW_REVEAL_main.png"))
+        shutil.copy(os.path.join(d, "CASEFLOW_OWN_closed.png"), os.path.join(d, "CASEFLOW_ROW_REVEAL_closed.png"))
+        return d
+
+    def test_row_style_without_row_is_na_not_pass(self):
+        import popclip
+        g = popclip.grade(self._row_dir(False), "CASEFLOW_ROW_REVEAL")
+        self.assertTrue(all(v[0] == "SKIP" for v in g.values()))
+
+    def test_row_style_with_row_is_graded(self):
+        import popclip
+        g = popclip.grade(self._row_dir(True), "CASEFLOW_ROW_REVEAL")
+        self.assertEqual(g["geometry"][0], "FAIL")
+
+
+class TestPopclipScript(unittest.TestCase):
+    """Update 467 (R26): the sweep never sends an intent while a popup is up (it closes the popups in the home screen) and
+    never lets a tap start a game."""
+    def test_no_intent_while_popup_up(self):
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn("qa_clip_req", sh)
+        self.assertNotIn("voltcap_test_clip", sh.split("for lay in", 1)[1])
+        self.assertNotIn("voltcap_test_winmore", sh.split("for lay in", 1)[1])
+
+    def test_action_words_match_the_gate(self):
+        import geomcheck, re as _re
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        words = lambda var: sorted(w.lower() for w in _re.search(var + r'="\(([^)]*)\)"', sh).group(1).split("|"))
+        self.assertEqual(words("PLAYW"), sorted(geomcheck.PLAY_WORDS))
+        self.assertEqual(words("DETW"), sorted(geomcheck.DETAILS_WORDS))
+        self.assertTrue(geomcheck.PLAY_RE.match("Start game")); self.assertFalse(geomcheck.PLAY_RE.match("Played"))
+
+    def test_play_tap_only_with_launches_blocked(self):
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn("touch $F/qa_nolaunch", sh)
+        self.assertRegex(sh, r'\[ -f \$F/qa_nolaunch \]')
+
+
+    def test_picker_answered_and_a_opens_everywhere(self):
+        # Update 469 (D210): a fresh Voltcap shows "Who's playing?" — the sweep answers it before the first combo;
+        # Card binder / Pocket Quest get A = open for the sweep (their "A plays" options), else they were NOT TESTED.
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        head = sh.split("for lay in", 1)[0]
+        self.assertIn("^PICKER", head); self.assertIn("BUTTON_B", head)
+        self.assertIn("cards_a_plays=false", sh); self.assertIn("pq_a_plays=false", sh)
+
+
+    def test_covering_sheet_hides_the_popup_under_it(self):
+        # Update 469: Bubbles' Details is a full-screen sheet over its LiveArea, in the same window — the LiveArea's keys under
+        # it are covered, not overlapping. Without a covering sheet the same nodes still count.
+        import popclip
+        def n(l, f): return {"label": l, "kind": "control", "full": f, "shown": f}
+        main = {"screen": [960, 640], "windows": [{"nodes": [n("Start", [66, 398, 255, 75]), n("Details", [153, 490, 60, 60])]}]}
+        page = {"screen": [960, 640], "windows": [{"nodes": [n("Game", [0, 0, 960, 640]), n("Start", [72, 400, 255, 75]),
+                                                            n("Details", [149, 486, 60, 60]), n("Play", [53, 447, 210, 51])]}]}
+        self.assertTrue(popclip.covering_sheet(page, main))
+        self.assertEqual([x["label"] for x in popclip.under_sheet(page, main)], ["Start", "Details"])
+        small = {"screen": [960, 640], "windows": [{"nodes": [n("Card", [100, 100, 500, 400]), n("Start", [72, 400, 255, 75])]}]}
+        self.assertFalse(popclip.covering_sheet(small, main))
+
+    def test_details_word_first(self):
+        # Update 469: Storage's INFO tab matched the Details words before its DETAILS tab.
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn('tapat "(Details|Full details)" main || tapat "$DETW" main', sh)
+
+    def test_stops_outside_voltcap(self):
+        # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn("not Voltcap in front after the first A", sh)
+        self.assertIn("break 2", sh)
 
 
 class TestLineEndings(unittest.TestCase):

@@ -6985,7 +6985,7 @@ index 16627b7..374e9fc 100644
                              .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
                              .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
-index f7b2755..e807d2a 100644
+index f7b2755..aba3e96 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
 @@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
@@ -6996,7 +6996,37 @@ index f7b2755..e807d2a 100644
  import androidx.compose.ui.graphics.drawscope.scale
  import androidx.compose.ui.graphics.drawscope.translate
  import androidx.compose.ui.graphics.graphicsLayer
-@@ -142,7 +143,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
+@@ -130,11 +131,28 @@ internal class SolidSpec(
+      * what's behind they hide), nothing of them behind its face, and its back as see-through. Null: solid plastic. The
+      * sides were solid slices standing behind the face, so a translucent card turned into an opaque grey block.
+      */
+-    val clear: Float? = null
++    val clear: Float? = null,
++    /**
++     * Update 469: a measured Game Boy family pak (SlabSide's references): the seam between its halves drawn on its side and,
++     * when clear, the board inside seen through the side — as Inspect draws it. Null: as before.
++     */
++    val gb: GbSide? = null
+ ) {
+     val back: ImageBitmap? by lazy { runCatching { back?.invoke() }.getOrNull() }
+ }
+ 
++/** Update 469: what a turned Game Boy family pak shows on its side — see SolidSpec.gb and SlabSide. */
++internal class GbSide(val shell: CartShell, val clear: Boolean, val boardType: Int?) {
++    companion object {
++        private val MEASURED = setOf("gb", "gbc", "gbc_dual")
++        fun of(sh: CartShell?, colour: ShellColour?, boardType: () -> Int?): GbSide? {
++            if (sh == null || sh.id !in MEASURED) return null
++            val clear = (colour?.opacity ?: 1f) < 0.85f && CartBacks.of(sh.id)?.board != null
++            return GbSide(sh, clear, if (clear) boardType() else null)
++        }
++    }
++}
++
+ /** [spec] for a game on a shell from the cartridge library ([pickPlatform] "shell:…"): its own size, colour and back. */
+ @Composable
+ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
+@@ -142,7 +160,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
      // (Update 228, #36: a pack shape picked in the shell picker turned with the pack picture's own plastic on its sides
      // and back — it was grey, whatever its colour.)
      val packTone = rememberCustomPieceTone(pickPlatform)
@@ -7007,7 +7037,7 @@ index f7b2755..e807d2a 100644
          val (choice, console) = CartShells.split(pickPlatform)
          val sh = choice?.shell
          when {
-@@ -158,6 +161,15 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
+@@ -158,11 +178,22 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
              } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
              else -> {
                  val colour = CartShells.colourOf(sh, choice.colourKey)
@@ -7016,22 +7046,56 @@ index f7b2755..e807d2a 100644
 +                val photoTone = if (choice.pack == null) PhotoShells.sideTone(sh, colour) else null
 +                if (photoTone != null) {
 +                    val pc = ShellColour("photo:$photoTone", colour.name, photoTone, colour.opacity)
++                    // (Update 469: a clear pak made from a photo is still clear plastic on its sides — they were opaque.)
++                    val gbs = GbSide.of(sh, colour) { null }
 +                    return@remember SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(photoTone), back = {
 +                        runCatching { CartShells.backFor(sh, pc, 480, console, backStyle).asImageBitmap() }.getOrNull()
-+                    }, fitBackToFace = true)
++                    }, fitBackToFace = true, clear = if (gbs?.clear == true) 0.5f else null, gb = gbs)
 +                }
                  // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
                  // (Update 306: another console's game on this shell has its own console's name on the back — backFor.)
                  SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {
-@@ -473,6 +485,7 @@ internal fun Modifier.solidPiece(
+                     CartShells.backFor(sh, colour, 480, console, backStyle).asImageBitmap()
+-                })
++                }, gb = if (choice.pack == null) GbSide.of(sh, colour) { null } else null)
+             }
+         }
+     }
+@@ -203,7 +234,10 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
+         // isn't the black of the usual Game Boy Color shell.)
+         // (Update 207: a UMD photo at the UMD's own thickness.)
+         if (sh == null) SolidSpec(aspect, if (platform != null && MediaShell.of(platform) == MediaShell.UMD) slabDepth(MediaShell.UMD) else 0.12f, tone ?: PLAIN_SHELL)
+-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
++        else {
++            // (Update 469: a photo of a clear pak — Pokémon Crystal's — has clear sides with the board inside, as in Inspect.)
++            val gbs = GbSide.of(sh, ownShellColour(sh, platform, gameKey)) { null }
++            SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
+             // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
+             // and cut to the photo's outline when drawn: fitBackToFace.)
+             val own = ownShellColour(sh, platform, gameKey)
+@@ -211,7 +245,8 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
+             // cartridge's back could come out in another photo's plastic.)
+             val colour = tone?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
+             runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
+-        }, fitBackToFace = true)
++        }, fitBackToFace = true, clear = if (gbs?.clear == true) 0.5f else null, gb = gbs)
++        }
+     }
+ }
+ 
+@@ -473,6 +508,11 @@ internal fun Modifier.solidPiece(
      val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
      val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
      val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
++    // (Update 469: the seam's darker copy and the clear pak's board — spec.gb.)
++    val seamLeaf = androidx.compose.ui.graphics.rememberGraphicsLayer()
++    val boardLeaf = androidx.compose.ui.graphics.rememberGraphicsLayer()
++    val boardPic = remember { arrayOfNulls<Any>(2) }
 +    val sideClip = remember { SideClip() }
      return this.drawWithCache {
          // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
          // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
-@@ -584,12 +597,20 @@ internal fun Modifier.solidPiece(
+@@ -584,12 +624,20 @@ internal fun Modifier.solidPiece(
              val t = Math.toRadians(yaw.toDouble())
              val c = cos(t).toFloat()
              val sn = sin(t).toFloat()
@@ -7054,16 +7118,18 @@ index f7b2755..e807d2a 100644
                  val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
                  // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
                  val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
-@@ -606,7 +627,7 @@ internal fun Modifier.solidPiece(
+@@ -606,7 +654,9 @@ internal fun Modifier.solidPiece(
              }
              back.rotationY = yaw; back.cameraDistance = cam
              // (Update 209: a see-through piece's back as see-through as its sides.)
 -            back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
-+            back.alpha = (spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f) * faceA
++            // (Update 469: not a clear Game Boy pak's — its drawn back is the board under the plastic; the back showed what was
++            // behind the cartridge through the board.)
++            back.alpha = (if (spec.gb?.clear == true) 1f else spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f) * faceA
              // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
              // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
              // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
-@@ -702,8 +723,10 @@ internal fun Modifier.solidPiece(
+@@ -702,8 +752,10 @@ internal fun Modifier.solidPiece(
                  val edgeL = edgeLeaf ?: edge
                  // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
                  // under the face, left out; see SIDE_SPREAD.)
@@ -7075,7 +7141,7 @@ index f7b2755..e807d2a 100644
                  val span = depthPx * abs(sn)
                  val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                  edgeL.alpha = if (edgeLeaf != null) {
-@@ -716,29 +739,35 @@ internal fun Modifier.solidPiece(
+@@ -716,28 +768,87 @@ internal fun Modifier.solidPiece(
                  val camPx = cam * 72f
                  val nearV = -depthPx / 2f * abs(c)
                  fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
@@ -7089,18 +7155,6 @@ index f7b2755..e807d2a 100644
 -                    smear.record(size = buf) {
 -                        translate(m.toFloat(), m.toFloat()) {
 -                            for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
--                        }
--                    }
--                }
--                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
--                    val f = k.toFloat() / n
--                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
--                    // (The nearest slice alone: nothing past it to fill.)
--                    val dk = depthK(z)
--                    scale(dk, dk, pivot = nodeC) {
--                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
--                        else translate(z * sn, 0f) { drawLayer(edge) }
--                    }
 +                // Update 458 (D175, Thor: "sharp, rough lines" along a GBA cartridge's side): each copy is a plane parallel to the
 +                // face, so its own top edge slants (it comes nearer toward one end) — steeper the more it's turned — while the
 +                // side's real top edge runs from one copy's far corner to the next. Between two copies the nearer part of the
@@ -7122,18 +7176,78 @@ index f7b2755..e807d2a 100644
 +                // the strip through every copy's outer corners — is filled first in the sides' plastic and light.)
 +                // (Only nearly side-on, past ~81°: there a notch in the outline — the GBA pak's shoulders — is narrower than a
 +                // pixel or two; turned less, the copies alone keep its step.)
-+                if (cut != null && spec.clear == null && abs(c) < 0.15f) {
++                // Update 469: a clear Game Boy pak's board (1 mm, on the back half) seen through its clear side, as in Inspect
++                // (SlabSide): copies of the board's outline in its edge green at its depth, behind the clear walls.
++                val gbs = spec.gb
++                val zpm = gbs?.let { depthPx / it.shell.t }
++                val nodeSz = IntSize((nodeC.x * 2f).roundToInt(), (nodeC.y * 2f).roundToInt())
++                if (gbs != null && gbs.clear && zpm != null && artPos != null && artSize != null && !mirror && !far) {
++                    val bm = CartBacks.of(gbs.shell.id)?.board
++                    if (bm != null) {
++                        val k = artSize.width / gbs.shell.w
++                        val at = IntOffset((artPos.x + (gbs.shell.w - bm[0] - bm[2]) * k).roundToInt(), (artPos.y + bm[1] * k).roundToInt())
++                        val bs = IntSize((bm[2] * k).roundToInt().coerceAtLeast(4), (bm[3] * k).roundToInt().coerceAtLeast(4))
++                        val key = "${gbs.boardType}|$bs"
++                        if (boardPic[0] != key) {
++                            boardPic[0] = key
++                            boardPic[1] = runCatching { GbBoard.chipSide(gbs.boardType, bs.width, bs.height).asImageBitmap() }.getOrNull()
++                        }
++                        val pic = boardPic[1] as? ImageBitmap
++                        if (pic != null) {
++                            boardLeaf.rotationY = sideYaw; boardLeaf.cameraDistance = cam
++                            // (At the node's own size, as the sides' layers: recorded inside the whole-piece buffer it took the
++                            // buffer's size — its turn pivoted round the buffer's middle and the board stood apart from the pak.)
++                            boardLeaf.record(size = nodeSz) {
++                                drawImage(pic, IntOffset.Zero, IntSize(pic.width, pic.height), at, bs, colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
++                                drawRect(Color(0xFF1C5A3C), blendMode = BlendMode.SrcAtop, alpha = 0.55f)
++                            }
++                            val zb0 = -depthPx / 2f + SlabSide.BOARD_FROM_BACK * zpm
++                            val zb1 = zb0 + SlabSide.BOARD_T * zpm
++                            val nb = ceil((zb1 - zb0) * abs(sn) / 1.5f).toInt().coerceIn(1, 4)
++                            for (i in 0..nb) {
++                                val z = if (c >= 0f) zb0 + (zb1 - zb0) * i / nb else zb1 - (zb1 - zb0) * i / nb
++                                val dk = depthK(z)
++                                scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(boardLeaf) } }
++                            }
+                         }
+                     }
+                 }
+-                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
+-                    val f = k.toFloat() / n
+-                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+-                    // (The nearest slice alone: nothing past it to fill.)
+-                    val dk = depthK(z)
+-                    scale(dk, dk, pivot = nodeC) {
+-                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+-                        else translate(z * sn, 0f) { drawLayer(edge) }
++                // (Update 469: a clear Game Boy pak too, as see-through as its sides — edge-on its copies are hairlines, so
++                // without it the side vanished and only the board's green line was left.)
++                if (cut != null && (spec.clear == null || gbs?.clear == true) && abs(c) < 0.15f) {
 +                    val tone = spec.tone.copy(alpha = 1f).toArgb()
 +                    val cols = List(5) { i -> Color(0xFF000000.toInt() or sideRowRgb(i / 4f, tone)) }
 +                    drawPath(sideClip.wall, Brush.verticalGradient(cols, sideClip.wallTop, sideClip.wallBottom),
++                        alpha = if (spec.clear != null) spec.clear.coerceIn(0.2f, 0.8f) else 1f,
 +                        colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
-                 }
++                }
 +                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf) }
 +                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf)
++                // (Update 469: the seam between the halves, 5.8 mm from the front — one darker copy of the side there.)
++                if (gbs != null && zpm != null && side != null && artPos != null && artSize != null && !mirror && !far && abs(sn) > 0.3f) {
++                    val padN = (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
++                    seamLeaf.rotationY = sideYaw; seamLeaf.cameraDistance = cam
++                    seamLeaf.alpha = if (gbs.clear) 0.6f else 1f
++                    seamLeaf.record(size = nodeSz) {
++                        drawImage(side, IntOffset.Zero, sideSrc!!, IntOffset(artPos.x - padN, artPos.y), IntSize(artSize.width + 2 * padN, artSize.height),
++                            colorFilter = SolidLight.of(0.16f * shadeK))
+                     }
++                    val zs = depthPx / 2f - SlabSide.FRONT_HALF * zpm
++                    val dk = depthK(zs)
++                    val drawSeam: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
++                    if (cut != null) clipPath(cut) { drawSeam() } else drawSeam()
+                 }
                  val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                  // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
-                 if (clear != null) {
-@@ -889,6 +918,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
+@@ -889,6 +1000,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
   */
  internal const val SIDE_SPREAD = 10
  
@@ -7160,7 +7274,7 @@ index f7b2755..e807d2a 100644
  /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
  // (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
  // steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
-@@ -934,3 +983,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
+@@ -934,3 +1065,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
      }
      found
  }.getOrNull()
@@ -8200,7 +8314,7 @@ index 791a4b3..02997cf 100644
                      sel, index, order.size, sizes[sel] ?: WidgetSize.NORMAL, allowedSizesOf(context, sel), Modifier,
                      onMove = { by -> order = WidgetBoardItems.moveTo(order, sel, index + by); WidgetBoardItems.set(order) },
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
-index 19a4ac7..94a55da 100644
+index 19a4ac7..d2d1be2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
 @@ -1,5 +1,6 @@
@@ -8210,19 +8324,48 @@ index 19a4ac7..94a55da 100644
  import androidx.compose.animation.core.Animatable
  import androidx.compose.animation.core.tween
  import androidx.compose.foundation.background
-@@ -197,7 +198,9 @@ internal fun SnapRows(modifier: Modifier, textLine: Dp = 0.dp, textTop: Dp = 0.d
+@@ -43,6 +44,8 @@ import androidx.compose.ui.unit.sp
+ import coil.compose.AsyncImage
+ import com.shelf.launcher.data.HomeLayout
+ import kotlinx.coroutines.delay
++import androidx.compose.ui.draw.drawWithContent
++import androidx.compose.ui.graphics.drawscope.clipRect
+ 
+ /**
+  * v0.6.66 (D142): the Twin layouts' window — one window folded open over a hinge, like the two screens it's made for.
+@@ -197,15 +200,26 @@ internal fun SnapRows(modifier: Modifier, textLine: Dp = 0.dp, textTop: Dp = 0.d
      val target = remember { mutableIntStateOf(0) }
      val off = remember { Animatable(0f) }
      val info = remember { IntArray(2) } // [next page offset or -1, total height]
 -    Layout(content, modifier.clipToBounds()) { ms, c ->
 +    // (Update 467, QA only: marked as a paging box, so the geometry gate reads its rows like a scrolling list's.)
 +    val qa = if (QaTrace.on) Modifier.semantics { this[QaClip.Paged] = true } else Modifier
-+    Layout(content, modifier.clipToBounds().then(qa)) { ms, c ->
++    // (Update 469, D221: the box keeps its first page's height on every page — a shorter later page (the story's last lines)
++    // made the window shrink and grow every 2.8 s, the keys under it jumped, and a tap aimed at More / Play landed on the
++    // veil and closed the window (KONKR, Twin desk). Later pages are cut to whole rows inside that height; the rest of the
++    // box stays empty.)
++    val vis = remember { IntArray(1) }
++    Layout(content, modifier.clipToBounds().then(qa).drawWithContent {
++        clipRect(bottom = vis[0].toFloat().coerceAtMost(size.height)) { this@drawWithContent.drawContent() }
++    }) { ms, c ->
          val ps = ms.map { it.measure(Constraints(maxWidth = c.maxWidth)) }
          val bounds = SnapPaging.bounds(ps.map { it.height }, textLine.roundToPx(), textTop.roundToPx())
          val avail = if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE
++        val boxH = SnapPaging.window(bounds, 0, avail)
+         val top = target.intValue.coerceAtMost(bounds.last())
+-        val shown = SnapPaging.window(bounds, top, avail)
+-        info[0] = SnapPaging.next(bounds, top, avail) ?: -1
++        val shown = SnapPaging.window(bounds, top, boxH)
++        info[0] = SnapPaging.next(bounds, top, boxH) ?: -1
+         info[1] = bounds.last()
+-        layout(c.maxWidth, shown.coerceIn(c.minHeight, maxOf(c.minHeight, avail))) {
++        vis[0] = shown
++        layout(c.maxWidth, boxH.coerceIn(c.minHeight, maxOf(c.minHeight, avail))) {
+             var y = -off.value.toInt()
+             ps.forEach { it.placeRelative(0, y); y += it.height }
+         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-index 5791282..1793fb7 100644
+index 5791282..deb1deb 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 @@ -749,7 +749,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
@@ -8267,7 +8410,25 @@ index 5791282..1793fb7 100644
                              (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
                                  SceneControl(a, Modifier.weight(1f)) { on ->
                                      Row(
-@@ -911,9 +916,15 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+@@ -844,8 +849,15 @@ private fun StorageRecord(ctx: WinSceneCtx) {
+                                         verticalAlignment = Alignment.CenterVertically
+                                     ) {
+                                         Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
+-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black,
+-                                            fontFamily = FontFamily.Monospace, maxLines = 2)
++                                        // (Update 469: "ACHIEVEMENTS" broke mid-word, "ACHIEVEME / NTS", on the KONKR — long keys a
++                                        // little smaller. Not FitText: it is a SubcomposeLayout, and FlowRow's weighted items ask for
++                                        // intrinsic sizes — that crashed Voltcap on A (IllegalStateException, Odin + KONKR sweep).
++                                        // Still two lines at most, never cut.)
++                                        // (Recheck: 10 sp still broke "ACHIEVEMENT / S" in the KONKR's 100 dp cell — Compose's own
++                                        // step auto-size (a text node, no subcomposition), one line, 13 → 8 sp.)
++                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp,
++                                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 13.sp, stepSize = 0.5.sp),
++                                            fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
+                                     }
+                                 }
+                             }
+@@ -911,9 +923,15 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
              .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
              .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
              .padding(14.dp)
@@ -8285,7 +8446,7 @@ index 5791282..1793fb7 100644
          Box(
              Modifier.fillMaxWidth().height(mediaH).clip(RoundedCornerShape(10.dp)).background(Color.Black)
                  .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
-@@ -970,6 +981,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+@@ -970,6 +988,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                  Text(it, color = Color(0xFFB9BEC9), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3)
              }
          }
@@ -8294,7 +8455,7 @@ index 5791282..1793fb7 100644
          // Glossy pills, each with its reflection on the stage's floor.
          FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-index b363ae3..401281a 100644
+index b363ae3..544b9a6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 @@ -1,5 +1,6 @@
@@ -8313,18 +8474,20 @@ index b363ae3..401281a 100644
  import androidx.compose.foundation.layout.offset
  import androidx.compose.foundation.layout.padding
  import androidx.compose.foundation.layout.size
-@@ -168,7 +171,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+@@ -168,7 +171,11 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                          SceneControl(a, Modifier.fillMaxWidth()) { on ->
                              val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgRow")
                              Row(
 -                                Modifier.fillMaxWidth().height(if (a.primary) 44.dp else 36.dp).clip(RoundedCornerShape(3.dp))
 +                                // (Update 467, popup gate: on a short screen — the KONKR — the eight commands ran past the blade's
 +                                // bottom and Back was cut in half; shorter rows there keep the whole list on the blade.)
-+                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 440.dp) 38.dp else 44.dp) else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
++                                // (Update 469, display size larger — KONKR at 280 dpi, a 366 dp screen: Back cut by 14 px again;
++                                // one more step there, rows still >= 24 dp.)
++                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 380.dp) 32.dp else if (h < 440.dp) 38.dp else 44.dp) else if (h < 380.dp) 25.dp else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
                                      .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                      .padding(horizontal = 10.dp),
                                  verticalAlignment = Alignment.CenterVertically
-@@ -525,7 +530,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -525,7 +532,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                      rows.forEach { a ->
                          SceneControl(a, Modifier.fillMaxWidth()) { on ->
                              Row(
@@ -8334,8 +8497,15 @@ index b363ae3..401281a 100644
                                      .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                  verticalAlignment = Alignment.CenterVertically
                              ) {
-@@ -710,7 +716,8 @@ internal fun RentalTag(ctx: WinSceneCtx) {
-     val short = h < 380.dp
+@@ -707,10 +715,14 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+     val w = minOf(ctx.maxW, 460.dp)
+     val h = minOf(ctx.maxH, 520.dp)
+     // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
+-    val short = h < 380.dp
++    // (Update 469, D214: with larger text (1.3×) on a short screen — the KONKR — the title and facts grew and pushed BACK under
++    // the tag's foot. Then the tag takes its short-screen layout: one line of facts, a two-line title, three keys across.)
++    // (Update 469: 480 at 1.3× — the Odin's 445 dp screen with its extra Performance key cut BACK under the tag's foot.)
++    val short = h < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && h < 480.dp)
      val tear = if (short) 0.1f else 0.15f
      Box(
 -        Modifier.size(w, h).graphicsLayer {
@@ -8344,7 +8514,7 @@ index b363ae3..401281a 100644
              // (Update 347: the tag swings in on the string through its hole as the case comes off the shelf — past
              // straight and back, once — and swings away as the case goes back.)
              val k = ctx.reveal().coerceIn(0f, 1f)
-@@ -756,11 +763,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -756,11 +768,13 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                      }
                  }
                  Spacer(Modifier.height(if (short) 4.dp else 8.dp))
@@ -8360,7 +8530,7 @@ index b363ae3..401281a 100644
                                  verticalAlignment = Alignment.CenterVertically) {
                                  // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
                                  val tight = !a.primary && w < 340.dp
-@@ -882,13 +891,15 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
+@@ -882,13 +896,15 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                  rows.forEach { a ->
                      SceneControl(a, Modifier.fillMaxWidth()) { on ->
                          Text((if (on) "► " else "  ") + a.label.uppercase(), style = if (on) style.copy(color = tc.hiInk, shadow = null) else style.copy(color = if (a.urgent) tc.accent else tc.fg),
@@ -8379,15 +8549,44 @@ index b363ae3..401281a 100644
                  }
              }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
-index 0563839..3248588 100644
+index 0563839..d4338bb 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
-@@ -232,12 +232,14 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
-                             SceneControl(a, Modifier.fillMaxWidth()) { on ->
+@@ -196,6 +196,20 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
+     val w = minOf(ctx.maxW, 900.dp)
+     val h = minOf(ctx.maxH, 560.dp)
+     val compact = h < 400.dp
++    // (Update 469, D213: with larger text (1.3×) on a short screen — the KONKR, 427 dp — the eight action rows didn't fit beside
++    // the facts and Back was cut. Then the actions take the drawer's whole width in two columns; the facts stay on Details.)
++    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
++    // (Recheck at 1.3× on the KONKR: its drawer is compact (< 400 dp) — the first fix tested !compact and missed it; Back was
++    // still cut by the list's scroll. Compact or not, larger text on a short drawer takes the two columns.)
++    val big = fontScale > 1.1f && h < 480.dp
++    // (Two columns only where each gets ~150 dp: beside the inspected case the drawer is ~230 dp and the words were cut
++    // ("ls D", "syn"). There one column with tighter rows — eight rows of 1.3× text fit a 400 dp drawer.)
++    val tight = big && (w * 0.66f - 44.dp) >= 300.dp
++    // (Also a compact drawer whose rows don't fit at the normal height — the Odin at display size larger, its Performance key
++    // in the list: Back cut by 12 px. Rows ~ line + 12 dp padding + 2 dp gap; the logo, title and rule take ~130 dp.)
++    val lineDp = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
++    val rowsNeed = (lineDp + 14.dp) * (ctx.buttons.size + ctx.tools.size)
++    val dense = (big && !tight) || (compact && rowsNeed > h - 130.dp)
+     val accent = ctx.accent
+     Box(Modifier.width(w).height(h)) {
+         // The poster you picked, standing on the left as the drawer comes out past it.
+@@ -227,22 +241,35 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
+                 Row(Modifier.weight(1f)) {
+                     // The actions as a media-centre list.
+                     val s = rememberScrollState()
+-                    Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+-                        (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
+-                            SceneControl(a, Modifier.fillMaxWidth()) { on ->
++                    val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
++                    @Composable fun actionRow(a: WinAction, m: Modifier) {
++                            SceneControl(a, m) { on ->
                                  Row(
                                      Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
 -                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 9.dp),
-+                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (compact || h < 500.dp) 6.dp else 9.dp),
++                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
                                      verticalAlignment = Alignment.CenterVertically
                                  ) {
                                      Icon(a.icon, null, tint = if (on) Color.Black else if (a.urgent) accent else Color.White.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
@@ -8396,11 +8595,28 @@ index 0563839..3248588 100644
 +                                    // (Update 467: its own line height — the theme's 24 sp line made every row 36 dp and pushed Back
 +                                    // half off the drawer on the KONKR.)
 +                                    FullText(a.label, color = if (on) Color.Black else Color.White, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = if (a.primary || on) FontWeight.Bold else FontWeight.Medium)
++                                }
++                            }
++                    }
++                    if (tight) {
++                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
++                            acts.chunked(2).forEach { pair ->
++                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
++                                    pair.forEach { a -> actionRow(a, Modifier.weight(1f)) }
++                                    if (pair.size == 1) Spacer(Modifier.weight(1f))
                                  }
                              }
                          }
++                    } else Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
++                        acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth()) }
+                     }
+-                    if (!compact) {
++                    if (!compact && !tight) {
+                         Spacer(Modifier.width(18.dp))
+                         // The info list and the plot.
+                         val s2 = rememberScrollState()
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-index a30bc6d..d67cdf0 100644
+index a30bc6d..d320f64 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 @@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
@@ -8411,7 +8627,17 @@ index a30bc6d..d67cdf0 100644
  import androidx.compose.ui.geometry.Offset
  import androidx.compose.ui.graphics.Brush
  import androidx.compose.ui.graphics.Color
-@@ -350,8 +351,10 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
+@@ -344,14 +345,19 @@ internal fun HubPlate(ctx: WinSceneCtx) {
+ internal fun DiscoverCard(ctx: WinSceneCtx) {
+     val a = ctx.accent
+     val w = minOf(ctx.maxW, 700.dp)
+-    val h = minOf(ctx.maxH, 380.dp)
++    // (Update 469, Odin at 1.3× text with its Performance key: the status line under the keys was cut at the card's foot —
++    // with larger text the card may take more of the screen and the keys are a little lower.)
++    val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
++    val h = minOf(ctx.maxH, if (big) 460.dp else 380.dp)
+     Row(Modifier.width(w).height(h).graphicsLayer {
+         val e = sceneEase(ctx.reveal())
          translationX = (1f - e) * -size.width * 0.12f
          alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
      }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -8424,7 +8650,16 @@ index a30bc6d..d67cdf0 100644
              (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
              Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                  modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
-@@ -591,11 +594,15 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+@@ -365,7 +371,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
+             Spacer(Modifier.weight(0.01f))
+             KeyRow(sceneKeys(ctx)) { k ->
+                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
+-                    Color.Transparent, a, RoundedCornerShape(50), height = 36.dp)
++                    Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
+             }
+         }
+     }
+@@ -591,11 +597,15 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
          translationY = (1f - e) * size.height * 0.15f
          alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
          shape = RoundedCornerShape(14.dp); clip = true
@@ -8470,6 +8705,58 @@ index 0b593a1..925a2dc 100644
              sceneFacts(ctx).chunked(2).forEach { pair ->
                  Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                      pair.forEach { (l, v) ->
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
+index db68617..48625c1 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesStyled.kt
+@@ -164,20 +164,28 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
+     val p = pqPalette()
+     val w = minOf(ctx.maxW, 640.dp)
+     val shape = CutCornerShape(14.dp)
++    // (Update 469 recheck, 1.3× text on the KONKR: beside the inspected cartridge the keys wrapped one or two a line in the
++    // column right of the art — seven lines — and the window's height cut the last ones (Inspect, the Saves line). With
++    // larger text the keys take the window's whole width under the art.)
++    val under = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
++    val key: @Composable (WinAction) -> Unit = { k ->
++        SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
++    }
+     Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.1f)
+         .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape).padding(14.dp)) {
+-        Row {
++        // (With the keys under it the art row gives way — measured after the keys — so the keys always fit.)
++        Row(if (under) Modifier.weight(1f, fill = false) else Modifier) {
+             ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.28f, 150.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
+             Spacer(Modifier.width(12.dp))
+             Column(Modifier.weight(1f)) {
+                 Text(ctx.console.uppercase(), color = p.accentLight, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                 StableFullText(ctx.name, color = p.ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
+                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
+-                FactsAndKeys(ctx, p.muted, p.ink, null) { k ->
+-                    SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
+-                }
++                if (!under) FactsAndKeys(ctx, p.muted, p.ink, null) { k -> key(k) }
++                else SceneFactsBody(ctx, p.muted, p.ink, null)
+             }
+         }
++        if (under) { Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp) { key(it) } }
+     }
+ }
+ 
+@@ -275,8 +283,12 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
+     val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
+     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
+         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
+-            .background(Color(0xFF0E0F13).copy(alpha = 0.86f)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
+-            StableFullText(ctx.name, color = ink, fontSize = 24.sp, maxLines = 3, fontWeight = FontWeight.Bold)
++            .background(Color(0xFF0E0F13).copy(alpha = 0.97f)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
++            // (Update 469, D215: the panel was 86 % opaque — the home screen's own title and facts, right under it, showed through
++            // as a second faded title behind the keys (worst with More open at 1.3×). It hides what it covers now.)
++            // (Update 469, display size larger — KONKR at 280 dpi: with More open the keys ran past the panel's foot and Inspect /
++            // Less / the Saves line were not on screen. The name gives way (shrinks, measured after the keys) on a short panel.)
++            StableFullText(ctx.name, color = ink, fontSize = 24.sp, maxLines = 3, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
+             Text(ctx.console, color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+             Spacer(Modifier.height(10.dp))
+             FactsAndKeys(ctx, muted, ink, null) { k ->
 diff --git a/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt b/app/src/test/java/com/shelf/launcher/data/ContinueApps450Test.kt
 new file mode 100644
 index 0000000..7d456c5
@@ -9168,6 +9455,39 @@ index 0000000..ba35160
 +
 +    @Test fun gameBoyPaksAreTheMeasuredThickness() {
 +        for (id in listOf("gb", "gbc_dual", "gbc")) assertEquals(id, 7.8f, CartShells.of(id)!!.t, 0.05f)
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/GbSide469Test.kt b/app/src/test/java/com/shelf/launcher/ui/GbSide469Test.kt
+new file mode 100644
+index 0000000..d6ad085
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/GbSide469Test.kt
+@@ -0,0 +1,27 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/** Update 469: the home screen's turned Game Boy paks get the measured sides (seam; clear walls with the board inside). */
++class GbSide469Test {
++    private fun side(id: String) = CartShells.of(id)!!.let { sh -> GbSide.of(sh, CartShells.colourOf(sh, null)) { 0x10 } }
++
++    @Test fun onlyTheMeasuredPaks() {
++        assertTrue(side("gbc")!!.clear)          // clear Color-only pak: clear, board inside
++        assertEquals(0x10, side("gbc")!!.boardType)
++        assertFalse(side("gbc_dual")!!.clear)    // black dual pak: opaque, seam only
++        assertFalse(side("gb")!!.clear)
++        assertNull(side("gba"))                  // GBA: not measured (no side reference) — unchanged
++        assertNull(side("nes"))
++    }
++
++    @Test fun inspectAndHomeAgreeOnTheSeam() {
++        // The seam / board depths are Inspect's (SlabSide) — one source for both views.
++        assertEquals(5.8f, SlabSide.FRONT_HALF, 0.001f)
++        assertTrue(SlabSide.BOARD_FROM_BACK + SlabSide.BOARD_T < CartShells.of("gbc")!!.t)
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt b/app/src/test/java/com/shelf/launcher/ui/InputContract462Test.kt
@@ -10379,6 +10699,44 @@ index 0000000..057c5ce
 +        assertTrue(inspect.contains("lit.alpha = faceA"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/SnapRows469Test.kt b/app/src/test/java/com/shelf/launcher/ui/SnapRows469Test.kt
+new file mode 100644
+index 0000000..a7743fc
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/SnapRows469Test.kt
+@@ -0,0 +1,32 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/**
++ * Update 469 (D221): Twin hinge's facts box paged every 2.8 s and changed its height with each page, so the window and its
++ * keys jumped and a tap on More / Play closed the window (KONKR). Every page now fits the first page's height, and the box
++ * is laid out at that height.
++ */
++class SnapRows469Test {
++    @Test fun everyPageFitsTheFirstPagesHeight() {
++        val b = SnapPaging.bounds(listOf(20, 20, 20, 20, 10), 0, 0)
++        for (avail in listOf(25, 45, 50, 70, 200)) {
++            val boxH = SnapPaging.window(b, 0, avail)
++            var top = 0
++            repeat(10) {
++                assertTrue("page at $top fits $boxH (avail $avail)", SnapPaging.window(b, top, boxH) <= boxH)
++                top = SnapPaging.next(b, top, boxH) ?: return@repeat
++            }
++        }
++    }
++
++    @Test fun theBoxKeepsOneHeight() {
++        val f = listOf("src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt", "app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt")
++            .map(::File).first { it.exists() }
++        val body = f.readText().substringAfter("fun SnapRows(").substringBefore("internal object SnapPaging")
++        assertTrue(body.contains("val boxH = SnapPaging.window(bounds, 0, avail)"))
++        assertTrue(body.contains("layout(c.maxWidth, boxH."))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt b/app/src/test/java/com/shelf/launcher/ui/SwitchTitle453Test.kt
 new file mode 100644
 index 0000000..0eb2848
@@ -10696,6 +11054,58 @@ index 0000000..7302c5f
 +- Gold contacts drawn through the back opening (466 data) are kept; the solder side's finger stubs are green.
 +- SFC / PAL back BLOCKED (no straight-on rear photo). Famicom: Jaleco back only (unchanged).
 +- Odin 2 Portal not re-swept for this update.
+diff --git a/tools/qa/CARTS_469.md b/tools/qa/CARTS_469.md
+new file mode 100644
+index 0000000..8fd30d9
+--- /dev/null
++++ b/tools/qa/CARTS_469.md
+@@ -0,0 +1,46 @@
++# Update 469 — home-screen Game Boy pak sides = Inspect's; GBA side BLOCKED — staging v0.6.67
++
++Builds on Update 468 (tools/qa/CARTS_468.md: references, measurements, the clear pak's board). R25: references used for
++measuring only, nothing bundled.
++
++## What changed (staging)
++- **Home screen's turned cartridges** (`ui/SolidPiece.kt`: SolidSpec.gb / GbSide, same constants as Inspect's SlabSide):
++  - Game Boy, black Color and clear Color paks (drawn shell, photo-made shell, the game's own photo of that shell) get the
++    seam between the halves (5.8 mm from the front) as one darker copy of the side.
++  - The clear pak's sides are clear plastic on the home screen too — the photo-made clear pak had opaque sides in the photo's
++    edge colour — with the board (1 mm, on the back half) seen through the side at its depth.
++  - Edge-on (past ~81°) the clear side is filled as see-through plastic (it vanished to the board's green line).
++  - From behind, the clear pak's back stays opaque (its drawn back is the board under the plastic; drawing it 75 % let
++    the background show through the board).
++- **Not ported to the home screen:** grip grooves and the 0.5 mm edge rounding (at home sizes, 100–200 px tall, they are
++  1–2 px — not visible; they would cost extra draws per piece on the performance-tuned path). Inspect keeps them.
++- **Unchanged:** real cartridge photos (their face), your picks and custom models / pack shapes (GbSide only for the drawn
++  Game Boy family shells, never a pack shape), every other console's pieces, Stadium 2 box sides, saved box-side choices.
++
++## GBA pak side (owner: "investigate … do not invent")
++Searched Wikimedia Commons: Nintendo-Game-Boy-Advance-Cartridge.jpg (Evan-Amos, PD — front 3/4), GBA_Cartridge_Types.jpg
++(Thomy pc, CC0 — opened boards), Simcity2000_advance_cartridge_by_zeartul.jpg (PD — front), Game Boy Advance game
++cartridges – rear view (CC BY-SA 4.0 — rear). **No side or top view.** Wikipedia's Game Boy Game Pak infobox gives the
++Advance pak "6–9 mm thick" without a citation (and the Color pak 9 mm, also uncited — 468 measured the black Color pak at
++7.7–7.8 mm from photos; the clear pak is taken as the same mould, not measured itself). **GBA side: BLOCKED** — the drawn
++shell keeps its 8 mm plain side; no seam / grips added.
++
++## Verified on hardware
++KONKR GT78 (USB), final staging build, Classic row + Cartridge / disc look, `home469.sh` held poses 0 / 30 / 45 / 60 / 75 /
++85 / 90 / 105 / 135 / 180° (`Claude outputs/qa469/q469h4`): clear Harvest Moon 3 (photo-made), clear Looney Tunes Alert!,
++pink Kirby Tilt 'n' Tumble, black Looney Tunes Twouble! in the same row.
++- **Front (0–45°):** labels on the front only; the side's plastic shows from ~30°.
++- **75°:** the side as a strip in the shell's plastic, the seam a darker line along it; clear paks paler than the black one.
++- **85–90°:** the clear pak a thin translucent wall with the board's line inside it; the black pak a solid black wall —
++  no vanishing, no comb.
++- **105–180°:** the back: the clear pak's back opaque (board under the plastic), black / pink backs plain.
++- A first capture (q469h3) found the board and seam drawn **apart** from the pak at 75–90° (D224, recorded in the piece
++  buffer at the wrong size) — fixed and recaptured (q469h4).
++- **Shortcomings:** at home sizes (≈100–200 px tall) the 1 mm board is a 1–2 px line — the traces are not readable there
++  (they are in Inspect); grip grooves / edge rounding are Inspect-only.
++- **Performance (KONKR, gfxinfo, 24 D-pad steps through the Game Boy Color row):** 546 frames, 1.65 % janky, p50 14 ms,
++  p90 19 ms, p95 22 ms (under the 16.7 ms budget at p50; same order as 468's row). An RC comparison was attempted but the
++  RC has no look / game test hooks, so it measured another screen — **not a like-for-like RC number**.
++RC at the same turns: NOT captured — the RC has no hold-a-turn test hook (its home sides are the old opaque strips, 468).
++Odin 2 Portal: no Game Boy games in its library — home pieces NOT TESTED there.
++Unchanged and checked by test: real scans keep precedence (RealScans464Test), Stadium 2 box sides (BoxSidesLabels465Test).
 diff --git a/tools/qa/INPUT_CONTRACT.md b/tools/qa/INPUT_CONTRACT.md
 new file mode 100644
 index 0000000..ce313f8
@@ -11052,6 +11462,65 @@ index 0000000..62b9a1f
 +Smaller density (wm density) — NOT TESTED; Odin at font 1.3 — NOT TESTED; content variations — one game per device
 +(Stadium 2, "WWE SmackDown Vs. Raw 2011" — longer title, 109 / 0 achievements), no long-description / no-metadata games;
 +frame-by-frame animation; the BANNER page's own secondary tabs beyond Game info.
+diff --git a/tools/qa/POPUP_AUDIT_469.md b/tools/qa/POPUP_AUDIT_469.md
+new file mode 100644
+index 0000000..7e315aa
+--- /dev/null
++++ b/tools/qa/POPUP_AUDIT_469.md
+@@ -0,0 +1,53 @@
++# Popup audit — update 469 (release stabilization), staging v0.6.67
++
++Builds on POPUP_AUDIT_467.md (method unchanged: `device/popclip.sh` + `tools/popclip.py`, six categories, R26). New this
++update: `tools/popmerge.py` (latest run per combination wins), popclip answers the profile picker, enters Green Core's games
++from its menu, taps "Details" itself before the other page words, stops if Voltcap is not in front after the first A.
++
++## Results (latest run per combination, final staging build)
++| device | config | combos | PASS | FAIL | NOT TESTED | SKIP (n/a) |
++|---|---|---|---|---|---|---|
++| KONKR GT78 960×640 | font 1.0, 53 × 6 | 318 | 287 | 5 | 2 | 24 |
++| Odin 2 Portal 1920×1080 | font 1.0, 53 × 6 | 318 | 288 | 4 | 1 | 25 |
++| KONKR | font 1.3, 15 layouts Own | 15 | 14 | 0 | 1 | 0 |
++| Odin | font 1.3, 15 layouts Own | 15 | 14 | 0 | 1 | 0 |
++| KONKR | display size smaller (200 dpi), 10 layouts Own | 10 | 9 | 0 | 1 | 0 |
++| KONKR | display size larger (280 dpi), 10 layouts Own | 10 | 9 | 0 | 1 | 0 |
++| Odin | display size larger (420 dpi), 10 layouts Own | 10 | 9 | 0 | 1 | 0 |
++467 for comparison: KONKR 266 / 24 / 4 NT / 1 INFRA / 23; Odin 270 / 21 / 2 / 0 / 25; KONKR 1.3: 15 / 15.
++Runs: KONKR k469g (full) → k469h / k469j / k469m / k469n; Odin o469g (full) → o469h / o469i / o469k / o469m / o469n;
++font k469fs…fs6, o469fs2…fs5; density k469d1…d5, o469d1…d3. Re-runs on the build that has each fix.
++
++**Remaining FAILs = D212 (owner decision, unchanged):** Arcade (rows 17 dp, PRESS START bar), Memory card (status 14 dp),
++Night (slanted keys' boxes cross), Magazine (3–6 px), Orbit (KONKR only, round keys' boxes).
++**NOT TESTED:** Box · Own "Play tap not recorded" (D222: its actions sit in the scrolling note card; a direct Play tap
++blocked the launch 1/1 by hand); Channels / Classic Banner page "no window action buttons to compare" (pixel check n/a).
++**Long / missing details: NOT TESTED** — the run (k469L) asked for "One Piece - Yume no Luffy" but the test hook matched
++no game by that spelling and stayed on Pokémon Stadium 2; it is a font-1.0 repeat, not the long-name check.
++
++## 467 popup bugs
++| id | finding | status |
++|---|---|---|
++| D210 | first A after start ignored | **test path, not the app:** the cold start's "Who's playing?" took the A; popclip answers it. Manual: A picks, next A opens |
++| D211 | Twin Play tap does nothing (KONKR) | **fixed (D221):** the facts box paged every 2.8 s and changed height; the keys moved under the finger, the tap hit the veil and closed the window |
++| D213 | Arctic Back cut at 1.3 | **fixed:** two columns where wide enough, else a denser single column (also compact drawers, Odin 420 dpi) |
++| D214 | Rental shop BACK cut at 1.3 | **fixed:** short layout at 1.3 up to 480 dp (Odin 445 dp still cut it) |
++| D215 | Cover details overlap / ghost title | **fixed:** panel opaque; name gives way to the keys at display size larger |
++| Storage Details tab | inconsistent | **test path:** "Info" was in the Details word list and matched the INFO tab (already open). Tab taps work 7/7 by hand (KONKR 4, Odin 3) |
++| Card binder / Pocket | NOT TESTED (A plays) | **test path fixed:** their A-plays options off for the sweep (restored by the snapshot) |
++
++## Found and fixed in this update
++D220 Storage window crashed on A (469's own FitText under FlowRow intrinsics — staging only) · D221 Twin facts box height ·
++D223 Pocket Quest keys cut, Blades Back, Cover details keys, Discover status line, Arctic labels in the narrow drawer
++(font 1.3 / display size) · Storage ACHIEVEMENTS broke mid-word (one line, auto-size) · Bubbles page "overlap" was the
++LiveArea under its full-screen details sheet (gate false positive, fixed in popclip.py) · D224 home GB pak layers (CARTS_469).
++
++## Hardware, settings
++USB only (KONKR BW0306N230000845, Odin b92036fb). Font / density changes made by `popclip_cfg.sh` and put back (logged
++"font was 1.0 / restored 1.0", "density restored"). Screen-off timeout: KONKR 1 800 000 for the runs, back to **60 000 — this
++is the value Update 468 left, not a recorded original** (468 changed it without reading it first; the owner's own value is
++unknown). Odin 1 800 000 unchanged. `voltcap_test_snapshot` restored on both; layout / view put back by hand on the KONKR
++(Case flow, Nintendo 64, Pokémon Snap) because a font run's app restart dropped the preview flag and the next layout was
++saved (FILESELECT). RC 0.6.66 reinstalled on both; test files removed (charge_log.csv, voltcap_qa_screen, Odin `upd` kept).
++Performance, KONKR Game Boy Color row (24 D-pad steps): staging 1.65 % janky / p95 22 ms (no like-for-like RC number:
++the RC lacks the look / game hooks).
 diff --git a/tools/qa/README.md b/tools/qa/README.md
 index e482bd7..10178ea 100644
 --- a/tools/qa/README.md
@@ -11202,7 +11671,7 @@ index 2a8c5fb..5705ba5 100644
 +screenshot, cause and fix (POPUP_AUDIT). Regression fixtures: selftest TestClipGate / TestPopupGate (Pokémon Stadium 2
 +before / after, a deliberately clipped button, the real KONKR action-row crop, n/a row styles).
 diff --git a/tools/qa/defects.json b/tools/qa/defects.json
-index 7b25399..3e4569a 100644
+index 7b25399..09f1e0c 100644
 --- a/tools/qa/defects.json
 +++ b/tools/qa/defects.json
 @@ -873,7 +873,7 @@
@@ -11278,7 +11747,7 @@ index 7b25399..3e4569a 100644
    },
    {
     "id": "D138",
-@@ -1646,6 +1647,838 @@
+@@ -1646,6 +1647,913 @@
     "status": "verified",
     "found": "2026-11-02 update 444 popfinal rapid A/B",
     "note": "GameWindow: while the window flies back, A acts on its press (asks to open again; its release is the home screen's orphan, never a Play click) and B on its press takes that open-again back. Odin + GT78: A B A B ends closed on the same game, A B B ends closed; no launch attempted (LAUNCH lines only from the QA script's own retry, blocked). PopupPolish444Test."
@@ -11960,30 +12429,30 @@ index 7b25399..3e4569a 100644
 +   "title": "First A after Voltcap starts does nothing (second A opens)",
 +   "rule": "R26",
 +   "severity": "medium",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 467 popup gate (popclip)",
 +   "where": "first combo of every run · both devices",
 +   "evidence": [
 +    "k467r / o467r / o467t log 'first A opened nothing' (CASEFLOW_OWN, TWIN_DESK_OWN)"
 +   ],
-+   "root_cause": "fresh process: nothing focused in Compose until a key; D198's fix doesn't cover it",
-+   "fix": "NOT FIXED — needs a focus on start",
-+   "verified": "—"
++   "root_cause": "Not an app bug: a cold start shows \"Who's playing?\" and the sweep's first A picked the profile (update 469).",
++   "fix": "popclip.sh answers the picker with B (keeps the profile) before the first combo; manual cold start: A picks, next A opens the popup.",
++   "verified": "k469g / o469g / k469h: no 'first A opened nothing' outside Green Core's menu"
 +  },
 +  {
 +   "id": "D211",
 +   "title": "Twin windows on the KONKR: a tap on Play does nothing",
 +   "rule": "R26",
 +   "severity": "medium",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 467 popup gate (popclip)",
 +   "where": "TWIN_* · OWN · KONKR GT78 960x640 (1.5x)",
 +   "evidence": [
 +    "k467t TWIN_*_OWN_play.txt blocked=0; manual tap logged nothing"
 +   ],
-+   "root_cause": "touch doesn't reach the key (Odin works) — cause not found",
-+   "fix": "NOT FIXED",
-+   "verified": "—"
++   "root_cause": "D221: the Twin window's facts box paged every 2.8 s and changed height, so the keys moved; the tap landed where Play / More had been (the veil) and closed the window.",
++   "fix": "see D221",
++   "verified": "k469h / k469j TWIN_* all styles PASS (KONKR); o469h PASS (Odin)"
 +  },
 +  {
 +   "id": "D212",
@@ -12005,45 +12474,45 @@ index 7b25399..3e4569a 100644
 +   "title": "Font 1.3: Arctic drawer's Back cut again (8 rows don't fit)",
 +   "rule": "R26",
 +   "severity": "medium",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 467 font 1.3 sweep",
 +   "where": "KONKR GT78 960x640 · font 1.3",
 +   "evidence": [
 +    "k467fz ARCTIC_OWN_main.png"
 +   ],
 +   "root_cause": "list fits at 1.0 only",
-+   "fix": "NOT FIXED",
-+   "verified": "—"
++   "fix": "Arctic drawer: two columns at large text where each gets ~150 dp, else one denser column (also in the compact drawer); 9 actions in a compact drawer denser too.",
++   "verified": "k469fs3 / k469fs5 ARCTIC_OWN PASS (KONKR 1.3); o469fs3 (Odin 1.3)"
 +  },
 +  {
 +   "id": "D214",
 +   "title": "Font 1.3: rental tag's BACK cut",
 +   "rule": "R26",
 +   "severity": "medium",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 467 font 1.3 sweep",
 +   "where": "KONKR GT78 960x640 · font 1.3",
 +   "evidence": [
 +    "k467fz SHOP_OWN_main.png"
 +   ],
 +   "root_cause": "rows sized for 1.0",
-+   "fix": "NOT FIXED",
-+   "verified": "—"
++   "fix": "Rental tag short layout at 1.3x up to 480 dp (was 440).",
++   "verified": "k469fs2 / k469fs5 SHOP_OWN PASS (KONKR); Odin 1.3 re-run after the 480 dp step"
 +  },
 +  {
 +   "id": "D215",
 +   "title": "Font 1.3: Cover details with More open — Play and Save sync boxes overlap",
 +   "rule": "R26",
 +   "severity": "medium",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 467 font 1.3 sweep",
 +   "where": "KONKR GT78 960x640 · font 1.3",
 +   "evidence": [
 +    "k467fz COVERDETAILS_OWN dumps"
 +   ],
-+   "root_cause": "not inspected yet",
-+   "fix": "NOT FIXED",
-+   "verified": "—"
++   "root_cause": "The panel was 86 % opaque: the home screen's title showed through behind the keys.",
++   "fix": "Panel 97 % opaque; with display size larger the name gives way to the keys.",
++   "verified": "k469fs2 / k469fs3 COVERDETAILS_OWN PASS; k469d3 density 280 PASS"
 +  },
 +  {
 +   "id": "D216",
@@ -12105,15 +12574,90 @@ index 7b25399..3e4569a 100644
 +   "title": "Home-screen turned cartridges (carousel / solid pieces) keep the old opaque sides; only Inspect has the measured sides",
 +   "rule": "R25",
 +   "severity": "low",
-+   "status": "open",
++   "status": "fixed",
 +   "found": "2026-11-03 update 468",
 +   "where": "SolidPiece.kt (home looks)",
 +   "evidence": [
 +    "code: Modifier.solidPiece unchanged"
 +   ],
 +   "root_cause": "solidPiece is the performance-tuned path (update 314-325); not changed in this pass.",
-+   "fix": "NOT FIXED — the face (with the new board) is shared, the sides are not",
++   "fix": "ui/SolidPiece.kt GbSide: seam copy, clear walls with the board seen through, clear back opaque, edge-on wall fill (same constants as Inspect's SlabSide). Grips / 0.5 mm edges not ported (1-2 px at home sizes).",
++   "verified": "KONKR home poses 0-180 (q469h4), clear / pink / black paks"
++  },
++  {
++   "id": "D220",
++   "title": "Storage window: Voltcap crashed on A (keys' FitText under FlowRow's intrinsic measurement)",
++   "rule": "R26",
++   "severity": "high",
++   "status": "fixed",
++   "found": "2026-11-04 update 469 full sweep (k469g / o469g)",
++   "where": "STORAGE · all styles that open its own window · both devices · staging only (introduced and fixed in 469)",
++   "evidence": [
++    "o469g STORAGE_OWN_firstA.png (crash screen), k469g STORAGE_OWN_firstA.png ('Voltcap has stopped')"
++   ],
++   "root_cause": "469's FitText (a SubcomposeLayout) inside FlowRow items with weight: FlowRow asks for intrinsic sizes -> IllegalStateException.",
++   "fix": "Compose's own step auto-size Text (one line, 13 -> 8 sp). popclip.sh now stops when Voltcap is not in front after the first A (the crash had sent the next keys into App info / Android Settings; nothing was changed there).",
++   "verified": "k469h / k469j / o469h / o469i STORAGE all styles: no crash; ACHIEVEMENTS on one line"
++  },
++  {
++   "id": "D221",
++   "title": "Twin windows: the facts box changed height as it paged; the window and its keys jumped every 2.8 s",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "fixed",
++   "found": "2026-11-04 update 469 (cause of D211)",
++   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE · Own",
++   "evidence": [
++    "KONKR manual: taps on More closed the window 4/4 after 3 s, 2/2 worked after 1 s"
++   ],
++   "root_cause": "SnapRows laid out each page at its own height; a short last page shrank the window.",
++   "fix": "SnapRows keeps the first page's height on every page (later pages drawn cut to whole rows). SnapRows469Test.",
++   "verified": "k469h / k469j TWIN_* PASS"
++  },
++  {
++   "id": "D222",
++   "title": "Cardboard box window: the actions live inside the scrolling note card; the tools row and the Saves line start below the screen",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "open",
++   "found": "2026-11-04 update 469 sweep (BOX_OWN buttons NOT TESTED: the Play tap after the Details page found no Play on screen)",
++   "where": "BOX · Own · KONKR 960x640 (and Odin at 1.3)",
++   "evidence": [
++    "k469g BOX_OWN_main.json: Options / Achievements / Save sync / Manual / Saves shown 0 px (y 609-725 on a 640 px screen)"
++   ],
++   "root_cause": "the note card scrolls as one; R26 says actions never live inside a scrolling column.",
++   "fix": "NOT FIXED (layout rework of the Box window; reachable by D-pad scroll)",
 +   "verified": "—"
++  },
++  {
++   "id": "D223",
++   "title": "Font 1.3 / display size larger: Pocket Quest keys cut, Blades Back cut, Cover details keys below the panel, Discover status line cut, Arctic labels cut in the narrow drawer",
++   "rule": "R26",
++   "severity": "medium",
++   "status": "fixed",
++   "found": "2026-11-04 update 469 configuration runs (k469fs, k469fs2, k469d2, o469fs2, o469d1)",
++   "where": "KONKR 1.3 / density 280; Odin 1.3 / density 420",
++   "evidence": [
++    "k469fs2 POCKET_OWN_main.png, ARCTIC_OWN_main.png; k469d2 BLADES / COVERDETAILS; o469fs2 RESUME / SHOP; o469d1 ARCTIC"
++   ],
++   "root_cause": "heights sized for font 1.0 / default display size",
++   "fix": "Pocket: keys under the art at large text, the art row gives way; Blades: one more row step under 380 dp; Cover details: name gives way; Discover card: taller, lower keys at 1.3; rental tag: short layout up to 480 dp at 1.3; Arctic: see D213.",
++   "verified": "k469fs3 / k469d3 / k469k / k469fs4 PASS (KONKR); Odin re-run in POPUP_AUDIT_469.md"
++  },
++  {
++   "id": "D224",
++   "title": "Home-screen clear / GB pak: the board and seam layers stood apart from the pak at 75-90 deg",
++   "rule": "R25",
++   "severity": "medium",
++   "status": "fixed",
++   "found": "2026-11-04 update 469 home pose check (q469h3)",
++   "where": "SolidPiece home pieces · staging only (introduced and fixed in 469)",
++   "evidence": [
++    "q469h3 hm_75 / hm_90"
++   ],
++   "root_cause": "the layers were recorded inside the whole-piece buffer at the buffer's size, so they turned round the buffer's middle.",
++   "fix": "recorded at the node's own size, as the sides' layers.",
++   "verified": "q469h4 0-180"
    }
   ]
 -}
@@ -12655,10 +13199,10 @@ index 0000000..6bee4eb
 +echo done > $OUT/DONE
 diff --git a/tools/qa/device/popclip.sh b/tools/qa/device/popclip.sh
 new file mode 100644
-index 0000000..98009f8
+index 0000000..fff4449
 --- /dev/null
 +++ b/tools/qa/device/popclip.sh
-@@ -0,0 +1,81 @@
+@@ -0,0 +1,101 @@
 +# Update 467 (QA rule R26) — popup geometry sweep. Run detached: setsid sh popclip.sh TAG "LAYOUTS" "STYLES" "GAME" &
 +# Per layout x R1 popup style, on the game GAME (voltcap_test_game): A opens the popup (main, controller); TAPS (touch) on
 +# Details (page) and More (more), each followed by B; a tap on Play (launch blocked, counted); B closes the popup (closed,
@@ -12689,6 +13233,9 @@ index 0000000..98009f8
 +}
 +shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.1; }
 +k WAKEUP 0.5
++# (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
++# run logged "first A opened nothing". The picker is answered with B (keep the profile) first; the app's own mark says so.)
++for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
 +[ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 3; }
 +touch $F/qa_nolaunch
 +A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
@@ -12696,6 +13243,16 @@ index 0000000..98009f8
 +  # (Asleep = no focused window: every key would end in an ANR. Preview keeps the screen on; this is the backstop.)
 +  dumpsys power | grep -q "mWakefulness=Awake" || { k WAKEUP 1.5; echo "woke the screen before $lay" >> $OUT/log.txt; }
 +  A --es voltcap_test_layout $lay; sleep 3.5
++  # (Update 469: Card binder and Pocket Quest play on A by default (cards_a_plays / pq_a_plays) — their window opens on A only
++  # with that option off, so it is switched off for the sweep; the caller's voltcap_test_snapshot restore puts the owner's
++  # value back. Before, these combos were "A plays" = NOT TESTED.)
++  case $lay in CARDS) A --es voltcap_test_pref "cards_a_plays=false"; sleep 1; echo "$lay: cards_a_plays=false for the sweep" >> $OUT/log.txt;;
++    POCKET) A --es voltcap_test_pref "pq_a_plays=false"; sleep 1; echo "$lay: pq_a_plays=false for the sweep" >> $OUT/log.txt;;
++    # (Green Core's home is its own menu — GAMES / SYSTEMS / ... — A enters the games first; the first combo logged "first
++    # A opened nothing" for it.)
++    # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
++    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; sleep 1.1
++      grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
 +  for st in $STYLES; do
 +    n=${lay}_$st
 +    A --es voltcap_test_pref "popup_style_by_layout=$lay=$st"; sleep 1.2
@@ -12706,11 +13263,18 @@ index 0000000..98009f8
 +    logcat -c; k BUTTON_A 1.9
 +    # (A first A that opened nothing is recorded — the gate fails "open" on it — and A is pressed once more to go on.)
 +    up || { if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
-+      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png; k BUTTON_A 1.9; fi; }
++      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
++        # (Update 469: a crash left the system's "has stopped" dialog / launcher in front and the next keys went to App info
++        # and Android Settings — never press on outside Voltcap.)
++        case "$(dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity')" in *com.shelf.launcher*) ;;
++          *) echo "STOP: not Voltcap in front after the first A of $n (crash?)" >> $OUT/log.txt; logcat -d -b crash > $OUT/${n}_crash.txt; break 2;; esac
++        k BUTTON_A 1.9; fi; }
 +    shot ${n}_main
 +    # Touch: taps go to the middle of the part of a control that SHOWS (the dump's "shown" box of the main step).
 +    # Details opens its page; B goes back.
-+    if tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
++    # (Update 469: "Details" itself first — Storage's tabs are INFO / DETAILS / …, and the list's "Info" matched INFO, the tab
++    # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
++    if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
 +    else echo "$n no Details action" >> $OUT/log.txt; fi
 +    # More (where the window has one, or the About text's More): a tap, then B.
 +    if grep -qiE '"label":"[^"]*(More|⋯)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
@@ -12738,7 +13302,7 @@ index 0000000..98009f8
 +done
 +A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
 +echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
-+mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $F/qa_tap_home.txt
++mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
 +echo DONE >> $OUT/log.txt
 diff --git a/tools/qa/device/popclip_cfg.sh b/tools/qa/device/popclip_cfg.sh
 new file mode 100644
@@ -12996,6 +13560,104 @@ index 0000000..b303a1a
 +  show) cat $D/voltcap_test_snapshot_view.json; echo;;
 +  *) echo "usage: viewstate.sh save|restore|show"; exit 2;;
 +esac
+diff --git a/tools/qa/report/evidence_pdf.py b/tools/qa/report/evidence_pdf.py
+new file mode 100644
+index 0000000..c3a7630
+--- /dev/null
++++ b/tools/qa/report/evidence_pdf.py
+@@ -0,0 +1,92 @@
++"""Update 469: a readable evidence PDF from a JSON plan — sections of before/after rows of screenshots (optionally cropped
++and enlarged for close-ups), with a status per row (VERIFIED / SHORTCOMING / BLOCKED / NOT TESTED) and a note.
++usage: python3 evidence_pdf.py plan.json out.pdf
++plan = {"title": str, "intro": [str], "sections": [{"title": str, "text": [str], "rows": [
++          {"label": str, "status": str, "note": str, "images": [{"path": str, "crop": [x0,y0,x1,y1]|null, "caption": str}]}]}]}
++Full-resolution originals are not embedded scaled down only: each image is placed at its crop's own resolution (up to the
++page width), so close-ups stay sharp.
++"""
++import json, sys, os
++from reportlab.lib.pagesizes import A4, landscape
++from reportlab.pdfgen import canvas
++from reportlab.lib.utils import ImageReader
++from reportlab.pdfbase import pdfmetrics
++from reportlab.pdfbase.ttfonts import TTFont
++from PIL import Image
++
++pdfmetrics.registerFont(TTFont("D", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
++pdfmetrics.registerFont(TTFont("DB", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
++COL = {"VERIFIED": (0.10, 0.55, 0.25), "SHORTCOMING": (0.80, 0.50, 0.05), "BLOCKED": (0.75, 0.15, 0.15),
++       "NOT TESTED": (0.45, 0.45, 0.45), "BEFORE": (0.3, 0.3, 0.6), "INFO": (0.2, 0.35, 0.6)}
++W, H = landscape(A4)
++M = 28
++
++def wrap(c, text, font, size, width):
++    words, lines, cur = text.split(), [], ""
++    for w in words:
++        t = (cur + " " + w).strip()
++        if c.stringWidth(t, font, size) > width and cur: lines.append(cur); cur = w
++        else: cur = t
++    if cur: lines.append(cur)
++    return lines
++
++class Doc:
++    def __init__(self, out, title):
++        self.c = canvas.Canvas(out, pagesize=(W, H)); self.c.setTitle(title); self.y = H - M; self.page = 1
++    def new(self):
++        self.c.setFont("D", 7); self.c.setFillColorRGB(0.5, 0.5, 0.5); self.c.drawRightString(W - M, 14, f"page {self.page}")
++        self.c.showPage(); self.page += 1; self.y = H - M
++    def need(self, h):
++        if self.y - h < M: self.new()
++    def text(self, s, size=10, font="D", color=(0, 0, 0), gap=3):
++        for line in wrap(self.c, s, font, size, W - 2 * M):
++            self.need(size + gap); self.c.setFont(font, size); self.c.setFillColorRGB(*color)
++            self.c.drawString(M, self.y - size, line); self.y -= size + gap
++    def row(self, r):
++        imgs = []
++        for im in r.get("images", []):
++            if not os.path.exists(im["path"]): continue
++            p = Image.open(im["path"]).convert("RGB")
++            if im.get("crop"): p = p.crop(tuple(im["crop"]))
++            imgs.append((p, im.get("caption", "")))
++        hdr = 14
++        avail = W - 2 * M
++        if imgs:
++            # One line of images: same height, as large as fits (never upscaled beyond 3x of the crop).
++            hmax = 300 if len(imgs) <= 3 else 230
++            ratio = sum(p.width / p.height for p, _ in imgs)
++            h = min(hmax, (avail - 6 * (len(imgs) - 1)) / ratio, max(p.height for p, _ in imgs) * 3)
++        else: h = 0
++        note_lines = wrap(self.c, r.get("note", ""), "D", 8, avail)
++        self.need(hdr + h + 12 + len(note_lines) * 10 + 8)
++        st = r.get("status", "INFO"); col = COL.get(st, (0, 0, 0))
++        self.c.setFillColorRGB(*col); self.c.roundRect(M, self.y - hdr + 2, 76, hdr - 2, 3, fill=1, stroke=0)
++        self.c.setFillColorRGB(1, 1, 1); self.c.setFont("DB", 7.5); self.c.drawCentredString(M + 38, self.y - hdr + 6, st)
++        self.c.setFillColorRGB(0, 0, 0); self.c.setFont("DB", 9.5); self.c.drawString(M + 84, self.y - hdr + 5, r.get("label", ""))
++        self.y -= hdr + 2
++        x = M
++        for p, cap in imgs:
++            w = p.width * h / p.height
++            self.c.drawImage(ImageReader(p), x, self.y - h, w, h)
++            if cap:
++                self.c.setFillColorRGB(0, 0, 0); self.c.rect(x, self.y - h, min(w, self.c.stringWidth(cap, "D", 7) + 6), 10, fill=1, stroke=0)
++                self.c.setFillColorRGB(1, 1, 0.6); self.c.setFont("D", 7); self.c.drawString(x + 3, self.y - h + 2.5, cap)
++            x += w + 6
++        self.y -= h + 4
++        for line in note_lines:
++            self.c.setFillColorRGB(0.15, 0.15, 0.15); self.c.setFont("D", 8); self.c.drawString(M, self.y - 8, line); self.y -= 10
++        self.y -= 8
++
++def main(plan_path, out):
++    plan = json.load(open(plan_path))
++    d = Doc(out, plan["title"])
++    d.text(plan["title"], 18, "DB", gap=8)
++    for t in plan.get("intro", []): d.text(t, 9.5)
++    for s in plan["sections"]:
++        d.need(60); d.y -= 6; d.text(s["title"], 13.5, "DB", (0.1, 0.2, 0.45), gap=5)
++        for t in s.get("text", []): d.text(t, 9)
++        for r in s.get("rows", []): d.row(r)
++    d.new(); d.c.save()
++
++if __name__ == "__main__":
++    main(sys.argv[1], sys.argv[2])
 diff --git a/tools/qa/selftest/fixtures/clip_resume_tinyscroll.json b/tools/qa/selftest/fixtures/clip_resume_tinyscroll.json
 new file mode 100644
 index 0000000..ff6d0c5
@@ -13559,7 +14221,7 @@ literal 0
 HcmV?d00001
 
 diff --git a/tools/qa/selftest/test_qa.py b/tools/qa/selftest/test_qa.py
-index 1561f46..c01cdfe 100644
+index 1561f46..aeb227b 100644
 --- a/tools/qa/selftest/test_qa.py
 +++ b/tools/qa/selftest/test_qa.py
 @@ -561,6 +561,35 @@ class TestDeviceScreenScripts(unittest.TestCase):
@@ -13598,7 +14260,7 @@ index 1561f46..c01cdfe 100644
      def test_pop_requires_verified_home(self):
          src = open(os.path.join(self.DEV, "pop.sh"), encoding="utf-8").read()
          self.assertIn("screen_state", src)
-@@ -756,6 +785,159 @@ class TestGeomcheck(Base):
+@@ -756,6 +785,193 @@ class TestGeomcheck(Base):
          self.assertEqual(verdict([0, 1], seq=""), 2)                         # no MARK seq: NO DATA, never a pass
  
  
@@ -13753,6 +14415,40 @@ index 1561f46..c01cdfe 100644
 +        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
 +        self.assertIn("touch $F/qa_nolaunch", sh)
 +        self.assertRegex(sh, r'\[ -f \$F/qa_nolaunch \]')
++
++
++    def test_picker_answered_and_a_opens_everywhere(self):
++        # Update 469 (D210): a fresh Voltcap shows "Who's playing?" — the sweep answers it before the first combo;
++        # Card binder / Pocket Quest get A = open for the sweep (their "A plays" options), else they were NOT TESTED.
++        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
++        head = sh.split("for lay in", 1)[0]
++        self.assertIn("^PICKER", head); self.assertIn("BUTTON_B", head)
++        self.assertIn("cards_a_plays=false", sh); self.assertIn("pq_a_plays=false", sh)
++
++
++    def test_covering_sheet_hides_the_popup_under_it(self):
++        # Update 469: Bubbles' Details is a full-screen sheet over its LiveArea, in the same window — the LiveArea's keys under
++        # it are covered, not overlapping. Without a covering sheet the same nodes still count.
++        import popclip
++        def n(l, f): return {"label": l, "kind": "control", "full": f, "shown": f}
++        main = {"screen": [960, 640], "windows": [{"nodes": [n("Start", [66, 398, 255, 75]), n("Details", [153, 490, 60, 60])]}]}
++        page = {"screen": [960, 640], "windows": [{"nodes": [n("Game", [0, 0, 960, 640]), n("Start", [72, 400, 255, 75]),
++                                                            n("Details", [149, 486, 60, 60]), n("Play", [53, 447, 210, 51])]}]}
++        self.assertTrue(popclip.covering_sheet(page, main))
++        self.assertEqual([x["label"] for x in popclip.under_sheet(page, main)], ["Start", "Details"])
++        small = {"screen": [960, 640], "windows": [{"nodes": [n("Card", [100, 100, 500, 400]), n("Start", [72, 400, 255, 75])]}]}
++        self.assertFalse(popclip.covering_sheet(small, main))
++
++    def test_details_word_first(self):
++        # Update 469: Storage's INFO tab matched the Details words before its DETAILS tab.
++        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
++        self.assertIn('tapat "(Details|Full details)" main || tapat "$DETW" main', sh)
++
++    def test_stops_outside_voltcap(self):
++        # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.
++        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
++        self.assertIn("not Voltcap in front after the first A", sh)
++        self.assertIn("break 2", sh)
 +
 +
  class TestLineEndings(unittest.TestCase):
@@ -14001,10 +14697,10 @@ index 45f4326..c2d8545 100644
              trace = from_logcat(open(path, encoding="utf-8", errors="replace").read())
 diff --git a/tools/qa/tools/popclip.py b/tools/qa/tools/popclip.py
 new file mode 100644
-index 0000000..2d720b7
+index 0000000..a0ab01e
 --- /dev/null
 +++ b/tools/qa/tools/popclip.py
-@@ -0,0 +1,184 @@
+@@ -0,0 +1,215 @@
 +#!/usr/bin/env python3
 +"""VoltCap QA — popup gate (update 467, QA rule R26). Reads one popclip.sh run (screenshots + QaClip dumps) and grades every
 +layout x popup style in SEPARATE categories — a popup is PASS only when every applicable category passes:
@@ -14040,6 +14736,31 @@ index 0000000..2d720b7
 +
 +def labels(d):
 +    return [geomcheck._label(n) for w in (d or {}).get("windows") or [] for n in w.get("nodes") or [] if n.get("kind") == "control"]
++
++
++def covering_sheet(page, main):
++    """True when the page step has a control the main step didn't, covering >= 90 % of the screen (a full-screen sheet)."""
++    sw, sh = ((page or {}).get("screen") or [0, 0])[:2]
++    if sw <= 0 or sh <= 0: return False
++    mk = {geomcheck._key(n) for w in (main or {}).get("windows") or [] for n in w.get("nodes") or []}
++    for w in page.get("windows") or []:
++        for n in w.get("nodes") or []:
++            f = n.get("full") or []
++            if n.get("kind") == "control" and len(f) == 4 and geomcheck._key(n) not in mk and f[2] * f[3] >= 0.9 * sw * sh:
++                return True
++    return False
++
++
++def under_sheet(page, main, tol=16):
++    """The page's nodes that are the main step's (same label, box within [tol] px: a focus scale moves them a little)."""
++    mn = [(geomcheck._label(n), n.get("full") or []) for w in (main or {}).get("windows") or [] for n in w.get("nodes") or []]
++    out = []
++    for w in page.get("windows") or []:
++        for n in w.get("nodes") or []:
++            f = n.get("full") or []
++            if len(f) == 4 and any(l == geomcheck._label(n) and len(g) == 4 and all(abs(a - b) <= tol for a, b in zip(f, g)) for l, g in mn):
++                out.append(n)
++    return out
 +
 +
 +def own_labels(d, home):
@@ -14103,7 +14824,13 @@ index 0000000..2d720b7
 +        if d[s] is None:
 +            if s == "main": geo.append(qalib.Result(s, qalib.INFRA, "no dump"))
 +            continue
-+        rs = geomcheck.clip_evaluate(d[s], png=png[s] if os.path.exists(png[s]) else None, baseline=d["home"] or d["closed"])
++        base = d["home"] or d["closed"]
++        # (Update 469: a page that is a full-screen sheet over the popup — Bubbles' LiveArea opens the full details over itself
++        # in the same window — leaves the popup's own keys composed under it; they are covered, not overlapping. Only when
++        # the page brings a new control covering >= 90 % of the screen are the main step's nodes left out too.)
++        if s == "page" and d["main"] is not None and covering_sheet(d["page"], d["main"]):
++            base = {"windows": ((base or {}).get("windows") or []) + [{"nodes": under_sheet(d["page"], d["main"])}]}
++        rs = geomcheck.clip_evaluate(d[s], png=png[s] if os.path.exists(png[s]) else None, baseline=base)
 +        for r in rs:
 +            (vis if r.name == "pixels" else geo).append(qalib.Result(f"{s} {r.name}", r.status, r.reason))
 +    def fold(rs):
@@ -14189,6 +14916,26 @@ index 0000000..2d720b7
 +
 +if __name__ == "__main__":
 +    main()
+diff --git a/tools/qa/tools/popmerge.py b/tools/qa/tools/popmerge.py
+new file mode 100644
+index 0000000..066b090
+--- /dev/null
++++ b/tools/qa/tools/popmerge.py
+@@ -0,0 +1,14 @@
++"""Update 469: merge popclip.py results of several runs — the latest run that has a combination wins (later runs are
++re-checks on newer builds). usage: python3 popmerge.py out.json run1.json run2.json ... (oldest first)"""
++import json, sys, collections
++out, runs = sys.argv[1], sys.argv[2:]
++best, src = {}, {}
++for r in runs:
++    d = json.load(open(r)); rs = d["results"] if isinstance(d, dict) else d
++    for x in rs:
++        best[x["name"]] = x; src[x["name"]] = r
++c = collections.Counter(x["status"] for x in best.values())
++json.dump({"runs": runs, "counts": c, "results": [dict(best[k], run=src[k]) for k in sorted(best)]}, open(out, "w"), indent=1)
++print(dict(c))
++for k in sorted(best):
++    if best[k]["status"] not in ("PASS", "SKIP"): print(f"  [{best[k]['status']}] {k} ({src[k]}): {best[k]['reason'][:160]}")
 diff --git a/tools/qa/tools/sheet462.py b/tools/qa/tools/sheet462.py
 new file mode 100644
 index 0000000..1d48106

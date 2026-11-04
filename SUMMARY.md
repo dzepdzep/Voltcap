@@ -1,3 +1,31 @@
+# Update 469 (4 Nov 2026) — v0.6.67 release stabilization: home-screen Game Boy pak sides, 467 popup bugs closed, full re-sweep
+
+**Owner request:** Inspect's GB / black GBC / clear GBC sides on the home screen's turned cartridges; GBA side only with evidence;
+close D210 / D211 / D213 / D214 / D215, the Storage Details tab, Card binder / Pocket test paths; density, larger text and long /
+missing details runs; KONKR + Odin; evidence PDF; full popup sweep + cartridge regression; RC unchanged; nothing published.
+**Home GB paks (`ui/SolidPiece.kt` GbSide, same constants as Inspect's SlabSide):** seam at 5.8 mm, clear walls see-through with
+the board inside, clear back opaque, edge-on wall fill. D224 (board / seam layers stood apart, found in our own check) fixed.
+Verified KONKR 0–180°. Grips / edge rounding Inspect only (1–2 px at home sizes); board traces unreadable at home sizes.
+**GBA side: BLOCKED** (no side / top photo on Commons; Wikipedia's 6–9 mm uncited). Real photos, picks, packs, Stadium 2 sides
+and saved box-side choices unchanged.
+**Popups:** D210 = test path (profile picker took the first A); D211 fixed via D221 (Twin facts box changed height while paging —
+the keys moved, taps hit the veil); D213 Arctic (two columns / denser column); D214 rental tag 1.3 up to 480 dp; D215 Cover details
+opaque + name gives way; Storage tab = test path ("Info" matched the INFO tab), keys on one line; D220 Storage crash (469's own
+FitText under FlowRow — staging only) fixed; D223 Pocket Quest / Blades / Cover details / Discover card / Arctic at 1.3 and
+display size. popclip.sh / popclip.py / popmerge.py test-path fixes (picker, Green Core menu, Details first, stop outside Voltcap,
+full-screen page sheet).
+**Sweeps (latest per combination, final build):** KONKR 287 PASS / 5 FAIL / 2 NT / 24 n/a (467: 266 / 24); Odin 288 / 4 / 1 / 25
+(467: 270 / 21). Font 1.3 (15 layouts each) and display size 200 / 280 dpi (KONKR), 420 dpi (Odin): all PASS except Box's Play
+tap (NT). FAILs left = D212 owner decisions. Open: D222 Box actions in its scrolling card; long / missing details NOT TESTED (hook
+game name didn't match). Details tools/qa/POPUP_AUDIT_469.md, CARTS_469.md; PDF `Claude outputs/qa469/Update469_evidence.pdf`.
+**Devices:** USB only. Fonts / densities restored by the scripts; KONKR timeout back to 60 s — the value 468 left, **original never
+recorded**; Odin 30 min unchanged. Snapshot restored; KONKR layout / view put back by hand (Case flow, N64, Pokémon Snap — a font
+run's restart had saved File select). Odin: layout not in the baseline — shows Side menu now; please confirm. RC 0.6.66
+reinstalled on both; test files removed.
+**Build / tests:** staging assembleRelease + testDebugUnitTest PASS on the PC (GbSide469Test, SnapRows469Test new); QA selftest 94
+OK; static checks PASS; RC rebuilt from the restored source (byte-identical inputs, from cache). Patch next/0.6.67 (item 28).
+**Copy:** staging lives on cloud dev / next/0.6.67/profile_picker.patch; PC app/ = RC.
+
 # Update 468 (3 Nov 2026) — Game Boy pak sides + clear GBC board from photos, Crystal media explained, NES front (batch 4)
 
 **Owner request (Update 466 review):** GBC side geometry / transparency (art squeezed at 75°, opaque grey strip at 90°), a

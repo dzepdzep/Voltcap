@@ -2325,30 +2325,30 @@
    "title": "First A after Voltcap starts does nothing (second A opens)",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
    "where": "first combo of every run · both devices",
    "evidence": [
     "k467r / o467r / o467t log 'first A opened nothing' (CASEFLOW_OWN, TWIN_DESK_OWN)"
    ],
-   "root_cause": "fresh process: nothing focused in Compose until a key; D198's fix doesn't cover it",
-   "fix": "NOT FIXED — needs a focus on start",
-   "verified": "—"
+   "root_cause": "Not an app bug: a cold start shows \"Who's playing?\" and the sweep's first A picked the profile (update 469).",
+   "fix": "popclip.sh answers the picker with B (keeps the profile) before the first combo; manual cold start: A picks, next A opens the popup.",
+   "verified": "k469g / o469g / k469h: no 'first A opened nothing' outside Green Core's menu"
   },
   {
    "id": "D211",
    "title": "Twin windows on the KONKR: a tap on Play does nothing",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
    "where": "TWIN_* · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467t TWIN_*_OWN_play.txt blocked=0; manual tap logged nothing"
    ],
-   "root_cause": "touch doesn't reach the key (Odin works) — cause not found",
-   "fix": "NOT FIXED",
-   "verified": "—"
+   "root_cause": "D221: the Twin window's facts box paged every 2.8 s and changed height, so the keys moved; the tap landed where Play / More had been (the veil) and closed the window.",
+   "fix": "see D221",
+   "verified": "k469h / k469j TWIN_* all styles PASS (KONKR); o469h PASS (Odin)"
   },
   {
    "id": "D212",
@@ -2370,45 +2370,45 @@
    "title": "Font 1.3: Arctic drawer's Back cut again (8 rows don't fit)",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
    "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz ARCTIC_OWN_main.png"
    ],
    "root_cause": "list fits at 1.0 only",
-   "fix": "NOT FIXED",
-   "verified": "—"
+   "fix": "Arctic drawer: two columns at large text where each gets ~150 dp, else one denser column (also in the compact drawer); 9 actions in a compact drawer denser too.",
+   "verified": "k469fs3 / k469fs5 ARCTIC_OWN PASS (KONKR 1.3); o469fs3 (Odin 1.3)"
   },
   {
    "id": "D214",
    "title": "Font 1.3: rental tag's BACK cut",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
    "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz SHOP_OWN_main.png"
    ],
    "root_cause": "rows sized for 1.0",
-   "fix": "NOT FIXED",
-   "verified": "—"
+   "fix": "Rental tag short layout at 1.3x up to 480 dp (was 440).",
+   "verified": "k469fs2 / k469fs5 SHOP_OWN PASS (KONKR); Odin 1.3 re-run after the 480 dp step"
   },
   {
    "id": "D215",
    "title": "Font 1.3: Cover details with More open — Play and Save sync boxes overlap",
    "rule": "R26",
    "severity": "medium",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
    "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz COVERDETAILS_OWN dumps"
    ],
-   "root_cause": "not inspected yet",
-   "fix": "NOT FIXED",
-   "verified": "—"
+   "root_cause": "The panel was 86 % opaque: the home screen's title showed through behind the keys.",
+   "fix": "Panel 97 % opaque; with display size larger the name gives way to the keys.",
+   "verified": "k469fs2 / k469fs3 COVERDETAILS_OWN PASS; k469d3 density 280 PASS"
   },
   {
    "id": "D216",
@@ -2470,15 +2470,90 @@
    "title": "Home-screen turned cartridges (carousel / solid pieces) keep the old opaque sides; only Inspect has the measured sides",
    "rule": "R25",
    "severity": "low",
-   "status": "open",
+   "status": "fixed",
    "found": "2026-11-03 update 468",
    "where": "SolidPiece.kt (home looks)",
    "evidence": [
     "code: Modifier.solidPiece unchanged"
    ],
    "root_cause": "solidPiece is the performance-tuned path (update 314-325); not changed in this pass.",
-   "fix": "NOT FIXED — the face (with the new board) is shared, the sides are not",
+   "fix": "ui/SolidPiece.kt GbSide: seam copy, clear walls with the board seen through, clear back opaque, edge-on wall fill (same constants as Inspect's SlabSide). Grips / 0.5 mm edges not ported (1-2 px at home sizes).",
+   "verified": "KONKR home poses 0-180 (q469h4), clear / pink / black paks"
+  },
+  {
+   "id": "D220",
+   "title": "Storage window: Voltcap crashed on A (keys' FitText under FlowRow's intrinsic measurement)",
+   "rule": "R26",
+   "severity": "high",
+   "status": "fixed",
+   "found": "2026-11-04 update 469 full sweep (k469g / o469g)",
+   "where": "STORAGE · all styles that open its own window · both devices · staging only (introduced and fixed in 469)",
+   "evidence": [
+    "o469g STORAGE_OWN_firstA.png (crash screen), k469g STORAGE_OWN_firstA.png ('Voltcap has stopped')"
+   ],
+   "root_cause": "469's FitText (a SubcomposeLayout) inside FlowRow items with weight: FlowRow asks for intrinsic sizes -> IllegalStateException.",
+   "fix": "Compose's own step auto-size Text (one line, 13 -> 8 sp). popclip.sh now stops when Voltcap is not in front after the first A (the crash had sent the next keys into App info / Android Settings; nothing was changed there).",
+   "verified": "k469h / k469j / o469h / o469i STORAGE all styles: no crash; ACHIEVEMENTS on one line"
+  },
+  {
+   "id": "D221",
+   "title": "Twin windows: the facts box changed height as it paged; the window and its keys jumped every 2.8 s",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 469 (cause of D211)",
+   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE · Own",
+   "evidence": [
+    "KONKR manual: taps on More closed the window 4/4 after 3 s, 2/2 worked after 1 s"
+   ],
+   "root_cause": "SnapRows laid out each page at its own height; a short last page shrank the window.",
+   "fix": "SnapRows keeps the first page's height on every page (later pages drawn cut to whole rows). SnapRows469Test.",
+   "verified": "k469h / k469j TWIN_* PASS"
+  },
+  {
+   "id": "D222",
+   "title": "Cardboard box window: the actions live inside the scrolling note card; the tools row and the Saves line start below the screen",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open",
+   "found": "2026-11-04 update 469 sweep (BOX_OWN buttons NOT TESTED: the Play tap after the Details page found no Play on screen)",
+   "where": "BOX · Own · KONKR 960x640 (and Odin at 1.3)",
+   "evidence": [
+    "k469g BOX_OWN_main.json: Options / Achievements / Save sync / Manual / Saves shown 0 px (y 609-725 on a 640 px screen)"
+   ],
+   "root_cause": "the note card scrolls as one; R26 says actions never live inside a scrolling column.",
+   "fix": "NOT FIXED (layout rework of the Box window; reachable by D-pad scroll)",
    "verified": "—"
+  },
+  {
+   "id": "D223",
+   "title": "Font 1.3 / display size larger: Pocket Quest keys cut, Blades Back cut, Cover details keys below the panel, Discover status line cut, Arctic labels cut in the narrow drawer",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 469 configuration runs (k469fs, k469fs2, k469d2, o469fs2, o469d1)",
+   "where": "KONKR 1.3 / density 280; Odin 1.3 / density 420",
+   "evidence": [
+    "k469fs2 POCKET_OWN_main.png, ARCTIC_OWN_main.png; k469d2 BLADES / COVERDETAILS; o469fs2 RESUME / SHOP; o469d1 ARCTIC"
+   ],
+   "root_cause": "heights sized for font 1.0 / default display size",
+   "fix": "Pocket: keys under the art at large text, the art row gives way; Blades: one more row step under 380 dp; Cover details: name gives way; Discover card: taller, lower keys at 1.3; rental tag: short layout up to 480 dp at 1.3; Arctic: see D213.",
+   "verified": "k469fs3 / k469d3 / k469k / k469fs4 PASS (KONKR); Odin re-run in POPUP_AUDIT_469.md"
+  },
+  {
+   "id": "D224",
+   "title": "Home-screen clear / GB pak: the board and seam layers stood apart from the pak at 75-90 deg",
+   "rule": "R25",
+   "severity": "medium",
+   "status": "fixed",
+   "found": "2026-11-04 update 469 home pose check (q469h3)",
+   "where": "SolidPiece home pieces · staging only (introduced and fixed in 469)",
+   "evidence": [
+    "q469h3 hm_75 / hm_90"
+   ],
+   "root_cause": "the layers were recorded inside the whole-piece buffer at the buffer's size, so they turned round the buffer's middle.",
+   "fix": "recorded at the node's own size, as the sides' layers.",
+   "verified": "q469h4 0-180"
   }
  ]
 }
