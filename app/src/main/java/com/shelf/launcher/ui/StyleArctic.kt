@@ -366,7 +366,7 @@ private fun ArcticRow(c: StyleCtx, r: HomeRow, here: Boolean, tileH: Dp, wide: B
                     ) {
                         val url = if (wide) c.wide(game) else c.cover(game)
                         if (url != null) AsyncImage(rememberStyleArtRequest(url), titles.display(game.name), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                        else FullText(titles.display(game.name), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                        else FullText(titles.display(game.name), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
                         if (game.stableKey in c.state.favorites) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(8.dp).clip(CircleShape).background(accent))
                     }
                 }

@@ -143,6 +143,8 @@ fun stripRegionTags(name: String): String =
 private val REGION_CLEAN = android.util.LruCache<String, String>(4096)
 private val ALL_CLEAN = android.util.LruCache<String, String>(4096)
 private val FLAG_ONLY = Regex("^[!abhotfpc]\\d*$")
+/** Update 453: a Switch title ID as dumps carry it, "[0100…]" (16 hex digits). */
+private val SWITCH_TITLE_ID = Regex("^01[0-9A-Fa-f]{14}$")
 
 private fun stripRegionTagsNow(name: String): String {
     val cleaned = TAG.replace(name) { match ->
@@ -154,7 +156,9 @@ private fun stripRegionTagsNow(name: String): String {
         val isPatch = PATCH_TAG.containsMatchIn(lower)
         val isFlag = inner.isEmpty() || inner in setOf("!", "a", "b", "h", "o", "t", "f", "p", "c") ||
             inner.matches(FLAG_ONLY)
-        if (isRegion || isLanguages || isPatch || (match.value.trim().startsWith("[") && isFlag)) "" else match.value
+        // Update 453 (Thor, Switch): a Switch dump's own tags — "[01009D901BC56000][Base]" — read as part of the name.
+        val isSwitchDump = match.value.trim().startsWith("[") && (SWITCH_TITLE_ID.matches(inner) || lower == "base")
+        if (isRegion || isLanguages || isPatch || isSwitchDump || (match.value.trim().startsWith("[") && isFlag)) "" else match.value
     }
     // Loose " - Widescreen Hack" / " + 60 FPS Patch" style suffixes too.
     val noSuffix = cleaned.replace(PATCH_SUFFIX, "").replace(LOOSE_SUFFIX, "")

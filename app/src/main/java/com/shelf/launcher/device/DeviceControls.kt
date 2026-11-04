@@ -103,7 +103,7 @@ object DeviceControls {
                         st == ChargeLimiter.Status.PAUSED || st == ChargeLimiter.Status.DRAINING,
                     when (st) {
                         ChargeLimiter.Status.UNSUPPORTED -> "Not supported"
-                        ChargeLimiter.Status.PAUSED -> "Stopped at 80%"
+                        ChargeLimiter.Status.PAUSED -> ChargeLimiter.pausedLabel(ChargeLimiter.stoppedAt)
                         ChargeLimiter.Status.DRAINING -> "Down to 80%"
                         else -> st.label
                     },

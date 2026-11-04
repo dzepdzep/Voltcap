@@ -55,6 +55,12 @@ object ChargeLog {
         }, "ChargeLog").apply { isDaemon = true; priority = Thread.MIN_PRIORITY }.start()
     }
 
+    /** Update 450 (D148): one row for a charge-limit step ("limit_stop", "limit_verify_ok", …), with the same readings. */
+    fun event(context: Context, name: String) {
+        val safe = name.replace(Regex("[^A-Za-z0-9_]"), "_")
+        sample(context.applicationContext, safe)
+    }
+
     private fun battery(c: Context): Intent? = runCatching { c.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) }.getOrNull()
 
     private fun plugged(c: Context): Boolean = (battery(c)?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0

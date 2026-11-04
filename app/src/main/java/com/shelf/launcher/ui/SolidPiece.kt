@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -130,9 +131,26 @@ internal class SolidSpec(
      * what's behind they hide), nothing of them behind its face, and its back as see-through. Null: solid plastic. The
      * sides were solid slices standing behind the face, so a translucent card turned into an opaque grey block.
      */
-    val clear: Float? = null
+    val clear: Float? = null,
+    /**
+     * Update 469: a measured Game Boy family pak (SlabSide's references): the seam between its halves drawn on its side and,
+     * when clear, the board inside seen through the side — as Inspect draws it. Null: as before.
+     */
+    val gb: GbSide? = null
 ) {
     val back: ImageBitmap? by lazy { runCatching { back?.invoke() }.getOrNull() }
+}
+
+/** Update 469: what a turned Game Boy family pak shows on its side — see SolidSpec.gb and SlabSide. */
+internal class GbSide(val shell: CartShell, val clear: Boolean, val boardType: Int?) {
+    companion object {
+        private val MEASURED = setOf("gb", "gbc", "gbc_dual")
+        fun of(sh: CartShell?, colour: ShellColour?, boardType: () -> Int?): GbSide? {
+            if (sh == null || sh.id !in MEASURED) return null
+            val clear = (colour?.opacity ?: 1f) < 0.85f && CartBacks.of(sh.id)?.board != null
+            return GbSide(sh, clear, if (clear) boardType() else null)
+        }
+    }
 }
 
 /** [spec] for a game on a shell from the cartridge library ([pickPlatform] "shell:…"): its own size, colour and back. */
@@ -142,7 +160,9 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
     // (Update 228, #36: a pack shape picked in the shell picker turned with the pack picture's own plastic on its sides
     // and back — it was grey, whatever its colour.)
     val packTone = rememberCustomPieceTone(pickPlatform)
-    return remember(pickPlatform, backStyle, packTone) {
+    // (Update 462b: a photo-made front's sides and back in its photo's plastic — PhotoShells.sideTone.)
+    val photoV = PhotoShells.version.intValue
+    return remember(pickPlatform, backStyle, packTone, photoV) {
         val (choice, console) = CartShells.split(pickPlatform)
         val sh = choice?.shell
         when {
@@ -158,11 +178,22 @@ internal fun rememberShellSolid(pickPlatform: String): SolidSpec? {
             } ?: SolidSpec(choice.aspect, 0.12f, packTone ?: CUSTOM_SHELL)
             else -> {
                 val colour = CartShells.colourOf(sh, choice.colourKey)
+                // (Update 462b: made from a real photo — turned exactly as the real photo is: opaque sides in the photo's own
+                // edge plastic, the researched back in that plastic, cut to the face — rememberPhotoSolid.)
+                val photoTone = if (choice.pack == null) PhotoShells.sideTone(sh, colour) else null
+                if (photoTone != null) {
+                    val pc = ShellColour("photo:$photoTone", colour.name, photoTone, colour.opacity)
+                    // (Update 469: a clear pak made from a photo is still clear plastic on its sides — they were opaque.)
+                    val gbs = GbSide.of(sh, colour) { null }
+                    return@remember SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(photoTone), back = {
+                        runCatching { CartShells.backFor(sh, pc, 480, console, backStyle).asImageBitmap() }.getOrNull()
+                    }, fitBackToFace = true, clear = if (gbs?.clear == true) 0.5f else null, gb = gbs)
+                }
                 // (Update 210: a see-through plastic stays see-through turned — SolidSpec.clear.)
                 // (Update 306: another console's game on this shell has its own console's name on the back — backFor.)
                 SolidSpec(sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), Color(colour.argb).copy(alpha = 1f), clear = if (colour.opacity < 0.85f) 0.5f else null, back = {
                     CartShells.backFor(sh, colour, 480, console, backStyle).asImageBitmap()
-                })
+                }, gb = if (choice.pack == null) GbSide.of(sh, colour) { null } else null)
             }
         }
     }
@@ -203,7 +234,10 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
         // isn't the black of the usual Game Boy Color shell.)
         // (Update 207: a UMD photo at the UMD's own thickness.)
         if (sh == null) SolidSpec(aspect, if (platform != null && MediaShell.of(platform) == MediaShell.UMD) slabDepth(MediaShell.UMD) else 0.12f, tone ?: PLAIN_SHELL)
-        else SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
+        else {
+            // (Update 469: a photo of a clear pak — Pokémon Crystal's — has clear sides with the board inside, as in Inspect.)
+            val gbs = GbSide.of(sh, ownShellColour(sh, platform, gameKey)) { null }
+            SolidSpec(aspect ?: sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), tone ?: Color(ownShellColour(sh, platform, gameKey).argb).copy(alpha = 1f), {
             // (Update 207: in the photo's own plastic colour — a black or gold cartridge photo had the grey shell's back —
             // and cut to the photo's outline when drawn: fitBackToFace.)
             val own = ownShellColour(sh, platform, gameKey)
@@ -211,7 +245,8 @@ internal fun rememberPhotoSolid(platform: String?, gameKey: String?, aspect: Flo
             // cartridge's back could come out in another photo's plastic.)
             val colour = tone?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
             runCatching { CartShells.back(sh, colour, 480, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
-        }, fitBackToFace = true)
+        }, fitBackToFace = true, clear = if (gbs?.clear == true) 0.5f else null, gb = gbs)
+        }
     }
 }
 
@@ -473,6 +508,11 @@ internal fun Modifier.solidPiece(
     val hole = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val edgeLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
     val litLeafLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    // (Update 469: the seam's darker copy and the clear pak's board — spec.gb.)
+    val seamLeaf = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val boardLeaf = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val boardPic = remember { arrayOfNulls<Any>(2) }
+    val sideClip = remember { SideClip() }
     return this.drawWithCache {
         // (Update 294: the face drawn flat into its own picture, which is then turned — the turned layers below used to
         // draw its contents (a badge's or a label's text) under a new angle every frame, and Android 13's text cache
@@ -584,12 +624,20 @@ internal fun Modifier.solidPiece(
             val t = Math.toRadians(yaw.toDouble())
             val c = cos(t).toFloat()
             val sn = sin(t).toFloat()
-            edge.rotationY = yaw; edge.cameraDistance = cam
+            // Update 458 (D175, Thor: a GBA cartridge turned side-on vanished at 90° and showed its label squeezed into a
+            // striped column just before): the side copies are planes parallel to the face, so edge-on they had no width
+            // left. They're turned at most to EDGE_ON_MIN_COS (≈88°) — the side stays a solid wall of plastic — and the
+            // face (or back) fades out over the last few degrees instead of showing its picture squeezed to a line.
+            val sideYaw = edgeOnSafeYaw(yaw)
+            val faceA = edgeOnFade(c)
+            edge.rotationY = sideYaw; edge.cameraDistance = cam
             lit.rotationY = yaw; lit.cameraDistance = cam
+            lit.alpha = faceA
             // (Update 316: the plain sides and face, their light drawn in — recorded again only as the turn changes.)
             if (edgeLeaf != null && litLeaf != null && side != null && art != null) {
-                edgeLeaf.rotationY = yaw; edgeLeaf.cameraDistance = cam
+                edgeLeaf.rotationY = sideYaw; edgeLeaf.cameraDistance = cam
                 litLeaf.rotationY = yaw; litLeaf.cameraDistance = cam
+                litLeaf.alpha = faceA
                 val edgeLight = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK)
                 // (Update 317: the sides' picture is SIDE_SPREAD px wider each side — drawn that much wider.)
                 val padN = (SIDE_SPREAD * artSize!!.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
@@ -606,7 +654,9 @@ internal fun Modifier.solidPiece(
             }
             back.rotationY = yaw; back.cameraDistance = cam
             // (Update 209: a see-through piece's back as see-through as its sides.)
-            back.alpha = spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f
+            // (Update 469: not a clear Game Boy pak's — its drawn back is the board under the plastic; the back showed what was
+            // behind the cartridge through the board.)
+            back.alpha = (if (spec.gb?.clear == true) 1f else spec.clear?.let { 0.5f + 0.5f * it.coerceIn(0f, 1f) } ?: 1f) * faceA
             // (Each part recorded at the node's own size, round its own middle; then placed in the buffer below.)
             // The sides: the face's outline, darker, lit a little as they face you. Update 205: filled with the shell's
             // plastic — they were copies of the whole face, so a cartridge seen from the side showed its label over and
@@ -702,8 +752,10 @@ internal fun Modifier.solidPiece(
                 val edgeL = edgeLeaf ?: edge
                 // (Update 317: drawn from the sides' picture — a copy every [SIDE_SPREAD] px (foreshortened), the near one,
                 // under the face, left out; see SIDE_SPREAD.)
+                // (Update 458, D175: the copies are turned as [sideYaw] — never quite edge-on — so their reach is too.)
+                val cSide = cos(Math.toRadians(sideYaw.toDouble())).toFloat()
                 val reach = if (edgeLeaf != null && side != null && artSize != null)
-                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(c)).coerceAtLeast(1.5f) else 0f
+                    (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(cSide)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
                 val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
                 edgeL.alpha = if (edgeLeaf != null) {
@@ -716,28 +768,90 @@ internal fun Modifier.solidPiece(
                 val camPx = cam * 72f
                 val nearV = -depthPx / 2f * abs(c)
                 fun depthK(z: Float): Float = ((camPx + nearV) / (camPx - z * c)).coerceIn(0.5f, 1f)
-                if (edgeLeaf != null) for (k in 0 until nLeaf) {
-                    val f = k.toFloat() / nLeaf
-                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                    val dk = depthK(z)
-                    scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
-                }
-                if (n > 0 && fill > 1 && edgeLeaf == null) {
-                    smear.record(size = buf) {
-                        translate(m.toFloat(), m.toFloat()) {
-                            for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
+                // Update 458 (D175, Thor: "sharp, rough lines" along a GBA cartridge's side): each copy is a plane parallel to the
+                // face, so its own top edge slants (it comes nearer toward one end) — steeper the more it's turned — while the
+                // side's real top edge runs from one copy's far corner to the next. Between two copies the nearer part of the
+                // farther one stood above that edge: a saw-tooth along the side's top and bottom, worst side-on. The copies are
+                // now cut to the side's own top and bottom edge — the line through every copy's far corners (sideClip) — so
+                // the side ends in one straight edge at every angle; side-on (face faded) also at the face's plane. One clip,
+                // the same copies as before (no new render load).
+                val copiesN = if (edgeLeaf != null) nLeaf else n
+                val clipRect = if (edgeLeaf != null && artPos != null && artSize != null && side != null) {
+                    val padN = SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()
+                    androidx.compose.ui.geometry.Rect(artPos.x - padN, artPos.y.toFloat(), artPos.x + artSize.width + padN, (artPos.y + artSize.height).toFloat())
+                } else androidx.compose.ui.geometry.Rect(0f, 0f, nodeC.x * 2f, nodeC.y * 2f)
+                // (The node's own size — inside the whole-piece buffer this drawing's size is the bigger buffer's.)
+                val cut = if (copiesN > 0) sideClip.of(
+                    clipRect, nodeC.x * 2f, nodeC.y * 2f, sideYaw, cam, copiesN, depthPx, c, sn, nodeC, { z -> depthK(z) },
+                    faceGone = faceA < 1f, cSide = cSide
+                ) else null
+                // (Side-on the far copies' corners can also stand apart, leaving notches between them: the side's own face —
+                // the strip through every copy's outer corners — is filled first in the sides' plastic and light.)
+                // (Only nearly side-on, past ~81°: there a notch in the outline — the GBA pak's shoulders — is narrower than a
+                // pixel or two; turned less, the copies alone keep its step.)
+                // Update 469: a clear Game Boy pak's board (1 mm, on the back half) seen through its clear side, as in Inspect
+                // (SlabSide): copies of the board's outline in its edge green at its depth, behind the clear walls.
+                val gbs = spec.gb
+                val zpm = gbs?.let { depthPx / it.shell.t }
+                val nodeSz = IntSize((nodeC.x * 2f).roundToInt(), (nodeC.y * 2f).roundToInt())
+                if (gbs != null && gbs.clear && zpm != null && artPos != null && artSize != null && !mirror && !far) {
+                    val bm = CartBacks.of(gbs.shell.id)?.board
+                    if (bm != null) {
+                        val k = artSize.width / gbs.shell.w
+                        val at = IntOffset((artPos.x + (gbs.shell.w - bm[0] - bm[2]) * k).roundToInt(), (artPos.y + bm[1] * k).roundToInt())
+                        val bs = IntSize((bm[2] * k).roundToInt().coerceAtLeast(4), (bm[3] * k).roundToInt().coerceAtLeast(4))
+                        val key = "${gbs.boardType}|$bs"
+                        if (boardPic[0] != key) {
+                            boardPic[0] = key
+                            boardPic[1] = runCatching { GbBoard.chipSide(gbs.boardType, bs.width, bs.height).asImageBitmap() }.getOrNull()
+                        }
+                        val pic = boardPic[1] as? ImageBitmap
+                        if (pic != null) {
+                            boardLeaf.rotationY = sideYaw; boardLeaf.cameraDistance = cam
+                            // (At the node's own size, as the sides' layers: recorded inside the whole-piece buffer it took the
+                            // buffer's size — its turn pivoted round the buffer's middle and the board stood apart from the pak.)
+                            boardLeaf.record(size = nodeSz) {
+                                drawImage(pic, IntOffset.Zero, IntSize(pic.width, pic.height), at, bs, colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
+                                drawRect(Color(0xFF1C5A3C), blendMode = BlendMode.SrcAtop, alpha = 0.55f)
+                            }
+                            val zb0 = -depthPx / 2f + SlabSide.BOARD_FROM_BACK * zpm
+                            val zb1 = zb0 + SlabSide.BOARD_T * zpm
+                            val nb = ceil((zb1 - zb0) * abs(sn) / 1.5f).toInt().coerceIn(1, 4)
+                            for (i in 0..nb) {
+                                val z = if (c >= 0f) zb0 + (zb1 - zb0) * i / nb else zb1 - (zb1 - zb0) * i / nb
+                                val dk = depthK(z)
+                                scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(boardLeaf) } }
+                            }
                         }
                     }
                 }
-                if (n > 0 && edgeLeaf == null) for (k in 0..n) {
-                    val f = k.toFloat() / n
-                    val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
-                    // (The nearest slice alone: nothing past it to fill.)
-                    val dk = depthK(z)
-                    scale(dk, dk, pivot = nodeC) {
-                        if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
-                        else translate(z * sn, 0f) { drawLayer(edge) }
+                // (Update 469: a clear Game Boy pak too, as see-through as its sides — edge-on its copies are hairlines, so
+                // without it the side vanished and only the board's green line was left.)
+                if (cut != null && (spec.clear == null || gbs?.clear == true) && abs(c) < 0.15f) {
+                    val tone = spec.tone.copy(alpha = 1f).toArgb()
+                    val cols = List(5) { i -> Color(0xFF000000.toInt() or sideRowRgb(i / 4f, tone)) }
+                    drawPath(sideClip.wall, Brush.verticalGradient(cols, sideClip.wallTop, sideClip.wallBottom),
+                        // (Update 470, owner review of the 469 PDF: at ~85° the clear pak's wall came in at full strength
+                        // beside the still-dense copies and read as a second, paler plane. It now fades in as the side turns
+                        // edge-on — none at 81°, most at 90° — so wall and copies read as one piece of plastic.)
+                        alpha = if (spec.clear != null) spec.clear.coerceIn(0.2f, 0.8f) * ((0.15f - abs(c)) / 0.12f).coerceIn(0f, 1f) else 1f,
+                        colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
+                }
+                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf) }
+                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf)
+                // (Update 469: the seam between the halves, 5.8 mm from the front — one darker copy of the side there.)
+                if (gbs != null && zpm != null && side != null && artPos != null && artSize != null && !mirror && !far && abs(sn) > 0.3f) {
+                    val padN = (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
+                    seamLeaf.rotationY = sideYaw; seamLeaf.cameraDistance = cam
+                    seamLeaf.alpha = if (gbs.clear) 0.6f else 1f
+                    seamLeaf.record(size = nodeSz) {
+                        drawImage(side, IntOffset.Zero, sideSrc!!, IntOffset(artPos.x - padN, artPos.y), IntSize(artSize.width + 2 * padN, artSize.height),
+                            colorFilter = SolidLight.of(0.16f * shadeK))
                     }
+                    val zs = depthPx / 2f - SlabSide.FRONT_HALF * zpm
+                    val dk = depthK(zs)
+                    val drawSeam: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
+                    if (cut != null) clipPath(cut) { drawSeam() } else drawSeam()
                 }
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
@@ -889,6 +1003,26 @@ internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphic
  */
 internal const val SIDE_SPREAD = 10
 
+/**
+ * Update 458 (D175): the side copies are turned no further than this from edge-on (|cos| of the turn, ≈ 88°) — planes
+ * parallel to the face, edge-on they had no width at all and the piece vanished at 90°.
+ */
+internal const val EDGE_ON_MIN_COS = 0.035f
+
+/** Update 458: [yaw] (degrees) moved, if need be, to the nearest turn whose |cos| is at least [EDGE_ON_MIN_COS] (pure, unit-tested). */
+internal fun edgeOnSafeYaw(yaw: Float): Float {
+    val c = cos(Math.toRadians(yaw.toDouble())).toFloat()
+    if (abs(c) >= EDGE_ON_MIN_COS) return yaw
+    val off = Math.toDegrees(kotlin.math.acos(EDGE_ON_MIN_COS.toDouble())).toFloat() // ≈ 88°
+    // (Which quarter it's in: the side facing you stays the same — front stays front, back stays back.)
+    val y = ((yaw % 360f) + 540f) % 360f - 180f
+    val target = if (c >= 0f) off else 180f - off
+    return yaw - y + (if (y < 0f) -target else target)
+}
+
+/** Update 458: how much of the face (or back) is drawn at a turn whose cos is [c] — gone edge-on, full by ≈ 85° (pure, unit-tested). */
+internal fun edgeOnFade(c: Float): Float = ((abs(c) - 0.02f) / 0.06f).coerceIn(0f, 1f)
+
 /** Update 317: the most copies a turned piece's side is drawn with while the view moves (PieceTurn.movingOf). */
 // (Update 325: as many as at rest now — Toni: "the jagged bottoms appear only when scrolling": with 3 / 4 copies the
 // steps between them showed while it moved, and the reflection turned out to be what cost. Only the smear stays off.)
@@ -934,3 +1068,98 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
     }
     found
 }.getOrNull()
+
+/** Update 458: the copies through a turned piece's thickness, far to near (moved out of solidPiece's drawing to be clipped as one). */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
+    edgeLeaf: androidx.compose.ui.graphics.layer.GraphicsLayer?, nLeaf: Int, n: Int, fill: Int, c: Float, sn: Float, depthPx: Float,
+    nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float,
+    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize
+) {
+    if (edgeLeaf != null) for (k in 0 until nLeaf) {
+        val f = k.toFloat() / nLeaf
+        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+        val dk = depthK(z)
+        scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
+    }
+    if (n > 0 && fill > 1 && edgeLeaf == null) {
+        smear.record(size = buf) {
+            translate(m.toFloat(), m.toFloat()) {
+                for (j in 0 until fill) translate(step * j / fill, 0f) { drawLayer(edge) }
+            }
+        }
+    }
+    if (n > 0 && edgeLeaf == null) for (k in 0..n) {
+        val f = k.toFloat() / n
+        val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+        // (The nearest slice alone: nothing past it to fill.)
+        val dk = depthK(z)
+        scale(dk, dk, pivot = nodeC) {
+            if (fill > 1 && k < n) translate(z * sn - m, -m.toFloat()) { drawLayer(smear) }
+            else translate(z * sn, 0f) { drawLayer(edge) }
+        }
+    }
+}
+
+/**
+ * Update 458 (D175): the outline a turned piece's side copies are cut to — below the line through every copy's far top
+ * corner and above the line through their far bottom corners, on the side's side of the face; past the face's plane too
+ * once the face has faded (side-on). The corners are placed as the layers place them: the same Skia camera
+ * (android.graphics.Camera, [cam] inches away), turned [yaw] round the node's middle, moved [z] × sin across and scaled
+ * by the copy's depth ([depthK]). Kept per piece; its path is rebuilt in place.
+ */
+internal class SideClip {
+    private val camera = android.graphics.Camera()
+    private val matrix = android.graphics.Matrix()
+    private val pt = FloatArray(2)
+    private val path = androidx.compose.ui.graphics.Path()
+    /** The side's own face: through every copy's outer top corner, back along their outer bottom corners. */
+    val wall = androidx.compose.ui.graphics.Path()
+    var wallTop = 0f
+    var wallBottom = 1f
+    private var tops = FloatArray(0)
+    private var bots = FloatArray(0)
+
+    fun of(
+        r: androidx.compose.ui.geometry.Rect, w: Float, h: Float, yaw: Float, cam: Float, n: Int, depthPx: Float, c: Float, sn: Float,
+        nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float, faceGone: Boolean, cSide: Float
+    ): androidx.compose.ui.graphics.Path? {
+        if (n <= 0 || depthPx * abs(sn) < 1f) return null
+        camera.save(); camera.setLocation(0f, 0f, -cam); camera.rotateY(yaw); camera.getMatrix(matrix); camera.restore()
+        matrix.preTranslate(-w / 2f, -h / 2f); matrix.postTranslate(w / 2f, h / 2f)
+        // (Which side shows: the far copy's left corner further left than the face plane's — the left side; else the right.)
+        fun place(x: Float, y: Float, k: Int, out: FloatArray, i: Int) {
+            val f = k.toFloat() / n
+            val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+            pt[0] = x; pt[1] = y; matrix.mapPoints(pt)
+            val dk = depthK(z)
+            out[i] = nodeC.x + (pt[0] + z * sn - nodeC.x) * dk
+            out[i + 1] = nodeC.y + (pt[1] - nodeC.y) * dk
+        }
+        val probe = FloatArray(4)
+        place(r.left, r.top, 0, probe, 0); place(r.left, r.top, n, probe, 2)
+        val left = probe[0] < probe[2]
+        val x = if (left) r.left else r.right
+        if (tops.size < 2 * (n + 1)) { tops = FloatArray(2 * (n + 1)); bots = FloatArray(2 * (n + 1)) }
+        for (k in 0..n) { place(x, r.top, k, tops, 2 * k); place(x, r.bottom, k, bots, 2 * k) }
+        val big = 4f * maxOf(w, h) + 4f * depthPx
+        val out = if (left) -1f else 1f
+        val lastX = tops[2 * n]
+        // (Past the face's plane: open while the face covers it; side-on, cut a little past it — a notch's step allowed.)
+        val stop = lastX - out * (if (faceGone) 1f + 0.12f * (r.right - r.left) * abs(cSide) else big)
+        path.reset()
+        path.moveTo(tops[0] + 2f * out, tops[1])
+        for (k in 0..n) path.lineTo(tops[2 * k], tops[2 * k + 1])
+        if (faceGone) { path.lineTo(stop, tops[2 * n + 1]); path.lineTo(stop, bots[2 * n + 1]) }
+        else { path.lineTo(lastX, -big); path.lineTo(stop, -big); path.lineTo(stop, big); path.lineTo(lastX, big) }
+        for (k in n downTo 0) path.lineTo(bots[2 * k], bots[2 * k + 1])
+        path.lineTo(bots[0] + 2f * out, bots[1])
+        path.close()
+        wall.reset()
+        wall.moveTo(tops[0], tops[1])
+        for (k in 1..n) wall.lineTo(tops[2 * k], tops[2 * k + 1])
+        for (k in n downTo 0) wall.lineTo(bots[2 * k], bots[2 * k + 1])
+        wall.close()
+        wallTop = tops[2 * n + 1]; wallBottom = maxOf(bots[2 * n + 1], wallTop + 1f)
+        return path
+    }
+}

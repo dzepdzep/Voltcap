@@ -368,6 +368,8 @@ internal object SettingsIndex {
         E("New game arrival", "Home", "Animations", null, null),
         E("Details window grows out of the game", "Home", "Animations", null, null),
         E("Startup intro", "Home", "Animations", null, null),
+        // v0.6.67: the profile picker's six looks (thumbnails + "Preview the looks").
+        E("Who's playing? look (profile picker style, preview)", "Home", "Animations", null, null),
         E("Cover → wide capsule (roll out, slide, flip…)", "Home", "Animations", null, null),
         E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
         E("Pages slide (turn off, preview)", "Home", "Animations", null, null),

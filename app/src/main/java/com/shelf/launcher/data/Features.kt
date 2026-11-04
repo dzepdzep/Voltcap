@@ -110,12 +110,16 @@ object Features {
         runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
         migrate158(p) // Update 158
         migrate166(p) // Update 166
+        migrate467(p, FirstRun.isDone(context.applicationContext)) // Update 467 (replaces 466's)
         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
         run {
             val existing = FirstRun.isDone(context.applicationContext)
             if (!p.contains("twin_desk_play_icon")) twinDeskPlayIcon.value = existing
             if (!p.contains("twin_desk_handles")) twinDeskHandles.value = existing
         }
+        // Update 447: "Who's playing?" look — only when none is saved yet (never overwrites a choice); saved at once, so a
+        // new install keeps Aurora glass after its later updates and an existing one keeps Midnight blue.
+        if (!p.contains("picker_look")) pickerLook.value = firstPickerLook(FirstRun.isDone(context.applicationContext))
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -158,6 +162,23 @@ object Features {
      * Update 166, once (asked for): the 3D box or piece you're on faces you again while you scroll ("The one you're on" ›
      * Faces you); "Turned like the others" stays a choice (Game look › 3D models, Carousel options, Case stacks options).
      */
+    /**
+     * Update 467 (owner: "if historical explicit choices cannot be distinguished from an old saved default, preserve
+     * existing installations' stored value and use Plain for new installations"): Plain colour is the default only for a new
+     * installation. A saved box-sides value is never changed; an installation from before 0.6.67 that never saved one keeps
+     * what it showed — Fill missing sides, the old default — written once so it no longer follows the new default.
+     * (Update 466's version turned a saved Fill into Plain colour; that could overwrite a real choice, so it is gone.)
+     */
+    internal fun migrate467(p: android.content.SharedPreferences, existingInstall: Boolean) {
+        if (p.getBoolean("m467_box_sides_done", false)) return
+        val e = p.edit().putBoolean("m467_box_sides_done", true)
+        if (existingInstall && !p.contains("box_sides")) {
+            e.putString("box_sides", BoxSides.FILL.name)
+            boxSides.state.value = BoxSides.FILL
+        }
+        e.apply()
+    }
+
     private fun migrate166(p: android.content.SharedPreferences) {
         if (p.getBoolean("m166_face_done", false)) return
         p.edit().putBoolean("m166_face_done", true).apply()
@@ -1125,9 +1146,18 @@ object Features {
      * real packaging scan (no scraper has those sides, so mostly your own scans), else plain card. PLAIN: plain card.
      */
     enum class BoxSides(val label: String) {
-        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard")
+        FILL("Fill missing sides"), AUTHENTIC("Authentic only"), PLAIN("Plain cardboard"),
+        // (Update 465, owner: "the generated sides can look too busy … a plain colour naturally derived from the box art":
+        // every side with no picture of its own in ONE colour chosen from the cover's artwork, on card — no print.)
+        COLOUR("Plain colour from the box art")
     }
-    val boxSides = EnumPref("box_sides", BoxSides.FILL, BoxSides.values())
+    /** Update 466 (owner: "make Plain colour from the box art the new default … preserve any explicitly saved preference"). */
+    val boxSides = EnumPref("box_sides", BoxSides.COLOUR, BoxSides.values())
+    /**
+     * Update 466: true once a box-sides style was picked in Settings (kept for later decisions; since update 467 no saved
+     * value is ever changed because of it — [migrate467]).
+     */
+    val boxSidesChosen = BoolPref("box_sides_chosen", false)
     /**
      * Update 320 (Toni: "the manual downloads only when I press it on the case — can they all be downloaded ahead if I
      * choose so, and if not just a preview, viewed that time without downloading"). PREVIEW: a manual is fetched only to
@@ -1406,6 +1436,18 @@ object Features {
         CALM("Calm", 95, 720), NORMAL("Normal", 65, 560), QUICK("Quick", 38, 380)
     }
     val rolloutSpeed = EnumPref("rollout_speed", RolloutSpeed.NORMAL, RolloutSpeed.values())
+    /**
+     * v0.6.67: how "Who's playing?" looks (ui/ProfileLooks.kt). Midnight blue is the look it had before (update 332).
+     * Owner decision (update 447): an install that already existed keeps Midnight blue until you pick another; a new install
+     * starts on Aurora glass. Chosen once in [init] and saved ([firstPickerLook]) — a saved choice is never overwritten.
+     * Saved and backed up like the other look settings.
+     */
+    enum class PickerLook(val label: String) {
+        AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue")
+    }
+    val pickerLook = EnumPref("picker_look", PickerLook.MIDNIGHT, PickerLook.values())
+    /** The look a setup without a saved one starts on: [existingInstall] (FirstRun done before this version) keeps Midnight blue. */
+    fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
     /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
     val statusMatchesLayout = BoolPref("status_matches_layout", true)
     val dashStatus = BoolPref("dash_status", true)
@@ -2130,11 +2172,17 @@ object Features {
         // Pass 4 (ui/CategoryLooks.kt).
         STAGE("System Stage"), BLADES("System Blades"), DRAWERS("Collector's Drawers"), WORLDS("Pocket Worlds"),
         ARCHIVE("Archive 1994"), CHANNEL("Channel Surf"), GENERATIONS("Generations"), CONSTELLATION("Constellation"),
-        VAULT("System Vault"), DASHBOARD("Pocket Dashboard")
+        VAULT("System Vault"), DASHBOARD("Pocket Dashboard"),
+        // Update 462: the themed pickers of Channel grid, Cinema and Arctic hub (ui/CategoryLooks462.kt).
+        WIICHAN("Channel Menu"), CINEMA("Cinema"), ARCTIC("Arctic Panes")
     }
     val platformView = EnumPref("pb_view", PlatformView.TILES, PlatformView.values())
     /** Pass 4: the category screen's look follows the home layout of the category you open it from (followLookFor). */
     val pbFollowHome = BoolPref("pb_follow_home", false)
+    /** Update 462: Pocket Quest, Green Core, Pocket classic, Channel grid, Cinema and Arctic hub open their own themed category picker. */
+    val pbThemed = BoolPref("pb_themed_pickers", true)
+    /** Update 462: drawn Game Boy family paks made from a real cartridge photo in your library (ui/PhotoShells.kt). */
+    val photoShells = BoolPref("photo_shells", true)
 
     /** Pass 4: which category-screen look goes with a home layout (Follow home layout). */
     fun followLookFor(l: HomeLayout): PlatformView = when (l) {
@@ -2143,7 +2191,10 @@ object Features {
         HomeLayout.BOX, HomeLayout.STORAGE, HomeLayout.CRATE, HomeLayout.CARDS -> PlatformView.DRAWERS
         HomeLayout.POCKET, HomeLayout.CAMERA, HomeLayout.GREENCORE -> PlatformView.WORLDS
         HomeLayout.LIBRARY, HomeLayout.AIRY, HomeLayout.RESUME -> PlatformView.ARCHIVE
-        HomeLayout.TV, HomeLayout.CHAN -> PlatformView.CHANNEL
+        HomeLayout.TV -> PlatformView.CHANNEL
+        HomeLayout.CHAN -> PlatformView.WIICHAN
+        HomeLayout.CINEMA -> PlatformView.CINEMA
+        HomeLayout.ARCTIC -> PlatformView.ARCTIC
         HomeLayout.TIMELINE, HomeLayout.CONSOLES -> PlatformView.GENERATIONS
         HomeLayout.ORBIT, HomeLayout.CIRCUIT, HomeLayout.CUBE, HomeLayout.BUBBLES -> PlatformView.CONSTELLATION
         HomeLayout.MEMCARD, HomeLayout.FILESELECT, HomeLayout.DISCS -> PlatformView.VAULT

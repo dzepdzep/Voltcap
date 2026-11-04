@@ -277,7 +277,8 @@ internal fun WidgetBoardPage(
                 ?: sel.removePrefix("app:").toIntOrNull()?.let { wid -> runCatching { AppWidgets.manager(context).getAppWidgetInfo(wid)?.loadLabel(context.packageManager) }.getOrNull() }
                 ?: "Widget"
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                // (Update 454, D83 / rule 11: the widget's whole name — readable smaller, then a slow slide; never "…".)
+                FullText(name.toString(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f))
                 WidgetEditBar(
                     sel, index, order.size, sizes[sel] ?: WidgetSize.NORMAL, allowedSizesOf(context, sel), Modifier,
                     onMove = { by -> order = WidgetBoardItems.moveTo(order, sel, index + by); WidgetBoardItems.set(order) },

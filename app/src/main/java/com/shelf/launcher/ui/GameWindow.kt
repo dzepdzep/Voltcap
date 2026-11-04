@@ -46,6 +46,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
@@ -119,6 +121,26 @@ internal object GamePopup {
         reopenRequested = false
         game = null
         if (again) reopenGame = g
+    }
+
+    /**
+     * Update 453: the window on screen now (one token per opened window). An A / B that reaches a window AFTER [closed]
+     * (its dialog still takes keys for a frame) used to set [reopenRequested] with nobody left to read it, so the NEXT close —
+     * seconds later, even in another layout — opened the window again (rapid A B A B ended with it open on Live tiles /
+     * Dashboard / Hero, RP Classic). Now such a late press acts at once, and a newly opened window starts with no stale request.
+     */
+    var current: Any? = null
+    fun opened(token: Any) { current = token; reopenRequested = false }
+    /** A pressed on a closing (or just closed) window: open it again once it is gone. */
+    fun askAgain(token: Any, g: Game) {
+        if (game != null && current === token) reopenRequested = true
+        else if (game == null) { if (reopenGame == null) reopenGame = g }
+        // (a newer window is already up: this press already did its job)
+    }
+    /** B pressed on a closing (or just closed) window: take a pending open-again back. */
+    fun cancelAgain(token: Any) {
+        if (game != null && current === token) reopenRequested = false
+        else if (game == null) reopenGame = null
     }
 }
 
@@ -953,12 +975,17 @@ internal fun GameWindow(
     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
     // reached the Play button of the closing window and launched the game instead of opening the case again.
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
+    // (Update 453: this window's identity for late A / B presses — see [GamePopup.current].)
+    val winToken = remember(g.stableKey) { Any() }
+    DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
     val onPlay: () -> Unit = {
-        val orphan = HomeKeyGuard.takeOrphanRelease()
+        // (Update 467, popup gate: the left-over A release is a key's — a TOUCH on Play after opening with A was taken for
+        // it and did nothing the first time (Twin layouts open on A's press). It is cleared either way.)
+        val orphan = HomeKeyGuard.takeOrphanRelease() && KeyInput.lastWasKey
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit
-        else if (closingFlag[0]) GamePopup.reopenRequested = true else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
+        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
     }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
@@ -972,7 +999,7 @@ internal fun GameWindow(
     // From the banner page and Game Glance it opens this window with the piece out.
     var askedInspect by remember(g.stableKey) { mutableStateOf(false) }
     val inspectOther: (() -> Unit)? = if (g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
-        MediaInspect.testShell = null; MediaInspect.testPose = null
+        MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
         MediaInspect.force = g.stableKey
         askedInspect = true
     }) else null
@@ -1135,7 +1162,7 @@ internal fun GameWindow(
             if (motion.started) { MediaInspect.amount.floatValue = 0f; MediaInspect.hold.value = false }
             if (MediaInspect.key == k) MediaInspect.key = null
             // (Update 274: the menu's Inspect… is for this opening only — unless a newer one was asked for meanwhile.)
-            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null }
+            if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null }
         }
     }
     androidx.compose.ui.window.Dialog(
@@ -1151,7 +1178,7 @@ internal fun GameWindow(
             // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is
             // then the home screen's orphan (HomeKeyGuard), never a Play click in the window that opens again.
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {
-                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true
+                GamePopup.askAgain(winToken, g); HomeKeyGuard.aDown = true
                 if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen on press")
                 return@onPreviewKeyEvent true
             }
@@ -1159,8 +1186,8 @@ internal fun GameWindow(
             // is gone, so it never reached anything — A B A B left the window open again, and the next A started the game.)
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && closingFlag[0] &&
                 (e.key == androidx.compose.ui.input.key.Key.ButtonB || e.key == androidx.compose.ui.input.key.Key.Back)) {
-                if (GamePopup.reopenRequested && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
-                GamePopup.reopenRequested = false
+                if ((GamePopup.reopenRequested || GamePopup.reopenGame != null) && QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen cancelled")
+                GamePopup.cancelAgain(winToken)
                 return@onPreviewKeyEvent true
             }
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
@@ -1226,7 +1253,7 @@ internal fun GameWindow(
             onManual = if (hasManual) ({ com.shelf.launcher.data.ManualLinks.open?.invoke(g); Unit }) else null,
             // (Update 285: only while no piece is out — not for apps, nor on the TV room's set / from the other screen.)
             onInspect = if (piece == null && tvRect == null && g.sourceType != com.shelf.launcher.data.SourceType.APP) ({
-                MediaInspect.testShell = null; MediaInspect.testPose = null
+                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
                 MediaInspect.force = g.stableKey
                 askedInspect = true
             }) else null
@@ -1402,7 +1429,9 @@ internal fun GameWindow(
             }
           }
             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
-            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay)
+            // (Update 471, owner review: "Tap the case to open it" sat under the case while its window was already open beside
+            // it — the hint now only comes with Inspect asked for, not with a window that opens by taking the case out.)
+            if (piece != null) MediaInspectPiece(piece, motion, slot, hereDisplay, hint = askedInspect)
         }
         }
     }
@@ -1694,7 +1723,7 @@ private fun TvWindowBody(
         val roomy = maxWidth > 380.dp
         when (page) {
             WinPage.MAIN -> {
-                if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                 val video = state.videoUrls[g.stableKey]
                 VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
@@ -1900,7 +1929,7 @@ private fun WindowBody(
             ) { pg ->
                 when (pg) {
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
-                        if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
                         val video = state.videoUrls[g.stableKey]
                         VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                         if (showName) {
@@ -2117,11 +2146,26 @@ private fun SceneBody(
         kotlinx.coroutines.delay(120)
         runCatching { f.requestFocus() }
     }
+    // v0.6.67 (update 451): the windows that showed every action as a wall of chips keep Play, Details, Inspect and Back in
+    // view and put the rest (Performance, Options, Achievements, Save sync, Manual, the save / performance lines) behind
+    // More, opened in place. B closes More first; focus goes to the first revealed action, and back to More when it closes.
+    val compactMore = scene in MORE_SCENES && page == WinPage.MAIN
+    var moreOpen by remember(g.stableKey) { mutableStateOf(false) }
+    val moreF = remember { FocusRequester() }
+    val showAll = !compactMore || moreOpen
+    androidx.activity.compose.BackHandler(enabled = compactMore && moreOpen) { moreOpen = false; moreRefocus(moreF) }
+    // (QA, update 452: `--es voltcap_test_winmore on` opens More as its own button does; the state is logged while tracing.)
+    val qaMore = TestHooks.winMore.value
+    LaunchedEffect(qaMore, compactMore) {
+        if (qaMore == true && compactMore && !moreOpen) { moreOpen = true; moreRefocus(optionsF) }
+        if (qaMore != null) TestHooks.winMore.value = null
+    }
+    LaunchedEffect(moreOpen, compactMore) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "win more=${if (!compactMore) "n/a" else if (moreOpen) "open" else "closed"} scene=$scene") }
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {
             WinPage.MAIN -> {
-                if (perf) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
+                if (perf && showAll) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
                 add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
@@ -2130,20 +2174,28 @@ private fun SceneBody(
             WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
         }
     }
-    val tools = buildList {
+    val allTools = buildList {
         add(WinAction("Options", I.Settings, opener(optionsF, extras.onOptions), focus = optionsF))
         add(WinAction("Achievements", I.EmojiEvents, opener(trophiesF, extras.onAchievements), focus = trophiesF))
         add(WinAction("Save sync", I.CloudSync, extras.onSync))
         extras.onManual?.let { add(WinAction("Manual", I.MenuBook, it)) }
         extras.onInspect?.let { add(WinAction("Inspect", InspectIcon.vector, it)) }
     }
-    val chips = buildList {
+    val allChips = buildList {
         status?.let { st ->
             val sv = st.sync
-            add(WinAction("Saves: " + sv.text, sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
+            add(WinAction(savesLabel(sv.text), sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
             st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf)) }
         }
     }
+    val tools = when {
+        !compactMore -> allTools
+        moreOpen -> allTools + WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
+        else -> allTools.filter { it.label == "Inspect" } +
+            WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
+    }
+    // (A save problem stays in view: it needs you.)
+    val chips = if (showAll) allChips else allChips.filter { it.urgent }
     val list = state.raAchievementDetails[g.stableKey].orEmpty()
     val p = state.raProgress[g.stableKey]
     val total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0
@@ -2177,6 +2229,24 @@ private fun SceneBody(
     // own in the window's colours, the scene's quick window coming back on B / Back.
     if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     else DrawWinScene(scene, ctx)
+}
+
+/**
+ * v0.6.67 (update 451): the layout windows that get More (they showed all nine actions and two status lines at once). The others
+ * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Airy, Arctic's drawer,
+ * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
+ * Storage, Box, Orbit, Blades).
+ */
+internal val MORE_SCENES = setOf(
+    WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
+    WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
+    WinScene.TILE_CARD, WinScene.POCKET_LCD, WinScene.DISC_PANEL, WinScene.CORE_PANEL, WinScene.CUBE_FACE, WinScene.RECORD_SLEEVE,
+    WinScene.CASE_MEDIA, WinScene.FILE_CARD
+)
+
+/** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
+private fun moreRefocus(f: FocusRequester) {
+    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ runCatching { f.requestFocus() } }, 90)
 }
 
 internal fun winPageTitle(page: WinPage): String = when (page) {
@@ -2263,7 +2333,7 @@ private fun WinStatusLine(look: WinLook) {
     // each other, each in full — they were cut with "…" and, on the Thor's top screen, cut off by the window's edge.)
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val sv = st.sync
-        WinStatusChip(look, sv.icon, "Saves: " + sv.text, urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
+        WinStatusChip(look, sv.icon, savesLabel(sv.text), urgent = sv.urgent, onClick = if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync)
         st.perf?.let { p ->
             WinStatusChip(look, androidx.compose.material.icons.Icons.Filled.Speed, p.perf.summary, urgent = false, onClick = st.onPerf)
         }
@@ -2613,12 +2683,16 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
-            androidx.compose.material3.Text(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
+            // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
+            // scrolls, so the name and the facts wrap in full.)
+            // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
+            WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
+                modifier = Modifier.fillMaxWidth())
             val facts = listOfNotNull(
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                 meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
             ).joinToString("  ·  ")
-            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp, maxLines = 2)
+            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp)
             Spacer(Modifier.height(8.dp))
             val list = state.raAchievementDetails[g.stableKey].orEmpty()
             val p = state.raProgress[g.stableKey]

@@ -45,8 +45,8 @@ internal fun PocketQuestSettings() {
         "A full-screen game menu in the style of the great 32-bit handheld RPGs: the game you're on big in the middle with its " +
             "details and Play, your games along the bottom, consoles as tabs on top, pixel-art scenery behind. " +
             "◀ ▶ move · ▲ the panel and the top bar · A " + (if (Features.pqAPlays.state.value) "plays" else "opens the game window") +
-            " · Y details · X favourite · " + (if (Features.pqBumpers.state.value) "L1 / R1 (or L2 / R2) console · Start quick settings" else "L2 / R2 console · R1 (or Start) quick settings · L1 shortcuts") +
-            " · Select systems (hold: sort & filter). The top bar's slider button opens the quick settings too."
+            " · Y details · X favourite · " + (if (Features.pqBumpers.state.value) "L1 / R1 (or L2 / R2) console" else "L2 / R2 console · R1 quick settings · L1 shortcuts") +
+            " · B Select a System · Start game options · Select Settings. The top bar's buttons open Select a System, search, sort & filter and the quick settings too."
     )
     Spacer(Modifier.height(12.dp))
     // The four themes as small pictures (the chips under them pick).

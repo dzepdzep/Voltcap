@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -43,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.shelf.launcher.data.HomeLayout
 import kotlinx.coroutines.delay
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
 
 /**
  * v0.6.66 (D142): the Twin layouts' window — one window folded open over a hinge, like the two screens it's made for.
@@ -153,7 +156,7 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
         if (url != null) {
             val inner = RoundedCornerShape(if (desk) 4.dp else 8.dp)
             AsyncImage(rememberStyleArtRequest(url), null, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Crop, alpha = 0.3f)
-            AsyncImage(rememberStyleArtRequest(url), ctx.name, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Fit)
+            AsyncImage(if (art != null) rememberBackdropRequest(url) else rememberStyleArtRequest(url), ctx.name, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Fit)
         } else {
             Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
                 Text(ctx.console, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
@@ -197,15 +200,26 @@ internal fun SnapRows(modifier: Modifier, textLine: Dp = 0.dp, textTop: Dp = 0.d
     val target = remember { mutableIntStateOf(0) }
     val off = remember { Animatable(0f) }
     val info = remember { IntArray(2) } // [next page offset or -1, total height]
-    Layout(content, modifier.clipToBounds()) { ms, c ->
+    // (Update 467, QA only: marked as a paging box, so the geometry gate reads its rows like a scrolling list's.)
+    val qa = if (QaTrace.on) Modifier.semantics { this[QaClip.Paged] = true } else Modifier
+    // (Update 469, D221: the box keeps its first page's height on every page — a shorter later page (the story's last lines)
+    // made the window shrink and grow every 2.8 s, the keys under it jumped, and a tap aimed at More / Play landed on the
+    // veil and closed the window (KONKR, Twin desk). Later pages are cut to whole rows inside that height; the rest of the
+    // box stays empty.)
+    val vis = remember { IntArray(1) }
+    Layout(content, modifier.clipToBounds().then(qa).drawWithContent {
+        clipRect(bottom = vis[0].toFloat().coerceAtMost(size.height)) { this@drawWithContent.drawContent() }
+    }) { ms, c ->
         val ps = ms.map { it.measure(Constraints(maxWidth = c.maxWidth)) }
         val bounds = SnapPaging.bounds(ps.map { it.height }, textLine.roundToPx(), textTop.roundToPx())
         val avail = if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE
+        val boxH = SnapPaging.window(bounds, 0, avail)
         val top = target.intValue.coerceAtMost(bounds.last())
-        val shown = SnapPaging.window(bounds, top, avail)
-        info[0] = SnapPaging.next(bounds, top, avail) ?: -1
+        val shown = SnapPaging.window(bounds, top, boxH)
+        info[0] = SnapPaging.next(bounds, top, boxH) ?: -1
         info[1] = bounds.last()
-        layout(c.maxWidth, shown.coerceIn(c.minHeight, maxOf(c.minHeight, avail))) {
+        vis[0] = shown
+        layout(c.maxWidth, boxH.coerceIn(c.minHeight, maxOf(c.minHeight, avail))) {
             var y = -off.value.toInt()
             ps.forEach { it.placeRelative(0, y); y += it.height }
         }

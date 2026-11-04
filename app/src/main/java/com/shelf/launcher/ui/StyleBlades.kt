@@ -112,7 +112,7 @@ import kotlin.math.roundToInt
  * - SYSTEMS: your consoles with their logos, counts and pictures; A opens one's games on the Games blade (B back).
  * - SPOTLIGHT: the games you played last, your achievements and statistics, search; a gamer card on the right.
  * - MEDIA: music, Save Vault, apps, the screensaver. SETTINGS: Settings, the quick menu, sort & filter, search, profile.
- * Start: the quick menu (R1's panel); Select: sort & filter. Touch: tap a blade's edge to open it, swipe across to slide,
+ * Start: game options; Select: Settings; R1: the quick menu. Touch: tap a blade's edge to open it, swipe across to slide,
  * tap a row to pick it, again to open it, drag the list. Options: Settings › Home › Layout options (Blades).
  */
 
@@ -238,7 +238,7 @@ private fun blRowCount(b: Int): Int = if (b == BladesNav.SYSTEMS) BladesNav.syst
  * Update 344: Blades' keys (all of them while it's on, before the home screen's own). True = handled.
  * ◀ ▶ the blades; ▲ ▼ down the list (Games: the game; Endless goes round); A acts on a menu blade's row (on the Games
  * blade it's the home screen's own: the game window); B back (Games from Systems → Systems, another blade → Games; on
- * Games it's the home screen's own); X / Y the home screen's own on Games. Start: quick menu; Select: sort & filter.
+ * Games it's the home screen's own); X / Y the home screen's own on Games. Start: game options; Select: Settings (update 462).
  */
 internal fun bladesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
     val c = BladesNav.ctx ?: return false
@@ -247,11 +247,7 @@ internal fun bladesKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
     val up = event.type == KeyEventType.KeyUp
     if (up && BladesNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) {
-        if (up) c.actions.quickMenu()
-        return up
-    }
-    if (k == Key.ButtonSelect) return up && blHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val b = BladesNav.blade
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     if (isA && b != BladesNav.GAMES) {
@@ -930,7 +926,7 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
 internal fun BladesSettings() {
     MutedNote(
         "Five overlapping blades — Spotlight, Games, Systems, Media, Settings. ◀ ▶ slide the next blade open, ▲ ▼ move down " +
-            "its list, A opens, B goes back. L2 / R2 change the category, Start the quick menu, Select sort & filter. Tap a " +
+            "its list, A opens, B goes back. L2 / R2 change the category, Start the game's options, R1 the quick menu (sort & filter), Select Settings. Tap a " +
             "blade's edge to open it, swipe across to slide."
     )
     Spacer(Modifier.height(10.dp))

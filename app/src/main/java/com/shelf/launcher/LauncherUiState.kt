@@ -392,6 +392,10 @@ data class LauncherUiState(
     }
 
     /** Whether an installed app counts as an Android game. */
+    /** Update 450: an ordinary app put in Continue playing by hand (not a game; see [com.shelf.launcher.data.ContinueApps]). */
+    fun isContinueApp(game: Game): Boolean =
+        game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.continueApps } == true && !isAndroidGame(game)
+
     fun isAndroidGame(game: Game): Boolean {
         if (game.sourceType != SourceType.APP) return false
         val pkg = game.packageName ?: return false
@@ -446,9 +450,12 @@ data class LauncherUiState(
             // Update 200: games only — every Android game (also with "Only apps you add", where they aren't in the
             // library's normal categories but are tracked), never an ordinary app (Settings, Spotify, an emulator
             // opened on its own…) that got a launch time from being started from the dock.
+            // Update 450: plus the ordinary apps you put in Continue playing (PXPlay, Asobi…), also when they aren't in the
+            // library; one entry per app however many shortcuts / screens open it.
             specialFilter == SpecialFilter.RECENT ->
-                (library + games.filter { isAndroidGame(it) && !isAppInLibrary(it) })
-                    .filter { (it.sourceType != SourceType.APP || isAndroidGame(it)) && lastPlayedAt.containsKey(it.stableKey) }
+                (library + games.filter { (isAndroidGame(it) || isContinueApp(it)) && !isAppInLibrary(it) })
+                    .filter { (it.sourceType != SourceType.APP || isAndroidGame(it) || isContinueApp(it)) && lastPlayedAt.containsKey(it.stableKey) }
+                    .distinctBy { if (it.sourceType == SourceType.APP) "app:" + (it.packageName ?: it.stableKey) else it.stableKey }
                     .sortedByDescending { lastPlayedAt[it.stableKey] ?: 0L }
             specialFilter == SpecialFilter.MOST_PLAYED ->
                 library.filter { (playtime[it.stableKey] ?: 0L) > 0L }

@@ -90,7 +90,7 @@ import kotlin.math.roundToInt
  * game look), Systems (your consoles), Media, Settings.
  * ▲ ▼ change the channel (they slide up / down), ◀ ▶ along its panels. A opens (a game: its window — the detail panel
  * swinging in, WinScenesConsole.kt), B back (Games opened from Systems → Systems, another channel → Games), X / Y / L2 /
- * R2 as everywhere. Start: the quick menu, Select: sort & filter. Touch: tap a panel, swipe along, swipe up / down.
+ * R2 as everywhere. Start: game options, Select: Settings, R1: the quick menu. Touch: tap a panel, swipe along, swipe up / down.
  */
 
 /** Update 344: where the controller is in Panel dashboard. */
@@ -191,8 +191,7 @@ internal fun panelsKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
     val up = event.type == KeyEventType.KeyUp
     if (up && PanelNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
-    if (k == Key.ButtonSelect) return up && pdHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val ch = PanelNav.channel
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     if (isA && ch != PanelNav.GAMES) {

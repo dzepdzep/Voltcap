@@ -122,8 +122,7 @@ internal fun rentalShopKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolea
     val up = event.type == KeyEventType.KeyUp
     if (up && ShopNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
-    if (k == Key.ButtonSelect) return up && rsHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     if (ShopNav.map) {
         val n = ShopNav.systems.size
@@ -230,6 +229,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
         StyleLoop.on = loopRowOn(c)
     }
     rememberLayoutKit(LayoutKit.SHOP, Features.rsSounds.state.value, c.state.appearance.soundsEnabled)
+    // (Update 460: the cases around the one you're on decoded ahead — no bare blocks while scrolling.)
+    WarmCaseNeighbours(c, c.focus, 10, loopRowOn(c), realFront = true)
     DisposableEffect(Unit) { onDispose { ShopNav.keysDown.clear(); ShopNav.map = false } }
     androidx.activity.compose.BackHandler(enabled = ShopNav.map && GamePopup.game == null) { ShopNav.map = false }
     if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native(null)

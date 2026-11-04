@@ -34,6 +34,7 @@ import android.provider.Settings
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -60,7 +61,13 @@ internal fun AppDrawer(
     onHide: (Game) -> Unit = {},
     /** Whether the app counts as a game right now (detected or set by hand). */
     isGame: (String) -> Boolean = { false },
-    onSetKind: (String, AppKind) -> Unit = { _, _ -> }
+    onSetKind: (String, AppKind) -> Unit = { _, _ -> },
+    /** Update 450: whether an ordinary app is in Continue playing, and the switch for it (null hides the row). */
+    isInContinue: (String) -> Boolean = { false },
+    onToggleContinue: ((String) -> Unit)? = null,
+    /** Update 450: "Clear from Continue playing" for an opted-in app that has history; null hides it. */
+    hasContinueHistory: (String) -> Boolean = { false },
+    onClearContinue: ((String) -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppDrawer")
     val sorted = remember(apps) { apps.sortedBy { it.name.lowercase() } }
@@ -90,13 +97,14 @@ internal fun AppDrawer(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(sorted) { app ->
-                        DrawerTile(app, look, Modifier.fillMaxWidth(), onMenu = { menuFor = app }) { onLaunch(app) }
+                        // (Update 453, Thor: the drawer opened with nothing lit — the first ▼ only lit the first app. It starts on it.)
+                        DrawerTile(app, look, Modifier.fillMaxWidth().then(if (app === sorted.first()) Modifier.initialFocus() else Modifier), onMenu = { menuFor = app }) { onLaunch(app) }
                     }
                 }
             }
         }
     }
-    menuFor?.let { app -> AppOptionsMenu(app, isGame, onSetKind, onHide = { onHide(app) }, onDismiss = { menuFor = null }) }
+    menuFor?.let { app -> AppOptionsMenu(app, isGame, onSetKind, onHide = { onHide(app) }, onDismiss = { menuFor = null }, isInContinue = isInContinue, onToggleContinue = onToggleContinue, hasContinueHistory = hasContinueHistory, onClearContinue = onClearContinue) }
 }
 
 /** Long-press / Start on an app: uninstall, Android's app info, hide, game or app. */
@@ -106,7 +114,11 @@ private fun AppOptionsMenu(
     isGame: (String) -> Boolean,
     onSetKind: (String, AppKind) -> Unit,
     onHide: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isInContinue: (String) -> Boolean = { false },
+    onToggleContinue: ((String) -> Unit)? = null,
+    hasContinueHistory: (String) -> Boolean = { false },
+    onClearContinue: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pkg = app.packageName ?: run { onDismiss(); return }
@@ -126,6 +138,20 @@ private fun AppOptionsMenu(
                 if (game) "Mark as app" else "Mark as game",
                 if (game) "Leaves the games row; stays in the drawer" else "Shows it with your games"
             ) { onSetKind(pkg, if (game) AppKind.APP else AppKind.GAME); onDismiss() }
+            // Update 450: an ordinary app (a streaming client such as PXPlay or Asobi) in Continue playing, still an app.
+            if (!game && onToggleContinue != null) {
+                val inContinue = isInContinue(pkg)
+                MenuRow(
+                    Icons.Filled.History,
+                    if (inContinue) "Show in Continue playing: On" else "Show in Continue playing: Off",
+                    if (inContinue) "Press to take it out — it stays an app" else "Lists it with your games when you use it — it stays an app"
+                ) { onToggleContinue(pkg); onDismiss() }
+                if (inContinue && onClearContinue != null && hasContinueHistory(pkg)) {
+                    MenuRow(Icons.Filled.History, "Clear from Continue playing", "Forgets when you used it and for how long (this profile)") {
+                        onClearContinue(pkg); onDismiss()
+                    }
+                }
+            }
             MenuRow(Icons.Filled.VisibilityOff, "Hide", "From the library and this drawer. Settings › Library brings it back") {
                 onHide(); onDismiss()
             }
@@ -179,12 +205,18 @@ private fun DrawerTile(app: Game, look: DrawerLook, modifier: Modifier, onMenu: 
             Box(Modifier.size(52.dp).clip(iconShape).background(look.placeholder))
         }
         Spacer(Modifier.height(6.dp))
-        Text(
+        // Update 453 (rule 11): the tile you're on shows its whole name — two lines, a readable smaller size, then a slow slide
+        // (FullText). The other tiles of the grid keep two lines (qa-ok: TRUNCATE fixed-size grid cell; whole name on focus,
+        // in the app's options and to TalkBack via the icon's description) so a page of long names never slides all at once.
+        if (focused) FullText(
+            app.name, color = look.ink, fontSize = 11.sp, maxLines = 2, textAlign = TextAlign.Center,
+            lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
+        ) else Text(
             app.name,
             color = look.ink, // (Update 237, #13: the panel's ink — dark on light glass / the pale Live backdrop)
             fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (unfocused grid cell; whole name on focus, above)
             textAlign = TextAlign.Center,
             lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em)
         )

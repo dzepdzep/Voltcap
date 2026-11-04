@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -485,7 +486,10 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                     titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2,
                     autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 19.sp),
                     textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
-                    modifier = Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
+                    // (Update 460, owner: the cover flow jumped up and down with one- or two-line names — the name and the line
+                    // under it always keep two lines' height now.)
+                    modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW), lines = 2))
+                        .riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
                 )
                 val meta = c.state.metadata[g.stableKey]
                 val line = buildList {
@@ -494,7 +498,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                     meta?.genres?.firstOrNull()?.let { add(it) }
                     add(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
                 }.joinToString("  ·  ")
-                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(12.sp, lines = 2)))
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     HubHint("A", "Open") { live.actions.open() }
@@ -530,7 +534,7 @@ private fun HubTabs(c: StyleCtx, tint: Color, on: Boolean) {
     // (Update 294, Toni: the last tab ("App") was cut off at the right edge: whole tabs only, "+N ›" for the rest —
     // WholeChipRow.)
     WholeChipRow(count = c.stops.size, focused = stop, modifier = Modifier.fillMaxWidth().height(30.dp), spacing = 6.dp) { i ->
-        val st = c.stops[i]
+        val st = c.stops.getOrNull(i) ?: return@WholeChipRow
         val here = i == stop
         val shape = RoundedCornerShape(8.dp)
         Box(

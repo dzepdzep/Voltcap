@@ -445,6 +445,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Every way of opening the window goes through here so it always starts
     // on Play, scrolled to the top.
     val openDetails = {
+        // Update 454 (Thor, Pocket classic + popup style Classic): a layout that opens on A's PRESS (Pocket classic) opened this
+        // window with A still held, and that A's release clicked the window's focused Play — one press started the game.
+        // The release of an A held while it opened is the home screen's, never this window's (HomeKeyGuard.swallowAUp).
+        if (HomeKeyGuard.aDown) HomeKeyGuard.swallowAUp = true
         detailsAction = DetailsAction.PLAY
         galleryIndex = 0
         summaryExpanded = false
@@ -835,6 +839,21 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
     LaunchedEffect(ProfilePicker.request) { if (ProfilePicker.request) { ProfilePicker.request = false; whoAtStart = false; whoAsk = true; lastInputAt = System.currentTimeMillis() } }
+    // v0.6.67 (QA): sample profiles on "Who's playing?" — a preview only: nothing is switched or saved (TestHooks.profilesDemo).
+    TestHooks.profilesDemo.value?.let { demo ->
+        ProfileSelectScreen(
+            profiles = demo, activeId = TestHooks.profilesDemoActive.value, raNames = emptyList(), steamAvatar = null, atStart = true,
+            onPick = { TestHooks.profilesDemo.value = null }, onSkip = { TestHooks.profilesDemo.value = null }, demo = true
+        )
+    }
+    // v0.6.67: Settings' live preview of the looks (your profiles, nothing switched; L1 / R1 change the look).
+    if (ProfilePicker.preview) {
+        ProfileSelectScreen(
+            profiles = com.shelf.launcher.data.Profiles.list.value, activeId = com.shelf.launcher.data.Profiles.activeId.value,
+            raNames = state.raAccounts, steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value, atStart = false,
+            onPick = { ProfilePicker.preview = false }, onSkip = { ProfilePicker.preview = false }, demo = true, lookStrip = true
+        )
+    }
     if (whoAsk) {
         ProfileSelectScreen(
             profiles = com.shelf.launcher.data.Profiles.list.value,
@@ -941,6 +960,51 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         perfForGame = null
     }
     // (Update 261: the game a test walk starts from — its console's category, focused on it.)
+    // Update 460b (testing, D173): what a game's case is drawn from — saved scans, your picks, what reaches the renderer.
+    val testDump = TestHooks.mediaDump.value
+    val dumpContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(testDump, state.games.size) {
+        val v = testDump ?: return@LaunchedEffect
+        val ctxD = dumpContext
+        val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val raw = runCatching { ctxD.getSharedPreferences("physical_media", android.content.Context.MODE_PRIVATE).all }.getOrNull().orEmpty()
+            buildString {
+                append("originalCases=${com.shelf.launcher.data.Features.originalCases.state.value} spinesOwn=${com.shelf.launcher.data.Features.spinesOwn.state.value} spineCuts=${com.shelf.launcher.data.Features.spineCuts.state.value} coverTemplates=${com.shelf.launcher.data.Features.coverTemplates.state.value} caseForAll=${LookStyles.caseForAll()} spineForAll=${LookStyles.spineForAll()} type=${state.appearance.cardArtType}\n")
+                for (g in state.games.filter { it.name.contains(v, ignoreCase = true) }.take(12)) {
+                    val k = g.stableKey
+                    append("== ${g.name} | ${g.platform} | $k\n")
+                    append("artOverride.cover=${state.artOverrides[k]?.cover}\nart.grid=${state.art[k]?.gridUrl}\nuserCover=${UserCovers.of(k)}\n")
+                    append("overrides=${com.shelf.launcher.data.PhysicalOverrides.inUse(k)}\n")
+                    append("refusedRA=${k in com.shelf.launcher.data.RaMatchStore.refusedKeys}\n")
+                    append("raw=${(raw[k] as? String)?.replace("\n", " ;; ")}\n")
+                    val st = state.physicalMedia[k]
+                    append("state=${st?.joinToString(" ;; ") { it.first + "=" + it.second }}\n")
+                    append("stateNoFlat=${st.withoutFlat()?.map { it.first }}\n")
+                    append("homeScans=${HomeScans.of(k)?.map { it.first }} known=${HomeScans.knownHere(k)}\n")
+                    append("front=${BoxTexture.front(st.withoutFlat(), g.platform)}\nuserSpine=${BoxTexture.userSpine(st.withoutFlat(), g.platform)}\n")
+                    append("flat=${st?.filter { FlatArt.isKnown(it.second) }?.map { it.first }}\n")
+                    // (Update 465: each face of the 3D box by where it comes from — the scan's own label (its media / region
+                    // only, never an address: they carry the account) or "cover" / "drawn" — and each blank side's source.)
+                    fun src(u: String?): String = when {
+                        u == null -> "drawn"
+                        else -> st?.firstOrNull { it.second == u }?.let { (lab, url) ->
+                            val m = Regex("[?&]media=([^&]+)").find(url)?.groupValues?.get(1); val r = Regex("[?&]region=([^&]+)").find(url)?.groupValues?.get(1)
+                            "$lab [media=$m region=$r markedScan=${com.shelf.launcher.data.ArtProvenance.isScan(url)}]"
+                        } ?: if (u == (state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl)) "cover" else "other picture"
+                    }
+                    val m3 = runCatching { case3dModels(g, state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl, st, true) }.getOrNull()
+                    append("FACES front=${src(m3?.first)} | spine=${src(m3?.second)} | back=${src(m3?.third)}\n")
+                    append("SIDES mode=${com.shelf.launcher.data.Features.boxSides.state.value} " + BoxSide.values().joinToString(" ") { sd ->
+                        val e = st.withoutFlat()?.firstOrNull { it.first == sd.label }
+                        "${sd.name}=" + (e?.let { "picture(markedScan=${com.shelf.launcher.data.ArtProvenance.isScan(it.second)})" } ?: "none")
+                    } + "\n")
+                }
+            }
+        }
+        runCatching { java.io.File(ctxD.getExternalFilesDir(null), "media_dump.txt").writeText(text) }
+        android.util.Log.e("VoltcapTest", "mediadump: ${text.length} chars")
+        TestHooks.mediaDump.value = null
+    }
     // Update 274 (testing): a game's piece out on a given shell, held at an angle (TestHooks.inspect).
     val testInspect = TestHooks.inspect.value
     LaunchedEffect(testInspect, state.games.size) {
@@ -951,6 +1015,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         kotlinx.coroutines.delay(400)
         MediaInspect.testShell = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
         MediaInspect.testPose = floatArrayOf(parts.getOrNull(2)?.toFloatOrNull() ?: 0f, parts.getOrNull(3)?.toFloatOrNull() ?: 0f)
+        // (Update 462b: "…|/sdcard/art.png|Shown name" — that picture as its cover and that name, this time only, nothing saved.)
+        MediaInspect.testArt = parts.getOrNull(4)?.takeIf { it.isNotBlank() }?.let { java.io.File(it).takeIf { f -> f.exists() }?.toURI()?.toString() }
+        MediaInspect.testTitle = parts.getOrNull(5)?.takeIf { it.isNotBlank() }?.replace('_', ' ')
         MediaInspect.forceSeq++
         MediaInspect.force = g.stableKey
         GamePopup.game = g
@@ -998,7 +1065,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     val testGame = TestHooks.game.value
     LaunchedEffect(testGame) {
         val q = testGame ?: return@LaunchedEffect
-        val g = state.games.firstOrNull { it.name.contains(q, ignoreCase = true) } ?: run { TestHooks.game.value = null; return@LaunchedEffect }
+        // (Update 469: matched by TestHooks.matchGame — letters and digits only, name or ROM file — and logged, so a run can check
+        // it is on the game it asked for: "Kirby - Tilt" and "One Piece - Yume" matched nothing and the run stayed on the old game.)
+        val g = TestHooks.matchGame(state.games, q)
+        android.util.Log.e("VoltcapTest", "game '$q' -> ${g?.name ?: "NO MATCH"}")
+        if (g == null) { TestHooks.game.value = null; return@LaunchedEffect }
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
         viewModel.setSearchQuery("")
         viewModel.setPlatformFilter(g.platform)
@@ -1018,14 +1089,25 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
+    // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
+    // once per library in the background — LabelIds.
+    LaunchedEffect(uiState.games) { com.shelf.launcher.data.LabelIds.index(uiState.games); viewModel.refreshFolderLabels(uiState.games); viewModel.shareScansAcrossCopies(uiState.games) }
     val testCategory = TestHooks.category.value
     LaunchedEffect(testCategory) {
         val c = testCategory ?: return@LaunchedEffect
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
         viewModel.setSearchQuery("")
-        viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
+        // Update 451: `S:<list>` (S:RECENT = Continue playing) picks a special list; a name that leaves the screen empty is
+        // undone at once (update 450 left the Thor on an empty "RECENT" console filter).
+        val before = viewModel.uiState.value.let { it.platformFilter to it.specialFilter }
+        val special = c.takeIf { it.startsWith("S:") }?.removePrefix("S:")?.let { n -> runCatching { com.shelf.launcher.SpecialFilter.valueOf(n) }.getOrNull() }
+        if (special != null) viewModel.setSpecialFilter(special)
+        else viewModel.setPlatformFilter(if (c.equals("ALL", ignoreCase = true)) null else c)
         kotlinx.coroutines.delay(300)
-        viewModel.setFocus(0)
+        if (viewModel.uiState.value.visibleGames.isEmpty()) {
+            if (before.second != null) viewModel.setSpecialFilter(before.second) else viewModel.setPlatformFilter(before.first)
+            android.util.Log.e("VoltcapQA", "category $c is empty here; left as it was")
+        } else viewModel.setFocus(0)
         TestHooks.category.value = null
     }
     // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)
@@ -1263,7 +1345,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // the look draws — as the menu's Inspect….)
             DetailsAction.INSPECT -> if (game.sourceType != com.shelf.launcher.data.SourceType.APP) {
                 showDetails = false
-                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
+                MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey
                 GamePopup.game = game
             }
             DetailsAction.CLOSE -> showDetails = false
@@ -1372,6 +1454,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         else -> "ALL"
     }
     fun openCategoryScreen() {
+        // Update 462: a layout with its own category picker (Pocket Quest, Green Core, Pocket classic) opens that one.
+        if (state.appearance.homeLayout.styleHome && ThemedPicker.open(state.appearance.homeLayout)) return
         val current = currentCategoryKey
         categoryIndex = categoryTiles.indexOfFirst { it.key == current }.coerceAtLeast(0)
         categoryScreenOpen = true
@@ -1433,6 +1517,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) { categoryIndex = i; categoryFollowKey = null }
     }
     LaunchedEffect(categoryScreenOpen) { if (!categoryScreenOpen) { CategoryReorder.stop(); CategoryHeader.leave() } }
+    // Update 462: what is open, for tools/qa/device/contract462.sh (VoltcapQA, test hooks only).
+    LaunchedEffect(showMenu, showNotifications, optionsForGame, showShortcuts, categoryScreenOpen, showSortDialog, PqNav.page, GreenCoreNav.page, PocketNav.page, currentCategoryKey) {
+        QaTrace.event("overlay", "menu=$showMenu quick=$showNotifications opts=${optionsForGame != null} short=$showShortcuts cat=$categoryScreenOpen " +
+            "sort=$showSortDialog pq=${PqNav.page} gc=${GreenCoreNav.page} pc=${PocketNav.page} cat_key=$currentCategoryKey")
+    }
 
     // The random-game button: go to that category, then pick from it once the games are showing.
     fun randomFromBrowser() {
@@ -1596,7 +1685,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Power saving while nobody touches the handheld (Appearance › Behind the dock › Save power when idle).
     SideEffect { HomeIdle.enabled = state.appearance.idleSaver }
     LaunchedWhileActive { HomeIdle.watch() }
-    EffectClockDriver()
+    EffectClockDriver(hold = (showAppDrawer || showMenu || showSettings) && TestHooks.panelHold.value)
     BatterySaverDriver() // (Update 187)
     // Only while on screen: no screensaver during a game or with the display off.
     val screensaverActive = rememberIsActive()
@@ -2340,6 +2429,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     menuStartCategory = e?.section ?: "Screens"; showMenu = true
                 },
                 onShortcut = dockShortcut,
+                // v0.6.67: the way back to a two-screen layout sits in the header row (it used to be a wide pill over the dock).
+                headerEnd = if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) {
+                    { TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout) }
+                } else null,
                 options = SecondScreenOptions(
                     artType = state.appearance.secondArtType,
                     artBlur = state.appearance.secondArtBlur,
@@ -2397,8 +2490,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     ) {
         Box(Modifier.fillMaxSize()) {
             SecondScreenContent()
-            // Update 180: the dashboard opened from a two-screen layout: the way back to the layout's bottom part.
-            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard) TwinBackPill(state.appearance.homeLayout.label, state.appearance.homeLayout)
+            // (Update 180's way back to the layout is in the dashboard's header now: SecondScreenHome(headerEnd = TwinBackButton).)
+            // (A look's own second screen shows instead of the dashboard: the same small button in its top corner.)
+            if (state.appearance.homeLayout.isTwin && TwinScreens.dashboard && !screensaverOn &&
+                LookSecondScreen.content != null && !(showDetails && state.appearance.secondDetails)
+            ) Box(Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 6.dp)) {
+                TwinBackButton(state.appearance.homeLayout.label, state.appearance.homeLayout)
+            }
         }
     }
     // The companion shows music, so keep it fresh while a second screen is up.
@@ -2429,7 +2527,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Update 159: Discs only on → cartridge games print their cover on their CD (typedArtFor).
     val discLookNow = state.appearance.cardArtType == com.shelf.launcher.data.CardArtType.DISC
     androidx.compose.runtime.SideEffect { if (DiscLook.on != discLookNow) DiscLook.on = discLookNow }
-    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; GameOrigin.rect = null /* (Update 421: the old layout's card never counts as this one's row) */; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
+    // (Update 421: the old layout's card never counts as this one's row.) Update 471 (D243): cleared while the new layout
+    // composes, not in the effect after it — the effect ran after the new layout's card had already marked itself, and a
+    // card that doesn't move never marks again: Row opens / Row reveal / Shared fell back to the layout's own window until
+    // the first D-pad move (Rental shop, Card binder, Orbit, Arcade, Stacks).
+    remember(state.appearance.homeLayout) { GameOrigin.rect = null; 0 }
+    LaunchedEffect(state.appearance.homeLayout) { StyleNav.reset(); HomeReach.leave(); GamePopup.game = null; TwinScreens.dashboard = false; TwinScreens.categoriesExpanded = false }
     // Update 181: the Pocket layouts play their sounds through the home screen's.
     SideEffect { PocketSounds.play = { s -> sounds?.play(s) } }
     // Update 202: Green Core's menu opens the app drawer, the music library and the sort window through the hotkey actions.
@@ -2883,6 +2986,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             com.shelf.launcher.data.Features.discCalm.state.value
         val scenePartlyCovered = !sceneCovered && (showMenu || showSettings || showDetails || showSaveExplorer ||
             showAppsLibrary || showAppDrawer || showFirstRun)
+        // Update 456 (owner, D64 option B): while the app drawer or Settings (the main menu, showMenu, and the older Settings
+        // window) is open the home's background — its animated
+        // scene, animated wallpaper and background clip — holds its current frame, dimmed edges included (same look, no
+        // black, no opaque scrim). Clips pause where they are and play on from there; scenes go on from the same moment.
+        // Only the background: the panel itself and the second screen keep moving. Idle behaviour is unchanged.
+        // (QA A/B: `--ez voltcap_test_panelhold false` turns it off for the session.)
+        val panelHold = (showAppDrawer || showMenu || showSettings) && TestHooks.panelHold.value
+        SideEffect { HomeIdle.panelHeld = panelHold; MediaClock.hold(panelHold) }
         // The second screen only gets the scene while the animated background is on.
         if (backgroundStyle != com.shelf.launcher.data.BackgroundStyle.ANIMATED) SideEffect { SecondScene.set(null, null) }
         // This theme's own look (Settings › Appearance › Theme look): blur and dim of the backdrop, scene motion.
@@ -3001,7 +3112,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     }
                     androidx.compose.runtime.CompositionLocalProvider(
                         LocalSceneAvoid provides sceneAvoid,
-                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalSceneCovered provides (sceneCovered || sceneOnSecond || discCalm || com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold), // (Update 187: the battery saver's low-battery rest: a still frame)
+                        LocalScenePanelHold provides panelHold,
                         LocalSceneMinFrameMs provides (if (scenePartlyCovered) 66 else 0),
                         // The theme's own speed / particles, times Theme intensity (Low · Normal · High).
                         LocalSceneTuning provides com.shelf.launcher.data.GameLooks.intensity(focusedGame?.stableKey).let { k ->
@@ -3142,7 +3254,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (wantsCrt) CrtArtOverlay(glow)
             if (ambience != null) GameAmbienceLayer(
                 ambience, glow, lookColors?.secondary ?: com.shelf.launcher.ui.theme.ShelfTheme.colors.secondary,
-                covered = sceneCovered || discCalm
+                covered = sceneCovered || discCalm || panelHold
             )
         }
 
@@ -3211,7 +3323,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 val total = p.NumPossibleAchievements ?: 0
                 if (total > 0) (p.NumAchieved ?: 0).toFloat() / total else null
             }
-            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered || discCalm, modifier = Modifier.fillMaxSize())
+            BackdropAchievementsLayer(recentBadges, prog, covered = sceneCovered || discCalm || panelHold, modifier = Modifier.fillMaxSize())
         }
 
         // Video preview: rest on a game for two seconds and its clip fades in.
@@ -3256,7 +3368,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 !(tileLayout && TileSwitch.plain)
         }
         // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
         // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
         if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
 
@@ -3296,7 +3408,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
             )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it
@@ -3738,6 +3850,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                 when (state.appearance.categoryBarHere) {
                     com.shelf.launcher.data.CategoryBar.FULL -> PlatformFilterRow(
+                        // (Update 453: the same categories as L2 / R2 and the category screen.)
+                        keys = run {
+                            val tileVer = com.shelf.launcher.data.CategoryTileOrder.version.value
+                            remember(state.categoryOrder, state.availablePlatforms, state.collections, state.games, tileVer, com.shelf.launcher.data.PlatformOrder.version.value) {
+                                com.shelf.launcher.data.CategoryStops.keys(state)
+                            }
+                        },
                         bottomGap = state.appearance.infoSpacing.dp.dp,
                         platforms = state.availablePlatforms,
                         order = state.categoryOrder,
@@ -4956,7 +5075,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // Update 274 (Toni): its piece out in the game window, whatever the look (MediaInspect.force).
             onDsCase = if (game.platform == "NDS") ({ optionsForGame = null; dsCaseForGame = game }) else null,
             onInspect = if (game.sourceType == com.shelf.launcher.data.SourceType.APP) null
-                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
+                else { { optionsForGame = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null; MediaInspect.forceSeq++; MediaInspect.force = game.stableKey; GamePopup.game = game } },
             onShowDetails = {
                 optionsForGame = null
                 if (!showDetails) openDetails()
@@ -4996,7 +5115,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 244: a game in Continue playing can be taken off it — until it's played again.)
             onRemoveFromContinue = if (state.lastPlayedAt.containsKey(game.stableKey)) {
                 { optionsForGame = null; viewModel.removeFromContinuePlaying(game) }
-            } else null
+            } else null,
+            // Update 450: an ordinary app can be put in Continue playing (a streaming client); games already are.
+            continueAppOn = continueAppSwitch(state, game),
+            onToggleContinueApp = game.packageName?.let { pkg -> { viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) } },
+            continueAppNote = continueAppNote(state, game, viewModel),
+            onClearContinue = game.packageName?.takeIf { continueAppSwitch(state, game) == true && state.lastPlayedAt.containsKey(game.stableKey) }
+                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } }
         )
     }
 
@@ -6014,7 +6139,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     com.shelf.launcher.data.AppKind.AUTO -> pkg in state.gameAppPackages
                 }
             },
-            onSetKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) }
+            onSetKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) },
+            isInContinue = { pkg -> pkg in state.libraryApps.continueApps },
+            onToggleContinue = { pkg -> viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) },
+            hasContinueHistory = { pkg -> state.lastPlayedAt.containsKey(pkg) },
+            onClearContinue = { pkg -> viewModel.clearContinueHistory(pkg) }
         )
     }
 
@@ -6169,6 +6298,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             .onPreviewKeyEvent { event ->
                 lastInputAt = System.currentTimeMillis()
                 // (v0.6.66, D135: which A press the home screen owns — its release then belongs to the home screen too.)
+                // (Update 454: …and the release of the A that opened the Details window on its press goes nowhere.)
+                if (HomeKeyGuard.isOpenKey(event.key) && event.type == KeyEventType.KeyDown) HomeKeyGuard.swallowAUp = false
+                if (HomeKeyGuard.swallowAUp && HomeKeyGuard.isOpenKey(event.key) && event.type == KeyEventType.KeyUp) {
+                    HomeKeyGuard.swallowAUp = false
+                    HomeKeyGuard.trackA(event.key, event.type)
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "details: A release from the home screen swallowed")
+                    return@onPreviewKeyEvent true
+                }
                 HomeKeyGuard.trackA(event.key, event.type)
                 if (QaTrace.on && GamePopup.game != null) android.util.Log.e("VoltcapQA", "homekey ${event.nativeKeyEvent.keyCode} ${event.type}")
                 when {
@@ -6242,6 +6379,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // open, and the next A started the game. B here now closes the window that is on its way (GamePopup).
                 // (…and a B whose press went to a window that has closed since — only its release reaches the home screen —
                 // is not a B for the home screen: on the Channel grid it opened the category screen right after the window.)
+                // Update 453 (RP Classic, Hero, rapid A B A B): a B in the frame between the closed window and the one opening
+                // again (A pressed while it flew back) reached neither window, and the window stayed open. It takes the open back (on its press; its release is then
+                // an orphan for the guard below, never a home-screen B).
+                if (GamePopup.game == null && GamePopup.reopenGame != null && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} cancels reopen")
+                    if (event.type == KeyEventType.KeyDown) GamePopup.reopenGame = null
+                    return@onKeyEvent true
+                }
                 if (event.key == Key.ButtonB || event.key == Key.Back) {
                     if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                     else if (event.type == KeyEventType.KeyUp) {
@@ -7252,6 +7397,8 @@ internal object HomeKeyGuard {
      * button clicked on it: Cross menu + Shared move started the game on A B A B. A Play click while this is set is that release.
      */
     @Volatile var aDown = false
+    /** Update 454: the Details window opened while A was held — that A's release is swallowed (see openDetails). */
+    @Volatile var swallowAUp = false
     fun isOpenKey(k: androidx.compose.ui.input.key.Key) =
         k == androidx.compose.ui.input.key.Key.ButtonA || k == androidx.compose.ui.input.key.Key.Enter ||
             k == androidx.compose.ui.input.key.Key.DirectionCenter || k == androidx.compose.ui.input.key.Key.NumPadEnter
@@ -7262,4 +7409,22 @@ internal object HomeKeyGuard {
     }
     /** True (and the release taken) when a window's Play click is really the home screen's own A being released. */
     fun takeOrphanRelease(): Boolean = aDown.also { if (it) aDown = false }
+}
+
+
+/** Update 450: the "Show in Continue playing" switch for an ordinary app (null for games, emulators and non-apps). */
+internal fun continueAppSwitch(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game): Boolean? {
+    val pkg = game.packageName ?: return null
+    if (game.sourceType != com.shelf.launcher.data.SourceType.APP || state.isAndroidGame(game) || pkg in state.emulatorPackages) return null
+    return pkg in state.libraryApps.continueApps
+}
+
+/** Update 450: "Last used 2 h ago · 1 h 20 min in front", or why it can only note launches from Voltcap. */
+@androidx.compose.runtime.Composable
+internal fun continueAppNote(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game, viewModel: LauncherViewModel): String? {
+    if (continueAppSwitch(state, game) != true) return null
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val usage = androidx.compose.runtime.remember(game.stableKey) { com.shelf.launcher.data.ContinueApps.usageAvailable(ctx) }
+    val fg = androidx.compose.runtime.remember(game.stableKey, state.lastPlayedAt[game.stableKey]) { viewModel.continueForeground()[game.packageName] }
+    return com.shelf.launcher.data.ContinueApps.note(state.lastPlayedAt[game.stableKey], fg, usage, System.currentTimeMillis())
 }

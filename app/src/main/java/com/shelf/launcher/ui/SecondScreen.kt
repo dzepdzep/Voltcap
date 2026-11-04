@@ -360,7 +360,8 @@ fun SecondScreenHost(
     // focus; so where an activity sits under it (the stock second-screen launcher on the AYN Thor) that activity
     // decides, and the handheld's own setting (GestureHint, force-hide) is what hides the bar there.
     val hideNavBar = com.shelf.launcher.data.GestureHint.immersiveState.value
-    LaunchedEffect(showing, hideNavBar) {
+    val deviceHidesNav = com.shelf.launcher.data.GestureHint.deviceNavHidden.value // (Update 449)
+    LaunchedEffect(showing, hideNavBar, deviceHidesNav) {
         val window = presentationHolder[0]?.window ?: return@LaunchedEffect
         for (wait in longArrayOf(0, 350, 1200)) {
             kotlinx.coroutines.delay(wait)

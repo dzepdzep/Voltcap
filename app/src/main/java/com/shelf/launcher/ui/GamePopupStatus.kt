@@ -324,3 +324,9 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
         }
     }
 }
+
+/**
+ * Update 469: the save line's words without "Saves: Saves up to date" — the status already starts with "Saves"; shorter, so it
+ * wraps less often in a narrow window (Cover details at 1.3×).
+ */
+internal fun savesLabel(t: String): String = "Saves: " + if (t.startsWith("Saves ")) t.removePrefix("Saves ") else t

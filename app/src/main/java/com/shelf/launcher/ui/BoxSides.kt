@@ -85,6 +85,124 @@ internal object BoxSides {
         return out
     }
 
+    /**
+     * Update 465: the one colour a box's blank sides are printed in, from its cover ([front]) — the colour that covers most
+     * of the cover's artwork, not its edge: the middle of the cover only (the outer 12 % left out — corner logos, the
+     * console's band, the rating and the white border sit there), colours counted in coarse buckets with very light and
+     * very dark ones (paper, outlines, text) passed over unless they ARE the cover, a coloured bucket weighted up a little
+     * (a box's print reads as its colour, not its grey; only a little — on the KONKR a 0.6 weight made Silver's small gold emblem
+     * beat its blue). The winning bucket's own pixels are averaged; a touch muted, as
+     * card takes ink. Null: unreadable.
+     */
+    /**
+     * Update 467 (owner: "use the genuine near-black indigo background instead of logo-derived red"): covers whose own
+     * background colour the reading above misses because a big logo out-counts it — the colour measured from the real
+     * cover (Pokémon Stadium 2: its dark indigo background, the average of those pixels in the US scan as shown on the
+     * KONKR, 18 / 1 / 35). Keyed by the printed title and the console; nothing else changes.
+     */
+    private val measured = mapOf(
+        "pokemon stadium 2|n64" to 0xFF120123.toInt()
+    )
+    fun measuredColour(title: String, platform: String?): Int? =
+        measured["${title.lowercase().replace("é", "e").trim()}|${platform?.lowercase()}"]
+
+    fun boxColour(front: Bitmap, platform: String? = null): Int? = runCatching {
+        val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+        val w = f.width; val h = f.height
+        if (w < 8 || h < 8) return@runCatching null
+        // (Where the console's box has a printed band — the N64's red NINTENDO 64 strip, a DS box's banner — only its art
+        // window (the cover template's, MediaCovers) is looked at, then its middle.)
+        val win = platform?.let { MediaCovers.of(it) }?.takeIf { kotlin.math.abs((w.toFloat() / h) / it.frontAspect - 1f) <= 0.15f }?.win
+        val wl = win?.get(0) ?: 0f; val wt = win?.get(1) ?: 0f; val wr = win?.get(2) ?: 1f; val wb = win?.get(3) ?: 1f
+        val mx = (wr - wl) * 0.12f; val my = (wb - wt) * 0.12f
+        val x0 = (w * (wl + mx)).toInt(); val x1 = (w * (wr - mx)).toInt(); val y0 = (h * (wt + my)).toInt(); val y1 = (h * (wb - my)).toInt()
+        if (x1 - x0 < 4 || y1 - y0 < 4) return@runCatching null
+        val sx = ((x1 - x0) / 64).coerceAtLeast(1); val sy = ((y1 - y0) / 64).coerceAtLeast(1)
+        val count = FloatArray(4096); val rs = LongArray(4096); val gs = LongArray(4096); val bs = LongArray(4096); val ns = IntArray(4096)
+        var total = 0; var extremes = 0
+        // (Update 466: the samples on their grid first, so a dark pixel can be checked against its neighbours — see below.)
+        val gw = (x1 - x0 + sx - 1) / sx; val gh = (y1 - y0 + sy - 1) / sy
+        val grid = IntArray(gw * gh)
+        for (j in 0 until gh) for (i in 0 until gw) grid[j * gw + i] = f.getPixel((x0 + i * sx).coerceAtMost(x1 - 1), (y0 + j * sy).coerceAtMost(y1 - 1))
+        fun dist(a: Int, b: Int) = kotlin.math.abs(((a shr 16) and 255) - ((b shr 16) and 255)) + kotlin.math.abs(((a shr 8) and 255) - ((b shr 8) and 255)) + kotlin.math.abs((a and 255) - (b and 255))
+        for (j in 0 until gh) for (i in 0 until gw) {
+            val c = grid[j * gw + i]
+            if ((c ushr 24) > 200) {
+                val r = (c shr 16) and 255; val g = (c shr 8) and 255; val b = c and 255
+                val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
+                val sat = if (mx == 0) 0f else (mx - mn).toFloat() / mx
+                total++
+                val extreme = (mx > 232 && sat < 0.12f) || mx < 24
+                if (extreme) extremes++
+                // (Update 466, owner: "without accidentally selecting … logos": a dark pixel counts only as much as its 3×3
+                // neighbours share its colour — the black outlines and strokes round drawn characters and lettering are thin,
+                // a dark background is not. Paper Mario's sides were the near-black of its outlines.)
+                var flat = 1f
+                if (mx < 64) {
+                    var same = 0; var all = 0
+                    for (dj in -1..1) for (di in -1..1) {
+                        val ii = i + di; val jj = j + dj
+                        if (ii in 0 until gw && jj in 0 until gh) { all++; if (dist(c, grid[jj * gw + ii]) < 40) same++ }
+                    }
+                    flat = same.toFloat() / all
+                }
+                val k = ((r shr 4) shl 8) or ((g shr 4) shl 4) or (b shr 4)
+                count[k] += (if (extreme) 0.15f else 1f + 0.3f * sat) * flat
+                rs[k] += r.toLong(); gs[k] += g.toLong(); bs[k] += b.toLong(); ns[k]++
+            }
+        }
+        if (total == 0) return@runCatching null
+        // (A cover that's mostly white or black — a white Nintendo 64 Kirby box — is that colour.)
+        if (extremes > total * 0.55f) for (k in 0 until 4096) if (ns[k] > 0) count[k] = ns[k].toFloat()
+        // Neighbouring buckets count together (a gradient's shades are one colour), the best one wins.
+        fun near(k: Int): Float {
+            val r = k shr 8; val g = (k shr 4) and 15; val b = k and 15; var s = 0f
+            for (dr in -1..1) for (dg in -1..1) for (db in -1..1) {
+                val rr = r + dr; val gg = g + dg; val bb = b + db
+                if (rr in 0..15 && gg in 0..15 && bb in 0..15) s += count[(rr shl 8) or (gg shl 4) or bb] * (if (dr == 0 && dg == 0 && db == 0) 1f else 0.5f)
+            }
+            return s
+        }
+        var best = -1; var bestS = 0f
+        for (k in 0 until 4096) if (ns[k] > 0) { val s = near(k); if (s > bestS) { bestS = s; best = k } }
+        if (best < 0) return@runCatching null
+        val n = ns[best].coerceAtLeast(1)
+        val r = (rs[best] / n).toInt(); val g = (gs[best] / n).toInt(); val b = (bs[best] / n).toInt()
+        val grey = (r * 30 + g * 59 + b * 11) / 100
+        fun mute(v: Int) = (v * 0.9f + grey * 0.1f).toInt().coerceIn(0, 255)
+        (0xFF shl 24) or (mute(r) shl 16) or (mute(g) shl 8) or mute(b)
+    }.getOrNull()
+
+    /**
+     * Update 465: [side] as plain printed card in [color]: flat (no strong gradient, no gloss), a fine fibre grain so it reads
+     * as card, and the folds — a slightly darker line along each edge where the board bends round the corner. Nothing
+     * printed on it.
+     */
+    fun card(side: BoxSide, w: Int, h: Int, color: Int): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val px = IntArray(w * h)
+        // A fixed seed per size: the same side looks the same every time it's drawn (no shimmer while turning).
+        var seed = 0x2F6E2B1 xor (w * 7919) xor (h * 104729)
+        fun rnd(): Int { seed = seed xor (seed shl 13); seed = seed xor (seed ushr 17); seed = seed xor (seed shl 5); return seed }
+        val r0 = (color shr 16) and 255; val g0 = (color shr 8) and 255; val b0 = color and 255
+        val fold = (minOf(w, h) * 0.035f).coerceIn(1f, 6f)
+        for (y in 0 until h) {
+            // (Fibres run along the board: a faint streak per row, plus fine grain.)
+            val streak = ((rnd() and 7) - 3) * 0.6f
+            for (x in 0 until w) {
+                val grain = ((rnd() and 15) - 7) * 0.45f + streak
+                val edge = minOf(minOf(x, w - 1 - x), minOf(y, h - 1 - y)).toFloat()
+                val f = if (edge < fold) 0.86f + 0.14f * (edge / fold) else 1f
+                val r = (r0 * f + grain).toInt().coerceIn(0, 255)
+                val g = (g0 * f + grain).toInt().coerceIn(0, 255)
+                val b = (b0 * f + grain).toInt().coerceIn(0, 255)
+                px[y * w + x] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+        out.setPixels(px, 0, w, 0, 0, w, h)
+        return out
+    }
+
     /** Update 319: the average colour of [front]'s edge that meets [side] (its outer 6 %), or null. */
     fun edgeColor(front: Bitmap, side: BoxSide): Int? = runCatching {
         val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
@@ -213,7 +331,7 @@ internal fun rememberBoxSides(
     val mode = com.shelf.launcher.data.Features.boxSides.state.value
     val provVersion = com.shelf.launcher.data.ArtProvenance.version.intValue
     fun pick(s: BoxSide): String? = scans?.firstOrNull { it.first == s.label }?.second
-        ?.takeIf { mode == com.shelf.launcher.data.Features.BoxSides.FILL || com.shelf.launcher.data.ArtProvenance.isScan(it) }
+        ?.takeIf { mode == com.shelf.launcher.data.Features.BoxSides.FILL || mode == com.shelf.launcher.data.Features.BoxSides.COLOUR || com.shelf.launcher.data.ArtProvenance.isScan(it) }
     val plain = mode == com.shelf.launcher.data.Features.BoxSides.PLAIN
     val u0 = if (plain) null else pick(BoxSide.RIGHT)
     // (Update 317: no picture of its top — a landscape box's top cut from its full case scan lying on its side, BoxPart.TOP.)
@@ -227,6 +345,9 @@ internal fun rememberBoxSides(
     val title = printTitle(g.name)
     val platform = LookStyles.casePlatform(g.platform)
     val fill = mode == com.shelf.launcher.data.Features.BoxSides.FILL
+    // (Update 465: one colour from the cover's artwork on every side without a picture of its own — your pictures and real
+    // scans of a side still win, as with "Fill missing sides".)
+    val oneColour = mode == com.shelf.launcher.data.Features.BoxSides.COLOUR
     // (Update 319: with the print off, these sides take the cover's edge colour instead of plain card.)
     val colorSides = com.shelf.launcher.data.Features.boxSideColors.state.value
     val made by produceKeyed<Array<Bitmap?>?>(null, title to platform, mode, b0, b1, b2, look.edge, look.top, shape, depth, front, title, platform, provVersion, colorSides) {
@@ -241,6 +362,11 @@ internal fun rememberBoxSides(
                     else if (fill) {
                         val base = if (side == BoxSide.RIGHT) look.edge else look.top
                         DerivedArt.named("sideprint|$i|$w|$h|$base|$platform|$accent|$title") { BoxSides.print(context, side, w, h, base, title, platform, accent) }
+                    } else if (oneColour && front != null) {
+                        val col = BoxSides.measuredColour(title, platform)
+                            ?: DerivedArt.of(front, "boxcolour|$platform") { BoxSides.boxColour(front, platform) ?: 0 }.takeIf { it != 0 }
+        BoxColourQa.dump(g.name, front, col)
+                        col?.let { c -> DerivedArt.named("sidecard|$i|$w|$h|$c") { BoxSides.card(side, w, h, c) } }
                     } else if (side.name in colorSides && front != null) {
                         val edge = DerivedArt.of(front, "edge|$i") { BoxSides.edgeColor(front, side) ?: 0 }.takeIf { it != 0 }
                         edge?.let { col -> DerivedArt.named("sidecolor|$i|$w|$h|$col") { BoxSides.colored(side, w, h, col) } }
@@ -263,3 +389,26 @@ internal fun printTitle(name: String): String = printTitles.getOrPut(name) {
 private val PRINT_TAGS = Regex("\\s*[(\\[][^)\\]]*[)\\]]")
 private val PRINT_SPACES = Regex("\\s+")
 private val printTitles = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+/**
+ * Update 466 (QA only, test hooks on): the box's front picture as the 3D box gets it and the side colour taken from it,
+ * once per game, into <external files>/qa_boxcolour/ (PNG + colours.tsv) — so the colour choice and the front's fit can be
+ * checked against the real cover. Nothing is written without the hooks flag.
+ */
+internal object BoxColourQa {
+    private val done = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    fun dump(name: String, front: Bitmap, col: Int?) {
+        if (!QaTrace.on) return
+        val d = QaTrace.dir ?: return
+        if (!done.add(name)) return
+        Thread {
+            runCatching {
+                val o = java.io.File(d, "qa_boxcolour").apply { mkdirs() }
+                val safe = name.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)
+                val b = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+                java.io.FileOutputStream(java.io.File(o, "$safe.png")).use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                java.io.File(o, "colours.tsv").appendText("$name\t${b.width}x${b.height}\t" + (col?.let { "#%06x".format(it and 0xffffff) } ?: "none") + "\n")
+            }
+        }.start()
+    }
+}

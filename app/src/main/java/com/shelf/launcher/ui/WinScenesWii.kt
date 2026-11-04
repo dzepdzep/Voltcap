@@ -126,7 +126,7 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 // whole in front of a soft, filled copy of itself, so the well never shows bare bars either side.
                 val wideArt = ctx.wide ?: ctx.backdrop
                 if (wideArt != null) AsyncImage(
-                    rememberStyleArtRequest(wideArt), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop
+                    rememberBackdropRequest(wideArt), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop
                 ) else if (ctx.cover != null) {
                     AsyncImage(rememberStyleArtRequest(ctx.cover), null, Modifier.fillMaxSize().graphicsLayer {
                         renderEffect = if (android.os.Build.VERSION.SDK_INT >= 31) androidx.compose.ui.graphics.BlurEffect(18.dp.toPx(), 18.dp.toPx()) else null

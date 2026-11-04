@@ -22,7 +22,7 @@ internal fun GreenCoreSettings() {
     MutedNote(
         "A dark green machine dashboard: a living sphere of light on the left, angled menu panels on the right — Games, " +
             "Systems, Apps, Save Vault, Music and Settings. ▲ ▼ move, A opens, B goes back to the menu. On the games: A opens " +
-            "the game, X favourite, Y achievements, L2 / R2 another category. Start: the quick menu; Select: sort & filter."
+            "the game, X favourite, Y achievements, L2 / R2 another category. B on the menu: Systems. Start: the game's options; R1: the quick menu (sort & filter is there); Select: Settings."
     )
     Spacer(Modifier.height(10.dp))
     PercentSlider(

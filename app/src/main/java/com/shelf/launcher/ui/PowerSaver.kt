@@ -39,6 +39,11 @@ object HomeIdle {
      */
     var rest by mutableStateOf(false)
         private set
+    /**
+     * Update 456: the app drawer or Settings is open over the home screen (owner-approved D64 option B): the home behind it
+     * holds still — see [calmHere]. Set by the home screen.
+     */
+    var panelHeld by mutableStateOf(false)
     private fun restMs(): Long = com.shelf.launcher.data.Features.idleRestMin.value * 60_000L
 
     /** Update 187: as still as when deeply idle — or the battery saver's low-battery rest (BatterySaver.low). */
@@ -114,6 +119,12 @@ object HomeIdle {
 val LocalSceneCovered = compositionLocalOf { false }
 
 /**
+ * Update 456: true while the app drawer or Settings holds the home's background on its current frame (it is also
+ * [LocalSceneCovered] then). A clip under it pauses where it is — kept, never dropped — so it plays on from there.
+ */
+val LocalScenePanelHold = compositionLocalOf { false }
+
+/**
  * Update 121: the slowest a background may step on this screen right now (ms per frame, 0 = no limit),
  * besides the background quality and [HomeIdle]. ~15 fps while a popup leaves the home screen showing
  * round its edges, and on a second screen nobody has touched for a while ([SecondIdle]). A music
@@ -167,10 +178,29 @@ object EffectClock {
     val shimmer = mutableFloatStateOf(0f)
 }
 
+/**
+ * Update 456: [HomeIdle.calm], or — only for what is drawn in the home screen's own window — the drawer / Settings holding
+ * the home behind them ([HomeIdle.panelHeld]). Those panels are windows of their own, so their own slides and previews
+ * keep moving; the home's focused piece, sliding names and sparks under the dim keep their frame and go on afterwards.
+ */
+@Composable
+internal fun calmHere(): Boolean {
+    if (HomeIdle.calm) return true
+    if (!HomeIdle.panelHeld) return false
+    val v = androidx.compose.ui.platform.LocalView.current
+    return androidx.compose.runtime.remember(v) {
+        var c: android.content.Context? = v.context
+        while (c is android.content.ContextWrapper && c !is android.app.Activity) c = c.baseContext
+        (c as? android.app.Activity)?.window?.decorView === v.rootView
+    }
+}
+
 /** Drives [EffectClock]; placed once on the home screen. */
 @Composable
-internal fun EffectClockDriver() {
-    val active = rememberIsActive() && rememberAnimationsEnabled()
+internal fun EffectClockDriver(hold: Boolean = false) {
+    // (Update 456: [hold] — the app drawer or Settings is open over the home screen: the home's focus pulse, shimmer and
+    // bolts keep their frame like the background does, then go on from there. Nothing inside those panels uses this clock.)
+    val active = rememberIsActive() && rememberAnimationsEnabled() && !hold
     val on = active && !HomeIdle.calm
     // Update 144: the shimmer's clock (see EffectClock.shimmer). (Update 235: stops at HomeIdle.calm, the same signal
     // as the background clip; the value is left as it was, so every shining card keeps a still frame.)
@@ -210,9 +240,12 @@ internal fun rememberFocusPulse(animate: Boolean): Float = rememberFocusPulseSta
 internal fun rememberFocusPulseState(animate: Boolean): androidx.compose.runtime.State<Float> {
     val pulseState = remember { mutableFloatStateOf(0.75f) }
     var pulse by pulseState
-    val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !HomeIdle.calm
+    // (Update 456: also still behind the drawer / Settings — calmHere — keeping the glow it had, not snapping to rest.)
+    val calm = calmHere()
+    val keep = calm && !HomeIdle.calm
+    val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !calm
     LaunchedEffect(on) {
-        if (!on) { pulse = 0.75f; return@LaunchedEffect }
+        if (!on) { if (!keep) pulse = 0.75f; return@LaunchedEffect }
         val start = SystemClock.uptimeMillis()
         while (true) {
             val ph = ((SystemClock.uptimeMillis() - start) % 2200L) / 1100f

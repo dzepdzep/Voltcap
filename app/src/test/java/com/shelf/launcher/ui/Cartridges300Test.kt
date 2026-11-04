@@ -72,7 +72,7 @@ class Cartridges300Test {
     @Test fun blackDualModeCartIsTheGameBoyCase() {
         val gb = CartShells.of("gb")!!; val dual = CartShells.of("gbc_dual")!!
         assertEquals(gb.w, dual.w, 0.001f); assertEquals(gb.h, dual.h, 0.001f); assertEquals(gb.t, dual.t, 0.001f)
-        assertEquals(9f, CartShells.of("gbc")!!.t, 0.001f) // (the clear Color-only cart unchanged)
+        assertEquals(7.8f, CartShells.of("gbc")!!.t, 0.001f) // (update 468: the clear Color-only pak is the same 7.8 mm mould — side photos)
         assertEquals(3.64f, CartShells.of("ds")!!.t, 0.001f)
     }
 

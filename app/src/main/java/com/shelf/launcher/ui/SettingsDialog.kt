@@ -74,6 +74,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.onKeyEvent
@@ -341,6 +344,7 @@ fun SettingsDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         ImmersiveDialogWindow()
+        SettingsWindowFlat()
         // Small screens (Retroid Pocket Classic and the like): the dialog fills
         // nearly the whole screen, the side list becomes a row of category pills
         // along the top, and paddings shrink — so every option stays reachable.
@@ -468,19 +472,26 @@ fun SettingsDialog(
                         // A fresh scroll position per category: sharing one kept
                         // the previous (long) page's position, so a new page
                         // opened scrolled down past its top.
-                        val paneScroll = androidx.compose.runtime.key(category.label) { rememberScrollState() }
+                        val paneWeight = Modifier.weight(1f)
+                        // Update 459 (owner, RP Classic: "the current category's content simply disappears and the next one
+                        // appears"): the pages slide — the next category in from the right, the previous out to the left,
+                        // back the other way (SettingsPageSlide).
+                        SettingsPageSlide(category, CATEGORIES, paneWeight) { cat, isTarget ->
+                        val paneScroll = androidx.compose.runtime.key(cat.label) { rememberScrollState() }
+                        SettingsLookAhead {
                         Column(
-                            Modifier
-                                .weight(1f)
+                            Modifier.fillMaxSize()
                                 // (0.6.15: a group the sidebar's ▶ enters at its first setting.)
-                                .focusRequester(paneFocus)
+                                // (Update 459: only the page sliding in — the one sliding out takes no focus.)
+                                .then(if (isTarget) Modifier.focusRequester(paneFocus) else Modifier)
                                 .focusGroup()
                                 // ▲ ▼ scroll text-only pages that have nothing to focus.
                                 .dpadScroll(paneScroll)
                                 .verticalScroll(paneScroll)
                                 .padding(if (compact) 12.dp else 20.dp)
                         ) {
-                            if (searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
+                            CompositionLocalProviderSection(cat.label) {
+                            if (isTarget && searchQuery.isNotBlank()) SettingsSearchResults(searchQuery) { hit ->
                                 // Straight to it: its section, its sub-page, its group opened.
                                 searchQuery = ""
                                 subpageMemory[hit.section] = hit.subpage
@@ -492,7 +503,7 @@ fun SettingsDialog(
                                     if (target == category) { currentSection = target.label; setSubpage(hit.subpage) }
                                     category = target
                                 }
-                            } else when (category.label) {
+                            } else when (cat.label) {
                                 "Home" -> HomeContent(currentTheme, onSelectTheme, appearance, onAppearanceChange)
                                 "Game look" -> GameLookContent(appearance, onAppearanceChange)
                                 "Theme" -> ThemeContent(
@@ -682,6 +693,9 @@ fun SettingsDialog(
                                     }
                                 }
                             }
+                        }
+                        }
+                        }
                         }
                         // (Update 144: no Close button floating under the settings any more — ✕ at the top and B close.)
                     }
@@ -904,6 +918,14 @@ private fun HomeContent(
                     if (F.rolloutOn.state.value) RowChoice("Speed", com.shelf.launcher.data.Features.RolloutSpeed.values(), F.rolloutSpeed.state.value, { it.label }) { F.rolloutSpeed.value = it }
                     Spacer(Modifier.height(6.dp))
                     Chip("Who's playing? now", accent = false) { ProfilePicker.request = true }
+                    // v0.6.67: its look (ProfileLooks.kt) — a small picture of each, and a full-screen preview where L1 / R1 change it.
+                    Spacer(Modifier.height(10.dp))
+                    Text("Who's playing? look", color = ShelfTheme.textMuted, fontSize = 12.sp)
+                    Spacer(Modifier.height(6.dp))
+                    PickerLookThumbs()
+                    Spacer(Modifier.height(8.dp))
+                    Chip("Preview the looks", accent = false) { ProfilePicker.preview = true }
+                    MutedNote("The preview uses your profiles; picking one there only closes it. Each profile's own colour: Edit (Ⓨ) on Who's playing?.")
                 } }
             }
             item { m -> Box(m) { ShelfCard { CapsuleRevealChoice() } } }
@@ -2804,7 +2826,9 @@ internal fun CollapsibleSection(title: String, startExpanded: Boolean = false, c
     // (‹ or B goes back). startExpanded is kept for callers but no longer used.
     @Suppress("UNUSED_VARIABLE") val unused = startExpanded
     val shape = uiRounded(14.dp)
-    val open = openSubpage
+    // (Update 459: a page sliding out keeps its own sub-page while the next one slides in — SettingsPageSlide.)
+    val sec = LocalSettingsSection.current
+    val open = if (sec == null || sec == currentSection) openSubpage else subpageMemory[sec]
     when (open) {
         null -> {
             val focus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -3962,10 +3986,10 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
         RowChoice(
             "Box sides (cardboard boxes)", com.shelf.launcher.data.Features.BoxSides.values(),
             com.shelf.launcher.data.Features.boxSides.state.value, { it.label }
-        ) { com.shelf.launcher.data.Features.boxSides.value = it }
-        MutedNote("A cardboard box's right side, top and bottom. Fill missing sides (default): your picture of that side (Artwork & details › Box right side / top / bottom), else a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
+        ) { com.shelf.launcher.data.Features.boxSides.value = it; com.shelf.launcher.data.Features.boxSidesChosen.value = true }
+        MutedNote("A cardboard box's right side, top and bottom — a real scan of that side or your own picture of it (Artwork & details › Box right side / top / bottom) always comes first. Plain colour from the box art (default): every other side in one colour taken from the cover's artwork, on card, nothing printed. Fill missing sides: a print made from the game's title, its console's logo and its box's colours. Authentic only: only pictures you've marked as a real packaging scan. Plain cardboard: plain card. The box's size and shape never change.")
         // (Update 319, Toni: the printed sides on or off, and when off each side in the cover's colours, or not.)
-        if (com.shelf.launcher.data.Features.boxSides.state.value != com.shelf.launcher.data.Features.BoxSides.FILL) {
+        if (com.shelf.launcher.data.Features.boxSides.state.value.let { it != com.shelf.launcher.data.Features.BoxSides.FILL && it != com.shelf.launcher.data.Features.BoxSides.COLOUR }) {
             val colored = com.shelf.launcher.data.Features.boxSideColors.state.value
             SectionLabel("Sides in the cover's colours")
             ChipFlow {
@@ -3986,6 +4010,14 @@ private fun GameMediaCard(appearance: AppearanceSettings, onChange: (AppearanceS
             com.shelf.launcher.data.Features.cartBackStyle.state.value, { it.label }
         ) { com.shelf.launcher.data.Features.cartBackStyle.value = it }
         MutedNote("Turn a drawn cartridge round to see its back: its screws, connector and panels as on the real one, with the maker's moulded text and stickers — or plain, without any console's branding (a game on another console's shell is plain by default).")
+        // Update 462: the photo-made shells (PhotoShells).
+        SwitchRow(
+            icon = Icons.Filled.ViewWeek,
+            title = "Photo-real Game Boy paks",
+            subtitle = "On (default): a drawn Game Boy / Game Boy Color / Game Boy Advance pak is made from a real cartridge photo of the same shell from your own library (an official game's cartridge picture, e.g. Pokémon Silver's) — its real plastic, moulded lettering, ridges and light — with the game's own label laid into the sticker recess. Without such a photo in your library: the drawn shell.",
+            checked = com.shelf.launcher.data.Features.photoShells.state.value,
+            onChange = { com.shelf.launcher.data.Features.photoShells.value = it; PhotoShells.reset() }
+        )
         // Update 210: real special editions (MediaEditions).
         SwitchRow(
             icon = Icons.Filled.ViewWeek,
@@ -5977,6 +6009,12 @@ private fun CategoriesContent(
                         F.followLookFor(appearance.homeLayout).label + ". Off: the look picked above.",
                     F.pbFollowHome.state.value, { F.pbFollowHome.value = it }
                 )
+                // Update 462: the themed pickers (ThemedPicker / themedLookFor).
+                SwitchRow(
+                    Icons.Filled.SwapHoriz, "Themed pickers",
+                    "Pocket Quest, Green Core and Pocket classic open their own systems page; Channel grid, Cinema and Arctic hub a picker in their style. Same categories, order and controls. Off: the look above.",
+                    F.pbThemed.state.value, { F.pbThemed.value = it }
+                )
                 Spacer(Modifier.height(14.dp))
                 Text("Cards show", color = ShelfTheme.textMuted, fontSize = 12.sp)
                 Spacer(Modifier.height(6.dp))
@@ -6221,3 +6259,118 @@ private fun HandheldControllerStyle() {
     }
     Spacer(Modifier.height(12.dp))
 }
+
+
+/**
+ * Update 457 (D172, RP Classic perfetto trace: every Settings frame drew a 1368 x 1160 buffer on a 1240 x 1080 screen): the
+ * dialog window kept the dialog theme's elevation, so Android gave it surface insets for a drop shadow and rendered that
+ * shadow round the window — which covers the whole screen, so the shadow was never seen, yet it was redrawn with every
+ * scroll frame. The Settings window is flat now (elevation 0, no insets): same picture, fewer pixels and no shadow pass.
+ * QA A/B: `--ez voltcap_test_settingsflat false` (session).
+ */
+@Composable
+private fun SettingsWindowFlat() {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val flat = TestHooks.settingsFlat.value
+    androidx.compose.runtime.DisposableEffect(view, flat) {
+        val window = (view.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+        if (window != null && flat) runCatching { window.setElevation(0f); window.decorView.elevation = 0f }
+        onDispose { }
+    }
+}
+
+/**
+ * Update 457 (D172, owner: "the new settings just spawn in"): ▼ moved focus and the pane scrolled only until the focused row
+ * touched the bottom edge, so the row after it was never in view — every new setting popped in from under the edge. Focus
+ * scrolling now keeps a look-ahead margin (56 dp, at most a quarter of the pane) above and below
+ * the focused row, so the next setting is already sliding in before you reach it. Touch / fling scrolling is not affected;
+ * a row taller than the pane still aligns as before. QA A/B: `--ez voltcap_test_lookahead false` (session).
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun SettingsLookAhead(content: @Composable () -> Unit) {
+    val on = TestHooks.settingsLookAhead.value
+    val wanted = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+    val default = androidx.compose.foundation.gestures.LocalBringIntoViewSpec.current
+    val spec = androidx.compose.runtime.remember(on, wanted, default) {
+        if (!on) default else object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+                lookAheadDistance(offset, size, containerSize, wanted)
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides spec, content = content
+    )
+}
+
+/** Scroll distance that shows the item at [offset] / [size] with up to [wanted] px of its neighbours (pure, unit-tested). */
+internal fun lookAheadDistance(offset: Float, size: Float, containerSize: Float, wanted: Float): Float {
+    val margin = minOf(wanted, containerSize / 4f, ((containerSize - size) / 2f).coerceAtLeast(0f))
+    val lead = offset - margin
+    val trail = offset + size + margin
+    return when {
+        lead >= 0f && trail <= containerSize -> 0f
+        lead < 0f && trail > containerSize -> 0f
+        kotlin.math.abs(lead) < kotlin.math.abs(trail - containerSize) -> lead
+        else -> trail - containerSize
+    }
+}
+
+/** Update 459: the Settings section a page belongs to (SettingsPageSlide shows two while one slides out). */
+private val LocalSettingsSection = androidx.compose.runtime.staticCompositionLocalOf<String?> { null }
+
+@Composable
+private fun CompositionLocalProviderSection(section: String, content: @Composable () -> Unit) =
+    androidx.compose.runtime.CompositionLocalProvider(LocalSettingsSection provides section, content = content)
+
+/** Update 459: how long a Settings page takes to slide in (ms) — short and eased, so it reads as one move. */
+internal const val SETTINGS_SLIDE_MS = 260
+
+/** Update 459: the hold before the slide starts (ms) — see SettingsPageSlide. */
+internal const val SETTINGS_SLIDE_HOLD_MS = 80
+
+/** Update 459: +1 when [to] comes after [from] in [order] (slides in from the right), −1 before, 0 the same (pure). */
+internal fun <T> slideDirection(order: List<T>, from: T, to: T): Int {
+    val a = order.indexOf(from); val b = order.indexOf(to)
+    return if (a < 0 || b < 0 || a == b) 0 else if (b > a) 1 else -1
+}
+
+/**
+ * Update 459 (owner, RP Classic): changing the Settings category replaced the page in one frame. Now the pages slide as
+ * a carousel — the next category in from the right while the one you leave goes left, back the other way — over
+ * [SETTINGS_SLIDE_MS] with an easing that settles without a snap. Only placement moves (no re-measure per frame); the
+ * page sliding out is cut off from input (no focus can enter it, touches on it are swallowed) and keeps its own scroll
+ * and sub-page; a new press mid-slide simply retargets it. [content] gets the page's category and whether it's the one
+ * sliding in (or shown).
+ */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+@Composable
+private fun <T : Any> SettingsPageSlide(current: T, order: List<T>, modifier: Modifier, content: @Composable (T, Boolean) -> Unit) {
+    androidx.compose.animation.AnimatedContent(
+        targetState = current,
+        modifier = modifier.clipToBounds(),
+        transitionSpec = {
+            val dir = slideDirection(order, initialState, targetState).let { if (it == 0) 1 else it }
+            // (A short hold first: the new page's first frame — composed and drawn for the first time — is the slow one
+            // (~100 ms on the RP Classic); the slide starts after it, so it doesn't jump half-way in on its first step.)
+            val spec = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(SETTINGS_SLIDE_MS, delayMillis = SETTINGS_SLIDE_HOLD_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+            (androidx.compose.animation.slideInHorizontally(spec) { w -> dir * w } togetherWith
+                androidx.compose.animation.slideOutHorizontally(spec) { w -> -dir * w })
+                .using(androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.snap() })
+        },
+        label = "settingsPage"
+    ) { page ->
+        val isTarget = transition.targetState == androidx.compose.animation.EnterExitState.Visible
+        Box(
+            Modifier.fillMaxSize()
+                .focusProperties { if (!isTarget) enter = { androidx.compose.ui.focus.FocusRequester.Cancel } }
+                .focusGroup()
+        ) {
+            content(page, isTarget)
+            if (!isTarget) Box(Modifier.matchParentSize().pointerInput(Unit) {
+                awaitPointerEventScope { while (true) awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial).changes.forEach { it.consume() } }
+            })
+        }
+    }
+}
+

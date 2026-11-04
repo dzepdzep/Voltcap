@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -344,14 +345,19 @@ internal fun HubPlate(ctx: WinSceneCtx) {
 internal fun DiscoverCard(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 700.dp)
-    val h = minOf(ctx.maxH, 380.dp)
+    // (Update 469, Odin at 1.3× text with its Performance key: the status line under the keys was cut at the card's foot —
+    // with larger text the card may take more of the screen and the keys are a little lower.)
+    val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
+    val h = minOf(ctx.maxH, if (big) 460.dp else 380.dp)
     Row(Modifier.width(w).height(h).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.12f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
     }, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        // The big square.
-        Box(Modifier.fillMaxHeight().aspectRatio(1f).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
+        // The big square — (update 467, popup gate: as tall as the card, it left the discover card ~210 dp on the KONKR, the
+        // keys one per line and the facts a 14 dp sliver showing half a line; it now leaves the card at least 290 dp).
+        val side = minOf(h, (w - 10.dp - 290.dp).coerceAtLeast(140.dp))
+        Box(Modifier.size(side).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
             (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
             Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
@@ -365,7 +371,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
             Spacer(Modifier.weight(0.01f))
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
-                    Color.Transparent, a, RoundedCornerShape(50), height = 36.dp)
+                    Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
             }
         }
     }
@@ -591,11 +597,15 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
         translationY = (1f - e) * size.height * 0.15f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(14.dp); clip = true
-    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))) {
-        // The charge stripe down the left edge.
-        Box(Modifier.width(6.dp).fillMaxHeight().background(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f)))))
+    }.background(Color(0xFF12151B).copy(alpha = 0.97f)).border(1.dp, a.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
+        // The charge stripe down the left edge. (Update 453: drawn behind, no longer a fillMaxHeight box — that box made the
+        // window take its whole maximum height, so a game with few facts left half of it empty; now it fits what it shows.)
+        .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f))), size = androidx.compose.ui.geometry.Size(6.dp.toPx(), size.height)) }) {
+        Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f).padding(14.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
+            // (Update 452, D156: the picture and facts give way to the keys — with More open the keys' extra lines were pushed out
+            // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)
+            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
                 Box(Modifier.width(minOf(w * 0.24f, 150.dp)).aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.Black)) {
                     ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
                 }

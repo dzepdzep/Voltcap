@@ -146,6 +146,8 @@ class MainActivity : ComponentActivity() {
         LaunchInfo.update(intent)
         // (Update 334: "Who's playing?" asked from a game — the in-game Quick menu.)
         if (intent?.getBooleanExtra(com.shelf.launcher.ui.ProfilePicker.EXTRA, false) == true) com.shelf.launcher.ui.ProfilePicker.request = true
+        // Update 447 (D144): a fresh process starts as HOME for QA's picker.sh (a picker that opens writes PICKER after this).
+        com.shelf.launcher.ui.TestHooks.markScreen(this, "HOME")
         com.shelf.launcher.ui.TestHooks.fromIntent(this, intent)
         com.shelf.launcher.data.QrTransfer.fromIntent(intent)
         // Sleep mode for Wi-Fi / Bluetooth (Settings › Device): listens for screen off only when on.
@@ -194,7 +196,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             // "Hide navigation bar" switched: the window follows at once.
             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
-            androidx.compose.runtime.LaunchedEffect(immersive) {
+            // Update 449: and when the handheld's own hide_nav_bar changes (Retroid: the window asks only while it's off).
+            val deviceHides = com.shelf.launcher.data.GestureHint.deviceNavHidden.value
+            androidx.compose.runtime.LaunchedEffect(immersive, deviceHides) {
                 hideSystemBars()
                 // Android ignores a hide that comes while the bar is still sliding in (Off → On): ask again once it settled.
                 for (wait in longArrayOf(120, 350, 800)) { kotlinx.coroutines.delay(wait); hideSystemBars() }
@@ -283,6 +287,11 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.QaGeom.key(event.keyCode, event.action == android.view.KeyEvent.ACTION_DOWN)
         if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
+        // Update 467 (popup gate): after a touch, the first A / B / X / Y did nothing — Android leaves touch mode only for
+        // the D-pad and typing keys, so a face button reached a home screen with nothing focused (the popup sweep: "first A
+        // opened nothing", and Row windows opened with no button lit). A gamepad button now leaves touch mode first.
+        if (event.action == android.view.KeyEvent.ACTION_DOWN && android.view.KeyEvent.isGamepadButton(event.keyCode) &&
+            window?.decorView?.isInTouchMode == true) runCatching { window.decorView.requestFocusFromTouch() }
         com.shelf.launcher.ui.HomeIdle.poke()
         com.shelf.launcher.data.GameMode.userIsHere() // (Update 182)
         com.shelf.launcher.data.BatterySaver.poke() // (Update 187)

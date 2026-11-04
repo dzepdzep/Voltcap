@@ -332,9 +332,13 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
     // (Update 294, Toni: "never show a partly hidden chip": whole tabs only, "+N ›" for the rest, the lit one always
     // whole — WholeChipRow. The plate is placed from each tab's place read against the row's own.)
     val rowX = remember { floatArrayOf(0f) }
+    // (Update 456: the room a tab's name may take — the bar less the "‹ +N" / "+N ›" hints and the tab's icon and padding —
+    // so even the narrowest bar (RP Classic) shows the tab you're in whole, with its plate, between the two hints.)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+    val textMax = minOf(if (compact) PQ_TAB_MAX_COMPACT else PQ_TAB_MAX, maxWidth - if (compact) 104.dp else 120.dp).coerceAtLeast(56.dp)
     WholeChipRow(
         tabs, lit,
-        modifier.onPlaced { rowX[0] = it.positionInRoot().x }
+        Modifier.fillMaxSize().onPlaced { rowX[0] = it.positionInRoot().x }
             .drawBehind {
                 // The plate under the tab you're in (read while drawing: the glide redraws, never recomposes).
                 val w = iw.value
@@ -376,9 +380,15 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
                     val ink = if (isHere) pal.onAccent else pal.ink.copy(alpha = if (dpad) 1f else 0.78f)
                     PqStopIcon(st, if (isHere) pal.onAccent else pal.muted, if (compact) 14.dp else 17.dp)
                     Spacer(Modifier.width(5.dp))
-                    Text(
+                    // Update 456 (owner: long category names "disappear"): a name is at most [PQ_TAB_MAX] wide — it was measured
+                    // as wide as the whole bar, cut off at the bar's end, and the gold plate (drawn only when the tab fits) vanished
+                    // with it. Now a long name wraps onto a second line inside its tab, then steps down to a readable minimum, and
+                    // only then slides (FullText) — whole, inside its tab, never over the icons or the tools.
+                    StableFullText(
                         if (st == null) c.categoryLabel else pqShortName(st), color = ink, fontSize = if (compact) 11.sp else 13.sp,
-                        fontWeight = if (isHere) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1, softWrap = false
+                        modifier = Modifier.widthIn(max = textMax),
+                        fontWeight = if (isHere) FontWeight.Bold else FontWeight.SemiBold, maxLines = 2,
+                        lineHeight = if (compact) 11.sp else 13.5.sp
                     )
                     if (dpad) {
                         Spacer(Modifier.width(3.dp))
@@ -386,7 +396,12 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
                     }
                 }
     }
+    }
 }
+
+/** Update 456: the widest a console tab's name may be (wider names wrap / step down / slide inside it). */
+internal val PQ_TAB_MAX = 168.dp
+internal val PQ_TAB_MAX_COMPACT = 120.dp
 
 /** A stop's small icon: RetroAchievements' console icon when there is one, else the category's symbol. */
 @Composable
@@ -402,6 +417,9 @@ private fun PqStopIcon(st: StyleStop?, tint: Color, size: Dp) {
  * one (GBA, SNES, PS1…) only with Settings › Home › Name & logo › Short console names.)
  */
 internal fun pqShortName(st: StyleStop): String {
+    // (Update 456, QA only: `--es voltcap_test_tabnames` renames tabs for this session — long / Unicode names; nothing saved.)
+    TestHooks.tabNames.value[st.platform ?: st.label]?.let { return it }
+    TestHooks.tabNames.value[st.label]?.let { return it }
     val p = st.platform ?: return st.label
     if (com.shelf.launcher.data.isCollectionKey(p)) return st.label
     return com.shelf.launcher.data.ConsoleNames.label(p)
@@ -589,7 +607,7 @@ private fun PqCover(c: StyleCtx, g: Game, modifier: Modifier) {
             else -> FullText(
                 titles.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, textAlign = TextAlign.Center,
                 maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp)
-            )
+            , reserve = false)
         }
         ConsoleBadge(g.platform, packageName = g.packageName)
     }
@@ -1028,7 +1046,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
                 }
             }
         }
-        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Sort & filter", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
+        PqHints(pal, compact, listOf("A" to "Choose", "B" to "Back", "SELECT" to "Settings", (if (Features.pqBumpers.state.value) "L1 / R1" else "L2 / R2") to "Console"))
     }
 }
 
@@ -1310,18 +1328,9 @@ internal fun pocketQuestKey(event: KeyEvent, reach: (Boolean) -> Boolean, sound:
     val first = native.repeatCount == 0
     val k = event.key
     fun beep(s: UiSound) { if (!PqSynth.play(s)) sound(s) }
-    // Select: a short press opens Select a System (on it: sort & filter); held half a second, sort & filter straight away.
-    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) {
-        if (down && first) PqNav.selectArmed = true
-        if (up && PqNav.selectArmed) {
-            PqNav.selectArmed = false
-            if (PqNav.launching == null) {
-                val held = native.eventTime - native.downTime >= 450L
-                if (held || PqNav.page == PqNav.Page.SYSTEMS) c.actions.sort() else pqOpenSystems(c)
-            }
-        }
-        return true
-    }
+    // Update 462: Select is Settings, as on every layout (InputContract) — it only reaches here during the launch flash,
+    // which holds it. Select a System opens from B (the category picker, ThemedPicker), L2 / R2 and the top bar's button.
+    if (code == android.view.KeyEvent.KEYCODE_BUTTON_SELECT) return true
     if (up && PqNav.keysDown.remove(code)) return true
     if (!down) return false
     fun take(): Boolean { PqNav.keysDown += code; return true }

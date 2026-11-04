@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.AutoStories
@@ -378,7 +380,10 @@ fun GameDetailsOverlay(
                 // Swallow taps on the window itself so they don't close it.
                 .pointerInput(Unit) { detectTapGestures { } }
         ) {
-            val bannerH = (maxHeight * 0.42f).coerceIn(140.dp, 340.dp)
+            // (Update 469, owner review — Bubbles' Details on the KONKR: the banner took 42 % and the Achievements heading was cut
+            // in half at the window's foot. On a short window the banner is a little lower, so Play, the numbers, the facts
+            // line and the next heading open whole; the page still scrolls for the rest.)
+            val bannerH = (maxHeight * if (maxHeight < 480.dp) 0.36f else 0.42f).coerceIn(140.dp, 340.dp)
             val windowW = maxWidth
             // The chosen backdrop (Appearance › Details window), very faint behind the page.
             DetailsBackdropLayer(
@@ -394,6 +399,28 @@ fun GameDetailsOverlay(
                 modifier = Modifier.matchParentSize()
             )
 
+            // (Update 471, owner review — Bubbles' Details on the KONKR: the name sat on the banner's characters. On a short window
+            // it goes under the banner, on the page, and the art is shown whole; tall windows keep it on the art.)
+            val nameUnder = maxHeight < 480.dp
+            val BannerTitle: @Composable (Modifier) -> Unit = { mod ->
+                    LogoAndName(
+                            logoUrl = if (titles.showLogos) logoUrl else null,
+                            placement = titles.logoPlacement,
+                            logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
+                            logoMaxWidth = 300.dp,
+                            modifier = mod
+                        ) { m ->
+                            Text(
+                                titles.display(game.name),
+                                color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
+                                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
+                                )),
+                                modifier = m.widthIn(max = 520.dp)
+                            )
+                        }
+            }
             Column(
                 Modifier
                     .fillMaxSize()
@@ -418,27 +445,12 @@ fun GameDetailsOverlay(
                     Box(
                         Modifier.fillMaxSize().background(
                             Brush.verticalGradient(
-                                0f to Color.Transparent, 0.55f to Color.Transparent, 1f to pageColor
+                                // (Update 469: a deeper scrim under the name — it sat straight on the art's characters.)
+                                0f to Color.Transparent, 0.45f to Color.Transparent, 0.78f to pageColor.copy(alpha = 0.6f), 1f to pageColor
                             )
                         )
                     )
-                    LogoAndName(
-                        logoUrl = if (titles.showLogos) logoUrl else null,
-                        placement = titles.logoPlacement,
-                        logoHeight = (bannerH * 0.32f).coerceIn(44.dp, 96.dp),
-                        logoMaxWidth = 300.dp,
-                        modifier = Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp)
-                    ) { m ->
-                        Text(
-                            titles.display(game.name),
-                            color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis,
-                            style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
-                                shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
-                            )),
-                            modifier = m.widthIn(max = 520.dp)
-                        )
-                    }
+                    if (!nameUnder) BannerTitle(Modifier.align(Alignment.BottomStart).padding(start = 28.dp, end = 20.dp, bottom = 22.dp))
                     if (playStatus != null) {
                         Text(
                             "${playStatus.glyph}  ${playStatus.label}",
@@ -452,6 +464,8 @@ fun GameDetailsOverlay(
                         )
                     }
                 }
+
+                if (nameUnder) BannerTitle(Modifier.padding(start = 28.dp, end = 20.dp, top = 4.dp, bottom = 2.dp))
 
                 // ---- Play, the numbers, and the square buttons on the right ----
                 // Small windows (the lower screen of a dual-screen handheld, 3.5" handhelds): the buttons
@@ -1271,7 +1285,10 @@ private fun hueBrush(hue: Int): Brush = Brush.radialGradient(
 @Composable
 private fun Modifier.tapToRun(onClick: () -> Unit): Modifier {
     val latest = androidx.compose.runtime.rememberUpdatedState(onClick)
-    return this.pointerInput(Unit) { detectTapGestures { latest.value() } }
+    // (Update 467: a button to accessibility and QA too — it was a bare tap area, so the window's Play / Details / More had no
+    // click semantics and the geometry gate couldn't tell them from text.)
+    // (Not merging: some of these cover a whole page — tap outside to close — and would swallow every node under them.)
+    return this.semantics { onClick { latest.value(); true } }.pointerInput(Unit) { detectTapGestures { latest.value() } }
 }
 
 /** Drive status of this game's saves as one small icon (colour = state); A / tap opens the sync window. */

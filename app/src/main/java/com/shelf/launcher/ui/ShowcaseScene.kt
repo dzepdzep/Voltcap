@@ -105,13 +105,15 @@ internal fun ShowcaseScene(motif: ThemeMotif, colors: ShelfColors, modifier: Mod
             Box(modifier.onSizeChanged { fullW = it.width.toFloat(); fullH = it.height.toFloat() }) {
                 CrtRoom3D(scene, art, time, colors, Modifier.fillMaxSize(), room, focus, poster)
                 // The gameplay clip plays on the monitor itself (a video view laid exactly over its screen).
-                val clip = Showcase.video?.takeIf { !LocalSceneCovered.current && !liteStill }
+                // (Update 456: under the app drawer / Settings the clip stays on its frame — paused, not dropped.)
+                val panelHold = LocalScenePanelHold.current
+                val clip = Showcase.video?.takeIf { (!LocalSceneCovered.current || panelHold) && !liteStill }
                 // (Update 307: one clip fading into the next on the monitor — VideoCrossfade.)
                 if (fullW > 0f) {
                     val r = roomMonitorRect(fullW, fullH, focus.value)
                     val d = LocalDensity.current
                     VideoCrossfade(
-                        clip, Showcase.videoSound, Modifier.fillMaxSize(),
+                        clip, Showcase.videoSound, Modifier.fillMaxSize(), paused = panelHold,
                         clipModifier = Modifier
                             .offset { androidx.compose.ui.unit.IntOffset(r.left.toInt(), r.top.toInt()) }
                             .size(with(d) { r.width.toDp() }, with(d) { r.height.toDp() })

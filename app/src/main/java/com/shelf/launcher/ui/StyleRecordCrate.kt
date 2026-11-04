@@ -519,7 +519,7 @@ private fun CrateSleeve(c: StyleCtx, g: Game, focused: Boolean, centre: Boolean,
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,
                 textAlign = TextAlign.Center, maxLines = 4,
                 modifier = Modifier.align(Alignment.Center).padding(8.dp)
-            )
+            , reserve = false)
         }
         // The sleeve's paper: light from the top left, and the ring the record has worn into it (drawn once per size).
         Box(

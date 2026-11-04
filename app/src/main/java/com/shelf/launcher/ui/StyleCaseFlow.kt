@@ -153,6 +153,8 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
     val centre by remember { derivedStateOf { pos.value.roundToInt() } }
     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
     val nSide = if (loop) min(5, (count - 1) / 2).coerceAtLeast(1) else 5
+    // (Update 460: the cases coming in decoded ahead — no bare plastic blocks while scrolling.)
+    WarmCaseNeighbours(c, vFocus, nSide + 4, loop, realFront = true)
     val density = LocalDensity.current
 
     BoxWithConstraints(modifier.fillMaxSize()) {

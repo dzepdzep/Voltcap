@@ -86,6 +86,7 @@ import com.shelf.launcher.data.mergeArt
 import com.shelf.launcher.data.asCandidates
 import com.shelf.launcher.data.lacksAny
 import com.shelf.launcher.data.SourceType
+import com.shelf.launcher.data.kindOf
 import com.shelf.launcher.data.SteamGameEntry
 import com.shelf.launcher.data.SteamGamesStore
 import com.shelf.launcher.data.SteamGridDbRepository
@@ -1033,6 +1034,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             if (!refresh || (!force && list.any { it.first == com.shelf.launcher.ui.BoxTexture.LABEL }) || screenScraperStore.load() == null) {
                 physicalRaw[key] = list
+                refreshHackLabels()
                 // (Update 232, #60: the state left as it is when the game's list is the one it already has — no new map.)
                 val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
                 _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
@@ -1073,6 +1075,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 ed.apply()
             }
             physicalRaw[key] = list
+            refreshHackLabels()
             // (Update 232, #60: the state left as it is when the look again found the list it already has — no new map.)
             val shown = com.shelf.launcher.data.PhysicalOverrides.apply(key, list)
             _uiState.update { if (it.physicalMedia[key] == shown) it else it.copy(physicalMedia = it.physicalMedia + (key to shown)) }
@@ -1081,6 +1084,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Update 137: what ScreenScraper found for each game, before your picks (PhysicalOverrides). */
     private val physicalRaw = java.util.concurrent.ConcurrentHashMap<String, List<Pair<String, String>>>()
+
+    /** Update 461: which ROM hacks' saved scans are their base game's (HackLabels), after a game's scans change. */
+    private fun refreshHackLabels() {
+        com.shelf.launcher.data.HackLabels.keys = com.shelf.launcher.data.HackLabels.baseMatched(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+        // (Update 462: the official games' cartridge photos — what the photo-made shells are made from.)
+        com.shelf.launcher.ui.PhotoShells.app = getApplication<Application>()
+        val photos = com.shelf.launcher.ui.PhotoShells.photosOf(physicalRaw) { com.shelf.launcher.data.RomHacks.isModified(null, it) }
+        if (photos != com.shelf.launcher.ui.PhotoShells.photos) { com.shelf.launcher.ui.PhotoShells.photos = photos; com.shelf.launcher.ui.PhotoShells.reset() }
+    }
 
     /**
      * Update 205: the games whose scans were asked for or shown this run — the ones whose pictures "Save art on the
@@ -1135,8 +1147,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 if (list.isEmpty()) continue
                 physicalRaw.putIfAbsent(k, list)
-                loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
             }
+            // (Update 461: ROM hacks matched to their base game don't wear that game's label — HackLabels.)
+            // (Update 462: and the official games' cartridge photos for the photo-made shells — refreshHackLabels.)
+            refreshHackLabels()
+            for ((k, list) in physicalRaw) loaded[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, list) }.getOrDefault(list)
             // (Update 305: a game with your own pictures but nothing scraped — no saved list — gets them too; they showed
             // only once its scans had been looked up again.)
             for (k in com.shelf.launcher.data.PhysicalOverrides.keys()) {
@@ -1144,6 +1159,58 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
             // (What was looked up meanwhile wins over the saved list.)
             if (loaded.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = loaded + st.physicalMedia) }
+            // (Update 460b: copies of one game file without scans of their own — GameCopies.)
+            shareScansAcrossCopies(_uiState.value.games)
+        }
+    }
+
+    /**
+     * Update 460b (D173): a game with no saved scans of its own takes the ones saved for another copy of the same file
+     * (internal storage and SD card — GameCopies). In memory only; your picks for this copy still apply.
+     */
+    fun shareScansAcrossCopies(games: List<Game>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (physicalRaw.isEmpty()) return@launch
+            val keys = physicalRaw.keys.toList()
+            val byCopy = HashMap<String, String>()
+            for (k in keys) com.shelf.launcher.data.GameCopies.copyKey(k)?.let { byCopy.putIfAbsent(it, k) }
+            val now = _uiState.value.physicalMedia
+            val upd = HashMap<String, List<Pair<String, String>>>()
+            for (g in games) {
+                if (g.sourceType != com.shelf.launcher.data.SourceType.ROM) continue
+                val k = g.stableKey
+                if (physicalRaw.containsKey(k) || now[k] != null) continue
+                val sib = com.shelf.launcher.data.GameCopies.copyKey(k)?.let { byCopy[it] }?.takeIf { it != k } ?: continue
+                val raw = physicalRaw[sib] ?: continue
+                if (!com.shelf.launcher.data.GameCopies.sameSize(runCatching { java.io.File(k).length() }.getOrDefault(0L), runCatching { java.io.File(sib).length() }.getOrDefault(0L))) continue
+                upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, raw) }.getOrNull() ?: continue
+            }
+            if (upd.isNotEmpty()) {
+                android.util.Log.i("Voltcap", "scans shared across copies: ${upd.size}")
+                _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + upd.filterKeys { st.physicalMedia[it] == null }) }
+            }
+        }
+    }
+
+    /**
+     * Update 460: reads the Labels folder (LabelFolder) and gives the games with a label there that label as their
+     * "Disc label" (where they have no real label scan, or always for a ROM hack). Once per library change, off the main thread.
+     */
+    private var folderLabelsFor = -1
+    fun refreshFolderLabels(games: List<Game>) {
+        val tag = games.size * 31 + (games.firstOrNull()?.stableKey?.hashCode() ?: 0)
+        if (tag == folderLabelsFor) return
+        folderLabelsFor = tag
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { com.shelf.launcher.data.LabelFolder.index() }
+            val upd = HashMap<String, List<Pair<String, String>>>()
+            for (g in games) {
+                if (g.sourceType != com.shelf.launcher.data.SourceType.ROM) continue
+                val k = g.stableKey
+                if (com.shelf.launcher.data.LabelFolder.forKey(k) == null) continue
+                upd[k] = runCatching { com.shelf.launcher.data.PhysicalOverrides.apply(k, physicalRaw[k].orEmpty()) }.getOrNull() ?: continue
+            }
+            if (upd.isNotEmpty()) _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + upd) }
         }
     }
 
@@ -1892,6 +1959,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // installed/removed while away are picked up.
         com.shelf.launcher.ui.SecondScreenGate.release()
         refreshAppsIfChanged()
+        refreshContinueApps()
         // Back on the home screen: the game is over, so whatever Voltcap put on
         // the other screen for it goes (the home screen's own second-screen
         // view takes over again). Not in the moment right after a launch,
@@ -2006,13 +2074,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** Other games open in the background (a different app than [game]'s): ask before starting [game]. */
     fun otherOpenGames(game: Game): List<Game> {
+        // Update 451: opening a streaming app never asks about closing an open game (it doesn't start one).
+        if (_uiState.value.isContinueApp(game)) return emptyList()
         val app = getApplication<Application>()
         val pkg = if (game.sourceType == SourceType.APP) game.packageName else emulatorPackageFor(game)
         // Only games known to be open: asking about one that may already be closed would just nag.
         val sure = com.shelf.launcher.data.RunningGames.confirmed
         val others = com.shelf.launcher.data.RunningGames.others(app, game.stableKey)
             .filter { it.pkg != pkg && it.key in sure }.map { it.key }.toSet()
-        return _uiState.value.games.filter { it.stableKey in others }
+        // Update 451: an app in Continue playing still open in the background (a streaming client) isn't a game to quit
+        // first — starting a game never asks about it (the Thor asked "PXPlay is still open" before Dr. Mario).
+        return _uiState.value.games.filter { it.stableKey in others && !_uiState.value.isContinueApp(it) }
     }
 
     /** X on a game that's still open: close it. */
@@ -2247,6 +2319,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * in the same update as the new category, so no frame has the new category in the old layout (or the reverse).
      */
     private fun categoryLayoutFor(next: LauncherUiState): AppearanceSettings? {
+        // Update 453/454 (D164): during a test-hook preview the layout on screen is the one under test — a category switch
+        // used to bring the category's (or the default) layout back, so a Cross menu preview became Pocket classic after the
+        // first L2 / R2 and every later key was judged on the wrong layout. Nothing is saved in a preview either way.
+        if (com.shelf.launcher.ui.TestHooks.previewOnly) return null
         val old = savedOf(_uiState.value.appearance)
         val want = com.shelf.launcher.data.CategoryLayouts.effective(categoryKeyOf(next)) ?: return null
         if (want == old.homeLayout) return null
@@ -3567,12 +3643,20 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // task forward there. A second instance is only safe for ordinary
         // apps — never emulators, whose two copies would fight over saves.
         val previous = lastAppDisplay[pkg]
+        // Update 450: an app in Continue playing (a streaming client) is brought forward, never opened twice.
+        val inContinue = pkg in state.libraryApps.continueApps
         val newInstance = displayId != null && previous != null && previous != displayId &&
-            pkg !in state.emulatorPackages
+            pkg !in state.emulatorPackages && !inContinue
         val result = GameLauncher.launchAppOn(context, pkg, displayId, app.name, newInstance)
         when (result) {
             is com.shelf.launcher.data.AppLaunchResult.Launched -> {
                 if (displayId != null) lastAppDisplay[pkg] = displayId
+                // Update 450: only the time is noted (the playing profile's Continue playing) — no session, play time,
+                // save sync or tuning. One entry per app, whichever shortcut or screen opened it.
+                if (inContinue) {
+                    recentlyPlayedStore.recordPlayed(pkg, System.currentTimeMillis())
+                    recombineGames()
+                }
                 noteOwnLaunch(null)
                 // The second-screen home is a window above every app on its
                 // display; step aside so the app can be seen.
@@ -3981,6 +4065,99 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun removeFromContinuePlaying(game: Game) {
         recentlyPlayedStore.hide(game.stableKey)
         recombineGames()
+    }
+
+    // ---- Update 450: ordinary apps in Continue playing (opt-in; data/ContinueApps.kt) ----
+
+    /** Puts an ordinary app in Continue playing (or takes it out). It stays an app; nothing else about it changes. */
+    fun setAppInContinue(packageName: String, on: Boolean) {
+        if (on && packageName !in _uiState.value.libraryApps.continueApps) com.shelf.launcher.data.ContinueApps.noteOptIn(getApplication(), packageName)
+        updateLibraryApps { it.copy(continueApps = if (on) it.continueApps + packageName else it.continueApps - packageName) }
+        if (on) refreshContinueApps()
+    }
+
+    /** Forgets the app's Continue playing history on this profile (last used, time in front). It stays opted in. */
+    fun clearContinueHistory(packageName: String) {
+        recentlyPlayedStore.forget(packageName)
+        com.shelf.launcher.data.ContinueApps.clear(getApplication(), packageName)
+        recombineGames()
+    }
+
+    /** Update 451: what the home screen is on now (QA snapshots). */
+    internal fun qaViewState(): org.json.JSONObject {
+        val s = _uiState.value
+        return org.json.JSONObject()
+            .put("platform", s.platformFilter ?: "")
+            .put("special", s.specialFilter?.name ?: "")
+            .put("focus", s.visibleGames.getOrNull(s.focusedIndex)?.stableKey ?: "")
+            .put("profile", com.shelf.launcher.data.Profiles.activeId.value)
+    }
+
+    /**
+     * Update 451: puts a saved [qaViewState] back — the same category (never an empty one: it stays where it is and says so)
+     * and the same game focused — then compares. The profile is only checked, never switched.
+     */
+    internal suspend fun qaRestoreViewState(j: org.json.JSONObject): String {
+        val special = j.optString("special").takeIf { it.isNotEmpty() }?.let { runCatching { SpecialFilter.valueOf(it) }.getOrNull() }
+        val platform = j.optString("platform").takeIf { it.isNotEmpty() }
+        val now = _uiState.value
+        if (now.specialFilter != special || now.platformFilter != platform) {
+            if (special != null) setSpecialFilter(special) else setPlatformFilter(platform)
+            kotlinx.coroutines.delay(300)
+        }
+        val key = j.optString("focus")
+        if (key.isNotEmpty()) {
+            val i = _uiState.value.visibleGames.indexOfFirst { it.stableKey == key }
+            if (i >= 0) setFocus(i)
+            kotlinx.coroutines.delay(150)
+        }
+        val got = qaViewState()
+        val diffs = listOf("platform", "special", "focus", "profile").filter { got.opt(it)?.toString() != j.opt(it)?.toString() }
+        return if (diffs.isEmpty()) "OK $got" else "MISMATCH ${diffs.joinToString(",")} want=$j got=$got"
+    }
+
+    /** Update 450: QA (`voltcap_test_appinfo`, read-only) — how this app is classified right now. */
+    private fun appProbe(pkg: String): String {
+        val s = _uiState.value
+        val lib = s.libraryApps
+        val g = s.games.firstOrNull { it.packageName == pkg && it.sourceType == SourceType.APP }
+            ?: Game(name = pkg, platform = "App", hue = 0, sourceType = SourceType.APP, packageName = pkg)
+        val hiddenFromContinue = !recentlyPlayedStore.loadVisible().containsKey(pkg) && recentlyPlayedStore.loadAll().containsKey(pkg)
+        return "kind=${lib.kindOf(pkg)} auto_game=${pkg in s.gameAppPackages} android_game=${s.isAndroidGame(g)} " +
+            "emulator=${pkg in s.emulatorPackages} added=${pkg in lib.added} mode=${lib.mode} in_library=${s.isAppInLibrary(g)} " +
+            "continue_opt_in=${pkg in lib.continueApps} last_played=${recentlyPlayedStore.loadAll()[pkg] ?: 0} " +
+            "removed_from_continue=$hiddenFromContinue in_continue_list=${s.copy(specialFilter = SpecialFilter.RECENT).visibleGames.any { it.packageName == pkg }} " +
+            "usage_access=${com.shelf.launcher.data.ContinueApps.usageAvailable(getApplication())} " +
+            "foreground_ms=${com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())[pkg] ?: 0} profile=${com.shelf.launcher.data.Profiles.activeId.value} " +
+            "playtime_ms=${playtimeStore.loadTotals()[pkg] ?: 0} visible_last_played=${recentlyPlayedStore.loadVisible()[pkg] ?: 0}"
+    }
+
+    /** Time in front per opted-in app (this profile, from Usage access); for the app's options. */
+    fun continueForeground(): Map<String, Long> = com.shelf.launcher.data.ContinueApps.foregroundTotals(getApplication())
+
+    /**
+     * With Usage access (optional, never switched on here): when the opted-in apps were in front since the last look —
+     * also when opened outside Voltcap — becomes their Continue playing time. Read once when Voltcap comes back.
+     */
+    /** Update 451: [refreshContinueApps] right now, on this thread, for the profile playing now (before a profile switch). */
+    private fun settleContinueAppsNow() {
+        val pkgs = _uiState.value.libraryApps.continueApps
+        if (pkgs.isEmpty()) return
+        runCatching {
+            com.shelf.launcher.data.ContinueApps.scan(getApplication(), pkgs)?.forEach { (pkg, u) -> recentlyPlayedStore.recordIfNewer(pkg, u.lastUsed) }
+        }
+    }
+
+    private fun refreshContinueApps() {
+        val pkgs = _uiState.value.libraryApps.continueApps
+        if (pkgs.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val app = getApplication<Application>()
+            val use = runCatching { com.shelf.launcher.data.ContinueApps.scan(app, pkgs) }.getOrNull() ?: return@launch
+            var changed = false
+            use.forEach { (pkg, u) -> if (recentlyPlayedStore.recordIfNewer(pkg, u.lastUsed)) changed = true }
+            if (changed) withContext(Dispatchers.Main) { recombineGames() }
+        }
     }
 
     fun toggleFavorite(game: Game) {
@@ -4706,6 +4883,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun switchProfile(id: Int) {
         val app = getApplication<Application>()
+        // Update 451: use of the opted-in apps (PXPlay, Asobi…) up to now goes to the profile that was playing, before it changes.
+        if (id != com.shelf.launcher.data.Profiles.activeId.value) settleContinueAppsNow()
         val p = com.shelf.launcher.data.Profiles.setActive(app, id) ?: return
         val slot = p.raSlot?.takeIf { raCredentialsStore.loadSlot(it) != null }
         if (slot != null) switchRaAccount(slot)
@@ -5385,6 +5564,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      */
     fun launch(game: Game) {
         if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launch", game.stableKey)) return
+        // Update 451 (D152): an app put in Continue playing (PXPlay, Asobi…) opened from a tile is just opened, like from the
+        // drawer — it took the whole game path before (second-screen info page, play-time session, save watch, overlays).
+        if (_uiState.value.isContinueApp(game)) { launchApp(game); return }
         com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
         val check = preparedCheck?.second
         if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
@@ -6650,6 +6832,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        // Update 450: read-only QA probe (voltcap_test_appinfo).
+        com.shelf.launcher.ui.TestHooks.appProbe = { pkg -> runCatching { appProbe(pkg) }.getOrElse { "voltcap_state=error ${it.message}" } }
+        // Update 451: QA snapshots keep / put back / check the selected category, focused game and profile.
+        com.shelf.launcher.ui.TestHooks.viewState = { qaViewState() }
+        com.shelf.launcher.ui.TestHooks.restoreViewState = { j, done -> viewModelScope.launch { done(runCatching { qaRestoreViewState(j) }.getOrElse { "MISMATCH error ${it.message}" }) } }
         // Pass 5: the start category's own game look (data/CategoryGameLooks.kt).
         runCatching { _uiState.update { it.copy(appearance = withCategoryArt(it, it.appearance)) } }
         // (Update 318: the RetroAchievements login decrypted now, off the main thread — its first read took over 5 s on the

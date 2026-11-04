@@ -417,6 +417,9 @@ fun PlatformBrowser(
             Features.PlatformView.CONSTELLATION -> ConstellationLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
             Features.PlatformView.VAULT -> VaultLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
             Features.PlatformView.DASHBOARD -> DashboardLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.WIICHAN -> WiiChannelLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.CINEMA -> CinemaLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
+            Features.PlatformView.ARCTIC -> ArcticLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
             else -> Unit
         }
         // Action bar: the platform's name, the game count and the random-game button; it animates between views.

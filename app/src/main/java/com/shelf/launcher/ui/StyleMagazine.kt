@@ -137,8 +137,7 @@ internal fun magazineKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean 
     val up = event.type == KeyEventType.KeyUp
     if (up && MagNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
-    if (k == Key.ButtonSelect) return up && mgHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     val n = c.games.size
     if (MagNav.contents) {

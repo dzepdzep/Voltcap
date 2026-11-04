@@ -80,6 +80,9 @@ fun VideoBackdrop(
                             if (!withSound) player.setVolume(0f, 0f)
                             player.setOnPreparedListener { mp ->
                                 sizeClip(view, mp.videoWidth, mp.videoHeight, fit)
+                                // (Update 470, QA only: the clip's own size against the room it fills — the "soft Stadium 2
+                                // window" was its 2-D gameplay clip, not a picture decoded small.)
+                                if (QaTrace.on) android.util.Log.e("VoltcapQA", "clip size ${mp.videoWidth}x${mp.videoHeight} in ${view.width}x${view.height}")
                                 prepared.set(true)
                                 // (Already idle when it got ready: the first frame is shown, then it holds.)
                                 mp.start()

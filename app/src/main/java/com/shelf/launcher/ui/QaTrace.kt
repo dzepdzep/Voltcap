@@ -16,9 +16,15 @@ internal object QaTrace {
         private set
     @Volatile private var budgetNs = 16_666_667L
 
+    /** Update 466: Voltcap's external files folder while QA is on (QA picture dumps), else null. */
+    @Volatile var dir: java.io.File? = null
+        private set
+
     fun init(activity: android.app.Activity) {
         on = TestHooks.enabled(activity)
         if (!on) return
+        dir = runCatching { activity.getExternalFilesDir(null) }.getOrNull()
+        QaClip.watch(activity)
         val hz = runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 30) activity.display?.refreshRate else @Suppress("DEPRECATION") activity.windowManager.defaultDisplay.refreshRate
         }.getOrNull() ?: 60f

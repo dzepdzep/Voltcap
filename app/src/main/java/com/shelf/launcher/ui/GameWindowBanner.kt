@@ -809,7 +809,7 @@ private fun BannerHero(
             }
             .clipToBounds().background(placeholderBrush(g.hue))
     ) {
-        if (backdrop != null) AsyncImage(backdrop, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+        if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
         val video = state.videoUrls[g.stableKey]
         VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
         Box(
@@ -967,7 +967,7 @@ private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> 
         Icon(sync.icon, null, tint = ink, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(5.dp))
         Text(
-            "Saves: " + sync.text, color = if (focused) look.ink else ink, fontSize = 12.sp,
+            savesLabel(sync.text), color = if (focused) look.ink else ink, fontSize = 12.sp,
             fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis
         )
     }

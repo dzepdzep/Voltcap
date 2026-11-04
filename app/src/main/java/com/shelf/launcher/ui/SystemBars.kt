@@ -74,7 +74,8 @@ internal object SystemBars {
 internal fun ImmersiveDialogWindow() {
     val view: View = LocalView.current
     val immersive = GestureHint.immersiveState.value
-    DisposableEffect(view, immersive) {
+    val deviceHides = GestureHint.deviceNavHidden.value // (Update 449)
+    DisposableEffect(view, immersive, deviceHides) {
         val window = (view.parent as? DialogWindowProvider)?.window
         if (window != null) {
             runCatching { SystemBars.apply(window, immersive); SystemBars.watchKeyboard(window) }
@@ -83,7 +84,7 @@ internal fun ImmersiveDialogWindow() {
     }
     // Switching "Hide navigation bar" back on right after it was off: Android ignores a hide that comes while the bar is
     // still sliding in, so the bar stayed. Ask again once it has settled.
-    androidx.compose.runtime.LaunchedEffect(view, immersive) {
+    androidx.compose.runtime.LaunchedEffect(view, immersive, deviceHides) {
         val window = (view.parent as? DialogWindowProvider)?.window ?: return@LaunchedEffect
         for (wait in longArrayOf(120, 350, 800)) {
             kotlinx.coroutines.delay(wait)

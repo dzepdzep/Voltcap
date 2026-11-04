@@ -133,3 +133,35 @@ internal class SharedArtInterceptor(private val px: Int) : coil.intercept.Interc
         return chain.withSize(coil.size.Size(px, px)).proceed(shared)
     }
 }
+
+/**
+ * Update 469 (owner: "the Stadium 2 popup background looks low-resolution while Bubbles' is sharp"): a popup window's
+ * full-width backdrop asked with a plain `AsyncImage(url)` — Coil's default request is INEXACT and keyed by the address only,
+ * so it took whatever copy of that picture was already in memory: the home screen's thumbnail / style-art decode (360–720 px)
+ * stretched over a 960–1920 px window. Bubbles' details banner has its own full-size request (rememberFullQualityHero).
+ * This one decodes to the screen's long side under its own key (never a smaller copy), the small one stands in while it
+ * reads, and with the test hooks on it logs the size it drew ("VoltcapQA backdrop <w>x<h> for <screen>").
+ */
+@Composable
+internal fun rememberBackdropRequest(url: String): ImageRequest {
+    val context = LocalContext.current
+    return remember(url, context) {
+        val m = context.resources.displayMetrics
+        val long = maxOf(m.widthPixels, m.heightPixels).coerceIn(720, 2560)
+        ImageRequest.Builder(context)
+            .data(url)
+            .size(long, long)
+            .scale(Scale.FIT)
+            .precision(Precision.INEXACT)
+            .memoryCacheKey("$url|backdrop|$long")
+            .placeholderMemoryCacheKey(thumbKey(url))
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .crossfade(120)
+            .apply {
+                if (QaTrace.on) listener(onSuccess = { _, r ->
+                    android.util.Log.e("VoltcapQA", "backdrop ${r.drawable.intrinsicWidth}x${r.drawable.intrinsicHeight} for ${m.widthPixels}x${m.heightPixels} (${r.dataSource})")
+                })
+            }
+            .build()
+    }
+}

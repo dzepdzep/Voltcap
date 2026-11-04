@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -74,6 +77,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -333,7 +337,7 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
  * draws it lit or not.
  */
 @Composable
-internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable BoxScope.(Boolean) -> Unit) {
+internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp, content: @Composable BoxScope.(Boolean) -> Unit) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -341,6 +345,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
     Box(
         modifier
             .then(if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier)
+            // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
+            // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
+            .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
             .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
@@ -351,19 +358,25 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, content: @Composable
  * ▲ ▼ scroll it while it has focus, and at its top / bottom the press goes on to the next control. A thin ring shows it is
  * the one the D-pad is on. Put it before sceneFadeEdges / verticalScroll(state).
  */
-internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color): Modifier = this.composed {
+internal fun Modifier.sceneReadable(state: androidx.compose.foundation.ScrollState, ring: Color, onlyWhenScrolls: Boolean = false,
+    exitDown: androidx.compose.ui.focus.FocusRequester? = null): Modifier = this.composed {
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val step = if (onlyWhenScrolls) 0.9f else 0.6f
     var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     androidx.compose.ui.Modifier.onFocusChanged { on = it.isFocused }
         .onPreviewKeyEvent { e ->
             if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when (e.key) {
-                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * 0.6f) }; true } else false
-                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * 0.6f) }; true } else false
+                // (Update 471: at the end, [exitDown] — the window's Play — rather than whatever key is nearest below.)
+                androidx.compose.ui.input.key.Key.DirectionDown -> if (state.value < state.maxValue) { scope.launch { state.animateScrollBy(state.viewportSize * step) }; true }
+                    else if (exitDown != null) runCatching { exitDown.requestFocus() }.isSuccess else false
+                androidx.compose.ui.input.key.Key.DirectionUp -> if (state.value > 0) { scope.launch { state.animateScrollBy(-state.viewportSize * step) }; true } else false
                 else -> false
             }
         }
-        .then(androidx.compose.ui.Modifier.focusable())
+        // (Update 471: [onlyWhenScrolls] — a box whose text fits is no stop for the D-pad at all, and a short one moves a
+        // whole view per press, so the way back to Play is one or two presses, not a page-by-page walk.)
+        .then(if (!onlyWhenScrolls || state.maxValue > 0) androidx.compose.ui.Modifier.focusable() else androidx.compose.ui.Modifier)
         .border(if (on) 2.dp else 0.dp, if (on) ring else Color.Transparent, RoundedCornerShape(6.dp))
         .padding(4.dp) // (the same room with or without the ring: the text never jumps when it is reached)
 }
@@ -437,8 +450,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     drawLine(SheetRed.copy(alpha = 0.35f), Offset(30.dp.toPx(), 0f), Offset(30.dp.toPx(), size.height), 1.5f)
                 }
                 .padding(start = 40.dp, end = 18.dp, top = 20.dp, bottom = 14.dp)
-                .verticalScroll(scroll)
         ) {
+            // (Update 469, D222: the whole sheet was one scroll — on the KONKR Play / Contents / Back sat under the story and the
+            // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
+            // header, the title and the stamped actions stay put.)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("INSERT · " + (if (ctx.page == WinPage.MAIN) "CONTENTS" else pageName(ctx.page).uppercase()), color = SheetMuted, fontSize = 11.sp,
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -451,6 +466,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
             Spacer(Modifier.height(8.dp))
+            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus).sceneFadeEdges(scroll).verticalScroll(scroll)) {
             if (ctx.page == WinPage.MAIN) {
                 @Composable
                 fun line(label: String, value: String?) {
@@ -466,19 +482,33 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
                     }
                 }
+                // (Update 471, owner review: the whole story under the facts left it a sliver of the sheet to be read in. The
+                // sheet shows the story's opening sentences — on a short sheet first, above the facts, so it is what the window
+                // opens on — and CONTENTS has all of it, said on the sheet, never cut silently. The facts follow in full.)
+                val shortSheet = ctx.maxH < 480.dp
+                @Composable
+                fun story(gapTop: Boolean) {
+                    ctx.summary?.let {
+                        val (lead, more) = storyLead(it, if (shortSheet) 150 else 220)
+                        if (gapTop) Spacer(Modifier.height(8.dp))
+                        Text(lead, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
+                        if (more) Text("THE WHOLE STORY: CONTENTS", color = SheetMuted, fontSize = 10.sp, fontFamily = mono, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp))
+                        if (!gapTop) Spacer(Modifier.height(8.dp))
+                    }
+                }
+                if (shortSheet) story(false)
                 line("Released", ctx.year)
                 line("Made by", ctx.developer)
                 line("Kind", ctx.genres)
                 line("Played", ctx.played)
                 line("Last played", ctx.last)
                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
-                ctx.summary?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it, color = SheetInk.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 16.sp, fontFamily = mono)
-                }
+                if (!shortSheet) story(true)
             } else {
                 // The other pages, on the same paper.
                 ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
+            }
             }
             Spacer(Modifier.height(12.dp))
             // The actions, stamped.
@@ -516,7 +546,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             }
             if (ctx.chips.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                // (Update 470: a gap between the status lines — the sheet lies tilted, and two lines touching edge to edge
+                // crossed each other's box by up to 19 px on the Odin at font 1.3; 12 dp clears it.)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(Modifier.background(if (on) accent.copy(alpha = 0.18f) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
@@ -749,7 +781,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
             if (w >= 640.dp) Text("STORED ENTRY", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(bottom = 8.dp))
             Spacer(Modifier.weight(1f))
-            Text("L1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, end = 4.dp))
+            // (Update 467, popup gate: in a narrow window — beside the case — the four tabs ran off the band and Options was
+            // squeezed to 6 px; there the tabs are tighter and the L1 / R1 marks give way.)
+            val narrow = w < 560.dp
+            if (!narrow) Text("L1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, end = 4.dp))
             tabs.forEach { t ->
                 val sel = ctx.page == t
                 val a = WinAction(pageName(t), androidx.compose.material.icons.Icons.Filled.Info, { openTab(t) })
@@ -757,14 +792,14 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     Box(
                         Modifier.clip(CutCornerShape(topStart = 6.dp, topEnd = 6.dp))
                             .background(if (sel) RecPanel else if (on) red else RecNavy)
-                            .padding(horizontal = 12.dp, vertical = if (sel) 8.dp else 6.dp)
+                            .padding(horizontal = if (narrow) 5.dp else 12.dp, vertical = if (sel) 8.dp else 6.dp)
                     ) {
-                        Text(pageName(t).uppercase(), color = if (sel) RecInk else Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace, maxLines = 1)
+                        Text(pageName(t).uppercase(), color = if (sel) RecInk else Color.White, fontSize = if (narrow) 10.sp else 12.sp, fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
                     }
                 }
             }
-            Text("R1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, start = 4.dp))
+            if (!narrow) Text("R1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, start = 4.dp))
         }
         Row(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
             // The sprite on its stand, the name plate, the console tag.
@@ -836,7 +871,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(8.dp))
                     // The menu with its pointer.
                     Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp)) {
-                        FlowRow(maxItemsInEachRow = 3, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        // (Update 467, popup gate: beside the case — Inspect, a narrow window — three a row broke "SUMMARY"
+                        // over two lines; two a row there.)
+                        FlowRow(maxItemsInEachRow = if (w < 560.dp) 2 else 3, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
                                 SceneControl(a, Modifier.weight(1f)) { on ->
                                     Row(
@@ -844,8 +881,15 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black,
-                                            fontFamily = FontFamily.Monospace, maxLines = 2)
+                                        // (Update 469: "ACHIEVEMENTS" broke mid-word, "ACHIEVEME / NTS", on the KONKR — long keys a
+                                        // little smaller. Not FitText: it is a SubcomposeLayout, and FlowRow's weighted items ask for
+                                        // intrinsic sizes — that crashed Voltcap on A (IllegalStateException, Odin + KONKR sweep).
+                                        // Still two lines at most, never cut.)
+                                        // (Recheck: 10 sp still broke "ACHIEVEMENT / S" in the KONKR's 100 dp cell — Compose's own
+                                        // step auto-size (a text node, no subcomposition), one line, 13 → 8 sp.)
+                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp,
+                                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 13.sp, stepSize = 0.5.sp),
+                                            fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
                                     }
                                 }
                             }
@@ -911,19 +955,42 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
             .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
             .padding(14.dp)
-            .verticalScroll(rememberScrollState())
     ) {
-        val mediaH = (ctx.maxH * 0.42f).coerceIn(120.dp, 300.dp)
+        // (Update 467, owner's Pokémon Stadium 2 screenshot: the whole window scrolled, so on the KONKR (960×640) with a
+        // three-line story the Play / Details / Back / More row sat below the window's bottom edge, cut in half, reachable
+        // only by scrolling. Now only the picture, screenshots, facts and story scroll — in the room the action row leaves;
+        // the actions are measured first and always shown whole. QA gate: tools/qa/tools/geomcheck.py --clip, R26.)
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+        // (Update 467: the picture gives way first — it leaves ~270 dp for the screenshots, facts, story and the action row —
+        // so on a short screen the story still shows rather than scrolling away; on a tall one it's as before.)
+        val mediaH = minOf(ctx.maxH * 0.42f, ctx.maxH - 270.dp).coerceIn(110.dp, 300.dp)
         Box(
             Modifier.fillMaxWidth().height(mediaH).clip(RoundedCornerShape(10.dp)).background(Color.Black)
                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
         ) {
             if (ctx.page == WinPage.MAIN) {
                 val pick = shots.getOrNull(shown)
-                if (pick != null) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                else {
-                    (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-                    VideoCrossfade(ctx.state.videoUrls[ctx.g.stableKey], ctx.state.appearance.videoSound, Modifier.fillMaxSize())
+                // (Update 471, owner decision on the soft Stadium 2 window: the gameplay clip (640x480 for an N64 game) was
+                // cropped and zoomed into this wide band. The window now opens on the sharp still — decoded at the screen's
+                // size — and plays the clip only when asked ("Watch clip"), whole, in its own shape with black bars, never
+                // stretched. Nothing is decoded or played while it isn't asked for. The Video previews setting still decides
+                // whether there is a clip at all.)
+                val clipUrl = ctx.state.videoUrls[ctx.g.stableKey]?.takeIf { ctx.state.appearance.videoPreviews }
+                var clipOn by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
+                if (pick != null && !clipOn) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                if (clipOn && clipUrl != null) VideoBackdrop(clipUrl, ctx.state.appearance.videoSound, Modifier.fillMaxSize(), fit = true, shade = false)
+                if (clipUrl != null) SceneControl(
+                    WinAction(if (clipOn) "Stop clip" else "Watch clip", if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, { clipOn = !clipOn }),
+                    Modifier.align(Alignment.TopEnd).padding(8.dp).zIndex(2f)
+                ) { on ->
+                    Row(Modifier.clip(RoundedCornerShape(50)).background(if (on) accent else Color.Black.copy(alpha = 0.55f))
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(50)).heightIn(min = 32.dp).padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(if (clipOn) Icons.Filled.Stop else Icons.Filled.PlayCircle, null, tint = if (on) onAccent else Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(5.dp))
+                        Text(if (clipOn) "Stop clip" else "Watch clip", color = if (on) onAccent else Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 // The glass's shine.
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
@@ -969,6 +1036,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(6.dp))
                 Text(it, color = Color(0xFFB9BEC9), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 3)
             }
+        }
         }
         Spacer(Modifier.height(12.dp))
         // Glossy pills, each with its reflection on the stage's floor.
@@ -1099,7 +1167,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
         OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
         // The keys, fanned out on an arc to the disc's right.
         val n = acts.size
-        val span = minOf(150f, (n - 1).coerceAtLeast(1) * 17f)
+        // (Update 470, D212: 22° between keys, was 17° — neighbours' touch boxes crossed by 9 x 18 px at the fan's ends.)
+        val span = minOf(156f, (n - 1).coerceAtLeast(1) * 22f)
         val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
         acts.forEachIndexed { i, a ->
             val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
@@ -1448,7 +1517,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 fun stat(label: String, value: String?) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(96.dp))
-                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                        // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
+                        // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
+                        // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
+                        Text(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 15.sp))
                     }
                 }
                 stat("PLAY TIME", ctx.played)
@@ -1464,7 +1537,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 stat("KIND", ctx.genres)
                 stat("SYSTEM", ctx.console)
                 Spacer(Modifier.height(6.dp))
-                ctx.chips.forEach { a ->
+                ctx.chips.forEachIndexed { i, a ->
+                    // (Update 470: 10 dp between the status lines — they touched edge to edge on the turned panel, and their boxes
+                    // crossed by 19 px on the Odin, o470F.)
+                    if (i > 0) Spacer(Modifier.height(10.dp))
                     SceneControl(a, Modifier) { on ->
                         Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
                             textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
@@ -1474,7 +1550,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
         }
         // The commands.
         Column(
-            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f).graphicsLayer { rotationZ = -4f },
+            // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
+            // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f)
+                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->
@@ -1500,4 +1579,17 @@ private fun NightStatus(ctx: WinSceneCtx) {
             }
         }
     }
+}
+
+/**
+ * Update 471: the opening of a story for a sheet with little room — whole sentences up to about [max] characters (at least
+ * the first one), and whether more follows. Never cut mid-word and never with "…": the window says where the rest is.
+ */
+internal fun storyLead(story: String, max: Int = 200): Pair<String, Boolean> {
+    val t = story.trim()
+    if (t.length <= max) return t to false
+    val ends = Regex("[.!?](\\s|$)").findAll(t).map { it.range.first + 1 }.toList()
+    val cut = ends.lastOrNull { it <= max } ?: ends.firstOrNull { it <= max * 2 } ?: t.lastIndexOf(' ', max).takeIf { it > max / 2 } ?: return t to false
+    val lead = t.substring(0, cut).trim()
+    return lead to (lead.length < t.length)
 }

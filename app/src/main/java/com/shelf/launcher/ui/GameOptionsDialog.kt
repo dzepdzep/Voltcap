@@ -84,7 +84,14 @@ fun GameOptionsDialog(
     /** Update 274 (Toni): "Inspect…" — its cartridge / disc / case out in the game window to turn round; null hides it. */
     onInspect: (() -> Unit)? = null,
     /** Update 287: "DS case…" (DsCasePicker) for a DS game; null hides it. */
-    onDsCase: (() -> Unit)? = null
+    onDsCase: (() -> Unit)? = null,
+    /** Update 450: an ordinary app (a streaming client) — "Show in Continue playing" on / off; null hides it (games). */
+    continueAppOn: Boolean? = null,
+    onToggleContinueApp: (() -> Unit)? = null,
+    /** Update 450: what Continue playing knows about the app (last used, time in front, Usage access); shown under the switch. */
+    continueAppNote: String? = null,
+    /** Update 450: "Clear from Continue playing" — forgets the app's history on this profile; null hides it. */
+    onClearContinue: (() -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -103,6 +110,17 @@ fun GameOptionsDialog(
         if (onRemoveFromContinue != null) {
             // (Update 244: until it's played again; its play time stays.)
             MenuRow(Icons.Filled.History, "Remove from Continue playing", "Until you play it again — play time stays", onClick = onRemoveFromContinue)
+        }
+        if (continueAppOn != null && onToggleContinueApp != null) {
+            MenuRow(
+                Icons.Filled.History,
+                if (continueAppOn) "Show in Continue playing: On" else "Show in Continue playing: Off",
+                continueAppNote ?: if (continueAppOn) "Press to take it out — it stays an app" else "Lists it with your games when you use it — it stays an app",
+                onClick = onToggleContinueApp
+            )
+        }
+        if (onClearContinue != null) {
+            MenuRow(Icons.Filled.History, "Clear from Continue playing", "Forgets when you used it and for how long (this profile)", onClick = onClearContinue)
         }
         if (onGuide != null) {
             MenuRow(Icons.Filled.Book, "Guide", "Walkthrough that follows where you are", onClick = onGuide)

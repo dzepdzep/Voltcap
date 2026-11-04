@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.os.PowerManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
@@ -48,6 +49,18 @@ import java.io.File
  * While the limit is on and the charger is in, [ChargeLimitService] (a minimum-priority foreground
  * service) keeps this running — battery broadcasts stop when the process dies. A stop switch that is
  * set stays set in the driver even if Voltcap's process goes away.
+ *
+ * **D148, Retroid fast charge (update 450).** On a fast charger with the screen off the RP Classic went 80 → 83 %:
+ * batterystats showed the handheld waking for ~0.45 s on each battery change and going straight back to sleep, so the
+ * root writes started at 80 % only finished at 83 % (voltage 4370 → 4253 mV and the charge counter flat right then).
+ * On a Retroid (only — the AYN path is unchanged) Voltcap now:
+ *  - holds a short partial wake lock (≤ 10 s) while it handles a battery change, so the stop is written at once;
+ *  - checks the battery current ~12 s after a stop and again 12 s later: still charging (> [STILL_CHARGING_MA]) → the
+ *    switches are written again, then the next switch is added (instead of waiting for a 2 % rise);
+ *  - learns how far the level still creeps up after a stop on a fast charge ([nextLead], 0–[MAX_LEAD] %, kept in
+ *    [KEY_LEAD]) and stops that much earlier, but only while it really is a fast charge (one percent in under
+ *    [FAST_STEP_MS]); a slow charge always stops at [STOP_AT]. The resume point ([RESUME_BELOW]) is unchanged.
+ * Every stop / check / retry / lesson is written to the charging log (charge_log.csv: `limit_*` rows).
  */
 object ChargeLimiter {
     const val STOP_AT = 80
@@ -65,6 +78,39 @@ object ChargeLimiter {
     private const val RECHECK_MS = 15_000L
     /** How far the level may rise while stopped (gauge lag) before the stop counts as not enough. */
     private const val RISE_TOLERANCE = 2
+    /** D148: the learned early stop for a fast charge on this device (Retroid only), 0..[MAX_LEAD]. */
+    private const val KEY_LEAD = "fast_lead"
+    const val MAX_LEAD = 2
+    /** One percent quicker than this counts as a fast charge (the RP Classic on AC: ~38 s; on a 500 mA port: minutes). */
+    const val FAST_STEP_MS = 90_000L
+    /** How long the level is watched after a stop before the lesson is taken. */
+    const val SETTLE_MS = 5 * 60_000L
+    private const val MIN_SETTLE_MS = 60_000L
+    /** Battery current (mA, + = into the battery on the Retroid) that still counts as charging after a stop. */
+    const val STILL_CHARGING_MA = 150
+
+    /** Where a charge stops: [STOP_AT], or up to [MAX_LEAD] % earlier on a fast charge with a learned lead. */
+    internal fun stopLevel(lead: Int, fast: Boolean): Int = if (fast) STOP_AT - lead.coerceIn(0, MAX_LEAD) else STOP_AT
+
+    /** A fast charge: the last whole percent took less than [FAST_STEP_MS]. */
+    internal fun isFast(stepMs: Long): Boolean = stepMs in 1..FAST_STEP_MS
+
+    /**
+     * The lesson after a fast-charge stop: it still crept to [settledMax] → stop that much earlier next time (at most
+     * [MAX_LEAD]); it settled under [STOP_AT] (stopped too early) → one percent less; exactly [STOP_AT] → keep.
+     */
+    internal fun nextLead(lead: Int, settledMax: Int): Int {
+        val over = settledMax - STOP_AT
+        return when {
+            over > 0 -> (lead + over).coerceAtMost(MAX_LEAD)
+            over < 0 -> (lead - 1).coerceAtLeast(0)
+            else -> lead
+        }.coerceIn(0, MAX_LEAD)
+    }
+
+    /** "Stopped at 80%", or the real level when it isn't 80 ("Stopped at 83% (limit 80%)"). */
+    internal fun pausedLabel(level: Int?): String =
+        if (level == null || level == STOP_AT) "Stopped at $STOP_AT%" else "Stopped at $level% (limit $STOP_AT%)"
 
     enum class Kind { STOP_FLAG, ENABLE_FLAG, THRESHOLD, LEVEL_MAX }
 
@@ -122,6 +168,19 @@ object ChargeLimiter {
     /** Plugged in above the limit: the charger is cut off so the battery comes down to 80 %. */
     @Volatile private var draining = false
     @Volatile private var bypassOn = false
+    // D148 (Retroid): charge rate, and what happened after the last stop.
+    @Volatile private var lastLevel = -1
+    @Volatile private var lastStepAt = 0L
+    @Volatile private var stepMs = 0L
+    @Volatile private var stopAtMs = 0L
+    @Volatile private var stopWasFast = false
+    @Volatile private var settledMax = -1
+    @Volatile private var observing = false
+    /** Update 451: the newest stop check; an older one still waiting gives up. */
+    @Volatile private var verifyGen = 0
+    /** The highest level seen while stopped (for the R1 chip), or null when not stopped. */
+    @Volatile var stoppedAt: Int? = null
+        private set
     /** How often a held switch was found undone (by the driver or firmware) and put back. */
     @Volatile var restored = 0
         private set
@@ -141,9 +200,12 @@ object ChargeLimiter {
         runCatching {
             app.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(c: Context, i: Intent) {
+                    // D148: on a Retroid keep the handheld awake until the battery change is handled (it slept after ~0.45 s) —
+                    // update 451: only while the limit has something to do (on and plugged in, or still holding a stop).
+                    val awake = if (needsAwake(app, i)) holdAwake(app, 10_000L) else null
                     val pending = goAsync()
                     Thread {
-                        try { runCatching { check(app, i) } } finally { pending.finish() }
+                        try { runCatching { check(app, i) } } finally { pending.finish(); runCatching { awake?.release() } }
                     }.start()
                 }
             }, IntentFilter().apply {
@@ -222,6 +284,93 @@ object ChargeLimiter {
         return _status.value
     }
 
+    /**
+     * Update 451: a battery change is worth keeping the handheld awake for only while the limit is on and the charger is in
+     * (or the cable just changed, or a stop / cut-off is still held). Unplugged with the limit off: no wake lock at all.
+     */
+    private fun needsAwake(context: Context, i: Intent): Boolean {
+        if (!isRetroid()) return false
+        val limitOn = runCatching { ownSwitch(context) }.getOrDefault(false)
+        val plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+        val cable = i.action == Intent.ACTION_POWER_CONNECTED || i.action == Intent.ACTION_POWER_DISCONNECTED
+        return wantsAwake(limitOn, plugged, cable, paused == true || draining)
+    }
+
+    /** Update 451: the rule behind [needsAwake] (unit-tested). */
+    internal fun wantsAwake(limitOn: Boolean, plugged: Boolean, cableChanged: Boolean, holding: Boolean): Boolean =
+        (limitOn && (plugged || cableChanged)) || holding
+
+    /** A partial wake lock with a time-out, on a Retroid only (null elsewhere: the AYN path is unchanged). */
+    private fun holdAwake(context: Context, ms: Long): PowerManager.WakeLock? {
+        if (!isRetroid()) return null
+        return runCatching {
+            (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "voltcap:chargelimit").apply { setReferenceCounted(false); acquire(ms) }
+        }.getOrNull()
+    }
+
+    private fun lead(context: Context): Int = prefs(context).getInt(KEY_LEAD, 0).coerceIn(0, MAX_LEAD)
+
+    /** Battery current in mA (+ = into the battery on the Retroid), or null. */
+    private fun currentMa(context: Context): Int? = runCatching {
+        (context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager).getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+    }.getOrNull()?.takeIf { it != Long.MIN_VALUE && it != 0L }?.let { if (kotlin.math.abs(it) > 20_000) (it / 1000).toInt() else it.toInt() }
+
+    private fun log(context: Context, event: String) {
+        if (isRetroid()) runCatching { com.shelf.launcher.data.ChargeLog.event(context, event) }
+    }
+
+    /**
+     * D148: ~12 s after a stop, is the battery still taking current? Then write the switches again; still charging
+     * 12 s later → add the next switch now. Two checks per stop (a wake lock of ≤ 30 s), no polling.
+     */
+    private fun verifyLater(context: Context) {
+        if (!isRetroid()) return
+        // Update 451: one check at a time — a newer stop (replug, setting switched) supersedes the one still waiting.
+        val gen = ++verifyGen
+        val awake = holdAwake(context, 30_000L)
+        Thread {
+            try {
+                for (attempt in 1..2) {
+                    Thread.sleep(12_000L)
+                    if (gen != verifyGen) break
+                    if (!verifyStop(context, attempt)) break
+                }
+            } catch (_: Throwable) {
+            } finally { runCatching { awake?.release() } }
+        }.start()
+    }
+
+    /** True when it still charged and something was done about it (so look once more). */
+    @Synchronized
+    private fun verifyStop(context: Context, attempt: Int): Boolean {
+        // Unplugged, the limit switched off (paused false) or bypass taken over since the stop: nothing to check.
+        if (paused != true || draining || lastPlugged != true || !ownSwitch(context)) return false
+        val ma = currentMa(context)
+        if (ma == null || ma <= STILL_CHARGING_MA) { log(context, "limit_verify_ok"); return false }
+        val flags = held().filter { it.kind != Kind.THRESHOLD }
+        if (attempt == 1) {
+            flags.forEach { setSwitch(it, true) }
+            lastError = "Still charging ${ma} mA after the stop; written again."
+            log(context, "limit_retry")
+        } else {
+            if (!exhausted) addNextSwitch(context, lastLevel)
+            log(context, "limit_add_switch")
+        }
+        return true
+    }
+
+    /** The lesson after a fast-charge stop, once the level has had time to settle. */
+    private fun finishObserving(context: Context, now: Long) {
+        if (!observing) return
+        observing = false
+        if (!isRetroid() || !stopWasFast || now - stopAtMs < MIN_SETTLE_MS || settledMax < 0) return
+        val old = lead(context)
+        val new = nextLead(old, settledMax)
+        if (new != old) prefs(context).edit().putInt(KEY_LEAD, new).apply()
+        log(context, "limit_learn_${settledMax}_lead_${old}_to_$new")
+    }
+
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private fun ownSwitch(context: Context): Boolean = prefs(context).getBoolean(KEY_ON, false)
@@ -294,6 +443,15 @@ object ChargeLimiter {
 
         val plugChanged = lastPlugged != plugged
         lastPlugged = plugged
+        // D148: how fast it is charging (time for the last whole percent while really charging).
+        if (!plugged || plugChanged) { stepMs = 0L; lastStepAt = now }
+        else if (paused != true && !draining && percent != lastLevel) {
+            if (lastLevel >= 0 && percent == lastLevel + 1 && lastStepAt > 0L) stepMs = now - lastStepAt
+            lastStepAt = now
+        }
+        lastLevel = percent
+        val fast = isRetroid() && isFast(stepMs)
+        val stopAt = if (isRetroid()) stopLevel(lead(context), fast) else STOP_AT
         val all = held()
         val flags = all.filter { it.kind != Kind.THRESHOLD }
         val thresholds = all.filter { it.kind == Kind.THRESHOLD }
@@ -306,6 +464,8 @@ object ChargeLimiter {
             lastNodeCheck = now
             paused = limitOn && flags.any { it.isStopped(read(it.path)) }
             if (paused == true) pausedAtPercent = maxOf(percent, STOP_AT)
+            // Update 451: after a restart the R1 chip still shows the real level it is held at.
+            if (paused == true && isRetroid()) stoppedAt = percent
         }
 
         // Limit off and charge bypass on: bypass owns AYN's switch; let go of anything else still held.
@@ -352,7 +512,7 @@ object ChargeLimiter {
         if (flags.isNotEmpty()) {
             val wantPaused = when {
                 !limitOn || !plugged -> false
-                percent >= STOP_AT -> true
+                percent >= stopAt -> true
                 percent < RESUME_BELOW -> false
                 else -> paused ?: false // in between: keep whatever it is doing
             }
@@ -361,6 +521,17 @@ object ChargeLimiter {
                 list.forEach { setSwitch(it, wantPaused) }
                 paused = wantPaused
                 if (wantPaused) pausedAtPercent = maxOf(percent, STOP_AT)
+                if (isRetroid()) {
+                    if (wantPaused) {
+                        stopAtMs = now; stopWasFast = fast; settledMax = percent; observing = true; stoppedAt = percent
+                        log(context, if (fast) "limit_stop_fast_at_$stopAt" else "limit_stop")
+                        verifyLater(context)
+                    } else {
+                        finishObserving(context, now)
+                        stoppedAt = null
+                        log(context, "limit_resume")
+                    }
+                }
             } else if (wantPaused && recheck) {
                 // Drivers and firmware undo these (on a replug, a charger renegotiation, or restrict_cur
                 // going back to full current while restrict_chg still says "stopped"): put back whatever
@@ -375,6 +546,17 @@ object ChargeLimiter {
         } else {
             paused = limitOn && plugged && percent >= STOP_AT
         }
+
+        // D148: watch where the level settles after a stop, then take the lesson.
+        if (isRetroid() && observing) {
+            if (paused == true && plugged && !draining) {
+                settledMax = maxOf(settledMax, percent); stoppedAt = settledMax
+                if (now - stopAtMs >= SETTLE_MS) finishObserving(context, now)
+            } else {
+                finishObserving(context, now)
+            }
+        }
+        if (paused != true) stoppedAt = null
 
         // Still rising while stopped (and every node reads back right)? This set isn't enough on
         // this device: add the next switch on top. Nothing that works is ever let go.

@@ -97,7 +97,7 @@ private fun pcHotkey(a: HotkeyAction): Boolean {
 
 /**
  * Update 344: Pocket camera's keys. ◀ ▶ the games (Endless round), ▲ ▼ which picture the photo shows (cover, screenshot,
- * art), A / B / X / Y / L / R the home screen's own. Start: quick menu; Select: sort & filter.
+ * art), A / B / X / Y / L / R the home screen's own. Start: game options; Select: Settings.
  */
 internal fun pocketCameraKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
     val c = CameraNav.ctx ?: return false
@@ -106,8 +106,7 @@ internal fun pocketCameraKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
     val up = event.type == KeyEventType.KeyUp
     if (up && CameraNav.keysDown.remove(code)) return true
     val k = event.key
-    if (k == Key.ButtonStart || k == Key.Menu) { if (up) c.actions.quickMenu(); return up }
-    if (k == Key.ButtonSelect) return up && pcHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     if (!down) return false
     val first = event.nativeKeyEvent.repeatCount == 0
     fun take(): Boolean { CameraNav.keysDown += code; return true }

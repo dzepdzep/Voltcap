@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +78,8 @@ private val REdge = Color(0xFFAAB0B8)
 private val RInk = Color(0xFF3A3F46)
 private val RMuted = Color(0xFF8A9099)
 private val RFrame = Color(0xFFFFFFFF)
+/** Update 455: the share of the picture panel under the piece that holds the game's name and its line (RibbonCaption). */
+private const val RIBBON_CAPTION = 0.24f
 
 @Composable
 internal fun StylePocketRibbon(c: StyleCtx, modifier: Modifier = Modifier) {
@@ -171,6 +174,18 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                     else if (g != null) Box(Modifier.fillMaxSize().background(placeholderBrush(g.hue)))
                 }
             }
+            // Update 455: the game's name and one quiet line (console · year · last played) in the panel's lower part — only for
+            // the game picture (album / photo / slides keep the whole frame).
+            if (showcase && g != null) {
+                val fh = h.coerceAtMost(POCKET_H - top - 14f)
+                val titles = LocalTitleOptions.current
+                val year = c.state.metadata[g.stableKey]?.releaseYear?.takeIf { it > 0 }
+                val meta = listOfNotNull(titles.console(g.platform), year?.toString(),
+                    c.lastPlayed(g)?.let { "Played " + lastPlayedLabel(it).let { l -> if (l == "Today" || l == "Yesterday") l.lowercase() else l } }).joinToString("  ·  ")
+                val capTop = top + 4f + (fh - 8f) * (1f - RIBBON_CAPTION)
+                PocketText(this, titles.display(g.name), 28f, capTop, 200f, 15f, 9f, RInk, font, TextAlign.Center)
+                PocketText(this, meta, 28f, capTop + 15f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
+            }
             // Small captions under the picture: the category, and where you are in it.
             // (Update 315: off for this layout — Categories tile / Settings — no caption.)
             if (CategoryTitle.captionOn(c.state.appearance)) CategoryTitle.Native() // (Update 212: the layout's own category title.)
@@ -206,14 +221,23 @@ private fun RibbonShowcase(c: StyleCtx, g: com.shelf.launcher.data.Game, cover: 
         }
     ) { shown ->
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+            // (Update 455: the picture sits a little higher and a little bigger — the cartridge drawing keeps generous margins
+            // of its own, so the lower part of the panel was empty; the game's name and one line about it go there now,
+            // RibbonCaption. Same centred piece, same proportions.)
             if (cart) {
-                val aspect = styleAspect(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC).coerceIn(0.5f, 1.9f)
-                val w = minOf(maxWidth, maxHeight * 0.92f * aspect)
-                StyleArt(cartCtx, shown, Modifier.size(w, w / aspect), focused = true)
+                // Sized by the game's own media (a tall 3DS card or Switch case no longer spills over the frame or the title):
+                // the largest piece that fits the space above the caption, centred in it.
+                val aspect = (MediaShell.of(shown.platform)?.aspect ?: styleAspect(com.shelf.launcher.data.CardArtType.CARTRIDGE_DISC)).coerceIn(0.5f, 1.9f)
+                val roomH = maxHeight * (1f - RIBBON_CAPTION)
+                val w = minOf(maxWidth * 0.96f, roomH * aspect)
+                Box(Modifier.fillMaxWidth().height(roomH).align(Alignment.TopCenter), contentAlignment = Alignment.Center) {
+                    StyleArt(cartCtx, shown, Modifier.size(w, w / aspect), focused = true)
+                }
             } else {
                 val m: Any? = c.cover(shown) ?: c.backdrop(shown) ?: c.wide(shown)
-                if (m != null) HeldImage(m, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, imageModifier = Modifier.pixelArtwork())
-                else Box(Modifier.fillMaxSize().background(placeholderBrush(shown.hue)))
+                val room = Modifier.fillMaxWidth().fillMaxHeight(1f - RIBBON_CAPTION).align(Alignment.TopCenter)
+                if (m != null) HeldImage(m, room, contentScale = ContentScale.Fit, imageModifier = Modifier.pixelArtwork())
+                else Box(room.background(placeholderBrush(shown.hue)))
             }
         }
     }
@@ -517,6 +541,8 @@ internal fun pocketRibbonKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
     if (!down) return false
     val first = event.nativeKeyEvent.repeatCount == 0
     fun take(): Boolean { PocketNav.keysDown += code; return true }
+    // (Update 462: while the launch moment plays, a second A / Start doesn't start the game again.)
+    if (PocketNav.launching && android.view.KeyEvent.isGamepadButton(code)) return take()
     // Update 182: below the row, the small tools and the home strip (PocketNav.ribbonSpot; −1 = the row).
     val spot = PocketNav.ribbonSpot
     val tools = pocketTools(c, ribbon = true)

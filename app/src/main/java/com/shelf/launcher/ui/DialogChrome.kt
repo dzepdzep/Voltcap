@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -138,7 +139,10 @@ internal fun Modifier.focusRing(focused: Boolean, shape: Shape): Modifier {
     val glow = VoltUi.glow && !LocalLiteEffects.current
     val pixelFocus = VoltUi.pixel
     val crtFocus = com.shelf.launcher.data.Features.uiStyle.state.value == com.shelf.launcher.data.Features.UiStyle.CRT
-    return if (!focused) this else if (volt) this.voltFocus(true, shape, accent, glow && !pixelFocus, pixelFocus, crtFocus) else this.drawWithContent {
+    // (Update 467, QA only: the ring is how a window shows its controller focus — many windows keep it as a selected index,
+    // not Compose focus — so the geometry gate reads "this one is focused" from the ring itself. Off without test hooks.)
+    val base = if (focused && QaTrace.on) this.semantics { this[QaClip.Ring] = true } else this
+    return if (!focused) base else if (volt) base.voltFocus(true, shape, accent, glow && !pixelFocus, pixelFocus, crtFocus) else base.drawWithContent {
         drawContent()
         val outerWidth = 2.5.dp.toPx()
         // Something can be focused while it's still (or again) zero-sized —

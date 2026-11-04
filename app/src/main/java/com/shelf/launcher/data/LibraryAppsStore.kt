@@ -27,7 +27,12 @@ data class LibraryAppsSettings(
     /** Set by hand: counts as an Android game, whatever the detector says. */
     val forcedGames: Set<String> = emptySet(),
     /** Set by hand: just an app, never an Android game. */
-    val forcedApps: Set<String> = emptySet()
+    val forcedApps: Set<String> = emptySet(),
+    /**
+     * v0.6.67 (update 450): ordinary apps put in Continue playing by hand (streaming clients such as PXPlay or Asobi).
+     * They stay apps (no game session, play time or save sync — [ContinueApps]); empty by default.
+     */
+    val continueApps: Set<String> = emptySet()
 )
 
 /** Game-or-app choice for one installed app. */
@@ -49,7 +54,8 @@ class LibraryAppsStore(context: Context) {
         iconArt = prefs.getStringSet("icon_art", null)?.toSet() ?: emptySet(),
         alwaysUseIcons = prefs.getBoolean("always_icons", false),
         forcedGames = prefs.getStringSet("forced_games", null)?.toSet() ?: emptySet(),
-        forcedApps = prefs.getStringSet("forced_apps", null)?.toSet() ?: emptySet()
+        forcedApps = prefs.getStringSet("forced_apps", null)?.toSet() ?: emptySet(),
+        continueApps = prefs.getStringSet("continue_apps", null)?.toSet() ?: emptySet()
     )
 
     fun save(s: LibraryAppsSettings) = prefs.edit()
@@ -60,5 +66,6 @@ class LibraryAppsStore(context: Context) {
         .putBoolean("always_icons", s.alwaysUseIcons)
         .putStringSet("forced_games", s.forcedGames)
         .putStringSet("forced_apps", s.forcedApps)
+        .putStringSet("continue_apps", s.continueApps)
         .apply()
 }

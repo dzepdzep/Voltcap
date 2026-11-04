@@ -41,11 +41,18 @@ class RecentlyPlayedStore(context: Context) {
     }
 
     /** Update 244: [loadAll] without the games taken off Continue playing since they were last played (what the lists show). */
-    fun loadVisible(): Map<String, Long> {
-        val all = loadAll()
-        val hidden = loadHidden()
-        if (hidden.isEmpty()) return all
-        return all.filter { (k, t) -> (hidden[k] ?: Long.MIN_VALUE) < t }
+    fun loadVisible(): Map<String, Long> = visibleOf(loadAll(), loadHidden())
+
+    /**
+     * Update 450: "Clear from Continue playing" — forgets [stableKey]'s last-played time on this profile. Update 451: and marks it
+     * cleared as of [at], so a time from before that coming back from "Last played on every device" (Drive) doesn't bring the
+     * entry back (seen on the Thor); using it again afterwards does.
+     */
+    fun forget(stableKey: String, at: Long = System.currentTimeMillis()) {
+        prefs.edit()
+            .putString(KEY, gson.toJson(loadAll() - stableKey))
+            .putString(KEY_HIDDEN, gson.toJson(loadHidden() + (stableKey to at)))
+            .apply()
     }
 
     fun recordPlayed(stableKey: String, timestampMillis: Long) {
@@ -54,6 +61,10 @@ class RecentlyPlayedStore(context: Context) {
     }
 
     companion object {
+        /** Update 452: the rule behind [loadVisible] — an entry shows only when it was played after it was taken off / cleared. */
+        internal fun visibleOf(all: Map<String, Long>, hidden: Map<String, Long>): Map<String, Long> =
+            if (hidden.isEmpty()) all else all.filter { (k, t) -> (hidden[k] ?: Long.MIN_VALUE) < t }
+
         private const val KEY = "last_played_json"
         private const val KEY_HIDDEN = "continue_hidden_json"
     }

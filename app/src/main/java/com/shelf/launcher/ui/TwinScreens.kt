@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import com.shelf.launcher.data.categoryBarHere
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -103,64 +106,63 @@ internal fun TwinCommonControls() {
 
 /**
  * Update 180: the button on the second screen's dashboard (opened from a two-screen layout) that brings the layout back.
- * Update 182: drawn in the layout's own style — Twin desk's and Twin icons' white bar with a round button (as their
- * Second screen button), the Pocket layouts' flat white panel with the pixel font and the corner brackets.
+ * Update 182: drawn in the layout's own style. v0.6.67: a compact button in the dashboard's header row (its end), not a
+ * wide pill in the bottom corner — that one covered the dock. The header keeps room for it ([SecondScreenHome]'s
+ * `headerEnd`), so it never overlaps the tabs, the dock or the apps; overlays (drawer, app picker, big player) draw over it.
+ * The visible part is small ([TWIN_BACK_VISIBLE]); the touch / controller target is [TWIN_BACK_TARGET] square.
  */
+internal val TWIN_BACK_TARGET = 44.dp
+internal val TWIN_BACK_VISIBLE = 32.dp
+
 @Composable
-internal fun androidx.compose.foundation.layout.BoxScope.TwinBackPill(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
-    val back = { TwinScreens.dashboard = false }
+internal fun TwinBackButton(name: String, layout: HomeLayout = HomeLayout.TWIN_DESK) {
+    // (Update 448: the controller comes back to the main screen with the layout — the dashboard's controls it was on are gone —
+    // so the layout's own keys carry on from the game you were on.)
+    val back = { TwinScreens.dashboard = false; SecondPad.leave() }
     val lit = SecondPad.active && SecondPad.focused == "twin-back"
     val accent = ShelfTheme.accent
     val ink = Color(0xFF26313C)
     val edge = Color(0xFFC6CFD7)
-    if (layout.isPocket) {
-        val font = pocketFont()
-        val pAccent = if (layout == HomeLayout.POCKET_RIBBON)
-            pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.ribbonAccent.state.value) }.getOrDefault(PocketAccent.SKY))
-        else pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
-        androidx.compose.foundation.layout.Box(
-            Modifier.align(Alignment.BottomStart).padding(10.dp)
-                .padTargetPlain("twin-back") { back() }
-                .tapOnly { back() }
-        ) {
-            androidx.compose.foundation.layout.Row(
-                Modifier.background(Color.White).border(1.dp, if (lit) Color(0xFF6B7380) else Color(0xFFB9BEC6))
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically
+    val label = "Back to $name"
+    androidx.compose.foundation.layout.Box(
+        Modifier.size(TWIN_BACK_TARGET)
+            .padTargetPlain("twin-back") { back() }
+            .backSemantics(label)
+            .tapOnly { back() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (layout.isPocket) {
+            val pAccent = if (layout == HomeLayout.POCKET_RIBBON)
+                pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.ribbonAccent.state.value) }.getOrDefault(PocketAccent.SKY))
+            else pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(TWIN_BACK_VISIBLE).background(Color.White).border(1.dp, if (lit) Color(0xFF6B7380) else Color(0xFFB9BEC6)),
+                contentAlignment = Alignment.Center
             ) {
                 androidx.compose.foundation.Canvas(Modifier.size(18.dp)) { pocketIcon(PocketIcons.BACK, Color(0xFF3A3F47), pAccent) }
-                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
-                androidx.compose.material3.Text(name, color = Color(0xFF3A3F47), fontSize = 14.sp, fontFamily = font, maxLines = 1)
+                if (lit) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { pocketBrackets(2.dp.toPx(), pAccent) }
             }
-            if (lit) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { pocketBrackets(2.dp.toPx(), pAccent) }
-        }
-    } else {
-        val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
-        androidx.compose.foundation.layout.Row(
-            Modifier.align(Alignment.BottomStart).padding(10.dp)
-                .padTargetPlain("twin-back") { back() }
-                .clip(shape).background(Color.White.copy(alpha = 0.86f)).border(1.dp, edge, shape)
-                .tapOnly { back() }
-                .padding(start = 4.dp, end = 14.dp, top = 4.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        } else {
+            val circle = androidx.compose.foundation.shape.CircleShape
             androidx.compose.foundation.layout.Box(
                 Modifier.graphicsLayer { val k = if (lit) 1.1f else 1f; scaleX = k; scaleY = k }
-                    .size(34.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(if (lit) accent.copy(alpha = 0.18f) else Color.White)
-                    .border(if (lit) 2.dp else 1.dp, if (lit) accent else edge, androidx.compose.foundation.shape.CircleShape),
+                    .size(TWIN_BACK_VISIBLE).clip(circle)
+                    .background(if (lit) Color.White else Color.White.copy(alpha = 0.86f))
+                    .border(if (lit) 2.dp else 1.dp, if (lit) accent else edge, circle),
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.material3.Icon(
                     androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null,
-                    tint = if (lit) ink else Color(0xFF4A5562), modifier = Modifier.size(19.dp)
+                    tint = if (lit) ink else Color(0xFF4A5562), modifier = Modifier.size(18.dp)
                 )
             }
-            androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
-            androidx.compose.material3.Text(name, color = ink, fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
         }
     }
 }
+
+/** The button's name for TalkBack ("Back to Twin desk"); it shows only an arrow. */
+private fun Modifier.backSemantics(label: String): Modifier =
+    this.semantics { contentDescription = label; role = androidx.compose.ui.semantics.Role.Button }
 
 /** Update 158: one of the two-screen layouts. */
 internal val HomeLayout.isTwin: Boolean get() = this == HomeLayout.TWIN_DESK || this == HomeLayout.TWIN_ICONS ||

@@ -662,6 +662,7 @@ internal fun PhysicalMedia(
     }
     // Update 128: a game on your cartridge pack — its cover in the window (a disc / label scan wouldn't fit it).
     if (platform != null && platform.startsWith(CUSTOM_CART)) {
+        MediaTrace.note(title, "CUSTOM MODEL cartridge pack ${platform.removePrefix(CUSTOM_CART)}")
         // (Update 203: your pack's cartridge solid when turned.)
         // (Update 214: a disc console's game on your optical-system pack is a cartridge-shaped shell too — solid at that
         // shell's own shape, and moving as a cartridge does: rocking slowly left and right. Update 203 gave it the disc's
@@ -686,6 +687,7 @@ internal fun PhysicalMedia(
         return
     }
     val tpl = MediaTemplates.of(platform)
+    MediaTrace.note(title, if (tpl != null) "TEMPLATE PACK picture $platform" else "plain drawn ${shell.name}")
     // "Disc in its case": the case with the disc half out of it, spinning (disc games only).
     if (tpl != null && discCaseOn(tpl, platform) && !noCase) {
         val front = caseCover ?: label.takeIf { !labelIsScan }
@@ -1048,6 +1050,7 @@ internal fun RealMediaPicture(
         if (t != null) { PhotoTones.put(model, t); tone = t }
     }
     val solid = rememberPhotoSolid(platform, gameKey, (model as? String)?.let { CoverAspects.rawOf(it) }, tone)
+    MediaTrace.note(gameKey?.substringAfterLast('/'), "REAL ${if (round) "disc" else "cartridge"} photo")
     // (Update 317: a cartridge photo's hop round its solid piece — see PhysicalMedia.)
     // (Update 317: the photo, fitted in the middle as the AsyncImage below draws it, is the piece's front — no picture of
     // the screen taken for it.)
@@ -1092,12 +1095,28 @@ internal fun RealMediaPicture(
 internal object MediaClock {
     @Composable
     fun rememberFrameTime(running: Boolean = true): androidx.compose.runtime.MutableLongState {
-        val t = androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.nanoTime()) }
-        androidx.compose.runtime.LaunchedEffect(running) {
-            if (!running) return@LaunchedEffect
-            while (true) androidx.compose.runtime.withFrameNanos { t.longValue = it }
+        val t = androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(System.nanoTime() - shiftNs) }
+        // (Update 456: behind the app drawer / Settings — calmHere in the home's own window — the clock holds where it is, so
+        // every turning disc / wobbling cartridge keeps its pose; afterwards the clock runs on from there for all of them
+        // in step ([hold] shifts the shared time by how long the hold lasted).)
+        val held = calmHere() && !HomeIdle.calm
+        androidx.compose.runtime.LaunchedEffect(running, held) {
+            if (!running || held) return@LaunchedEffect
+            while (true) androidx.compose.runtime.withFrameNanos { t.longValue = it - shiftNs }
         }
         return t
+    }
+
+    /** Update 456: how much the shared media time is behind the frame time (the length of the holds so far). */
+    @Volatile var shiftNs = 0L
+        private set
+    @Volatile private var heldSince = 0L
+
+    /** Update 456: the drawer / Settings opened ([on]) or closed over the home screen. */
+    fun hold(on: Boolean) {
+        val now = System.nanoTime()
+        if (on && heldSince == 0L) heldSince = now
+        else if (!on && heldSince != 0L) { shiftNs += now - heldSince; heldSince = 0L }
     }
 }
 

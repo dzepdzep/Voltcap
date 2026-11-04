@@ -96,8 +96,8 @@ import kotlin.math.sin
  *   its console, play time, last played and achievements. A opens the game window (or starts it) like everywhere,
  *   X favourite, Y achievements (Voltcap's own buttons), B back to the menu.
  * - SYSTEMS: your consoles as panels with their logos and game counts; A opens one's games.
- * The sphere slides and shrinks between the pages, the panels slide in. Start: the quick menu (R1's panel); Select: sort
- * & filter. L2 / R2 change the category, L1 / R1 as everywhere. Touch: tap / drag everything; the back gesture goes back.
+ * The sphere slides and shrinks between the pages, the panels slide in. Start: game options; Select: Settings; R1: the quick menu.
+ * L2 / R2 change the category, L1 / R1 as everywhere. Touch: tap / drag everything; the back gesture goes back.
  * Options: Settings › Home › Layout options (GreenCoreSettings.kt).
  */
 
@@ -126,7 +126,7 @@ internal object GreenCoreHooks {
     @Volatile var hotkey: ((HotkeyAction) -> Unit)? = null
 }
 
-private enum class GcItem(val label: String) {
+internal enum class GcItem(val label: String) {
     GAMES("GAMES"), SYSTEMS("SYSTEMS"), APPS("APPS"), SAVES("SAVE VAULT"), MUSIC("MUSIC"), SETTINGS("SETTINGS")
 }
 
@@ -252,7 +252,7 @@ private fun gcStepGame(c: StyleCtx, d: Int, jump: Boolean = false): Boolean {
  * GAMES: ▲ ▼ (◀ ▶ on the carousel) the game, ◀ ▶ (▲ ▼) six at a time; A / X / Y / L / R are the home screen's own (the
  * game window, favourite, achievements, categories…); B back.
  * SYSTEMS: ▲ ▼ the system, ◀ ▶ five at a time, A its games, B back.
- * Start (on release): the quick menu; Select (on release, not as a combo): sort & filter.
+ * Start / Select / R1: the home screen's (game options, Settings, the quick menu; update 462, InputContract).
  */
 internal fun greenCoreKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean {
     val c = GreenCoreNav.ctx ?: return false
@@ -261,13 +261,7 @@ internal fun greenCoreKey(event: KeyEvent, reach: (Boolean) -> Boolean): Boolean
     val up = event.type == KeyEventType.KeyUp
     if (up && GreenCoreNav.keysDown.remove(code)) return true
     val k = event.key
-    // Start: the R1 quick menu. Select: sort & filter (the Sort hotkey). Both on release; their presses are claimed by
-    // the home screen (Select is also the combo key: a combo never reaches here).
-    if (k == Key.ButtonStart || k == Key.Menu) {
-        if (up) c.actions.quickMenu()
-        return up
-    }
-    if (k == Key.ButtonSelect) return up && gcHotkey(HotkeyAction.SORT)
+    // (Update 462: Start and Select are the home screen's — game options and Settings — on every layout; InputContract.)
     val page = GreenCoreNav.page
     val isA = k == Key.ButtonA || k == Key.Enter || k == Key.DirectionCenter
     // A on the menu / systems acts on release (what it opens never gets the release).
@@ -471,7 +465,7 @@ private fun GcMenu(c: StyleCtx, systemCount: Int, compact: Boolean, reduced: Boo
             }
         }
         Text(
-            "Ⓐ SELECT   START QUICK MENU   SELECT SORT", color = accent.copy(alpha = 0.55f), fontSize = 9.sp,
+            "Ⓐ SELECT   START OPTIONS   R1 QUICK MENU   SELECT SETTINGS", color = accent.copy(alpha = 0.55f), fontSize = 9.sp,
             fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false,
             modifier = Modifier.align(Alignment.BottomStart).padding(start = 4.dp, bottom = 2.dp)
         )

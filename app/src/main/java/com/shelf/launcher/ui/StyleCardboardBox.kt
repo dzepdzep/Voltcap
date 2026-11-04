@@ -684,7 +684,7 @@ private fun BoxScene(c: StyleCtx, modifier: Modifier) {
         kotlinx.coroutines.yield()
         if (c.games.none { it.stableKey == k }) { BoxNav.pull = null; return@LaunchedEffect }
         // The window shows the case itself, whatever the look (MediaInspect.force — cleared when the window closes).
-        MediaInspect.testShell = null; MediaInspect.testPose = null
+        MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null
         MediaInspect.forceSeq++; MediaInspect.force = k
         open()
         // (A game set to start at once opens no window: back down it goes.)

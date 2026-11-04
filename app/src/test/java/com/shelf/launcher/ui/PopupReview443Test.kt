@@ -24,8 +24,8 @@ class PopupReview443Test {
     }
 
     @Test fun wholeScreenLayoutsAreShadedUnderTheWindow() {
-        assertTrue(src("RowRevealWindow.kt").contains("if (state.appearance.homeLayout.styleHome) Canvas("))
-        assertTrue(src("GlanceWindow.kt").contains("if (state.appearance.homeLayout.styleHome) Spacer("))
+        assertTrue(src("RowRevealWindow.kt").contains("if (WindowShade.on(state.appearance.homeLayout)) Canvas("))
+        assertTrue(src("GlanceWindow.kt").contains("if (WindowShade.on(state.appearance.homeLayout)) Spacer("))
     }
 
     @Test fun sharedMoveStoryScrollsInsteadOfEllipsis() {

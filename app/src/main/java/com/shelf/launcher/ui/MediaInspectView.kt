@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.layout.layout
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.compose.animation.core.CubicBezierEasing
@@ -470,6 +471,13 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         // (Update 286, testing only: "case" — the game's case as the case looks draw it, whatever the look; for checking
         // every face of the cases and boxes at set angles.)
         if (id == "case") return casePiece(g, physical, cover, false)
+        // (Update 462, testing only: "media" — the piece the cartridge-and-disc look draws (the real cartridge photo when it
+        // has one), for the real-vs-drawn contact sheet.)
+        if (id == "media") physical?.firstOrNull { it.first == "Disc / cartridge" }?.second?.let { real ->
+            val shell = MediaShell.of(g.platform)
+            return InspectPiece(g, InspectKind.SLAB, (CoverAspects.rawOf(real) ?: shell?.aspect ?: 1f).coerceIn(0.3f, 3f), slabDepth(shell), null, null, false, real, cover, null, null,
+                physical, null, shellTone(shell), false)
+        }
         // (Update 276: "pack:<shape>" — a pack shape picked as the shell; "cc:<console>" — the game on your pack.)
         if (id.startsWith("pack:") || id.startsWith("cc:")) {
             val ms = MediaShell.values().first { !it.disc && it != MediaShell.UMD }
@@ -480,10 +488,18 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
             return InspectPiece(g, InspectKind.SLAB, pick.aspect, CustomCarts.depthForPick(pick.platform) ?: slabDepth(null), pick, cover, false, null, cover, null, null, physical, null,
                 CustomPieceTones.of(pick.platform) ?: CUSTOM_SHELL, false)
         }
-        val sh = CartShells.of(id) ?: return@let
+        // (Update 462: "id~colour" — a shell in one of its colours / materials, e.g. "gbc_dual~m:pkmn_silver".)
+        val sh = CartShells.of(id.substringBefore('~')) ?: return@let
         val ms = MediaShell.of(g.platform)?.takeIf { !it.disc && it != MediaShell.UMD } ?: MediaShell.values().first { !it.disc && it != MediaShell.UMD }
         val pick = MediaPick(ms, SHELL_PREFIX + id + "|" + g.platform, sh.aspect)
-        return InspectPiece(g, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, cover, false, null, cover, null, null, physical, null, shellTone(ms), false)
+        // (Update 460: the game's real / custom label scan on that shell, as the home screen draws it — the hook drew the cover
+        // only, so update 459's comparison sheets showed covers where the game had its real label.)
+        val testArt = MediaInspect.testArt
+        // (Update 463: a test picture named "lab_…" is a label scan — laid on the sticker as a real one is — not a cover.)
+        val scan = if (testArt != null) testArt.takeIf { it.substringAfterLast('/').startsWith("lab_") } else drawnLabelScan(physical, g.platform)
+        val cv: Any? = testArt ?: cover
+        val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
+        return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)
     }
     val small = Features.bigGcDiscs.state.value.not()
     val mixed = mixedConsoles(state.visibleGames)
@@ -1231,7 +1247,7 @@ internal fun InspectStick(motion: InspectMotion) {
  * own outside the piece).
  */
 @Composable
-internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int) {
+internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot: Rect?, displayId: Int, hint: Boolean = true) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     // Update 292: Inspect is on screen (for the freeze snapshot of a crash report).
@@ -1386,7 +1402,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
             val content = piece.content
             if (content != null && piece.kind == InspectKind.BOX) InspectContent(piece, content, motion, left - win[0], top - win[1], w, h, aspect, scope)
             // Update 189: how to open it, said once it's out.
-            if (piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
+            if (hint && piece.kind == InspectKind.BOX && piece.content != null) OpenHint(
                 motion, left - win[0], top + h - win[1], w,
                 // (Update 260: a PSP game's is a UMD, not a cartridge.)
                 when (piece.content?.kind) { InspectKind.DISC -> "disc"; else -> if (piece.content?.game?.platform?.let { MediaShell.of(it) } == MediaShell.UMD) "UMD" else if (piece.content?.game?.platform in setOf("NDS", "3DS", "Switch", "PSVita")) "card" else "cartridge" },
@@ -1558,6 +1574,7 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
         kotlinx.coroutines.withTimeoutOrNull(3_500) { snapshotFlow { motion.out.floatValue > 0.05f || motion.lid.floatValue < 0.9f }.first { it } }
         shown.animateTo(0f, tween(400))
     }
+    val screenWpx = with(density) { androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp.roundToPx() }
     Box(
         Modifier
             .offset { IntOffset(left.roundToInt(), (bottom + with(density) { 6.dp.toPx() }).roundToInt()) }
@@ -1576,7 +1593,16 @@ private fun OpenHint(motion: InspectMotion, left: Float, bottom: Float, w: Float
             color = Color.White, fontSize = 12.sp, maxLines = 1,
             // Update 201: as wide as it needs, centred under the case — it was cut to the case's width, so under a narrow
             // case "Tap the cartridge (or click a stick) to take it out" lost its end ("… to").
-            modifier = Modifier.wrapContentWidth(unbounded = true)
+            // (Update 467, popup gate: with large text, under a case near the screen's edge, it ran 12 px off the left
+            // edge — "an the case …"; it now slides back inside the screen, still as close to centred as it can be.)
+            modifier = Modifier.layout { m, c ->
+                val p = m.measure(c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
+                val centred = (c.maxWidth - p.width) / 2
+                val edge = 4.dp.roundToPx()
+                val absL = left.roundToInt() + centred
+                val shift = if (absL < edge) edge - absL else if (absL + p.width > screenWpx - edge) (screenWpx - edge) - (absL + p.width) else 0
+                layout(c.maxWidth, p.height) { p.place(centred + shift, 0) }
+            }
                 .background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.RoundedCornerShape(50))
                 .padding(horizontal = 10.dp, vertical = 4.dp)
         )
@@ -1691,7 +1717,15 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // Update 195: a library shell's own back (seam, screws, contacts), shown when it's turned round.
     // (Update 200: its researched back; plain — no maker's markings — on another console's shell, or as set.)
     val backStyle = Features.cartBackStyle.state.value
-    val shellBack = remember(p.pick?.platform, p.realScan, backStyle) {
+    // (Update 462b: a photo-made piece turned as the real photo is — its sides and back in its photo's plastic, PhotoShells.)
+    val photoV = PhotoShells.version.intValue
+    val photoTone: Int? = remember(p.pick?.platform, photoV) {
+        p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
+            CartShells.split(pp).first?.takeIf { it.pack == null }?.let { ch -> ch.shell?.let { sh -> PhotoShells.sideTone(sh, CartShells.colourOf(sh, ch.colourKey)) } }
+        }
+    }
+    val labelsV = com.shelf.launcher.data.LabelIds.version.intValue
+    val shellBack = remember(p.pick?.platform, p.realScan, backStyle, photoTone, labelsV) {
         // Update 204: the game's own cartridge photo turned round shows its console's real shell's researched back (it
         // was a plain silhouette, so the new backs never showed for the many games with a photo).
         if (p.pick == null && p.realScan != null) ownShellOf(p.game.platform, p.game.stableKey)?.let { sh ->
@@ -1699,13 +1733,15 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             val own = ownShellColour(sh, p.game.platform, p.game.stableKey) // (Update 210: its edition's plastic)
             // (Update 228, #36: keyed by the colour — one "photo" key for every photo's back in the cache.)
             val colour = PhotoTones.of(p.realScan)?.let { t -> t.copy(alpha = 1f).toArgb().let { c -> ShellColour("photo:$c", own.name, c, own.opacity) } } ?: own
-            runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL).asImageBitmap() }.getOrNull()
+            runCatching { CartShells.back(sh, colour, 640, backStyle == Features.CartBackStyle.NEUTRAL, boardType = boardTypeOf(p.game)).asImageBitmap() }.getOrNull()
         }
         else p.pick?.platform?.takeIf { it.startsWith(SHELL_PREFIX) }?.let { pp ->
             val (ch, console) = CartShells.split(pp)
             // (Update 306: on another console's shell, that game's console named where the maker's name is — backFor.)
             ch?.shell?.let { sh ->
-                runCatching { CartShells.backFor(sh, CartShells.colourOf(sh, ch.colourKey), 640, console, backStyle).asImageBitmap() }.getOrNull()
+                val own = CartShells.colourOf(sh, ch.colourKey)
+                val colour = photoTone?.let { t -> ShellColour("photo:$t", own.name, t, own.opacity) } ?: own
+                runCatching { CartShells.backFor(sh, colour, 640, console, backStyle, boardTypeOf(p.game)).asImageBitmap() }.getOrNull()
             }
         }
     }
@@ -1764,6 +1800,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             runCatching { CustomCartBacks.backImage(ctx, console, (saved ?: p.tone).copy(alpha = 1f).toArgb(), CustomCarts.aspectFor(console)) }.getOrNull()
         }
     }
+    // Update 468 (owner, Update 466 review: the GBC pak's 90° edge a flat opaque grey strip, the clear plastic not clear):
+    // the measured shell this piece is (its drawn shell, or the console's real shell under its photo) — for its rounded
+    // edges, the seam between its halves and its side grips, and, in clear plastic, the board and its parts inside.
+    val sideSpec = remember(p.pick?.platform, p.realScan, p.game.platform, p.game.stableKey, labelsV) { SlabSide.of(p) }
+    val sideBits = remember(sideSpec) { SlabSideBits() }
     var shell by androidx.compose.runtime.remember(p) { androidx.compose.runtime.mutableStateOf<Color?>(null) }
     // (Update 257, #35: a PSP game's UMD — not a cartridge shell picked for it — shows its data side from behind.)
     val isUmd = p.pick?.platform?.startsWith(SHELL_PREFIX) != true && customPlatform == null &&
@@ -1778,10 +1819,11 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
     // drawn face. It comes from what the face is drawn from — a library shell's own colour, else the template / pack
     // picture's edge read off the main thread (its file, not the screen); a photo's tone comes from PhotoTones.
     val ctxTone = androidx.compose.ui.platform.LocalContext.current
-    LaunchedEffect(p) {
+    LaunchedEffect(p, photoTone) {
         val pp = p.pick?.platform
         shell = when {
             pp == null -> null
+            pp.startsWith(SHELL_PREFIX) && photoTone != null -> Color(photoTone)
             pp.startsWith(SHELL_PREFIX) -> CartShells.split(pp).first?.let { ch -> ch.shell?.let { sh -> Color(CartShells.colourOf(sh, ch.colourKey).argb) } }
             isCustomPiece(pp) -> null
             else -> MediaTemplates.of(pp)?.cart?.res?.let { res ->
@@ -1820,6 +1862,13 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             )))
             val sheen = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.12f), Color.Transparent, Color.Black.copy(alpha = 0.18f)))
             val mx = androidx.compose.ui.graphics.Matrix()
+            // (Update 468: the clear pak's wall — the outline less its inside — its seam slice, its grips, its board.)
+            val ring = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
+            val cut = obtainGraphicsLayer().also { it.blendMode = BlendMode.DstOut }
+            val grips = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
+            val boardEdge = obtainGraphicsLayer()
+            val partsEdge = obtainGraphicsLayer()
+            val seam = obtainGraphicsLayer().also { it.compositingStrategy = androidx.compose.ui.graphics.layer.CompositingStrategy.Offscreen }
             onDrawWithContent {
                 face.record { this@onDrawWithContent.drawContent() }
                 // Update 238 (#117): turned and tilted (PiecePose) — over its top and under its bottom the same slices
@@ -1846,19 +1895,99 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                     drawRect(sideTone, blendMode = BlendMode.SrcIn)
                     drawRect(sheen, blendMode = BlendMode.SrcAtop)
                 }
-                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 48)
-                if (n > 0) {
+                // (Update 458, D175: up to 72 — a big GBA cartridge side-on wanted ~80, so 48 left them ~2 px apart.)
+                val n = kotlin.math.ceil(depth * abs(sn) / 1.2f).toInt().coerceIn(0, 72)
+                val ss = sideSpec
+                if (n > 0 && ss == null) {
                     // Far to near.
                     for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
                         at(z) { drawLayer(edge) }
                     }
+                } else if (n > 0 && ss != null) {
+                    // Update 468: the measured shell — see SlabSide.
+                    val aspect = p.aspect
+                    val pw = minOf(w, h * aspect); val ph = pw / aspect
+                    val ppm = pw / ss.shell.w // px per mm across the face
+                    val zpm = depth / ss.shell.t // px per mm through its thickness
+                    val piece = androidx.compose.ui.geometry.Rect((w - pw) / 2f, (h - ph) / 2f, (w + pw) / 2f, (h + ph) / 2f)
+                    fun atIn(z: Float, insetPx: Float, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+                        if (insetPx <= 0.05f) { at(z, block); return }
+                        pose.matrix(mx, center, z)
+                        withTransform({ transform(mx); scale(1f - 2f * insetPx / pw, 1f - 2f * insetPx / ph, center) }) { block() }
+                    }
+                    val seamZ = depth / 2f - SlabSide.FRONT_HALF * zpm
+                    if (ss.grips) grips.record {
+                        // (Its grips: grooves across the front half's sides, 3–14 mm from the top — the GBC Game Pak side photos.)
+                        // (Each groove at least ~2.5 px wide as the turn draws it: edge-on, a slice is the face's outline
+                        // squeezed to ~1 %, so a groove 0.9 mm in from the edge was a hair and read as a comb of dots.)
+                        val gw = (2.5f / abs(pose.cy).coerceAtLeast(0.01f)).coerceIn(0.9f * ppm, pw * 0.45f)
+                        for (i in 0 until SlabSide.GRIP_LINES) {
+                            val y = piece.top + (SlabSide.GRIP_TOP + i * SlabSide.GRIP_PITCH) * ppm
+                            drawRect(Color.Black.copy(alpha = 0.55f), androidx.compose.ui.geometry.Offset(piece.left, y), androidx.compose.ui.geometry.Size(gw, 0.45f * ppm))
+                            drawRect(Color.Black.copy(alpha = 0.55f), androidx.compose.ui.geometry.Offset(piece.right - gw, y), androidx.compose.ui.geometry.Size(gw, 0.45f * ppm))
+                        }
+                    }
+                    val clear = ss.clear
+                    if (clear) {
+                        // The wall: the outline less its inside (1.2 mm walls), in the clear plastic.
+                        // (At least ~2.5 px as the turn draws it: edge-on a slice is its outline squeezed to ~1 %, and a
+                        // 1.2 mm wall there was a hair per slice — the side read as a comb and then vanished. Turned that far,
+                        // the wall you look through is the whole side, so the slices fill out to it.)
+                        val wall = maxOf(SlabSide.WALL * ppm, 2.5f / abs(pose.cy).coerceAtLeast(0.01f)).coerceAtMost(minOf(pw, ph) / 2f)
+                        cut.record { drawLayer(solid) }
+                        ring.record {
+                            drawLayer(edge)
+                            withTransform({ scale(1f - 2f * wall / pw, 1f - 2f * wall / ph, center) }) { drawLayer(cut) }
+                        }
+                        // What's inside, far to near: the board (1 mm, lying on the back half) and the parts on its label side.
+                        val bits = sideBits.at(ss, piece, ppm)
+                        if (bits != null) {
+                            boardEdge.record { drawImage(bits.board, dstOffset = bits.at, dstSize = bits.size); drawRect(Color(0xFF1C5A3C), blendMode = BlendMode.SrcIn) }
+                            partsEdge.record { drawImage(bits.parts, dstOffset = bits.at, dstSize = bits.size); drawRect(Color(0xFF232326), blendMode = BlendMode.SrcIn) }
+                            val zb0 = -depth / 2f + SlabSide.BOARD_FROM_BACK * zpm
+                            val zb1 = zb0 + SlabSide.BOARD_T * zpm
+                            val zp1 = zb1 + SlabSide.PARTS_T * zpm
+                            val nb = kotlin.math.ceil((zb1 - zb0) * abs(sn) / 1.2f).toInt().coerceIn(1, 8)
+                            val np = kotlin.math.ceil((zp1 - zb1) * abs(sn) / 1.2f).toInt().coerceIn(1, 10)
+                            val ops = ArrayList<Pair<Float, androidx.compose.ui.graphics.layer.GraphicsLayer>>()
+                            for (k in 0..nb) ops += (zb0 + (zb1 - zb0) * k / nb) to boardEdge
+                            for (k in 1..np) ops += (zb1 + (zp1 - zb1) * k / np) to partsEdge
+                            if (c >= 0f) ops.sortBy { it.first } else ops.sortByDescending { it.first }
+                            for ((z, l) in ops) at(z) { drawLayer(l) }
+                        }
+                        // The clear walls over it, as one sheet of plastic (slices overlapping don't add up to opaque).
+                        val cv = drawContext.canvas
+                        cv.saveLayer(androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h), androidx.compose.ui.graphics.Paint().apply { alpha = SlabSide.CLEAR_SIDE_ALPHA })
+                    }
+                    val layer = if (clear) ring else edge
+                    for (k in 0..n) {
+                        val f = k.toFloat() / n
+                        val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
+                        // (Rounded edges: the slices within 0.5 mm of a face drawn a little smaller — a 0.5 mm radius.)
+                        val d = (depth / 2f - abs(z)) / zpm
+                        val r = SlabSide.EDGE_R
+                        val inset = if (d < r) (r - kotlin.math.sqrt((r * r - (r - d) * (r - d)).coerceAtLeast(0f))) * ppm else 0f
+                        atIn(z, inset) { drawLayer(layer) }
+                        if (ss.grips && z >= seamZ) atIn(z, inset) { drawLayer(grips) }
+                    }
+                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
+                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
+                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
+                    at(seamZ) { drawLayer(seam) }
+                    if (clear) drawContext.canvas.restore()
                 }
                 // (Update 275: the bottom face round the openings — a drawn shell's own.)
                 val uv = under?.let { u -> CartUndersides.View(u.shell, w, h, depth, pose.cy, pose.sy, pose.cp, pose.sp, stretch = !u.full, frame = u.frame) }
                 val plasticArgb = sideTone.toArgb()
                 if (under != null && uv != null && under.full) CartUndersides.drawRim(this, under.geo, uv, plasticArgb, under.opacity)
+                // Update 458 (D175, Thor: a striped, coloured 1–2 px column down a GBA cartridge's side at 90°): the face is
+                // never drawn narrower than 1 % (PiecePose.matrix), so edge-on its label was squeezed into a line of stripes on
+                // the side. It fades out over the last few degrees now (edgeOnFade); the sides' slices fill that place.
+                val faceA = edgeOnFade(c)
+                lit.alpha = faceA
+                back.alpha = faceA
                 if (c >= 0f) {
                     lit.colorFilter = SlabLight.of(1f - 0.4f * abs(sn))
                     lit.record { drawLayer(face) }
@@ -1916,6 +2045,75 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             }
         }
     ) { PieceFace(p, Modifier.fillMaxSize()) }
+}
+
+/** Update 468: the clear Game Boy pak's board parts for [g] — its ROM header's cartridge type (GbBoard); null: unknown. */
+internal fun boardTypeOf(g: Game): Int? = com.shelf.launcher.data.LabelIds.of(g.name)?.cartType
+
+/**
+ * Update 468 (owner, Update 466 review: "show real thickness and rounded shell edges… correct the transparent plastic side,
+ * with the internal board visible"): the Game Boy family's pak as measured from the photos of the real one —
+ * https://commons.wikimedia.org/wiki/File:Nintendo_Game_Boy_Color_Game_Pak_Right_Side.jpg , …Left_Side.jpg , …Top.jpg
+ * (Mitch Mastroni, CC BY-SA 4.0): 7.7–7.8 mm thick; the front half 5.8 mm, the back half 2.0 mm, the seam between them a fine
+ * dark line; eight grip grooves across the front half's sides 4–13 mm from the top; corners rounded ~0.5 mm. The clear pak
+ * (https://commons.wikimedia.org/wiki/File:Nintendo-Game-Boy-Color-Cartridge.jpg , Evan-Amos, public domain): pale clear
+ * walls you see the green board through, the board lying on the back half (PokemonSilverBoard.jpg: chips on the label
+ * side). Measured for the Game Boy, black Color and clear Color paks (one mould); the GBA and the special paks are not.
+ */
+internal class SlabSide(val shell: CartShell, val clear: Boolean, val boardType: Int?, val grips: Boolean) {
+    companion object {
+        const val FRONT_HALF = 5.8f
+        const val GRIP_TOP = 4f; const val GRIP_PITCH = 1.3f; const val GRIP_LINES = 8
+        const val WALL = 1.2f
+        const val BOARD_FROM_BACK = 1.2f; const val BOARD_T = 1f; const val PARTS_T = 1.5f
+        const val EDGE_R = 0.5f
+        const val CLEAR_SIDE_ALPHA = 0.5f
+        private val MEASURED = setOf("gb", "gbc", "gbc_dual")
+
+        fun of(p: InspectPiece): SlabSide? = runCatching {
+            val pp = p.pick?.platform
+            val (sh, colour) = when {
+                pp != null && pp.startsWith(SHELL_PREFIX) -> {
+                    val ch = CartShells.split(pp).first ?: return@runCatching null
+                    if (ch.pack != null) return@runCatching null
+                    val sh = ch.shell ?: return@runCatching null
+                    sh to CartShells.colourOf(sh, ch.colourKey)
+                }
+                pp == null && p.realScan != null -> {
+                    val sh = ownShellOf(p.game.platform, p.game.stableKey) ?: return@runCatching null
+                    // (Only a photo of that very shape — as the connector end, `under`.)
+                    if (abs(p.aspect - sh.aspect) / sh.aspect > 0.15f) return@runCatching null
+                    sh to ownShellColour(sh, p.game.platform, p.game.stableKey)
+                }
+                else -> return@runCatching null
+            }
+            if (sh.id !in MEASURED) return@runCatching null
+            val clear = colour.opacity < 0.85f && CartBacks.of(sh.id)?.board != null
+            SlabSide(sh, clear, if (clear) boardTypeOf(p.game) else null, grips = true)
+        }.getOrNull()
+    }
+}
+
+/** Update 468: the clear pak's board pictures at the size it's drawn (GbBoard), made once per size. */
+internal class SlabSideBits {
+    class Bits(val board: androidx.compose.ui.graphics.ImageBitmap, val parts: androidx.compose.ui.graphics.ImageBitmap, val at: androidx.compose.ui.unit.IntOffset, val size: androidx.compose.ui.unit.IntSize)
+    private var key = ""
+    private var made: Bits? = null
+    fun at(ss: SlabSide, piece: androidx.compose.ui.geometry.Rect, ppm: Float): Bits? {
+        val m = CartBacks.of(ss.shell.id)?.board ?: return null
+        // (The back's millimetres are seen from behind: from the front the board sits mirrored across the shell.)
+        val x = ss.shell.w - m[0] - m[2]
+        val at = androidx.compose.ui.unit.IntOffset((piece.left + x * ppm).roundToInt(), (piece.top + m[1] * ppm).roundToInt())
+        val size = androidx.compose.ui.unit.IntSize((m[2] * ppm).roundToInt().coerceAtLeast(4), (m[3] * ppm).roundToInt().coerceAtLeast(4))
+        val k = "${ss.boardType}|$at|$size"
+        if (k != key) {
+            key = k
+            made = runCatching {
+                Bits(GbBoard.chipSide(ss.boardType, size.width, size.height).asImageBitmap(), GbBoard.partsOnly(ss.boardType, size.width, size.height).asImageBitmap(), at, size)
+            }.getOrNull()
+        }
+        return made
+    }
 }
 
 /** Update 275: what InspectSlab draws of a piece's connector end (CartUnderside.kt). */

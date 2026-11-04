@@ -29,7 +29,8 @@ import kotlinx.coroutines.withContext
 internal fun GestureHintCard() {
     val context = LocalContext.current
     val immersive = GestureHint.immersiveState.value
-    var force by remember { mutableStateOf(GestureHint.forceOn(context)) }
+    // (Update 449: the live state — Hide navigation bar switched from the R1 tile changes it when no choice is saved.)
+    val force = GestureHint.forceState.value
     var status by remember { mutableStateOf("…") }
     var needsAdb by remember { mutableStateOf(false) }
     // Bumped to re-check after a change (the checks may ask the root service: off the main thread).
@@ -50,7 +51,7 @@ internal fun GestureHintCard() {
             Icons.Filled.Gesture, "Hide navigation bar",
             "Android's immersive mode. A swipe from the edge shows it for a moment; it hides again by itself. Popups and the keyboard keep it hidden too.",
             checked = immersive,
-            onChange = { GestureHint.setImmersive(context, it) }
+            onChange = { GestureHint.setImmersive(context, it); refresh++ }
         )
         Spacer(Modifier.height(8.dp))
         SwitchRow(
@@ -61,7 +62,6 @@ internal fun GestureHintCard() {
                 "and puts it back when you leave Voltcap for another app or turn this off. No other app has to run.",
             checked = force,
             onChange = {
-                force = it
                 GestureHint.setForce(context, it)
                 refresh++
             }
@@ -81,6 +81,11 @@ internal fun GestureHintCard() {
                 }
                 Chip("Check again") { refresh++ }
             }
+        }
+        // Update 449: when the two switches can't do what they say on this handheld, say so (no guessing at the bar).
+        GestureHint.limitNote(immersive, force, GestureHint.aynHandle, GestureHint.deviceNavHidden.value)?.let {
+            Spacer(Modifier.height(6.dp))
+            MutedNote(it)
         }
         Spacer(Modifier.height(6.dp))
         // Update 202: with the handheld's root service a watcher gives the setting back after an uninstall by itself.

@@ -51,6 +51,9 @@ internal object MediaInspect {
 
     /** Update 274, testing only (TestHooks `voltcap_test_inspect`): the forced piece on this library shell, held at [testPose]. */
     @Volatile var testShell: String? = null
+    /** Update 462b, testing only: a picture file used as the forced piece's cover and the name printed on it (nothing saved). */
+    @Volatile var testArt: String? = null
+    @Volatile var testTitle: String? = null
     /** Update 274, testing only: yaw, pitch (degrees) to hold the piece at — no turn once round, no sway. */
     @Volatile var testPose: FloatArray? = null
 }

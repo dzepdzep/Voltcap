@@ -76,10 +76,21 @@ object GestureHint {
         loaded = true
         val p = prefs(c)
         immersiveState.value = p.getBoolean("immersive", true)
+        // Update 449: the device's own setting, followed as it changes (Voltcap's force-hide, the handheld's own Settings).
+        deviceNavHidden.value = readDeviceNavHidden(c)
+        if (observer == null) runCatching {
+            val app0 = c.applicationContext
+            val o = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean) { deviceNavHidden.value = readDeviceNavHidden(app0) }
+            }
+            app0.contentResolver.registerContentObserver(Settings.Global.getUriFor("hide_nav_bar"), false, o)
+            observer = o
+        }
         // Older choice (Off / While Voltcap is open / Everywhere) → the force-hide switch.
         if (!p.contains("force") && p.contains("scope")) {
             p.edit().putBoolean("force", p.getString("scope", "OFF") != "OFF").remove("scope").apply()
         }
+        forceState.value = forceOn(c)
         // The older version saved the value as a number for navigation_bar_gesture_hint.
         (p.all["previous"] as? Int)?.let { p.edit().putString("previous", it.toString()).putString("previous_key", "navigation_bar_gesture_hint").apply() }
         // Left hidden by a crash or a killed process with the option off: give the hint back.
@@ -102,14 +113,61 @@ object GestureHint {
         (android.os.Build.MODEL.contains("Retroid", true) || android.os.Build.MANUFACTURER.contains("Retroid", true)) && RootShell.available
     }
 
-    /** Whether Voltcap's windows themselves ask Android to hide the navigation bar. */
-    fun windowHidesNav(immersive: Boolean = immersiveState.value): Boolean = immersive && !systemOwnsNav
+    /**
+     * Update 449: the device's own "hide_nav_bar" setting is on right now (AYN / Retroid). Kept current by a
+     * [ContentObserver][android.database.ContentObserver] (no polling) registered in [init], so the windows can follow it.
+     */
+    val deviceNavHidden = mutableStateOf(false)
+
+    /**
+     * Whether Voltcap's windows themselves ask Android to hide the navigation bar.
+     * Update 449: on a Retroid the window stays out of it only while the device's own setting is hiding the bar (asking
+     * then brought the pill back, update 155). With that setting off — Force-hide off, or given back — "Hide navigation bar"
+     * on used to do nothing there and the white pill showed while the switch said on; now the window asks, as anywhere else.
+     */
+    fun windowHidesNav(immersive: Boolean = immersiveState.value): Boolean =
+        immersive && !(systemOwnsNav && deviceNavHidden.value)
+
+    /**
+     * Update 449: an AYN handheld (Thor, Odin): its ROM keeps drawing the gesture pill on the main screen while its own
+     * hide_nav_bar is 0, even with Voltcap's window in immersive mode and focused (checked on the Thor: NavigationBar0
+     * visible, Voltcap focused on display 0). There only the device setting — Force-hide — removes it.
+     */
+    val aynHandle: Boolean by lazy {
+        (android.os.Build.MANUFACTURER.contains("AYN", true) || android.os.Build.MODEL.contains("AYN", true)) && RootShell.available
+    }
+
+    /** Update 449: what the settings card says under the two switches when they can't do what they say on this device. */
+    internal fun limitNote(immersive: Boolean, force: Boolean, ayn: Boolean, deviceHides: Boolean): String? = when {
+        immersive && !force && ayn && !deviceHides ->
+            "On this handheld the pill is drawn by the device itself: with Force-hide off it can stay visible while Hide navigation bar is on."
+        !immersive && deviceHides ->
+            "The handheld's own setting is hiding the bar (its own Settings, or Force-hide below)."
+        else -> null
+    }
+
+    /** Update 449: for testing [windowHidesNav]'s rule without a device. */
+    internal fun windowHidesNavRule(immersive: Boolean, systemOwns: Boolean, deviceHides: Boolean): Boolean =
+        immersive && !(systemOwns && deviceHides)
+
+    /**
+     * Update 449: the Force-hide switch as the screens show it. With no choice saved it follows "Hide navigation bar" on a
+     * handheld with a root service ([forceOn]); the settings card used to read it once, so after the R1 tile switched
+     * Hide navigation bar the card showed the old Force-hide state. Updated by [setImmersive], [setForce] and [init].
+     */
+    val forceState = mutableStateOf(false)
+
+    private var observer: android.database.ContentObserver? = null
+
+    private fun readDeviceNavHidden(c: Context): Boolean =
+        runCatching { Settings.Global.getString(c.contentResolver, "hide_nav_bar")?.trim() == "1" }.getOrDefault(false)
 
     fun immersive(c: Context): Boolean = prefs(c).getBoolean("immersive", true)
 
     fun setImmersive(c: Context, on: Boolean) {
         prefs(c).edit().putBoolean("immersive", on).apply()
         immersiveState.value = on
+        forceState.value = forceOn(c)
         // (Update 137: where the force-hide follows this switch, the handle goes / comes back with it.)
         // Update 202: also from the R1 tile over a game (Voltcap not in front): on hides it there too, off gives it back.
         // With the force-hide set by hand, off only gives it back where it was held for a game / as the home app.
@@ -138,6 +196,7 @@ object GestureHint {
     fun setForce(c: Context, on: Boolean) {
         val app = c.applicationContext
         prefs(app).edit().putBoolean("force", on).apply()
+        forceState.value = on
         worker.execute {
             runCatching {
                 // On a handheld with a root service: the permission for good, once (no other app needed).

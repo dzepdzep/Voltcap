@@ -320,10 +320,13 @@ internal fun RowMotionWindow(
                 // on stays bright over it. Here only a little more behind the words, never reaching the game.
                 // (v0.6.66 popup review: a whole-screen layout draws no RowRevealShade and its own title sat under the window's —
                 // the name twice on Cinema / Arctic / Cross menu / Disc station. There the shade covers everything but the game.)
-                if (state.appearance.homeLayout.styleHome) Canvas(Modifier.fillMaxSize()) {
+                // (Update 461 popup audit, KONKR + Odin: the 0.8 shade still let a layout's own bright title / menu show through the
+                // words — Cube menu, File select, Game rentals — and the Hero carousel, Channel grid and TV guide had none, so the
+                // window's words sat on their covers and text. WindowShade: those three too, and 0.9.)
+                if (WindowShade.on(state.appearance.homeLayout)) Canvas(Modifier.fillMaxSize()) {
                     val t = p.value
                     clipRect(c.left - 6f, c.top - 6f, c.right + 6f, c.bottom + 6f, clipOp = androidx.compose.ui.graphics.ClipOp.Difference) {
-                        drawRect(Color.Black.copy(alpha = 0.8f * t))
+                        drawRect(Color.Black.copy(alpha = WindowShade.ALPHA * t))
                     }
                 }
                 Canvas(Modifier.fillMaxSize()) {
@@ -551,7 +554,11 @@ internal fun RowMotionWindow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 if (badges.isNotEmpty()) {
-                    badges.forEach { (url, unlocked) ->
+                    // (Update 471, found in the 471 sweep — KONKR, Row opens: the badges filled the strip and "+99" was squeezed to
+                    // one letter a line. As many badges as fit with room for the count; the count on one line.)
+                    val room = with(d) { (W - buttonsTo.x - pad).coerceAtLeast(0f).toDp() }
+                    val fit = if (total > badges.size || ((badges.size * 52).dp > room)) (((room - 52.dp) / 52.dp).toInt()).coerceIn(0, badges.size) else badges.size
+                    badges.take(fit).forEach { (url, unlocked) ->
                         AsyncImage(
                             url, null, contentScale = ContentScale.Crop,
                             modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))
@@ -559,7 +566,8 @@ internal fun RowMotionWindow(
                                 .border(1.dp, if (unlocked) accent.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
                         )
                     }
-                    if (total > badges.size) Text("+${total - badges.size}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (total > fit) Text("+${total - fit}", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, softWrap = false)
                 } else shots.forEach { url ->
                     AsyncImage(
                         url, null, contentScale = ContentScale.Crop,
@@ -603,6 +611,18 @@ private fun RevealButton(label: String, main: Boolean = false, accent: Color, on
  * Update 249 (#119): Row reveal's shade over the home screen's art, under its rows (LauncherScreen draws it before them):
  * deepest at the top, for the words the game window lays over it.
  */
+/**
+ * Update 461 (popup audit): the layouts whose own picture and words stay under the Row reveal / Shared move windows (nothing
+ * of them steps aside) — every whole-screen layout, plus the Hero carousel, Channel grid and TV guide — and how deep the
+ * shade over them goes, so no title, menu or cover shows through the window's words (pure — unit-tested).
+ */
+internal object WindowShade {
+    const val ALPHA = 0.9f
+    fun on(layout: com.shelf.launcher.data.HomeLayout): Boolean =
+        layout.styleHome || layout == com.shelf.launcher.data.HomeLayout.HERO || layout == com.shelf.launcher.data.HomeLayout.GRID ||
+            layout == com.shelf.launcher.data.HomeLayout.TV
+}
+
 @Composable
 internal fun RowRevealShade(modifier: Modifier) {
     Canvas(modifier) {

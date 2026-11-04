@@ -581,15 +581,19 @@ internal fun PlatformFilterRow(
     /** Lines the pills up with the row: start (left end), centre or end (right). */
     align: Alignment.Horizontal = Alignment.Start,
     /** Where the pills start / end at the screen edge; null = where the game name starts. */
-    edge: androidx.compose.ui.unit.Dp? = null
+    edge: androidx.compose.ui.unit.Dp? = null,
+    /** Update 453: the category keys in L2 / R2 order (CategoryStops.keys); null = built from [order] / [platforms]. */
+    keys: List<String>? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("PlatformFilterRow")
     // Every pill needs its own key: no category listed twice.
     val orderU = remember(order) { order.distinct() }
     val platformsU = remember(platforms) { platforms.distinct() }
     val collectionsU = remember(collections, platformsU) { collections.distinct().filter { it !in platformsU } }
-    val itemKeys = remember(orderU, platformsU, collectionsU) {
-        buildList {
+    val itemKeys = remember(orderU, platformsU, collectionsU, keys) {
+        // Update 453: the categories L2 / R2 and the category screen use (data/CategoryStops.kt) — tiles taken off the
+        // category screen (the owner's "Other apps") are no pill either, in the tile order. Built here only without them.
+        keys?.distinct() ?: buildList {
             orderU.forEach { key ->
                 when (key) {
                     com.shelf.launcher.data.CategorySettings.ALL -> add(key)

@@ -202,6 +202,11 @@ fun SecondScreenHome(
     fxOverlay: (@Composable androidx.compose.foundation.layout.BoxScope.() -> Unit)? = null,
     /** Room kept free at the right of the header row for something drawn over it (the in-game timer). */
     headerEndInset: Dp = 0.dp,
+    /**
+     * v0.6.67: a small control at the end of the header row (the way back to a two-screen layout, [TwinBackButton]).
+     * The header gives it its own room, so it never covers the tabs, the dock or the pages.
+     */
+    headerEnd: (@Composable () -> Unit)? = null,
     /** Update 189: your picture and points for the "Game art" look's top-left pill (RetroAchievements). */
     avatarUrl: String? = null,
     raPoints: Int? = null,
@@ -437,9 +442,11 @@ fun SecondScreenHome(
                     }
                 }
                 ShowcaseTopBar(
-                    avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) }, endInset = headerEndInset,
+                    avatarUrl, raPoints, if (gameOpen) "Game" else page.label, onPageTap = { latestStep(1) },
+                    endInset = headerEndInset + (if (headerEnd != null) TWIN_BACK_TARGET + 4.dp else 0.dp),
                     modifier = Modifier.align(Alignment.TopStart)
                 )
+                if (headerEnd != null) Box(Modifier.align(Alignment.TopEnd).padding(top = 3.dp, end = 6.dp + headerEndInset)) { headerEnd() }
                 // Update 195: ‹ › fixed at the screen's left and right edges, half-way down, to step through the pages
                 // (swiping still works); reachable with the controller too.
                 if (visiblePages.size > 1 || gameOpen) for (dir in intArrayOf(-1, 1)) {
@@ -474,7 +481,8 @@ fun SecondScreenHome(
             }
         } else Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
             // Volt look: the Voltcap mark, underlined tabs and the clock over a voltage line Volt sits on.
-            Box(Modifier.fillMaxWidth().padding(end = headerEndInset)) {
+            Row(Modifier.fillMaxWidth().padding(end = headerEndInset), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) {
             if (gameOpen) PageSwitcher(page, visiblePages.size + 1, latestStep) {
                 FullText("Game", color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
@@ -494,6 +502,8 @@ fun SecondScreenHome(
                 }
                 PageArrow(left = false, visible = visiblePages.size > 1) { latestStep(1) }
             }
+            }
+            if (headerEnd != null) { Spacer(Modifier.width(6.dp)); headerEnd() }
             }
             Spacer(Modifier.height(10.dp))
             // Update 200: the pages slide in the direction of travel instead of just appearing.

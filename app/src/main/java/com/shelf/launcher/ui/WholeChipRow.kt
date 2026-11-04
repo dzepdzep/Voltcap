@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -63,12 +64,19 @@ internal fun WholeChipRow(
     chip: @Composable (Int) -> Unit
 ) {
     val win = remember { ChipWindow() }
+    // Update 460 (KONKR Pocket crash in 0.6.66: IndexOutOfBounds 6 / 6 in the Cube hub's tabs): when the list gets
+    // shorter, an old chip's slot can still be recomposed once before it is dropped — it then draws nothing instead of
+    // asking its caller for an item that no longer exists.
+    val liveCount = androidx.compose.runtime.rememberUpdatedState(count)
     val tick = remember { mutableIntStateOf(0) }
     val focusIdx = remember { mutableIntStateOf(-1) }
     val stepPx = with(LocalDensity.current) { 40.dp.toPx() }
     val drag = remember { floatArrayOf(0f) }
     SubcomposeLayout(
         modifier
+            // (Update 467, QA only: a row that shows whole chips and "+N" for the rest — the gate reads its hidden chips
+            // like a scrolling list's, reachable with L1 / R1 and a swipe.)
+            .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Paged] = true } else Modifier)
             // Clipped sideways only, so a chip's focus ring / glow above and below still shows.
             .drawWithContent { clipRect(0f, -size.height, size.width, size.height * 2f) { this@drawWithContent.drawContent() } }
             .pointerInput(count) {
@@ -94,7 +102,7 @@ internal fun WholeChipRow(
         val ps: List<Placeable> = (0 until count).map { i ->
             subcompose("c$i") {
                 val bring = remember(i) { { win.keep = i; win.manual = false; tick.intValue++; Unit } }
-                Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { chip(i) }
+                Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { if (i < liveCount.value) chip(i) }
             }.first().measure(childCs)
         }
         val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width

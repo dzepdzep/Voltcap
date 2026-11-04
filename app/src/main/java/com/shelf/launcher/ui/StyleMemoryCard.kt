@@ -728,9 +728,10 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
                     }
                 }
             }
-            if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 0.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 ctx.chips.forEach { a ->
-                    SceneControl(a, Modifier) { on ->
+                    // (Update 470, D212: the Saves line was 14 dp to touch; 24 dp now, the 12 sp words unchanged.)
+                    SceneControl(a, Modifier, minTouch = 24.dp) { on ->
                         Text(a.label, color = if (a.urgent) McYellow else Color.White.copy(alpha = if (on) 1f else 0.8f), fontSize = 12.sp, maxLines = 1,
                             style = outline, textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                     }

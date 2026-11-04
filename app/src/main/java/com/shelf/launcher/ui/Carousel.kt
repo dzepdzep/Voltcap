@@ -165,7 +165,7 @@ internal fun ShelfGameArt(
         ) {
             // (Update 202: the cover, when it stands in for missing wide art, with its file's flat strips trimmed.)
             if (url != null) AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156)
-            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(6.dp), reserve = false)
             ConsoleBadge(g.platform, packageName = g.packageName)
         }
     } else if (cov != null) {
@@ -203,7 +203,7 @@ internal fun ShelfGameArt(
                 onSuccess = { r -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(cover, sz.width, sz.height) } }
             )
             else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize().padding(10.dp))
-            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp))
+            else FullText(gameDisplayName(g.name), color = Color.White, fontSize = 11.sp, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(6.dp), reserve = false)
             // Case gloss.
             Canvas(Modifier.fillMaxSize()) {
                 drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent, Color.Transparent), start = Offset.Zero, end = Offset(size.width, size.height)))

@@ -31,13 +31,17 @@ object SettingsScopes {
         // Platform artwork / maker / year, and your own platform order.
         "platform_media", "platform_order",
         // Update 321: each game's own spine fit (SpineFits).
-        "spine_fit"
+        "spine_fit",
+        // Update 450: ordinary apps' time in front for Continue playing (ContinueApps; per profile).
+        "continue_apps"
     )
 
     /** Tied to this handheld's folders, emulators, screens or storage. */
     val DEVICE_FILES = setOf(
         "screen_layouts", "emulator_configs", "library_settings", "gamenative_settings",
         "art_storage", "hero_upscale", "first_run", "device_profile", "steam_import", "perf_settings",
+        // Update 450: where Continue playing last read this handheld's usage record (ContinueApps).
+        "continue_apps_scan",
         // Gesture hints already shown on this screen; CPU/GPU clocks, charge limit and hidden accessories
         // of this handheld; where this device keeps its files; this device's web remote (and its PIN).
         "gesture_hint", "tuner", "charge_limit", "accessories", "app_storage", "web_remote", "bios_check",

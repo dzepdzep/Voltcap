@@ -133,7 +133,7 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                                 if (ctx.chips.isNotEmpty()) {
                                     Spacer(Modifier.height(4.dp))
                                     ctx.chips.forEach { a ->
-                                        SceneControl(a, Modifier.fillMaxWidth()) { on ->
+                                        SceneControl(a, Modifier.fillMaxWidth(), minTouch = 24.dp) { on ->
                                             Text(sceneLabel(a.label).uppercase(), color = if (on) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcDim, fontSize = small, maxLines = 3,
                                                 style = TextStyle(fontFamily = font), modifier = Modifier.fillMaxWidth().padding(start = 14.dp))
                                         }
@@ -174,7 +174,8 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
 /** One line of the menu: ▶ on the one you're on, it lit in yellow; Play big at the top. */
 @Composable
 private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.FontFamily, size: androidx.compose.ui.unit.TextUnit, compact: Boolean) {
-    SceneControl(a, Modifier.fillMaxWidth()) { on ->
+    // (Update 470, D212: the compact menu's lines were 17 dp to touch; now 24 dp, the yellow bar drawn as before.)
+    SceneControl(a, Modifier.fillMaxWidth(), minTouch = 24.dp) { on ->
         Row(
             Modifier.fillMaxWidth().background(if (on) ArcYellow else Color.Transparent, RoundedCornerShape(3.dp))
                 .padding(horizontal = 6.dp, vertical = if (a.primary) (if (compact) 3.dp else 6.dp) else (if (compact) 1.dp else 2.dp)),

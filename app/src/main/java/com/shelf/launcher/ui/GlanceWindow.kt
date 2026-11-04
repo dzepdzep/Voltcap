@@ -245,7 +245,8 @@ internal fun GlanceWindow(
             // (v0.6.66 popup review: on the whole-screen layouts — Disc station, Cinema, Arctic, Cross menu… — nothing of the
             // layout steps aside, so its own title and panels showed through the window's words, the title twice. A shade
             // over the layout, as deep as the move, keeps the window readable; the classic rows still step aside as before.)
-            if (state.appearance.homeLayout.styleHome) Spacer(Modifier.fillMaxSize().drawBehind { drawRect(Color.Black.copy(alpha = 0.8f * leave.value)) })
+            // (Update 461 popup audit: WindowShade — the Hero carousel / Channel grid / TV guide too, and deep enough that no title shows through.)
+            if (WindowShade.on(state.appearance.homeLayout)) Spacer(Modifier.fillMaxSize().drawBehind { drawRect(Color.Black.copy(alpha = WindowShade.ALPHA * leave.value)) })
             val shift = rootAt ?: androidx.compose.ui.geometry.Offset.Zero
             val srcName = srcName0?.let { if (fromRow) it.translate(-shift.x, -shift.y) else it }
             val srcChip = srcChip0?.translate(-shift.x, -shift.y)

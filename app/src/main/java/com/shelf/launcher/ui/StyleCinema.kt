@@ -366,7 +366,7 @@ private fun CinemaRow(
                     ) {
                         val url = if (poster) c.cover(game) else c.wide(game)
                         if (url != null) AsyncImage(rememberStyleArtRequest(url), titles(game), Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                        else FullText(titles(game), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                        else FullText(titles(game), color = Color.White, fontSize = 13.sp, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
                         // A thin progress line for games you've played, like the rows' "keep watching" bar.
                         c.progress(game)?.let { (e, t) ->
                             if (e in 1 until t) Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(3.dp).background(Color.White.copy(alpha = 0.25f))) {

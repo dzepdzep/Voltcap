@@ -363,7 +363,7 @@ internal fun rememberSoftLoad(model: Any?, maxSide: Int = 720): SoftLoad {
  * case or 3D piece sliding into a carousel has its cover at once — the carousel warmed only the flat covers, and the 3D
  * ones came in dark for a moment while scrolling.
  */
-internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int, trim: Boolean = false) {
+internal fun warmSoft(context: android.content.Context, urls: List<String>, maxSide: Int, trim: Boolean = false, prepare: Boolean = true) {
     val loader = coil.Coil.imageLoader(context)
     for (u in urls) {
         val flight = softKey(maxSide, u, trim)
@@ -383,7 +383,7 @@ internal fun warmSoft(context: android.content.Context, urls: List<String>, maxS
                     override fun onSuccess(request: coil.request.ImageRequest, result: coil.request.SuccessResult) {
                         softInFlight.remove(flight)
                         // (Update 232, #60: its GPU upload started now, not in the first frame that draws it.)
-                        prepareSoft((result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap)
+                        if (prepare) prepareSoft((result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap)
                     }
                     override fun onError(request: coil.request.ImageRequest, result: coil.request.ErrorResult) { softInFlight.remove(flight) }
                     override fun onCancel(request: coil.request.ImageRequest) { softInFlight.remove(flight) }
@@ -428,14 +428,86 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
  * and keys Case3D reads), so cases sliding in or a category opening show their print at once. They were warmed with the
  * flat cover only: on a category switch every case stood as bare plastic while its box scan and spine were read.
  */
-internal fun warmCase3d(context: android.content.Context, models: List<Triple<String?, String?, String?>>) {
-    warmSoft(context, models.mapNotNull { it.first }.distinct(), 480, trim = true)
-    warmSoft(context, models.mapNotNull { it.second }.distinct(), 600)
-    if (!com.shelf.launcher.device.MemoryBudget.small(context)) warmSoft(context, models.mapNotNull { it.third }.distinct(), 480)
+internal fun warmCase3d(context: android.content.Context, models: List<Triple<String?, String?, String?>>, backs: Boolean = true, prepare: Boolean = true) {
+    warmSoft(context, models.mapNotNull { it.first }.distinct(), 480, trim = true, prepare = prepare)
+    warmSoft(context, models.mapNotNull { it.second }.distinct(), 600, prepare = prepare)
+    if (backs && !com.shelf.launcher.device.MemoryBudget.small(context)) warmSoft(context, models.mapNotNull { it.third }.distinct(), 480)
+}
+
+/**
+ * Update 460 (owner, KONKR Pocket: "when scrolling, first the games appear as blocks and then as games with the right
+ * artwork" in the case layouts): Case flow, Case stacks and Rental shop drew their 3D cases without decoding the cases
+ * ahead — each case sliding in stood as bare plastic until its front and spine were read. The cases [reach] either side of
+ * [focus] are decoded ahead now, as the carousel's Box flow does ([warmCase3d]); worked out away from the screen's thread,
+ * a moment after the move so the move's own frame comes first.
+ */
+@androidx.compose.runtime.Composable
+internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boolean, realFront: Boolean) {
+    val context = LocalContext.current
+    val games = c.games
+    // (Update 461, D137: 460's decoding ahead held ~90-110 MB more than the RC on the KONKR with no lasting gain. Now:
+    // at most [WARM_REACH_MAX] cases ahead in the direction you move and one behind, fronts and spines only (a back shows
+    // only once a case is turned), and the pictures it decoded for cases that are now far away are let go — WarmWindow.)
+    val window = androidx.compose.runtime.remember { WarmWindow() }
+    androidx.compose.runtime.LaunchedEffect(focus, games, realFront) {
+        if (games.isEmpty() || TestHooks.warmMode == "off") return@LaunchedEffect
+        kotlinx.coroutines.delay(40)
+        val idx = window.indices(focus, reach.coerceAtMost(WARM_REACH_MAX), games.size, loop)
+        val near = idx.map { games[it] }.distinct()
+        val models = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            near.map { g -> g.stableKey to case3dModels(g, c.cover(g), c.state.physicalMedia[g.stableKey], realFront && c.state.artOverrides[g.stableKey]?.cover == null) }
+        }
+        warmCase3d(context, models.map { it.second }, backs = false, prepare = TestHooks.warmMode != "noprepare")
+        val loader = coil.Coil.imageLoader(context)
+        for ((k, m) in models) window.remember(k, listOfNotNull(m.first?.let { softKey(480, it, true) }, m.second?.let { softKey(600, it, false) }))
+        // Pictures decoded here for cases far from the one in focus (beyond three times the reach) leave the memory cache.
+        val keep = window.keepKeys(focus, reach.coerceAtMost(WARM_REACH_MAX) * 3 + 2, games, loop)
+        for (key in window.release(keep)) loader.memoryCache?.remove(coil.memory.MemoryCache.Key(key))
+    }
+}
+
+/** Update 461 (D137): the largest number of cases decoded ahead of the one in focus. */
+internal const val WARM_REACH_MAX = 6
+
+/**
+ * Update 461 (D137): which cases [WarmCaseNeighbours] decodes and which of its pictures it lets go (pure apart from its own
+ * memory — unit-tested). Moving right: [reach] cases to the right and one to the left (and the other way round); standing
+ * still (the first time): half the reach either side.
+ */
+internal class WarmWindow {
+    private var last = -1
+    private val byGame = LinkedHashMap<String, List<String>>()
+
+    fun indices(focus: Int, reach: Int, size: Int, loop: Boolean): List<Int> {
+        val dir = if (last < 0 || last == focus) 0
+            else if (loop && size > 0) (focus - last).mod(size).let { d -> if (d <= size / 2) 1 else -1 }
+            else if (focus > last) 1 else -1
+        last = focus
+        val r = reach.coerceAtLeast(1)
+        val range = when (dir) { 1 -> (focus - 1)..(focus + r); -1 -> (focus - r)..(focus + 1); else -> (focus - (r + 1) / 2)..(focus + (r + 1) / 2) }
+        return range.mapNotNull { i -> if (loop && size > 0) i.mod(size) else i.takeIf { it in 0 until size } }.distinct()
+    }
+
+    fun remember(game: String, keys: List<String>) { byGame.remove(game); byGame[game] = keys }
+
+    fun keepKeys(focus: Int, keepReach: Int, games: List<com.shelf.launcher.data.Game>, loop: Boolean): Set<String> =
+        ((focus - keepReach)..(focus + keepReach)).mapNotNull { i -> games.getOrNull(if (loop && games.isNotEmpty()) i.mod(games.size) else i)?.stableKey }.toSet()
+
+    /** The picture keys of the remembered games not in [keep], forgotten here and returned (to be removed from memory). */
+    fun release(keep: Set<String>): List<String> {
+        val gone = byGame.keys.filter { it !in keep }
+        val out = ArrayList<String>()
+        for (g in gone) byGame.remove(g)?.let { out += it }
+        // the keys still used by a kept game stay
+        val inUse = byGame.values.flatten().toSet()
+        return out.filter { it !in inUse }
+    }
+
+    fun warmedGames(): Set<String> = byGame.keys.toSet()
 }
 
 /** Update 202: the memory key of a [rememberSoftBitmap] / [warmSoft] picture (a trimmed cover has its own). */
-private fun softKey(maxSide: Int, url: String, trim: Boolean): String =
+internal fun softKey(maxSide: Int, url: String, trim: Boolean): String =
     "soft|$maxSide|" + (if (trim) TrimUniformMargins.KEY + "|" else "") + url
 
 /**

@@ -580,10 +580,10 @@ private fun CompactNowPlaying(
             Spacer(Modifier.width(8.dp))
         }
         Column(Modifier.weight(1f).shelfClickable { onOpenApp() }) {
-            Text(np.title ?: "Playing", color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            // (Update 454, D83 / rule 11: title and artist whole — two lines, a readable smaller size, then a slow slide; never "…".)
+            FullText(np.title ?: "Playing", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
             np.artist?.let {
-                Text(it, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                FullText(it, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 2)
             }
         }
         RoundStep(Icons.Filled.SkipPrevious, "Previous", onPrevious)

@@ -29,7 +29,13 @@ internal class CartBack(
     /** Other parts: kind (0 notch, 1 grip, 2 tab, 3 hole, 4 window, 5 compartment, 6 flap, 7 port, 8 battery door, 9 lens), x, y, w, h. */
     val extras: FloatArray,
     /** False when the back makes no sense without its maker's markings (the neutral back keeps them then). */
-    val neutralOk: Boolean
+    val neutralOk: Boolean,
+    /**
+     * Update 466: a see-through shell's board as it shows through the plastic — x, y, w, h (mm, seen from behind) —
+     * measured from a photo of the real one (null: the old estimate). Only the board's back shows from behind: no chips
+     * (they sit on its front, under the label).
+     */
+    val board: FloatArray? = null
 )
 
 internal object CartBacks {
@@ -84,16 +90,23 @@ internal object CartBacks {
             fa(0f, 0f, 0f, 5f, 3f, 1f, 0f, 5f, 0.8f, 10f, 1f, 56.2f, 5f, 0.8f, 10f), true),
         CartBack("gbc", "photo",
             fa(28.3f, 49f, 3.8f, 5.5f, 2f),
-            fa(28.5f, 4f, 1.8f, 0f, 1f, 28.5f, 8f, 1.5f, 0f, 1f), arrayOf("MADE IN JAPAN", "PAT. PEND."),
+            // (Update 466, measured off a rear photo of a clear Color-only Game Pak — Wikimedia Commons "GBCartridges Back.jpg",
+            // PiaCarrot, CC BY-SA 3.0 — tools/qa/BACKS_466.md: the "Nintendo" oval moulded near the top, "PAT.PEND." and
+            // "MADE IN JAPAN" below it, the dimple and the one screw as before. It had the black pak's text box at the top,
+            // which the clear pak doesn't have. A "MODEL NO." line above "PAT.PEND." is too blurred to read — left off.)
+            fa(28.8f, 8.8f, 2.1f, 0f, 1f, 28.5f, 20.3f, 1.1f, 0f, 1f, 28.5f, 22.9f, 1.1f, 0f, 1f), arrayOf("Nintendo", "PAT. PEND.", "MADE IN JAPAN"),
             fa(26.3f, 31.5f, 4f, 4f, 2f, 0.5f),
-            fa(),
+            fa(19.1f, 7.1f, 19.5f, 3.4f, 1.7f),
             fa(), ia(),
             fa(0f, 55f, 57f, 55f),
             fa(4f, 60.5f, 49f, 4.5f, 0f, 32f, 0f),
             // (Update 240, #90: no power-lock notch — the Color-only clear Game Pak lacks the top notch the original Game
             // Boy's lock tab slides into (Wikipedia, Game Boy Game Pak); it was the grey Game Boy's notch copied over. The
             // black dual-mode Game Pak, which runs on a Game Boy, keeps it.)
-            fa(), true),
+            fa(), true,
+            // (Update 466: the board fills the shell — 2.6 mm in from each side, from 3 mm below the top down to the
+            // contacts at the bottom edge — same photo.)
+            board = fa(2.6f, 3f, 51.8f, 62.5f)),
         CartBack("gba", "photo",
             fa(30.5f, 3.8f, 3f, 4.2f, 1f),
             fa(30.5f, 10.5f, 2f, 0f, 1f, 30.5f, 14.5f, 1.6f, 0f, 1f, 30.5f, 17f, 1.6f, 0f, 1f), arrayOf("Nintendo", "MODEL NO. AGB-002", "MADE IN JAPAN"),
@@ -238,15 +251,24 @@ internal object CartBacks {
             fa(16f, 73f, 66f, 73f),
             fa(3f, 78f, 75f, 9f, 0f, 0f, 0f),
             fa(1f, 3.8f, 7.1f, 3.5f, 12.5f, 1f, 73.7f, 7.1f, 3.5f, 12.5f, 0f, 0f, 5f, 3.8f, 14.6f, 0f, 77.2f, 5f, 3.8f, 14.6f), true),
-        CartBack("famicom", "unverified",
+        // (Update 466, tools/qa/BACKS_466.md: the Famicom back from a rear photo of a Jaleco cassette — Flickr bochalla
+        // 24084609544 "Back of City Connection cartridge (Famicom)", CC BY-SA 2.0 — the game's how-to-play sticker over most of
+        // it (about 4.5 mm in from the sides, 3 mm from the top, 52 mm tall), "MADE IN JAPAN" moulded under it, no screws
+        // (the halves clip together), the narrower connector tab at the bottom. One maker's cassette: other makers'
+        // (Konami, Namco, Hudson…) backs aren't verified and use this one. Sticker print is a stand-in (it's the game's own).)
+        CartBack("famicom", "partial",
             fa(),
-            fa(), arrayOf(),
+            fa(54f, 57.8f, 1.6f, 0f, 0f), arrayOf("MADE IN JAPAN"),
             fa(),
             fa(),
-            fa(), ia(),
+            fa(4.5f, 3f, 99f, 52f, 1f), ia(0xFFDDE8EE.toInt(), 0xFF2A3440.toInt()),
             fa(),
-            fa(9f, 61f, 90f, 10f, 0f, 0f, 0f),
+            fa(8.2f, 70.2f, 91.6f, 0.8f, 0f, 0f, 0f),
             fa(), true),
+        // (Update 466: NOT changed — tools/qa/BACKS_466.md. A straight-on front photo (Wikimedia Commons
+        // "Super-Famicom-Angelique-1994-Cartridge.jpg", public domain) shows the two screws on the FRONT's bottom corners,
+        // so the low-angle photo that seemed to show screws and a sticker on the back may show the front; no straight-on
+        // rear photo was found. Kept as it was until one is.)
         CartBack("sfc", "unverified",
             fa(),
             fa(), arrayOf(),

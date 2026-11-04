@@ -18,8 +18,8 @@ class PopupPolish444Test {
     @Test fun aClosingWindowActsOnPressesNotReleases() {
         val s = src("GameWindow.kt")
         assertTrue("A while closing asks to open again on its press",
-            s.contains("HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {\n                GamePopup.reopenRequested = true; HomeKeyGuard.aDown = true"))
-        assertTrue("B while closing takes the open-again back", s.contains("GamePopup.reopenRequested = false\n                return@onPreviewKeyEvent true"))
+            s.contains("HomeKeyGuard.isOpenKey(e.key) && closingFlag[0]) {\n                GamePopup.askAgain(winToken, g); HomeKeyGuard.aDown = true"))  // (update 453: via askAgain)
+        assertTrue("B while closing takes the open-again back", s.contains("GamePopup.cancelAgain(winToken)\n                return@onPreviewKeyEvent true"))
     }
 
     @Test fun bannerRoundKeysNameTheOneYouAreOn() {

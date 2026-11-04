@@ -164,19 +164,41 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
     val p = pqPalette()
     val w = minOf(ctx.maxW, 640.dp)
     val shape = CutCornerShape(14.dp)
+    // (Update 469 recheck, 1.3× text on the KONKR: beside the inspected cartridge the keys wrapped one or two a line in the
+    // column right of the art — seven lines — and the window's height cut the last ones (Inspect, the Saves line). With
+    // larger text the keys take the window's whole width under the art.)
+    val under = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
+    val key: @Composable (WinAction) -> Unit = { k ->
+        SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
+    }
     Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.1f)
         .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape).padding(14.dp)) {
-        Row {
+        if (!under) Row {
             ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.28f, 150.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(ctx.console.uppercase(), color = p.accentLight, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 StableFullText(ctx.name, color = p.ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
-                FactsAndKeys(ctx, p.muted, p.ink, null) { k ->
-                    SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
-                }
+                FactsAndKeys(ctx, p.muted, p.ink, null) { k -> key(k) }
             }
+        } else {
+            // (Update 469, owner review of the 469 PDF: the facts in the narrow column right of the art ended in a faded
+            // "Played / Trophies" row just above the keys. With larger text: a smaller art beside the name, the facts across the
+            // whole width under it (fewer, whole rows), then the keys — measured first, the facts give way.)
+            Column(Modifier.weight(1f, fill = false)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.2f, 96.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(ctx.console.uppercase(), color = p.accentLight, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                        StableFullText(ctx.name, color = p.ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
+                SceneFactsBody(ctx, p.muted, p.ink, null)
+            }
+            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp) { key(it) }
         }
     }
 }
@@ -275,12 +297,39 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
     val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF0E0F13).copy(alpha = 0.86f)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
-            StableFullText(ctx.name, color = ink, fontSize = 24.sp, maxLines = 3, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(10.dp))
-            FactsAndKeys(ctx, muted, ink, null) { k ->
-                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp), size = 12.sp)
+            // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
+            .background(Color(0xFF0E0F13)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
+            // (Update 469, D215: the panel was 86 % opaque — the home screen's own title and facts, right under it, showed through
+            // as a second faded title behind the keys (worst with More open at 1.3×). It hides what it covers now.)
+            // (Update 469, display size larger — KONKR at 280 dpi: with More open the keys ran past the panel's foot. A weighted name
+            // fixed that but took the whole free height — a big gap under the title, the facts (Year) squeezed out, and the title's
+            // re-fit drew a faded second copy. Now the name is simply smaller on a short panel and the facts give way first.)
+            // The keys are measured first (the block above them is the weighted one); inside it the name and console keep their
+            // natural height and the facts give way.
+            val shortPanel = ctx.maxH < 420.dp
+            Column(Modifier.weight(1f, fill = false)) {
+                StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
+                // (The year beside the console: with More open the facts give way to the keys and the year went with them.)
+                // (Update 471: console and year are on this line — not repeated in the facts. With More open every fact moves up
+                // into two plain lines — console · year · maker · genre, then what you've played — so all of them stay in view over
+                // the extra keys, also with large text and display size larger (KONKR at 280 dpi left the label rows no room).)
+                val moreOpen = ctx.tools.any { it.label == "Less" }
+                Text(if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                if (moreOpen) Text(coverPlayedLine(ctx), color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
+                Spacer(Modifier.height(if (moreOpen) 6.dp else 10.dp))
+                // (Update 471: the facts / story under the lines are what gives way — never the lines themselves.)
+                Column(Modifier.weight(1f, fill = false)) {
+                    SceneFactsBody(ctx, muted, ink, null, omit = if (moreOpen) COVER_DETAIL_OMIT_MORE else COVER_DETAIL_OMIT, inline = moreOpen)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            // (Update 471, D244: KONKR at 280 dpi with More open — nine keys in six rows left the two lines above them 40 px short:
+            // the second line was cut and "Never played · 0 / 109 trophies" got no height. On a short panel with More open the
+            // keys are a little more compact — 26 dp tall (touch stays >= 24 dp), 4 dp apart — so both lines stay whole.)
+            val compact = shortPanel && ctx.tools.any { it.label == "Less" }
+            KeyRow(sceneKeys(ctx), if (compact) 4.dp else 6.dp) { k ->
+                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
+                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp)
             }
         }
     }
@@ -289,3 +338,14 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
 /** Update 425: the Disc station window's labels for what the game really comes on. */
 internal fun discPanelLabels(platform: String): Pair<String, String> =
     if (mediaKind(platform) == "disc") "COMPACT DISC  DIGITAL" to "TRACK 01" else "CARTRIDGE" to "SLOT A"
+
+/** Update 471: Cover details' header line already shows these. */
+internal val COVER_DETAIL_OMIT = setOf("Console", "Year")
+/** With More open: what you've played is on its own line under the console (coverPlayedLine). */
+internal val COVER_DETAIL_OMIT_MORE = COVER_DETAIL_OMIT + setOf("Made by", "Genre", "Played", "Last played", "Trophies")
+internal fun coverInfoLine(ctx: WinSceneCtx): String = coverInfoLine(ctx.console, ctx.year, ctx.developer, ctx.genres)
+internal fun coverInfoLine(console: String, year: String?, developer: String?, genres: String?): String =
+    listOfNotNull(console, year, developer, genres).filter { it.isNotBlank() }.joinToString(" · ")
+internal fun coverPlayedLine(ctx: WinSceneCtx): String = coverPlayedLine(ctx.played, ctx.last, ctx.earned, ctx.total)
+internal fun coverPlayedLine(played: String, last: String?, earned: Int, total: Int): String =
+    listOfNotNull(if (played.startsWith("Never")) played else "Played $played", last?.let { "last $it" }, if (total > 0) "$earned / $total trophies" else null).joinToString("  ·  ")

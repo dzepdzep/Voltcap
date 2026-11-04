@@ -127,18 +127,32 @@ internal object CartShells {
 
     val all: List<CartShell> = listOf(
         // ── Nintendo ──
-        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f, rect(120f, 134f, 2f, 1f), lab(11.5f, 1f, 97f, 48f),
-            listOf(rid(8f, 70f, 104f, 58f, 12)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
-            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), check = CaseCheck.ESTIMATED,
+        // (Update 468, batch 4 — measured off https://commons.wikimedia.org/wiki/File:NES-Cartridge.jpg (Evan-Amos, public
+        // domain, straight-on front, no label): the sticker stands upright down the right half (its recess 47.8 mm in from
+        // the left, 56.8 mm wide, from the top edge down 90.7 mm — the 55 × 97 mm sticker, 7 mm over the top), the grip
+        // grooves are a column on the left (18.4 – 44.5 mm, ~24 grooves top to foot), a moulded arrow under the sticker points
+        // in, and the foot narrows to the connector from 109 mm down (6.9 mm in each side). It was drawn with the sticker
+        // across the top and the grooves across the bottom half — what 463 found in every NES cartridge photo.)
+        CartShell("nes", "NES Game Pak", ShellGroup.NINTENDO, 120f, 134f, 17f,
+            o(0f, 0f, 1f, 120f, 0f, 1f, 120f, 109.2f, 0.5f, 113.3f, 109.2f, 0.5f, 113.3f, 134f, 0.8f, 6.9f, 134f, 0.8f, 6.9f, 109.2f, 0.5f, 0f, 109.2f, 0.5f),
+            lab(48.7f, 0.5f, 55f, 90f),
+            listOf(rid(18.4f, 1f, 26.1f, 118f, 24)), listOf(sc(20f, 22f), sc(100f, 22f), sc(60f, 62f), sc(20f, 112f), sc(100f, 112f)),
+            listOf(c("Grey", GREY), c("Gold", 0xFFC9A548)), extras = listOf(ShellExtra(ShellExtra.ARROW, 55.1f, 98.9f, 9.4f, 9.3f)), check = CaseCheck.ESTIMATED,
             // (Update 240, #90: checked, not an axis bug — the 55 × 97 sticker is 97 wide and 55 tall, 7 mm of it over the
             // top edge, so 97 × 48 on the front, centred ((120 − 97) / 2 = 11.5). Only the fold is new: a scan of the whole
             // sticker loses its top 7 mm to the top face instead of being squashed. ConsoleMods doesn't mark it test-fitted.)
             labelFold = 7f,
-            note = "Size and label (55×97 mm with 7 mm over the top) measured (NESdev, ConsoleMods); ridges, screw places and radii estimated."),
-        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f, rect(108f, 71f, 3f, 1f), lab(9f, 5f, 90f, 45.5f),
-            listOf(rid(3f, 52f, 102f, 14f, 5)), emptyList(),
+            note = "Size and label (55×97 mm upright, 7 mm over the top) measured (NESdev, ConsoleMods; front layout from Evan-Amos's photo, update 468); back screw places and radii estimated."),
+        // (Update 466, tools/qa/BACKS_466.md: the real cassette's narrower connector tab — measured off a straight-on front
+        // photo, Wikimedia Commons "Famicom 'Devil World' cartridge (5158740395).jpg", Bryan Ochalla, CC BY-SA 2.0, and the
+        // Jaleco back photo: the body 62 mm tall, the tab 7.1 mm in from each side and 9 mm tall. The shell was a plain
+        // rectangle with five grip lines across its foot, which neither photo shows; they're gone.)
+        CartShell("famicom", "Famicom cassette", ShellGroup.NINTENDO, 108f, 71f, 17f,
+            o(0f, 0f, 2f, 108f, 0f, 2f, 108f, 62f, 1f, 100.9f, 62f, 0.6f, 100.9f, 71f, 0.8f, 7.1f, 71f, 0.8f, 7.1f, 62f, 0.6f, 0f, 62f, 1f),
+            lab(9f, 5f, 90f, 45.5f),
+            emptyList(), emptyList(),
             listOf(c("Grey", 0xFFC8C8C8), c("Black", BLACK), c("Red", 0xFFB3262E), c("Yellow", 0xFFE8C51E), c("Blue", 0xFF2D4FA0)),
-            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; outline estimated. Shell colours vary by game."),
+            check = CaseCheck.ESTIMATED, note = "Size from ConsoleMods (landscape), sticker 90×45.5 mm measured; connector tab measured off photos (update 466). Shell colours vary by game."),
         CartShell("snes_na", "SNES Game Pak (North America)", ShellGroup.NINTENDO, 135.85f, 87.7f, 19.7f, rect(135.85f, 87.7f, 3f, 1.5f),
             // (Update 240, #90: the sticker as ConsoleMods' Cart Labels table gives it, test-fitted on an OEM cartridge —
             // 82.5 × 44 mm with 7 mm folded over the top and 3 mm corners: 82.5 × 37 on the front from the top edge,
@@ -192,9 +206,9 @@ internal object CartShells {
         CartShell("gbc_dual", "Game Boy Color Game Pak (black)", ShellGroup.NINTENDO, 57f, 65f, 7.8f, rect(57f, 65f, 1f, 0.8f), GB_LABEL,
             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Black", 0xFF1C1C1E)), extras = GB_EXTRAS,
             contactsBack = floatArrayOf(4f, 58f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "The Game Boy case in black (Game Verifying); its size as the Game Boy shell, places estimated."),
-        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 9f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
+        CartShell("gbc", "Game Boy Color Game Pak (clear)", ShellGroup.NINTENDO, 57f, 65.5f, 7.8f, rect(57f, 65.5f, 1f, 0.8f), GB_LABEL,
             GB_RIDGES, listOf(sc(28.5f, 22f)), listOf(c("Clear", 0xFFE6E8EA, 0.45f)), extras = GB_EXTRAS,
-            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured, layout estimated."),
+            contactsBack = floatArrayOf(4f, 58.5f, 49f, 6f), check = CaseCheck.ESTIMATED, labelRadius = 1.2f, note = "Clear shell, the board shows through; size measured (update 468: 7.8 mm thick, the GBC Game Pak side photos — it was 9), layout estimated."),
         CartShell("gba", "Game Boy Advance Game Pak", ShellGroup.NINTENDO, 60f, 35f, 8f,
             o(0f, 0f, 3f, 60f, 0f, 3f, 60f, 8f, 0.5f, 58.5f, 8f, 0.5f, 58.5f, 35f, 1f, 1.5f, 35f, 1f, 1.5f, 8f, 0.5f, 0f, 8f, 0.5f),
             // (Update 240, #90: the sticker 43 × 22 mm with 1 mm corners — ConsoleMods' Cart Labels table, test-fitted on an
@@ -635,6 +649,67 @@ internal object CartShells {
         if (n == 0) 0xFFE9E6DF.toInt() else (0xFF shl 24) or ((r / n).toInt() shl 16) or ((g / n).toInt() shl 8) or (bl / n).toInt()
     }.getOrDefault(0xFFE9E6DF.toInt())
 
+    /**
+     * Update 458 / 459 (D174): what's moulded in a Game Boy pak's top panel — the shell's own branding, part of the plastic,
+     * whatever the Cartridge backs setting says (it only governs the backs): "Nintendo" + "GAME BOY" on the grey and the
+     * black dual-mode paks (the Game Boy's own case), "GAME BOY COLOR" on the clear Color-only pak (ConsoleMods, Identifying
+     * Fake Carts). Another console's game on these shells shows that console's name instead, as the backs do. Null: none.
+     * Returns the small leading word (or "") and the main word.
+     */
+    internal fun gbTopText(shellId: String, brand: String): Pair<String, String>? {
+        val gb = setOf("", com.shelf.launcher.data.ConsoleNames.display("GB"), com.shelf.launcher.data.ConsoleNames.display("GBC"))
+        return when (shellId) {
+            "gb", "gbc_dual" -> if (brand in gb) "Nintendo" to "GAME BOY" else "" to brand.uppercase()
+            "gbc" -> if (brand in gb) "" to "GAME BOY COLOR" else "" to brand.uppercase()
+            else -> null
+        }
+    }
+
+    /**
+     * Update 458 / 459 (D174): raised moulded lettering in the pak's top panel [r]: "Nintendo" in a heavy face, the main
+     * word thinner and slanted, ™ smallest and thinnest, all on one baseline (ConsoleMods: "The GAME BOY text should be
+     * thinner than the Nintendo logo and somewhat italicized. The trademark symbol should be the smallest and thinnest.
+     * All of these should be aligned at the bottom.")
+     */
+    private fun mouldedTop(c: Canvas, text: Pair<String, String>, r: RectF, k: Float, base: Int, op: Float) {
+        val (lead, name) = text
+        val big = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.ITALIC)
+            textSize = 4.3f * k; letterSpacing = 0.03f
+        }
+        val small = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.BOLD)
+            textSize = 3.5f * k; isFakeBoldText = true
+        }
+        val tm = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
+            textSize = 1.4f * k
+        }
+        val gap = if (lead.isEmpty()) 0f else 1.4f * k
+        var wN = if (lead.isEmpty()) 0f else small.measureText(lead); var wB = big.measureText(name); var wT = tm.measureText("™")
+        val room = r.width() * 0.86f
+        val total = wN + gap + wB + wT
+        if (total > room) { val f = room / total; big.textSize *= f; small.textSize *= f; tm.textSize *= f; wN *= f; wB *= f; wT *= f }
+        val x0 = r.centerX() - (wN + gap + wB + wT) / 2f
+        // (One baseline for all three, the line's middle on the panel's.)
+        val by = r.centerY() + (big.textSize * 0.36f)
+        val off = maxOf(0.16f * k, 0.6f)
+        val a = maxOf(op, 0.7f)
+        fun pass(dy: Float, argb: Int) {
+            small.color = argb; big.color = argb; tm.color = argb
+            if (lead.isNotEmpty()) c.drawText(lead, x0, by + dy, small)
+            c.drawText(name, x0 + wN + gap, by + dy, big)
+            c.drawText("™", x0 + wN + gap + wB, by + dy, tm)
+        }
+        // Raised: lit above, in shadow below, the face of the letters a touch lighter than the panel's floor.
+        // (On the clear pak the plastic is pale: the letters' faces a little darker than it, so they read as moulded.)
+        val clear = op < 0.85f
+        pass(-off, withAlpha(shade(base, 0.38f), a * 0.9f))
+        pass(off, withAlpha(shade(base, if (clear) -0.6f else -0.5f), a * 0.9f))
+        pass(0f, withAlpha(shade(base, if (clear) -0.22f else 0.02f), a))
+    }
+
+
     private fun labelArt(s: CartShell, art: Bitmap): Bitmap = runCatching {
         val tpl = MediaCovers.of(COVER_OF[s.id] ?: return art) ?: return art
         val a = art.width.toFloat() / art.height.coerceAtLeast(1)
@@ -823,7 +898,21 @@ internal object CartShells {
         val frame = if (paperOn && (brand.isEmpty() || brand == ownConsole)) SwitchLabel.stickerFrame(s.id) else null
         val paperHead = if (!paperOn || frame != null) null else paperStrip(brand.ifEmpty { ownConsole })
         val head = plaque ?: switchHeader ?: paperHead
-        val key = "f9|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
+        // (Update 458 / 459: the moulded branding in a Game Boy pak's top panel — gbTopText; the printed label's facts —
+        // LabelIds: the real product code from the ROM header, or that it's fan-made / homebrew, and the region.)
+        val mould = gbTopText(s.id, brand)
+        val ids = if (!scan) com.shelf.launcher.data.LabelIds.of(title) else null
+        // (Update 460, owner: "I don't want another collection of invented cartridge labels" — update 459's generated
+        // designs (grey strips, GBA title panel, N64 footer, FAN-MADE down the side) are off; they stay only behind the QA
+        // switch GeneratedLabels.enabled for side-by-side comparisons. Real label scans, your own label and a label from
+        // your Labels folder (LabelFolder) come first, as before; a cover is the simple fallback.)
+        // (Update 461, owner's option D for Pokémon Brown: a Game Boy / Game Boy Color pak without a label scan wears the
+        // printed Game Boy sticker — GeneratedLabels.printed — on the same shell; your own label or a scan still comes first.)
+        val kindNow = GeneratedLabels.kindOf(s.id)
+        val labelKind = if ((GeneratedLabels.enabled || GeneratedLabels.printed(kindNow)) && !scan && art != null && head == null && frame == null && !paperOn) kindNow else null
+        // (Update 468: which parts the clear pak's board has — its ROM header's cartridge type, GbBoard.)
+        val boardType = if (colour.opacity < 0.85f && CartBacks.of(s.id)?.board != null) com.shelf.launcher.data.LabelIds.of(title)?.cartType else null
+        val key = "f13|${boardType ?: ""}|${mould ?: ""}|${ids ?: ""}|$labelKind|${frame != null}|${if (paperOn) com.shelf.launcher.data.Features.caseRegion.state.value.code else ""}|${s.id}|${colour.key}|${art?.let { System.identityHashCode(it) } ?: 0}|$brand|${title ?: ""}|$maxPx|$scan|${switchHeader != null}|${plaque?.let { System.identityHashCode(it) } ?: 0}"
         cache.get(key)?.let { return it }
         if (peek) return null
         val k = maxPx / maxOf(s.w, s.h)
@@ -834,12 +923,28 @@ internal object CartShells {
         val path = outlinePath(s, k)
         val base = colour.argb
         val op = colour.opacity
-        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), op), withAlpha(shade(base, -0.12f), op), Shader.TileMode.CLAMP)
+        // (Update 468: a measured clear pak's board — GbBoard, drawn from the Pokémon Silver board photos — under the plastic,
+        // the plastic's tint over it; it was a flat green rectangle with a grey block on top.)
+        val measuredBoard = if (op < 0.85f) CartBacks.of(s.id)?.board else null
+        if (measuredBoard != null) {
+            val m = measuredBoard
+            c.save(); c.clipPath(path)
+            p.color = withAlpha(shade(base, -0.55f), 0.55f); c.drawPath(path, p)
+            val rb = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
+            // (The back's millimetres are seen from behind: from the front the board sits mirrored across the shell.)
+            val rf = RectF(bw - rb.right, rb.top, bw - rb.left, rb.bottom)
+            val pcb = GbBoard.chipSide(boardType, rf.width().toInt(), rf.height().toInt())
+            p.alpha = 235; c.drawBitmap(pcb, null, rf, p); p.alpha = 255
+            c.restore()
+        }
+        p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.08f), if (measuredBoard != null) op * 0.5f else op), withAlpha(shade(base, -0.12f), if (measuredBoard != null) op * 0.5f else op), Shader.TileMode.CLAMP)
         c.drawPath(path, p)
         p.shader = null
         c.save(); c.clipPath(path)
         // A see-through shell shows its board (green PCB, a chip) inside.
-        if (op < 0.85f) {
+        if (op < 0.85f && measuredBoard == null) {
+            // (Update 466: where it was measured, the board where the real one is — CartBack.board, the same board seen
+            // from the front, so front, sides and back agree.)
             val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
             p.color = withAlpha(0xFF1E5F3A.toInt(), 0.55f * (1f - op))
             c.drawRect(board, p)
@@ -880,6 +985,9 @@ internal object CartShells {
             }
         }
         for (e in s.extras) drawExtra(c, e, k, base, p)
+        // Update 458 / 459 (D174): the real pak's top panel has its branding moulded in it ("Nintendo GAME BOY™"; "GAME BOY
+        // COLOR" on the clear pak); the drawn one was empty.
+        if (mould != null) s.extras.firstOrNull { it.kind == ShellExtra.RECESS }?.let { e -> mouldedTop(c, mould, RectF(e.x * k, e.y * k, (e.x + e.w) * k, (e.y + e.h) * k), k, base, op) }
         s.contactsFront?.let { ct -> contacts(c, ct, k, p) }
         // The label in its recess (a shadow round it), the cover cut to its shape, the console's band on top.
         val lr0 = RectF(s.label[0] * k, s.label[1] * k, (s.label[0] + s.label[2]) * k, (s.label[1] + s.label[3]) * k)
@@ -890,7 +998,9 @@ internal object CartShells {
         val coverPic = if (art != null && !scan) labelArt(s, art) else null
         // (Update 297: a Switch card's sticker keeps the label's whole width: the red header runs across it.)
         // (Update 307: a pack plaque header runs across the whole sticker too.)
-        val lr = if (head != null || frame != null) lr0 else coverPic?.let { pic ->
+        // (Update 459, D174: a generated label — GeneratedLabels — is always the real sticker's full size and shape: its width
+        // used to follow the cover's, the plastic showing either side like a sticker that didn't fit.)
+        val lr = if (head != null || frame != null || labelKind != null) lr0 else coverPic?.let { pic ->
             val pa = pic.width.toFloat() / pic.height.coerceAtLeast(1)
             val want = maxOf(lr0.height() * pa, lr0.width() * 0.45f)
             if (want < lr0.width() * 0.96f) RectF(lr0.centerX() - want / 2f, lr0.top, lr0.centerX() + want / 2f, lr0.bottom) else null
@@ -962,21 +1072,31 @@ internal object CartShells {
                         p.color = 0xFFBDBDBD.toInt(); c.drawRect(RectF(lr.left, lr.bottom - footH, lr.right, lr.bottom - footH + 0.12f * k), p)
                     }
                     // (Toni: "some fitting numbers there, so it looks like the real cartridges": the product code printed at
-                    // the left of the band under the art, past the cut corner — see productCode.)
+                    // the left of the band under the art, past the cut corner. Update 459: only a true one — the ROM header's
+                    // code, or FAN-MADE / HOMEBREW (LabelIds); the made-up NTR-codes from the title are gone.)
                     val bandH = lr.bottom - artRect.bottom
-                    if (bandH > 0.8f * k) {
+                    // (Update 460: only a real product code from the ROM header; ROM-hack status is metadata, never printed on the label.)
+                    val idText = ids?.code
+                    if (bandH > 0.8f * k && idText != null) {
                         val tp = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                             color = 0xFF4A4A4E.toInt(); textSize = minOf(bandH * 0.42f, 1.3f * k); letterSpacing = 0.04f
                             typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF, android.graphics.Typeface.NORMAL)
                         }
                         val by = lr.bottom - bandH / 2f - (tp.ascent() + tp.descent()) / 2f
-                        c.drawText(productCode(s.id, title ?: brand), lr.left + 3.0f * k, by, tp)
+                        c.drawText(idText, lr.left + 3.0f * k, by, tp)
                     }
                 } else {
+                    // (Update 459, D174: a generated label — the real sticker printed for this console, the cover whole at its
+                    // own proportions in it (GeneratedLabels); it was cut to fill, which lost "BROWN VERSION" at its foot.)
+                    if (labelKind != null) {
+                        val printed = GeneratedLabels.compose(labelKind, pic, artRect.width().toInt(), artRect.height().toInt(), k, ids, title, brand)
+                        c.drawBitmap(printed, null, artRect, p)
+                    } else {
                     val fit = if (pa > la) RectF(artRect.left, artRect.centerY() - artRect.width() / pa / 2f, artRect.right, artRect.centerY() + artRect.width() / pa / 2f)
                         else RectF(artRect.centerX() - artRect.height() * pa / 2f, artRect.top, artRect.centerX() + artRect.height() * pa / 2f, artRect.bottom)
                     if (kotlin.math.abs(pa - la) > 0.02f) { p.color = edgeColour(pic, pa > la); c.drawRect(artRect, p) }
                     c.drawBitmap(pic, null, fit, p)
+                    }
                 }
             }
         } else if (!title.isNullOrBlank()) {
@@ -1021,9 +1141,24 @@ internal object CartShells {
         packColourParts(key)?.let { (look, clear, con) ->
             val colour = colourOf(s, key)
             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
+            MediaTrace.note(title, "CUSTOM MODEL pack ${look.key} on ${s.id}")
             CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx)?.let { return it }
         }
-        return front(s, colourOf(s, key), art, brand, title, maxPx, scan)
+        val colour = colourOf(s, key)
+        val drawn = front(s, colour, art, brand, title, maxPx, scan)
+        // (Update 462: the same label on a real cartridge photo of this shell, when your library has one — PhotoShells.)
+        val photo = photoFront(s, colour, drawn)
+        MediaTrace.note(title, "drawn shell ${s.id}~${colour.key} ${if (photo != null) "PHOTOSHELL " + PhotoShells.why(s, colour) else "PROCEDURAL " + PhotoShells.why(s, colour)}${if (scan) " label=scan" else ""}")
+        return photo ?: drawn
+    }
+
+    private val photoCache = android.util.LruCache<Bitmap, Bitmap>(12)
+
+    /** Update 462: [drawn] (CartShells.front) on its photo-made shell, or null (none for this shell / not made yet). */
+    private fun photoFront(s: CartShell, colour: ShellColour, drawn: Bitmap): Bitmap? {
+        if (PhotoShells.template(s, colour) == null) return null
+        synchronized(photoCache) { photoCache.get(drawn)?.let { return it } }
+        return PhotoShells.front(s, colour, drawn)?.also { synchronized(photoCache) { photoCache.put(drawn, it) } }
     }
 
     /**
@@ -1036,7 +1171,10 @@ internal object CartShells {
             val file = CustomCarts.idFor(con)?.let { CustomCarts.asset(look, clear, it) }
             return CustomCarts.authenticFront(s, look, file, androidx.compose.ui.graphics.Color(colour.argb), clear, console ?: con, art, scan, title, maxPx, peek = true)
         }
-        return frontOrNull(s, colourOf(s, key), art, brand, title, maxPx, scan, null, peek = true)
+        val colour = colourOf(s, key)
+        val drawn = frontOrNull(s, colour, art, brand, title, maxPx, scan, null, peek = true) ?: return null
+        if (PhotoShells.template(s, colour) == null) return drawn
+        return synchronized(photoCache) { photoCache.get(drawn) }
     }
 
     /**
@@ -1048,13 +1186,15 @@ internal object CartShells {
      * the same shape, screws, panels and contacts without the maker's text and stickers (a game on another console's
      * shell). Shells without researched backs keep the plain one. The front is never touched.
      */
-    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null): Bitmap {
+    fun back(s: CartShell, colour: ShellColour, maxPx: Int, neutral: Boolean = false, brand: String? = null,
+        /** Update 468: a clear pak's board parts — its ROM header's cartridge type (GbBoard); null: the photographed board's. */
+        boardType: Int? = null): Bitmap {
         val data = CartBacks.of(s.id)
         val plainText = neutral && data?.neutralOk != false
         // (Update 306: [brand] — the game's own console, on another console's shell: the maker's name and model numbers
         // moulded on the back become that console's name; the rest of the shell — screws, panels, stickers — stays.)
         val rebrand = brand?.takeIf { !plainText && data != null && !belongsTo(s.id, it) }
-        val key = "b|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}"
+        val key = "b2|${s.id}|${colour.key}|$maxPx|$plainText|${rebrand ?: ""}|${boardType ?: ""}"
         cache.get(key)?.let { return it }
         val k = maxPx / maxOf(s.w, s.h)
         val bw = (s.w * k).toInt().coerceAtLeast(8); val bh = (s.h * k).toInt().coerceAtLeast(8)
@@ -1073,10 +1213,21 @@ internal object CartShells {
         if (op < 0.85f) {
             c.save(); c.clipPath(path)
             p.color = withAlpha(shade(base, -0.62f), 1f); c.drawPath(path, p)
-            val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
-            p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
-            p.color = withAlpha(0xFF111111.toInt(), 0.92f)
-            c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+            // (Update 466: a measured board — CartBack.board — where the real one is, seen from behind: only its back, no
+            // chip (the chips are on its front, under the label); else the old estimate with its chip.)
+            val m = data?.board
+            if (m != null) {
+                // (In the back's own millimetres, seen from behind, like everything drawBack draws — the canvas mirrors it.)
+                val board = RectF(m[0] * k, m[1] * k, (m[0] + m[2]) * k, (m[1] + m[3]) * k)
+                // (Update 468: its solder side — traces, vias, test pads, finger stubs — GbBoard, from the photo of the
+                // Silver board's back; drawn reading right from behind, like everything drawBack draws.)
+                c.drawBitmap(GbBoard.solderSide(boardType, board.width().toInt(), board.height().toInt()), null, board, p)
+            } else {
+                val board = RectF(bw * 0.1f, bh * 0.22f, bw * 0.9f, bh * 0.97f)
+                p.color = withAlpha(0xFF1E5F3A.toInt(), 0.92f); c.drawRect(board, p)
+                p.color = withAlpha(0xFF111111.toInt(), 0.92f)
+                c.drawRect(RectF(board.left + board.width() * 0.4f, board.top + board.height() * 0.25f, board.left + board.width() * 0.75f, board.top + board.height() * 0.5f), p)
+            }
             c.restore()
         }
         p.shader = LinearGradient(0f, 0f, 0f, bh.toFloat(), withAlpha(shade(base, 0.04f), op), withAlpha(shade(base, -0.16f), op), Shader.TileMode.CLAMP)
@@ -1123,7 +1274,7 @@ internal object CartShells {
             if (keep != null) { for (j in 0 until 5) pos += d.textPos[at + j]; texts += keep }
         }
         return CartBack(d.id, d.verified, d.screws, pos.toFloatArray(), texts.toTypedArray(), d.recesses, d.raised, d.stickers,
-            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk)
+            d.stickerColours, d.seams, d.connector, d.extras, d.neutralOk, d.board)
     }
 
     /**
@@ -1132,11 +1283,11 @@ internal object CartShells {
      * console's name in place of the maker's (Auto used to leave the markings off there; Authentic left Nintendo's on a
      * PlayStation game). [console] null: not known — Authentic keeps the markings, Auto leaves them off.
      */
-    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle): Bitmap = when {
-        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true)
-        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO)
-        belongsTo(s.id, console) -> back(s, colour, maxPx)
-        else -> back(s, colour, maxPx, brand = console)
+    fun backFor(s: CartShell, colour: ShellColour, maxPx: Int, console: String?, style: com.shelf.launcher.data.Features.CartBackStyle, boardType: Int? = null): Bitmap = when {
+        style == com.shelf.launcher.data.Features.CartBackStyle.NEUTRAL -> back(s, colour, maxPx, neutral = true, boardType = boardType)
+        console == null -> back(s, colour, maxPx, neutral = style == com.shelf.launcher.data.Features.CartBackStyle.AUTO, boardType = boardType)
+        belongsTo(s.id, console) -> back(s, colour, maxPx, boardType = boardType)
+        else -> back(s, colour, maxPx, brand = console, boardType = boardType)
     }
 
     /** Update 306: a strip the Switch header's shape in dark plastic grey with [brand] (a console's name) on it. */
@@ -1159,27 +1310,6 @@ internal object CartShells {
         return b
     }
 
-    /**
-     * Update 325: the product code a DS / 3DS sticker prints along its bottom ("NTR-ADME-USA", "CTR-P-ADME") — made up
-     * for the game, the same every time: "A", two letters from its title's first words, the region's letter (your case
-     * region: E North America, P Europe, J Japan). The drawing has no ROM file to read the real code from.
-     */
-    private fun productCode(id: String, title: String): String {
-        val region = com.shelf.launcher.data.Features.caseRegion.state.value.code
-        val letter = when (region) { "EU" -> 'P'; "JP" -> 'J'; else -> 'E' }
-        val skip = setOf("THE", "A", "AN", "OF", "AND", "DS", "3D")
-        val words = title.uppercase().split(Regex("[^A-Z]+")).filter { it.isNotEmpty() && it !in skip }
-        val h = kotlin.math.abs(title.hashCode())
-        val fill = "ABCDEFGHJKLMNPRSTUVWXYZ"
-        val two = buildString {
-            words.take(2).forEach { append(it[0]) }
-            if (length < 2 && words.isNotEmpty() && words[0].length > 1) append(words[0][1])
-            var i = 0
-            while (length < 2) { append(fill[(h / (i * 7 + 1)) % fill.length]); i++ }
-        }
-        val code = "A$two$letter"
-        return if (id == "3ds") "CTR-P-$code" else "NTR-$code-" + when (region) { "EU" -> "EUR"; "JP" -> "JPN"; else -> "USA" }
-    }
 
     /** Update 325: a DS / 3DS sticker's white top strip (27 × 5.5 mm) with [brand] (a console's name) in grey on it. */
     private fun paperStrip(brand: String): Bitmap {
@@ -1581,6 +1711,7 @@ internal fun CartShellArt(
     // (Update 200: a retired 3D piece comes here as its console's authentic shell — CartShells.split — never the
     // pre-rendered pictures.)
     if (packLook != null) {
+        MediaTrace.note(title, "CUSTOM MODEL pack shape ${packLook.key}")
         // (Update 316: the solid build and the motion applied in PackCart — a shape drawn as its real cartridge turns from
         // its finished front, as the drawn shells do.)
         PackCart(console ?: "", art, modifier, packLook, choice.clear, labelIsScan, title, solid = solid, motionSeed = motionSeed)
@@ -1606,16 +1737,18 @@ internal fun CartShellArt(
         // away from the screen's thread (it was drawn here, ~640 px with its label, as each cartridge came into a
         // carousel, and again when its cover arrived). While the cover comes in the front before stays (no blank piece);
         // a place that changes to another game draws its new one here, as before, so it never shows the old game's.
-        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan"
+        // (Update 459: drawn again once the library's label facts are read — LabelIds: a real code / FAN-MADE on the sticker.)
+        val labelsV = com.shelf.launcher.data.LabelIds.version.intValue + 10000 * PhotoShells.version.intValue
+        val identity = "$pickPlatform|$title|$maxPx|$labelIsScan|$labelsV"
         val madeFront = remember { androidx.compose.runtime.mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
         val prior = madeFront.value
-        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
+        val cachedFront = remember(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
             if (shell == null) null else runCatching {
                 CartShells.cachedFrontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan)
                     ?: if (prior != null && prior.first != identity) CartShells.frontFor(shell, colourKey, console, bmpArt, brand, titleNow, maxPx, labelIsScan) else null
             }.getOrNull()
         }
-        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan) {
+        androidx.compose.runtime.LaunchedEffect(pickPlatform, bmpArt, brand, titleNow, maxPx, labelIsScan, labelsV) {
             if (shell == null) { madeFront.value = null; return@LaunchedEffect }
             if (cachedFront != null) { madeFront.value = identity to cachedFront; return@LaunchedEffect }
             val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {

@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +32,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,6 +74,10 @@ internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNo
     ctx.last?.let { "Last played" to it },
     if (ctx.total > 0) "Trophies" to "${ctx.earned} / ${ctx.total}" else null
 )
+
+/** Update 471: the facts a window lists, without those it already shows elsewhere ([omit], by label). */
+internal fun shownFacts(ctx: WinSceneCtx, omit: Set<String>): List<Pair<String, String>> = shownFacts(sceneFacts(ctx), omit)
+internal fun shownFacts(facts: List<Pair<String, String>>, omit: Set<String>): List<Pair<String, String>> = facts.filter { it.first !in omit }
 
 /** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips. */
 internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
@@ -115,12 +123,39 @@ internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit()
 
 /** The first page's facts, label over value in two columns, or the other page's body. */
 @Composable
-internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true) {
+internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true,
+    omit: Set<String> = emptySet(), inline: Boolean = false) {
     if (ctx.page == WinPage.MAIN) {
         // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
         val sc = rememberScrollState()
-        Column(Modifier.weight(1f, fill = false).sceneFadeEdges(sc).verticalScroll(sc)) {
-            sceneFacts(ctx).chunked(2).forEach { pair ->
+        // (Update 467, popup gate: with large text the keys can leave the facts a sliver that shows the tops of one row
+        // — "CONSOLE YEAR" cut in half on the KONKR at 1.3×. Under one whole row's room the box gives its space away
+        // instead; the facts stay on the Details page.)
+        val minRow = with(androidx.compose.ui.platform.LocalDensity.current) { (9.sp.toDp() + 14.sp.toDp() + 8.dp).roundToPx() }
+        // (Update 471, owner review of the 470 PDF: with More open the facts box showed "MADE BY" / "GENRE" and their values
+        // were scrolled away under the keys — the actions fitted, the information didn't. [omit] leaves out facts the window
+        // already shows (Cover details' header line has the console and year); [inline] puts label and value on one line.
+        // A window that doesn't ask for it gets it too when its two-column facts don't fit the room they have: measured once,
+        // switched for the next frame, again when the window's keys change (More / Less).)
+        var viewH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        var factsH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+        var tight by androidx.compose.runtime.remember(ctx.g.stableKey, ctx.tools.size, ctx.chips.size) { androidx.compose.runtime.mutableStateOf(false) }
+        val asLines = inline || tight
+        androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
+        Column(Modifier.weight(1f, fill = false).layout { m, c ->
+            if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
+        }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
+            val facts = shownFacts(ctx, omit)
+            Column(Modifier.onSizeChanged { factsH = it.height }) {
+            if (asLines) facts.forEach { (l, v) ->
+                Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Top) {
+                    // (Its own line height — the theme's tall one made every row half as tall again as its value: 470's KONKR
+                    // run showed three facts of four.)
+                    Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font,
+                        softWrap = false, modifier = Modifier.width(78.dp).padding(top = 3.dp))
+                    Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
+                }
+            } else facts.chunked(2).forEach { pair ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     pair.forEach { (l, v) ->
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
@@ -130,6 +165,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     }
                     if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
+            }
             }
             ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
         }

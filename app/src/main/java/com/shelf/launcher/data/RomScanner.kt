@@ -335,14 +335,25 @@ object RomScanner {
 
     /** Update 408: an indexed game whose file (or a folder above it) is a trash / hidden placeholder is an invalid record. */
     fun isTrashedPath(path: String?): Boolean =
-        path != null && path.replace('\\', '/').split('/').any { it.startsWith(".trashed-") || it.startsWith(".pending-") } ||
-            path != null && isTrashedOrHiddenName(path.replace('\\', '/').substringAfterLast('/'))
+        path != null && path.replace('\\', '/').split('/').dropLast(1).any { it.startsWith(".trashed-") || it.startsWith(".pending-") || isTrashFolder(it) } ||
+            path != null && path.replace('\\', '/').substringAfterLast('/').let { it.startsWith(".trashed-") || it.startsWith(".pending-") || isTrashedOrHiddenName(it) }
+
+    /**
+     * Update 453: recycle / trash / recovery folders — Windows `$RECYCLE.BIN` / `RECYCLER` (an SD card formatted or cleaned on a PC:
+     * a deleted ROM sits there as `$Rxxxxxx.gba` with its real extension), `System Volume Information`, Android's `LOST.DIR`, and the
+     * desktop `.Trash` / `.Trash-1000` / `.Trashes` folders. Never walked, and a record inside one is invalid. Exact names only.
+     */
+    fun isTrashFolder(name: String): Boolean =
+        name.equals("\$RECYCLE.BIN", ignoreCase = true) || name == "RECYCLER" || name == "System Volume Information" ||
+            name == "LOST.DIR" || name == ".Trash" || name == ".Trashes" || TRASH_UID.matches(name)
+    private val TRASH_UID = Regex("^[.]Trash-\\d+$")
 
     /** Folders never worth walking: hidden ones and Android's app-data trees. */
     private fun skipFolder(dir: File, root: File): Boolean {
         if (dir.absolutePath == root.absolutePath) return false
         val name = dir.name
         if (name.startsWith(".")) return true
+        if (isTrashFolder(name)) return true
         // /storage/emulated/0/Android (data, obb, media of every app).
         if (name == "Android" && (File(dir, "data").isDirectory || File(dir, "obb").isDirectory)) return true
         return false

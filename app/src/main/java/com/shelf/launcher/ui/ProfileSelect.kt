@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -54,6 +56,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -64,6 +67,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -91,6 +95,8 @@ internal object ProfilePicker {
     var request by mutableStateOf(false)
     /** Update 334: an intent extra (true) that opens Voltcap on "Who's playing?" (the in-game Quick menu). */
     const val EXTRA = "voltcap_who_is_playing"
+    /** v0.6.67: Settings' live preview of the looks (nothing is switched). */
+    var preview by mutableStateOf(false)
 }
 
 /** One choice on the selector: a profile, or the "Add" circle (null). */
@@ -103,11 +109,24 @@ internal fun ProfileSelectScreen(
     /** At start-up: B keeps the profile that played last. Else B closes. */
     atStart: Boolean,
     onPick: (Int) -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    /**
+     * v0.6.67: a preview (Settings' look preview, QA's sample profiles): nothing is saved or switched — Add does nothing, the
+     * editor and PIN only show. [onPick] / [onSkip] just close it.
+     */
+    demo: Boolean = false,
+    /** v0.6.67: L1 / R1 (or the arrows on the look strip) change the look live — Settings' preview. */
+    lookStrip: Boolean = false
 ) {
     val context = LocalContext.current
     val lite = LocalLiteEffects.current
-    val canAdd = profiles.size < Profiles.MAX
+    // Update 447 (D144): tell QA's picker.sh that "Who's playing?" is up (only with the test hooks file).
+    val markCtx = LocalContext.current
+    DisposableEffect(Unit) {
+        TestHooks.markScreen(markCtx, "PICKER")
+        onDispose { TestHooks.markScreen(markCtx, "HOME") }
+    }
+    val canAdd = profiles.size < Profiles.MAX && !lookStrip
     val count = profiles.size + if (canAdd) 1 else 0
     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
     var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
@@ -122,11 +141,18 @@ internal fun ProfileSelectScreen(
     LaunchedEffect(Unit) { enter.animateTo(1f, tween(if (lite) 180 else 520, easing = FastOutSlowInEasing)) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(editing) { if (editing == null) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } } }
+    // v0.6.67: the look (ProfileLooks.kt) — QA can show one for this session only (TestHooks.pickerLook), nothing saved.
+    val look = TestHooks.pickerLook.value ?: Features.pickerLook.state.value
+    val style = pickerStyle(look)
+    val looks = Features.PickerLook.values()
+    val planPerRow = remember { intArrayOf(1) }
+    fun stepLook(d: Int) { Features.pickerLook.value = looks[(looks.indexOf(look) + d).mod(looks.size)] }
 
     fun pick(i: Int) {
         if (leaving) return
         if (i >= profiles.size) {
             // The Add circle: a new profile, straight into its editor.
+            if (demo) return
             Profiles.add(context, "Player ${profiles.size + 1}")?.let { editing = it; cursor = Profiles.list.value.indexOfFirst { p -> p.id == it.id } }
             return
         }
@@ -134,7 +160,7 @@ internal fun ProfileSelectScreen(
         unlockThen(profiles[i]) {
             leaving = true
             scope.launch {
-                exit.animateTo(1f, tween(if (lite) 120 else 430, easing = FastOutSlowInEasing))
+                exit.animateTo(1f, tween(if (lite) 120 else 460, easing = FastOutSlowInEasing))
                 onPick(id)
             }
         }
@@ -142,19 +168,24 @@ internal fun ProfileSelectScreen(
 
     Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
         ImmersiveDialogWindow()
+        val accentNow = profiles.getOrNull(cursor)?.let { style.accent(it.hue) } ?: style.accent(210f)
         BoxWithConstraints(
             Modifier.fillMaxSize()
                 .graphicsLayer { alpha = (enter.value * (1f - exit.value * 0.9f)).coerceIn(0f, 1f) }
-                .background(Brush.radialGradient(listOf(Color(0xFF16305E), Color(0xFF0A1734), Color(0xFF03060F)), radius = 1600f))
                 .focusRequester(focus)
                 .focusable()
                 .onPreviewKeyEvent { e ->
                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    val per = planPerRow[0]
                     when (e.key) {
-                        Key.DirectionLeft -> { cursor = (cursor - 1).coerceAtLeast(0); true }
-                        Key.DirectionRight -> { cursor = (cursor + 1).coerceAtMost(count - 1); true }
+                        Key.DirectionLeft -> { cursor = PickerGrid.step(cursor, count, per, -1, 0); true }
+                        Key.DirectionRight -> { cursor = PickerGrid.step(cursor, count, per, 1, 0); true }
+                        Key.DirectionUp -> { cursor = PickerGrid.step(cursor, count, per, 0, -1); true }
+                        Key.DirectionDown -> { cursor = PickerGrid.step(cursor, count, per, 0, 1); true }
+                        Key.ButtonL1 -> { if (lookStrip) stepLook(-1); lookStrip }
+                        Key.ButtonR1 -> { if (lookStrip) stepLook(1); lookStrip }
                         Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.NumPadEnter -> { pick(cursor); true }
-                        Key.ButtonY, Key.ButtonX -> { profiles.getOrNull(cursor)?.let { p -> unlockThen(p) { editing = p } }; true }
+                        Key.ButtonY, Key.ButtonX -> { if (!lookStrip) profiles.getOrNull(cursor)?.let { p -> unlockThen(p) { editing = p } }; true }
                         // (Update 334: at start-up a locked profile that played last isn't kept without its PIN.)
                         Key.ButtonB, Key.Back, Key.Escape -> {
                             if (!leaving) {
@@ -168,151 +199,245 @@ internal fun ProfileSelectScreen(
                 },
             contentAlignment = Alignment.Center
         ) {
-            if (!lite) Sparks(Modifier.fillMaxSize())
-            // A soft floor of light under the row.
-            Box(Modifier.fillMaxSize().drawBehind {
-                drawOval(
-                    Brush.radialGradient(listOf(Color(0x3363A8FF), Color.Transparent), center = Offset(size.width / 2, size.height * 0.62f), radius = size.width * 0.4f),
-                    topLeft = Offset(size.width * 0.1f, size.height * 0.5f), size = androidx.compose.ui.geometry.Size(size.width * 0.8f, size.height * 0.24f)
-                )
-            })
+            PickerBackdrop(look, accentNow, animate = !lite)
             val compact = maxHeight < 360.dp || maxWidth < 520.dp
-            val avatar = (if (compact) 84.dp else 118.dp).let { a -> minOf(a, (maxWidth - 48.dp) / (count.coerceAtLeast(1) * 1.45f)) }
+            val plan = PickerGrid.plan(count, maxWidth.value, maxHeight.value, compact)
+            planPerRow[0] = plan.perRow
+            val viewport = (maxWidth - (PickerGrid.SIDE * 2).dp)
+            val avatar = plan.avatar.dp
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer {
                 translationY = (1f - enter.value) * 40f
             }) {
+                if (lookStrip) {
+                    LookStrip(style, look, onStep = { stepLook(it) })
+                    Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
+                }
                 Text(
-                    "Who's playing?", color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.SemiBold,
+                    "Who's playing?", color = style.title, fontSize = if (compact) 22.sp else 30.sp, fontWeight = style.titleWeight,
+                    letterSpacing = style.titleSpacing.sp, fontFamily = style.titleFont,
                     modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }
                 )
-                Spacer(Modifier.height(if (compact) 18.dp else 34.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(avatar * 0.42f), verticalAlignment = Alignment.Top) {
+                Spacer(Modifier.height(if (compact) 16.dp else 30.dp))
+                // One row; when the pictures can't all fit at a readable size it scrolls, keeping the one you're on in view.
+                val rowScroll = androidx.compose.foundation.rememberScrollState()
+                val density = LocalDensity.current
+                // Room at both ends of a scrolling row, so the one you're on (drawn a little bigger) is never cut at the edge.
+                val edge = plan.slot * 0.1f
+                LaunchedEffect(cursor, plan) {
+                    if (!plan.scroll) return@LaunchedEffect
+                    val target = with(density) { (edge + (plan.slot + plan.gap) * cursor - (viewport.value - plan.slot) / 2f).dp.roundToPx() }
+                    if (lite) rowScroll.scrollTo(target.coerceIn(0, rowScroll.maxValue)) else rowScroll.animateScrollTo(target.coerceIn(0, rowScroll.maxValue))
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(plan.gap.dp), verticalAlignment = Alignment.Top,
+                    modifier = Modifier.then(if (plan.scroll) Modifier.width(viewport).scrollFade(rowScroll).horizontalScroll(rowScroll, enabled = !leaving).padding(horizontal = edge.dp) else Modifier)
+                        .padding(vertical = avatar * 0.22f)
+                ) {
                     for (i in 0 until count) {
                         val p = profiles.getOrNull(i)
                         ProfileBubble(
-                            p, on = i == cursor, size = avatar, leaving = leaving, exit = exit.value,
+                            p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
+                            leaving = leaving, exit = exit.value,
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
                             playing = p?.id == activeId,
                             ra = p?.raSlot?.let { raNames.getOrNull(it) },
                             onTap = { cursor = i; pick(i) },
-                            onLong = { if (p != null) { cursor = i; unlockThen(p) { editing = p } } }
+                            onLong = { if (p != null && !lookStrip) { cursor = i; unlockThen(p) { editing = p } } }
                         )
                     }
                 }
-                Spacer(Modifier.height(if (compact) 18.dp else 30.dp))
-                Text(
-                    buildString {
-                        append("Ⓐ Play"); if (cursor < profiles.size) append("   Ⓨ Edit")
-                        append(if (atStart) "   Ⓑ Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "   Ⓑ Close")
-                    },
-                    color = Color.White.copy(alpha = 0.55f), fontSize = 12.sp,
-                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }
-                )
+                Spacer(Modifier.height(if (compact) 14.dp else 28.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }) {
+                    PickerHint(style, "A", if (cursor < profiles.size) "Play" else "Add")
+                    if (cursor < profiles.size && !lookStrip) PickerHint(style, "Y", "Edit")
+                    PickerHint(style, "B", if (atStart) "Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "Close")
+                    if (lookStrip) PickerHint(style, "L1 R1", "Look")
+                }
             }
         }
     }
     pinFor?.let { p ->
-        PinPad("${p.name}'s PIN", check = { Profiles.pinOpens(p, it) }, onDone = {
+        PinPad("${p.name}'s PIN", check = { if (demo) true else Profiles.pinOpens(p, it) }, onDone = {
             val go = afterPin; pinFor = null; afterPin = null; go?.invoke()
-        }, onCancel = { pinFor = null; afterPin = null })
+        }, onCancel = { pinFor = null; afterPin = null }, accent = style.accent(p.hue))
     }
     editing?.let { p ->
         ProfileEditDialog(p, raNames, steamAvatar, onDone = { editing = null }, onRemoved = {
             editing = null; cursor = cursor.coerceAtMost((Profiles.list.value.size - 1).coerceAtLeast(0))
-        })
+        }, demo = demo)
     }
 }
 
-/** One round picture with its name; the one you're on lifts, grows and glows in its colour. */
+/** v0.6.67: Settings' live preview — the look's name between ◀ L1 and R1 ▶ (touch: tap the arrows). */
+@Composable
+private fun LookStrip(style: PickerStyle, look: Features.PickerLook, onStep: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.35f))
+            .border(1.dp, style.title.copy(alpha = 0.25f), androidx.compose.foundation.shape.RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 6.dp)) {
+        Text("◀ L1", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(-1) } })
+        Text(look.label, color = style.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text("R1 ▶", color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.pointerInput(Unit) { detectTapGestures { onStep(1) } })
+    }
+}
+
+/** v0.6.67: a button hint — the button in a small round key, then what it does. */
+@Composable
+private fun PickerHint(style: PickerStyle, key: String, what: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.height(22.dp).widthIn(min = 22.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(style.hintKey)
+                .padding(horizontal = if (key.length > 1) 7.dp else 0.dp),
+            contentAlignment = Alignment.Center
+        ) { Text(key, color = style.hint, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+        Spacer(Modifier.width(6.dp))
+        // (Whole name of the profile kept: it wraps, never "…".)
+        Text(what, color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.widthIn(max = 220.dp))
+    }
+}
+
+/**
+ * One picture with its name, in the look's style; the one you're on lifts, grows, gets a ring and light in its own colour
+ * (Profiles.Profile.hue). The profile playing now carries a "Playing" pill; a locked one a lock badge.
+ */
 @Composable
 private fun ProfileBubble(
-    p: Profiles.Profile?, on: Boolean, size: Dp, leaving: Boolean, exit: Float, model: Any?, playing: Boolean, ra: String?,
-    onTap: () -> Unit, onLong: () -> Unit
+    p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean, exit: Float,
+    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
 ) {
-    val lift by animateFloatAsState(if (on) 1f else 0f, tween(260, easing = FastOutSlowInEasing), label = "bubbleLift")
+    val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (lite) 120 else 260, easing = FastOutSlowInEasing), label = "bubbleLift")
     val hue = p?.hue ?: 210f
-    val glow = Color.hsv(hue, 0.55f, 1f)
+    val accent = style.accent(hue)
     val stamp = Profiles.pictureStamp.value
+    val shape = style.avatarShape
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(size * 1.3f).graphicsLayer {
+        modifier = Modifier.width(slot).graphicsLayer {
+            // Picked: it grows toward you while the others drop back and fade.
             val pickedOut = if (leaving && !on) exit else 0f
-            val k = 1f + 0.16f * lift + (if (leaving && on) 0.22f * exit else 0f)
+            val k = 1f + (if (lite) 0.08f else 0.14f) * lift + (if (leaving && on) 0.24f * exit else 0f)
             scaleX = k; scaleY = k
-            translationY = -size.toPx() * 0.08f * lift
-            alpha = (0.62f + 0.38f * lift) * (1f - pickedOut)
+            translationY = -size.toPx() * 0.07f * lift + pickedOut * size.toPx() * 0.25f
+            alpha = (style.dimOthers + (1f - style.dimOthers) * lift) * (1f - pickedOut)
         }.pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
     ) {
         Box(
-            Modifier.size(size).drawBehind {
-                if (lift > 0.01f) drawCircle(Brush.radialGradient(listOf(glow.copy(alpha = 0.55f * lift), Color.Transparent), radius = this.size.minDimension * 0.85f), radius = this.size.minDimension * 0.85f)
-            },
+            Modifier.then(if (style.card != null) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
+                .background(if (on) style.card.copy(alpha = style.card.alpha * 2.2f) else style.card)
+                .border(1.dp, if (on) accent.copy(alpha = 0.55f) else (style.cardEdge ?: Color.Transparent), androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
+                .padding(size * 0.09f) else Modifier.padding(size * 0.06f))
+                .drawBehind {
+                    if (style.glow > 0f && lift > 0.01f) {
+                        val r = this.size.minDimension * 0.82f
+                        drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = style.glow * lift), Color.Transparent), radius = r), radius = r)
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
-            val ring = if (on) 3.dp else 1.5.dp
-            Box(
-                Modifier.size(size).clip(CircleShape)
-                    .background(if (p == null) Color.White.copy(alpha = 0.06f) else Color.hsv(hue, 0.5f, 0.42f))
-                    .border(ring, if (on) Color.White else Color.White.copy(alpha = 0.25f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                when {
-                    p == null -> Icon(Icons.Filled.Add, "Add a profile", tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(size * 0.36f))
-                    model != null -> AsyncImage(
-                        coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
-                            .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
-                        p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape)
-                    )
-                    else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold)
+            Box(contentAlignment = Alignment.Center) {
+                // The ring in the profile's own colour (two outlines for Neon arcade).
+                val ring = if (on) style.ringOn else 1.5.dp
+                Box(
+                    Modifier.size(size).clip(shape)
+                        .background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
+                        .border(ring, if (on) accent else style.ringOff, shape)
+                        .then(if (on && style.doubleRing) Modifier.padding(ring + 3.dp).border(1.dp, accent.copy(alpha = 0.6f), shape) else Modifier),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when {
+                        p == null -> Icon(Icons.Filled.Add, "Add a profile", tint = style.nameOff, modifier = Modifier.size(size * 0.36f))
+                        model != null -> AsyncImage(
+                            coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
+                                .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
+                            p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(ring).clip(shape)
+                        )
+                        else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold, fontFamily = style.titleFont)
+                    }
                 }
+                if (p?.locked == true) Box(
+                    Modifier.align(Alignment.BottomEnd).size((size * 0.26f).coerceAtLeast(20.dp)).clip(CircleShape).background(Color.Black.copy(alpha = 0.72f))
+                        .border(1.dp, accent, CircleShape), contentAlignment = Alignment.Center
+                ) { Icon(Icons.Filled.Lock, "Locked", tint = Color.White, modifier = Modifier.size((size * 0.14f).coerceAtLeast(11.dp))) }
             }
         }
-        Spacer(Modifier.height(10.dp))
-        Text(
-            p?.name ?: "Add", color = Color.White.copy(alpha = if (on) 1f else 0.7f), fontSize = if (on) 16.sp else 14.sp,
-            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+        // (Long names wrap onto a second line and shrink a little — never "…", never over the next name: the slot is the limit.)
+        ProfileName(
+            p?.name ?: "Add", color = if (on) style.nameOn else style.nameOff, maxSize = if (compact) 14f else 16f,
+            bold = on, modifier = Modifier.fillMaxWidth()
         )
-        val sub = when {
-            p == null -> null
-            ra != null -> "RetroAchievements · $ra"
-            else -> null
+        if (ra != null && on) Text("RetroAchievements · $ra", color = style.nameOff.copy(alpha = 0.8f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        if (playing) Row(
+            Modifier.padding(top = 5.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(accent.copy(alpha = if (style.look == Features.PickerLook.OLED) 0.25f else 0.2f))
+                .border(1.dp, accent.copy(alpha = 0.7f), androidx.compose.foundation.shape.RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+            Spacer(Modifier.width(5.dp))
+            Text("Playing", color = style.nameOn, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
         }
-        if (sub != null) Text(sub, color = Color.White.copy(alpha = 0.45f * (0.5f + 0.5f * lift)), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (p?.locked == true) Icon(Icons.Filled.Lock, "Locked", tint = Color.White.copy(alpha = 0.55f), modifier = Modifier.padding(top = 3.dp).size(12.dp))
-        if (playing) Box(Modifier.padding(top = 4.dp).size(6.dp).clip(CircleShape).background(glow))
     }
 }
 
-/** Slow sparks drifting up through the dark (the PS-style user screen's), drawn on one canvas. */
-@Composable
-private fun Sparks(modifier: Modifier) {
-    val t = remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        val start = withFrameNanos { it }
-        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
+/** A scrolling row fades out at a side that has more profiles beyond it, so a half-shown one reads as "more this way". */
+private fun Modifier.scrollFade(state: androidx.compose.foundation.ScrollState): Modifier =
+    graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.drawWithContent {
+        drawContent()
+        val f = size.width * 0.08f
+        val l = if (state.value > 0) 0f else 1f
+        val r = if (state.value < state.maxValue) 0f else 1f
+        drawRect(
+            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                0f to Color.Black.copy(alpha = l), f / size.width to Color.Black, 1f - f / size.width to Color.Black, 1f to Color.Black.copy(alpha = r)
+            ), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+        )
     }
-    val seeds = remember { List(46) { i -> floatArrayOf(((i * 7919) % 1000) / 1000f, ((i * 104729) % 1000) / 1000f, 0.4f + ((i * 31) % 10) / 16f, ((i * 53) % 100) / 100f) } }
-    Canvas(modifier) {
-        val time = t.floatValue
-        for (s in seeds) {
-            val speed = 0.012f + 0.02f * s[3]
-            val y = (s[1] - time * speed).let { it - kotlin.math.floor(it) }
-            val x = s[0] + 0.012f * kotlin.math.sin(time * 0.6f + s[3] * 6f)
-            val a = (0.18f + 0.35f * s[3]) * kotlin.math.sin(y * Math.PI.toFloat()).coerceAtLeast(0f)
-            drawCircle(Color(0xFFBFD8FF).copy(alpha = a), radius = s[2] * 2.2f, center = Offset(x * size.width, y * size.height))
+
+/**
+ * A profile's name under its picture: whole words only. It breaks between words or after a hyphen ("Anastasia-" /
+ * "Katharina"), never inside a word, and shrinks (down to 10 sp) until every word fits on a line and the name fits in
+ * 2 lines; a name that still doesn't fit takes a third line. Measured bold, so the selected name never grows past its slot.
+ */
+@Composable
+private fun ProfileName(name: String, color: Color, maxSize: Float, bold: Boolean, modifier: Modifier = Modifier) {
+    val text = PickerGrid.breakable(name)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.TopCenter) {
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+        val font = uiFontStyle()
+        val w = constraints.maxWidth
+        val fit = remember(text, w, maxSize, font) {
+            fun st(s: Float) = font.copy(fontSize = s.sp, lineHeight = (s * 1.18f).sp, fontWeight = FontWeight.Bold)
+            fun ok(s: Float, lines: Int): Boolean {
+                if (w <= 0 || w == androidx.compose.ui.unit.Constraints.Infinity) return true
+                val words = PickerGrid.words(name)
+                if (words.any { measurer.measure(it, st(s), softWrap = false).size.width > w }) return false
+                return measurer.measure(text, st(s), constraints = androidx.compose.ui.unit.Constraints(maxWidth = w)).lineCount <= lines
+            }
+            var s = maxSize
+            while (s > 10f && !ok(s, 2)) s = maxOf(10f, s - 0.5f)
+            s to (if (ok(s, 2)) 2 else 3)
         }
+        Text(
+            text, color = color, fontSize = fit.first.sp, lineHeight = (fit.first * 1.18f).sp, style = font,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, textAlign = TextAlign.Center, maxLines = fit.second,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
 /** A profile's name, picture and RetroAchievements account; remove (never the first one). */
 @Composable
-internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit) {
+internal fun ProfileEditDialog(
+    p0: Profiles.Profile, raNames: List<String?>, steamAvatar: String?, onDone: () -> Unit, onRemoved: () -> Unit,
+    /** v0.6.67: a preview's sample profile — changes show here only, nothing is saved (QA, Settings' preview). */
+    demo: Boolean = false
+) {
     val context = LocalContext.current
-    var p by remember(p0.id) { mutableStateOf(Profiles.list.value.firstOrNull { it.id == p0.id } ?: p0) }
+    var p by remember(p0.id) { mutableStateOf(if (demo) p0 else Profiles.list.value.firstOrNull { it.id == p0.id } ?: p0) }
     var name by remember(p0.id) { mutableStateOf(p.name) }
-    fun save(np: Profiles.Profile) { p = np; Profiles.update(context, np) }
+    fun save(np: Profiles.Profile) { p = np; if (!demo) Profiles.update(context, np) }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null && Profiles.setPicture(context, p.id, uri)) p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p
+        if (uri != null && !demo && Profiles.setPicture(context, p.id, uri)) p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p
     }
     ShelfDialog(icon = Icons.Filled.Person, title = "Profile", subtitle = "Its own favorites, Continue playing, play time and achievements account.", onDismiss = {
         if (name.isNotBlank() && name != p.name) save(p.copy(name = name.trim()))
@@ -321,6 +446,10 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
         ShelfTextField(name, { name = it.take(24) }, "Name", modifier = Modifier.fillMaxWidth(), onSubmit = {
             if (name.isNotBlank()) save(p.copy(name = name.trim()))
         })
+        Spacer(Modifier.height(10.dp))
+        // v0.6.67: the profile's own colour — its ring, its light and its "Playing" pill on Who's playing? (never the app's theme).
+        SettingsHeading("Colour")
+        ProfileColourRow(p.hue) { h -> save(p.copy(hue = h)) }
         Spacer(Modifier.height(10.dp))
         SettingsHeading("Picture")
         ChipFlow {
@@ -351,16 +480,37 @@ internal fun ProfileEditDialog(p0: Profiles.Profile, raNames: List<String?>, ste
         var settingPin by remember { mutableStateOf(false) }
         ChipFlow {
             Chip(if (p.locked) "Change PIN…" else "Set a PIN…", accent = false) { settingPin = true }
-            if (p.locked) Chip("Remove the PIN", accent = false) { Profiles.setPin(context, p.id, null); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p }
+            if (p.locked) Chip("Remove the PIN", accent = false) { if (demo) p = p.copy(pinHash = null) else { Profiles.setPin(context, p.id, null); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p } }
         }
         MutedNote(if (p.locked) "Locked: its PIN is asked before it plays or is edited." else "Optional: 4 digits asked before this profile plays or is edited.")
         if (settingPin) PinPad("A new PIN for ${p.name}", check = null, onDone = { pin ->
-            Profiles.setPin(context, p.id, pin); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p; settingPin = false
+            if (demo) p = p.copy(pinHash = Profiles.hashPin(p.id, pin)) else { Profiles.setPin(context, p.id, pin); p = Profiles.list.value.firstOrNull { it.id == p.id } ?: p }; settingPin = false
         }, onCancel = { settingPin = false })
         if (p.id != 0) {
             Spacer(Modifier.height(10.dp))
-            Chip("Remove this profile", accent = false) { Profiles.remove(context, p.id); onRemoved() }
+            Chip("Remove this profile", accent = false) { if (!demo) Profiles.remove(context, p.id); onRemoved() }
             MutedNote("Its favorites, Continue playing and play time go with it; games, saves and settings stay.")
+        }
+    }
+}
+
+/**
+ * v0.6.67: a profile's colour — twelve round swatches (PickerGrid.PRESETS) and the colour it has now when that is none of them
+ * (colours saved before stay exactly as they were). ◀ ▶ move, A picks; touch taps.
+ */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+internal fun ProfileColourRow(hue: Float, onPick: (Float) -> Unit) {
+    val choices = remember(hue) { (if (PickerGrid.PRESETS.any { kotlin.math.abs(it - hue) < 0.5f }) PickerGrid.PRESETS else listOf(hue) + PickerGrid.PRESETS) }
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        choices.forEach { h ->
+            val on = kotlin.math.abs(h - hue) < 0.5f
+            Box(
+                Modifier.size(34.dp).shelfClickable(CircleShape) { onPick(h) }.clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color.hsv(h.mod(360f), 0.45f, 0.95f), Color.hsv(h.mod(360f), 0.6f, 0.6f))))
+                    .border(if (on) 3.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.25f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) { if (on) Box(Modifier.size(8.dp).clip(CircleShape).background(Color.White)) }
         }
     }
 }
@@ -459,7 +609,7 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
  * last digit back, B cancels. A wrong PIN shakes the dots and clears them.
  */
 @Composable
-internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (String) -> Unit, onCancel: () -> Unit) {
+internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (String) -> Unit, onCancel: () -> Unit, accent: Color = Color(0xFF8FB8FF)) {
     var digits by remember { mutableStateOf("") }
     var first by remember { mutableStateOf<String?>(null) }
     var cursor by remember { mutableIntStateOf(4) }
@@ -490,7 +640,7 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         ImmersiveDialogWindow()
         Box(
-            Modifier.fillMaxSize().background(Color(0xE6030812))
+            Modifier.fillMaxSize().background(Color(0xFA030812))
                 .focusRequester(focus).focusable()
                 .onPreviewKeyEvent { e ->
                     if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -513,16 +663,16 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     if (check == null && first != null) "Enter it again" else title,
-                    color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold
+                    color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold
                 )
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(16.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.graphicsLayer { translationX = kotlin.math.sin(shake.value * 18f) * 14f * shake.value * density }
                 ) {
                     for (i in 0 until 4) Box(
-                        Modifier.size(14.dp).clip(CircleShape)
-                            .background(if (i < digits.length) Color.White else Color.White.copy(alpha = 0.18f))
+                        Modifier.size(16.dp).clip(CircleShape)
+                            .background(if (i < digits.length) accent else Color.White.copy(alpha = 0.18f))
                             .border(1.dp, if (shake.value > 0.01f) Color(0xFFFF7A7A) else Color.White.copy(alpha = 0.5f), CircleShape)
                     )
                 }
@@ -533,19 +683,19 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
                             val i = r * 3 + c
                             val on = i == cursor
                             Box(
-                                Modifier.size(52.dp).clip(CircleShape)
-                                    .background(if (on) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.07f))
-                                    .border(if (on) 2.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.18f), CircleShape)
+                                Modifier.size(56.dp).clip(CircleShape)
+                                    .background(if (on) accent.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.08f))
+                                    .border(if (on) 2.dp else 1.dp, if (on) accent else Color.White.copy(alpha = 0.22f), CircleShape)
                                     .pointerInput(i) { detectTapGestures { cursor = i; press(keys[i]) } },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(keys[i], color = Color.White, fontSize = if (keys[i].length > 1) 14.sp else 20.sp, fontWeight = FontWeight.Medium)
+                                Text(keys[i], color = Color.White, fontSize = if (keys[i].length > 1) 15.sp else 22.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp)
+                Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
             }
         }
     }

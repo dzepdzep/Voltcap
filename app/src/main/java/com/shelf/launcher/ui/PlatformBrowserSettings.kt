@@ -57,6 +57,9 @@ internal fun categoryLookNote(v: Features.PlatformView): String = when (v) {
     Features.PlatformView.CONSTELLATION -> "Constellation: the systems as nodes round a glowing core; the one you're on turns to the front. ◀ ▶."
     Features.PlatformView.VAULT -> "System Vault: storage modules in a rack; the one you're on slides into the reader, which shows its games. ▲ ▼."
     Features.PlatformView.DASHBOARD -> "Pocket Dashboard: a compact list, a big preview of the system you're on and its information panels. ▲ ▼."
+    Features.PlatformView.WIICHAN -> "Channel Menu: Channel grid's own picker — white rounded channels on pinstriped grey, four across, a page of twelve."
+    Features.PlatformView.CINEMA -> "Cinema: the category big as a title card, the others as a row of posters along the bottom."
+    Features.PlatformView.ARCTIC -> "Arctic Panes: frosted panes down the left on the deep slate, the art of the one you're on beside them."
 }
 
 /** Settings › Categories › Category screen: the options of the look in use (only that look's). */
@@ -170,7 +173,9 @@ internal object CategoryLookNow {
     private var held: Features.PlatformView? = null
 
     fun resolve(open: Boolean, layout: com.shelf.launcher.data.HomeLayout): Features.PlatformView {
-        if (open && !wasOpen) held = if (Features.pbFollowHome.value) Features.followLookFor(layout) else null
+        // (Update 462: a layout with a themed picker uses it — Settings › Category screen › Themed pickers.)
+        if (open && !wasOpen) held = (if (Features.pbThemed.value) themedLookFor(layout) else null)
+            ?: if (Features.pbFollowHome.value) Features.followLookFor(layout) else null
         wasOpen = open
         return current()
     }
