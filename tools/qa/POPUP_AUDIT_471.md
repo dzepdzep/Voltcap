@@ -88,3 +88,6 @@ unset, Case flow · N64 · Pokémon Snap; Odin font 1.0, timeout 1 800 000, brig
 369 dpi, animation 1.0 / 1.0 / 1.0, Artwork library). Restored by voltcap_test_snapshot and read back after the runs.
 Note: the Voltcap view at the 471 start was KONKR Recently played · Pokémon Silver (470 had left N64 · Pokémon Snap) — the
 471 snapshot (07:59) is what was restored; system values above read back equal on both devices.
+
+## Evidence
+`Claude outputs/qa471/Update471_repairs.pdf` (before / after, 17 pages) and `Update471_full_png.zip` (33 full-resolution PNGs).
