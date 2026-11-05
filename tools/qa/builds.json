@@ -239,9 +239,20 @@
    "version_code": 73,
    "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
    "base_commit": "f0dfe14",
-   "patch_sha256": "00bb53423a8c080dc4525aec8ba8a9aef3ef9e95eb15a3bc9fead1de09f496a0",
+   "patch_sha256": "",
    "tree_hash": "",
-   "note": "update 480: 479c + A5 one-colour logos use the plain icon / stacked GBA logo, D257 Tile home room (bigger tiles + facts strip), B2 hero clip pause, B4 motion level (root MotionDurationScale); Odin only (480a-c intermediate, not archived)"
+   "note": "update 480: 479c + A5 one-colour logos use the plain icon / stacked GBA logo, D257 Tile home room (bigger tiles + facts strip), B2 hero clip pause, B4 motion level (root MotionDurationScale); Odin only (480a-c intermediate, not archived); patch superseded by 481a"
+  },
+  {
+   "id": "qa-0.6.68-481a",
+   "apk_sha256": "f475eec6eaf7300c1e8181499869312b60bf5c80bd5093f00b31c3a6d5da5013",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "84a8deed0065c1005080f5241b55376b75ca0361a044bbed651fa90bcc2271a6",
+   "tree_hash": "",
+   "note": "update 481: 480d + C2 per-layout colours (palettes / yours, inherit, readability guard), B4 motion probe (QA); Odin only"
   }
  ]
 }

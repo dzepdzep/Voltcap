@@ -1,3 +1,20 @@
+# Update 481 (5 Nov 2026) — checkpoint 4: B4 confirmed, C2 per-layout colours, E4 check
+
+Staging patch = **qa-0.6.68-481a** (APK f475eec6…, Odin only; KONKR off USB → its tests NOT TESTED).
+- **B4 — DONE (Odin):** QA probe `--ei voltcap_test_motionprobe 1000`: a 1000 ms tween really took 4 ms (Off), 605 (Subtle),
+  1005 (Normal), 1315 (Expressive).
+- **C2 — PARTIAL:** Settings › Home › Layout options › Colours for this layout: Same as the theme (inherits), Plain light,
+  OLED black, light blue / yellow / pink, mint, lavender, peach, or your own accent + background (hue bar, HEX, saturation,
+  brightness), reset. Readability guard: writing turns dark / light when under 4.5:1 (muted 3:1), panels step darker on light
+  backgrounds, a layout's accent stays ≥ 3:1. Covers, labels and layouts' own art never recoloured. Odin: four palettes on the
+  Voltcap row, Settings on Mint readable, Tile home inherits. Controller walk of the picker NOT TESTED.
+- **E4 — PARTIAL:** catalog thicknesses match sources; Xbox 360 spine in Inspect within 5 % of the real ratio. Pokémon Silver
+  (KONKR) is the reproduction case — NOT TESTED. **E3:** Pokémon Silver on the KONKR too (owner) — NOT TESTED.
+- BLOCKED / NOT TESTED as before: GameNative launch (signed out), background-clip measurement (no clips on the Odin).
+- Device: Odin back on RC f79aa2a7, settings snapshot byte-identical (rc480o); hooks removed.
+- **Next action:** B5 scrolling / layout stability, C2 controller walk, A5 long category names / counts, remaining roadmap;
+  KONKR when on USB: Pokémon Silver (E3 / E4), logos (A5), clips (B2), re-checks.
+
 # Update 480 (5 Nov 2026) — checkpoint 3: A5 logos, D257 Tile home, B3 Settings test, B4 motion level, B2 / D1 limits
 
 **Read first:** `ROADMAP_070.md`. Staging patch = **qa-0.6.68-480d** (APK 8d894a20…, Odin only; KONKR still off USB, so

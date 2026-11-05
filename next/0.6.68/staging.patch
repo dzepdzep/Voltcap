@@ -119,7 +119,7 @@ index b8fdb4e..38d63e9 100644
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..93ef1bd 100644
+index 55c357d..d103179 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -141,7 +141,62 @@ index 55c357d..93ef1bd 100644
      val pageAnim = EnumPref("anim_page", PageAnim.NONE, PageAnim.values())
      val focusPop = IntPref("focus_pop", 100, 0..400)
      val motionFocusedOnly = BoolPref("motion_focused_only", false)
-@@ -1450,6 +1455,16 @@ object Features {
+@@ -564,6 +569,54 @@ object Features {
+         }
+     }
+ 
++    /**
++     * Update 480 (C2, master request: per-layout colours with global inheritance). A layout's own colours over the theme's:
++     * a named palette or your accent / background. A layout without an entry inherits the theme's look (ThemeLook) as
++     * before. Only Voltcap's own colours (background, panels, text, accent) — never covers, labels or a layout's own art.
++     */
++    enum class Palette(val label: String, val bg: Long?, val accent: Long?) {
++        THEME("Same as the theme", null, null),
++        PLAIN_LIGHT("Plain light", 0xFFF3F4F6, 0xFF3563D9),
++        OLED_BLACK("OLED black", 0xFF000000, 0xFF4C8DFF),
++        LIGHT_BLUE("Light blue", 0xFFE2ECF8, 0xFF2A64B8),
++        LIGHT_YELLOW("Light yellow", 0xFFFAF3D6, 0xFF9A6A00),
++        LIGHT_PINK("Light pink", 0xFFFAE5EE, 0xFFB83C72),
++        MINT("Mint", 0xFFDFF4EA, 0xFF1C7F5B),
++        LAVENDER("Lavender", 0xFFECE6F9, 0xFF6345BD),
++        PEACH("Peach", 0xFFFCE8DA, 0xFFB9552A),
++        CUSTOM("Your colours", null, null)
++    }
++    data class LayoutColors(val palette: Palette = Palette.THEME, val accent: Int? = null, val background: Int? = null) {
++        /** The background / accent this layout asks for (null = the theme's). */
++        val bg: Int? get() = if (palette == Palette.CUSTOM) background else palette.bg?.toInt()
++        val acc: Int? get() = if (palette == Palette.CUSTOM) accent else palette.accent?.toInt()
++    }
++    val layoutColors = StringPref("layout_colors", "")
++    private var layoutColorsKey: String? = null
++    private var layoutColorsCache: Map<String, LayoutColors> = emptyMap()
++    /** [layout]'s own colours (a HomeLayout name); THEME when it has none. Reads Compose state. */
++    fun layoutColorsFor(layout: String): LayoutColors {
++        val raw = layoutColors.state.value
++        if (raw != layoutColorsKey) {
++            layoutColorsCache = runCatching {
++                val o = org.json.JSONObject(raw)
++                o.keys().asSequence().associateWith { k ->
++                    val j = o.getJSONObject(k)
++                    LayoutColors(Palette.values().firstOrNull { it.name == j.optString("p") } ?: Palette.THEME,
++                        if (j.has("acc")) j.optInt("acc") else null, if (j.has("bg")) j.optInt("bg") else null)
++                }
++            }.getOrDefault(emptyMap())
++            layoutColorsKey = raw
++        }
++        return layoutColorsCache[layout] ?: LayoutColors()
++    }
++    fun setLayoutColors(layout: String, c: LayoutColors) {
++        val o = runCatching { org.json.JSONObject(layoutColors.value) }.getOrDefault(org.json.JSONObject())
++        if (c.palette == Palette.THEME) o.remove(layout)
++        else o.put(layout, org.json.JSONObject().apply { put("p", c.palette.name); c.accent?.let { put("acc", it) }; c.background?.let { put("bg", it) } })
++        layoutColors.value = o.toString()
++    }
++
+     /** Every theme's own look, as JSON {"THEME_NAME": {...}}. Themes not in it use [themeLookDefault]. */
+     val themeLooks = StringPref("theme_looks", "")
+     /** The look themes start with: what the old global colour settings were (migrated once), else plain. */
+@@ -1450,6 +1503,16 @@ object Features {
      fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
@@ -890,7 +945,7 @@ index 2f264a2..1faa8e3 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..8f7c64e 100644
+index eca8853..ace9e8f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
@@ -921,7 +976,23 @@ index eca8853..8f7c64e 100644
          viewModel.setSearchQuery("")
          viewModel.setPlatformFilter(g.platform)
          kotlinx.coroutines.delay(400)
-@@ -2807,6 +2812,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1188,6 +1193,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         viewModel.previewAppearance(state.appearance.copy(sceneFromCover = on))
+         TestHooks.sceneCover.value = null
+     }
++    // (Update 480, B4: QA — how long a tween of N ms really takes under the motion level; logged, nothing shown.)
++    val probeMs = TestHooks.motionProbe.value
++    LaunchedEffect(probeMs) {
++        if (probeMs <= 0) return@LaunchedEffect
++        val t0 = System.nanoTime()
++        androidx.compose.animation.core.Animatable(0f).animateTo(1f, androidx.compose.animation.core.tween(probeMs, easing = androidx.compose.animation.core.LinearEasing))
++        android.util.Log.e("VoltcapQA", "motionprobe tween=$probeMs real=${(System.nanoTime() - t0) / 1_000_000} level=${com.shelf.launcher.data.Features.motion.value} scale=${MotionLevel.scaleFactor}")
++        TestHooks.motionProbe.value = 0
++    }
+     // (Update 261: a Settings page asked for by a test walk.)
+     val testSettings = TestHooks.settings.value
+     LaunchedEffect(testSettings) {
+@@ -2807,6 +2821,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              paleBehind = paleBehind,
              // (Update 333: dressed for the layout — StatusLooks.)
              lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
@@ -929,7 +1000,7 @@ index eca8853..8f7c64e 100644
              modifier = modifier,
              menuSlot = menuSlot,
              onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
-@@ -3368,7 +3374,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3368,7 +3383,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -942,7 +1013,7 @@ index eca8853..8f7c64e 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3408,7 +3418,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3408,7 +3427,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -952,7 +1023,7 @@ index eca8853..8f7c64e 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -4063,9 +4074,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4063,9 +4083,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                  modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                      .padding(
@@ -968,7 +1039,7 @@ index eca8853..8f7c64e 100644
                      )
              )
          } else if (tvLayout) {
-@@ -4175,8 +4190,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4175,8 +4199,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              }
              // Tile-style: tiles a little above the middle, round buttons under them.
              // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
@@ -984,7 +1055,7 @@ index eca8853..8f7c64e 100644
              Column(
                  Modifier
                      .align(
-@@ -4274,6 +4295,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4274,6 +4304,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                              // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
                              val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
                              TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
@@ -992,7 +1063,7 @@ index eca8853..8f7c64e 100644
                      TileHomeRow(
                          lastPlayedAt = state.lastPlayedAt,
                          onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
-@@ -4302,6 +4324,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4302,6 +4333,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                          loopTick = state.loopTick, loopStep = state.loopStep
                      )
                      }
@@ -1526,7 +1597,7 @@ index 418ffc1..a3111b1 100644
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..bc17afb 100644
+index f580972..8174460 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 @@ -819,6 +819,21 @@ private fun HomeContent(
@@ -1551,7 +1622,16 @@ index f580972..bc17afb 100644
              // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
              ShelfCard {
                  SectionLabel("Moving between games")
-@@ -3570,6 +3585,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3558,6 +3573,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+         SectionLabel(appearance.homeLayout.label)
+         MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
+         Spacer(Modifier.height(8.dp))
++        // Update 480 (C2): this layout's own colours over the theme's.
++        LayoutColorsGroup(appearance.homeLayout)
+         // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
+         if (tileLayout) {
+             val F = com.shelf.launcher.data.Features
+@@ -3570,6 +3587,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                      "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
                      F.tileSwitch.state.value, { F.tileSwitch.value = it }
                  )
@@ -1564,7 +1644,7 @@ index f580972..bc17afb 100644
                  if (F.tileSwitch.state.value) {
                      SwitchRow(
                          Icons.Filled.Wallpaper, "Plain background",
-@@ -4254,15 +4275,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -4254,15 +4277,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -1699,10 +1779,30 @@ index 977fe34..430f9da 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..3b53bf0 100644
+index 536f473..2a46ad8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-@@ -350,6 +350,17 @@ internal object TestHooks {
+@@ -70,6 +70,9 @@ internal object TestHooks {
+     val sceneCover = mutableStateOf<Boolean?>(null)
+     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
+     val noVideo = mutableStateOf(false)
++    /** Update 480 (B4): `--ei voltcap_test_motionprobe <ms>` — a tween of that length run in the home's composition; its real
++     *  duration is logged (VoltcapQA motionprobe), so the motion level's scale can be measured. */
++    val motionProbe = mutableStateOf(0)
+     /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
+     val panelHold = mutableStateOf(true)
+     /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
+@@ -318,6 +321,9 @@ internal object TestHooks {
+             panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
+             android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
+         }
++        if (intent?.hasExtra("voltcap_test_motionprobe") == true && enabled(context)) {
++            motionProbe.value = intent.getIntExtra("voltcap_test_motionprobe", 0)
++        }
+         if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
+             noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
+             android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
+@@ -350,6 +356,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -1720,6 +1820,67 @@ index 536f473..3b53bf0 100644
          val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
          if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
              // (A walk only ever previews: nothing it changes is saved.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt b/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
+index 0d3f901..357ad9e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
+@@ -232,3 +232,56 @@ private fun shiftLabel(v: Int): String = when {
+     v <= 15 -> "Lower"
+     else -> "Much lower"
+ }
++
++/**
++ * Update 480 (C2): Settings › Home › Layout options › Colours for this layout — a named palette (Original = the theme's,
++ * Plain light, OLED black, light blue / yellow / pink, mint, lavender, peach) or your own accent and background for the
++ * layout in use, over the theme's colours; "Same as the theme" goes back to inheriting. Writing stays readable on any
++ * background (the theme's readability guard). Covers, labels and the layouts' own art are never recoloured.
++ */
++@Composable
++@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
++internal fun LayoutColorsGroup(layout: com.shelf.launcher.data.HomeLayout) {
++    val now = Features.layoutColorsFor(layout.name)
++    fun set(c: Features.LayoutColors) = Features.setLayoutColors(layout.name, c)
++    FoldGroup("Colours for this layout", summary = now.palette.label, key = "lo_layout_colors") {
++        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
++            Features.Palette.values().filter { it != Features.Palette.CUSTOM }.forEach { p ->
++                val swatch = p.bg?.toInt() ?: ShelfTheme.colors.background.toArgb()
++                SwatchDot(swatch, if (p == Features.Palette.THEME) "Theme" else p.label, now.palette == p) { set(Features.LayoutColors(p)) }
++            }
++            val accNow = ShelfTheme.accent.toArgb(); val bgNow = ShelfTheme.colors.background.toArgb()
++            SwatchDot(now.background ?: bgNow, "Yours", now.palette == Features.Palette.CUSTOM) {
++                set(Features.LayoutColors(Features.Palette.CUSTOM, now.acc ?: accNow, now.bg ?: bgNow))
++            }
++        }
++        Spacer(Modifier.height(4.dp))
++        MutedNote(
++            when (now.palette) {
++                Features.Palette.THEME -> "This layout uses the theme's colours (Theme › Theme look)."
++                Features.Palette.CUSTOM -> "Your accent and background for this layout only. Writing switches to dark or light by itself so it stays readable."
++                else -> "${now.palette.label} for this layout only; the other layouts keep the theme's. Covers and labels keep their own colours."
++            }
++        )
++        if (now.palette == Features.Palette.CUSTOM) {
++            val acc = now.accent ?: ShelfTheme.accent.toArgb()
++            val bg = now.background ?: ShelfTheme.colors.background.toArgb()
++            Spacer(Modifier.height(8.dp))
++            Text("Accent", color = ShelfTheme.textMuted, fontSize = 12.sp)
++            Spacer(Modifier.height(6.dp))
++            HueSlider(acc) { picked -> set(now.copy(accent = withHueOf(picked, acc, minSat = 0f, minVal = 0f))) }
++            Spacer(Modifier.height(8.dp))
++            ColorFineTune("Accent", acc) { set(now.copy(accent = it)) }
++            Spacer(Modifier.height(10.dp))
++            Text("Background", color = ShelfTheme.textMuted, fontSize = 12.sp)
++            Spacer(Modifier.height(6.dp))
++            HueSlider(bg) { picked -> set(now.copy(background = withHueOf(picked, bg, minSat = 0f, minVal = 0f))) }
++            Spacer(Modifier.height(8.dp))
++            ColorFineTune("Background", bg) { set(now.copy(background = it)) }
++        }
++        if (now.palette != Features.Palette.THEME) {
++            Spacer(Modifier.height(6.dp))
++            Chip("Reset: same as the theme", accent = false) { set(Features.LayoutColors()) }
++        }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
 index 830a9b6..6b51b69 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
@@ -2444,6 +2605,82 @@ index 00bae26..02e3b51 100644
  internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
  
  // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
+diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
+index 4648169..876d7aa 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
+@@ -101,19 +101,27 @@ fun ShelfLauncherTheme(
+     // stays yours — your Custom accent when you picked one, else the theme's — and it is never recoloured by the art.)
+     val keepAccent = artDriven && appTheme.recolorable && com.shelf.launcher.data.Features.artKeepAccent.state.value
+     val manualAccent: Int? = if (keepAccent) look.accent else null
+-    val customBackground = if (custom && !music) look.background else null
++    // (Update 480, C2: the home layout's own colours — a palette or yours — over the theme's; a layout without its own
++    // inherits the theme's look. Not for themes that can't be recoloured, nor while music colours the theme.)
++    val layoutOwn = if (appTheme.recolorable && !music) com.shelf.launcher.data.Features.layoutColorsFor(appearance.homeLayout.name)
++        else com.shelf.launcher.data.Features.LayoutColors()
++    val customBackground = layoutOwn.bg ?: if (custom && !music) look.background else null
+     val sat = if (custom) look.saturation / 100f else 1f
+     val bri = if (custom) look.brightness / 100f else 1f
+     val background = (customBackground?.let { Color(it) } ?: base.background).tuned(sat, bri)
+     // Surfaces are derived from a custom background, so popups still stand out from it.
+-    val surface = (if (customBackground != null) lerp(background, Color.White, 0.07f) else base.surface.tuned(sat, bri))
+-    val surfaceRaised = (if (customBackground != null) lerp(background, Color.White, 0.12f) else base.surfaceRaised.tuned(sat, bri))
+-    val chosenAccent = ((if (custom && !music) look.accent else manualAccent)?.let { Color(it) }
++    // (Update 480, C2: on a light background the panels step darker, not lighter — white on white didn't stand out.)
++    val lift = if (customBackground != null && background.luminance() > 0.5f) Color.Black else Color.White
++    val surface = (if (customBackground != null) lerp(background, lift, 0.07f) else base.surface.tuned(sat, bri))
++    val surfaceRaised = (if (customBackground != null) lerp(background, lift, 0.12f) else base.surfaceRaised.tuned(sat, bri))
++    val chosenAccent = ((layoutOwn.acc ?: (if (custom && !music) look.accent else manualAccent))?.let { Color(it) }
+         ?: (if (keepAccent) appTheme.colors.accent else base.accent)).tuned(sat, bri)
+     // (Update 240, #23: an accent from the art reaches 3:1 on the background and the raised panels, and white or black
+     // writing on it 4.5:1 — only its lightness moves, the hue stays the art's. Your own accent (Custom, or kept with
+     // "Keep my accent") is used exactly as you picked it.)
+-    val adjustAccent = artDriven && manualAccent == null && !(custom && !music)
++    // (Update 480, C2 readability guard: a layout's own accent is kept readable too — 3:1 on the background, only its
++    // lightness moves.)
++    val adjustAccent = (artDriven && manualAccent == null && !(custom && !music) && layoutOwn.acc == null) || layoutOwn.acc != null
+     val fixedAccent = remember(chosenAccent, background, surfaceRaised, adjustAccent) {
+         if (adjustAccent) legibleArtAccent(chosenAccent, background, surfaceRaised) else chosenAccent
+     }
+@@ -129,8 +137,19 @@ fun ShelfLauncherTheme(
+     val surfaceA by animateColorAsState(surface, fade, label = "surface")
+     val raisedA by animateColorAsState(surfaceRaised, fade, label = "raised")
+     val secondaryA by animateColorAsState(secondaryTuned, fade, label = "secondary")
+-    val textA by animateColorAsState(base.textPrimary, fade, label = "text")
+-    val mutedA by animateColorAsState(base.textMuted, fade, label = "muted")
++    // (Update 480, C2 readability guard: on a background of your own — a light palette, a pale custom colour — the
++    // theme's writing moves to dark or light when it wouldn't reach 4.5:1 (muted 3:1). It used to stay the theme's light
++    // text on a light background.)
++    val guardedText = remember(base.textPrimary, background, customBackground) {
++        if (customBackground == null || contrastRatio(base.textPrimary, background) >= 4.5f) base.textPrimary
++        else if (background.luminance() > 0.4f) Color(0xFF15171B) else Color.White
++    }
++    val guardedMuted = remember(base.textMuted, background, customBackground) {
++        if (customBackground == null || contrastRatio(base.textMuted, background) >= 3f) base.textMuted
++        else if (background.luminance() > 0.4f) Color(0xFF4A505A) else Color(0xFFB8BEC8)
++    }
++    val textA by animateColorAsState(guardedText, fade, label = "text")
++    val mutedA by animateColorAsState(guardedMuted, fade, label = "muted")
+ 
+     val colors = base.copy(
+         background = backgroundA,
+@@ -147,12 +166,13 @@ fun ShelfLauncherTheme(
+     // draw light with dark writing instead of the dark defaults. (A light custom background keeps the dark scheme:
+     // its writing stays the theme's light text.)
+     // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
+-    val lightTheme = appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum
++    val lightTheme = (appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum && customBackground == null) ||
++        (customBackground != null && background.luminance() > 0.5f) // (Update 480, C2: a light background of your own is a light scheme)
+     // (Update 231, #59: Material's scheme is built from the colours being glided TO, once per change, instead of a new
+     // scheme every frame of the glide — that re-composed the whole home screen ~70 times per D-pad step while the
+     // colours followed the game. Voltcap's own colours (LocalShelfColors) still glide; Material's controls switch.)
+-    val targetText = base.textPrimary
+-    val targetMuted = base.textMuted
++    val targetText = guardedText
++    val targetMuted = guardedMuted
+     val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
+         if (lightTheme) androidx.compose.material3.lightColorScheme(
+             background = background,
 diff --git a/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt b/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
 new file mode 100644
 index 0000000..ba15098
@@ -2676,10 +2913,10 @@ index 0000000..13e9ca0
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
 new file mode 100644
-index 0000000..293599d
+index 0000000..f81aa6c
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,76 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertFalse
@@ -2734,6 +2971,26 @@ index 0000000..293599d
 +        assertTrue(m.contains("Features.Motion.OFF -> 0f"))
 +        assertTrue(m.contains("get() = factorFor(Features.motion.value) * system"))
 +        assertTrue(src("KeyInput.kt").contains("v.setParentCompositionContext(v.createLifecycleAwareWindowRecomposer(MotionLevel, lifecycle))"))
++    }
++
++    private fun theme(name: String): String = listOf(
++        File("../src_copy/ui/theme/$name"), File("src/main/java/com/shelf/launcher/ui/theme/$name"), File("app/src/main/java/com/shelf/launcher/ui/theme/$name"),
++    ).first { it.exists() }.readText()
++
++    // C2: per-layout colours (palettes / yours) over the theme's, inherited when unset; readability guard on own backgrounds.
++    @Test fun layoutColoursInheritAndStayReadable() {
++        val f = data("Features.kt")
++        assertTrue(f.contains("enum class Palette(val label: String, val bg: Long?, val accent: Long?)"))
++        assertTrue(f.contains("if (c.palette == Palette.THEME) o.remove(layout)"))
++        val t = theme("Theme.kt")
++        assertTrue(t.contains("val customBackground = layoutOwn.bg ?: if (custom && !music) look.background else null"))
++        assertTrue(t.contains("if (customBackground == null || contrastRatio(base.textPrimary, background) >= 4.5f) base.textPrimary"))
++        assertTrue(src("SettingsDialog.kt").contains("LayoutColorsGroup(appearance.homeLayout)"))
++    }
++
++    // B4: QA probe measuring a tween's real length under the motion level.
++    @Test fun motionProbeLogsRealDuration() {
++        assertTrue(src("LauncherScreen.kt").contains("motionprobe tween=\$probeMs real="))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
