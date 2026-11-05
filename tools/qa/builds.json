@@ -264,6 +264,17 @@
    "patch_sha256": "14eb206f502256715cf68ab99c2064ac1d66abc2d1cab9a92f961c5a3f3ea6dc",
    "tree_hash": "",
    "note": "update 481: 481a + A5 long category names (WholeChipRow room beside hints, Live tiles header StableFullText, QA catname hook); Odin only (481b = hook only)"
+  },
+  {
+   "id": "qa-0.6.68-482b",
+   "apk_sha256": "fc09e24e75cabe621fd283b30759aeb2e88546b36b6f2f6e4545bfc7184a32a3",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "457dd8d2f88db8f85dea609005a7e666b0df64de7a8dbc19afde4af53b4f8b7c",
+   "tree_hash": "",
+   "note": "update 482: 481c + B5 single-box wrap (D277), A5 category counts from the category's own list (D278), C1 status tones on light surfaces; Odin only (482a = without D278)"
   }
  ]
 }

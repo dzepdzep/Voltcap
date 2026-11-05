@@ -1,3 +1,28 @@
+# Update 482 (5 Nov 2026) — checkpoint 6: B5 stability sweep, A5 counts (D278), single-box wrap (D277), C1 status tones
+
+Staging patch = **qa-0.6.68-482b** (APK fc09e24e…, Odin only; KONKR off USB → NOT TESTED). CI green on checkpoint 5 (bd53131).
+- **B5 — PARTIAL (Odin, 53 layouts):** `tools/qa/device/b5.sh` (selected card per frame + focus events while pressing ▶ / ◀
+  slowly, in a burst and reversed; two stills 0.6 s and 3 s after a rest) graded by `tools/qa/tools/b5grade.py`. One focus
+  step per press, or a by-design move (Channel / Shop columns, Hero tiles 2-row grid, File select pages, Cross / Blades
+  categories, Library / Resume ◀ to the side panel, Green Core / Night / Terminal lists jump to the ends). No late labels,
+  stale art or placeholders after a rest — what still changes is idle motion (spinning disc / record, shelf bob, cube, marquees).
+  **D277 fixed:** Cardboard box with one box wrapped ◀ but only bumped ▶ (Endless) → wraps both ways (box5: 1 2 3 4 0 / 4 3 2 1 0).
+  Limits: the Odin has 5 games (long-row scrolling not exercised), D137 Case stacks needs the KONKR.
+- **A5 stale headings / counts:** `device/a5s.sh` + `tools/a5stale.py` (20 layouts × 3 R2 steps, texts against the same
+  category opened fresh): headings correct. **D278 fixed:** Blades, Panels, Terminal, Green Core, Bubbles, Rental shop and
+  Pocket Quest counted `game.platform` — "Android games" showed 0 and "Other apps" 44 while the category opens 7 / 1. Counts
+  now come from the category's own list (`LauncherUiState.countIn` / `gamesIn`, `categoryCounts(c)`); Odin a5c: Blades 7 / 1 / 1,
+  Terminal C:\GAMES\ANDROID 7 files. Picker vs L2/R2 NOT STARTED.
+- **C1:** shared chrome's fixed colours audited; destructive rows, "pending" editions and missable marks used bright tones
+  (~2:1 on light palettes) → `ShelfTheme.danger` / `warning` pick a deeper tone on a light surface. Look on device NOT TESTED.
+- Tests: Batch482Test (status tones, single-box wrap, category counts). PC unit tests + assembleRelease green.
+- Copy: src_copy `LauncherUiState.kt`, `ui/StyleHomes.kt`, `ui/StyleBlades.kt`, `ui/StylePanels.kt`, `ui/StyleTerminal.kt`,
+  `ui/StyleGreenCore.kt`, `ui/StyleBubbles.kt`, `ui/StyleRentalShop.kt`, `ui/StylePocketQuest.kt`, `ui/StyleCardboardBox.kt`,
+  `ui/GamePopupStatus.kt`, `ui/CartShellPicker.kt`, `ui/AchievementDetailDialog.kt`, `ui/theme/ShelfColors.kt` (all in the patch).
+- Device: Odin back on RC f79aa2a7, settings snapshot byte-identical (rc480o); hooks removed.
+- **Next action:** C2 controller walk of the colour picker, A5 picker vs L2/R2, B1 other layouts; KONKR when on USB:
+  Pokémon Silver (E3 / E4), logos (A5), clips (B2), D137, re-checks.
+
 # Update 481 (5 Nov 2026) — checkpoint 5: A5 long category names (D276)
 
 Staging patch = **qa-0.6.68-481c** (APK 4148244f…, Odin only). CI green on checkpoint 4 (59cfa5e).

@@ -71,4 +71,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
 /app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt
 /app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt

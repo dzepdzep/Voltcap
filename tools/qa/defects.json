@@ -3370,6 +3370,36 @@
    "root_cause": "the lit chip is kept whole and measured against the whole row, so a name wider than the room beside the hints overflowed; Live tiles used a plain Text (no shrink / slide)",
    "fix": "chips measured against the row minus both hints; Live tiles' words through StableFullText (shrink, then slide)",
    "verified": "k481b LIVE (Odin)"
+  },
+  {
+   "id": "D277",
+   "title": "Cardboard box with a single box: \u25c0 on the first case went round to the last (Endless), \u25b6 on the last case only bumped",
+   "rule": "R23",
+   "severity": "low",
+   "kind": "defect",
+   "status": "fixed in staging (482a) - Odin box5: \u25b6 1 2 3 4 0, \u25c0 0 4 3 2 1 0; KONKR / Thor NOT TESTED",
+   "found": "update 482 B5 sweep b5b (rowaudit selection: L0 -> L4 but R4 stayed)",
+   "where": "ui/StyleCardboardBox.kt cardboardBoxKey",
+   "evidence": [
+    "b5b BOX: R1 R2 R3 R4 R R R L3 L2 L1 L0 L4"
+   ],
+   "root_cause": "the Endless wrap past the last box needed more than one box; the left edge fell through to the home row, which wraps",
+   "fix": "wrap past the last case with Endless on whatever the number of boxes (Batch482Test.singleBoxWrapsBothWays)"
+  },
+  {
+   "id": "D278",
+   "title": "Category counts in Blades / Panels / Terminal / Green Core / Bubbles / Rental shop / Pocket Quest counted game.platform: 'Android games' read 0 and apps not in the library were counted",
+   "rule": "A5",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (482b) - Odin a5c re-check; KONKR / Thor NOT TESTED",
+   "found": "update 482 A5 stale-heading run a5s (Blades Systems blade: Android '0 games' while the category opens 7)",
+   "where": "LauncherUiState.countIn / gamesIn, StyleHomes.categoryCounts, 7 layouts",
+   "evidence": [
+    "a5s BLADES_s1: Systems \u203a Android '0 games'; DASH fresh Android '7 games'"
+   ],
+   "root_cause": "each layout grouped state.games by platform instead of asking for the category's own list (Android games are picked by package, collections by key, apps only when in the library)",
+   "fix": "one count source: the category's visible list through the shared memo (Batch482Test.categoryCountsMatchTheCategory)"
   }
  ]
 }
