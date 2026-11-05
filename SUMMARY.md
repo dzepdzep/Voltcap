@@ -1,3 +1,20 @@
+# Update 484 (5 Nov 2026) — checkpoint 8: E6 controller contract 53/53, D4 FPS reading follows the last second
+
+Staging patch = 483a + D4 (`data/perf/FpsSource.kt`; compiled and unit-tested by CI, no device build — the change needs a
+running game to see). CI green on 3b2030d (483a).
+- **E6 — DONE (Odin):** `tools/qa/device/contract462.sh` on all 53 layouts (483a): Select = Settings, Start = game options,
+  R1 = quick menu, L1 = shortcuts, R2 / L2, rapid presses — **53/53 PASS**, nothing launched. B: plain category screen on 46,
+  own picker on Pocket Quest / Pocket classic / Green Core, inside their own pages on Cube / Bubbles / Terminal / Pocket ribbon
+  (deliberate, D190). Touch parity, physical pad, KONKR / Thor NOT TESTED.
+- **D4 — PARTIAL:** the SurfaceFlinger FPS route averaged its whole 128-frame buffer (over 4 s at 30 fps): a 30 → 60 fps change
+  still read ~37 a second later. Now the last second's frames (at least 3; otherwise the buffer as before; stale > 2 s = none).
+  `SurfaceFlingerFpsSource.fpsFrom`, test FpsWindow483Test (staging-only, in .gitignore). Overlay / CPU / GPU / battery /
+  thermal / AutoTDP against the system: needs a running game — NOT TESTED (no launches without the owner).
+- Device: Odin back on RC f79aa2a7, settings snapshot byte-identical (rc480o); hooks removed.
+- Copy: src_copy `data/perf/FpsSource.kt` (in the patch).
+- **Next action:** E1 / E2 need reference photos (R25) and the KONKR's cartridges; owner items (E7: D263, D265, popup
+  hierarchy); KONKR / Thor rounds; D4 measurements once the owner allows a game launch. Then QA tiers and R1–R3 (approval).
+
 # Update 483 (5 Nov 2026) — checkpoint 7: A5 picker vs L2/R2, "All games" counts (D279), C1 window reds
 
 Staging patch = **qa-0.6.68-483a** (APK 22f1df8c…, Odin only; KONKR off USB → NOT TESTED). CI green on 69258ae.

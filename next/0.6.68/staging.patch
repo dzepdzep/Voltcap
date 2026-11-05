@@ -319,6 +319,46 @@ index 07d1ef9..11ce125 100644
              lower.endsWith(".url") -> readText(n, MAX_TEXT_BYTES)?.let { t ->
                  val line = t.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("URL=", true) } ?: return
                  addRunId(line, base, "${n.name} (Steam shortcut)", P_URL, found, nonSteam)
+diff --git a/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt b/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt
+index a05a490..61db7f7 100644
+--- a/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt
++++ b/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt
+@@ -81,16 +81,28 @@ class SurfaceFlingerFpsSource(private val context: Context) : FpsSource {
+             // Column 2 is the actual present time; 0 and Long.MAX_VALUE mean "not presented".
+             cols.getOrNull(1)?.toLongOrNull()?.takeIf { it > 0L && it != Long.MAX_VALUE }
+         }
+-        if (times.size < 3) return null
+-        // SurfaceFlinger stamps use the monotonic clock, same as nanoTime. Stale data = not rendering.
+-        if (System.nanoTime() - times.max() > 2_000_000_000L) return null
+-        val span = times.max() - times.min()
+-        if (span <= 0L) return null
+-        val frameNs = span.toDouble() / (times.size - 1)
+-        return FpsReading((1_000_000_000.0 / frameNs).toFloat(), (frameNs / 1_000_000.0).toFloat())
++        return fpsFrom(times, System.nanoTime())
+     }
+ 
+     companion object {
++        /**
++         * D4 (update 483): FPS from SurfaceFlinger present times. The buffer holds the last 128 frames — over 4 s at 30 fps —
++         * so its average lagged behind a change (a 30 → 60 fps step read ~37 fps a second later). Only the frames of the
++         * last second count when there are at least 3 of them; otherwise the whole buffer, as before. Stale (> 2 s) = null.
++         */
++        fun fpsFrom(presentNs: List<Long>, nowNs: Long, windowNs: Long = 1_000_000_000L): FpsReading? {
++            if (presentNs.size < 3) return null
++            val last = presentNs.max()
++            // SurfaceFlinger stamps use the monotonic clock, same as nanoTime. Stale data = not rendering.
++            if (nowNs - last > 2_000_000_000L) return null
++            val recent = presentNs.filter { it >= last - windowNs }
++            val times = if (recent.size >= 3) recent else presentNs
++            val span = times.max() - times.min()
++            if (span <= 0L) return null
++            val frameNs = span.toDouble() / (times.size - 1)
++            return FpsReading((1_000_000_000.0 / frameNs).toFloat(), (frameNs / 1_000_000.0).toFloat())
++        }
++
+         const val ADB_COMMAND = "adb shell pm grant com.shelf.launcher android.permission.DUMP"
+         fun hasDump(context: Context) =
+             context.checkSelfPermission("android.permission.DUMP") == PackageManager.PERMISSION_GRANTED
 diff --git a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt b/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
 index 8f84258..812e91c 100644
 --- a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
@@ -3127,6 +3167,49 @@ index 4648169..876d7aa 100644
      val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
          if (lightTheme) androidx.compose.material3.lightColorScheme(
              background = background,
+diff --git a/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt b/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt
+new file mode 100644
+index 0000000..e5c75e5
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt
+@@ -0,0 +1,37 @@
++package com.shelf.launcher.data
++
++import com.shelf.launcher.data.perf.SurfaceFlingerFpsSource
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Test
++
++/** D4 (update 483): the SurfaceFlinger FPS reading follows the last second, not the whole 128-frame buffer. */
++class FpsWindow483Test {
++    private val ms = 1_000_000L
++
++    @Test fun stepFrom30To60ReadsSixty() {
++        // 98 frames at 30 fps (3.27 s), then 1 s at 60 fps: the old whole-buffer average said ~37.
++        val t = ArrayList<Long>()
++        var now = 0L
++        repeat(98) { now += 33 * ms + 333_333; t += now }
++        repeat(60) { now += 16 * ms + 666_667; t += now }
++        val r = SurfaceFlingerFpsSource.fpsFrom(t.takeLast(128), now)!!
++        assertEquals(60f, r.fps, 1.5f)
++    }
++
++    @Test fun steadyRateUnchanged() {
++        val t = (1..128).map { it * 16_666_667L }
++        assertEquals(60f, SurfaceFlingerFpsSource.fpsFrom(t, t.last())!!.fps, 0.5f)
++    }
++
++    @Test fun fewRecentFramesFallBackToTheBuffer() {
++        // 2 fps: fewer than 3 frames in the last second → the whole buffer.
++        val t = (1..10).map { it * 500 * ms }
++        assertEquals(2f, SurfaceFlingerFpsSource.fpsFrom(t, t.last())!!.fps, 0.1f)
++    }
++
++    @Test fun staleIsNull() {
++        val t = (1..128).map { it * 16_666_667L }
++        assertNull(SurfaceFlingerFpsSource.fpsFrom(t, t.last() + 3_000 * ms))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt b/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
 new file mode 100644
 index 0000000..ba15098
