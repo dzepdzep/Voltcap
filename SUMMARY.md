@@ -1,3 +1,23 @@
+# Update 483 (5 Nov 2026) — checkpoint 7: A5 picker vs L2/R2, "All games" counts (D279), C1 window reds
+
+Staging patch = **qa-0.6.68-483a** (APK 22f1df8c…, Odin only; KONKR off USB → NOT TESTED). CI green on 69258ae.
+- **A5 picker vs L2/R2 (Odin, `tools/qa/device/p483.sh`):** the category screen (B on the home) lists the same categories
+  in the same order as L2 / R2 (Continue playing, Smart Continue, Android games, Other apps, Xbox 360, Never played, All games).
+  **D279 fixed:** its "All games" tile, the Dashboard's Library line / LIB bar and the Blades / Green Core / Pocket Quest
+  totals counted every installed app (45) while All opens 5. One source: `LauncherUiState.libraryGames()` / `libraryCount(c)`;
+  the tiles' stale check compares the same number. Odin: All games 5, Dashboard 5.
+- **C1:** destructive rows in the layouts' own game windows (Hide / Uninstall / Remove…) follow the window's writing colour
+  (`dangerOn`): deep red on a light window, the bright red as before on a dark one. Look on device NOT TESTED.
+- **B1:** nothing left on the Odin → DONE (Odin); KONKR NOT TESTED.
+- Tests: Batch482Test +2 (library count, window reds). PC unit tests + assembleRelease green.
+- Copy: src_copy `LauncherUiState.kt`, `ui/CategoryScreen.kt`, `ui/LauncherScreen.kt`, `ui/StyleHomes.kt`, `ui/StyleDashboard.kt`,
+  `ui/StyleBlades.kt`, `ui/StyleGreenCore.kt`, `ui/StylePocketQuest.kt`, `ui/GameWindow.kt`, `ui/GameWindowBanner.kt`,
+  `ui/theme/ShelfColors.kt` (all in the patch).
+- Device: Odin back on RC f79aa2a7, settings snapshot byte-identical (rc480o); hooks removed.
+- **Next action:** A5 is done on the Odin apart from the KONKR logo check. Every remaining Odin-testable item is done or
+  needs another device / the owner: KONKR (E3 / E4 Pokémon Silver, A5 logos, B2 clips, D137, re-checks), Thor (D2 / D3),
+  GameNative (owner). Next Odin work: D4 / E1 / E2 / E6 / E7 per ROADMAP_070.md.
+
 # Update 482 (5 Nov 2026) — checkpoint 6: B5 stability sweep, A5 counts (D278), single-box wrap (D277), C1 status tones
 
 Staging patch = **qa-0.6.68-482b** (APK fc09e24e…, Odin only; KONKR off USB → NOT TESTED). CI green on checkpoint 5 (bd53131).

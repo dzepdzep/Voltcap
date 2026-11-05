@@ -1,8 +1,8 @@
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
-index 4acd436..5112f21 100644
+index 4acd436..8d8ef6c 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
 +++ b/app/src/main/java/com/shelf/launcher/LauncherUiState.kt
-@@ -392,6 +392,14 @@ data class LauncherUiState(
+@@ -392,6 +392,19 @@ data class LauncherUiState(
      }
  
      /** Whether an installed app counts as an Android game. */
@@ -13,6 +13,11 @@ index 4acd436..5112f21 100644
 +        runCatching { copy(platformFilter = platform, specialFilter = null, searchQuery = "").visibleGames }.getOrDefault(emptyList())
 +
 +    fun countIn(platform: String): Int = gamesIn(platform).size
++
++    /** A5 (update 483): the library as "All games" opens it (apps only when in the library, hidden duplicates out) — the
++     *  total layouts and the category screen print, not `games.size` (every installed app counted: 45 for 5 games). */
++    fun libraryGames(): List<Game> =
++        runCatching { copy(platformFilter = null, specialFilter = null, searchQuery = "").visibleGames }.getOrDefault(emptyList())
 +
      /** Update 450: an ordinary app put in Continue playing by hand (not a game; see [com.shelf.launcher.data.ContinueApps]). */
      fun isContinueApp(game: Game): Boolean =
@@ -391,6 +396,35 @@ index 707c345..9c8d5ad 100644
              fade.shader = null
              c.restoreToCount(l)
          }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt
+index 3a1facd..e2d20e2 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt
+@@ -504,17 +504,19 @@ fun buildCategoryTiles(
+         .mapNotNull { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl }
+         .take(12).toList()
+     // (Update 214: in your own order of the tiles, each one on its own — CategoryTileOrder.)
++    // (A5, update 483: "All games" = what L2 / R2's All opens — the library, not every installed app.)
++    val library = state.libraryGames()
+     return com.shelf.launcher.data.CategoryTileOrder.sort(buildList {
+         state.categoryOrder.forEach { key ->
+             when (key) {
+                 com.shelf.launcher.data.CategorySettings.ALL ->
+                     add(
+                         CategoryTile(
+-                            "ALL", "All games", gamesCount(state.games.size), coversOf(state.games), 210,
+-                            slides = slidesOf(state.games.shuffled(java.util.Random(7))), customImage = categoryImages["ALL"],
+-                            count = state.games.size, favorites = favsOf(state.games),
+-                            lastPlayedCover = coverOf(lastOf(state.games)), lastPlayedTitle = lastOf(state.games)?.name,
+-                            lastPlayedArt = wideOf(lastOf(state.games) ?: state.games.firstOrNull()), coverSlides = coverSlidesOf(state.games)
++                            "ALL", "All games", gamesCount(library.size), coversOf(library), 210,
++                            slides = slidesOf(library.shuffled(java.util.Random(7))), customImage = categoryImages["ALL"],
++                            count = library.size, favorites = favsOf(library),
++                            lastPlayedCover = coverOf(lastOf(library)), lastPlayedTitle = lastOf(library)?.name,
++                            lastPlayedArt = wideOf(lastOf(library) ?: library.firstOrNull()), coverSlides = coverSlidesOf(library)
+                         )
+                     )
+                 com.shelf.launcher.data.CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).forEach { p ->
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
 index 0bc1e0d..8955b99 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
@@ -581,7 +615,7 @@ index 920f03a..e7ce3cb 100644
          com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
          // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 169d875..ad6c5e3 100644
+index 169d875..2d6bbef 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -323,7 +323,10 @@ private class WinLook(
@@ -722,6 +756,24 @@ index 169d875..ad6c5e3 100644
              text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 2,
              fontFamily = if (look.mono) FontFamily.Monospace else null
          )
+@@ -2394,7 +2404,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
+         perfRows(s, st.hasFan, st.onPerfAdvanced).forEachIndexed { i, row ->
+             WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = { row.onClick?.invoke() }) { on ->
+                 Column(Modifier.weight(1f)) {
+-                    val c = when { on -> look.btnOnInk; row.destructive -> Color(0xFFFF8A80); else -> look.btnInk }
++                    val c = when { on -> look.btnOnInk; row.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk); else -> look.btnInk }
+                     androidx.compose.material3.Text(
+                         if (look.caps) row.label.uppercase() else row.label, color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+@@ -2450,7 +2460,7 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
+                 Column(Modifier.weight(1f)) {
+                     val ink = when {
+                         on -> look.btnOnInk
+-                        opt.destructive -> Color(0xFFFF8A80)
++                        opt.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk)
+                         else -> look.btnInk
+                     }
+                     androidx.compose.material3.Text(
 @@ -2604,13 +2614,12 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
  
  @Composable
@@ -863,6 +915,28 @@ index 169d875..ad6c5e3 100644
 +        else -> null
 +    }
  }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt
+index dd17b2a..6838f19 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt
+@@ -724,7 +724,7 @@ internal fun BannerGameWindow(
+                                     itemsIndexed(rows, key = { i, r -> "p$i${r.label}" }) { _, r ->
+                                         BannerCard(look, onClick = r.onClick) {
+                                             Text(
+-                                                r.label, color = if (r.destructive) Color(0xFFFF8A80) else look.ink, fontSize = 14.sp,
++                                                r.label, color = if (r.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
+                                                 fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                             )
+                                             Text(r.value, color = look.muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+@@ -735,7 +735,7 @@ internal fun BannerGameWindow(
+                                     itemsIndexed(options, key = { i, _ -> "o$i" }) { i, opt ->
+                                         BannerCard(look, if (i == 0) firstMod else Modifier, onClick = opt.onClick) {
+                                             Text(
+-                                                opt.label, color = if (opt.destructive) Color(0xFFFF8A80) else look.ink, fontSize = 14.sp,
++                                                opt.label, color = if (opt.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
+                                                 fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                             )
+                                             opt.sub?.let { Text(it, color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt b/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt
 index 06392a7..a195039 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/HeroCarousel.kt
@@ -1035,7 +1109,7 @@ index 2f264a2..1faa8e3 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..ace9e8f 100644
+index eca8853..153da8c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
@@ -1082,7 +1156,18 @@ index eca8853..ace9e8f 100644
      // (Update 261: a Settings page asked for by a test walk.)
      val testSettings = TestHooks.settings.value
      LaunchedEffect(testSettings) {
-@@ -2807,6 +2821,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1428,7 +1442,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+     // Worked out off the main thread, and only while the category screen is open
+     // (or once, so it is ready the first time it opens). Each category's list
+     // comes from the state's memoized visibleGames.
+-    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty() || categoryTilesStale(categoryTiles, state.games.size)
++    // (A5, update 483: the "All games" tile counts the library — compared with the same count.)
++    val libraryTotal = remember(state.games, state.libraryApps, state.gameAppPackages, state.appearance.hideDuplicates, state.favorites) { state.libraryGames().size }
++    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty() || categoryTilesStale(categoryTiles, libraryTotal)
+     val tilesBuiltOpen = remember { BooleanArray(1) }
+     LaunchedEffect(
+         tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,
+@@ -2807,6 +2823,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              paleBehind = paleBehind,
              // (Update 333: dressed for the layout — StatusLooks.)
              lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
@@ -1090,7 +1175,7 @@ index eca8853..ace9e8f 100644
              modifier = modifier,
              menuSlot = menuSlot,
              onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
-@@ -3368,7 +3383,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3368,7 +3385,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -1103,7 +1188,7 @@ index eca8853..ace9e8f 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3408,7 +3427,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3408,7 +3429,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -1113,7 +1198,7 @@ index eca8853..ace9e8f 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -4063,9 +4083,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4063,9 +4085,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                  modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                      .padding(
@@ -1129,7 +1214,7 @@ index eca8853..ace9e8f 100644
                      )
              )
          } else if (tvLayout) {
-@@ -4175,8 +4199,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4175,8 +4201,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              }
              // Tile-style: tiles a little above the middle, round buttons under them.
              // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
@@ -1145,7 +1230,7 @@ index eca8853..ace9e8f 100644
              Column(
                  Modifier
                      .align(
-@@ -4274,6 +4304,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4274,6 +4306,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                              // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
                              val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
                              TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
@@ -1153,7 +1238,7 @@ index eca8853..ace9e8f 100644
                      TileHomeRow(
                          lastPlayedAt = state.lastPlayedAt,
                          onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
-@@ -4302,6 +4333,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4302,6 +4335,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                          loopTick = state.loopTick, loopStep = state.loopStep
                      )
                      }
@@ -1785,7 +1870,7 @@ index e6215a3..2ab6b88 100644
                      "Subfolders are searched up to 3 levels deep."
              )
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt b/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
-index 865f678..6b43365 100644
+index 865f678..7f56c13 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleBlades.kt
 @@ -692,7 +692,7 @@ private fun BladeBadges(c: StyleCtx, g: Game) {
@@ -1797,6 +1882,15 @@ index 865f678..6b43365 100644
      val row = BladesNav.sysRow.coerceIn(0, (systems.size - 1).coerceAtLeast(0))
      Column(Modifier.fillMaxSize()) {
          BladeTitle("Systems", "${systems.size} in your library", p, compact)
+@@ -912,7 +912,7 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
+             FullText(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = ink)
+             FullText(
+                 listOfNotNull(prof?.TotalPoints?.let { "$it points" }, stats.mastered.takeIf { it > 0 }?.let { "$it mastered" }, stylePlaytime(total.takeIf { it > 0 }, true).takeIf { total > 0 }?.let { "$it played" })
+-                    .joinToString("  ·  ").ifEmpty { "${c.state.games.size} games" },
++                    .joinToString("  ·  ").ifEmpty { "${libraryCount(c)} games" },
+                 color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 1, style = ink
+             )
+         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt b/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
 index eae6ae6..bd0fdbd 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
@@ -1878,10 +1972,41 @@ index 97f29c8..3f0967d 100644
                  logos[p]
              } else null
              CubeFaceArt(st.label, logo, painters[st.icon])
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleDashboard.kt b/app/src/main/java/com/shelf/launcher/ui/StyleDashboard.kt
+index 4dff531..76f6ed6 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleDashboard.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleDashboard.kt
+@@ -459,7 +459,7 @@ private fun DashProfile(c: StyleCtx, panel: Features.PanelLook, op: Float, shape
+         Spacer(Modifier.height(10.dp))
+         StatBar("PWR", battery.percent / 100f, Color(0xFF6CCB3E), "${battery.percent} / 100", ink)
+         Spacer(Modifier.height(5.dp))
+-        val total = c.state.games.size
++        val total = libraryCount(c)
+         // (Update 151: the library bar in the theme's accent; the battery bar stays green.)
+         StatBar("LIB", if (total > 0) c.games.size / total.toFloat() else 0f, ShelfTheme.accent, gamesCount(c.games.size), ink)
+     }
+@@ -476,7 +476,7 @@ private fun DashStatus(c: StyleCtx, panel: Features.PanelLook, op: Float, shape:
+         PanelLabel("System status", ink)
+         Spacer(Modifier.height(4.dp))
+         StatusLine(Icons.Filled.BatteryFull, "Battery", "${battery.percent}%" + if (battery.charging) " ⚡" else "", ink, tight = tight)
+-        StatusLine(Icons.Filled.VideogameAsset, "Library", gamesCount(c.state.games.size), ink, tight = tight)
++        StatusLine(Icons.Filled.VideogameAsset, "Library", gamesCount(libraryCount(c)), ink, tight = tight)
+         if (!tight) StatusLine(Icons.Filled.Schedule, "Played", if (totalMs > 0) stylePlaytime(totalMs) else "—", ink)
+         StatusLine(Icons.Filled.Wifi, "Network", if (wifi) "Connected" else "Offline", ink, last = true, tight = tight)
+     }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt b/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
-index e9a9ac9..d76b4ae 100644
+index e9a9ac9..35f641e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt
+@@ -442,7 +442,7 @@ private fun GcMenu(c: StyleCtx, systemCount: Int, compact: Boolean, reduced: Boo
+         Column(Modifier.align(Alignment.TopStart).padding(start = 4.dp, top = 2.dp)) {
+             Text("GREEN CORE", color = Color(0xFFDDF7E1), fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp, maxLines = 1, softWrap = false)
+             Text(
+-                "${c.state.games.size} TITLES ONLINE · ${systemCount} SYSTEMS", color = accent.copy(alpha = 0.7f), fontSize = 9.sp,
++                "${libraryCount(c)} TITLES ONLINE · ${systemCount} SYSTEMS", color = accent.copy(alpha = 0.7f), fontSize = 9.sp,
+                 fontFamily = FontFamily.Monospace, letterSpacing = 1.5.sp, maxLines = 1, softWrap = false
+             )
+         }
 @@ -902,7 +902,7 @@ private fun GcInfoStrip(c: StyleCtx, g: Game, compact: Boolean, accent: Color, m
  private fun GcSystems(c: StyleCtx, systems: List<Int>, compact: Boolean, reduced: Boolean) {
      val accent = greenCoreAccent()
@@ -1892,10 +2017,10 @@ index e9a9ac9..d76b4ae 100644
      val cur = GreenCoreNav.system.coerceIn(0, (n - 1).coerceAtLeast(0))
      val pos = remember { Animatable(cur.toFloat()) }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
-index 672cfd1..4682b56 100644
+index 672cfd1..4e2f2f2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
-@@ -847,6 +847,15 @@ internal class StyleActions(
+@@ -847,6 +847,22 @@ internal class StyleActions(
  )
  
  /** One stop of the category cycle (as L2 / R2 go through them). */
@@ -1908,10 +2033,17 @@ index 672cfd1..4682b56 100644
 +    }
 +}
 +
++/** A5 (update 483): how many games "All games" opens ([com.shelf.launcher.LauncherUiState.libraryGames]). */
++@Composable
++internal fun libraryCount(c: StyleCtx): Int {
++    val s = c.state
++    return remember(s.games, s.libraryApps, s.gameAppPackages, s.appearance.hideDuplicates, s.favorites) { s.libraryGames().size }
++}
++
  internal class StyleStop(val special: SpecialFilter?, val platform: String?, val label: String, val logo: String?) {
      /** The icon for a stop without a console logo. */
      val icon: ImageVector get() = when (special) {
-@@ -1411,6 +1420,9 @@ internal val LocalStyleTopInset = androidx.compose.runtime.compositionLocalOf {
+@@ -1411,6 +1427,9 @@ internal val LocalStyleTopInset = androidx.compose.runtime.compositionLocalOf {
  /** Cinema and Arctic hub: the art / rail run to the top of the screen, the status bar floats over them (no reserved band). */
  internal fun HomeLayout.drawsUnderStatusBar(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
  
@@ -1959,18 +2091,28 @@ index 8982b8f..63b1d09 100644
                  Text(st.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                  Text(if (count == 1) "1 game" else "$count games", color = p.sub, fontSize = 13.sp)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
-index b49603d..7cbe7dc 100644
+index b49603d..f156101 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StylePocketQuest.kt
-@@ -1003,7 +1003,7 @@ private fun PqSelector(pal: PqPalette, liftPx: Float, modifier: Modifier) {
+@@ -1003,7 +1003,8 @@ private fun PqSelector(pal: PqPalette, liftPx: Float, modifier: Modifier) {
  
  @Composable
  private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
 -    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
 +    val counts = categoryCounts(c)
++    val libTotal = libraryCount(c)
      val stops = c.stops
      val live by rememberUpdatedState(c)
      Column(Modifier.fillMaxSize().pqPanel(pal, cut = 16.dp, edge = 2.dp).padding(horizontal = 14.dp, vertical = if (compact) 8.dp else 12.dp)) {
+@@ -1035,7 +1036,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
+                         val st = stops[i]
+                         val count = when {
+                             i == c.stop -> c.games.size
+-                            st.special == null && st.platform == null -> c.state.games.size
++                            st.special == null && st.platform == null -> libTotal
+                             st.special == null && st.platform != null && !com.shelf.launcher.data.isCollectionKey(st.platform) -> counts[st.platform]
+                             else -> null
+                         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
 index 762f07a..6d0f288 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
@@ -2877,7 +3019,7 @@ index 00bae26..02e3b51 100644
  
  // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
 diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt b/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
-index 049f87d..6506071 100644
+index 049f87d..b7d1ece 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
 @@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
@@ -2888,7 +3030,7 @@ index 049f87d..6506071 100644
  
  /** The palette every screen reads from. Swapping themes swaps this object,
   * so nothing in the UI hardcodes a colour. */
-@@ -1100,4 +1101,16 @@ object ShelfTheme {
+@@ -1100,4 +1101,20 @@ object ShelfTheme {
  
      val textMuted: Color
          @Composable @ReadOnlyComposable get() = colors.textMuted
@@ -2901,6 +3043,10 @@ index 049f87d..6506071 100644
 +    val warning: Color
 +        @Composable @ReadOnlyComposable get() = statusTone(colors.surface, light = Color(0xFF8A5A00), dark = Color(0xFFE8A33D))
  }
++
++/** C1 (update 483): a destructive label on a layout's own window look, picked from the look's writing colour — dark
++ *  writing means a light window, so the deep red; light writing, the bright red (it was always the bright one). */
++fun dangerOn(ink: Color): Color = if (ink.luminance() < 0.4f) Color(0xFFB3261E) else Color(0xFFFF8A80)
 +
 +/** C1: [light] on a light surface (luminance > 0.45), else [dark]. */
 +internal fun statusTone(surface: Color, light: Color, dark: Color): Color =
@@ -3303,16 +3449,17 @@ index 0000000..a39f03b
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt
 new file mode 100644
-index 0000000..7f4721b
+index 0000000..01cfa6e
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,87 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.ui.graphics.Color
 +import com.shelf.launcher.LauncherUiState
 +import com.shelf.launcher.data.Game
 +import com.shelf.launcher.data.SourceType
++import com.shelf.launcher.ui.theme.dangerOn
 +import com.shelf.launcher.ui.theme.statusTone
 +import org.junit.Assert.assertEquals
 +import org.junit.Assert.assertFalse
@@ -3369,6 +3516,28 @@ index 0000000..7f4721b
 +        }
 +        val t = src("StyleTerminal.kt")
 +        assertTrue(t.contains("c.state.countIn(it)") && t.contains("c.state.gamesIn(it)"))
++    }
++
++    // A5 (483): "All games" in the category screen / Dashboard = what All opens (apps only when in the library).
++    @Test fun allGamesCountsTheLibrary() {
++        val rom = Game("Quest", "SNES", 1, SourceType.ROM, romPath = "/r/q.sfc")
++        val racer = Game("Racer", "App", 1, SourceType.APP, packageName = "com.studio.racer")
++        val spotify = Game("Spotify", "App", 1, SourceType.APP, packageName = "com.spotify.music")
++        val s = LauncherUiState(games = listOf(rom, racer, spotify), gameAppPackages = setOf("com.studio.racer"),
++            libraryApps = com.shelf.launcher.data.LibraryAppsSettings(mode = com.shelf.launcher.data.AppsMode.GAMES_AND_ADDED))
++        assertEquals(setOf(rom.stableKey, racer.stableKey), s.libraryGames().map { it.stableKey }.toSet())
++        val cs = src("CategoryScreen.kt")
++        assertTrue(cs.contains("val library = state.libraryGames()") && cs.contains("count = library.size"))
++        assertTrue(src("LauncherScreen.kt").contains("categoryTilesStale(categoryTiles, libraryTotal)"))
++        assertFalse(src("StyleDashboard.kt").contains("c.state.games.size"))
++    }
++
++    // C1 (483): destructive rows in the layouts' own game windows follow the window's writing colour.
++    @Test fun windowDangerFollowsTheLook() {
++        assertEquals(Color(0xFFB3261E), dangerOn(Color(0xFF202124)))
++        assertEquals(Color(0xFFFF8A80), dangerOn(Color(0xFFF2F2F2)))
++        assertFalse(src("GameWindow.kt").contains("Color(0xFFFF8A80)"))
++        assertFalse(src("GameWindowBanner.kt").contains("Color(0xFFFF8A80)"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

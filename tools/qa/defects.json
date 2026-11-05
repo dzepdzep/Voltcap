@@ -3400,6 +3400,22 @@
    ],
    "root_cause": "each layout grouped state.games by platform instead of asking for the category's own list (Android games are picked by package, collections by key, apps only when in the library)",
    "fix": "one count source: the category's visible list through the shared memo (Batch482Test.categoryCountsMatchTheCategory)"
+  },
+  {
+   "id": "D279",
+   "title": "'All games' tile on the category screen, Dashboard Library line / LIB bar, Blades / Green Core / Pocket Quest totals counted every installed app (45) while All opens the library (5)",
+   "rule": "A5",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (483a) - Odin p483: category screen All games 5, Dashboard 5; KONKR / Thor NOT TESTED",
+   "found": "update 482 a5c follow-up (Dashboard 'Library 45 games' beside 'LIB 5')",
+   "where": "ui/CategoryScreen.kt buildCategoryTiles, LauncherScreen tiles stale check, StyleDashboard, StyleBlades, StyleGreenCore, StylePocketQuest",
+   "evidence": [
+    "Odin DASH: Library 45 games, profile LIB 5 game",
+    "p483 cats: All games 5 games after the fix"
+   ],
+   "root_cause": "state.games is every scanned game and installed app; the library (All) keeps apps only when in the library and hides region duplicates",
+   "fix": "LauncherUiState.libraryGames() / libraryCount(c); the stale check compares the same count (Batch482Test.allGamesCountsTheLibrary)"
   }
  ]
 }
