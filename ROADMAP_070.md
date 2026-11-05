@@ -27,9 +27,9 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 ## Batch B — layout and performance foundations (P2)
 | id | item | status |
 |---|---|---|
-| B1 | Full-screen / unused space audit of 53 layouts (Netflix-like Cinema edges, padding, status-bar space) via shared sizing helpers | NOT STARTED |
-| B2 | Background video suspended only when fully covered by opaque UI (not drawer / Settings dim edges); measured CPU / GPU / frames / memory / resume | NOT STARTED |
-| B3 | Adaptive status bar: Follow layout (default for new installs) / Always / Minimal / Hidden; per-layout integration; existing prefs kept | NOT STARTED |
+| B1 | Full-screen / unused space audit of 53 layouts (Netflix-like Cinema edges, padding, status-bar space) via shared sizing helpers | PARTIAL — cause: every style home got a 12 dp side / 8 dp bottom gutter (Odin 28 / 18 px); `HomeLayout.fullBleed()` (Cinema, Arctic) drops it; Cinema edge-to-edge verified on Odin (479b). 53-layout still sweep e479b + `edgeaudit.py`: remaining flags are deliberate stages / frames (Case flow room, Terminal CRT, Magazine desk, Pocket screens) except **Tiles: bottom ~45 % empty** (= D257, owner review). KONKR NOT TESTED |
+| B2 | Background video suspended only when fully covered by opaque UI (not drawer / Settings dim edges); measured CPU / GPU / frames / memory / resume | PARTIAL — backdrop clip pauses under category screen / guide / manual / art viewer / screenshots (479a, unit test); measurement NOT DONE |
+| B3 | Adaptive status bar: Follow layout (default for new installs) / Always / Minimal / Hidden; per-layout integration; existing prefs kept | PARTIAL — 479c: `Features.statusMode` + Hidden = old switch off; existing install → ALWAYS (seen on Odin), new → FOLLOW; Minimal = clock + battery; Follow = minimal on Cinema / Arctic, none where a layout has its own bar, full elsewhere. Odin: Follow/Cinema, Follow/Classic, Minimal/Classic PASS. Settings chooser not checked on screen; KONKR NOT TESTED |
 | B4 | Shared animation system (Off / Subtle / Normal / Expressive, reduced motion) for popups, Settings, R1, categories, drawer, profile picker, Details, More/Less, dialogs; input safe during animations | NOT STARTED |
 | B5 | Scrolling / layout stability audit (rows, titles, covers, late labels, stale art, placeholders) incl. D137 Case stacks; keep 13 arrangements | NOT STARTED |
 
@@ -42,7 +42,7 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 ## Batch D — functional integrations (P4)
 | id | item | status |
 |---|---|---|
-| D1 | GameNative `.steam` files → PC / Steam category, App ID validation, titles / art, no duplicates, real launch verified | NOT STARTED |
+| D1 | GameNative `.steam` files → PC / Steam category, App ID validation, titles / art, no duplicates, real launch verified | PARTIAL — scan + folder import + dedupe (unit tests); launch intent confirmed against GameNative 1.2.0 on Odin; real launch NOT TESTED (needs owner OK to start a game) |
 | D2 | Dual-screen lifecycle (lower UI exits when an app opens up top; "Probably still open" stale; focus to wrong screen) | NOT STARTED (Thor needed) |
 | D3 | Independent brightness per screen where Android allows | NOT STARTED (Thor needed) |
 | D4 | FPS / frame-time / jank / CPU / GPU / battery / thermal / AutoTDP accuracy audit (no risky power tests without approval) | NOT STARTED |
@@ -54,7 +54,7 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 | E2 | Boxes / cases: custom box sides, case / spine geometry, artwork fitting | NOT STARTED |
 | E3 | 3D case prints cropped in Case Flow vs Inspect (Case Flow, Case Stacks, Game Shelf, Inspect: same texture, no crop / stretch) | NOT STARTED |
 | E4 | Spine widths per case type vs real measurements (thickness / UV / texture scale), consistent in Inspect and layouts | NOT STARTED |
-| E5 | Case Flow reflection: bright strip / hard edge at the fade end | NOT STARTED |
+| E5 | Case Flow reflection: bright strip / hard edge at the fade end | DONE (Odin) — cause: fade mask stopped short of the layer (Odin cf479: 1 px lines, row spike 14.3 / 10.8); mask extended (479b): no spike > 2.4 (texture noise) in e479b CASEFLOW. KONKR NOT TESTED |
 | E6 | Controller contract re-check (Select = Settings, R1, L2/R2, B closes, Wii preview popup), touch parity | NOT STARTED |
 | E7 | Owner-decision visuals: D257 Tiles, D263 Cover details story, D265 Twin paging, popup hierarchy, tiny controls, secondary buttons | NOT STARTED (owner review) |
 

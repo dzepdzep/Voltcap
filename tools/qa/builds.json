@@ -197,7 +197,40 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
+  },
+  {
+   "id": "qa-0.6.68-479a",
+   "apk_sha256": "114b1fcc4085af73501411a454cc443fc03374f03da10a31785fb945b0e6b74f",
+   "patch_sha256": "",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "tree_hash": "",
+   "note": "update 479: 478d + B2 backdrop clip paused under opaque pages, D1 GameNative .steam scan/import; Odin only; patch not archived (superseded by 479b)"
+  },
+  {
+   "id": "qa-0.6.68-479b",
+   "apk_sha256": "a6153c5b840a25f448f6faf7815afa52d671a85516053cb866d57ffaf9309afc",
+   "patch_sha256": "",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "tree_hash": "",
+   "note": "update 479: 479a + E5 Case3D reflection mask past the layer, B1 full-bleed Cinema / Arctic (no 12 dp / 8 dp gutter); Odin only; patch not archived (superseded by 479c, which adds B3 only)"
+  },
+  {
+   "id": "qa-0.6.68-479c",
+   "apk_sha256": "8d70eef55ab591e44b79e18049d692233e043a7fbd457b8d3e2cb01944b252d8",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "625567e7eb4a6b7c5328151cd5931cf37f80ba76fee389454e6250b72309505a",
+   "tree_hash": "",
+   "note": "update 479: 479b + B3 status bar Follow layout / Always / Minimal / Hidden (existing installs ALWAYS, new FOLLOW); Odin only"
   }
  ]
 }

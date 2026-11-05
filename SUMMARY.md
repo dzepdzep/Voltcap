@@ -1,3 +1,30 @@
+# Update 479 (5 Nov 2026) — master request v0.7.0, checkpoint 2: B1 Cinema edges, B2, B3 status bar, D1 GameNative, E5
+
+**Read first:** `ROADMAP_070.md`. Base main f0dfe14; staging patch = **qa-0.6.68-479c** (APK 8d70eef5…, Odin only). KONKR
+still off USB: every KONKR result is NOT TESTED.
+- **B1 — PARTIAL:** Cinema didn't reach the edges because every style home had a 12 dp side / 8 dp bottom gutter (Odin 28 /
+  18 px; the dim, slightly smaller frame seen once was the "Who's playing?" rollout mid-run, not stuck).
+  `HomeLayout.fullBleed()` (Cinema, Arctic) drops it; the legend's strip stays. Odin: Cinema edge to edge (e479b). 53-layout
+  still sweep (`device/edges.sh` + `tools/edgeaudit.py`, flat edge bands + empty share): other flags are deliberate stages /
+  frames; **Tiles leaves ~45 % of the screen empty at the bottom** — that is D257 (owner review, E7).
+- **B2 — PARTIAL:** the backdrop clip pauses under opaque full-screen pages only (category screen, guide, manual, art viewer,
+  screenshots), never under the drawer / Settings edges. Unit-tested; CPU / frame measurement NOT DONE.
+- **B3 — PARTIAL:** Settings › Appearance › Status bar: Follow layout / Always / Minimal / Hidden ("Hidden" = the old switch
+  off). Existing installs start on Always (unchanged bar — seen on the Odin), new ones on Follow layout. Minimal = clock and
+  battery only. Follow = minimal over Cinema / Arctic, none where a layout has its own bar, full elsewhere. Odin: Follow on
+  Cinema / Classic and Minimal on Classic PASS; the Odin's mode left on Always. Settings chooser not looked at on screen.
+- **D1 — PARTIAL:** GameNative `.steam` exports (a file holding only the decimal App ID) are found by the ROM scan and the
+  Steam folder import → Steam games (App ID validated, broken files skipped, a hand-added Steam game wins, duplicates once).
+  Launch intent checked against GameNative 1.2.0 on the Odin; **a real launch is NOT TESTED** (it starts a game — owner OK).
+- **E5 — DONE (Odin):** Case Flow's reflection mask stopped short of the layer (1 px bright line); now drawn past it. Row
+  spike 14.3 → ≤ 2.4 (noise).
+- Defects D273 (Cinema gutter), D274 (reflection line) fixed. Tests: Batch478Test +4 (full-bleed, B2, reflection, B3),
+  GameNative478Test; unit tests SUCCESS on the PC. Builds 479a–c in builds.json.
+- Device: Odin back on RC f79aa2a7, hooks removed; its RC settings snapshot (rc479o) byte-identical to update 478's (rc478o).
+- **Next action:** A5 category logos (the owner's
+  GBA / Sega CD "black lines" not reproduced yet — needs a console category with those logos, probably the KONKR), A6, B4
+  animations, B5, C1/C2, D4; KONKR re-runs (c478_k.sh) when it is on USB.
+
 # Update 478 (4 Nov 2026) — master request v0.7.0: roadmap + Batch A (checkpoint 1)
 
 **Read first:** `ROADMAP_070.md` (every item of the owner's master request with status), then this entry.

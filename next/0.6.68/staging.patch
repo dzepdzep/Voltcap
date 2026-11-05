@@ -1,3 +1,21 @@
+diff --git a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
+index 4e2bb89..54489b7 100644
+--- a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
++++ b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
+@@ -5426,7 +5426,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+ 
+     private fun recombineGames() {
+         val lastPlayed = recentlyPlayedStore.loadVisible() // (Update 244: without games taken off Continue playing)
+-        val merged = (applyOverrides(currentRomGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
++        // (Update 478, D1: a Steam game added by hand / folder import AND found as a GameNative `.steam` export is one game —
++        // the hand-added entry wins; two exports of one AppID (two folders) count once.)
++        val handSteam = currentSteamGames.mapTo(HashSet()) { it.stableKey }
++        val scannedSteam = HashSet<String>()
++        val romGames = currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }
++        val merged = (applyOverrides(romGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
+             applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
+             .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
+         _uiState.update { current ->
 diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
 index e33cd4f..616ee1f 100644
 --- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
@@ -53,6 +71,32 @@ index e33cd4f..616ee1f 100644
      }
  
      // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
+diff --git a/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt b/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt
+index 64a36d9..95de453 100644
+--- a/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt
++++ b/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt
+@@ -1801,6 +1801,21 @@ val AppearanceSettings.statusOn: Boolean
+         // Update 202: Pocket Quest has its own top bar too (brand, consoles, search, settings, battery and clock).
+         homeLayout != HomeLayout.POCKET
+ 
++/**
++ * Update 479 (B3): the status bar drawn small (clock and battery only): Minimal, or Follow layout on a layout whose art runs
++ * to the edges (Cinema, Arctic — the bar floats over the picture). Layouts with a bar of their own already hide Voltcap's
++ * (statusOn); everything else keeps the full bar.
++ */
++val AppearanceSettings.statusMinimal: Boolean
++    get() = when (Features.statusMode.state.value) {
++        Features.StatusMode.MINIMAL -> true
++        Features.StatusMode.ALWAYS -> false
++        Features.StatusMode.FOLLOW -> homeLayout.statusFollowsMinimal()
++    }
++
++/** Update 479 (B3): the layouts whose own look asks for the small bar under Follow layout. */
++fun HomeLayout.statusFollowsMinimal(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
++
+ /** Update 132: Spotlight's Home menu draws its own top row (and its own button hints), so the status bar steps aside. */
+ val AppearanceSettings.spotOwnTop: Boolean
+     get() = homeLayout == HomeLayout.SPOT && Features.spotLook.state.value == Features.SpotLook.HOME_MENU && !Features.spotStatusBar.state.value
 diff --git a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt b/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
 index b8fdb4e..38d63e9 100644
 --- a/app/src/main/java/com/shelf/launcher/data/ArtStorage.kt
@@ -66,6 +110,116 @@ index b8fdb4e..38d63e9 100644
              .build()
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
+index 55c357d..f6037ad 100644
+--- a/app/src/main/java/com/shelf/launcher/data/Features.kt
++++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
+@@ -120,6 +120,8 @@ object Features {
+         // Update 447: "Who's playing?" look — only when none is saved yet (never overwrites a choice); saved at once, so a
+         // new install keeps Aurora glass after its later updates and an existing one keeps Midnight blue.
+         if (!p.contains("picker_look")) pickerLook.value = firstPickerLook(FirstRun.isDone(context.applicationContext))
++        // Update 479 (B3): an install that already had the status bar keeps the full one; a new one follows the layout.
++        if (!p.contains("status_mode")) statusMode.value = if (FirstRun.isDone(context.applicationContext)) StatusMode.ALWAYS else StatusMode.FOLLOW
+         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
+         // default; it now starts on the games' own art (still pickable).
+         if (!p.contains("category_art")) {
+@@ -1450,6 +1452,14 @@ object Features {
+     fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
+     /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
+     val statusMatchesLayout = BoolPref("status_matches_layout", true)
++    /**
++     * Update 479 (B3, master request): how much status bar there is while it's on (Appearance › Status bar; "Hidden" is the
++     * old switch turned off). Follow layout: each layout's choice (HomeLayout.statusFollowsMinimal); Always: the full bar;
++     * Minimal: the clock and the battery only. A new install starts on Follow layout; an existing one keeps its full bar
++     * (set once at start, never over a choice).
++     */
++    enum class StatusMode(val label: String) { FOLLOW("Follow layout"), ALWAYS("Always"), MINIMAL("Minimal") }
++    val statusMode = EnumPref("status_mode", StatusMode.FOLLOW, StatusMode.values())
+     val dashStatus = BoolPref("dash_status", true)
+     /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
+     val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())
+diff --git a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
+index 976dac9..8f72be1 100644
+--- a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
++++ b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
+@@ -244,12 +244,35 @@ object RomScanner {
+      * Every ROM folder at once. A game found through two folders (one inside
+      * the other) counts once. Folders that can't be read are reported.
+      */
++    /**
++     * Update 478 (D1): one GameNative frontend export — `<Game title>.steam` whose whole content is the Steam AppID as a
++     * decimal number (GameNative's FrontendSyncManager: `file.writeText(appId.toString())`). A PC / Steam game (platform
++     * "Steam", key "steam:<id>" — the same game a manual or folder import of that AppID gives, so a rescan never doubles
++     * it) started through GameNative's own LAUNCH_GAME intent like the others. Null for anything that isn't a plain
++     * positive AppID (empty, text, a huge or binary file).
++     */
++    internal fun gameNativeExport(file: File): Game? {
++        if (!file.isFile || file.length() !in 1..64) return null
++        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
++        val id = parseSteamExport(text) ?: return null
++        val title = file.nameWithoutExtension.trim().ifBlank { "Steam game $id" }
++        return Game(name = title, platform = "Steam", hue = (("steam$id").hashCode() and 0x7fffffff) % 360,
++            sourceType = SourceType.STEAM, steamAppId = id)
++    }
++
++    /** The AppID of a `.steam` export's text: digits only (a BOM / whitespace / newline round it allowed), 1..Int.MAX. */
++    internal fun parseSteamExport(text: String): Int? {
++        val t = text.removePrefix("\uFEFF").trim()
++        if (t.isEmpty() || t.length > 10 || !t.all { it in '0'..'9' }) return null
++        return t.toLongOrNull()?.takeIf { it in 1..Int.MAX_VALUE }?.toInt()
++    }
++
+     fun scanAll(rootPaths: List<String>, deep: Boolean): ScanResult {
+         val results = rootPaths.map { scan(it, deep) }
+         // Update 177: one file reached two ways (/sdcard and /storage/emulated/0, "ROMs/psx" and "ROMs/PSX" — Android's
+         // shared storage and SD cards don't tell capitals apart — or one ROM folder inside another) counts once.
+         fun same(path: String?): String = path?.let { p -> (runCatching { File(p).canonicalPath }.getOrNull() ?: p).lowercase() } ?: ""
+-        val games = results.flatMap { it.games }.distinctBy { same(it.romPath) }.sortedBy { it.name }
++        val games = results.flatMap { it.games }.distinctBy { if (it.romPath == null) it.stableKey else same(it.romPath) }.sortedBy { it.name }
+         // The same game (console + name) in two folders: both stay listed, but it's reported.
+         val twice = games.groupBy { it.platform to it.name.lowercase() }.values.filter { it.size > 1 }.flatMap { list ->
+             list.drop(1).map { Duplicate(list[0].name, list[0].platform, list[0].romPath.orEmpty(), it.romPath.orEmpty(), sameFolder = false) }
+@@ -369,6 +392,7 @@ object RomScanner {
+         val knownFiles = mutableListOf<File>()
+         val m3uFiles = mutableListOf<File>()
+         val skipped = mutableSetOf<String>()
++        val steamFiles = mutableListOf<File>()
+         // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
+         // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
+         val folderGames = mutableListOf<File>()
+@@ -385,6 +409,9 @@ object RomScanner {
+                 when {
+                     isTrashedOrHiddenName(file.name) -> {}
+                     ext == "m3u" -> m3uFiles += file
++                    // (Update 478, D1: GameNative's frontend export — "<Game>.steam" holding the Steam AppID — is a PC /
++                    // Steam game handed to GameNative, whatever folder it sits in; one that isn't a valid AppID is skipped.)
++                    ext == "steam" -> steamFiles += file
+                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
+                     // used to count as one of its games.)
+                     ext in notGames -> {}
+@@ -398,6 +425,7 @@ object RomScanner {
+             }
+ 
+         val games = mutableListOf<Game>()
++        steamFiles.forEach { f -> gameNativeExport(f)?.let { games += it } }
+         folderGames.forEach { dir ->
+             val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
+             games += Game(
+diff --git a/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt b/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt
+index 07d1ef9..11ce125 100644
+--- a/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt
++++ b/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt
+@@ -164,6 +164,10 @@ object SteamShortcutImport {
+                     )
+                 }
+             }
++            // (Update 478, D1: GameNative's frontend export — the file's whole content is the AppID.)
++            lower.endsWith(".steam") -> if (n.size in 1..64) readText(n, 64)?.let { t ->
++                RomScanner.parseSteamExport(t)?.let { found += Found(base, it, "${n.name} (GameNative export)", P_URL) }
++            }
+             lower.endsWith(".url") -> readText(n, MAX_TEXT_BYTES)?.let { t ->
+                 val line = t.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("URL=", true) } ?: return
+                 addRunId(line, base, "${n.name} (Steam shortcut)", P_URL, found, nonSteam)
 diff --git a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt b/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
 index 8f84258..812e91c 100644
 --- a/app/src/main/java/com/shelf/launcher/device/FrameWatch.kt
@@ -83,6 +237,22 @@ index 8f84258..812e91c 100644
          ignoreUntil = SystemClock.uptimeMillis() + GRACE_MS
          val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
          listener = l
+diff --git a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
+index 707c345..9c8d5ad 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
+@@ -1456,7 +1456,10 @@ private object CaseDraw {
+             shaderMatrix.postTranslate(0f, floorY)
+             fadeDown.setLocalMatrix(shaderMatrix)
+             fade.shader = fadeDown
+-            c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, reflBottom, fade)
++            // (Update 478, E5: the mask runs past the layer on every side — the layer's bounds round out to whole pixels, and
++            // its last partly-covered row kept the mirror image at full strength: a bright line where the reflection ends
++            // (Odin, Case flow). Past the fade's end the gradient is clear, so those rows are emptied too.)
++            c.drawRect(cx - w * 2f - 2f, floorY - d - 2f, cx + w * 2f + 2f, reflBottom + 4f, fade)
+             fade.shader = null
+             c.restoreToCount(l)
+         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 index 11b8faf..501b41c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
@@ -549,6 +719,72 @@ index 06392a7..a195039 100644
          // The page: only this part changes when ◀ ▶ are pressed.
          AnimatedContent(
              targetState = p,
+diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
+index 1ef0d90..6baa0b9 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
+@@ -158,7 +158,9 @@ internal fun StatusBar(
+     look0: StatusLook = PlainStatusLook,
+     /** QA pass 3 (D34): the layout to dress it for — the look is then made HERE, in the bar's own scope (made by the
+      *  caller, its accent was read in the home screen's scope and the colour glide re-composed the whole screen). */
+-    lookLayout: com.shelf.launcher.data.HomeLayout? = null
++    lookLayout: com.shelf.launcher.data.HomeLayout? = null,
++    /** Update 479 (B3): the small bar — the clock and the battery only (Settings › Status bar › Minimal, or the layout's choice). */
++    minimal: Boolean = false
+ ) {
+     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
+     val look = animatedLook(if (lookLayout != null) statusLookFor(lookLayout, paleBehind) else look0)
+@@ -232,12 +234,12 @@ internal fun StatusBar(
+                 Sep()
+             }
+             // Controllers and other devices.
+-            if (accessories.isNotEmpty()) {
++            if (accessories.isNotEmpty() && !minimal) {
+                 Group { AccessoryChips(accessories, maxChips, ink) { showDevices = true } }
+                 Sep()
+             }
+             // Search, the trophy from the last game, notifications.
+-            Group {
++            if (!minimal) Group {
+                 Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
+                 if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
+                 if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
+@@ -249,10 +251,10 @@ internal fun StatusBar(
+                     )
+                 }
+             }
+-            Sep()
++            if (!minimal) Sep()
+             // Wi-Fi and the battery.
+             Group {
+-                Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
++                if (!minimal) Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
+                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                     // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
+                     if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
+@@ -264,11 +266,11 @@ internal fun StatusBar(
+                     if (bar.showPercent && !(compact && voltGauge)) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
+                 }
+             }
+-            Sep()
++            if (!minimal) Sep()
+             // You: RetroAchievements points (wide screens) and your picture. Falls back to the profile's initial, so the
+             // bar never looks empty.
+             val avatarUrl = profilePictureUrl(RaBadges.mediaUrl(raProfile?.UserPic))
+-            Group {
++            if (!minimal) Group {
+                 if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
+                     Text(
+                         "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+@@ -354,7 +356,7 @@ internal fun StatusBar(
+         )
+         // With the player there it takes (nearly) all the spare room; the readouts get the rest.
+         Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
+-            if (progress.isNotEmpty() && !(nowPlaying != null && widthDp < 600)) {
++            if (progress.isNotEmpty() && !minimal && !(nowPlaying != null && widthDp < 600)) {
+                 Text(
+                     modifier = Modifier.tapOnly(onProgressClick),
+                     text = 
 diff --git a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
 index 2f264a2..c4d07e0 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
@@ -608,10 +844,18 @@ index 2f264a2..c4d07e0 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..55ee180 100644
+index eca8853..1bcf4f8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-@@ -370,7 +370,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
+ import com.shelf.launcher.data.categoryBarHere
+ import kotlinx.coroutines.flow.flowOn
+ import com.shelf.launcher.data.statusOn
++import com.shelf.launcher.data.statusMinimal
+ import com.shelf.launcher.data.legendOn
+ import com.shelf.launcher.data.shownIn
+ import com.shelf.launcher.data.cardArtFor
+@@ -370,7 +371,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // (Update 423: the QA stand-in library for preview pictures, display only — DemoLibrary.kt.)
      val demoOn = DemoLibrary.on.value
      val demoArt = DemoLibrary.artDir.value
@@ -621,7 +865,7 @@ index eca8853..55ee180 100644
      // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
      // Update 422: Settings › Library › ES-DE artwork works through the view model.
      androidx.compose.runtime.SideEffect {
-@@ -1071,6 +1072,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1071,6 +1073,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          android.util.Log.e("VoltcapTest", "game '$q' -> ${g?.name ?: "NO MATCH"}")
          if (g == null) { TestHooks.game.value = null; return@LaunchedEffect }
          closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
@@ -631,6 +875,43 @@ index eca8853..55ee180 100644
          viewModel.setSearchQuery("")
          viewModel.setPlatformFilter(g.platform)
          kotlinx.coroutines.delay(400)
+@@ -2807,6 +2812,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+             paleBehind = paleBehind,
+             // (Update 333: dressed for the layout — StatusLooks.)
+             lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
++            minimal = state.appearance.statusMinimal, // (Update 479, B3)
+             modifier = modifier,
+             menuSlot = menuSlot,
+             onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
+@@ -3368,7 +3374,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                 !(tileLayout && TileSwitch.plain)
+         }
+         // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
+-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
++        // (Update 478, B2: also paused — where it is, nothing restarts — while an opaque full-screen page lies over the whole
++        // home: the category screen, a guide / manual, the art and screenshot viewers. It kept decoding unseen. Panels that
++        // leave the home showing round them (Settings, drawer, popups) are not "covered"; the drawer / Settings hold is 456's.)
++        val clipCovered = categoryScreenOpen || guideForGame != null || manualFor != null || artViewer != null || viewingShots != null
++        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || clipCovered || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
+         // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
+         if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
+ 
+@@ -4063,9 +4073,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                 statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
+                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
+                     .padding(
+-                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree, bottom = if (legendShown) 28.dp else 8.dp,
++                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree,
++                        // (Update 479, B1: the full-bleed homes — Cinema, Arctic — run to all four edges; they keep their own
++                        // gutters for words and rows. Only the legend's strip stays reserved.)
++                        bottom = if (legendShown) 28.dp else if (state.appearance.homeLayout.fullBleed()) 0.dp else 8.dp,
+                         // The Side menu's panel runs against the left edge.
+-                        start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE) 0.dp else 12.dp, end = 12.dp
++                        start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE || state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp,
++                        end = if (state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp
+                     )
+             )
+         } else if (tvLayout) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
 index 897cce8..35c10a6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
@@ -1013,6 +1294,74 @@ index 418ffc1..a3111b1 100644
 +    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
+index f580972..27092d0 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
+@@ -4254,15 +4254,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+                 modifier = m
+             )
+         }
++        // Update 479 (B3): one choice — Follow layout / Always / Minimal / Hidden ("Hidden" is the old switch turned off).
+         item { m ->
+-            SwitchRow(
+-                icon = Icons.Filled.Palette,
+-                title = "Status bar",
+-                subtitle = "Clock, battery, Wi-Fi, search and your profile along the top.",
+-                checked = appearance.showStatusBar,
+-                onChange = { onChange(appearance.copy(showStatusBar = it)) },
+-                modifier = m
+-            )
++            Box(m) { ShelfCard {
++                val F = com.shelf.launcher.data.Features
++                val modes = arrayOf("Follow layout", "Always", "Minimal", "Hidden")
++                val now = if (!appearance.showStatusBar) "Hidden" else F.statusMode.state.value.label
++                RowChoice("Status bar", modes, now, { it }) { pick ->
++                    if (pick == "Hidden") onChange(appearance.copy(showStatusBar = false))
++                    else {
++                        F.statusMode.value = com.shelf.launcher.data.Features.StatusMode.values().first { it.label == pick }
++                        if (!appearance.showStatusBar) onChange(appearance.copy(showStatusBar = true))
++                    }
++                }
++                MutedNote(
++                    when (now) {
++                        "Follow layout" -> "Each layout decides: the full bar (clock, battery, Wi-Fi, search, your profile) on most, just the clock and battery over Cinema's and Arctic's pictures, and none where a layout has its own bar."
++                        "Always" -> "The full bar on every layout that doesn't draw its own: clock, battery, Wi-Fi, search and your profile."
++                        "Minimal" -> "Just the clock and the battery, everywhere."
++                        else -> "No status bar. The layouts' own clocks and bars stay."
++                    }
++                )
++            } }
+         }
+         // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
+         item { m ->
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
+index e6215a3..2ab6b88 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
+@@ -115,7 +115,7 @@ fun SteamImportDialog(
+     ) {
+         ShelfCard {
+             MutedNote(
+-                "Choose a folder holding .url or .desktop shortcuts, a Steam library's steamapps folder " +
++                "Choose a folder holding GameNative .steam exports, .url or .desktop shortcuts, a Steam library's steamapps folder " +
+                     "(appmanifest files), a userdata config folder (shortcuts.vdf), or exported shortcut files. " +
+                     "Subfolders are searched up to 3 levels deep."
+             )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
+index 672cfd1..2e7fdec 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
+@@ -1411,6 +1411,9 @@ internal val LocalStyleTopInset = androidx.compose.runtime.compositionLocalOf {
+ /** Cinema and Arctic hub: the art / rail run to the top of the screen, the status bar floats over them (no reserved band). */
+ internal fun HomeLayout.drawsUnderStatusBar(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
+ 
++/** Update 479 (B1): homes whose art runs to every edge of the screen (no 12 dp side / 8 dp bottom gutter around them). */
++internal fun HomeLayout.fullBleed(): Boolean = drawsUnderStatusBar()
++
+ /**
+  * What a style home draws across the WHOLE screen, behind the status bar and the games (the home screen puts it
+  * right over the background): the game's art (Side menu / Spotlight / Icon bar, their option), Spotlight's shade,
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
 index 977fe34..430f9da 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
@@ -1692,6 +2041,50 @@ index 00bae26..02e3b51 100644
  internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
  
  // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
+diff --git a/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt b/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
+new file mode 100644
+index 0000000..ba15098
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
+@@ -0,0 +1,38 @@
++package com.shelf.launcher.data
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 478 (D1): GameNative's frontend `.steam` exports become PC / Steam games during the library scan. */
++class GameNative478Test {
++    @Test fun anExportHoldsJustTheAppId() {
++        assertEquals(620, RomScanner.parseSteamExport("620"))
++        assertEquals(620, RomScanner.parseSteamExport("620\n"))
++        assertEquals(620, RomScanner.parseSteamExport("﻿ 620 \r\n"))
++        assertNull(RomScanner.parseSteamExport(""))
++        assertNull(RomScanner.parseSteamExport("0"))
++        assertNull(RomScanner.parseSteamExport("-5"))
++        assertNull(RomScanner.parseSteamExport("abc"))
++        assertNull(RomScanner.parseSteamExport("620 Portal"))
++        assertNull(RomScanner.parseSteamExport("99999999999"))
++    }
++
++    @Test fun aScanFindsExportsAsSteamGamesOnceAndSkipsBadOnes() {
++        val root = kotlin.io.path.createTempDirectory("gn478").toFile()
++        try {
++            File(root, "PC").mkdirs()
++            File(root, "PC/Half-Life 2.steam").writeText("220")
++            File(root, "PC/Portal 2.steam").writeText("620")
++            File(root, "PC/broken.steam").writeText("not an id")
++            File(root, "Copy").mkdirs()
++            File(root, "Copy/Portal 2.steam").writeText("620")   // the same AppID exported twice
++            val games = RomScanner.scanAll(listOf(root.absolutePath), deep = false).games.filter { it.sourceType == SourceType.STEAM }
++            assertEquals(listOf("Half-Life 2", "Portal 2"), games.map { it.name })
++            assertTrue(games.all { it.platform == "Steam" && it.romPath == null })
++            assertEquals(listOf("steam:220", "steam:620"), games.map { it.stableKey })
++        } finally { root.deleteRecursively() }
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt
 new file mode 100644
 index 0000000..61da863
@@ -1759,10 +2152,10 @@ index 0000000..61da863
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
 new file mode 100644
-index 0000000..9f0f54a
+index 0000000..13e9ca0
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,115 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertFalse
@@ -1832,6 +2225,51 @@ index 0000000..9f0f54a
 +        assertTrue(src("WinScenesHomes.kt").contains("if (readable) Modifier.sceneReadable(s, ctx.accent) else Modifier"))
 +        assertTrue(src("GameWindow.kt").contains("Modifier.heightIn(min = 24.dp).clip(shape)"))
 +    }
++
++    // E5 (owner + Odin cf479): a bright 1 px line where Case flow's reflection ends — the fade mask stopped at the
++    // layer's fractional bottom, the rounded-out last row kept the mirror image.
++    @Test fun caseReflectionMaskCoversTheWholeLayer() {
++        val s = src("Case3D.kt")
++        assertTrue(s.contains("c.drawRect(cx - w * 2f - 2f, floorY - d - 2f, cx + w * 2f + 2f, reflBottom + 4f, fade)"))
++    }
++
++    // B2: the backdrop clip pauses (keeps its place) under an opaque full-screen page, not under panels with edges.
++    @Test fun backdropClipPausesOnlyUnderOpaquePages() {
++        val s = src("LauncherScreen.kt")
++        assertTrue(s.contains("val clipCovered = categoryScreenOpen || guideForGame != null || manualFor != null || artViewer != null || viewingShots != null"))
++        assertFalse(Regex("val clipCovered = [^\\n]*(showSettings|showAppDrawer|showMenu)").containsMatchIn(s))
++    }
++
++    // B1: Cinema and Arctic run to every screen edge (no 12 dp side / 8 dp bottom gutter); the others keep theirs.
++    @Test fun fullBleedHomesHaveNoGutter() {
++        val h = src("StyleHomes.kt")
++        assertTrue(h.contains("internal fun HomeLayout.fullBleed(): Boolean = drawsUnderStatusBar()"))
++        assertTrue(h.contains("this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC"))
++        val s = src("LauncherScreen.kt")
++        assertTrue(s.contains("bottom = if (legendShown) 28.dp else if (state.appearance.homeLayout.fullBleed()) 0.dp else 8.dp"))
++        assertTrue(s.contains("end = if (state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp"))
++    }
++
++    private fun data(name: String): String = listOf(
++        File("../src_copy/data/$name"), File("src/main/java/com/shelf/launcher/data/$name"), File("app/src/main/java/com/shelf/launcher/data/$name"),
++    ).first { it.exists() }.readText()
++
++    // B3: status bar Follow layout / Always / Minimal / Hidden; existing installs keep the full bar, new ones follow.
++    @Test fun statusBarModes() {
++        val f = data("Features.kt")
++        assertTrue(f.contains("enum class StatusMode(val label: String) { FOLLOW(\"Follow layout\"), ALWAYS(\"Always\"), MINIMAL(\"Minimal\") }"))
++        assertTrue(f.contains("if (!p.contains(\"status_mode\")) statusMode.value = if (FirstRun.isDone(context.applicationContext)) StatusMode.ALWAYS else StatusMode.FOLLOW"))
++        val a = data("AppearanceStore.kt")
++        assertTrue(a.contains("Features.StatusMode.FOLLOW -> homeLayout.statusFollowsMinimal()"))
++        val h = src("HomeChrome.kt")
++        // Minimal keeps the clock and the battery; search, Wi-Fi, devices, profile and progress go.
++        assertTrue(h.contains("if (accessories.isNotEmpty() && !minimal)"))
++        assertTrue(h.contains("if (!minimal) Group {\n                Icon(Icons.Filled.Search"))
++        assertTrue(h.contains("if (!minimal) Icon(if (wifiConnected)"))
++        assertTrue(h.contains("if (progress.isNotEmpty() && !minimal"))
++        assertTrue(src("LauncherScreen.kt").contains("minimal = state.appearance.statusMinimal"))
++        assertTrue(src("SettingsDialog.kt").contains("arrayOf(\"Follow layout\", \"Always\", \"Minimal\", \"Hidden\")"))
++    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
 new file mode 100644
@@ -1865,6 +2303,21 @@ index 0000000..aa0ba08
 +        assertTrue(f.readText().contains("setKeyRootContent {"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt b/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt
+index 1d69321..7125b5e 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/PanelHold456Test.kt
+@@ -20,7 +20,9 @@ class PanelHold456Test {
+         assertTrue(s.contains("HomeIdle.rest || panelHold), //"))
+         assertTrue(s.contains("LocalScenePanelHold provides panelHold"))
+         // Every home clip pauses (keeps its place) rather than being removed.
+-        assertEquals(2, Regex("HomeIdle.rest \\|\\| panelHold \\|\\| \\(com.shelf.launcher.data.Features.clipIdlePause").findAll(s).count())
++        // (Update 478, B2: the backdrop clip also pauses under an opaque full-screen page — clipCovered.)
++        assertEquals(2, Regex("HomeIdle.rest \\|\\| panelHold( \\|\\| clipCovered)? \\|\\| \\(com.shelf.launcher.data.Features.clipIdlePause").findAll(s).count())
++        assertTrue(s.contains("val clipCovered = categoryScreenOpen || guideForGame != null || manualFor != null || artViewer != null || viewingShots != null"))
+     }
+ 
+     @Test fun showcaseMonitorClipPausedNotDropped() {
 diff --git a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt b/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
 index 249059f..f649ed0 100644
 --- a/app/src/test/java/com/shelf/launcher/ui/PopupMore451Test.kt
