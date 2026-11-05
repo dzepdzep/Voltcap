@@ -1,3 +1,27 @@
+# Update 480 (5 Nov 2026) — checkpoint 3: A5 logos, D257 Tile home, B3 Settings test, B4 motion level, B2 / D1 limits
+
+**Read first:** `ROADMAP_070.md`. Staging patch = **qa-0.6.68-480d** (APK 8d894a20…, Odin only; KONKR still off USB, so
+every KONKR line is NOT TESTED). Owner decisions of 5 Nov applied (GameNative launch allowed, Tiles improve, logos).
+- **A5 (D275) — PARTIAL:** the "black lines" are colour logos drawn in ONE colour (a tint keeps only the outline: GBA's
+  wordmark a blob, Sega CD's plate a solid bar). Every one-colour draw now uses the plain icons (lettering kept): PlatformLogo
+  (tint / black → white), Channel grid corner, Cross menu cut-outs, Cube, Cube hub, Pocket classic / ribbon; a very wide
+  wordmark (GBA 8.5 : 1) in a squarish slot draws the stacked ES-DE logo, chosen at draw time. Checked by rendering the assets;
+  **on screen NOT TESTED** (the Odin has no GBA / Sega CD games) → KONKR. Long category names / counts / carousel: not started.
+- **D257 Tile home — improved (Odin):** in the middle with no round buttons, tiles 14 % bigger (still ≥ 4 across) and a facts
+  strip under them (console, time played, last played, achievements) in the tile home's rounded pills, centred with the tiles.
+  Empty bottom 45 % → ~24 %; long names and the popup PASS. Off: Layout options › Tile home › Game facts under the tiles.
+- **B3:** the Status bar chooser reached and all four modes picked with the controller on the Odin; put back to Always.
+  QA note: during that walk one A landed on Status bar details › Clock and turned it off — turned back on and checked; the
+  QA snapshot does not cover the status-bar details (StatusBarPrefs), so walks there must check them by hand.
+- **B4 — PARTIAL:** Settings › Home › Animations › Motion: Off / Subtle / Normal (default) / Expressive = one motion scale for
+  every Compose window and dialog (root recomposer), each keeping its own animation; sliding names keep their speed; Android's
+  "Remove animations" wins. Odin: Off = window in one frame, Subtle shorter, fast A/B ends clean. Expressive not measurable.
+- **B2:** the hero carousel's clip pauses too. Measuring is **blocked on the Odin** — its library has no gameplay clips.
+- **D1:** real GameNative launch **blocked** — GameNative on the Odin is not signed in (no games); signing in is the owner's.
+- Device: Odin back on RC f79aa2a7; RC settings snapshot rc480o byte-identical to rc479o; hooks removed; GameNative closed.
+- **Next action:** E3 / E4 (3D case prints cropped, spine widths), B5, C1 / C2 colour roles; KONKR when on USB: A5 logos,
+  B2 measurement, D257 / B3 / B4 re-check, c478_k.sh.
+
 # Update 479 (5 Nov 2026) — master request v0.7.0, checkpoint 2: B1 Cinema edges, B2, B3 status bar, D1 GameNative, E5
 
 **Read first:** `ROADMAP_070.md`. Base main f0dfe14; staging patch = **qa-0.6.68-479c** (APK 8d70eef5…, Odin only). KONKR

@@ -3056,7 +3056,7 @@
    "rule": "R26 / rule 11 (readability)",
    "severity": "medium",
    "kind": "recommendation (owner decision)",
-   "status": "not changed: subjective (light design) - stop for review | update 477: deferred by the owner (recorded only)",
+   "status": "improved in staging (480d, owner approved): bigger tiles + facts strip when no round buttons; Odin PASS (normal / long names, popup); KONKR NOT TESTED",
    "found": "2026-11-04 external review (ChatGPT) of PDF volumes 1-2, update 475",
    "where": "Tiles popup",
    "evidence": [
@@ -3337,6 +3337,22 @@
    "root_cause": "DST_IN fade mask stopped short of the reflection layer's edge",
    "fix": "mask drawn 2 px past the layer on every side",
    "verified": "e479b CASEFLOW (Odin)"
+  },
+  {
+   "id": "D275",
+   "title": "GBA / Sega CD category logos drawn as a blob / solid bar ('black lines') wherever a logo is shown in one colour",
+   "rule": "R25",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (480d) - offline render check; on-device NOT TESTED (Odin has no GBA / Sega CD games; KONKR)",
+   "found": "owner (master request A5)",
+   "where": "PlatformLogo (tint / black-to-white), Pocket classic / ribbon, Channel grid corner, Cross menu cut-outs, Cube, Cube hub",
+   "evidence": [
+    "platform_logos_png GBA / SegaCD tinted -> silhouette (tint.png)"
+   ],
+   "root_cause": "ColorFilter.tint(SrcIn) on a full-colour logo keeps only its alpha outline: GBA's outlined wordmark becomes a blob, Sega CD's opaque plate a bar; dark ink on pale = black lines",
+   "fix": "one-colour draws use the plain icons (platform_icons_mono, lettering kept); a very wide wordmark in a squarish slot draws ES-DE's stacked logo (picked at draw time)",
+   "verified": "offline render; device pending"
   }
  ]
 }

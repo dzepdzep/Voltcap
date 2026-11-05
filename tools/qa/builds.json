@@ -228,9 +228,20 @@
    "version_code": 73,
    "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
    "base_commit": "f0dfe14",
-   "patch_sha256": "625567e7eb4a6b7c5328151cd5931cf37f80ba76fee389454e6250b72309505a",
+   "patch_sha256": "",
    "tree_hash": "",
-   "note": "update 479: 479b + B3 status bar Follow layout / Always / Minimal / Hidden (existing installs ALWAYS, new FOLLOW); Odin only"
+   "note": "update 479: 479b + B3 status bar Follow layout / Always / Minimal / Hidden (existing installs ALWAYS, new FOLLOW); Odin only; patch superseded by 480d"
+  },
+  {
+   "id": "qa-0.6.68-480d",
+   "apk_sha256": "8d894a205ad2eec83f1a1f28ba1ac725410eef873fbf29e5c8fe03890385cd91",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "00bb53423a8c080dc4525aec8ba8a9aef3ef9e95eb15a3bc9fead1de09f496a0",
+   "tree_hash": "",
+   "note": "update 480: 479c + A5 one-colour logos use the plain icon / stacked GBA logo, D257 Tile home room (bigger tiles + facts strip), B2 hero clip pause, B4 motion level (root MotionDurationScale); Odin only (480a-c intermediate, not archived)"
   }
  ]
 }

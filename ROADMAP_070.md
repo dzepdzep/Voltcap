@@ -21,16 +21,16 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 | A2 | D268 Terminal 6 px preview jump (Odin) | DONE (Odin) | cursor glyph changed the line height; 478a o478T/U PASS; KONKR NOT TESTED |
 | A3 | Other T3 failures: Blades harness state, Cinema 18 px control, first-A timing, missing evidence (Tiles), wrong test game | PARTIAL | Blades hook, Cinema keys / empty stop (D272), chips 24 dp, picker-first-A harness fixed; Tiles evidence + KONKR re-run left |
 | A4 | Pocket Ribbon dual-screen: no duplicate title on the upper screen (D270); single-screen keeps its title | PARTIAL | code done; two-screen check needs the Thor |
-| A5 | Category logos: GBA / Sega CD as black lines, sizes; long category names off screen; stale headings, counts, carousel jumps, picker vs L2/R2 | NOT STARTED | |
+| A5 | Category logos: GBA / Sega CD as black lines, sizes; long category names off screen; stale headings, counts, carousel jumps, picker vs L2/R2 | PARTIAL | 480d: cause found (colour logos tinted to one colour = silhouette; D275) — plain icons for one-colour draws everywhere, stacked GBA logo in squarish slots; offline render only — Odin has no GBA / Sega CD games → KONKR check. Long names / headings / counts / carousel / picker NOT STARTED |
 | A6 | Proven artwork / scrolling regressions; no other game's art flashing | NOT STARTED | |
 
 ## Batch B — layout and performance foundations (P2)
 | id | item | status |
 |---|---|---|
 | B1 | Full-screen / unused space audit of 53 layouts (Netflix-like Cinema edges, padding, status-bar space) via shared sizing helpers | PARTIAL — cause: every style home got a 12 dp side / 8 dp bottom gutter (Odin 28 / 18 px); `HomeLayout.fullBleed()` (Cinema, Arctic) drops it; Cinema edge-to-edge verified on Odin (479b). 53-layout still sweep e479b + `edgeaudit.py`: remaining flags are deliberate stages / frames (Case flow room, Terminal CRT, Magazine desk, Pocket screens) except **Tiles: bottom ~45 % empty** (= D257, owner review). KONKR NOT TESTED |
-| B2 | Background video suspended only when fully covered by opaque UI (not drawer / Settings dim edges); measured CPU / GPU / frames / memory / resume | PARTIAL — backdrop clip pauses under category screen / guide / manual / art viewer / screenshots (479a, unit test); measurement NOT DONE |
-| B3 | Adaptive status bar: Follow layout (default for new installs) / Always / Minimal / Hidden; per-layout integration; existing prefs kept | PARTIAL — 479c: `Features.statusMode` + Hidden = old switch off; existing install → ALWAYS (seen on Odin), new → FOLLOW; Minimal = clock + battery; Follow = minimal on Cinema / Arctic, none where a layout has its own bar, full elsewhere. Odin: Follow/Cinema, Follow/Classic, Minimal/Classic PASS. Settings chooser not checked on screen; KONKR NOT TESTED |
-| B4 | Shared animation system (Off / Subtle / Normal / Expressive, reduced motion) for popups, Settings, R1, categories, drawer, profile picker, Details, More/Less, dialogs; input safe during animations | NOT STARTED |
+| B2 | Background video suspended only when fully covered by opaque UI (not drawer / Settings dim edges); measured CPU / GPU / frames / memory / resume | PARTIAL — backdrop + hero carousel clips pause under category screen / guide / manual / art viewer / screenshots (479a / 480d, unit tests). Measurement BLOCKED on the Odin: its library has no gameplay clips (0 clip files; no app decoding seen) → KONKR. Side finding: the category screen itself draws ~45 frames/s with ~46 % of a core on the Odin (slideshow) |
+| B3 | Adaptive status bar: Follow layout (default for new installs) / Always / Minimal / Hidden; per-layout integration; existing prefs kept | PARTIAL — 479c: `Features.statusMode` + Hidden = old switch off; existing install → ALWAYS (seen on Odin), new → FOLLOW; Minimal = clock + battery; Follow = minimal on Cinema / Arctic, none where a layout has its own bar, full elsewhere. Odin: Follow/Cinema, Follow/Classic, Minimal/Classic PASS. 480d Odin: chooser reached and all four picked with the controller (text follows), Hidden → Always restored. KONKR NOT TESTED |
+| B4 | Shared animation system (Off / Subtle / Normal / Expressive, reduced motion) for popups, Settings, R1, categories, drawer, profile picker, Details, More/Less, dialogs; input safe during animations | PARTIAL — 480d: Settings › Home › Animations › Motion = the root recomposer's MotionDurationScale (every Compose window / dialog; layouts keep their own designs; sliding names keep their speed; Android's Remove animations wins). Odin: Off opens the window in one frame, Subtle shorter than Normal, fast A/B and A/B/A/B end clean; Expressive's longer run not resolvable in screen recordings. Per-component curves (springs for Expressive) NOT DONE |
 | B5 | Scrolling / layout stability audit (rows, titles, covers, late labels, stale art, placeholders) incl. D137 Case stacks; keep 13 arrangements | NOT STARTED |
 
 ## Batch C — personalisation (P3)
@@ -42,7 +42,7 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 ## Batch D — functional integrations (P4)
 | id | item | status |
 |---|---|---|
-| D1 | GameNative `.steam` files → PC / Steam category, App ID validation, titles / art, no duplicates, real launch verified | PARTIAL — scan + folder import + dedupe (unit tests); launch intent confirmed against GameNative 1.2.0 on Odin; real launch NOT TESTED (needs owner OK to start a game) |
+| D1 | GameNative `.steam` files → PC / Steam category, App ID validation, titles / art, no duplicates, real launch verified | PARTIAL — scan + folder import + dedupe (unit tests); intent confirmed against GameNative 1.2.0. Real launch BLOCKED: GameNative on the Odin is not signed in (login screen, no games installed) — signing in is the owner's |
 | D2 | Dual-screen lifecycle (lower UI exits when an app opens up top; "Probably still open" stale; focus to wrong screen) | NOT STARTED (Thor needed) |
 | D3 | Independent brightness per screen where Android allows | NOT STARTED (Thor needed) |
 | D4 | FPS / frame-time / jank / CPU / GPU / battery / thermal / AutoTDP accuracy audit (no risky power tests without approval) | NOT STARTED |
@@ -56,7 +56,7 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 | E4 | Spine widths per case type vs real measurements (thickness / UV / texture scale), consistent in Inspect and layouts | NOT STARTED |
 | E5 | Case Flow reflection: bright strip / hard edge at the fade end | DONE (Odin) — cause: fade mask stopped short of the layer (Odin cf479: 1 px lines, row spike 14.3 / 10.8); mask extended (479b): no spike > 2.4 (texture noise) in e479b CASEFLOW. KONKR NOT TESTED |
 | E6 | Controller contract re-check (Select = Settings, R1, L2/R2, B closes, Wii preview popup), touch parity | NOT STARTED |
-| E7 | Owner-decision visuals: D257 Tiles, D263 Cover details story, D265 Twin paging, popup hierarchy, tiny controls, secondary buttons | NOT STARTED (owner review) |
+| E7 | Owner-decision visuals: D257 Tiles, D263 Cover details story, D265 Twin paging, popup hierarchy, tiny controls, secondary buttons | PARTIAL — D257 done in 480d (owner approved): in the middle without round buttons, tiles +14 % and a facts strip (console, time played, last played, achievements) centred with them; Odin: empty bottom 45 % → ~24 %, long names + popup PASS; option Layout options › Tile home › Game facts under the tiles. Others still owner review |
 
 ## QA (with every batch)
 T1 other styles, T2 font / display size (needs the owner to change system font scale), T3 remaining content, T4 pairwise

@@ -17,7 +17,7 @@ index 4e2bb89..54489b7 100644
              .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
          _uiState.update { current ->
 diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
-index e33cd4f..616ee1f 100644
+index e33cd4f..3ef5396 100644
 --- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
 +++ b/app/src/main/java/com/shelf/launcher/MainActivity.kt
 @@ -5,7 +5,7 @@ import android.content.ClipboardManager
@@ -71,6 +71,14 @@ index e33cd4f..616ee1f 100644
      }
  
      // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
+@@ -346,6 +356,7 @@ class MainActivity : ComponentActivity() {
+ 
+     override fun onResume() {
+         super.onResume()
++        com.shelf.launcher.ui.MotionLevel.refresh(this) // (Update 480, B4: Android's animation scale may have changed)
+         // Update 188: back in Voltcap (a game ended): its second screen lights up again.
+         com.shelf.launcher.ui.SecondDim.poke()
+         // Update 125: Sleep mode starts listening as soon as the system rights are there (they can come a moment after start-up).
 diff --git a/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt b/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt
 index 64a36d9..95de453 100644
 --- a/app/src/main/java/com/shelf/launcher/data/AppearanceStore.kt
@@ -111,7 +119,7 @@ index b8fdb4e..38d63e9 100644
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..f6037ad 100644
+index 55c357d..93ef1bd 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -123,10 +131,22 @@ index 55c357d..f6037ad 100644
          // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
          // default; it now starts on the games' own art (still pickable).
          if (!p.contains("category_art")) {
-@@ -1450,6 +1452,14 @@ object Features {
+@@ -281,6 +283,9 @@ object Features {
+     enum class PageAnim(val label: String) { SLIDE("Slide"), FADE("Fade"), NONE("Just change") }
+     // (Update 393: text / panels / rows appear in place by default — no rise, fade or slide-in. A value already saved is kept.)
+     val infoAnim = EnumPref("anim_info", InfoAnim.NONE, InfoAnim.values())
++    /** Update 480 (B4): how much motion every transition has (MotionLevel.kt). Normal = as designed, so nothing changes until picked. */
++    enum class Motion(val label: String) { OFF("Off"), SUBTLE("Subtle"), NORMAL("Normal"), EXPRESSIVE("Expressive") }
++    val motion = EnumPref("motion_level", Motion.NORMAL, Motion.values())
+     val pageAnim = EnumPref("anim_page", PageAnim.NONE, PageAnim.values())
+     val focusPop = IntPref("focus_pop", 100, 0..400)
+     val motionFocusedOnly = BoolPref("motion_focused_only", false)
+@@ -1450,6 +1455,16 @@ object Features {
      fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
++    /** Update 480 (D257): Tile home — the focused game's facts under the tiles when no round buttons are there (Layout options). */
++    val tileInfoStrip = BoolPref("tile_info_strip", true)
 +    /**
 +     * Update 479 (B3, master request): how much status bar there is while it's on (Appearance › Status bar; "Hidden" is the
 +     * old switch turned off). Follow layout: each layout's choice (HomeLayout.statusFollowsMinimal); Always: the full bar;
@@ -253,6 +273,19 @@ index 707c345..9c8d5ad 100644
              fade.shader = null
              c.restoreToCount(l)
          }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
+index 0bc1e0d..8955b99 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
+@@ -696,7 +696,7 @@ private fun HubSystems(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifier
+                         horizontalAlignment = Alignment.CenterHorizontally,
+                         verticalArrangement = Arrangement.Center
+                     ) {
+-                        if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.baked(context, p) }.getOrNull()
++                        if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.oneColour(context, p) }.getOrNull() // (480 A5: drawn white — the plain icon keeps the lettering)
+                         val logo = logos[p]
+                         if (logo != null) Image(logo, st.label, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxWidth().weight(1f))
+                         else Icon(Icons.Filled.SportsEsports, null, tint = Color.White, modifier = Modifier.size(34.dp).weight(1f))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 index 11b8faf..501b41c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
@@ -786,10 +819,18 @@ index 1ef0d90..6baa0b9 100644
                      modifier = Modifier.tapOnly(onProgressClick),
                      text = 
 diff --git a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
-index 2f264a2..c4d07e0 100644
+index 2f264a2..1faa8e3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
-@@ -14,3 +14,53 @@ internal object KeyInput {
+@@ -1,5 +1,7 @@
+ package com.shelf.launcher.ui
+ 
++import androidx.compose.ui.platform.createLifecycleAwareWindowRecomposer
++
+ /**
+  * Update 233 (#120): whether the last thing you did was a button press (not a touch). After a touch Android is in "touch
+  * mode": a window opened with A then showed no highlight, the first ◀ / ▶ only lit Play (Android eats that press to
+@@ -14,3 +16,58 @@ internal object KeyInput {
          if (lastWasKey && view.isInTouchMode) runCatching { view.requestFocusFromTouch() }
      }
  }
@@ -838,13 +879,18 @@ index 2f264a2..c4d07e0 100644
 +)
 +
 +/** Update 477 (D252): the activity's Compose content in [KeyRootComposeView] (ComponentActivity sets the view-tree owners). */
++@OptIn(androidx.compose.ui.InternalComposeUiApi::class)
 +internal fun androidx.activity.ComponentActivity.setKeyRootContent(c: @androidx.compose.runtime.Composable () -> Unit) {
 +    val v = KeyRootComposeView(this)
++    // Update 480 (B4): the root recomposer runs with Voltcap's own motion scale (MotionLevel) — every window and dialog
++    // composed under it shares it.
++    MotionLevel.refresh(this)
++    v.setParentCompositionContext(v.createLifecycleAwareWindowRecomposer(MotionLevel, lifecycle))
 +    v.setContent(c)
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..1bcf4f8 100644
+index eca8853..8f7c64e 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
@@ -896,7 +942,17 @@ index eca8853..1bcf4f8 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -4063,9 +4073,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3408,7 +3418,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
+                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
+                 },
+-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
++                // (Update 480, B2: the hero carousel's clip too pauses under an opaque full-screen page.)
++                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || clipCovered || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
+             )
+         }
+         // The status bar's real height (taller with the music player in it), so what sits under it
+@@ -4063,9 +4074,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                  modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                      .padding(
@@ -912,6 +968,181 @@ index eca8853..1bcf4f8 100644
                      )
              )
          } else if (tvLayout) {
+@@ -4175,8 +4190,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+             }
+             // Tile-style: tiles a little above the middle, round buttons under them.
+             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
+-            val buttonsUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
++            val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
+                 state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && !shortcutsFloating && tileShortcuts.isNotEmpty()
++            // Update 480 (D257): in the middle with no round buttons under the tiles, the room under them was left empty (~45 %
++            // of the screen): the tiles grow a little (LocalTileRoom) and the focused game's facts sit under them, centred
++            // with the tiles as one group (as the buttons are).
++            val tileInfoUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && !buttonsUnder0 && visibleGames.isNotEmpty() &&
++                com.shelf.launcher.data.Features.tileInfoStrip.state.value
++            val buttonsUnder = buttonsUnder0 || tileInfoUnder
+             Column(
+                 Modifier
+                     .align(
+@@ -4274,6 +4295,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                             // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
+                             val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
+                             TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
++                    androidx.compose.runtime.CompositionLocalProvider(LocalTileRoom provides (if (tileInfoUnder) 1.14f else 1f)) {
+                     TileHomeRow(
+                         lastPlayedAt = state.lastPlayedAt,
+                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
+@@ -4302,6 +4324,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+                         loopTick = state.loopTick, loopStep = state.loopStep
+                     )
+                     }
++                    }
++                    if (tileInfoUnder) {
++                        val g = visibleGames.getOrNull(state.focusedIndex.coerceIn(0, visibleGames.lastIndex))
++                        if (g != null) {
++                            val p = state.raProgress[g.stableKey]
++                            val total = p?.NumPossibleAchievements ?: 0
++                            Spacer(Modifier.height(18.dp * LocalTileScale.current))
++                            TileInfoStrip(
++                                g, LocalTitleOptions.current.console(g.platform), state.playtime[g.stableKey], state.lastPlayedAt[g.stableKey],
++                                if (total > 0) (p?.NumAchieved ?: 0) to total else null, tileNameAnchor
++                            )
++                        }
++                    }
+                 }
+                 if (tileCategoryBelow && showCats) {
+                     Spacer(Modifier.height(4.dp))
+diff --git a/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt b/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
+new file mode 100644
+index 0000000..f23c1b8
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
+@@ -0,0 +1,37 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.Features
++
++/**
++ * Update 480 (B4, master request: a shared animation system — Off / Subtle / Normal / Expressive, reduced motion).
++ *
++ * One clock speed for every Compose animation in Voltcap's windows: popups, Settings, R1, the category screen, the drawer,
++ * the profile picker, Details, More / Less and the dialogs all run their OWN animations (each layout keeps its own design),
++ * only faster, slower or not at all. It works as the [androidx.compose.ui.MotionDurationScale] of the root recomposer
++ * (setKeyRootContent), which the dialogs and popups share as child compositions.
++ *  - Off: transitions finish at once (0). Normal: as designed (1). Subtle: quicker (0.6). Expressive: more time (1.3).
++ *  - Android's "Remove animations" (animator duration scale 0) always wins: reduced motion means 0, whatever the level;
++ *    other system scales multiply.
++ *  - Sliding names (basicMarquee) keep their own fixed speed (Compose runs them outside this scale), so a long name still
++ *    slides to show the rest with motion Off. The layouts' ambient scenes run on their own clocks and are not touched.
++ */
++internal object MotionLevel : androidx.compose.ui.MotionDurationScale {
++    @Volatile private var system = 1f
++
++    fun factorFor(level: Features.Motion): Float = when (level) {
++        Features.Motion.OFF -> 0f
++        Features.Motion.SUBTLE -> 0.6f
++        Features.Motion.NORMAL -> 1f
++        Features.Motion.EXPRESSIVE -> 1.3f
++    }
++
++    override val scaleFactor: Float
++        get() = factorFor(Features.motion.value) * system
++
++    /** Reads Android's animator duration scale again (at start and whenever the app comes back). */
++    fun refresh(context: android.content.Context) {
++        system = runCatching {
++            android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
++        }.getOrDefault(1f).coerceIn(0f, 10f)
++    }
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/PlatformLogos.kt b/app/src/main/java/com/shelf/launcher/ui/PlatformLogos.kt
+index 240b5da..ec78fac 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/PlatformLogos.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/PlatformLogos.kt
+@@ -121,6 +121,26 @@ object PlatformLogos {
+     fun plain(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
+         key(platform)?.let { asset(context, "platform_icons_mono/$it.png") }
+ 
++    /** Update 480 (A5): [platform]'s logo for drawing in ONE colour (tinted): the plain icon (lettering kept), else the baked logo. */
++    fun oneColour(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
++        plain(context, platform) ?: baked(context, platform)
++
++    /** Update 480 (A5): ES-DE's logo for [platform] when it is a different, narrower picture than the redrawn one (GBA's two lines). */
++    fun stacked(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? {
++        if (key(platform) == null) return null
++        val alt = com.shelf.launcher.data.SystemLogos.bundled(platform)?.let { bakedForUrl(context, it) } ?: return null
++        val main = baked(context, platform) ?: return null
++        val ra = main.width.toFloat() / main.height; val rb = alt.width.toFloat() / alt.height
++        return alt.takeIf { ra > 5f && rb < ra / 2f }
++    }
++
++    /** The area (px²) a picture covers when fitted into w × h. */
++    fun fitArea(img: androidx.compose.ui.graphics.ImageBitmap, w: Int, h: Int): Float {
++        if (img.width <= 0 || img.height <= 0 || w <= 0 || h <= 0) return 0f
++        val k = minOf(w.toFloat() / img.width, h.toFloat() / img.height)
++        return img.width * k * img.height * k
++    }
++
+     private fun asset(context: android.content.Context, path: String): androidx.compose.ui.graphics.ImageBitmap? {
+         bakedCache[path]?.let { return it }
+         if (path in bakedMissing) return null
+@@ -169,15 +189,20 @@ internal fun PlatformLogo(
+     var failed by remember(url) { mutableStateOf(false) }
+     // Update 166: the baked logo, there on the first frame (see PlatformLogos.baked).
+     val baked = remember(platform) { PlatformLogos.baked(context, platform) }
++    // Update 480 (A5, owner: GBA / Sega CD shown as black lines): a colour logo tinted one colour turns into its outline —
++    // Game Boy Advance a blob, Sega CD's plate a solid bar. One colour (a tint, or a black logo in white) draws the plain
++    // icon instead (PlatformLogos.plain: the same shape with the lettering kept).
++    val oneColour = tint ?: (if (blackToWhite && PlatformLogos.mono(platform)) Color.White else null)
++    val plainIcon = remember(platform, oneColour != null) { if (oneColour != null) PlatformLogos.plain(context, platform) else null }
++    // (… and a very wide wordmark in a squarish slot — GBA's is 8.5 : 1 — gets ES-DE's stacked logo when that fills it far better.)
++    val stacked = remember(platform, oneColour != null) { if (oneColour == null) PlatformLogos.stacked(context, platform) else null }
+     Box(modifier, contentAlignment = Alignment.Center) {
+-        if (baked != null) {
++        val pic = plainIcon ?: baked
++        if (pic != null) {
++            val painter = remember(pic, stacked) { FittedLogoPainter(pic, stacked) }
+             androidx.compose.foundation.Image(
+-                baked, name, contentScale = ContentScale.Fit,
+-                colorFilter = when {
+-                    tint != null -> ColorFilter.tint(tint)
+-                    blackToWhite && PlatformLogos.mono(platform) -> ColorFilter.tint(Color.White)
+-                    else -> null
+-                },
++                painter, name, contentScale = ContentScale.FillBounds,
++                colorFilter = oneColour?.let { ColorFilter.tint(it) },
+                 modifier = Modifier.matchParentSize()
+             )
+         } else if (url != null && !failed) {
+@@ -200,3 +225,28 @@ internal fun PlatformLogo(
+         }
+     }
+ }
++
++/**
++ * Update 480 (A5): draws [main] fitted and centred in whatever room it gets; when [alt] (a stacked version of a very wide
++ * wordmark) would cover over 2.2 × the area there, [alt] instead — decided at draw time, so nothing pops in.
++ */
++private class FittedLogoPainter(
++    private val main: androidx.compose.ui.graphics.ImageBitmap,
++    private val alt: androidx.compose.ui.graphics.ImageBitmap?
++) : androidx.compose.ui.graphics.painter.Painter() {
++    private var filter: ColorFilter? = null
++    override val intrinsicSize: androidx.compose.ui.geometry.Size get() = androidx.compose.ui.geometry.Size.Unspecified
++    override fun applyColorFilter(colorFilter: ColorFilter?): Boolean { filter = colorFilter; return true }
++    override fun androidx.compose.ui.graphics.drawscope.DrawScope.onDraw() {
++        val w = size.width.toInt(); val h = size.height.toInt()
++        if (w <= 0 || h <= 0) return
++        val img = if (alt != null && PlatformLogos.fitArea(alt, w, h) > 2.2f * PlatformLogos.fitArea(main, w, h)) alt else main
++        val k = minOf(size.width / img.width, size.height / img.height)
++        val dw = (img.width * k).toInt().coerceAtLeast(1); val dh = (img.height * k).toInt().coerceAtLeast(1)
++        drawImage(
++            img, dstOffset = androidx.compose.ui.unit.IntOffset(((w - dw) / 2), ((h - dh) / 2)),
++            dstSize = androidx.compose.ui.unit.IntSize(dw, dh), colorFilter = filter,
++            filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
++        )
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt b/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
 index 897cce8..35c10a6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/PocketRibbon.kt
@@ -1295,10 +1526,45 @@ index 418ffc1..a3111b1 100644
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..27092d0 100644
+index f580972..bc17afb 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-@@ -4254,15 +4254,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -819,6 +819,21 @@ private fun HomeContent(
+         }
+     }
+     CollapsibleSection("Animations") {
++            // Update 480 (B4): one level for every transition — popups, Settings, R1, categories, drawer, profile picker, Details,
++            // More / Less, dialogs (MotionLevel.kt). Each keeps its own design; only how much time it takes changes.
++            ShelfCard {
++                val F = com.shelf.launcher.data.Features
++                RowChoice("Motion", com.shelf.launcher.data.Features.Motion.values(), F.motion.state.value, { it.label }) { F.motion.value = it }
++                MutedNote(
++                    when (F.motion.state.value) {
++                        com.shelf.launcher.data.Features.Motion.OFF -> "Windows, menus and pages appear at once. Long names still slide so you can read them; the layouts' own scenes keep moving."
++                        com.shelf.launcher.data.Features.Motion.SUBTLE -> "The same animations, quicker and calmer."
++                        com.shelf.launcher.data.Features.Motion.NORMAL -> "Every animation as designed."
++                        com.shelf.launcher.data.Features.Motion.EXPRESSIVE -> "The same animations with more time to play out."
++                    } + " Android's \"Remove animations\" always turns them off."
++                )
++            }
++            Spacer(Modifier.height(8.dp))
+             // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
+             ShelfCard {
+                 SectionLabel("Moving between games")
+@@ -3570,6 +3585,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+                     "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
+                     F.tileSwitch.state.value, { F.tileSwitch.value = it }
+                 )
++                // Update 480 (D257).
++                SwitchRow(
++                    Icons.Filled.Info, "Game facts under the tiles",
++                    "With the tiles in the middle and no round buttons under them: the console, time played, last played and achievements of the game you're on, and slightly bigger tiles.",
++                    F.tileInfoStrip.state.value, { F.tileInfoStrip.value = it }
++                )
+                 if (F.tileSwitch.state.value) {
+                     SwitchRow(
+                         Icons.Filled.Wallpaper, "Plain background",
+@@ -4254,15 +4275,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -1348,6 +1614,57 @@ index e6215a3..2ab6b88 100644
                      "(appmanifest files), a userdata config folder (shortcuts.vdf), or exported shortcut files. " +
                      "Subfolders are searched up to 3 levels deep."
              )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
+index d887f82..22323ad 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
+@@ -770,7 +770,18 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages:
+             val shown = symbol ?: stop?.logo
+             var failed by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+             val logo = shown?.takeIf { !failed }
+-            if (logo != null) {
++            // (Update 480, A5: the logo in one colour is the plain icon — the colour logo tinted was a blob / bar: GBA, Sega CD.)
++            val oneColourIcon = if (symbols && symbol == null) stop?.platform?.let { p ->
++                val ctx = androidx.compose.ui.platform.LocalContext.current
++                remember(p) { PlatformLogos.plain(ctx, p) }
++            } else null
++            if (oneColourIcon != null) {
++                androidx.compose.foundation.Image(
++                    oneColourIcon, c.categoryLabel, contentScale = ContentScale.Fit,
++                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(ink),
++                    modifier = Modifier.fillMaxSize().padding(ring * 0.17f)
++                )
++            } else if (logo != null) {
+                 val context = androidx.compose.ui.platform.LocalContext.current
+                 val request = remember(logo) {
+                     coil.request.ImageRequest.Builder(context).data(logo)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt
+index e614012..468b487 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt
+@@ -448,7 +448,8 @@ internal fun CrossIconTile(stop: StyleStop, size: Dp) {
+         var failed by androidx.compose.runtime.remember(stop.logo) { androidx.compose.runtime.mutableStateOf(false) }
+         val logo = stop.logo.takeIf { !failed }
+         // Update 166: the console logos baked into the app, drawn at once (no SVG decoding, no popping in).
+-        val baked = androidx.compose.runtime.remember(logo) { logo?.let { PlatformLogos.bakedForUrl(context, it) } }
++        // (Update 480, A5: cut out in one colour → the plain icon, so GBA / Sega CD keep their lettering instead of becoming a blob / bar.)
++        val baked = androidx.compose.runtime.remember(logo, cut) { logo?.let { (if (cut) stop.platform?.let { p -> PlatformLogos.plain(context, p) } else null) ?: PlatformLogos.bakedForUrl(context, it) } }
+         if (baked != null) {
+             androidx.compose.foundation.Image(
+                 baked, stop.label, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCube.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCube.kt
+index 97f29c8..3f0967d 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCube.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCube.kt
+@@ -387,7 +387,7 @@ private fun StyleCubeClassic(c: StyleCtx, modifier: Modifier = Modifier) {
+             val st = stops[k.mod(stops.size)]
+             val p = st.platform
+             val logo = if (!nameOnly && p != null && st.special == null && !com.shelf.launcher.data.isCollectionKey(p)) {
+-                if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.baked(context, p) }.getOrNull()
++                if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.oneColour(context, p) }.getOrNull() // (480 A5: drawn white — the plain icon keeps the lettering)
+                 logos[p]
+             } else null
+             CubeFaceArt(st.label, logo, painters[st.icon])
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
 index 672cfd1..2e7fdec 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
@@ -1403,6 +1720,92 @@ index 536f473..3b53bf0 100644
          val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
          if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
              // (A walk only ever previews: nothing it changes is saved.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
+index 830a9b6..6b51b69 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
+@@ -31,6 +31,9 @@ import androidx.compose.foundation.shape.CircleShape
+ import androidx.compose.foundation.shape.RoundedCornerShape
+ import androidx.compose.material.icons.Icons
+ import androidx.compose.material.icons.filled.EmojiEvents
++import androidx.compose.material.icons.filled.SportsEsports
++import androidx.compose.material.icons.filled.Schedule
++import androidx.compose.material.icons.filled.History
+ import androidx.compose.material.icons.filled.Star
+ import androidx.compose.material3.Icon
+ import androidx.compose.material3.Text
+@@ -104,6 +107,13 @@ private fun tileFraction(size: CardSize): Float = when (size) {
+ /** Tile home size (Appearance › Game row › Tile size), 1 = the Card size default. Name, round buttons and pills follow it. */
+ internal val LocalTileScale = androidx.compose.runtime.staticCompositionLocalOf { 1f }
+ 
++/**
++ * Update 480 (D257, owner: "about 45 % empty at the bottom is excessive"): extra tile height when the tiles sit in the middle
++ * with nothing under them (no round buttons) — the row takes some of that room (still ≥ ~4 across, never over two thirds of
++ * the screen) and [TileInfoStrip] the rest. 1 = as before.
++ */
++internal val LocalTileRoom = androidx.compose.runtime.staticCompositionLocalOf { 1f }
++
+ /** Geometry of the row, shared by the tiles, the name above them and the touch handling. */
+ internal class TileRowMetrics(
+     val tile: Dp,
+@@ -124,7 +134,7 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
+     // (Update 317as, Toni: "with the coloured frame the frame seems cut off": the frame and its glow reach ~12 dp out from
+     // the tile, a little more with the lift — 22 dp in now, so all of it shows.)
+     val start = 22.dp
+-    val byHeight = screen.height * tileFraction(size) * scale
++    val byHeight = screen.height * tileFraction(size) * scale * LocalTileRoom.current
+     val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
+     // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
+     // and never taller than about two thirds of the screen.
+@@ -1149,3 +1159,48 @@ internal fun tileCenterAnchor(vFocus: Int, rowW: Float, tile: Float, start: Floa
+ /** Update 369: whether the row jumps to [target] instead of gliding: a long way ([visible] + 1 tiles), or the row was resized. */
+ internal fun tileScrollSnaps(target: Float, current: Float, stride: Float, visible: Int, resized: Boolean): Boolean =
+     resized || abs(target - current) > stride * (visible + 1)
++
++/**
++ * Update 480 (D257): the focused game's facts under the tiles — console, time played, last played, achievements — as the
++ * tile home's own rounded pills, lined up with the name above (it follows the focused tile). Shown in the room the round
++ * buttons would take when there are none. Not focusable: the controller path is unchanged.
++ */
++@Composable
++internal fun TileInfoStrip(
++    game: com.shelf.launcher.data.Game,
++    console: String,
++    playtimeMs: Long?,
++    lastPlayed: Long?,
++    achievements: Pair<Int, Int>?,
++    anchor: TileNameAnchor,
++    modifier: Modifier = Modifier
++) {
++    val scale = LocalTileScale.current
++    val screenW = with(androidx.compose.ui.platform.LocalDensity.current) { screenSizeDp().width.toPx() }
++    val pills = listOfNotNull(
++        console.takeIf { it.isNotBlank() }?.let { androidx.compose.material.icons.Icons.Filled.SportsEsports to it },
++        // (Same rule as the windows: a game with a last-played date but no time recorded reads "Under a minute".)
++        androidx.compose.material.icons.Icons.Filled.Schedule to stylePlaytime(playtimeMs, played = (lastPlayed ?: 0L) > 0L).let { if (it == "Never played") "Not played yet" else it },
++        lastPlayed?.takeIf { it > 0L }?.let { androidx.compose.material.icons.Icons.Filled.History to lastPlayedLabel(it) },
++        achievements?.let { (e, t) -> Icons.Filled.EmojiEvents to "$e / $t" }
++    )
++    androidx.compose.runtime.key(game.stableKey) {
++        Row(
++            modifier.fillMaxWidth().onTileNameLine(anchor, screenW),
++            horizontalArrangement = Arrangement.spacedBy(8.dp * scale), verticalAlignment = Alignment.CenterVertically
++        ) {
++            for ((icon, text) in pills) {
++                Row(
++                    Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.34f))
++                        .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(50))
++                        .padding(horizontal = 12.dp * scale, vertical = 6.dp * scale),
++                    verticalAlignment = Alignment.CenterVertically
++                ) {
++                    Icon(icon, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(15.dp * scale))
++                    Spacer(Modifier.width(6.dp * scale))
++                    StableFullText(text, color = Color.White, fontSize = 13.sp * scale, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
++                }
++            }
++        }
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
 new file mode 100644
 index 0000000..885cc81
@@ -2269,6 +2672,68 @@ index 0000000..13e9ca0
 +        assertTrue(h.contains("if (progress.isNotEmpty() && !minimal"))
 +        assertTrue(src("LauncherScreen.kt").contains("minimal = state.appearance.statusMinimal"))
 +        assertTrue(src("SettingsDialog.kt").contains("arrayOf(\"Follow layout\", \"Always\", \"Minimal\", \"Hidden\")"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
+new file mode 100644
+index 0000000..293599d
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
+@@ -0,0 +1,56 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 480: A5 category logos in one colour, D257 Tile home room. */
++class Batch480Test {
++    private fun src(name: String): String = listOf(
++        File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
++    ).first { it.exists() }.readText()
++
++    // A5: a colour logo tinted one colour became its silhouette (GBA a blob, Sega CD a bar) — the plain icon is used instead.
++    @Test fun oneColourLogosUseThePlainIcon() {
++        val p = src("PlatformLogos.kt")
++        assertTrue(p.contains("val plainIcon = remember(platform, oneColour != null) { if (oneColour != null) PlatformLogos.plain(context, platform) else null }"))
++        assertTrue(p.contains("fun oneColour(context: android.content.Context, platform: String)"))
++        assertTrue(src("StyleCube.kt").contains("PlatformLogos.oneColour(context, p)"))
++        assertTrue(src("CubeHub.kt").contains("PlatformLogos.oneColour(context, p)"))
++        assertTrue(src("StyleCrossMenu.kt").contains("if (cut) stop.platform?.let { p -> PlatformLogos.plain(context, p) }"))
++        assertTrue(src("StyleConsoleHomes.kt").contains("val oneColourIcon = if (symbols && symbol == null)"))
++        // No caller tints the full-colour baked logo any more.
++        assertFalse(Regex("PlatformLogos\\.baked\\(context, p\\)\\.getOrNull\\(\\)").containsMatchIn(src("CubeHub.kt")))
++    }
++
++    // A5: very wide wordmarks in squarish slots pick the stacked logo at draw time (no pop-in).
++    @Test fun wideWordmarkPicksStackedLogo() {
++        val p = src("PlatformLogos.kt")
++        assertTrue(p.contains("private class FittedLogoPainter("))
++        assertTrue(p.contains("return alt.takeIf { ra > 5f && rb < ra / 2f }"))
++    }
++
++    // D257: Tile home in the middle with no round buttons — bigger tiles + the facts strip, grouped and centred.
++    @Test fun tileHomeUsesTheRoomUnderTheTiles() {
++        val t = src("TileHome.kt")
++        assertTrue(t.contains("val byHeight = screen.height * tileFraction(size) * scale * LocalTileRoom.current"))
++        assertTrue(t.contains("internal fun TileInfoStrip("))
++        val s = src("LauncherScreen.kt")
++        assertTrue(s.contains("val buttonsUnder = buttonsUnder0 || tileInfoUnder"))
++        assertTrue(s.contains("LocalTileRoom provides (if (tileInfoUnder) 1.14f else 1f)"))
++    }
++
++    private fun data(name: String): String = listOf(
++        File("../src_copy/data/$name"), File("src/main/java/com/shelf/launcher/data/$name"), File("app/src/main/java/com/shelf/launcher/data/$name"),
++    ).first { it.exists() }.readText()
++
++    // B4: one motion level (Off / Subtle / Normal / Expressive) as the root recomposer's MotionDurationScale; Normal default.
++    @Test fun motionLevelScalesEveryTransition() {
++        assertTrue(data("Features.kt").contains("val motion = EnumPref(\"motion_level\", Motion.NORMAL, Motion.values())"))
++        val m = src("MotionLevel.kt")
++        assertTrue(m.contains("Features.Motion.OFF -> 0f"))
++        assertTrue(m.contains("get() = factorFor(Features.motion.value) * system"))
++        assertTrue(src("KeyInput.kt").contains("v.setParentCompositionContext(v.createLifecycleAwareWindowRecomposer(MotionLevel, lifecycle))"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
