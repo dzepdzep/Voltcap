@@ -1,3 +1,16 @@
+# Update 481 (5 Nov 2026) — checkpoint 5: A5 long category names (D276)
+
+Staging patch = **qa-0.6.68-481c** (APK 4148244f…, Odin only). CI green on checkpoint 4 (59cfa5e).
+- QA: `--es voltcap_test_catname "…"|off` renames every console / collection label for the session; `tools/qa/device/cat481.sh`
+  takes a still + QaClip dump per layout. Sweep k481: 53 layouts with "Nintendo Entertainment System Classic Mini Collection
+  Ultimate Edition" — 32 show it whole or sliding; Live tiles' header ran 7 px off the screen under "+3"; chip rows could push
+  a kept-whole chip past their edge (Cube). 17 layouts show no console label in this category (not a defect by itself).
+- **D276 fixed:** WholeChipRow measures each chip against the row minus both "‹ +N" / "+N ›" hints (the chip's FullText then
+  shrinks / slides); Live tiles' category words use StableFullText. Odin k481b: Live tiles fits between the hints and slides.
+  Cube re-run did not rename its chips (hook timing) — fixed by construction, re-check pending. KONKR NOT TESTED.
+- Device: Odin on RC f79aa2a7, settings byte-identical (rc480o); hooks removed.
+- **Next action:** A5 stale headings / counts / carousel jumps, B5, C2 controller walk; KONKR items as listed in 481 below.
+
 # Update 481 (5 Nov 2026) — checkpoint 4: B4 confirmed, C2 per-layout colours, E4 check
 
 Staging patch = **qa-0.6.68-481a** (APK f475eec6…, Odin only; KONKR off USB → its tests NOT TESTED).

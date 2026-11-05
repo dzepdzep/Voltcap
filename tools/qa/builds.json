@@ -250,9 +250,20 @@
    "version_code": 73,
    "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
    "base_commit": "f0dfe14",
-   "patch_sha256": "84a8deed0065c1005080f5241b55376b75ca0361a044bbed651fa90bcc2271a6",
+   "patch_sha256": "",
    "tree_hash": "",
-   "note": "update 481: 480d + C2 per-layout colours (palettes / yours, inherit, readability guard), B4 motion probe (QA); Odin only"
+   "note": "update 481: 480d + C2 per-layout colours (palettes / yours, inherit, readability guard), B4 motion probe (QA); Odin only; patch superseded by 481c"
+  },
+  {
+   "id": "qa-0.6.68-481c",
+   "apk_sha256": "4148244fd5aef163c51815aa86a8e663920f3524224f9dec4de92dda94492bc2",
+   "version_name": "0.6.68-qa",
+   "version_code": 73,
+   "variant": "release (QA only, versionCode 73 so the 0.6.66 RC can go back on)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "14eb206f502256715cf68ab99c2064ac1d66abc2d1cab9a92f961c5a3f3ea6dc",
+   "tree_hash": "",
+   "note": "update 481: 481a + A5 long category names (WholeChipRow room beside hints, Live tiles header StableFullText, QA catname hook); Odin only (481b = hook only)"
   }
  ]
 }

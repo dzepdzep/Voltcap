@@ -490,6 +490,20 @@ index c5dcaf5..f746344 100644
                  onError = { failed = true },
                  modifier = Modifier.width(slotWidth).height(logoHeight)
              )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt b/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
+index 920f03a..e7ce3cb 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameTitles.kt
+@@ -26,6 +26,9 @@ data class TitleOptions(
+     val lookAlike: Map<String, String> = emptyMap()
+ ) {
+     fun console(platform: String): String = when {
++        // (Update 481, A5 QA only: `--es voltcap_test_catname "…"` — every console / collection label this session, to test
++        // long category names in every layout; nothing saved.)
++        com.shelf.launcher.ui.TestHooks.catName.value != null -> com.shelf.launcher.ui.TestHooks.catName.value!!
+         // Collections, franchises and play statuses (category label).
+         com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
+         // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 index 169d875..ad6c5e3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
@@ -1759,6 +1773,29 @@ index 672cfd1..2e7fdec 100644
  /**
   * What a style home draws across the WHOLE screen, behind the status bar and the games (the home screen puts it
   * right over the background): the game's art (Side menu / Spotlight / Icon bar, their option), Spotlight's shade,
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleLiveTiles.kt b/app/src/main/java/com/shelf/launcher/ui/StyleLiveTiles.kt
+index 74e489f..103d68c 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleLiveTiles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleLiveTiles.kt
+@@ -182,12 +182,15 @@ private fun LiveTabs(c: StyleCtx, ink: Color, compact: Boolean) {
+     ) { i ->
+             val (d, label) = tabs[i]
+             val on = StyleNav.on(StyleNav.Zone.TOP, i)
+-            Text(
++            // (Update 481, A5: a category word longer than the row — the kept-whole lit one — shrinks to the readable minimum,
++            // then slides, instead of running off the right edge: StableFullText, one line, nothing reserved.)
++            StableFullText(
+                 // (Update 136: as written — no all-lower-case labels.)
+                 label,
+                 color = if (d == 0 || on) ink else ink.copy(alpha = 0.38f),
+-                fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1, softWrap = false,
+-                textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null,
++                fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1,
++                style = androidx.compose.material3.LocalTextStyle.current.copy(textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null),
++                reserve = false,
+                 modifier = Modifier
+                     .padding(end = if (compact) 16.dp else 26.dp)
+                     .pointerInput(d) { detectTapGestures { if (d != 0) move(d) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt b/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
 index 977fe34..430f9da 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt
@@ -1779,30 +1816,33 @@ index 977fe34..430f9da 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..2a46ad8 100644
+index 536f473..e9ba930 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-@@ -70,6 +70,9 @@ internal object TestHooks {
+@@ -70,6 +70,11 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
 +    /** Update 480 (B4): `--ei voltcap_test_motionprobe <ms>` — a tween of that length run in the home's composition; its real
 +     *  duration is logged (VoltcapQA motionprobe), so the motion level's scale can be measured. */
 +    val motionProbe = mutableStateOf(0)
++    /** Update 481 (A5): `--es voltcap_test_catname "name"|off` — every console / collection label replaced this session (QA). */
++    val catName = mutableStateOf<String?>(null)
      /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
      val panelHold = mutableStateOf(true)
      /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
-@@ -318,6 +321,9 @@ internal object TestHooks {
+@@ -318,6 +323,10 @@ internal object TestHooks {
              panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
              android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
          }
++        intent?.getStringExtra("voltcap_test_catname")?.let { v -> if (enabled(context)) { previewOnly = true; catName.value = v.takeIf { it != "off" } } }
 +        if (intent?.hasExtra("voltcap_test_motionprobe") == true && enabled(context)) {
 +            motionProbe.value = intent.getIntExtra("voltcap_test_motionprobe", 0)
 +        }
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -350,6 +356,17 @@ internal object TestHooks {
+@@ -350,6 +359,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -1967,6 +2007,31 @@ index 830a9b6..6b51b69 100644
 +        }
 +    }
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt b/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
+index 057b5ab..cd7d6bd 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
+@@ -98,14 +98,18 @@ internal fun WholeChipRow(
+         val padS = startPadding.roundToPx()
+         val padE = endPadding.roundToPx()
+         val gap = spacing.roundToPx()
+-        val childCs = Constraints(0, (avail - padS - padE).coerceAtLeast(0), 0, cs.maxHeight)
++        // (Update 481, A5: a chip never wider than the room left beside both "‹ +N" / "+N ›" hints — a very long category
++        // name kept whole ran past the row's right edge, under the hint (Live tiles' header, the Cube's pills). The chip's
++        // own FullText then shrinks it and slides it.)
++        val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width
++        val roomMax = (avail - padS - padE - (if (count > 1) 2 * (hw + gap) else 0)).coerceAtLeast(0)
++        val childCs = Constraints(0, roomMax, 0, cs.maxHeight)
+         val ps: List<Placeable> = (0 until count).map { i ->
+             subcompose("c$i") {
+                 val bring = remember(i) { { win.keep = i; win.manual = false; tick.intValue++; Unit } }
+                 Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { if (i < liveCount.value) chip(i) }
+             }.first().measure(childCs)
+         }
+-        val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width
+ 
+         // The last chip that fits whole when the window starts at [s] (at least [s] itself).
+         fun endFor(s: Int): Int {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
 new file mode 100644
 index 0000000..885cc81
@@ -2913,10 +2978,10 @@ index 0000000..13e9ca0
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
 new file mode 100644
-index 0000000..f81aa6c
+index 0000000..a39f03b
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,84 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertFalse
@@ -2991,6 +3056,14 @@ index 0000000..f81aa6c
 +    // B4: QA probe measuring a tween's real length under the motion level.
 +    @Test fun motionProbeLogsRealDuration() {
 +        assertTrue(src("LauncherScreen.kt").contains("motionprobe tween=\$probeMs real="))
++    }
++
++    // A5 (481): a very long category name never runs past a chip row's edge (room beside both hints) nor off Live tiles' header.
++    @Test fun longCategoryNamesStayInTheirRow() {
++        val w = src("WholeChipRow.kt")
++        assertTrue(w.contains("val roomMax = (avail - padS - padE - (if (count > 1) 2 * (hw + gap) else 0)).coerceAtLeast(0)"))
++        assertTrue(src("StyleLiveTiles.kt").contains("StableFullText(\n                // (Update 136: as written"))
++        assertTrue(src("GameTitles.kt").contains("TestHooks.catName.value != null"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

@@ -3353,6 +3353,23 @@
    "root_cause": "ColorFilter.tint(SrcIn) on a full-colour logo keeps only its alpha outline: GBA's outlined wordmark becomes a blob, Sega CD's opaque plate a bar; dark ink on pale = black lines",
    "fix": "one-colour draws use the plain icons (platform_icons_mono, lettering kept); a very wide wordmark in a squarish slot draws ES-DE's stacked logo (picked at draw time)",
    "verified": "offline render; device pending"
+  },
+  {
+   "id": "D276",
+   "title": "A very long category name ran past the row's edge under the '+N' hint (Live tiles header; kept-whole chips in chip rows such as the Cube's)",
+   "rule": "R25",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (481c) - Odin: Live tiles verified; Cube chips by construction (the re-run's hook did not rename them); KONKR NOT TESTED",
+   "found": "update 481 A5 sweep k481 (53 layouts, voltcap_test_catname)",
+   "where": "WholeChipRow (16 rows), StyleLiveTiles LiveTabs",
+   "evidence": [
+    "k481 LIVE text 1720 px from x 207 (shown 1713), overlapped by '+3'",
+    "k481 CUBE pill 825 px from x 1113 (ends 1938)"
+   ],
+   "root_cause": "the lit chip is kept whole and measured against the whole row, so a name wider than the room beside the hints overflowed; Live tiles used a plain Text (no shrink / slide)",
+   "fix": "chips measured against the row minus both hints; Live tiles' words through StableFullText (shrink, then slide)",
+   "verified": "k481b LIVE (Odin)"
   }
  ]
 }
