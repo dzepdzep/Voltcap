@@ -15,12 +15,15 @@ Staging patch = **qa-0.6.68-482b** (APK fc09e24e…, Odin only; KONKR off USB �
   Terminal C:\GAMES\ANDROID 7 files. Picker vs L2/R2 NOT STARTED.
 - **C1:** shared chrome's fixed colours audited; destructive rows, "pending" editions and missable marks used bright tones
   (~2:1 on light palettes) → `ShelfTheme.danger` / `warning` pick a deeper tone on a light surface. Look on device NOT TESTED.
+- **C2 controller walk — PASS (Odin):** Settings › Home › Layout options › Colours for this layout: Mint applied (Settings
+  turns mint, writing dark), Yours starts from the current colours, accent hue / HEX / saturation / brightness / background
+  reachable and moving with ◀ ▶, Theme puts the layout back on the theme. ▲ ▼ in the swatch grid go to the nearest swatch.
 - Tests: Batch482Test (status tones, single-box wrap, category counts). PC unit tests + assembleRelease green.
 - Copy: src_copy `LauncherUiState.kt`, `ui/StyleHomes.kt`, `ui/StyleBlades.kt`, `ui/StylePanels.kt`, `ui/StyleTerminal.kt`,
   `ui/StyleGreenCore.kt`, `ui/StyleBubbles.kt`, `ui/StyleRentalShop.kt`, `ui/StylePocketQuest.kt`, `ui/StyleCardboardBox.kt`,
   `ui/GamePopupStatus.kt`, `ui/CartShellPicker.kt`, `ui/AchievementDetailDialog.kt`, `ui/theme/ShelfColors.kt` (all in the patch).
 - Device: Odin back on RC f79aa2a7, settings snapshot byte-identical (rc480o); hooks removed.
-- **Next action:** C2 controller walk of the colour picker, A5 picker vs L2/R2, B1 other layouts; KONKR when on USB:
+- **Next action:** A5 picker vs L2/R2, B1 other layouts; KONKR when on USB:
   Pokémon Silver (E3 / E4), logos (A5), clips (B2), D137, re-checks.
 
 # Update 481 (5 Nov 2026) — checkpoint 5: A5 long category names (D276)
