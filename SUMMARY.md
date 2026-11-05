@@ -1,3 +1,30 @@
+# Update 486 (5 Nov 2026) — E7 review for the owner, backlog K1–K5, D281
+
+No code change: staging is still qa-0.6.68-485 (`next/0.6.68/staging.patch`). Nothing launched, nothing published.
+- **E7 review page (claude.ai artifact "VoltCap E7 Review"):** Thor screenshots, what's wrong, recommendation + A/B/C options for
+  D263 Cover details story, D265 Twin window paging, popup hierarchy, tiny controls, secondary buttons. **Waiting for the
+  owner** — nothing implemented. Measured on the Thor (dp, density 2.43): home edge arrows 28 × 61, Arcade menu rows 24 tall,
+  Case Flow icon-only Inspect / More 40 × 40, Classic / Tiles chips 36–38 tall; Play contrast white on lilac 2.9 : 1 (Tiles),
+  2.6 : 1 (Case Flow). Cinema's action row lays out 8 actions, 5 on screen (Manual / Inspect / Back off the row, no cue).
+- **D281 (new, Thor):** Cover details shows no story for a game that has one (007 The World Is Not Enough; the window shows it).
+  QaClip: title 2 lines + facts row; the 4th fact (Achievements) is laid out at 0 × 0 and no story node exists — the info
+  column (stage height minus the shelf allowance) is used up before the story box gets one 20 dp line, so `lines = 0` drops it.
+  Fix depends on the owner's D263 choice (A/B make room; C = fix only D281).
+- **Data (not code):** Thor "Legend of Zelda, The Twilight Princess" (GameCube) shows *My Nintendo Picross: The Legend of Zelda*
+  box and facts (2016, Jupiter) — wrong scrape match; artwork untouched (owner can repick).
+- **Backlog added to ROADMAP_070 (K1–K5):** per-layout game spacing; home UI over screensavers / popups (K2); Save Vault card
+  looks; custom spine flicker (K4); CI 579debd hang (rerun separately, no code change).
+- **K2 notes (unconfirmed):** the floating home parts take their layer from a process-wide `PartsLayer.z`, written by a
+  SideEffect from `homeCovered` (details, controls help, category screen, screensaverOn, stick letter) — `GamePopup.game`
+  (the layout window) is not in that list, and other home pieces carry fixed zIndex 5–6.5. A restart resetting singletons fits
+  a stuck global; needs a repro (which layout / screensaver mode) before any change.
+- **K4 notes:** Thor Cover details N64 shelf (real spine scans), 14 steps recorded at 120 fps: no flash, no dark strip. The
+  console-template spine path (CustomSpines → rememberTitledSpine) shows the untitled spine until the titled one is made, which
+  would look like the name blinking in; needs the owner's layout / console to reproduce.
+- Device: Thor back on v0.6.67 (1586accc), settings snapshot byte-identical (t485o), hooks / qa_nolaunch / media_dump removed.
+- **Next action:** owner picks E7 options; then D281 + chosen E7 items in staging. Meanwhile: K2 / K4 repro details from the
+  owner, D2 / D4 (launch OK), B2 clips, E1 / E2 references, QA tiers.
+
 # Update 485 (5 Nov 2026) — checkpoint 9: KONKR + Thor — Pokémon Silver print (D280), D3 second-screen brightness
 
 Staging = 484 + the changes below (`next/0.6.68/staging.patch`); QA build qa-0.6.68-485 at **versionCode 74** — the KONKR and

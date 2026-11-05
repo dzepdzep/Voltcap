@@ -3432,6 +3432,22 @@
    ],
    "root_cause": "update 317's rule (a cover > 8 % off the case's shape gives way to the box scan) only knew a cover's shape once a flat card had drawn it (CoverAspects) \u2014 Case Flow decodes its own; Case stacks' flat case (StyleArt / CaseArt) is never handed a scan for a picked cover (update 235)",
    "fix": "Case3D reads the shape from its own decode (front held, no flash of the cut cover); CaseArt looks up the game's box-front scan itself for a far-off picked cover; a picked cover of the box's shape stays the front (Batch485Test)"
+  },
+  {
+   "id": "D281",
+   "title": "Cover details (Thor 1080p) shows no story for a game that has one (007 The World Is Not Enough; its window shows the story)",
+   "rule": "E7 / D263",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "open - fix depends on the owner's D263 choice (review page update 486)",
+   "found": "update 486 Thor (E7 captures)",
+   "where": "ui/StyleCoverDetails.kt CoverDetailsInfo",
+   "evidence": [
+    "Thor screenshot: title 2 lines, Released / Developer, empty area above the shelf, no story",
+    "QaClip CD7: Genre on row 1, Achievements laid out 0 x 0, no story text node"
+   ],
+   "root_cause": "the info column (stage height less the shelf allowance) is used up by the 2-line title and the wrapped facts; the story box gets under one 20 dp line and lines = 0 drops it",
+   "fix": ""
   }
  ]
 }
