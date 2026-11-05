@@ -19,7 +19,9 @@ every KONKR line is NOT TESTED). Owner decisions of 5 Nov applied (GameNative la
 - **B2:** the hero carousel's clip pauses too. Measuring is **blocked on the Odin** — its library has no gameplay clips.
 - **D1:** real GameNative launch **blocked** — GameNative on the Odin is not signed in (no games); signing in is the owner's.
 - Device: Odin back on RC f79aa2a7; RC settings snapshot rc480o byte-identical to rc479o; hooks removed; GameNative closed.
-- **Next action:** E3 / E4 (3D case prints cropped, spine widths), B5, C1 / C2 colour roles; KONKR when on USB: A5 logos,
+- **E3:** on the Odin the Xbox 360 case of WWE SmackDown vs Raw 2011 shows the same framing in Case Flow, Case Stacks, Game
+  Shelf and Inspect — not reproduced; needs the owner's example or the KONKR's cases.
+- **Next action:** E3 with an example game, E4 spine widths, B5, C1 / C2 colour roles; KONKR when on USB: A5 logos,
   B2 measurement, D257 / B3 / B4 re-check, c478_k.sh.
 
 # Update 479 (5 Nov 2026) — master request v0.7.0, checkpoint 2: B1 Cinema edges, B2, B3 status bar, D1 GameNative, E5

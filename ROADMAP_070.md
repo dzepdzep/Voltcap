@@ -52,7 +52,7 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 |---|---|---|
 | E1 | Cartridges: GBA side geometry, clear GBC PCB, NES geometry / rear, SFC/PAL rear, Famicom variants, Sega references, backs, double labels / product codes, ROM-hack labels (reference-first R25; keep real scans) | NOT STARTED |
 | E2 | Boxes / cases: custom box sides, case / spine geometry, artwork fitting | NOT STARTED |
-| E3 | 3D case prints cropped in Case Flow vs Inspect (Case Flow, Case Stacks, Game Shelf, Inspect: same texture, no crop / stretch) | NOT STARTED |
+| E3 | 3D case prints cropped in Case Flow vs Inspect (Case Flow, Case Stacks, Game Shelf, Inspect: same texture, no crop / stretch) | PARTIAL — Odin (RC, Xbox 360 case, WWE SmackDown vs Raw 2011): Case Flow, Case Stacks, Game Shelf and Inspect show the identical framing (logo to belt line) → not reproduced with this case; needs the owner's example game / the KONKR library (N64 / PS2 / DS cases). No code change |
 | E4 | Spine widths per case type vs real measurements (thickness / UV / texture scale), consistent in Inspect and layouts | NOT STARTED |
 | E5 | Case Flow reflection: bright strip / hard edge at the fade end | DONE (Odin) — cause: fade mask stopped short of the layer (Odin cf479: 1 px lines, row spike 14.3 / 10.8); mask extended (479b): no spike > 2.4 (texture noise) in e479b CASEFLOW. KONKR NOT TESTED |
 | E6 | Controller contract re-check (Select = Settings, R1, L2/R2, B closes, Wii preview popup), touch parity | NOT STARTED |
