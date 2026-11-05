@@ -1,3 +1,32 @@
+# Update 485 (5 Nov 2026) — checkpoint 9: KONKR + Thor — Pokémon Silver print (D280), D3 second-screen brightness
+
+Staging = 484 + the changes below (`next/0.6.68/staging.patch`); QA build qa-0.6.68-485 at **versionCode 74** — the KONKR and
+the Thor run the published v0.6.67 (74, user builds: no downgrade), so the QA build installs in place and the exact v0.6.67 APK
+(pulled from the KONKR, sha 1586accc = the published one) goes back after. Odin not connected this session.
+- **E3 / D280 — fixed (KONKR):** v0.6.67 Case Flow cut Pokémon Silver's print (top margin and the "SILVER VERSION" /
+  ESRB / Nintendo foot). Cause: the owner's picked cover is a SteamGridDB portrait grid (0.667) on the square 117 mm Game Boy
+  Color box; update 317's "over 8 % off → the box scan" only knew a cover's shape after a flat card had drawn it, and Case
+  stacks' flat case never got a scan for a picked cover. Now Case3D reads the shape from its own decode (front held until then,
+  no flash of the cut cover) and CaseArt looks the box scan up itself. KONKR: Case Flow, Case stacks, Game shelf and Inspect all
+  show the same whole box. A picked cover of the box's shape stays the front.
+- **E4 (KONKR):** GBC 117 × 117 × 24 mm, spines in proportion and readable in Case Flow / Game shelf / Inspect 90°.
+- **E5 (KONKR):** Case Flow reflection fades evenly (64 → 28 brightness under the case, no band or hard edge).
+- **A5 logos (KONKR):** GBA on Cube, Cross menu (purple wordmark), Channel grid (console icon), Side menu, Consoles, Hub —
+  no blob. Sega CD NOT TESTED (no Sega CD games).
+- **D137 (KONKR):** Case stacks GBC, 6 moves, clips off: 15–20 missed vsyncs per ~400 frames, PSS 612–656 MB (460b range); open.
+- **D3 — DONE (Thor):** Settings › Screens › Second screen brightness (Same as main / 10–100 %) = the second-screen window's
+  own override (`Features.secondBrightness`, `SecondDim.backlight`). Thor: lower display 0.25 while the main stays 0.53;
+  Same as main → both 0.53, no override. Row visible in Screens (QaClip).
+- **D2:** NOT STARTED — needs an app opened on the top screen (owner OK). **B2 clips:** NOT TESTED this session.
+- QA note: on the KONKR a background (`setsid`) script can't send key presses ("Failed transaction") — run key steps in the
+  foreground; `tools/qa/device/k485.sh` / `k485b.sh` kept for the views and logos.
+- Tests: Batch485Test (front choice, flat case, D3). PC unit tests + assembleRelease green.
+- Devices: KONKR and Thor back on v0.6.67 (1586accc), settings snapshots byte-identical (k485o / t485o), hooks removed.
+- Copy: src_copy `ui/Case3D.kt`, `ui/RealMedia.kt`, `ui/StyleCaseStacks.kt`, `ui/SecondDim.kt`, `ui/BatterySaverUi.kt`,
+  `ui/SettingsDialog.kt`, `data/Features.kt` (in the patch).
+- **Next action:** D2 (owner OK to open an app on the top screen), B2 clips on the KONKR, owner items (E7, GameNative, D4
+  launches), E1 / E2 references; then QA tiers and R1–R3 (approval).
+
 # Update 484 (5 Nov 2026) — checkpoint 8: E6 controller contract 53/53, D4 FPS reading follows the last second
 
 Staging patch = 483a + D4 (`data/perf/FpsSource.kt`; compiled and unit-tested by CI, no device build — the change needs a

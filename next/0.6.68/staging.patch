@@ -143,7 +143,7 @@ index b8fdb4e..38d63e9 100644
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..d103179 100644
+index 55c357d..cc95089 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -220,7 +220,17 @@ index 55c357d..d103179 100644
      /** Every theme's own look, as JSON {"THEME_NAME": {...}}. Themes not in it use [themeLookDefault]. */
      val themeLooks = StringPref("theme_looks", "")
      /** The look themes start with: what the old global colour settings were (migrated once), else plain. */
-@@ -1450,6 +1503,16 @@ object Features {
+@@ -997,6 +1050,9 @@ object Features {
+     val secondDimLevel = IntPref("second_dim_level2", 45, 10..90)
+     /** Update 188: its backlight turned down too while dimmed. */
+     val secondDimBacklight = BoolPref("second_dim_backlight", true)
++    /** D3 (update 485): the second screen's own brightness, % (0 = the same as the main screen). Android lets an app set
++     *  it only for its own window, so it holds while Voltcap's second-screen window is up (SecondDim.backlight). */
++    val secondBrightness = IntPref("second_brightness", 0, 0..100)
+ 
+     // ---- Save Vault ----
+     /** The save grid wraps round: scrolling past the end starts again at the beginning. */
+@@ -1450,6 +1506,16 @@ object Features {
      fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
@@ -407,6 +417,30 @@ index 5045841..6952ef0 100644
              Spacer(Modifier.width(6.dp))
              Text(
                  "Linked by title, not by the game file — achievements may belong to a different version (e.g. Gold vs Silver).",
+diff --git a/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt b/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt
+index 7c6eaf1..b734cc8 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt
+@@ -108,6 +108,19 @@ internal fun BatterySaverSettings() {
+     }
+ }
+ 
++/**
++ * D3 (update 485): the second screen's own brightness, apart from the main screen's. Android lets an app set it only for its
++ * own window there, so it holds while Voltcap's second-screen view is up (Settings › Screens).
++ */
++@Composable
++internal fun SecondBrightnessChoice() {
++    StyleChoice(
++        "Second screen brightness", arrayOf(0, 10, 25, 50, 75, 100), Features.secondBrightness.state.value,
++        { if (it == 0) "Same as main" else "$it %" }
++    ) { Features.secondBrightness.value = it; SecondDim.settingsChanged() }
++    MutedNote("While Voltcap's view is on the second screen; a game there uses the system brightness.")
++}
++
+ /**
+  * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
+  * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt b/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
 index 00fd4af..a2dc26a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
@@ -421,10 +455,40 @@ index 00fd4af..a2dc26a 100644
          if (m != null) Text(
              ShellMaterials.hexOf(m.base) + (if (m.back != 0) " / " + ShellMaterials.hexOf(m.back) else "") + " (approx.)",
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
-index 707c345..9c8d5ad 100644
+index 707c345..4669a07 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
-@@ -1456,7 +1456,10 @@ private object CaseDraw {
+@@ -77,14 +77,27 @@ internal fun Case3D(
+     // (Update 317, Toni: with the Covers look an N64 box's front was its cover cut to the box — its title and foot lost. A
+     // cover that would lose more than 8 % to the box's shape gives way to the game's own box-front scan, when it has one,
+     // as the Cases look shows it.)
+-    val coverCut = !realFront && spec != null && (cover as? String)?.let { CoverAspects.rawOf(it) }
++    // (Update 485, KONKR — Pokémon Silver in Case Flow: the cover's shape was only known once a flat card had shown it
++    // (CoverAspects), so Case Flow / Case stacks cut a portrait SteamGridDB cover you picked to the square Game Boy Color box —
++    // its top and its "SILVER VERSION" foot lost — while Inspect showed the box scan. The cover's own decoded shape decides
++    // now; while it is read, a game that has a box-front scan shows no print rather than the cut cover for a moment.)
++    val coverUrl = cover as? String
++    val coverKnown = coverUrl?.let { CoverAspects.rawOf(it) }
++    val scanFront = if (faces && spec != null && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) remember(scans, g.platform) { BoxTexture.front(scans, g.platform) } else null
++    val probeCover = faces && !realFront && spec != null && coverKnown == null && coverUrl != null && scanFront != null
++    val coverProbe = if (probeCover) rememberSoftBitmap(coverUrl, 480, trim = true) else null
++    val coverAspect = coverKnown ?: coverProbe?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
++    // (Noted once, so the next time — and the decoding ahead, case3dModels — knows it without reading the cover again.)
++    androidx.compose.runtime.LaunchedEffect(coverProbe) { val b = coverProbe ?: return@LaunchedEffect; if (coverUrl != null) CoverAspects.note(coverUrl, b.width.toFloat(), b.height.toFloat()) }
++    val coverCut = !realFront && spec != null && coverAspect
+         ?.let { a -> a > 0f && kotlin.math.abs(a / spec.aspect - 1f) > 0.08f } == true
+     val ownFront = if (faces && ((realFront && Features.originalCases.state.value) || coverCut) && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
+         remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
+     } else null
++    val frontPending = probeCover && coverProbe == null
+     // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
+     // carousel's warmSoft for 3D cases asks the same way.)
+-    val front0 = rememberSoftBitmap(if (faces) ownFront ?: cover else null, 480, trim = true)
++    val front0 = rememberSoftBitmap(if (faces && !frontPending) ownFront ?: cover else null, 480, trim = true)
+     // (Update 240, #27/#58: a "Box" scan that is really the whole unfolded box — back | spine | front side by side, far wider
+     // than the real case's front (CaseCatalog) — has its front cut out of it (BoxTexture), not its middle cut to the case's
+     // shape: that showed the spine and the back's edge as the front. The case's shape stays the catalog's whatever the scan.)
+@@ -1456,7 +1469,10 @@ private object CaseDraw {
              shaderMatrix.postTranslate(0f, floorY)
              fadeDown.setLocalMatrix(shaderMatrix)
              fade.shader = fadeDown
@@ -1751,6 +1815,40 @@ index 0000000..05d27e1
 +        return out
 +    }
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
+index 8ea7122..84905fb 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
+@@ -414,7 +414,9 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
+     val f = com.shelf.launcher.data.Features
+     val scans = scans0.withoutFlat()
+     // (Update 235, #24: not with a cover you picked for the game — its cover is the case front, see UserCovers.)
+-    val front = (if (realFront && UserCovers.of(g.stableKey) == null && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
++    // (Update 485: as Case3D — a cover whose shape is over 8 % off the case's gives way to the box-front scan.)
++    val coverOff = CoverAspects.rawOf(cover)?.let { a -> val c = case3dAspect(g, false); a > 0f && c > 0f && kotlin.math.abs(a / c - 1f) > 0.08f } == true
++    val front = (if (((realFront && UserCovers.of(g.stableKey) == null && f.originalCases.state.value) || coverOff) && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
+         BoxTexture.front(scans, g.platform) else null) ?: cover
+     val spine = if (LookStyles.spineForAll()) null
+         else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
+@@ -773,7 +775,17 @@ internal fun CaseArt(
+     // cover whose shape wasn't known yet stayed whole until some other view had measured it. Both are measured now — a
+     // small decode, only while the shape isn't known.)
+     val cover = rememberWrapFront(cover0, LookStyles.casePlatform(platform), decode = true)
+-    val caseScan = if (forAll || UserCovers.isPicked(cover0)) null else rememberWrapFront(scan, LookStyles.casePlatform(platform), decode = true)
++    // (Update 485, KONKR — Pokémon Silver in Case stacks: a cover you picked whose shape is far off the case's (a portrait
++    // SteamGridDB grid on the square Game Boy Color box) was cut to it — its top and its "SILVER VERSION" foot lost. As in
++    // Case3D (update 317's rule: over 8 % off), the game's box scan is the front then; a picked cover of the box's shape
++    // stays the front as before.)
++    // (Callers hand no scan with a picked cover — typedArtFor, update 235 — so the game's own box-front scan is looked up here.)
++    val pickedOff = UserCovers.isPicked(cover0) && (cover0 as? String)?.let { CoverAspects.rawOf(it) }
++        ?.let { a -> realCaseMm(casePlatform)?.let { (w, h) -> a > 0f && w > 0f && h > 0f && kotlin.math.abs(a / (w / h) - 1f) > 0.08f } } == true
++    val ownScan = if (pickedOff && scan == null && game != null && !forAll && !androidOwnCase(platform))
++        remember(game.stableKey, physical) { BoxTexture.front(physical ?: HomeScans.of(game.stableKey), platform) } else null
++    val scanUse = scan ?: ownScan
++    val caseScan = if (forAll || (UserCovers.isPicked(cover0) && (!pickedOff || scanUse == null))) null else rememberWrapFront(scanUse, LookStyles.casePlatform(platform), decode = true)
+     val caseSpine = if (forAll) null else spine
+     val mm = if (real != null) realCaseMm(casePlatform) else null
+     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt b/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
 index 418ffc1..a3111b1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt
@@ -1811,11 +1909,49 @@ index 418ffc1..a3111b1 100644
 +    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt b/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
+index 5c94cb3..7305477 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
+@@ -76,7 +76,7 @@ internal object SecondDim {
+     }
+ 
+     private fun wakeAndSchedule() {
+-        if (dimmed) undim()
++        if (dimmed) undim() else backlight(false)
+         main.removeCallbacks(check)
+         val a = afterMs()
+         if (a > 0 && layer != null) main.postDelayed(check, a)
+@@ -130,7 +130,13 @@ internal object SecondDim {
+         val w = window ?: return
+         runCatching {
+             val lp = w.attributes
+-            val want = if (low && Features.secondDimBacklight.value) 0.12f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
++            // (D3, update 485: its own brightness when one is set — Settings › Screens — dimming never brightens it.)
++            val own = Features.secondBrightness.value
++            val want = when {
++                low && Features.secondDimBacklight.value -> if (own > 0) minOf(0.12f, own / 100f) else 0.12f
++                own > 0 -> own / 100f
++                else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
++            }
+             if (lp.screenBrightness != want) { lp.screenBrightness = want; w.attributes = lp }
+         }
+     }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..8174460 100644
+index f580972..083d1aa 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-@@ -819,6 +819,21 @@ private fun HomeContent(
+@@ -613,6 +613,9 @@ fun SettingsDialog(
+                                     SecondScreenExtras(appearance, onAppearanceChange, hasSecondScreen)
+                                     // Update 188.
+                                     if (hasSecondScreen) {
++                                        // D3 (update 485): its own brightness, apart from the main screen's.
++                                        Spacer(Modifier.height(12.dp))
++                                        ShelfCard { SecondBrightnessChoice() }
+                                         Spacer(Modifier.height(12.dp))
+                                         FoldGroup("Dim the second screen", summary = "When nobody uses it, also during a game", key = "second_dim") { ShelfCard { SecondDimSettings() } }
+                                     }
+@@ -819,6 +822,21 @@ private fun HomeContent(
          }
      }
      CollapsibleSection("Animations") {
@@ -1837,7 +1973,7 @@ index f580972..8174460 100644
              // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
              ShelfCard {
                  SectionLabel("Moving between games")
-@@ -3558,6 +3573,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3558,6 +3576,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
          SectionLabel(appearance.homeLayout.label)
          MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
          Spacer(Modifier.height(8.dp))
@@ -1846,7 +1982,7 @@ index f580972..8174460 100644
          // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
          if (tileLayout) {
              val F = com.shelf.launcher.data.Features
-@@ -3570,6 +3587,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3570,6 +3590,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                      "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
                      F.tileSwitch.state.value, { F.tileSwitch.value = it }
                  )
@@ -1859,7 +1995,7 @@ index f580972..8174460 100644
                  if (F.tileSwitch.state.value) {
                      SwitchRow(
                          Icons.Filled.Wallpaper, "Plain background",
-@@ -4254,15 +4277,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -4254,15 +4280,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -1961,6 +2097,31 @@ index c6fe26a..3b59ecf 100644
                      if (ctx.first) EdgeBump.hit(dir); return ctx.take()
                  }
                  // (After a knock: the first press only knocks against the box's wall.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
+index 4972c11..d386bdf 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
+@@ -576,7 +576,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+             StacksProgress(c, g, on)
+         }
+     } else if (caseLook && !spines && caseMarker(g.platform) != null) {
+-        val scan = typedArtFor(CardArtType.CASE, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
++        // (Update 485, KONKR: the game's own scans also when the library hasn't handed them in yet — HomeScans, as Case3D
++        // reads them — so a picked cover far off the box's shape can give way to the box scan, CaseArt.)
++        val scans = c.state.physicalMedia[k] ?: HomeScans.of(k)
++        val scan = typedArtFor(CardArtType.CASE, scans, c.state.screenshots[k], g.platform)
+         Box(modifier.gameOrigin(k, on).rolloutItem()) {
+             MediaFocus(on) {
+                 CaseArt(
+@@ -584,7 +587,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+                     g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
+                     caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
+                     // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
+-                    spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
++                    spine = BoxTexture.realSpine(scans, g.platform), game = g, physical = scans
+                 )
+             }
+             // (Update 202: the case's printed band shows the console already.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
 index d887f82..22323ad 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
@@ -3621,6 +3782,48 @@ index 0000000..01cfa6e
 +        assertEquals(Color(0xFFFF8A80), dangerOn(Color(0xFFF2F2F2)))
 +        assertFalse(src("GameWindow.kt").contains("Color(0xFFFF8A80)"))
 +        assertFalse(src("GameWindowBanner.kt").contains("Color(0xFFFF8A80)"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch485Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch485Test.kt
+new file mode 100644
+index 0000000..531e8c2
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch485Test.kt
+@@ -0,0 +1,36 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 485: KONKR — a picked cover far off the case's shape gives way to the box scan in Case Flow too. */
++class Batch485Test {
++    private fun src(name: String): String = listOf(
++        File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
++    ).first { it.exists() }.readText()
++
++    @Test fun caseFrontKnowsTheCoverShapeFromItsOwnDecode() {
++        val c = src("Case3D.kt")
++        assertTrue(c.contains("val coverAspect = coverKnown ?: coverProbe?.let"))
++        assertTrue(c.contains("val front0 = rememberSoftBitmap(if (faces && !frontPending) ownFront ?: cover else null, 480, trim = true)"))
++        assertTrue(src("RealMedia.kt").contains("val coverOff = CoverAspects.rawOf(cover)"))
++    }
++
++    @Test fun flatCaseTakesTheScanForAFarOffPickedCover() {
++        val r = src("RealMedia.kt")
++        assertTrue(r.contains("val pickedOff = UserCovers.isPicked(cover0) && (cover0 as? String)?.let { CoverAspects.rawOf(it) }"))
++        assertTrue(r.contains("val scanUse = scan ?: ownScan"))
++        assertTrue(r.contains("val caseScan = if (forAll || (UserCovers.isPicked(cover0) && (!pickedOff || scanUse == null))) null else"))
++    }
++
++    // D3 (Thor): the second screen's own brightness — its window's override, 0 = the same as the main screen.
++    @Test fun secondScreenHasItsOwnBrightness() {
++        val f = listOf(File("../src_copy/data/Features.kt"), File("src/main/java/com/shelf/launcher/data/Features.kt"), File("app/src/main/java/com/shelf/launcher/data/Features.kt")).first { it.exists() }.readText()
++        assertTrue(f.contains("val secondBrightness = IntPref(\"second_brightness\", 0, 0..100)"))
++        val d = src("SecondDim.kt")
++        assertTrue(d.contains("own > 0 -> own / 100f"))
++        assertTrue(d.contains("if (dimmed) undim() else backlight(false)"))
++        assertTrue(src("SettingsDialog.kt").contains("ShelfCard { SecondBrightnessChoice() }"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

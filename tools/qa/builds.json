@@ -286,6 +286,17 @@
    "patch_sha256": "5540bda9ece813c98a3c0091d35fa94f3824b17920a3a551e1f38ed021fbbfe4",
    "tree_hash": "",
    "note": "update 483: 482b + A5 'All games' / library totals from the library (D279), C1 destructive rows in the layouts' own game windows follow the window's writing colour; Odin only"
+  },
+  {
+   "id": "qa-0.6.68-485",
+   "apk_sha256": "1e763a14998c5697fb9980c41c982053c9acb3667a84f996cf27b05ad96cb719",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74 = the published v0.6.67 the KONKR and Thor run, so it installs in place and v0.6.67 goes back without a downgrade)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "50a8d1fb1f32c0829f0430ab66670b4e5e39e031740e8ec1e83b629cfe1c5098",
+   "tree_hash": "",
+   "note": "update 485: 484 + E3 picked cover far off the case's shape gives way to the box scan in Case3D (decoded shape) and CaseArt (D280), D3 second-screen brightness; KONKR + Thor, restored to v0.6.67 (1586accc) after"
   }
  ]
 }

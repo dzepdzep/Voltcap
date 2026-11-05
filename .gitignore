@@ -73,4 +73,8 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt
 /app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch485Test.kt
 /app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
+
+# A stray file from a shell command on the PC (update 485) — never committed
+/bject FullName, Length

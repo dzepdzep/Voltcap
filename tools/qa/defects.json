@@ -3416,6 +3416,22 @@
    ],
    "root_cause": "state.games is every scanned game and installed app; the library (All) keeps apps only when in the library and hides region duplicates",
    "fix": "LauncherUiState.libraryGames() / libraryCount(c); the stale check compares the same count (Batch482Test.allGamesCountsTheLibrary)"
+  },
+  {
+   "id": "D280",
+   "title": "Pokemon Silver (KONKR): Case Flow and Case stacks cut the box print \u2014 top margin and the 'SILVER VERSION' / ESRB / Nintendo foot lost \u2014 while Inspect showed the whole box",
+   "rule": "E3",
+   "severity": "high",
+   "kind": "defect",
+   "status": "fixed in staging (485) - KONKR: Case Flow, Case stacks, Game shelf and Inspect show the same whole box scan; v0.6.67 reproduced before",
+   "found": "update 485 KONKR (owner's report; Case Flow on the published v0.6.67)",
+   "where": "ui/Case3D.kt (front choice), ui/RealMedia.kt CaseArt + case3dModels, ui/StyleCaseStacks.kt",
+   "evidence": [
+    "media dump: the owner's picked cover is a SteamGridDB portrait grid (aspect 0.667) on a 117 x 117 mm Game Boy Color box; FACES front=cover",
+    "QA trace: CaseArt picked aspect=0.667 case=(117,117) scan=false"
+   ],
+   "root_cause": "update 317's rule (a cover > 8 % off the case's shape gives way to the box scan) only knew a cover's shape once a flat card had drawn it (CoverAspects) \u2014 Case Flow decodes its own; Case stacks' flat case (StyleArt / CaseArt) is never handed a scan for a picked cover (update 235)",
+   "fix": "Case3D reads the shape from its own decode (front held, no flash of the cut cover); CaseArt looks up the game's box-front scan itself for a far-off picked cover; a picked cover of the box's shape stays the front (Batch485Test)"
   }
  ]
 }
