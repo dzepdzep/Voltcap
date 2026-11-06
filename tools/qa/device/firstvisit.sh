@@ -23,7 +23,7 @@ while [ $r -lt $N ]; do
   dump ${r}_cinema_a; k DPAD_RIGHT; sleep 1.4; dump ${r}_cinema_b; k DPAD_RIGHT; sleep 1.4; dump ${r}_cinema_c
   echo "$r mark=$(cut -d' ' -f1 $F/voltcap_qa_screen) cinema a=$(foc ${r}_cinema_a | tail -c 30) b=$(foc ${r}_cinema_b | tail -c 30) c=$(foc ${r}_cinema_c | tail -c 30)" >> $OUT/trials.txt
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT
 echo DONE >> $OUT/log.txt

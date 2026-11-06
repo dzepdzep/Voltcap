@@ -23,5 +23,5 @@ for L in $2; do
   echo "$L $ok rapid_end=$([ "$W4" = "$H" ] && echo closed || echo "open->${W4b:+B}") launches_blocked=$LB | $MO" >> $OUT/log.txt
   W4b=
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false
+A --ez voltcap_test_preview false
 echo DONE >> $OUT/log.txt

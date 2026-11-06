@@ -1,3 +1,47 @@
+# Update 489d (6 Nov 2026) — checkpoint 13: D287 fail-safe launch block (verified), D285 KONKR regression, K4 spines A/B, K2 before/after, Settings proposal (read-only)
+
+Staging = 489c + the changes below; QA build qa-0.6.68-489d (bb646d48…, versionCode 74). Nothing published; no game launched; no
+save, sync, RetroArch history or recent-games data touched. Both devices back on v0.6.67 (1586accc), snapshots byte-identical.
+- **D287 — QA launch protection is fail-safe (fixed in staging, verified on the KONKR):**
+  - *App, QA builds only (test-hooks file present):* launching is blocked by default. Switching `voltcap_test_nolaunch` off or
+    deleting `qa_nolaunch` no longer unblocks; only `<files>/qa_allow_launch` (an owner-approved run) does. The check sits at every
+    launch path: `vm.launch`, `vm.launchNow` (Play, Continue, offline prompt, save conflicts), `vm.launchApp`, `GameLauncher.launch`
+    / `launchAppOn` (the last step before Android), `QuickResume.resume`, `ScreenLayouts.startApp`, the hero dock. A hooks file older
+    than 24 h stops counting, so a forgotten one can never block normal use; installs without the hooks file are untouched.
+  - *Scripts:* `qaguard.sh` asks the running build (`qa_launch_check` → `qa_launch_state`); only "blocked" passes. Every Play press
+    (popclip, cycle489, d287v) is behind it. No QA script lifts the block any more (24 old scripts cleaned); only the final clean-up
+    with the release build back removes the files.
+  - *Regression checks:* `Batch489Test.d287EveryLaunchPathIsGuarded` (fails if any launch path loses the check),
+    `d287QaBuildsBlockLaunchesUnlessAllowed`; `test_qa.py TestLaunchGuard` (no device script lifts the block; Play only after `qa_guard`).
+  - *Device (KONKR, `d287v.sh`):* guard "blocked" PASS · nolaunch switched off + file deleted → still blocked PASS · allow file →
+    ALLOWED, removed → blocked PASS · one real Play press on Pokemon Silver → `LAUNCH blocked` ×1, asked 0, Voltcap stayed in front
+    PASS · RetroArch history md5 unchanged PASS. popclip p489k: all 6 Play taps blocked. Silver `.srm` md5 unchanged (7e07a4186713).
+- **D285 — KONKR regression (settings-safe, QA build 489d):** Panels + Row reveal, open / close ×12 on SpongeBob (GBC, long title):
+  no ANR, p99 34–46 ms, janky 2–7 per cycle. Own window scenes ×6 cycles each, no ANR: Orbit p99 42–69 ms, Magazine 48–73 ms
+  (≈97 frames per cycle — mostly still), Rental 38–53 ms, Bubbles 25–57 ms (Orbit / Bubbles: the first cycle highest). popclip p489k (Own
+  style): Panels, Orbit, Blades, Bubbles, Magazine, Rental 6/6 PASS. Not tested on the KONKR: the 3DS case that froze on the Thor
+  (the KONKR has no 3DS games) and a v0.6.67 KONKR baseline (the old build can't confirm the launch block, so no Play-capable run on it).
+  - *Gate fix:* popclip's Play words lacked Rental's "Rent & Continue" (a played game), so Rental graded open=FAIL; added "Rent &
+    Continue" / "Rent & Resume" (geomcheck.py + popclip.sh, kept in step).
+- **K4 — spines ahead, A/B cold on the Thor (Case flow SNES, 80 steps out and back):** spines made ahead in their own effect
+  (489b moved them out of the picture effect; `SPINE_AHEAD` = 8, nearest first, same bounded SpineCache). Nameless spines shown:
+  **90 with spines-ahead off → 0 with it on** (489b: 12; 488: 95); the second pass 0 in both. Frames over the same walk: janky
+  26.7 % → 26.0 %, p50 11 → 10 ms, p90 81 / 81, p99 150 / 150 — no scrolling cost. Memory: settled PSS 579–605 MB with it on
+  (489b 581 MB); right after the walk 1061 MB (off) vs 1223 MB (on), single samples while the walk's pictures were still held —
+  not conclusive. **K4 stays "owner check pending":** Thor only, one category; KONKR not measured.
+  - *QA tool fix:* the Thor's lower screen launcher can hold the input focus; `k4wait488.sh` sends its arrows to display 0. After a
+    cold start "Who's playing?" opens first; `k4ab489.sh` closes it with B (keeps the profile).
+- **K2 — before / after for review (`Claude outputs/qa489/k2_before_after.png`):** the Thor's own screensaver timer, no input, no
+  setting changed (`k2idle.sh`): v0.6.67 and staging both start the screensaver after ~5 min and it covers the whole home. The
+  original fault (home UI over the screensaver) did not occur in this one v0.6.67 run, so the before image does not show the bug.
+- **Settings proposal (read-only):** `docs/SETTINGS_PROPOSAL_489.md` — current size, the colour order as the code resolves it,
+  staged simplification (labels, search, a "this layout" badge), R1 Quick menu; no prefs moved.
+- **Seen, not changed:** after a fresh install / force-stop the start-up "Who's playing?" opens (owner's start-up mode);
+  v0.6.67 shows "What's new" after the reinstall (left on the Thor for the owner); Pocket classic's info line scrolls past the edge.
+- **Copy:** staging only — `next/0.6.68/staging.patch`. Files: LauncherViewModel.kt, data/GameLauncher.kt, data/QuickResume.kt,
+  data/ScreenLayouts.kt, ui/StyleHeroTiles.kt, ui/RealMedia.kt (+ 489 files); tools/qa (device scripts, geomcheck.py, selftest).
+- **Checks:** testDebugUnitTest + assembleRelease green on the PC; QA selftest 134 OK.
+
 # Update 489 (6 Nov 2026) — checkpoint 12: D285 Panels ANR root cause + fix (verified), D286 = QA artefact, K4 spines ready ahead, K1 Case stacks spacing, Save Vault check; QA incident D287
 
 Staging = 488c + the changes below; QA builds qa-0.6.68-489a / 489b / 489c (versionCode 74, Thor only). Nothing published.

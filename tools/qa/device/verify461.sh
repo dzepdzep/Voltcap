@@ -20,5 +20,5 @@ for L in GRID HERO TV CUBE FILESELECT SHOP; do
     k BUTTON_A 1.7; screencap -p $O/pop_${L}_${st}.png; k BUTTON_B 1.4
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
+A --ez voltcap_test_preview false; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; cat /sdcard/Android/data/$P/files/voltcap_test_snapshot_verify.txt > $O/restore.txt; echo DONE > $O/DONE

@@ -1,5 +1,5 @@
 {
- "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete \u2014 mark it.",
+ "_about": "VoltCap defect database (tools/qa). status: open | fixed (code changed, compiled) | verified (re-run on device shows it gone) | wontfix | suspect (needs evidence). Add one entry per defect; never delete — mark it.",
  "defects": [
   {
    "id": "D1",
@@ -13,13 +13,13 @@
     "qa_runs/r1/nav120_frames/ev_00698_transient.png",
     "qa_runs/r1/base_nav_frames/ev_00702_transient.png"
    ],
-   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) \u2014 those frames drew the new row at rest, full strength.",
+   "root_cause": "HomeExtras.categorySlide: LaunchedEffect(tick) snapped the slide to its start only after the frame where the category changed (and then waited two more frames) — those frames drew the new row at rest, full strength.",
    "files": [
     "ui/HomeExtras.kt"
    ],
    "fix": "graphicsLayer draws the slide's start position while the effect hasn't caught up with the tick (as StyleCrossMenu update 166).",
    "check": "home_nav scenario: no transient at the R2/L2 frames; static rule SNAP-ANIMATE",
-   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 \u2014 no full-strength row; one empty frame (D17), then the slide"
+   "verified": "qa_runs/r2/C_nav_frames: ev_00518, ev_00764 — no full-strength row; one empty frame (D17), then the slide"
   },
   {
    "id": "D2",
@@ -73,7 +73,7 @@
   },
   {
    "id": "D6",
-   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals\u2026)",
+   "title": "27 more keyed produceState sites returned the previous item's value (console photos, screenshots, case faces, theme thumbs, history, manuals…)",
    "rule": "STALE-PRODUCE",
    "severity": "medium",
    "status": "fixed",
@@ -82,11 +82,11 @@
     "ui/ProduceKeyed.kt (new)",
     "26 call sites"
    ],
-   "fix": "produceKeyed(initial, identity, keys\u2026)"
+   "fix": "produceKeyed(initial, identity, keys…)"
   },
   {
    "id": "D7",
-   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) \u2026 })",
+   "title": "Theme thumbnails could stay on the previous theme's picture forever (produceState(cached(t), t) { if (value == null) … })",
    "rule": "STALE-FOREVER",
    "severity": "medium",
    "status": "fixed",
@@ -96,7 +96,7 @@
   },
   {
    "id": "D8",
-   "title": "Focus pulse rebuilt the whole focused card ~20\u00d7/s while idle on Home",
+   "title": "Focus pulse rebuilt the whole focused card ~20×/s while idle on Home",
    "rule": "PULSE-COMPOSE",
    "severity": "medium",
    "status": "fixed",
@@ -111,7 +111,7 @@
   },
   {
    "id": "D9",
-   "title": "Sliders: \u25c0 \u25b6 step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
+   "title": "Sliders: ◀ ▶ step by 5 even on small ranges (2..12, 0..8) and trap focus at the ends",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "fixed",
@@ -132,7 +132,7 @@
   },
   {
    "id": "D11",
-   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) \u2014 cause found: the theme colour glide (D22)",
+   "title": "Home screen content recomposes ~50 times a second while navigating (LauncherScreenContent collects the whole uiState) — cause found: the theme colour glide (D22)",
    "rule": "PERF",
    "severity": "medium",
    "status": "verified",
@@ -141,7 +141,7 @@
   },
   {
    "id": "D12",
-   "title": "Render-thread spikes 36\u201348 ms (CommandIssue) right after focus moves \u2014 likely software bitmaps uploaded at draw",
+   "title": "Render-thread spikes 36–48 ms (CommandIssue) right after focus moves — likely software bitmaps uploaded at draw",
    "rule": "PERF",
    "severity": "medium",
    "status": "suspect",
@@ -151,13 +151,13 @@
   },
   {
    "id": "D13",
-   "title": "Composition spikes 25\u201354 ms (ANIMATION phase) during navigation / category switch",
+   "title": "Composition spikes 25–54 ms (ANIMATION phase) during navigation / category switch",
    "rule": "PERF",
    "severity": "medium",
    "status": "suspect",
    "found": "QaTrace slow-frame log",
    "next": "trace with vcTrace sections; perf agent P2/P7",
-   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) \u2192 D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
+   "note": "pass 2 atrace T1: one 66 ms frame = decodeBitmap 45 ms inside Compose:recompose (fresh install) → D23; render-thread 55 ms = shader_compile on first run after install (not reproducible after warm-up)"
   },
   {
    "id": "D14",
@@ -177,18 +177,18 @@
    "rule": "LAYOUT-POP",
    "severity": "medium",
    "status": "verified",
-   "found": "qa_runs/r2/B_nav 720\u2192730\u2192745",
+   "found": "qa_runs/r2/B_nav 720→730→745",
    "files": [
     "ui/GameCard.kt",
     "ui/GameDock.kt"
    ],
-   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos \u00b12 prefetched"
+   "fix": "slot reserved from known aspect (LogoAspects) or max width; image keyed by URL; logos ±2 prefetched"
   },
   {
    "id": "D16",
-   "title": "(not a defect) repeated header/cover shake when pressing \u25b6 on the last game",
+   "title": "(not a defect) repeated header/cover shake when pressing ▶ on the last game",
    "status": "wontfix",
-   "note": "EdgeBump \u2014 intended; scenarios now start from All, first game"
+   "note": "EdgeBump — intended; scenarios now start from All, first game"
   },
   {
    "id": "D17",
@@ -200,19 +200,19 @@
    "files": [
     "ui/GameDock.kt"
    ],
-   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 \u2014 no empty frame"
+   "verified": "qa_runs/r3/G_nav.mp4 (Thor 120 Hz, 849 frames): frames.py 0 transients / 0 blanks / 0 dips; contact sheet frames 440-470: old row at 457, new row already sliding in at 458 — no empty frame"
   },
   {
    "id": "D18",
-   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames \u2014 explained",
+   "title": "Idle (calm, 35 s untouched) still draws ~32 fps with 31-45 % janky frames — explained",
    "severity": "medium",
    "status": "wontfix",
    "found": "suite A/B idlecalm",
-   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings \u203a Device \u203a Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
+   "note": "pass 3: the background is 'Art + videos': the game's clip plays behind the row (frame-diff heatmap of a 4 s idle recording: the whole backdrop changes, ~30 fps; churn shows only the clip's clock). By design until Rest (Settings › Device › Battery saver). gfxinfo 'janky' % is meaningless for a 30 fps clip on a 120 Hz panel. Possible later optimisation: a SurfaceView clip would not redraw Voltcap's UI each clip frame."
   },
   {
    "id": "D19",
-   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts \u2715 badge, Edit Home hint",
+   "title": "Controller paths added: Background work / Sync status (R1), Twin Showcase + Pocket Classic dashboard chip, second-screen Wall edit, second-screen X menu, Shortcuts ✕ badge, Edit Home hint",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "fixed",
@@ -231,7 +231,7 @@
     "ui/ShortcutsPanel.kt",
     "ui/SettingsDialog.kt"
    ],
-   "check": "not yet run on device \u2014 key sequences in audit/2026-10-27/controller.md"
+   "check": "not yet run on device — key sequences in audit/2026-10-27/controller.md"
   },
   {
    "id": "D20",
@@ -264,7 +264,7 @@
   },
   {
    "id": "D22",
-   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110\u00d7/s and every game card (~1000 card rebuilds/s) while navigating",
+   "title": "The theme colours glide (600 ms after every game change); every reader re-composed each frame: the home screen ~110×/s and every game card (~1000 card rebuilds/s) while navigating",
    "rule": "THEME-COMPOSE",
    "severity": "high",
    "status": "verified",
@@ -281,7 +281,7 @@
     "ui/FocusEffects.kt (softGlowLive, pulseBorderLive, electricFrameLive)"
    ],
    "fix": "colours read while drawing through one stable State (ShelfTheme.live) in the hot paths: root background, dim wash, EdgeBump glow, status bar (only layouts that use the accent), card shadow (graphicsLayer), glow, frames, Living Library bars, unlock pill, progress bars, accent icons in their own scope; the no-op mediaFloorGlow argument removed. The glide itself is unchanged.",
-   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 \u2192 8, GameCard 1000 \u2192 48 (+ focused 6), GameDock unchanged 6",
+   "verified": "same 14-press scenario, recompositions per second while navigating: Screen 113 → 8, GameCard 1000 → 48 (+ focused 6), GameDock unchanged 6",
    "remaining": "static rule THEME-COMPOSE lists 37 more sites (other layouts, dialogs)"
   },
   {
@@ -301,7 +301,7 @@
    ],
    "fix": "cachedImageResource(): one decode per app run, LRU-bounded at 64 MB; traced as VC:resDecode",
    "check": "atrace of a category switch: VC:resDecode only on the first appearance of each template",
-   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) \u2014 fix kept, effect unproven"
+   "note": "cold-start traces T4/T5: no VC:resDecode on the main thread in the tested categories (the templates may simply not be used there) — fix kept, effect unproven"
   },
   {
    "id": "D25",
@@ -311,17 +311,17 @@
    "status": "fixed",
    "found": "T3/T4/T5; not imageResource / painterResource (ResImages), PlatformLogos or PackSpines (instrumented: VC:resDecode / VC:logoDecode / VC:spineDecode never fire)",
    "next": "sampling profile (am profile) around the first 3DS category switch",
-   "root_cause": "second screen: MediaInspectView.secondCasePiece \u2192 CustomPieceTones.of \u2192 CartShells.packColour \u2192 CustomPieceTones.toneOfFile \u2192 BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
+   "root_cause": "second screen: MediaInspectView.secondCasePiece → CustomPieceTones.of → CartShells.packColour → CustomPieceTones.toneOfFile → BitmapFactory.decodeFile of your pack's cartridge picture, on the main thread in composition, the first time a pack cartridge shows after each start (found with QaSampler + retrace.py, coldsample CS1)",
    "files": [
     "ui/SolidPiece.kt (CustomPieceTones.attach / keepTone)",
     "MainActivity.kt"
    ],
-   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date \u2192 colour); restored on a background thread at start",
+   "fix": "the tone is read once ever and kept in files/piece_tones.txt (path, size, date → colour); restored on a background thread at start",
    "verified": "coldsample CS2 / CS3 (cold starts, same category switches): 0 main-thread decodes (CS1: 1, 47-58 ms)"
   },
   {
    "id": "D26",
-   "title": "R1 panel: a notification's \u2715 (Dismiss) could not be reached with the D-pad \u2014 it sits inside the notification's own button, \u25b6 went to 'Clear all' instead",
+   "title": "R1 panel: a notification's ✕ (Dismiss) could not be reached with the D-pad — it sits inside the notification's own button, ▶ went to 'Clear all' instead",
    "rule": "CONTROLLER",
    "severity": "medium",
    "status": "verified",
@@ -329,12 +329,12 @@
    "files": [
     "ui/NotificationsPanel.kt"
    ],
-   "fix": "\u25b6 on a notification moves to its \u2715, \u25c0 back (focus requesters on the row and the \u2715)",
-   "verified": "walk W5 on the Thor: \u25b6 \u2192 'Dismiss', \u25c0 \u2192 the notification"
+   "fix": "▶ on a notification moves to its ✕, ◀ back (focus requesters on the row and the ✕)",
+   "verified": "walk W5 on the Thor: ▶ → 'Dismiss', ◀ → the notification"
   },
   {
    "id": "D27",
-   "title": "The \u2715 close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
+   "title": "The ✕ close button of every panel / dialog had no name (screen readers said nothing; the walk showed '@box')",
    "rule": "CONTROLLER",
    "severity": "low",
    "status": "fixed",
@@ -352,7 +352,7 @@
    "files": [
     "data/RomHacks.kt"
    ],
-   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < \u2026 LauncherViewModel.recombineGames"
+   "found": "QaSampler CS1: Pattern.compile < RomHacks.plain < … LauncherViewModel.recombineGames"
   },
   {
    "id": "D29",
@@ -371,7 +371,7 @@
    "rule": "SNAP-LATE-LAYOUT",
    "severity": "medium",
    "status": "verified",
-   "found": "layout sweep LA_TILES frames 224\u2192226 (frames.py transient ev_00225)",
+   "found": "layout sweep LA_TILES frames 224→226 (frames.py transient ev_00225)",
    "files": [
     "ui/TileHome.kt (TilesMidLine)",
     "ui/LauncherScreen.kt"
@@ -385,15 +385,15 @@
    "rule": "THEME-COMPOSE",
    "severity": "high",
    "status": "verified",
-   "found": "layout sweep (recomp Screen=\u2026), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
+   "found": "layout sweep (recomp Screen=…), QaInval themeread stack: ShelfTheme.colors < HomeLayer$CategoriesBar < HomeLayer$GameRows < LauncherScreenContent (local composable functions run in the caller's scope)",
    "files": [
     "ui/LauncherScreen.kt (ProvideNameColors)"
    ],
-   "verified": "layout sweep LE vs LA\u2013LD: Grid Screen 91 \u2192 9/s, janky 15.8 \u2192 7.5 %"
+   "verified": "layout sweep LE vs LA–LD: Grid Screen 91 → 9/s, janky 15.8 → 7.5 %"
   },
   {
    "id": "D32",
-   "title": "Resume & discover: on every \u25c0 \u25b6 the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
+   "title": "Resume & discover: on every ◀ ▶ the NEW game sat in the big spot for one frame, then jumped back to the row and flew in",
    "rule": "SNAP-ANIMATE",
    "severity": "high",
    "status": "verified",
@@ -416,7 +416,7 @@
     "ui/LauncherScreen.kt"
    ],
    "fix": "the look is made inside StatusBar (its own recompose scope)",
-   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s \u2192 9-14/s in every one; janky % e.g. Cross 12.2 \u2192 3.4, Live 4.8 \u2192 1.3, Cards 9.7 \u2192 3.7, Green Core 17.3 \u2192 5.7, Crate 8.1 \u2192 2.9, Side 8.4 \u2192 3.4 (full table: REPORT.md pass 3)"
+   "verified": "layout sweep LE (27 layouts, same navigation): Screen recompositions 42-112/s → 9-14/s in every one; janky % e.g. Cross 12.2 → 3.4, Live 4.8 → 1.3, Cards 9.7 → 3.7, Green Core 17.3 → 5.7, Crate 8.1 → 2.9, Side 8.4 → 3.4 (full table: REPORT.md pass 3)"
   },
   {
    "id": "D33",
@@ -443,17 +443,17 @@
   },
   {
    "id": "D36",
-   "title": "Settings \u203a Categories: after \u25b2/\u25bc the focus stayed on the row slot, so the next press moved the neighbouring category",
+   "title": "Settings › Categories: after ▲/▼ the focus stayed on the row slot, so the next press moved the neighbouring category",
    "rule": "FOCUS-FOLLOWS",
    "severity": "medium",
    "status": "verified",
-   "found": "2026-10-27 walk ST3 (Thor): A on \u25bc of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
+   "found": "2026-10-27 walk ST3 (Thor): A on ▼ of row 3 moved 'Continue playing' down; focus stayed on row 3 (now 'Most played')",
    "root_cause": "CategoryOrderCard drew the rows with forEachIndexed and no key(): the chip nodes belong to the slot, not the category, so focus stays put while the categories swap under it.",
    "files": [
     "ui/SettingsDialog.kt"
    ],
    "fix": "Rows keyed by category; after a move, focus is requested on the same arrow of the moved category (the other arrow when it reaches the top/bottom and the pressed one turns off).",
-   "check": "walk D36: \u25b2 \u25b2 \u25bc \u25bc on one category \u2014 focus y 945\u2192822\u2192699 then 699\u2192822\u2192945 (one row per press, following the category)",
+   "check": "walk D36: ▲ ▲ ▼ ▼ on one category — focus y 945→822→699 then 699→822→945 (one row per press, following the category)",
    "verified": "walk D36 (14:10 build) on the Thor; category order back exactly as saved (snapshot file compared)"
   },
   {
@@ -462,7 +462,7 @@
    "rule": "WALK-SAFETY",
    "severity": "medium",
    "status": "verified",
-   "found": "walk ST3 pressed A on a \u25bc in Settings \u203a Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
+   "found": "walk ST3 pressed A on a ▼ in Settings › Categories; the Features snapshot did not include the 'categories' prefs, so the order stayed changed (put back by hand right away)",
    "root_cause": "voltcap_test_snapshot only saves Features prefs; CategoryStore lives in its own SharedPreferences.",
    "files": [
     "ui/TestHooks.kt"
@@ -473,16 +473,16 @@
   },
   {
    "id": "D38",
-   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; \u25b6 off a row's end jumps rows; settings opened on the last-used category",
+   "title": "Explorer (QA tool) false 'not reached': chip rows entered on their picked chip; ▶ off a row's end jumps rows; settings opened on the last-used category",
    "rule": "TOOL",
    "severity": "low",
    "status": "fixed-compiles",
-   "found": "E4: Theme \u203a Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with \u25c0 (no app defect)",
-   "root_cause": "explorePage swept \u25b6 only, and came back with the same number of \u25c0; QaExplore took the first focused category as the list's start.",
+   "found": "E4: Theme › Size & text Compact/Default/Small/Normal 'NOT REACHED'; hand walk ST2 showed they ARE reachable with ◀ (no app defect)",
+   "root_cause": "explorePage swept ▶ only, and came back with the same number of ◀; QaExplore took the first focused category as the list's start.",
    "files": [
     "ui/QaExplore.kt"
    ],
-   "fix": "Row walk \u25c0 and \u25b6 while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
+   "fix": "Row walk ◀ and ▶ while the focus stays on the row (same top, inside the page), back to the row's entry by id (label@x), re-found from the page top if lost; toFirstCategory() before listing/reaching categories; to=N option.",
    "check": "next explorer run E6: Size & text chips reached; categories list starts at Home"
   },
   {
@@ -493,7 +493,7 @@
    "status": "fixed-on-device (data); design note open",
    "found": "Toni 2026-10-27 ('would it break when I added the rounded shortcuts under the tiles'); preview TILES with shortcuts ROW: bar drawn over the tiles at y=0.42",
    "root_cause": "A bar moved in Edit Home floats at a saved screen fraction (widget_positions shortcuts=0.5,0.42); it doesn't follow the tiles, so Update 350 / D30 moving the tiles up left it over them.",
-   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) \u2014 the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
+   "fix": "Toni's saved 'shortcuts' spot removed (voltcap_test_pref widget_positions, the other spots kept) — the bar is by the row again. Open idea: a floating bar dropped right under the tiles could snap back to 'by the row'.",
    "check": "tilemid log: group=721 (bar included), screenshot tiles_sc2",
    "verified": "screens/tiles_sc2.png (Thor, preview TILES)"
   },
@@ -509,7 +509,7 @@
     "ui/TileHome.kt"
    ],
    "fix": "TilesTopLine alignment line; Middle uses (tiles top + group bottom without padding)/2 when the buttons are by the row under the tiles.",
-   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 \u2192 tiles 282\u2013652 + buttons to ~780 (group centre \u2248 531 vs screen 540 minus bottom padding)",
+   "check": "tilemid log h=1080 group=721 line=353 mid=425.8 y=114 → tiles 282–652 + buttons to ~780 (group centre ≈ 531 vs screen 540 minus bottom padding)",
    "verified": "Thor preview TILES, 14:25 build"
   },
   {
@@ -518,13 +518,13 @@
    "rule": "PER-FRAME-COMPOSITION",
    "severity": "high",
    "status": "verified",
-   "found": "atrace TS (STACKS): 35\u201346 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) \u2248 1,000/s with no input changed",
-   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this \u2014 checked, CH4 \u2014 so it is specific to this derived state, not derivedStateOf in general).",
+   "found": "atrace TS (STACKS): 35–46 ms frames, ~24 CarouselArt + ~190 recompose scopes in a step frame; QaInval CH/CH3: ~1,000 CarItem invalidations/s, all by one DerivedSnapshotState (mapping m1431: ao0) whose value stayed false; CarRun (item body re-runs) ≈ 1,000/s with no input changed",
+   "root_cause": "CarouselItem read turnedFar (derivedStateOf over the item's moving place) in composition; it is re-evaluated every glide frame and each evaluation re-ran the whole item although the answer stayed false (ARCADE's derivedStateOf over its glide does NOT do this — checked, CH4 — so it is specific to this derived state, not derivedStateOf in general).",
    "files": [
     "ui/Carousel.kt"
    ],
    "fix": "turnedFar is a plain mutableState set from snapshotFlow only when the answer changes (initial value computed synchronously).",
-   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% \u2192 22.7%, p90 42 \u2192 32 ms, p99 85 \u2192 77 ms",
+   "check": "lchurn STACKS: CarRun ~50/s (was ~1,000/s); layouts.sh STACKS janky 26.6% → 22.7%, p90 42 → 32 ms, p99 85 → 77 ms",
    "verified": "Thor, runs SB (before) / SA (after), 14:35 build"
   },
   {
@@ -533,8 +533,8 @@
    "rule": "TOOL",
    "severity": "low",
    "status": "fixed-compiles",
-   "found": "E6: 9 'row lost at Search settings' \u2014 each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
-   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every \u25c0 along a row counted as leaving the page.",
+   "found": "E6: 9 'row lost at Search settings' — each disabled the row walk for the rest of its page, so later chips showed as NOT REACHED",
+   "root_cause": "pageLeft was taken from the first focused control (the search field, x 1016), so every ◀ along a row counted as leaving the page.",
    "files": [
     "ui/QaExplore.kt"
    ],
@@ -555,8 +555,8 @@
     "data/Features.kt",
     "data/LayoutOnly.kt"
    ],
-   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings \u203a Categories \u203a Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
-   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 \u2192 Voltcap row, GameCube \u2192 Case stacks, back \u2192 Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
+   "fix": "CategoryLayouts (JSON per category key + default); the switch goes through the usual layout switch (look parked / Only-this-layout settings swapped) and is shown in the same state update as the new category. Settings › Categories › Home layout per category: Keep <layout> here / Follow the default / list with Reset / Reset all.",
+   "check": "catlayout.sh CL (GameCube=STACKS, default CLASSIC): N64 → Voltcap row, GameCube → Case stacks, back → Voltcap row; frames.py on L2 / R2: 0 transients, 0 black, one 50 ms hitch at the switch into Case stacks",
    "verified": "Thor, preview session (nothing saved), qa_runs/r7/CL"
   },
   {
@@ -579,7 +579,7 @@
   },
   {
    "id": "D45",
-   "title": "Mix \u203a Customize consoles (feature): each console its own medium",
+   "title": "Mix › Customize consoles (feature): each console its own medium",
    "rule": "FEATURE",
    "severity": "request",
    "status": "verified (CASE, COVER, AUTO, MEDIUM)",
@@ -596,7 +596,7 @@
     "ui/MediaInspectView.kt",
     "ui/StyleDiscStation.kt"
    ],
-   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing \u2014 fixed.",
+   "root_cause": "(first build) active() also required discsForAll off; that flag is only used inside the Discs look and was on on the Thor, so the choices did nothing — fixed.",
    "check": "mixcon.sh MY (GameCube): AUTO / MEDIUM discs, CASE retail boxes, COVER covers",
    "verified": "Thor, preview session, qa_runs/r7/MY"
   },
@@ -606,7 +606,7 @@
    "rule": "art-fit",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -618,7 +618,7 @@
    "rule": "STEP-READ (R12)",
    "severity": "high",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -630,7 +630,7 @@
    "rule": "WINDOW-BY-GLIDE (R13), WRAP-AFTER-PARALLAX (R14)",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -642,11 +642,11 @@
    "rule": "PERF",
    "severity": "med",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
-   "fix": "Face only for |i-sel|<=1, window \u00b13, shadow only on the blade coming forward \u2192 1.14 % (L7)."
+   "fix": "Face only for |i-sel|<=1, window ±3, shadow only on the blade coming forward → 1.14 % (L7)."
   },
   {
    "id": "D51",
@@ -654,7 +654,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -669,7 +669,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -684,7 +684,7 @@
    "rule": "LAYOUT",
    "severity": "low",
    "status": "verified",
-   "found": "2026-10-27 pass 4 polish (looks.sh L5\u2013L8)",
+   "found": "2026-10-27 pass 4 polish (looks.sh L5–L8)",
    "files": [
     "ui/CategoryLooks.kt"
    ],
@@ -695,7 +695,7 @@
   },
   {
    "id": "D54",
-   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1\u20136 %)",
+   "title": "Category looks re-composed every item on every frame of a move (Drawers ~9 % janky, Blades 1–6 %)",
    "rule": "GLIDE-COMPOSE (R17)",
    "severity": "med",
    "status": "verified",
@@ -721,7 +721,7 @@
    ],
    "fix": "Scrolls by whole rows only when the system you're on leaves the view.",
    "evidence": [
-    "qa_runs/r8/T.tar: tap 1 \u2192 PlayStation focused, tap 2 \u2192 PlayStation opened"
+    "qa_runs/r8/T.tar: tap 1 → PlayStation focused, tap 2 → PlayStation opened"
    ]
   },
   {
@@ -756,7 +756,7 @@
    ],
    "fix": "Visible windows / z-orders as derivedStateOf; positions read in offset {} / graphicsLayer.",
    "evidence": [
-    "layouts.sh B5/B6 \u2192 A5: AIRY 12.80 \u2192 1.82 % (p99 48 \u2192 21 ms), CIRCUIT 13.55 \u2192 11.84 %, ORBIT 8.33 \u2192 7.85 %, PANELS 6.56 \u2192 5.81 %; NIGHT 6.27 \u2192 7.77 % and BLADES 2.26 \u2192 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
+    "layouts.sh B5/B6 → A5: AIRY 12.80 → 1.82 % (p99 48 → 21 ms), CIRCUIT 13.55 → 11.84 %, ORBIT 8.33 → 7.85 %, PANELS 6.56 → 5.81 %; NIGHT 6.27 → 7.77 % and BLADES 2.26 → 3.71 % within run noise (B6 runs were short). Circuit's remaining slow frames are GPU 10 ms + issue 6 ms (render-bound)."
    ]
   },
   {
@@ -795,7 +795,7 @@
     "ui/TileHome.kt"
    ],
    "root_cause": "The game's own disc photo (realScanOf) won before the case template was consulted.",
-   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles \u203a Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
+   "fix": "discInItsCase(platform): with Disc in its case (or Customize consoles › Case + media) the drawn case is used and the photo becomes the disc that sticks out.",
    "evidence": [
     "qa_runs/r8/MX.tar MX_GameCube_CASE_MEDIA (cases with their own discs), _MEDIUM (discs), _CASE (boxes)"
    ]
@@ -806,7 +806,7 @@
    "rule": "CONTROLLER (R6)",
    "severity": "low",
    "status": "verified-rp",
-   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first \u25b6 lands on the first control)",
+   "found": "2026-10-27 pass 5 explorer XS / XY / XL and walks WY*, WL*, WS* ('focus=-' after opening; the first ▶ lands on the first control)",
    "files": [
     "ui/DialogChrome.kt",
     "ui/ShortcutsPanel.kt",
@@ -824,11 +824,11 @@
    "status": "open (finding)",
    "found": "2026-10-27 pass 5 atrace TR1 (Case stacks, 8 s): checkForSemanticsChanges 399 ms + sendAccessibilitySemanticsStructureChangeEvents 313 ms + getAllUncoveredSemanticsNodes 220 ms on the main thread",
    "root_cause": "com.odin.gameassistant (ForegroundAppMonitorV4Service, the handheld's own game assistant) is enabled as an accessibility service, so Compose keeps its accessibility tree up to date for every app.",
-   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off \u2014 a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
+   "next": "Option A (no app change): Toni can test the cost by turning the game assistant's accessibility permission off — a system setting, not changed by QA. Option B: fewer semantics nodes on the moving rows (decorative spines and text without semantics); needs a TalkBack check."
   },
   {
    "id": "D61",
-   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) \u2014 mirror, 3D cases and building the new list over several frames made no difference",
+   "title": "Case stacks / Arcade stay render-bound (25 % / 30 % slow frames) — mirror, 3D cases and building the new list over several frames made no difference",
    "rule": "PERF",
    "severity": "med",
    "status": "open",
@@ -837,11 +837,11 @@
   },
   {
    "id": "D62",
-   "title": "Voltcap force-stopped during a QA trace \u2014 by the QA tools themselves",
+   "title": "Voltcap force-stopped during a QA trace — by the QA tools themselves",
    "rule": "ENV",
    "severity": "info",
    "status": "tool artefact (closed)",
-   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 \u2014 not one of the QA scripts",
+   "found": "2026-10-27 pass 5 logcat: ActivityManager forceStopPackage from pid 31607 — not one of the QA scripts",
    "note": "`vqa.sh hooks on|off` restarts Voltcap (force-stop + start). ltrace2.sh switched the hooks off while atrace was still recording. Each restart also brings up 'Who's playing?' on the next start."
   },
   {
@@ -851,7 +851,7 @@
    "severity": "medium",
    "status": "open",
    "found": "traces T3-T5; pass 5 am start -W: 889-963 ms",
-   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) \u2014 both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms \u2192 C1 877-1034 ms, no measurable change) \u2014 reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
+   "note": "pass 3 (QaSampler stacks): LauncherViewModel's constructor opens TgdbKeyStore / ScreenScraperStore (CS1: 68 + 203 ms). Tried: prewarm in the ViewModel's order (CS2: worse), stores opened in parallel (CS3: 260 ms) — both reverted. Pass 5: the first UI state built without the account flags, filled from IO (C0 889-963 ms → C1 877-1034 ms, no measurable change) — reverted. Next: a new QaSampler run (coldsample.sh) to find where the first frame waits now.",
    "partial": "SecureStore: an already-open store is returned without the lock (compiled, installed)"
   },
   {
@@ -873,11 +873,11 @@
    "severity": "medium",
    "status": "open",
    "found": "RP Classic, Dash layout, Game art background with a scraped clip: gfxinfo idle 5 min after the last press: 241 frames / 8 s, 85 % janky.",
-   "note": "By design since update 307 (clips loop while the home screen rests; only a low battery or the long rest holds them). Update 221 had paused them after 30 s for exactly this reason on the RP. Option for Toni: hold the clip after the 30 s idle on weak GPUs, or a setting. | Update 454: Measured (RP Classic, staging/RC identical): the idle home redraws continuously \u2014 owner's own layout 61 fps (0 missed), Tile home preview with the owner's background 31 fps; with a session-only BLACK background (voltcap_test_bg) 0 frames. So the cost is the selected animated / clip background, by design. It also makes the app drawer scroll GPU-bound (gpu 14.6 + cmd 7.9 ms per frame \u2192 ~30 fps; Thor the same). Not changed (owner: keep the selected background). Proposal for approval: hold the background clip / scene while a full panel (drawer, Settings) covers the home, and/or after the idle timeout on the RP Classic only."
+   "note": "By design since update 307 (clips loop while the home screen rests; only a low battery or the long rest holds them). Update 221 had paused them after 30 s for exactly this reason on the RP. Option for Toni: hold the clip after the 30 s idle on weak GPUs, or a setting. | Update 454: Measured (RP Classic, staging/RC identical): the idle home redraws continuously — owner's own layout 61 fps (0 missed), Tile home preview with the owner's background 31 fps; with a session-only BLACK background (voltcap_test_bg) 0 frames. So the cost is the selected animated / clip background, by design. It also makes the app drawer scroll GPU-bound (gpu 14.6 + cmd 7.9 ms per frame → ~30 fps; Thor the same). Not changed (owner: keep the selected background). Proposal for approval: hold the background clip / scene while a full panel (drawer, Settings) covers the home, and/or after the idle timeout on the RP Classic only."
   },
   {
    "id": "D65",
-   "title": "RP Classic: system_server aborts in a loop ('Got MOVE, but no touching pointers for device 8') \u2014 the vendor's 'Retro Station Virtual Mouse'",
+   "title": "RP Classic: system_server aborts in a loop ('Got MOVE, but no touching pointers for device 8') — the vendor's 'Retro Station Virtual Mouse'",
    "rule": "DEVICE",
    "severity": "high",
    "status": "third-party",
@@ -900,7 +900,7 @@
    "rule": "OVERLAP",
    "severity": "low",
    "status": "open",
-   "found": "crash3d runs E3T / E3W (carousel, 3D cartridges): logo over 'Game Boy Color \u00b7 Pokemon Silver Version'",
+   "found": "crash3d runs E3T / E3W (carousel, 3D cartridges): logo over 'Game Boy Color · Pokemon Silver Version'",
    "note": "User-placed part (fractions of the screen); the Thor's taller dp height leaves room. Option: keep the logo clear of the dock like the category part's keepClearOf."
   },
   {
@@ -909,7 +909,7 @@
    "rule": "LAYER-BRANCH",
    "severity": "high",
    "status": "verified-rp",
-   "found": "RP Classic 21:52 screenshot: no name after \u25b6; with QaFault rise_old the name shows -> Motion.riseOnChange",
+   "found": "RP Classic 21:52 screenshot: no name after ▶; with QaFault rise_old the name shows -> Motion.riseOnChange",
    "fix": "riseOnChange read p.value only in the else-branch of its layer; the frame drawn at 0 observed nothing, so the rise never redrew. Read first. Same pattern fixed in StyleConsoleHomes, StyleCustom, StyleMagazine (new static rule LAYER-BRANCH).",
    "verified": "t3/t4 21:56: ActRaiser and Contra Advance names shown after moves"
   },
@@ -925,7 +925,7 @@
   },
   {
    "id": "D70",
-   "title": "Home layouts: 176 names / labels cut with '...' (R18) \u2014 Airy, Bubbles, Camera, Cards, File select, Green core, Hero, Magazine, Night, Orbit, Pocket, Spotlight, Storage, Timeline \u2026",
+   "title": "Home layouts: 176 names / labels cut with '...' (R18) — Airy, Bubbles, Camera, Cards, File select, Green core, Hero, Magazine, Night, Orbit, Pocket, Spotlight, Storage, Timeline …",
    "rule": "TRUNCATE",
    "severity": "medium",
    "status": "verified-rp",
@@ -957,7 +957,7 @@
    "rule": "FOCUS",
    "severity": "low",
    "status": "open",
-   "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home \u203a Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
+   "found": "SX1-3: Home, Game look, Controls, Library, Accounts, Emulators, Screens, Overlay, Sync, Permissions, Device, Diagnostics walked. Not reached by the explorer: Overlay's 2 s / 3 s / 5 s / 10 s / Never, Sync's Every 3 / 6 / 24 h, Home › Name & logo and Round shortcuts chips (wrapped chip rows on the narrow screen). UNTESTED by hand whether the D-pad reaches them.",
    "note": "Theme, Screensaver, Categories, Achievements, Music & sound, Metadata, Performance not walked yet."
   },
   {
@@ -989,21 +989,21 @@
   },
   {
    "id": "D77",
-   "title": "Dashboard, Endless on: \u25c0 moves the row but the selection only changes on the second press (user report after update 381)",
+   "title": "Dashboard, Endless on: ◀ moves the row but the selection only changes on the second press (user report after update 381)",
    "rule": "ONE-PRESS (R23)",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-10-29 user report",
-   "note": "UPDATE 389 (owner: still wrong after 388, Endless on AND off): 388 only moved the problem. A per-frame trace on the Thor (QaGeom, card x + which card wore the frame) showed that after every press the frame rode the OLD card ~90 px left and then JUMPED ~197 px right onto the new card (hand-over half-way) before gliding back: highlight and row out of sync, the highlighted card was not the selected one. Cause: the highlight belonged to whichever card the discrete selection / a rounded slot pointed at, not to the row's position. Fix: the highlight is a crossfade by the row's actual position (EndlessRow.kt highlightStrength / FocusFollow; StyleArt focusAlpha / styleFocus alpha): the strengths of the cards always add up to 1 and their centre stays in the selection's slot; settled = the selected card alone; a row that cannot move further (no Endless, last game) is not followed. Settled slot verified Endless on and off (Dashboard x=706, Side menu x=800 after every press). Highlight389Test. Other layouts: see SUMMARY 389. UPDATE 388 (owner recording: highlight in the third slot, two games left of it, before the row caught up): 383 fixed only the scroll TARGET; the selection still changed at once while the row glided (~10 frames), so the highlight sat in slot 3 and slid back. Reproduced on the Thor in a 60 Hz screen recording (highlight x 906 -> 706). Fix: FollowFocus now returns the item that wears the highlight (shownFocusItem: the item standing in the selection slot while the row glides, hand-over half-way), also for a reversal back to the last settled selection; Dashboard and Side menu rows use it. Re-recorded frame by frame: highlight stays in slot 2 (max half a slot off at hand-over). ShownFocus388Test. UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one \u25b6 from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, \u25b6 \u25b6 \u25b6 and \u25c0 via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for \u25c0 on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
+   "note": "UPDATE 389 (owner: still wrong after 388, Endless on AND off): 388 only moved the problem. A per-frame trace on the Thor (QaGeom, card x + which card wore the frame) showed that after every press the frame rode the OLD card ~90 px left and then JUMPED ~197 px right onto the new card (hand-over half-way) before gliding back: highlight and row out of sync, the highlighted card was not the selected one. Cause: the highlight belonged to whichever card the discrete selection / a rounded slot pointed at, not to the row's position. Fix: the highlight is a crossfade by the row's actual position (EndlessRow.kt highlightStrength / FocusFollow; StyleArt focusAlpha / styleFocus alpha): the strengths of the cards always add up to 1 and their centre stays in the selection's slot; settled = the selected card alone; a row that cannot move further (no Endless, last game) is not followed. Settled slot verified Endless on and off (Dashboard x=706, Side menu x=800 after every press). Highlight389Test. Other layouts: see SUMMARY 389. UPDATE 388 (owner recording: highlight in the third slot, two games left of it, before the row caught up): 383 fixed only the scroll TARGET; the selection still changed at once while the row glided (~10 frames), so the highlight sat in slot 3 and slid back. Reproduced on the Thor in a 60 Hz screen recording (highlight x 906 -> 706). Fix: FollowFocus now returns the item that wears the highlight (shownFocusItem: the item standing in the selection slot while the row glides, hand-over half-way), also for a reversal back to the last settled selection; Dashboard and Side menu rows use it. Re-recorded frame by frame: highlight stays in slot 2 (max half a slot off at hand-over). ShownFocus388Test. UPDATE 383 (cause found by reading FollowFocus, then checked on the Thor): FollowFocus (ui/EndlessRow.kt) skipped the scroll whenever the focused card was already in view and not at an edge, so after one ▶ from the second slot two games stood left of the selection and the row moved only when the focus later reached an edge (the row moving a press after the selection). Fix: the row always keeps the selected card the same place (followTarget, one game left of it); regression test FollowFocus383Test (4 tests). Thor 3140972f: Dashboard, All, ▶ ▶ ▶ and ◀ via vqa.sh onepress, screenshots: selected card stayed in the second slot with exactly one game to its left each time. The OLD behaviour was not captured on the Thor (fix installed first); the cause is from code. Earlier note (update 382): Thor 3140972f, installed 0.6.55 build (includes 381), Dashboard layout via preview: Game Boy 140 games, PS3 3 games and a 6-game category, single presses 1.0-1.4 s apart and fast 130-150 ms sequences, both directions, first/last wrap: every press changed the focus by exactly one game in the trace (0 -> 139 and 139 -> 0 in ONE press); a 60 Hz recording of the 3-game wrap shows highlight and hero art switching within 2-3 frames. Code read: moveFocus -> setFocus(loopStep) is one step per press; styleHomeKey returns false for ◀ on game 0 when StyleNav.sideLoops (Dashboard sets it every composition). Not marked fixed. If it recurs ask for: category + game count, which game was selected, Dashboard options, whether the second screen was on. Tooling so the next run catches it: vqa.sh onepress + focuscheck.py (ignored press / latency / --edge-ok), static ONEPRESS."
   },
   {
    "id": "D78",
-   "title": "Resume & discover: \u25c0 on the first game knocks first, the menu only on the second press, also with Endless on",
+   "title": "Resume & discover: ◀ on the first game knocks first, the menu only on the second press, also with Endless on",
    "rule": "ONE-PRESS (R23)",
    "severity": "info",
    "status": "deliberate",
    "found": "2026-10-29 update 382 audit (code)",
-   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and \u25bc also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants \u25c0 to go round to the last game there. NOT tested on hardware."
+   "note": "Left as is (update 151 knock-then-menu): the big spot draws one game, no card shows the last game left of the first, and ▼ also enters the menu. Marked qa-ok: ONEPRESS in StyleHomes.kt. Revisit only if the owner wants ◀ to go round to the last game there. NOT tested on hardware."
   },
   {
    "id": "D79",
@@ -1048,7 +1048,7 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-10-29 update 386 (R1 quick panel player 'Future & Young...', Settings Screens header 'what goes on each screen w...', WidgetBoard.kt editor name TextOverflow.Ellipsis)",
-   "note": "Seen while testing, NOT fixed (outside the scope of this task). 371 static TRUNCATE findings remain app-wide. | Update 454: R1 Now Playing title + artist (NotificationsPanel.kt) and the Widget Board editor's widget name (WidgetBoard.kt) now use FullText (wrap / readable shrink / slide, never '\u2026'); static TRUNCATE 296 \u2192 293. Settings header subtitle on the Thor (Game look): shown whole, wraps to 3 lines \u2014 no cut seen. Now Playing / Widget Board not seen on hardware (no music playing; the owner's widget board not opened)."
+   "note": "Seen while testing, NOT fixed (outside the scope of this task). 371 static TRUNCATE findings remain app-wide. | Update 454: R1 Now Playing title + artist (NotificationsPanel.kt) and the Widget Board editor's widget name (WidgetBoard.kt) now use FullText (wrap / readable shrink / slide, never '…'); static TRUNCATE 296 → 293. Settings header subtitle on the Thor (Game look): shown whole, wraps to 3 lines — no cut seen. Now Playing / Widget Board not seen on hardware (no music playing; the owner's widget board not opened)."
   },
   {
    "id": "D84",
@@ -1269,7 +1269,7 @@
    "severity": "low",
    "status": "wontfix",
    "found": "2026-10-29 update 407 sweep (Thor)",
-   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS \u25c0\u25b6 call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN. | Update 453: Thor navcheck: inside a Cross menu PREVIEW the stops change 21\u219220 after the first switch and \u25c0\u25b6 then moves games \u2014 the preview is lost on a category switch (D164). Likely a QA artefact; a real check needs Cross set as the layout (owner setting, not changed). | Update 454: Re-run with the preview fixed (Thor, Cross menu): \u25c0\u25b6 = category axis, one press = one category both ways, wraps both ends (\u25c0 at All \u2192 Smart continue 21/21, \u25b6 at the last \u2192 All), L2/R2 identical, \u25b2\u25bc one game each. No asymmetry: the earlier reports came from the preview artefact (D164)."
+   "note": "Vertical D/U one press each PASS. L/R may be the category axis by design; needs a look at CROSS key handling before judging. NOT VERIFIED. | 2026-11-01 update 428: code read: CROSS ◀▶ call cycleCategory on every key-down (repeats included), CategoryStops.stepFrom wraps both ways, empty categories are skipped. No asymmetry found in code; needs a device repro with QaTrace \"category stop\" events. Still OPEN. | Update 453: Thor navcheck: inside a Cross menu PREVIEW the stops change 21→20 after the first switch and ◀▶ then moves games — the preview is lost on a category switch (D164). Likely a QA artefact; a real check needs Cross set as the layout (owner setting, not changed). | Update 454: Re-run with the preview fixed (Thor, Cross menu): ◀▶ = category axis, one press = one category both ways, wraps both ends (◀ at All → Smart continue 21/21, ▶ at the last → All), L2/R2 identical, ▲▼ one game each. No asymmetry: the earlier reports came from the preview artefact (D164)."
   },
   {
    "id": "D103",
@@ -1320,7 +1320,7 @@
    "severity": "low",
    "status": "fixed-unverified",
    "found": "2026-10-30 update 409 Thor batch (docs/POPUP_AUDIT_409.md)",
-   "note": "2026-11-01 update 428: Cinema story column and Arctic plot column are D-pad stops (WinScenes.sceneReadable: focusable, \u25b2\u25bc scroll, ring); Details / Options / Achievements open as a full page since 426 (ExpandedWinPage). Unit test Stage428Test. NOT verified on the Thor (it shut down)."
+   "note": "2026-11-01 update 428: Cinema story column and Arctic plot column are D-pad stops (WinScenes.sceneReadable: focusable, ▲▼ scroll, ring); Details / Options / Achievements open as a full page since 426 (ExpandedWinPage). Unit test Stage428Test. NOT verified on the Thor (it shut down)."
   },
   {
    "id": "D108",
@@ -1356,7 +1356,7 @@
    "severity": "high",
    "status": "verified",
    "found": "2026-11-01 update 428 Thor capture (.shots/428th2/LOBBY_a.png)",
-   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded). | 432b: the 432 fix did NOT help on the Odin (the home's white writing doesn't follow the theme's text colour); LOBBY added to the shaded scenes and the shade no longer depends on the text colour \u2014 after-fix capture NOT taken. | 433: VERIFIED on the Odin (d111_CLASSIC_LOBBY, BG=ANIMATED): status bar, 'All' chip and the title white over the shaded Lobby scene, readable."
+   "note": "LobbyScene's wash now follows the writing (dark slate under light writing). After-fix capture NOT taken (Thor shut down). | 432: FAILED after-fix on the Odin and GT78 (white title / chips / status on the near-white wash): the 428 check read the scene's own palette while the home wrote in the game's light colours. Fixed in 432 (LobbyScene reads ShelfTheme.colors); after-fix capture NOT valid yet (the hero art covered the scene once loaded). | 432b: the 432 fix did NOT help on the Odin (the home's white writing doesn't follow the theme's text colour); LOBBY added to the shaded scenes and the shade no longer depends on the text colour — after-fix capture NOT taken. | 433: VERIFIED on the Odin (d111_CLASSIC_LOBBY, BG=ANIMATED): status bar, 'All' chip and the title white over the shaded Lobby scene, readable."
   },
   {
    "id": "D112",
@@ -1365,7 +1365,7 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-01 update 428 Thor captures (.shots/428th2)",
-   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked. | 432: FAILED on the Odin (Classic row big title at 45-55 % height ~1.3:1 on Manga beat, Magical, Blue sky, Meadow, Pixel sky, Waterfall, Filmstrip, Badge bounce; GT78 has its status bar at the bottom). Shade rebuilt (both edges + ~0.48 from 42 % down, >= 3:1 white-on-white in Stage432Test) and 6 more scenes added; device after-fix capture NOT valid (hero art). | 432b: VERIFIED on the Odin with voltcap_test_bg ANIMATED (af432e): Manga beat, Blue sky, Pixel sky, Magical, Meadow, Waterfall, Badge bounce \u2014 white titles / chips readable over the shade. GT78 not re-captured."
+   "note": "HomeChrome.BRIGHT_SCENES + SceneTextShade (status band + lower half only). After-fix captures NOT taken; other layouts than the Classic row NOT checked. | 432: FAILED on the Odin (Classic row big title at 45-55 % height ~1.3:1 on Manga beat, Magical, Blue sky, Meadow, Pixel sky, Waterfall, Filmstrip, Badge bounce; GT78 has its status bar at the bottom). Shade rebuilt (both edges + ~0.48 from 42 % down, >= 3:1 white-on-white in Stage432Test) and 6 more scenes added; device after-fix capture NOT valid (hero art). | 432b: VERIFIED on the Odin with voltcap_test_bg ANIMATED (af432e): Manga beat, Blue sky, Pixel sky, Magical, Meadow, Waterfall, Badge bounce — white titles / chips readable over the shade. GT78 not re-captured."
   },
   {
    "id": "D113",
@@ -1374,7 +1374,7 @@
    "severity": "high",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
-   "note": "Now: smoothed power (EMA, 3 readings over, 0.92 band), -0.01/s only while really over, no raise over budget, headroom-limited raises, TdpState.POWER_LIMITED shown on the tuner page. AutoTdp429Test (over-budget, budget-respected, power-spike tests). Thor comparison NOT run. | 431 Odin 2 Portal (plugged in at its charge limit, so NO power data): AutoTDP Efficient on a PS2 game (ARMSX2, WWE SmackDown! Vs. Raw attract / loading, light load) held 59.7 fps (min 57.9, 0 s under 57) while stepping the level 1.0 \u2192 0.50; average clocks vs Stock: little 1.31 vs 1.89 GHz, big 1.54 vs 2.12, prime 0.74 vs 2.48, GPU 157 vs 550 MHz. Power saving NOT measured."
+   "note": "Now: smoothed power (EMA, 3 readings over, 0.92 band), -0.01/s only while really over, no raise over budget, headroom-limited raises, TdpState.POWER_LIMITED shown on the tuner page. AutoTdp429Test (over-budget, budget-respected, power-spike tests). Thor comparison NOT run. | 431 Odin 2 Portal (plugged in at its charge limit, so NO power data): AutoTDP Efficient on a PS2 game (ARMSX2, WWE SmackDown! Vs. Raw attract / loading, light load) held 59.7 fps (min 57.9, 0 s under 57) while stepping the level 1.0 → 0.50; average clocks vs Stock: little 1.31 vs 1.89 GHz, big 1.54 vs 2.12, prime 0.74 vs 2.48, GPU 157 vs 550 MHz. Power saving NOT measured."
   },
   {
    "id": "D114",
@@ -1387,7 +1387,7 @@
   },
   {
    "id": "D115",
-   "title": "With no game package the sampler's screen refresh rate reached AutoTDP as the game fps (looked on target \u2192 clocks lowered with no game signal; target detection could lock to the refresh rate)",
+   "title": "With no game package the sampler's screen refresh rate reached AutoTDP as the game fps (looked on target → clocks lowered with no game signal; target detection could lock to the refresh rate)",
    "rule": "AUTOTDP",
    "severity": "high",
    "status": "fixed-unverified",
@@ -1396,7 +1396,7 @@
   },
   {
    "id": "D116",
-   "title": "Panel-level frame counters (SurfaceFlinger 1013, Qualcomm measured_fps) may count refreshes, not game frames \u2014 unverified per device",
+   "title": "Panel-level frame counters (SurfaceFlinger 1013, Qualcomm measured_fps) may count refreshes, not game frames — unverified per device",
    "rule": "AUTOTDP",
    "severity": "med",
    "status": "fixed-unverified",
@@ -1419,7 +1419,7 @@
    "severity": "med",
    "status": "fixed-unverified",
    "found": "2026-11-01 update 429 source audit (AutoTdpController / TuneService / PerfSampler / Tuner)",
-   "note": "Proportional recovery (up to +0.25/tick), failed-step floor with back-off 60\u2192480 ticks (modest misses only; loading collapses excluded), session start = learned + 0.1. AutoTdp429Test holdsTheTargetWithoutASawtooth (\u22643 raises, \u22643 misses) and recoveryFromABigMissIsQuick. Frame-time effect on hardware NOT measured."
+   "note": "Proportional recovery (up to +0.25/tick), failed-step floor with back-off 60→480 ticks (modest misses only; loading collapses excluded), session start = learned + 0.1. AutoTdp429Test holdsTheTargetWithoutASawtooth (≤3 raises, ≤3 misses) and recoveryFromABigMissIsQuick. Frame-time effect on hardware NOT measured."
   },
   {
    "id": "D119",
@@ -1432,7 +1432,7 @@
   },
   {
    "id": "D120",
-   "title": "Twin desk list rows ended long names in '\u2026' (Yu Gi Oh! Capsule Monster Coliseu\u2026)",
+   "title": "Twin desk list rows ended long names in '…' (Yu Gi Oh! Capsule Monster Coliseu…)",
    "rule": "TRUNCATE",
    "severity": "med",
    "status": "verified",
@@ -1464,7 +1464,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-01 update 432 Odin 2 Portal b92036fb (1080p) / GT78 BW0306N230000845 (960x640) stills, .shots/432",
-   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed \u2014 the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval). | Update 440 (owner decision: painting where it exists, else a better legacy scene): none of the four has a painting (ScenePainting); ThemeSceneLegacy now draws Manga beat (screentone, speed lines, panel borders, impact burst), Magical (pastel light, four-point glints, sparkle dust, light ring), Blue sky (sky + sea in its blues, sun flare, drifting clouds, glitter), Pixel sky (stepped sky bands, pixel sun rays, pixel clouds, birds) \u2014 Android 12 only, shaders untouched. GT78 (.shots/440 thG): the scenes draw (sea glitter, light ring, pixel clouds, speed lines visible) but under the home screen's dim / game-colour tint they read faint and greenish; colour fidelity and contrast NOT confirmed \u2014 next: capture with the theme set for real (not previewed) and the dim off. | Update 441: the greenish look on the GT78 is the home screen's 'scene colours from the cover' choice (sceneColors = the focused game's cover colours, Advance Wars green) plus the dim \u2014 not the new scenes. Colour check with the cover colours off still to do (no hook for that setting; needs Settings). | Update 442 colour check (GT78, theme_look_default temporarily = theme original, restored after; new hook voltcap_test_scenecover): the four scenes draw in their own palettes \u2014 Manga beat red accent + speed lines / panel line, Magical pink accent with glints / light ring, Blue sky navy sky + sea with clouds / glitter, Pixel sky pixel clouds / sun. Element contrast raised ~1.5x (alphas only, no tint / blur). They stay subdued under the home screen's own shade over the background \u2014 by design. Odin unaffected (Android 13 shaders, legacy code path not used). .shots/442 th3 (before contrast) / th4 (after)."
+   "note": "Observation only (ThemeSceneLegacy); decide whether the fallback should be the theme's still / thumbnail picture. | v0.6.66 update 439: owner decision needed — the theme thumbnails are rendered by the Android 13 shaders, so there is no picture to fall back to on Android 12; options: (a) lighter legacy palettes / a gradient for the dark themes, (b) the theme's static painting where one exists, (c) keep. Not changed (visual redesign needs approval). | Update 440 (owner decision: painting where it exists, else a better legacy scene): none of the four has a painting (ScenePainting); ThemeSceneLegacy now draws Manga beat (screentone, speed lines, panel borders, impact burst), Magical (pastel light, four-point glints, sparkle dust, light ring), Blue sky (sky + sea in its blues, sun flare, drifting clouds, glitter), Pixel sky (stepped sky bands, pixel sun rays, pixel clouds, birds) — Android 12 only, shaders untouched. GT78 (.shots/440 thG): the scenes draw (sea glitter, light ring, pixel clouds, speed lines visible) but under the home screen's dim / game-colour tint they read faint and greenish; colour fidelity and contrast NOT confirmed — next: capture with the theme set for real (not previewed) and the dim off. | Update 441: the greenish look on the GT78 is the home screen's 'scene colours from the cover' choice (sceneColors = the focused game's cover colours, Advance Wars green) plus the dim — not the new scenes. Colour check with the cover colours off still to do (no hook for that setting; needs Settings). | Update 442 colour check (GT78, theme_look_default temporarily = theme original, restored after; new hook voltcap_test_scenecover): the four scenes draw in their own palettes — Manga beat red accent + speed lines / panel line, Magical pink accent with glints / light ring, Blue sky navy sky + sea with clouds / glitter, Pixel sky pixel clouds / sun. Element contrast raised ~1.5x (alphas only, no tint / blur). They stay subdued under the home screen's own shade over the background — by design. Odin unaffected (Android 13 shaders, legacy code path not used). .shots/442 th3 (before contrast) / th4 (after)."
   },
   {
    "id": "D124",
@@ -1472,17 +1472,17 @@
    "rule": "AUTOTDP",
    "severity": "med",
    "status": "fixed-unverified",
-   "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM\u2192LIGHT\u2192OFF in Efficient, LIGHT\u2192OFF in Balanced)",
-   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again \u2014 test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done. | Update 451: not re-run \u2014 a real game session would change the owner's play history (last played, play time) and possibly emulator saves; the code paths are covered by AutoTdp429Test. Still fixed-unverified. | Update 452: Static only: AutoTdp429Test 31 tests incl. loading-screen / scene-cut cases pass on the final code; the restore path still needs a real PS2 session (not run without approval). | Update 453: Deferred: needs the owner's approval for a controlled real-game test."
+   "found": "2026-11-01 update 432b Odin 2 Portal PS2 runs (tdp432: uc MEDIUM→LIGHT→OFF in Efficient, LIGHT→OFF in Balanced)",
+   "note": "AutoUnderclock: a miss deeper than 35 % with the GPU under 60 % is not a struggle. Test aLoadingCollapseWithAnIdleGpuKeepsTheUnderclock (fails on 431). Hardware re-run NOT done. | 433 review: an idle GPU doesn't prove a loading screen (CPU-bound emulators); the excuse now lasts 8 s at most, then a lasting slowdown counts again — test aCpuBoundSlowdownWithAnIdleGpuStillRecovers. Hardware re-run NOT done. | Update 451: not re-run — a real game session would change the owner's play history (last played, play time) and possibly emulator saves; the code paths are covered by AutoTdp429Test. Still fixed-unverified. | Update 452: Static only: AutoTdp429Test 31 tests incl. loading-screen / scene-cut cases pass on the final code; the restore path still needs a real PS2 session (not run without approval). | Update 453: Deferred: needs the owner's approval for a controlled real-game test."
   },
   {
    "id": "D125",
-   "title": "GT78 960x640: Hero layout side list and overview end names / summary with '\u2026' (Pokemon Silver Version (GB Compati\u2026)",
+   "title": "GT78 960x640: Hero layout side list and overview end names / summary with '…' (Pokemon Silver Version (GB Compati…)",
    "rule": "TRUNCATE",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_HERO",
-   "note": "Small-screen only; the Hero overview paragraph '\u2026' is the Update 136 design (PageText) \u2014 owner decision vs CLAUDE.md rule 11. | 433: still present on the GT78 (G433_HERO); not fixed this session. | v0.6.66 update 439: FIXED \u2014 HeroCarousel PageText: one line = FullText (shrinks, then slides); a paragraph keeps its lines of room and pans slowly to its end and back (HeroParagraph; rests with HomeIdle.calm, once per game on Lite); ScrollingName: the focused name slides on Lite too (3 runs). GT78 .shots/439 h0/h5/h10: the Advance Wars summary scrolls to its last line, no '\u2026'; Odin Hero summary whole. Unfocused wheel names still end in '\u2026' (full name reachable on focus \u2014 rule 11 allows it)."
+   "note": "Small-screen only; the Hero overview paragraph '…' is the Update 136 design (PageText) — owner decision vs CLAUDE.md rule 11. | 433: still present on the GT78 (G433_HERO); not fixed this session. | v0.6.66 update 439: FIXED — HeroCarousel PageText: one line = FullText (shrinks, then slides); a paragraph keeps its lines of room and pans slowly to its end and back (HeroParagraph; rests with HomeIdle.calm, once per game on Lite); ScrollingName: the focused name slides on Lite too (3 runs). GT78 .shots/439 h0/h5/h10: the Advance Wars summary scrolls to its last line, no '…'; Odin Hero summary whole. Unfocused wheel names still end in '…' (full name reachable on focus — rule 11 allows it)."
   },
   {
    "id": "D126",
@@ -1491,16 +1491,16 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_DISCS",
-   "note": "Also 'Game Boy Advance \u00b7 On CD' for a GBA game in Disc station (media label accuracy) \u2014 check whether intended. | 433: two fix attempts keyed on the layout's `compact` flag did NOT work on the GT78 (G433v_DISCS: '\u25b6 n') \u2014 compact is false there; the pill needs a width-based rule. STILL OPEN. | 434: width-based (BoxWithConstraints): the word when it fits, else the play symbol alone. GT78 G434_DISCS: clean play symbol, no letter; Odin O434_DISCS: 'Continue' kept."
+   "note": "Also 'Game Boy Advance · On CD' for a GBA game in Disc station (media label accuracy) — check whether intended. | 433: two fix attempts keyed on the layout's `compact` flag did NOT work on the GT78 (G433v_DISCS: '▶ n') — compact is false there; the pill needs a width-based rule. STILL OPEN. | 434: width-based (BoxWithConstraints): the word when it fits, else the play symbol alone. GT78 G434_DISCS: clean play symbol, no letter; Odin O434_DISCS: 'Continue' kept."
   },
   {
    "id": "D127",
-   "title": "GT78 960x640: Twin desk focused card \u2014 a two-line name pushes the console / playtime line under the card's bottom edge",
+   "title": "GT78 960x640: Twin desk focused card — a two-line name pushes the console / playtime line under the card's bottom edge",
    "rule": "CLIP",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_TWIN_DESK",
-   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact. | 433: the compact-only one-line rule did NOT apply on the GT78 (compact false; G433v_TWIN_DESK still two lines, console line cut). STILL OPEN \u2014 needs a width / height based rule. | 434: the focused card's name is one line that shrinks on every screen. GT78 G434_TWIN_DESK: full 'Pokemon Silver Version (GB Compatible)' + 'Game Boy Color \u00b7 6 h 27 min' inside the card; Odin O434 unchanged."
+   "note": "Side effect of D120's wrapping in compact mode; give the card's name a height-bounded FitText or one line in compact. | 433: the compact-only one-line rule did NOT apply on the GT78 (compact false; G433v_TWIN_DESK still two lines, console line cut). STILL OPEN — needs a width / height based rule. | 434: the focused card's name is one line that shrinks on every screen. GT78 G434_TWIN_DESK: full 'Pokemon Silver Version (GB Compatible)' + 'Game Boy Color · 6 h 27 min' inside the card; Odin O434 unchanged."
   },
   {
    "id": "D128",
@@ -1509,7 +1509,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-01 update 432b GT78 G432_BOX (Continue playing, 2 games)",
-   "note": "Box 1-3 games item of the backlog; reproduced on hardware. | v0.6.66 update 439: FIXED \u2014 packBoxesFull: a category that fills only part of one row stands in the middle of the box (centred across, mid-floor of a 2/3-row box); full boxes unchanged. BoxFewD128Test (3). Odin: N64 (1 game) and Xbox 360 (1 game) centred; Switch (2 rows) unchanged. GT78: no 1-3 game category on that library (N64 8 games, packed from the wall as before)."
+   "note": "Box 1-3 games item of the backlog; reproduced on hardware. | v0.6.66 update 439: FIXED — packBoxesFull: a category that fills only part of one row stands in the middle of the box (centred across, mid-floor of a 2/3-row box); full boxes unchanged. BoxFewD128Test (3). Odin: N64 (1 game) and Xbox 360 (1 game) centred; Switch (2 rows) unchanged. GT78: no 1-3 game category on that library (N64 8 games, packed from the wall as before)."
   },
   {
    "id": "D129",
@@ -1518,7 +1518,7 @@
    "severity": "low",
    "status": "wontfix",
    "found": "2026-11-01 update 433 GT78",
-   "note": "dropbox: Input dispatching timed out (Application does not have a focused window), main thread idle in nativePollOnce \u2014 caused by the QA script sending keys to a sleeping screen, not by Voltcap work. Keep the screen awake during runs."
+   "note": "dropbox: Input dispatching timed out (Application does not have a focused window), main thread idle in nativePollOnce — caused by the QA script sending keys to a sleeping screen, not by Voltcap work. Keep the screen awake during runs."
   },
   {
    "id": "D130",
@@ -1527,21 +1527,21 @@
    "severity": "low",
    "status": "closed",
    "found": "2026-11-01 update 434 Odin P434_DISCS",
-   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED \u2014 Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on. | Update 443: EXPLAINED \u2014 the Disc station window's showcase turn shows the disc's silver underside (reading side) for part of the turn (Odin DISCS_OWN open sequence); the label side is the real art. Possible polish: rest on the label side after the turn. | Update 444: confirmed on the Odin \u2014 after the showcase turn the disc rests on its label side (+5 s still, .shots/444 DISCS_OWN_2rested); the turn itself is kept. Closed: by design."
+   "note": "The home screen of the same layout shows the real PS2 disc; only the window's disc is generic. | v0.6.66 update 439: NOT REPRODUCED — Odin Disc station window shows the real disc art for Donkey Konga 2 (GameCube) and WWE SmackDown! vs. Raw (PS2) (.shots/439 DISCS_OWN_open, d130_ps2). Possibly a scan not yet loaded at capture time in 434; reopen with the game it happened on. | Update 443: EXPLAINED — the Disc station window's showcase turn shows the disc's silver underside (reading side) for part of the turn (Odin DISCS_OWN open sequence); the label side is the real art. Possible polish: rest on the label side after the turn. | Update 444: confirmed on the Odin — after the showcase turn the disc rests on its label side (+5 s still, .shots/444 DISCS_OWN_2rested); the turn itself is kept. Closed: by design."
   },
   {
    "id": "D131",
-   "title": "Round shortcuts' corner \u2630 on whole-screen layouts (Disc station, Arctic\u2026): on the GT78 (game-row setting Top) every corner landed on the bottom edge, the open row over Disc station's disc panel and 'DISC LOADED' label",
+   "title": "Round shortcuts' corner ☰ on whole-screen layouts (Disc station, Arctic…): on the GT78 (game-row setting Top) every corner landed on the bottom edge, the open row over Disc station's disc panel and 'DISC LOADED' label",
    "rule": "OVERLAP",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-01 update 436 (.shots/436, voltcap_test_shortcuts + shortcuts_open with snapshot save / restore)",
-   "note": "Cause (LauncherScreen.kt, generic corner path): the corner was flipped by the game-row setting (row Top \u2192 top corners to the bottom, row Bottom \u2192 bottom corners to the top) on every layout, but whole-screen layouts (style homes, Grid, TV room) don't draw that row \u2014 GT78 (row Top) put all four corners on Disc station's bottom panel, the Odin (row Bottom) put all four in the status bar. Fix (update 438, ui/ShortcutCorner.kt): a layout with the game row at an edge still steps off that edge (unchanged); a whole-screen layout keeps the side picked and uses the top band \u2014 the status bar's \u2630 room (intentional slot, kept) when the bar is on, the top corner when it's off, with the style home starting 56 dp down (like below the status bar) so the \u2630 never lies on its panel / title. The open row stays in the band: up to the bar's clock cluster / music player (measured), one line that scrolls (swipe; follows the D-pad) instead of wrapping onto the layout. Tests ShortcutCornerD131Test (9; wholeScreenLayoutWithTheRowSettingAtTheTopKeepsTheTopBand fails on f0f71bc). Verified (release build, .shots/438): GT78 960x640 Disc station + Arctic + Classic (row Top), Odin 1080p Disc station + Arctic + Classic and Classic / Disc station with row Top \u2014 4 corners \u00d7 open / closed \u00d7 status bar on / off, no overlap of DISC LOADED, title, artwork, action buttons, game row or status bar; Classic unchanged (row-layout flip). D-pad: \u25b2 from the game folds the row out with the first button ringed, \u25ba scrolls to the last button, \u25bc folds it and returns to the layout (GT78 TOP_LEFT, BOTTOM_RIGHT; Odin BOTTOM_LEFT); touch tap opens, swipe scrolls (GT78). Settings: Features snapshot saved / restored on both, layouts previewed only.",
+   "note": "Cause (LauncherScreen.kt, generic corner path): the corner was flipped by the game-row setting (row Top → top corners to the bottom, row Bottom → bottom corners to the top) on every layout, but whole-screen layouts (style homes, Grid, TV room) don't draw that row — GT78 (row Top) put all four corners on Disc station's bottom panel, the Odin (row Bottom) put all four in the status bar. Fix (update 438, ui/ShortcutCorner.kt): a layout with the game row at an edge still steps off that edge (unchanged); a whole-screen layout keeps the side picked and uses the top band — the status bar's ☰ room (intentional slot, kept) when the bar is on, the top corner when it's off, with the style home starting 56 dp down (like below the status bar) so the ☰ never lies on its panel / title. The open row stays in the band: up to the bar's clock cluster / music player (measured), one line that scrolls (swipe; follows the D-pad) instead of wrapping onto the layout. Tests ShortcutCornerD131Test (9; wholeScreenLayoutWithTheRowSettingAtTheTopKeepsTheTopBand fails on f0f71bc). Verified (release build, .shots/438): GT78 960x640 Disc station + Arctic + Classic (row Top), Odin 1080p Disc station + Arctic + Classic and Classic / Disc station with row Top — 4 corners × open / closed × status bar on / off, no overlap of DISC LOADED, title, artwork, action buttons, game row or status bar; Classic unchanged (row-layout flip). D-pad: ▲ from the game folds the row out with the first button ringed, ► scrolls to the last button, ▼ folds it and returns to the layout (GT78 TOP_LEFT, BOTTOM_RIGHT; Odin BOTTOM_LEFT); touch tap opens, swipe scrolls (GT78). Settings: Features snapshot saved / restored on both, layouts previewed only.",
    "fixed": "2026-11-02 update 438"
   },
   {
    "id": "D132",
-   "title": "Row-move game windows (The row opens up / Row reveal / Shared move): an A pressed while the window closed \u2014 or the release of the A that opened it \u2014 pressed \u25b6 Continue and started the game",
+   "title": "Row-move game windows (The row opens up / Row reveal / Shared move): an A pressed while the window closed — or the release of the A that opened it — pressed ▶ Continue and started the game",
    "rule": "ONEPRESS",
    "severity": "high",
    "status": "verified",
@@ -1573,7 +1573,7 @@
    "severity": "high",
    "status": "verified",
    "found": "2026-11-02 update 439 GT78 popup runs G3, G4, G5 CROSS_SHARED (Advance Wars / Pokemon Silver started in RetroArch; closed at the title screen with force-stop, no save written)",
-   "note": "Reproducible on the GT78 only (Odin O4 / O5 CROSS_SHARED clean). Not the row window (D132 guards in place): the launch is the GameWindow playNow throw after the window closed and re-opened \u2014 check the D108 reopen path (GamePopup.reopenGame) with a pending A release, the 450 ms PLAY_GUARD_MS against the re-opened window's openedAt, and whether Cross marks GameOrigin on the GT78 (Shared falls back to the scene window). Next: run popaudit.sh G CROSS SHARED with the VoltcapQA focus log + a logcat line in playNow (who called it). | Update 440 ROOT CAUSE: Shared move is drawn by GlanceWindow.kt (not the row window D132 fixed). While it flew back the window still had the focus on \u25b6 Continue, so the A of A B A B (glancekey 96 KeyDown closing=true) pressed it \u2014 QA launch interception logged it as 'win play closing=false' from the closing Glance window. FIX: GlanceWindow takes no button presses while closing, an A re-opens it and its release is swallowed, an A release whose press it never saw clicks nothing; GameWindow / Banner / row windows also ignore the release of the A that opened them on the home screen (HomeKeyGuard key ownership). Tests: RapidPlayD135Test (5), PlayWhileClosing412Test extended. VERIFIED with launches blocked (voltcap_test_nolaunch): GT78 Cross + Shared 5/5 clean (was 3/3 attempts), GT78 Cross / Case stacks / Channel / Disc station \u00d7 6 styles and Odin Cross / Case stacks / Channel / Twin desk \u00d7 6 styles: 0 launch attempts, windows closed, same game focused (one Odin run hit the profile picker: INFRA).",
+   "note": "Reproducible on the GT78 only (Odin O4 / O5 CROSS_SHARED clean). Not the row window (D132 guards in place): the launch is the GameWindow playNow throw after the window closed and re-opened — check the D108 reopen path (GamePopup.reopenGame) with a pending A release, the 450 ms PLAY_GUARD_MS against the re-opened window's openedAt, and whether Cross marks GameOrigin on the GT78 (Shared falls back to the scene window). Next: run popaudit.sh G CROSS SHARED with the VoltcapQA focus log + a logcat line in playNow (who called it). | Update 440 ROOT CAUSE: Shared move is drawn by GlanceWindow.kt (not the row window D132 fixed). While it flew back the window still had the focus on ▶ Continue, so the A of A B A B (glancekey 96 KeyDown closing=true) pressed it — QA launch interception logged it as 'win play closing=false' from the closing Glance window. FIX: GlanceWindow takes no button presses while closing, an A re-opens it and its release is swallowed, an A release whose press it never saw clicks nothing; GameWindow / Banner / row windows also ignore the release of the A that opened them on the home screen (HomeKeyGuard key ownership). Tests: RapidPlayD135Test (5), PlayWhileClosing412Test extended. VERIFIED with launches blocked (voltcap_test_nolaunch): GT78 Cross + Shared 5/5 clean (was 3/3 attempts), GT78 Cross / Case stacks / Channel / Disc station × 6 styles and Odin Cross / Case stacks / Channel / Twin desk × 6 styles: 0 launch attempts, windows closed, same game focused (one Odin run hit the profile picker: INFRA).",
    "fixed": "2026-11-02 update 440"
   },
   {
@@ -1592,11 +1592,11 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 441 GT78 QaTrace slow-frame lines (no screenrecord)",
-   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) \u2014 judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show \u22644 frames > 33 ms per layout (Classic, Cinema) \u2014 its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition \u2014 draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) \u2014 FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage \u2014 no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 \u2014 it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20\u00d7/s) \u2192 read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused \u2014 still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) \u2014 the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) \u2014 reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) \u2014 a refactor, not attempted for the RC. | Update 451 (RP Classic, RC, d137.sh NOVIDEO): cadence missed per 6-move run 16 / 3 / 1, idle 2 / 2 / 0; the first frame after each move has anim 36-40 ms (the home screen recomposing: Screen=3-4, CarRun/CarP per move). Idle renders at 60 fps with gpu ~14-19 ms (the background). Not changed \u2014 no optimisation found within this batch; the root-level recomposition per focus move is the lead. | Update 452: RP Classic, no recording, 3 runs each: experiment (focus save without UI state) Screen recompositions 11/11/9 vs 9/12/9 before, missed frames 1/3/2 vs 0/1/0 \u2014 no gain, reverted. Bottleneck: the home-screen root recomposes ~1.5\u20132\u00d7 per move (state read high in LauncherScreen), not the focus save; needs a state-hoisting change, not a tweak. | Update 453: Deferred by the owner until the KONKR Pocket Advance is on USB (no other device as a substitute). Update 460b (KONKR, Case stacks, GBA, staging): 29-39 % janky, 90th 42-48 ms, slow frames render-bound (cmd 11.7 + gpu 7.3 ms avg), PSS ~650-680 MB. Not fixed. RC same script: 51/28/25 % janky, 90th 61/42/42 ms, PSS ~490-570 MB -> staging first pass smoother, later passes equal, +90-110 MB PSS from WarmCaseNeighbours (to cap). Update 461 (KONKR, cold start, 2x3 runs per build): A/B in one staging build \u2014 decoding ahead off 612-617 MB, on 637-652 MB, first pass and later passes the same; removed from Case stacks (final staging 607-636 MB). RC same script: 598-615 MB, first pass 38-46 %, later 20-47 % (90th 40-44 ms) \u2014 staging ~10-20 MB above RC; 460b's +90-110 MB was a warm-vs-cold measurement difference. Still render-bound; open."
+   "note": "Disc station (19 > 33 ms) and Classic (6) are fine without recording; recordings inflate GT78 numbers a lot (Disc station 603 > 33 ms while recording) — judge frame pacing from QaTrace without screenrecord. Odin: catswitch runs show ≤4 frames > 33 ms per layout (Classic, Cinema) — its recording hitches are recording overhead. | Update 442: NOT FIXED. Findings: (1) Case stacks idle often renders continuously (~60 frames/s, frames ~20 ms on the GT78) with no recomposition — draw-phase animation under the stage (the game clip / animated background); on a black or art background it idles at ~30 frames/s, 12 ms. (2) The theme colours glided on every game move and were read at the home-screen level by the corner visualizers (themeread trace) — FIXED: CornerVisualizers now read them themselves (colorsOf). (3) Tried an offscreen layer for the stage — no improvement (AFTER 71-160 vs BEFORE 6-365 frames over 33 ms per 6-move run), reverted. Measurements are very noisy (idle 0-300 slow frames in 5 s depending on whether the clip plays), so no claim either way. Next: find the 30 fps draw ticker present even on a black background, and gate the background clip while the stage moves. Tool: tools/qa/device/d137.sh (QaTrace counts; avoid `dumpsys gfxinfo reset` on the GT78 — it aborted Voltcap once in Android 11's HWUI JankTracker). | Update 443: idle redraws come only from the background (black background: 0 slow frames idle on Case stacks). Fixed: carousel focus pulse read in composition (re-composed the focused case 20×/s) → read while drawing; the animated theme scene holds its frame while the 3D row glides (BackdropHold). ANIMATED background moves: 52-79 frames over 33 ms per 6-move run (PULSE build 65-130). Owner's gameplay-video background: 120-160 (video not paused — still open). | Update 444: RE-MEASURED with a cadence metric (QaTrace 'cadence n= missed=' = vsyncs with no new frame while drawing). The 'frames over 33 ms' count measured latency, not dropped frames: on the GT78 every animated frame takes ~36 ms from its vsync (RenderThread issue ~15 ms) on ANY layout and background, yet frames still arrive every 16.7 ms. Case stacks, 6 steps 0.8 s apart, clip playing (USER) vs clips off (voltcap_test_novideo): 6/6/6 vs 5/7/5 missed vsyncs per run (~1 per step, ~360 frames) — the gameplay video adds no dropped frames. The one dropped frame is the step's first frame on the UI thread (composition ~15-20 ms + recording ~15 ms: the home screen recomposes when the focused game changes). Tried: the whole stage in one cached layer (no change: 298 vs 303 slow frames, same cadence) — reverted. Video background untouched. Remaining: whole-screen recomposition on focus change (LauncherScreen reads focusedIndex at the top) — a refactor, not attempted for the RC. | Update 451 (RP Classic, RC, d137.sh NOVIDEO): cadence missed per 6-move run 16 / 3 / 1, idle 2 / 2 / 0; the first frame after each move has anim 36-40 ms (the home screen recomposing: Screen=3-4, CarRun/CarP per move). Idle renders at 60 fps with gpu ~14-19 ms (the background). Not changed — no optimisation found within this batch; the root-level recomposition per focus move is the lead. | Update 452: RP Classic, no recording, 3 runs each: experiment (focus save without UI state) Screen recompositions 11/11/9 vs 9/12/9 before, missed frames 1/3/2 vs 0/1/0 — no gain, reverted. Bottleneck: the home-screen root recomposes ~1.5–2× per move (state read high in LauncherScreen), not the focus save; needs a state-hoisting change, not a tweak. | Update 453: Deferred by the owner until the KONKR Pocket Advance is on USB (no other device as a substitute). Update 460b (KONKR, Case stacks, GBA, staging): 29-39 % janky, 90th 42-48 ms, slow frames render-bound (cmd 11.7 + gpu 7.3 ms avg), PSS ~650-680 MB. Not fixed. RC same script: 51/28/25 % janky, 90th 61/42/42 ms, PSS ~490-570 MB -> staging first pass smoother, later passes equal, +90-110 MB PSS from WarmCaseNeighbours (to cap). Update 461 (KONKR, cold start, 2x3 runs per build): A/B in one staging build — decoding ahead off 612-617 MB, on 637-652 MB, first pass and later passes the same; removed from Case stacks (final staging 607-636 MB). RC same script: 598-615 MB, first pass 38-46 %, later 20-47 % (90th 40-44 ms) — staging ~10-20 MB above RC; 460b's +90-110 MB was a warm-vs-cold measurement difference. Still render-bound; open."
   },
   {
    "id": "D138",
-   "title": "QA tool: focuscheck.py expects linear focus indices \u2014 Arctic's recents row (global indices 1, 0, 164, 26) reads as wrong-direction moves",
+   "title": "QA tool: focuscheck.py expects linear focus indices — Arctic's recents row (global indices 1, 0, 164, 26) reads as wrong-direction moves",
    "rule": "INFRA",
    "severity": "low",
    "status": "open",
@@ -1610,7 +1610,7 @@
    "severity": "low",
    "status": "wontfix",
    "found": "2026-11-02 update 442 GT78 07:18 (native SIGABRT on a Binder thread in libhwui JankTracker::finishFrame)",
-   "note": "Android framework bug triggered by the frame-stats reset from adb \u2014 no Voltcap code on the stack; not seen in normal use. QA scripts no longer use gfxinfo reset on the GT78 (d137.sh uses QaTrace). Voltcap's crash screen appeared on the next start; Continue dismissed it, no data lost."
+   "note": "Android framework bug triggered by the frame-stats reset from adb — no Voltcap code on the stack; not seen in normal use. QA scripts no longer use gfxinfo reset on the GT78 (d137.sh uses QaTrace). Voltcap's crash screen appeared on the next start; Continue dismissed it, no data lost."
   },
   {
    "id": "D140",
@@ -1619,16 +1619,16 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 443 popup review",
-   "note": "RowRevealWindow: cover \u2264 42 % of the width (aspect kept), text column never wider than the room left, buttons in a FlowRow below the name. PopupReview443Test. Verified Odin + GT78 Cinema / Arctic / Cross / Disc station (.shots/443 G3 / O3)."
+   "note": "RowRevealWindow: cover ≤ 42 % of the width (aspect kept), text column never wider than the room left, buttons in a FlowRow below the name. PopupReview443Test. Verified Odin + GT78 Cinema / Arctic / Cross / Disc station (.shots/443 G3 / O3)."
   },
   {
    "id": "D141",
-   "title": "Row reveal / Shared move on whole-screen layouts (Cinema, Arctic, Cross menu, Disc station): the layout's own title showed under the window's (the name twice), Shared's story ran off the GT78's bottom edge with '\u2026'",
+   "title": "Row reveal / Shared move on whole-screen layouts (Cinema, Arctic, Cross menu, Disc station): the layout's own title showed under the window's (the name twice), Shared's story ran off the GT78's bottom edge with '…'",
    "rule": "VISUAL",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 443 popup review",
-   "note": "80 % shade over the layout except the game's card (Row reveal) / over the whole layout (Shared); Shared's story pans in the room left (no ellipsis). A faint ghost of the title remains on the GT78 Cinema \u2014 acceptable. PopupReview443Test."
+   "note": "80 % shade over the layout except the game's card (Row reveal) / over the whole layout (Shared); Shared's story pans in the room left (no ellipsis). A faint ghost of the title remains on the GT78 Cinema — acceptable. PopupReview443Test."
   },
   {
    "id": "D142",
@@ -1637,7 +1637,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 443 popup review",
-   "note": "A scrolling facts column was tried and reverted (collapsed to no lines on the GT78). Needs a size-aware hinge split (WinScenesMore.kt TwinHinge) and a placement for Row reveal's buttons on grids. | Update 444: FIXED. Twin hinge rebuilt (ui/WinSceneTwin.kt): top half = the 'top screen' (picture whole, pinned on Twin desk's squared paper, beside the desk's own name strip); bottom half = facts then keys \u2014 the keys are measured first, the facts get what is left and show whole rows only (SnapRows / SnapPaging, unit-tested: never a half line, never zero rows, pages by itself, Details shows all); the window is only as tall as its content. Twin desk gets its light paper, pill keys and a pale veil; Twin icons / showcase keep the dark hinge. Channel grid + Row reveal: name, line and buttons sit together in an action panel under the game (over it in the bottom row) with a notch at the game, only where it fits (a tall Case stacks case keeps the old placement). Verified on the Odin and the GT78 (.shots/444)."
+   "note": "A scrolling facts column was tried and reverted (collapsed to no lines on the GT78). Needs a size-aware hinge split (WinScenesMore.kt TwinHinge) and a placement for Row reveal's buttons on grids. | Update 444: FIXED. Twin hinge rebuilt (ui/WinSceneTwin.kt): top half = the 'top screen' (picture whole, pinned on Twin desk's squared paper, beside the desk's own name strip); bottom half = facts then keys — the keys are measured first, the facts get what is left and show whole rows only (SnapRows / SnapPaging, unit-tested: never a half line, never zero rows, pages by itself, Details shows all); the window is only as tall as its content. Twin desk gets its light paper, pill keys and a pale veil; Twin icons / showcase keep the dark hinge. Channel grid + Row reveal: name, line and buttons sit together in an action panel under the game (over it in the bottom row) with a notch at the game, only where it fits (a tall Case stacks case keeps the old placement). Verified on the Odin and the GT78 (.shots/444)."
   },
   {
    "id": "D143",
@@ -1655,7 +1655,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 446 (code review, staging only)",
-   "note": "Staged in next/0.6.67 (update 447): with the hooks file Voltcap writes <external files>/voltcap_qa_screen = PICKER/HOME <pid> (ProfileSelectScreen DisposableEffect; HOME at every MainActivity start); picker.sh reads it (display awake, Voltcap resumed, same pid; HOME also needs a lit screen) \u2014 no background colours; old builds fall back to the Midnight corner. Selftest 73 OK (5 new cases: OLED black / Console graphite / blue home / asleep / other app / stale pid). Device pickdetect.sh: all six looks PICKER then HOME \u2014 GT78 (GD1) and AYN Thor (TD1) PASS."
+   "note": "Staged in next/0.6.67 (update 447): with the hooks file Voltcap writes <external files>/voltcap_qa_screen = PICKER/HOME <pid> (ProfileSelectScreen DisposableEffect; HOME at every MainActivity start); picker.sh reads it (display awake, Voltcap resumed, same pid; HOME also needs a lit screen) — no background colours; old builds fall back to the Midnight corner. Selftest 73 OK (5 new cases: OLED black / Console graphite / blue home / asleep / other app / stale pid). Device pickdetect.sh: all six looks PICKER then HOME — GT78 (GD1) and AYN Thor (TD1) PASS."
   },
   {
    "id": "D145",
@@ -1664,7 +1664,7 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 446 pickerlooks.sh G1 (GT78)",
-   "note": "ProfileName: whole words only (break after a hyphen via U+200B, shrink to 10 sp until every word fits, 2 lines, 3rd only as a last resort, never \u2026); scrolling row gets edge room (10 % of a slot), 22 % vertical room and edge fades. Re-checked G3 / O3 / GU2 on GT78 + Odin. ProfilePicker445Test.longNamesBreakBetweenWordsOnly. Staging only (next/0.6.67)."
+   "note": "ProfileName: whole words only (break after a hyphen via U+200B, shrink to 10 sp until every word fits, 2 lines, 3rd only as a last resort, never …); scrolling row gets edge room (10 % of a slot), 22 % vertical room and edge fades. Re-checked G3 / O3 / GU2 on GT78 + Odin. ProfilePicker445Test.longNamesBreakBetweenWordsOnly. Staging only (next/0.6.67)."
   },
   {
    "id": "D146",
@@ -1673,25 +1673,25 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 owner report (update 447)",
-   "note": "Staged in next/0.6.67: TwinBackButton (TwinScreens.kt) \u2014 32 dp visible / 44 dp target, layout-styled (Twin round, Pocket square + brackets), in SecondScreenHome's header row via headerEnd (classic header Row, showcase TopEnd with the top bar's endInset), fallback top corner over a look's own second screen. Same pad id twin-back and action. AYN Thor 3140972f: twinback.sh T1 / T2 on all five layouts \u2014 button in the header, dock / tabs / arrows clear on every page; a tap brings each layout's lower part back; D-pad reaches it (Pocket classic: \u25b2 from the dock \u2192 lit brackets \u2192 A). TwinBack447Test."
+   "note": "Staged in next/0.6.67: TwinBackButton (TwinScreens.kt) — 32 dp visible / 44 dp target, layout-styled (Twin round, Pocket square + brackets), in SecondScreenHome's header row via headerEnd (classic header Row, showcase TopEnd with the top bar's endInset), fallback top corner over a look's own second screen. Same pad id twin-back and action. AYN Thor 3140972f: twinback.sh T1 / T2 on all five layouts — button in the header, dock / tabs / arrows clear on every page; a tap brings each layout's lower part back; D-pad reaches it (Pocket classic: ▲ from the dock → lit brackets → A). TwinBack447Test."
   },
   {
    "id": "D147",
-   "title": "Two-screen layouts with the second-screen dashboard open: \u25bc walked the layout's hidden lower-screen list / grid / spots instead of reaching the dashboard (Twin desk, Twin icons; Pocket layouts needed many presses)",
+   "title": "Two-screen layouts with the second-screen dashboard open: ▼ walked the layout's hidden lower-screen list / grid / spots instead of reaching the dashboard (Twin desk, Twin icons; Pocket layouts needed many presses)",
    "rule": "ONEPRESS",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 447 Thor D-pad check",
-   "note": "Staged in next/0.6.67 (update 448): StyleHomes styleKey \u2014 with TwinScreens.dashboard open on any two-screen layout (isTwin), \u25bc goes past the hidden lower part: HomeReach, then SecondPad (the dashboard); other keys unchanged, nothing changes with the dashboard closed. TwinBackButton also hands the controller back (SecondPad.leave) so the layout's own keys carry on. AYN Thor 3140972f, D-pad only: Twin desk (\u25b6 to its Second screen button, A, \u25bc \u2192 dashboard, \u25b2\u25b2 to \u2190, A \u2192 same game 66/282, \u25bc \u25b2 move normally), Twin icons (\u25b2 to tools, \u25b6 to Second screen, A, \u25bc lands on \u2190, A \u2192 same game, \u25bc next row), Twin showcase (\u25b2 \u25b6 to Dashboard chip, A, \u25bc \u2192 \u2190, A \u2192 same game 4/282, \u25bc\u25bc normal), Pocket classic (\u25bc to the dash spot, A, \u25bc \u2192 \u2190, A \u2192 spot + game kept, \u25b2 normal), Pocket ribbon (\u25bc \u25c0 to dash, A, \u25bc \u2192 \u2190, A \u2192 dash spot + 6/282 kept, \u25b2 \u25b6 next game). No crash, launches blocked. TwinBack447Test (downReachesTheDashboardOnTwinLayouts, returningHandsTheControllerBack). Update 449, exact final build (also carries D149/D150): TwinBack447Test 4/4 + NavBar449Test + ProfilePicker445Test pass; Thor d147.sh \u2014 Twin icons (\u25b2 to tools, \u25b6 Second screen, A, \u25bc \u2192 \u2190 lit, A \u2192 50 Cent kept, \u25bc next row), Twin showcase (Dashboard chip, A, \u25bc \u2192 \u2190 lit, A \u2192 7/282 kept, \u25bc\u25bc \u2192 9/282), Twin desk, Pocket classic, Pocket ribbon all the same; Twin icons repeated on the very last APK."
+   "note": "Staged in next/0.6.67 (update 448): StyleHomes styleKey — with TwinScreens.dashboard open on any two-screen layout (isTwin), ▼ goes past the hidden lower part: HomeReach, then SecondPad (the dashboard); other keys unchanged, nothing changes with the dashboard closed. TwinBackButton also hands the controller back (SecondPad.leave) so the layout's own keys carry on. AYN Thor 3140972f, D-pad only: Twin desk (▶ to its Second screen button, A, ▼ → dashboard, ▲▲ to ←, A → same game 66/282, ▼ ▲ move normally), Twin icons (▲ to tools, ▶ to Second screen, A, ▼ lands on ←, A → same game, ▼ next row), Twin showcase (▲ ▶ to Dashboard chip, A, ▼ → ←, A → same game 4/282, ▼▼ normal), Pocket classic (▼ to the dash spot, A, ▼ → ←, A → spot + game kept, ▲ normal), Pocket ribbon (▼ ◀ to dash, A, ▼ → ←, A → dash spot + 6/282 kept, ▲ ▶ next game). No crash, launches blocked. TwinBack447Test (downReachesTheDashboardOnTwinLayouts, returningHandsTheControllerBack). Update 449, exact final build (also carries D149/D150): TwinBack447Test 4/4 + NavBar449Test + ProfilePicker445Test pass; Thor d147.sh — Twin icons (▲ to tools, ▶ Second screen, A, ▼ → ← lit, A → 50 Cent kept, ▼ next row), Twin showcase (Dashboard chip, A, ▼ → ← lit, A → 7/282 kept, ▼▼ → 9/282), Twin desk, Pocket classic, Pocket ribbon all the same; Twin icons repeated on the very last APK."
   },
   {
    "id": "D148",
-   "title": "Retroid Pocket Classic: with Voltcap's 80 % charge limit on, a fast (AC) charge went 80 \u2192 83 % before charging stopped \u2014 fixed in v0.6.67 staging (update 450)",
+   "title": "Retroid Pocket Classic: with Voltcap's 80 % charge limit on, a fast (AC) charge went 80 → 83 % before charging stopped — fixed in v0.6.67 staging (update 450)",
    "rule": "DEVICE",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 448 battery diagnosis (owner: 'charged only to 83 %')",
-   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370\u21924253 mV and charge flat at 83 % until unplugged \u2014 the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh. Update 449: left as is (owner: no threshold change). The R1 chip already says 'Stopped at 80 %'. Possible later, with approval: show the real level when it stopped above 80 % ('Stopped at 83 %, limit 80 %'), or stop one percent early while the charge rate is high. Update 450 (owner asked for the fix): cause found in batterystats \u2014 on AC with the screen off the handheld woke ~0.45 s per battery change and slept again, so the root writes begun at 80 % finished at 83 % (voltage drop + flat charge counter right then). Fix (staging, Retroid only; AYN path unchanged): partial wake lock (<=10 s) while a battery change is handled; current checked ~12 s after a stop (still > 150 mA -> written again, then the next switch added); learned fast-charge lead 0-2 % (only while 1 % takes < 90 s, only from this device's own measured overshoot); R1 chip shows the real level if it isn't 80; limit_* rows in charge_log.csv. STOP_AT 80 / resume < 77 / RISE_TOLERANCE unchanged. RP Classic on the owner's fast charger (AC, ~3.7-4.2 A): screen on 79->80 stop 13:25:30, -293 mA 13 s later, max 80; screen OFF (device suspending) 79->80 stop 13:36:16, wake lock held 13 s, voltage 4341->4180 mV in 4 s, charge counter flat, -181 mA at +12 s, held 80 for 7.5 min, learned lead stays 0. ChargeFastStop450Test."
+   "note": "batterystats history (reset 2026-10-27 20:45): plugged into AC at 43 %, ~1 %/38 s, 80 % at +4d20h28m26s, 81/82/83 % within 2 min, then voltage 4370→4253 mV and charge flat at 83 % until unplugged — the limit held at 83. Live on a 500 mA PC port (SDP): at 80 % Voltcap set restrict_chg=1 + restrict_cur=0, USB current 0, battery -216 mA (driver keeps saying 'Charging'). Overshoot on fast charge only; likely the first stop not taking (or the check lag) before the next switch in the stack is added (RISE_TOLERANCE 2). Not changed: owner asked for diagnosis only. Health Good, 10 cycles, 5128/5097 mAh. Update 449: left as is (owner: no threshold change). The R1 chip already says 'Stopped at 80 %'. Possible later, with approval: show the real level when it stopped above 80 % ('Stopped at 83 %, limit 80 %'), or stop one percent early while the charge rate is high. Update 450 (owner asked for the fix): cause found in batterystats — on AC with the screen off the handheld woke ~0.45 s per battery change and slept again, so the root writes begun at 80 % finished at 83 % (voltage drop + flat charge counter right then). Fix (staging, Retroid only; AYN path unchanged): partial wake lock (<=10 s) while a battery change is handled; current checked ~12 s after a stop (still > 150 mA -> written again, then the next switch added); learned fast-charge lead 0-2 % (only while 1 % takes < 90 s, only from this device's own measured overshoot); R1 chip shows the real level if it isn't 80; limit_* rows in charge_log.csv. STOP_AT 80 / resume < 77 / RISE_TOLERANCE unchanged. RP Classic on the owner's fast charger (AC, ~3.7-4.2 A): screen on 79->80 stop 13:25:30, -293 mA 13 s later, max 80; screen OFF (device suspending) 79->80 stop 13:36:16, wake lock held 13 s, voltage 4341->4180 mV in 4 s, charge counter flat, -181 mA at +12 s, held 80 for 7.5 min, learned lead stays 0. ChargeFastStop450Test."
   },
   {
    "id": "D149",
@@ -1700,34 +1700,34 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 449 (owner video: white gesture bar at the bottom of Voltcap)",
-   "note": "Cause: update 155 made Voltcap's windows never ask Android to hide the bar on a Retroid (asking while the device's own hide_nav_bar=1 brought the pill back), so with that setting 0 nothing hid it. Fix (staging): windowHidesNav = immersive && !(Retroid && device hide_nav_bar==1), the setting followed by a ContentObserver (no polling); main window, popups and the second-screen window re-apply when it changes. RP Classic MC94516AQF091001112: RC/0.6.65 with hide_nav_bar=0 \u2192 NavigationBar0 visible + white pill in the screenshot; staging build \u2192 NavigationBar0 hidden, no pill; also with R1 open; with 1 the device hides it (no pill) as before; leaving for Settings and returning: Force-hide put 1 back. Device setting restored to 1. NavBar449Test."
+   "note": "Cause: update 155 made Voltcap's windows never ask Android to hide the bar on a Retroid (asking while the device's own hide_nav_bar=1 brought the pill back), so with that setting 0 nothing hid it. Fix (staging): windowHidesNav = immersive && !(Retroid && device hide_nav_bar==1), the setting followed by a ContentObserver (no polling); main window, popups and the second-screen window re-apply when it changes. RP Classic MC94516AQF091001112: RC/0.6.65 with hide_nav_bar=0 → NavigationBar0 visible + white pill in the screenshot; staging build → NavigationBar0 hidden, no pill; also with R1 open; with 1 the device hides it (no pill) as before; leaving for Settings and returning: Force-hide put 1 back. Device setting restored to 1. NavBar449Test."
   },
   {
    "id": "D150",
-   "title": "Settings \u203a Gesture hint: the Force-hide switch read its state once; after 'Hide navigation bar' was switched from the R1 tile (Force-hide following it by default) the card showed the old state",
+   "title": "Settings › Gesture hint: the Force-hide switch read its state once; after 'Hide navigation bar' was switched from the R1 tile (Force-hide following it by default) the card showed the old state",
    "rule": "SETTINGS",
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-02 update 449 code review",
-   "note": "GestureHint.forceState (updated by setImmersive / setForce / init) drives the card; the card also explains when the switches can't do what they say (AYN: pill drawn by the device while its own hide_nav_bar is 0 \u2014 Force-hide needed; Hide off while the device's own setting hides it). Unit-tested (NavBar449Test); the card itself not opened on hardware."
+   "note": "GestureHint.forceState (updated by setImmersive / setForce / init) drives the card; the card also explains when the switches can't do what they say (AYN: pill drawn by the device while its own hide_nav_bar is 0 — Force-hide needed; Hide off while the device's own setting hides it). Unit-tested (NavBar449Test); the card itself not opened on hardware."
   },
   {
    "id": "D151",
-   "title": "Continue playing: streaming clients (PXPlay psplay.grill.com, Asobi com.asobi.droid) never appear \u2014 ordinary apps get no launch time and the list keeps games only",
+   "title": "Continue playing: streaming clients (PXPlay psplay.grill.com, Asobi com.asobi.droid) never appear — ordinary apps get no launch time and the list keeps games only",
    "rule": "LIBRARY",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 450 (owner request)",
-   "note": "Thor 3140972f (read-only probe voltcap_test_appinfo): both kind=AUTO, no Android game flag, auto_game=false, not added, not hidden, not removed from Continue playing (manual exclusion: none) \u2014 filtered by design (update 200). v0.6.67 staging: per-app opt-in 'Show in Continue playing' (app drawer menu, game options) in library_apps.continue_apps (empty by default; stays an app), launch from Voltcap records the time only (no session / play time / save sync / tuning; no second instance), Usage access (optional) picks up use outside Voltcap: foreground stretches only (screen off / lock / other app / background excluded, < 5 s ignored), counted from opt-in, per profile; one entry per package; Clear / take out per app. Thor: Asobi opened outside Voltcap 25 s -> last used + 25.1 s; PXPlay 15 s, screen off 30 s, 5 s, background 30 s -> 20.1 s; chosen from the drawer -> same task #10483 brought forward; clear + opt-out restore the original state. ContinueApps450Test (10)."
+   "note": "Thor 3140972f (read-only probe voltcap_test_appinfo): both kind=AUTO, no Android game flag, auto_game=false, not added, not hidden, not removed from Continue playing (manual exclusion: none) — filtered by design (update 200). v0.6.67 staging: per-app opt-in 'Show in Continue playing' (app drawer menu, game options) in library_apps.continue_apps (empty by default; stays an app), launch from Voltcap records the time only (no session / play time / save sync / tuning; no second instance), Usage access (optional) picks up use outside Voltcap: foreground stretches only (screen off / lock / other app / background excluded, < 5 s ignored), counted from opt-in, per profile; one entry per package; Clear / take out per app. Thor: Asobi opened outside Voltcap 25 s -> last used + 25.1 s; PXPlay 15 s, screen off 30 s, 5 s, background 30 s -> 20.1 s; chosen from the drawer -> same task #10483 brought forward; clear + opt-out restore the original state. ContinueApps450Test (10)."
   },
   {
    "id": "D152",
-   "title": "Continue playing: an opted-in app (PXPlay) opened from its tile took the whole game path \u2014 second-screen info page, play-time session, save watch",
+   "title": "Continue playing: an opted-in app (PXPlay) opened from its tile took the whole game path — second-screen info page, play-time session, save watch",
    "rule": "LAUNCH",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 451 visual check (Thor)",
-   "note": "LauncherScreen startGame \u2192 viewModel.launch \u2192 launchNow for every tile; update 450 only made the drawer / shortcuts light. Fix (staging): launch() sends a Continue-playing app to launchApp (no CompanionActivity, session, save watch, Discord, tuning; existing task brought forward). Thor: tile launch \u2192 psplay task #10483 brought forward, companion 0, LAUNCH vm.launch then launchApp; play time unchanged. ContinueApps451LaunchTest."
+   "note": "LauncherScreen startGame → viewModel.launch → launchNow for every tile; update 450 only made the drawer / shortcuts light. Fix (staging): launch() sends a Continue-playing app to launchApp (no CompanionActivity, session, save watch, Discord, tuning; existing task brought forward). Thor: tile launch → psplay task #10483 brought forward, companion 0, LAUNCH vm.launch then launchApp; play time unchanged. ContinueApps451LaunchTest."
   },
   {
    "id": "D153",
@@ -1740,7 +1740,7 @@
   },
   {
    "id": "D154",
-   "title": "Starting a game asked 'PXPlay is still open \u2014 quit it and play?' (a streaming app counted as an open game)",
+   "title": "Starting a game asked 'PXPlay is still open — quit it and play?' (a streaming app counted as an open game)",
    "rule": "LAUNCH",
    "severity": "med",
    "status": "fixed",
@@ -1754,16 +1754,16 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 451 (Thor: Asobi last_played back after a clear)",
-   "note": "forget() now also leaves a 'cleared at' mark (the existing hide map), so an older time from sync stays hidden; using the app again shows it. Thor: clear \u2192 last 0 / visible 0. Sync round itself not forced (every 20 min). ContinueApps451LaunchTest. | Update 452: Thor hardware: after Clear, Asobi's last_played came back from the Drive sync but stayed hidden (visible_last_played absent); ContinueApps452SyncTest (visibleOf) covers it."
+   "note": "forget() now also leaves a 'cleared at' mark (the existing hide map), so an older time from sync stays hidden; using the app again shows it. Thor: clear → last 0 / visible 0. Sync round itself not forced (every 20 min). ContinueApps451LaunchTest. | Update 452: Thor hardware: after Clear, Asobi's last_played came back from the Drive sync but stayed hidden (visible_last_played absent); ContinueApps452SyncTest (visibleOf) covers it."
   },
   {
    "id": "D156",
-   "title": "Game windows: 22 layouts showed every action at once (Play, Performance, Details, Back, Options, Achievements, Save sync, Manual, Inspect + 2 status lines) \u2014 cramped on the RP Classic",
+   "title": "Game windows: 22 layouts showed every action at once (Play, Performance, Details, Back, Options, Achievements, Save sync, Manual, Inspect + 2 status lines) — cramped on the RP Classic",
    "rule": "UI",
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 451 popup audit (RP Classic, all 53 layouts, own style)",
-   "note": "Audit: tools/qa/device/popscan.sh RPC (53 stills). Clean already (unchanged): Channel grid (More), Cinema, Bubbles, Cards, Memory card, Airy, Arctic, Discover, TV room and the menu-list windows (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop, Storage, Box, Orbit, Blades). Fix (GameWindow SceneBody, MORE_SCENES): Play, Details, Back, Inspect + More; More opens in place (Performance, Options, Achievements, Save sync, Manual, status lines, Less), focus to Options, B closes More first, focus back on More; an urgent save line stays visible; each layout keeps its own look. RP Classic: Cover details B closes More then the window; Thor Twin desk + Hero: same (popmore.sh). PopupMore451Test. | Update 452: Final staging build, popverify.sh: RP Classic all 26 window layouts (all 20 MORE_SCENES types) \u2014 More opens, B closes More first then the window, rapid A/B never launched; Thor TWIN_DESK/ICONS/SHOWCASE, POCKET_CLASSIC, HERO, TILES PASS. CLASSIC (VOLT_PANEL) cut off the keys with More open on 1240x1080 \u2192 fixed (WinScenesHomes2 picture row weight(1f, fill=false), PopupMore452Test) and re-verified. Popup modes on STACKS: Banner, Classic, Row reveal, Row opens, Shared, Own all open/close, no launch (popup_style_by_layout restored by snapshot). Not yet covered: a real touch tap on More, long-title / missing-art games, a physical controller; LIVE and DASH: rapid A B A B ended with the window open (one more B closed it) \u2014 not checked against 0.6.66. Kept 'fixed', not 'verified'. | Update 453: Remaining 452 checks: real touch on More (Classic, Live tiles: More \u2192 Less \u2192 Back taps PASS), long titles + missing metadata (2 games x 16 layouts, collapsed + More, RP Classic: wraps / slides, no clipped key), compact screen = RP Classic 1240x1080. LIVE/DASH rapid = D157 (fixed). Physical controller: not possible remotely. Kept 'fixed': touch was checked on 2 window types only and no physical controller was used."
+   "note": "Audit: tools/qa/device/popscan.sh RPC (53 stills). Clean already (unchanged): Channel grid (More), Cinema, Bubbles, Cards, Memory card, Airy, Arctic, Discover, TV room and the menu-list windows (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop, Storage, Box, Orbit, Blades). Fix (GameWindow SceneBody, MORE_SCENES): Play, Details, Back, Inspect + More; More opens in place (Performance, Options, Achievements, Save sync, Manual, status lines, Less), focus to Options, B closes More first, focus back on More; an urgent save line stays visible; each layout keeps its own look. RP Classic: Cover details B closes More then the window; Thor Twin desk + Hero: same (popmore.sh). PopupMore451Test. | Update 452: Final staging build, popverify.sh: RP Classic all 26 window layouts (all 20 MORE_SCENES types) — More opens, B closes More first then the window, rapid A/B never launched; Thor TWIN_DESK/ICONS/SHOWCASE, POCKET_CLASSIC, HERO, TILES PASS. CLASSIC (VOLT_PANEL) cut off the keys with More open on 1240x1080 → fixed (WinScenesHomes2 picture row weight(1f, fill=false), PopupMore452Test) and re-verified. Popup modes on STACKS: Banner, Classic, Row reveal, Row opens, Shared, Own all open/close, no launch (popup_style_by_layout restored by snapshot). Not yet covered: a real touch tap on More, long-title / missing-art games, a physical controller; LIVE and DASH: rapid A B A B ended with the window open (one more B closed it) — not checked against 0.6.66. Kept 'fixed', not 'verified'. | Update 453: Remaining 452 checks: real touch on More (Classic, Live tiles: More → Less → Back taps PASS), long titles + missing metadata (2 games x 16 layouts, collapsed + More, RP Classic: wraps / slides, no clipped key), compact screen = RP Classic 1240x1080. LIVE/DASH rapid = D157 (fixed). Physical controller: not possible remotely. Kept 'fixed': touch was checked on 2 window types only and no physical controller was used."
   },
   {
    "id": "D157",
@@ -1776,25 +1776,25 @@
   },
   {
    "id": "D158",
-   "title": "The pill category bar (Classic / Tiles rows, Category bar = Full) still listed tiles taken off the category screen ('Other apps' on the Thor) \u2014 21 pills vs 20 L2/R2 stops / 20 tiles",
+   "title": "The pill category bar (Classic / Tiles rows, Category bar = Full) still listed tiles taken off the category screen ('Other apps' on the Thor) — 21 pills vs 20 L2/R2 stops / 20 tiles",
    "rule": "CATEGORY",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 453 Thor Tile home preview",
-   "note": "PlatformFilterRow built its own list from availablePlatforms + categoryOrder (no CategoryTileOrder.isHidden / tile order). Now it takes data/CategoryStops.keys(state) (remembered on order, platforms, collections, games, tile-order and console-order versions). CategoryBar453Test. Thor after: All, Continue playing, Nintendo 3DS, Android games, Game Boy\u2026 \u2014 Other apps gone; L2/R2 = 20 stops = 20 tiles both ways."
+   "note": "PlatformFilterRow built its own list from availablePlatforms + categoryOrder (no CategoryTileOrder.isHidden / tile order). Now it takes data/CategoryStops.keys(state) (remembered on order, platforms, collections, games, tile-order and console-order versions). CategoryBar453Test. Thor after: All, Continue playing, Nintendo 3DS, Android games, Game Boy… — Other apps gone; L2/R2 = 20 stops = 20 tiles both ways."
   },
   {
    "id": "D159",
-   "title": "App drawer opened with nothing lit: the first \u25bc only lit the first app",
+   "title": "App drawer opened with nothing lit: the first ▼ only lit the first app",
    "rule": "ONEPRESS",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 453 Thor drawer",
-   "note": "AppDrawer.kt: the first app takes Modifier.initialFocus(). Thor: opens on aPS3e lit; \u25bc scrolls to the last row with focus visible. DrawerFocus453Test."
+   "note": "AppDrawer.kt: the first app takes Modifier.initialFocus(). Thor: opens on aPS3e lit; ▼ scrolls to the last row with focus visible. DrawerFocus453Test."
   },
   {
    "id": "D160",
-   "title": "Classic game window (VoltPanel) always took its full maximum height \u2014 a game with few facts left half the window empty",
+   "title": "Classic game window (VoltPanel) always took its full maximum height — a game with few facts left half the window empty",
    "rule": "UI",
    "severity": "low",
    "status": "verified",
@@ -1808,16 +1808,16 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 453 Thor Case stacks / Shelf",
-   "note": "GameTitles.stripRegionTags drops a square-bracket 16-digit Switch title ID (01\u2026) and [Base] (display / matching only; the file, its stable key, art and history untouched). SwitchTitle453Test. Thor Tile home: 'Donkey Kong Country Returns HD'."
+   "note": "GameTitles.stripRegionTags drops a square-bracket 16-digit Switch title ID (01…) and [Base] (display / matching only; the file, its stable key, art and history untouched). SwitchTitle453Test. Thor Tile home: 'Donkey Kong Country Returns HD'."
   },
   {
    "id": "D162",
-   "title": "App drawer: long app names cut with '\u2026' (rule 11)",
+   "title": "App drawer: long app names cut with '…' (rule 11)",
    "rule": "TRUNCATE",
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-02 update 453 static TRUNCATE AppDrawer.kt:212",
-   "note": "The tile you're on shows FullText (2 lines, readable shrink, slide); other tiles keep 2 lines (qa-ok, whole name on focus). No app on the two devices has a name long enough to need the slide \u2014 not seen sliding on hardware."
+   "note": "The tile you're on shows FullText (2 lines, readable shrink, slide); other tiles keep 2 lines (qa-ok, whole name on focus). No app on the two devices has a name long enough to need the slide — not seen sliding on hardware."
   },
   {
    "id": "D163",
@@ -1826,16 +1826,16 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-02 update 453 code review (P5)",
-   "note": "RomScanner.isTrashFolder: exact names $RECYCLE.BIN (any case), RECYCLER, System Volume Information, LOST.DIR, .Trash, .Trashes, .Trash-<uid> \u2014 never walked; a record inside one is dropped on read (isTrashedPath). Nothing is ever touched. TrashFolders453Test (scan keeps the real ROM, leaves the bin file as it was). Neither device has such a folder (checked read-only) \u2014 unit tested only."
+   "note": "RomScanner.isTrashFolder: exact names $RECYCLE.BIN (any case), RECYCLER, System Volume Information, LOST.DIR, .Trash, .Trashes, .Trash-<uid> — never walked; a record inside one is dropped on read (isTrashedPath). Nothing is ever touched. TrashFolders453Test (scan keeps the real ROM, leaves the bin file as it was). Neither device has such a folder (checked read-only) — unit tested only."
   },
   {
    "id": "D164",
-   "title": "QA: a layout preview (voltcap_test_preview + voltcap_test_layout) is lost on the first category switch (the stored appearance comes back) \u2014 Cross menu showed 21 stops then 20, the Thor screen went back to Pocket classic",
+   "title": "QA: a layout preview (voltcap_test_preview + voltcap_test_layout) is lost on the first category switch (the stored appearance comes back) — Cross menu showed 21 stops then 20, the Thor screen went back to Pocket classic",
    "rule": "INFRA",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-02 update 453 Thor navcheck",
-   "note": "Set the category first, then the layout preview (media.sh does). Explains D102's odd \u25c0\u25b6 observations, which came from preview runs. | Update 454: Cause: LauncherViewModel.categoryLayoutFor applied CategoryLayouts.effective() (the category's own or the DEFAULT layout) on every category switch, replacing the previewed layout (nothing was saved: persistAppearance returns early in previews). Now a preview keeps its layout across categories (PreviewCategory454Test). Thor Cross menu preview: 21 stops before and after 4 x \u25c0\u25b6 + 2 x L2/R2, layout stayed Cross."
+   "note": "Set the category first, then the layout preview (media.sh does). Explains D102's odd ◀▶ observations, which came from preview runs. | Update 454: Cause: LauncherViewModel.categoryLayoutFor applied CategoryLayouts.effective() (the category's own or the DEFAULT layout) on every category switch, replacing the previewed layout (nothing was saved: persistAppearance returns early in previews). Now a preview keeps its layout across categories (PreviewCategory454Test). Thor Cross menu preview: 21 stops before and after 4 x ◀▶ + 2 x L2/R2, layout stayed Cross."
   },
   {
    "id": "D165",
@@ -1844,7 +1844,7 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-02 update 454 perf.sh (RC and staging alike)",
-   "note": "FrameMetrics: total 177 ms with small measured phases (anim 2, layout 5, gpu 12) = time before the frame starts \u2014 creating the dialog's own window; next frame anim \u2248 50 ms = composing the Settings content. Same on the 0.6.66 RC. Thor: maxgap 83-183 ms. A fix means restructuring how Settings is hosted (e.g. composed in the home window or prewarmed) \u2014 not attempted without a design decision."
+   "note": "FrameMetrics: total 177 ms with small measured phases (anim 2, layout 5, gpu 12) = time before the frame starts — creating the dialog's own window; next frame anim ≈ 50 ms = composing the Settings content. Same on the 0.6.66 RC. Thor: maxgap 83-183 ms. A fix means restructuring how Settings is hosted (e.g. composed in the home window or prewarmed) — not attempted without a design decision."
   },
   {
    "id": "D166",
@@ -1862,7 +1862,7 @@
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 454 popmodes.sh (Thor)",
-   "note": "Pocket classic acts on A's PRESS; openDetails showed the inline Classic details window with A still held and that A's RELEASE clicked its focused Play ('LAUNCH blocked startGame \u2026 popup=null'). The other 59 RP Classic + 29 Thor style x layout combinations never launched. Fix: openDetails remembers a held A (HomeKeyGuard.swallowAUp) and the home screen's root swallows that release; a new press clears it. DetailsHeldA454Test. Thor re-check on the final build: Pocket classic + Classic style, 2 x A \u2192 'details: A release from the home screen swallowed', no launch; Own style still opens its window."
+   "note": "Pocket classic acts on A's PRESS; openDetails showed the inline Classic details window with A still held and that A's RELEASE clicked its focused Play ('LAUNCH blocked startGame … popup=null'). The other 59 RP Classic + 29 Thor style x layout combinations never launched. Fix: openDetails remembers a held A (HomeKeyGuard.swallowAUp) and the home screen's root swallows that release; a new press clears it. DetailsHeldA454Test. Thor re-check on the final build: Pocket classic + Classic style, 2 x A → 'details: A release from the home screen swallowed', no launch; Own style still opens its window."
   },
   {
    "id": "D168",
@@ -1884,7 +1884,7 @@
   },
   {
    "id": "D170",
-   "title": "Pocket Quest: long category names lose their gold plate and are cut off / covered by the '+N \u203a' hint (RP Classic: Continue playing, Game Boy Advance, Game Boy Color, Super Nintendo Entertainment System)",
+   "title": "Pocket Quest: long category names lose their gold plate and are cut off / covered by the '+N ›' hint (RP Classic: Continue playing, Game Boy Advance, Game Boy Color, Super Nintendo Entertainment System)",
    "rule": "TRUNCATE",
    "severity": "med",
    "status": "verified",
@@ -1893,39 +1893,39 @@
   },
   {
    "id": "D171",
-   "title": "Settings (main menu) / app drawer: the home behind kept redrawing at 60 fps (circuit current, focused piece wobble, focus pulse, sliding names) \u2014 both windows competing for the RP Classic's GPU",
+   "title": "Settings (main menu) / app drawer: the home behind kept redrawing at 60 fps (circuit current, focused piece wobble, focus pulse, sliding names) — both windows competing for the RP Classic's GPU",
    "rule": "PERF",
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 456 (RP Classic, QA churn + gfxinfo)",
-   "note": "Owner-approved hold (D64 option B) extended to the home's own motion in its window only (calmHere: HomeIdle.panelHeld + the home window), the shared media clock held and run on from where it stopped (MediaClock.hold), EffectClock held; showMenu (the real Settings) included \u2014 the first attempt held showSettings only (an older window). RP Classic: home window frames under Settings 60/s -> 0 (setnav.sh), drawer 158 -> 80 frames / 4 s; dimmed edges pixel-identical over 1.5 s; no black frame on close. PanelHold456Test."
+   "note": "Owner-approved hold (D64 option B) extended to the home's own motion in its window only (calmHere: HomeIdle.panelHeld + the home window), the shared media clock held and run on from where it stopped (MediaClock.hold), EffectClock held; showMenu (the real Settings) included — the first attempt held showSettings only (an older window). RP Classic: home window frames under Settings 60/s -> 0 (setnav.sh), drawer 158 -> 80 frames / 4 s; dimmed edges pixel-identical over 1.5 s; no black frame on close. PanelHold456Test."
   },
   {
    "id": "D172",
-   "title": "Settings window's own frames are expensive on the RP Classic (~27 ms vsync-to-complete, GPU ~14 ms, cmd ~9 ms) \u2014 vertical navigation still misses ~17-20 vsyncs per 20 presses, worst gap ~200 ms",
+   "title": "Settings window's own frames are expensive on the RP Classic (~27 ms vsync-to-complete, GPU ~14 ms, cmd ~9 ms) — vertical navigation still misses ~17-20 vsyncs per 20 presses, worst gap ~200 ms",
    "rule": "PERF",
    "severity": "med",
    "status": "open",
    "found": "2026-11-02 update 456 (winpace.sh, per-window framestats)",
-   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls \u2014 UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look \u2014 owner decision. Update 457b: owner clarified \"the new settings just spawn in\" \u2014 reproduced on the RP Classic (30 fps recording): focus scroll stopped with the focused row flush on the bottom edge, so the next row was never visible and popped in. Fixed in staging: SettingsLookAhead (LocalBringIntoViewSpec, 56 dp margin, max 1/4 pane). Verified RP Classic A/B (voltcap_test_lookahead) + Thor; Render457Test. Update 458 (RP Classic gfxinfo, Settings Home \u25bcx10 \u25b2x10): still 12-14 % janky, GPU p50 13 / p90 18-19 ms, ~20 slow UI-thread frames per 20 presses; plain panels give the same janky %. Row visibility fixed (457b); frame drops OPEN \u2014 next: what recomposes per focus move. Update 459: Settings category change now slides (SettingsPageSlide, 260 ms + 80 ms hold). RP touch recording: directional, no blank frame, but ~3-4 visible steps (31 % janky, slow first composition of the new page). Thor smooth (9 %)."
+   "note": "Unchanged by the background hold (D171): the dialog itself is the bottleneck. Not yet traced to a cause (candidates: full-screen translucent dialog blending, row shadows / gradients, focus-change recomposition). Thor not measured this update. Update 457 (perfetto, RP Classic): not stalls — UI thread median 5.6 ms; GPU ~10.7 ms and RenderThread ~8 ms per frame; the 200 ms \"gaps\" were idle time between presses. Fixed part: Settings window elevation 0 (no unseen shadow insets; buffer 1368x1160 -> 1240x1032, GPU 11.0 -> 10.2 ms). Remaining cause measured: default panel surface (gradient + sheen + hairline per card) ~3-4 ms GPU/frame (plain panels: GPU 6.4-8.0 ms, over-budget frames 33 -> 12). Not applied: changes the look — owner decision. Update 457b: owner clarified \"the new settings just spawn in\" — reproduced on the RP Classic (30 fps recording): focus scroll stopped with the focused row flush on the bottom edge, so the next row was never visible and popped in. Fixed in staging: SettingsLookAhead (LocalBringIntoViewSpec, 56 dp margin, max 1/4 pane). Verified RP Classic A/B (voltcap_test_lookahead) + Thor; Render457Test. Update 458 (RP Classic gfxinfo, Settings Home ▼x10 ▲x10): still 12-14 % janky, GPU p50 13 / p90 18-19 ms, ~20 slow UI-thread frames per 20 presses; plain panels give the same janky %. Row visibility fixed (457b); frame drops OPEN — next: what recomposes per focus move. Update 459: Settings category change now slides (SettingsPageSlide, 260 ms + 80 ms hold). RP touch recording: directional, no blank frame, but ~3-4 visible steps (31 % janky, slow first composition of the new page). Thor smooth (9 %)."
   },
   {
    "id": "D173",
-   "title": "Pok\u00e9mon Stadium / Pok\u00e9mon Snap (N64): owner reports the wrong case / packaging",
+   "title": "Pokémon Stadium / Pokémon Snap (N64): owner reports the wrong case / packaging",
    "rule": "ART",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Thor: Pok\u00e9mon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced \u2014 Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen. Owner (457): seen on the KONKR Pocket \u2014 not connected; test there when it is plugged in via USB. Update 460 (KONKR, label audit + Inspect): the real US box, back, spine, full scan and label scans are saved and no cover is picked, yet Case flow / Inspect show a cream Snap / Mewtwo Stadium front and Voltcap's plain spine (the back is real). Cause not found; next: a log build of Case3D's front / spine pick. Update 460b ROOT CAUSE: Snap / Stadium / Stadium 2 are on the KONKR twice (internal + SD card); their scans were saved under the SD copy's key only, the library shows the internal copy (no scans \u2192 cover + plain title spine). Fix: GameCopies / shareScansAcrossCopies (same file name in a same-named folder only). KONKR: real US fronts + spines in Case flow and Inspect (qa460/d173b); 11 games gained scans. Update 461: staging compiled + GameCopies460Test 5/5 on the PC; copy key = whole path below the storage + same size; KONKR Case flow real US boxes on the compiled build."
+   "note": "Thor: Pokémon Snap (USA) shows the grey N64 cartridge with its real USA label on the Pocket Ribbon (label correct there). Retail box / case layouts not yet inspected; source layer (scan vs generated vs override) not yet identified. Not changed. Update 457 (Thor): not reproduced — Case flow, Game shelf and Inspect show the real US N64 box front + back scans, the box opens as cardboard and the cartridge is separate. Need the layout/device where it was seen. Owner (457): seen on the KONKR Pocket — not connected; test there when it is plugged in via USB. Update 460 (KONKR, label audit + Inspect): the real US box, back, spine, full scan and label scans are saved and no cover is picked, yet Case flow / Inspect show a cream Snap / Mewtwo Stadium front and Voltcap's plain spine (the back is real). Cause not found; next: a log build of Case3D's front / spine pick. Update 460b ROOT CAUSE: Snap / Stadium / Stadium 2 are on the KONKR twice (internal + SD card); their scans were saved under the SD copy's key only, the library shows the internal copy (no scans → cover + plain title spine). Fix: GameCopies / shareScansAcrossCopies (same file name in a same-named folder only). KONKR: real US fronts + spines in Case flow and Inspect (qa460/d173b); 11 games gained scans. Update 461: staging compiled + GameCopies460Test 5/5 on the PC; copy key = whole path below the storage + same size; KONKR Case flow real US boxes on the compiled build."
   },
   {
    "id": "D174",
-   "title": "Generated cartridges for games without a retail release (Pok\u00e9mon Brown) look artificial next to authentic ones",
+   "title": "Generated cartridges for games without a retail release (Pokémon Brown) look artificial next to authentic ones",
    "rule": "ART",
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not investigated on hardware this update. Update 457 (RP Classic, Inspect, next to Mario's Picross photo cart): reproduced \u2014 flat even grey shell, empty top recess (no moulded \"Nintendo GAME BOY\"), box-front cover used as the sticker (ESRB / seal / slogan printed), sticker sized to the cover. Not changed. Update 458 (staging, CartShells gb/gbc_dual only): sticker fills its recess (cover cut to it, upper part kept \u2014 box-foot rating/blurb and Brown's BROWN VERSION line drop off), moulded \"Nintendo GAME BOY\" in the top panel (rebranded / Neutral as the backs), fine grain, spot light and bevel at half strength. RP Classic verified (home row next to the Dr. Mario photo cart, Inspect 0/60, generated Fire Red). Owner look pending. Update 459: shells left exactly as before 458 (grain / light / crop removed); a cover now gets a printed label of its own platform (GeneratedLabels.kt) \u2014 Brown: whole cover incl. BROWN VERSION, grey printed strips, FAN-MADE (hack, no code); moulded lettering on gb / gbc / gbc_dual regardless of the Cartridge backs setting. RP Classic Inspect 0 / 35 / 90 + gbc / gbc_dual; owner look pending (qa459/evidence/labels_459.png). Update 461: owner option D \u2014 printed Game Boy sticker (full-height art, grey printed side borders, THIS SIDE OUT + name), GB/GBC paks without a label scan; awaiting approval."
+   "note": "Not investigated on hardware this update. Update 457 (RP Classic, Inspect, next to Mario's Picross photo cart): reproduced — flat even grey shell, empty top recess (no moulded \"Nintendo GAME BOY\"), box-front cover used as the sticker (ESRB / seal / slogan printed), sticker sized to the cover. Not changed. Update 458 (staging, CartShells gb/gbc_dual only): sticker fills its recess (cover cut to it, upper part kept — box-foot rating/blurb and Brown's BROWN VERSION line drop off), moulded \"Nintendo GAME BOY\" in the top panel (rebranded / Neutral as the backs), fine grain, spot light and bevel at half strength. RP Classic verified (home row next to the Dr. Mario photo cart, Inspect 0/60, generated Fire Red). Owner look pending. Update 459: shells left exactly as before 458 (grain / light / crop removed); a cover now gets a printed label of its own platform (GeneratedLabels.kt) — Brown: whole cover incl. BROWN VERSION, grey printed strips, FAN-MADE (hack, no code); moulded lettering on gb / gbc / gbc_dual regardless of the Cartridge backs setting. RP Classic Inspect 0 / 35 / 90 + gbc / gbc_dual; owner look pending (qa459/evidence/labels_459.png). Update 461: owner option D — printed Game Boy sticker (full-height art, grey printed side borders, THIS SIDE OUT + name), GB/GBC paks without a label scan; awaiting approval."
   },
   {
    "id": "D175",
@@ -1934,7 +1934,7 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 456 (owner)",
-   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared \u2014 on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees \u2014 a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed. Update 458: causes \u2014 (1) side copies are planes parallel to the face: edge-on they had no width, the GBA cart vanished at 90 deg on the home (Thor); (2) each copy's slanted top left a step before the next: saw-tooth along the side top at 45-90; (3) Inspect drew the face at >= 1 % width edge-on: label squeezed into a striped column. Fixed in staging: copies never past ~88 deg (edgeOnSafeYaw), face/back fade edge-on (edgeOnFade, home + Inspect), copies clipped to the side's real top/bottom edge (SideClip, same Skia camera) and the side strip filled past ~81 deg; Inspect slices up to 72. Thor verified: home poses 0-180 incl. 88/90/92/-90, Inspect 45/88/90, turn + scroll recordings, GB/GBC/N64/3DS at 75/90. Left: ~1 px fine tooth at ~75; Switch and RP Classic not tested; perf not proven (Thor 1 staging run 4.3 % janky vs RC ~1.6 %). Update 459: performance re-measured on the Thor GBA row (staging, 16 moves x3): 7.3 % cold, then 0.98 % / 1.21 % janky = RC (~1.6 %). Fix kept. Update 460: KONKR (staging) Advance Wars 2 at 45/75/90/120/180 clean."
+   "note": "Not reproduced on hardware yet. Code suspect (unverified): the side-picture copies (edgeLeaf path) are capped at 24 at rest (FAR_COPIES 3 far, MOVING_COPIES 24) and, unlike the slice path, are never smeared — on a wide, thick GBA cart at 75-90 degrees the copies can sit > 2 px apart, which would read as steps. Needs front / 45 / 75 / 90 / rear-3/4 captures before any change. Update 457 (Thor, Inspect poses 0-180): reproduced at ~90 degrees — a 1-2 px striped / coloured column down the side edge. Leaving out the edge-on face changed nothing (reverted); narrowed to the side picture built from the face's edge pixels. Not fixed. Update 458: causes — (1) side copies are planes parallel to the face: edge-on they had no width, the GBA cart vanished at 90 deg on the home (Thor); (2) each copy's slanted top left a step before the next: saw-tooth along the side top at 45-90; (3) Inspect drew the face at >= 1 % width edge-on: label squeezed into a striped column. Fixed in staging: copies never past ~88 deg (edgeOnSafeYaw), face/back fade edge-on (edgeOnFade, home + Inspect), copies clipped to the side's real top/bottom edge (SideClip, same Skia camera) and the side strip filled past ~81 deg; Inspect slices up to 72. Thor verified: home poses 0-180 incl. 88/90/92/-90, Inspect 45/88/90, turn + scroll recordings, GB/GBC/N64/3DS at 75/90. Left: ~1 px fine tooth at ~75; Switch and RP Classic not tested; perf not proven (Thor 1 staging run 4.3 % janky vs RC ~1.6 %). Update 459: performance re-measured on the Thor GBA row (staging, 16 moves x3): 7.3 % cold, then 0.98 % / 1.21 % janky = RC (~1.6 %). Fix kept. Update 460: KONKR (staging) Advance Wars 2 at 45/75/90/120/180 clean."
   },
   {
    "id": "D176",
@@ -1952,7 +1952,7 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-02 update 459 (owner)",
-   "note": "Fixed in staging: GeneratedLabels.kt (per-platform designs, cover whole at its aspect), LabelIds.kt (ROM-header codes only, FAN-MADE / HOMEBREW). Verified on hardware: GB family, GBA, N64, SFC, DS. Not verified: 3DS, Switch, Vita, NES / Famicom, Sega, Atari, CustomCarts. Labels459Test. Update 460 (owner rejected the 459 designs): designs OFF by default; real / fan label scans (ScreenScraper) shown first \u2014 they were hidden in 459's QA sheets by the Inspect hook drawing the cover (fixed); Labels folder added. KONKR sheet qa460/evidence."
+   "note": "Fixed in staging: GeneratedLabels.kt (per-platform designs, cover whole at its aspect), LabelIds.kt (ROM-header codes only, FAN-MADE / HOMEBREW). Verified on hardware: GB family, GBA, N64, SFC, DS. Not verified: 3DS, Switch, Vita, NES / Famicom, Sega, Atari, CustomCarts. Labels459Test. Update 460 (owner rejected the 459 designs): designs OFF by default; real / fan label scans (ScreenScraper) shown first — they were hidden in 459's QA sheets by the Inspect hook drawing the cover (fixed); Labels folder added. KONKR sheet qa460/evidence."
   },
   {
    "id": "D178",
@@ -1961,7 +1961,7 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-02 update 459 (owner)",
-   "note": "Fixed in staging: SettingsPageSlide (directional slide, old page focus / touch blocked, per-category scroll + subpage kept). RP: directional but steppy (31 % janky frames); Thor smooth. Controller L1 / R1 path not recorded on the RP (injected keyevents did not switch). Update 460: RP not connected \u2014 not re-measured."
+   "note": "Fixed in staging: SettingsPageSlide (directional slide, old page focus / touch blocked, per-category scroll + subpage kept). RP: directional but steppy (31 % janky frames); Thor smooth. Controller L1 / R1 path not recorded on the RP (injected keyevents did not switch). Update 460: RP not connected — not re-measured."
   },
   {
    "id": "D179",
@@ -1997,7 +1997,7 @@
    "severity": "med",
    "status": "fixed",
    "found": "2026-11-03 update 460",
-   "note": "Update 459's comparison sheets were wrong for games with a label scan (Silver, Crystal Clear\u2026). MediaInspectView forced shell now wears drawnLabelScan."
+   "note": "Update 459's comparison sheets were wrong for games with a label scan (Silver, Crystal Clear…). MediaInspectView forced shell now wears drawnLabelScan."
   },
   {
    "id": "D183",
@@ -2010,12 +2010,12 @@
   },
   {
    "id": "D184",
-   "title": "ROM hack matched to its base game by ScreenScraper wore the base game's real label (Pok\u00e9mon Crystal Kaizo \u2192 Crystal)",
+   "title": "ROM hack matched to its base game by ScreenScraper wore the base game's real label (Pokémon Crystal Kaizo → Crystal)",
    "rule": "ART",
    "severity": "med",
    "status": "verified",
    "found": "2026-11-03 update 461",
-   "note": "HackLabels: same ScreenScraper game id as an official game in the library \u2192 label scan + cartridge photo dropped; own art on the printed label (KONKR). Crystal Clear fan label kept. HackLabels461Test. Limitation: base game not in library."
+   "note": "HackLabels: same ScreenScraper game id as an official game in the library → label scan + cartridge photo dropped; own art on the printed label (KONKR). Crystal Clear fan label kept. HackLabels461Test. Limitation: base game not in library."
   },
   {
    "id": "D185",
@@ -2127,16 +2127,16 @@
   },
   {
    "id": "D197",
-   "title": "Case flow window: Play / Details / Back / More cut at the bottom (Pok\u00e9mon Stadium 2)",
+   "title": "Case flow window: Play / Details / Back / More cut at the bottom (Pokémon Stadium 2)",
    "rule": "R26",
    "severity": "high",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "CASEFLOW \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "CASEFLOW · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "Claude outputs/qa467/stadium2_before_after_inspect.png"
    ],
-   "root_cause": "CaseFlowMedia: the whole panel was one verticalScroll with heightIn(max) \u2014 the action row sat inside the scroll and was clipped by the panel",
+   "root_cause": "CaseFlowMedia: the whole panel was one verticalScroll with heightIn(max) — the action row sat inside the scroll and was clipped by the panel",
    "fix": "ui/WinScenes.kt: media + chips + summary scroll in weight(1f, fill=false); the action row is outside the scroll, always whole",
    "verified": "k467f CASEFLOW_* PASS, o467f PASS"
   },
@@ -2147,13 +2147,13 @@
    "severity": "high",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "all layouts \u00b7 ROW_OPENS / ROW_REVEAL / SHARED most visible \u00b7 KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
+   "where": "all layouts · ROW_OPENS / ROW_REVEAL / SHARED most visible · KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
    "evidence": [
     "sweep k467s log 'first A opened nothing' (before)"
    ],
    "root_cause": "Android leaves touch mode only for D-pad and typing keys; a face button reached a home screen with nothing focused",
    "fix": "MainActivity.dispatchKeyEvent: a gamepad button leaves touch mode first (requestFocusFromTouch)",
-   "verified": "manual tap\u2192B\u2192A and tap\u2192A: popup opens, Play focused (KONKR)"
+   "verified": "manual tap→B→A and tap→A: popup opens, Play focused (KONKR)"
   },
   {
    "id": "D199",
@@ -2162,7 +2162,7 @@
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "CLASSIC style \u00b7 all layouts",
+   "where": "CLASSIC style · all layouts",
    "evidence": [
     "QaClip dump (Play reported as text)"
    ],
@@ -2177,12 +2177,12 @@
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "RESUME \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x) (1.0 and 1.3 font)",
+   "where": "RESUME · OWN · KONKR GT78 960x640 (1.5x) (1.0 and 1.3 font)",
    "evidence": [
     "k467f RESUME_OWN_main.png"
    ],
    "root_cause": "DiscoverCard's square was as tall as the card, leaving the card ~210 dp; SceneFactsBody then had ~14 dp",
-   "fix": "ui/WinScenesHomes2.kt square leaves the card \u2265 290 dp; ui/WinScenesMore.kt SceneFactsBody gives its room away under one whole row",
+   "fix": "ui/WinScenesHomes2.kt square leaves the card ≥ 290 dp; ui/WinScenesMore.kt SceneFactsBody gives its room away under one whole row",
    "verified": "k467r RESUME_* PASS (1.0); 1.3 in k467fz"
   },
   {
@@ -2192,11 +2192,11 @@
    "severity": "high",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "ARCTIC \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
+   "where": "ARCTIC · OWN · KONKR GT78 960x640 (1.5x) and Odin 2 Portal 1920x1080 (2.3x)",
    "evidence": [
     "k467f ARCTIC_OWN_main.png"
    ],
-   "root_cause": "FullText took the theme's 24 sp line \u2192 36 dp rows; 8\u20139 rows didn't fit",
+   "root_cause": "FullText took the theme's 24 sp line → 36 dp rows; 8–9 rows didn't fit",
    "fix": "ui/WinScenesHomes.kt: own 18 sp line height; 6 dp padding under 500 dp",
    "verified": "k467t ARCTIC_* PASS; Odin o467z"
   },
@@ -2207,11 +2207,11 @@
    "severity": "high",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "BLADES \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "BLADES · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467f BLADES_OWN_main.png"
    ],
-   "root_cause": "36 / 44 dp rows \u00d7 8 ran past the blade on a 427 dp screen",
+   "root_cause": "36 / 44 dp rows × 8 ran past the blade on a 427 dp screen",
    "fix": "ui/WinScenesConsole.kt BladeGuide rows 29 / 38 dp under 440 dp",
    "verified": "k467r BLADES_* PASS"
   },
@@ -2222,7 +2222,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "PANELS \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "PANELS · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467f PANELS_OWN_main.png"
    ],
@@ -2237,7 +2237,7 @@
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "STORAGE \u00b7 OWN (Inspect) \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "STORAGE · OWN (Inspect) · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467f STORAGE_OWN_main.png"
    ],
@@ -2252,7 +2252,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "TERMINAL \u00b7 OWN \u00b7 both",
+   "where": "TERMINAL · OWN · both",
    "evidence": [
     "k467f / o467f TERMINAL_OWN"
    ],
@@ -2267,13 +2267,13 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "SHOP \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "SHOP · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467f SHOP_OWN_main.png"
    ],
    "root_cause": "rows 30 / 38 dp + 4 dp gaps on a 427 dp screen",
    "fix": "RentalTag rows 24 / 30 dp, 2 dp gaps under 440 dp; tag marked tilted for QA",
-   "verified": "k467fz (1.3) \u2014 1.0 not re-run"
+   "verified": "k467fz (1.3) — 1.0 not re-run"
   },
   {
    "id": "D207",
@@ -2282,13 +2282,13 @@
    "severity": "medium",
    "status": "partly",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE \u00b7 OWN",
+   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE · OWN",
    "evidence": [
     "o467f / k467f TWIN_*_OWN_play.txt blocked=0"
    ],
    "root_cause": "HomeKeyGuard orphan A-release consumed by a touch",
    "fix": "GameWindow.onPlay: the orphan release only counts after a key press",
-   "verified": "Odin o467t PASS; KONKR still FAIL (a tap on Play does nothing at all \u2014 OPEN, D211)"
+   "verified": "Odin o467t PASS; KONKR still FAIL (a tap on Play does nothing at all — OPEN, D211)"
   },
   {
    "id": "D208",
@@ -2297,7 +2297,7 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "BUBBLES \u00b7 all",
+   "where": "BUBBLES · all",
    "evidence": [
     "o467r BUBBLES dumps"
    ],
@@ -2312,7 +2312,7 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "BOX / COVERDETAILS \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x) \u00b7 font 1.3",
+   "where": "BOX / COVERDETAILS · OWN · KONKR GT78 960x640 (1.5x) · font 1.3",
    "evidence": [
     "k467fs BOX_OWN_main.png"
    ],
@@ -2327,7 +2327,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "first combo of every run \u00b7 both devices",
+   "where": "first combo of every run · both devices",
    "evidence": [
     "k467r / o467r / o467t log 'first A opened nothing' (CASEFLOW_OWN, TWIN_DESK_OWN)"
    ],
@@ -2342,7 +2342,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "TWIN_* \u00b7 OWN \u00b7 KONKR GT78 960x640 (1.5x)",
+   "where": "TWIN_* · OWN · KONKR GT78 960x640 (1.5x)",
    "evidence": [
     "k467t TWIN_*_OWN_play.txt blocked=0; manual tap logged nothing"
    ],
@@ -2352,17 +2352,17 @@
   },
   {
    "id": "D212",
-   "title": "Owner decision: small touch rows / boxes that cross by design \u2014 470: touch rooms enlarged, looks kept",
+   "title": "Owner decision: small touch rows / boxes that cross by design — 470: touch rooms enlarged, looks kept",
    "rule": "R26",
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-03 update 467 popup gate (popclip)",
-   "where": "ARCADE (rows 17 dp, PRESS START bar), MEMCARD (status 14 dp), NIGHT (slanted keys' boxes cross 13 px), ORBIT (round keys 9\u00d718 px), MAGAZINE (3\u20136 px)",
+   "where": "ARCADE (rows 17 dp, PRESS START bar), MEMCARD (status 14 dp), NIGHT (slanted keys' boxes cross 13 px), ORBIT (round keys 9×18 px), MAGAZINE (3–6 px)",
    "evidence": [
     "k467f / o467f"
    ],
    "root_cause": "design of those windows",
-   "fix": "Arcade menu lines and the Memory card Saves line: SceneControl(minTouch = 24 dp) \u2014 the touch box is 24 dp, the drawn row unchanged and centred in it (the gap between rows grows). Orbit: 22\u00b0 between keys (was 17\u00b0), so neighbouring keys' boxes no longer cross. Night: status lines 10 dp apart; its command keys and Magazine's page are drawn turned 4\u00b0 / 2\u00b0 \u2014 their laid-out boxes are 2-3 px apart, only the screen-aligned boxes of the turned rows cross, so they are marked tilted for the gate (as the rental tag in 467). No touch target is under 24 dp now.",
+   "fix": "Arcade menu lines and the Memory card Saves line: SceneControl(minTouch = 24 dp) — the touch box is 24 dp, the drawn row unchanged and centred in it (the gap between rows grows). Orbit: 22° between keys (was 17°), so neighbouring keys' boxes no longer cross. Night: status lines 10 dp apart; its command keys and Magazine's page are drawn turned 4° / 2° — their laid-out boxes are 2-3 px apart, only the screen-aligned boxes of the turned rows cross, so they are marked tilted for the gate (as the rental tag in 467). No touch target is under 24 dp now.",
    "verified": "k470h / o470h (font 1.0) and k470hs / o470hs (1.3): ARCADE, MEMCARD, NIGHT, ORBIT, MAGAZINE all six categories PASS (k470hs Magazine 1.3 fixed by D229, rerun k470ks)"
   },
   {
@@ -2372,7 +2372,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
-   "where": "KONKR GT78 960x640 \u00b7 font 1.3",
+   "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz ARCTIC_OWN_main.png"
    ],
@@ -2387,7 +2387,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
-   "where": "KONKR GT78 960x640 \u00b7 font 1.3",
+   "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz SHOP_OWN_main.png"
    ],
@@ -2397,12 +2397,12 @@
   },
   {
    "id": "D215",
-   "title": "Font 1.3: Cover details with More open \u2014 Play and Save sync boxes overlap",
+   "title": "Font 1.3: Cover details with More open — Play and Save sync boxes overlap",
    "rule": "R26",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-03 update 467 font 1.3 sweep",
-   "where": "KONKR GT78 960x640 \u00b7 font 1.3",
+   "where": "KONKR GT78 960x640 · font 1.3",
    "evidence": [
     "k467fz COVERDETAILS_OWN dumps"
    ],
@@ -2429,7 +2429,7 @@
     "ui/CartShells.kt",
     "data/LabelIds.kt"
    ],
-   "fix": "Measured from the GBC Game Pak side / top photos (Mitch Mastroni, CC BY-SA 4.0): 7.8 mm, seam 5.8 mm from the front, grip grooves 4-13 mm from the top, 0.5 mm edges; clear pak: see-through walls (one sheet, filled out edge-on), the board 1 mm thick lying on the back half with its parts on the label side, seen through the side; board drawn from the Pok\u00e9mon Silver board photos, parts per ROM header cartridge type.",
+   "fix": "Measured from the GBC Game Pak side / top photos (Mitch Mastroni, CC BY-SA 4.0): 7.8 mm, seam 5.8 mm from the front, grip grooves 4-13 mm from the top, 0.5 mm edges; clear pak: see-through walls (one sheet, filled out edge-on), the board 1 mm thick lying on the back half with its parts on the label side, seen through the side; board drawn from the Pokémon Silver board photos, parts per ROM header cartridge type.",
    "verified": "KONKR sweeps q468a / q468b / q468c: 0-180 every 15-45 degrees, clear (photo-made and drawn front), black, grey, Crystal real photo"
   },
   {
@@ -2463,7 +2463,7 @@
    ],
    "root_cause": "No measured side / top photos of the GBA pak used yet.",
    "fix": "NOT FIXED (needs references)",
-   "verified": "\u2014"
+   "verified": "—"
   },
   {
    "id": "D219",
@@ -2487,7 +2487,7 @@
    "severity": "high",
    "status": "fixed",
    "found": "2026-11-04 update 469 full sweep (k469g / o469g)",
-   "where": "STORAGE \u00b7 all styles that open its own window \u00b7 both devices \u00b7 staging only (introduced and fixed in 469)",
+   "where": "STORAGE · all styles that open its own window · both devices · staging only (introduced and fixed in 469)",
    "evidence": [
     "o469g STORAGE_OWN_firstA.png (crash screen), k469g STORAGE_OWN_firstA.png ('Voltcap has stopped')"
    ],
@@ -2502,7 +2502,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 update 469 (cause of D211)",
-   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE \u00b7 Own",
+   "where": "TWIN_DESK / TWIN_ICONS / TWIN_SHOWCASE · Own",
    "evidence": [
     "KONKR manual: taps on More closed the window 4/4 after 3 s, 2/2 worked after 1 s"
    ],
@@ -2517,7 +2517,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 update 469 sweep (BOX_OWN buttons NOT TESTED: the Play tap after the Details page found no Play on screen)",
-   "where": "BOX \u00b7 Own \u00b7 KONKR 960x640 (and Odin at 1.3)",
+   "where": "BOX · Own · KONKR 960x640 (and Odin at 1.3)",
    "evidence": [
     "k469g BOX_OWN_main.json: Options / Achievements / Save sync / Manual / Saves shown 0 px (y 609-725 on a 640 px screen)"
    ],
@@ -2547,7 +2547,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 update 469 home pose check (q469h3)",
-   "where": "SolidPiece home pieces \u00b7 staging only (introduced and fixed in 469)",
+   "where": "SolidPiece home pieces · staging only (introduced and fixed in 469)",
    "evidence": [
     "q469h3 hm_75 / hm_90"
    ],
@@ -2577,12 +2577,12 @@
    "severity": "low",
    "status": "fixed",
    "found": "2026-11-04 update 470 (o470fs / o470d BOX_OWN, o470F NIGHT_OWN)",
-   "where": "BOX \u00b7 Own, NIGHT \u00b7 Own (Odin, font 1.3 / 420 dpi)",
+   "where": "BOX · Own, NIGHT · Own (Odin, font 1.3 / 420 dpi)",
    "evidence": [
     "o470fs BOX: Saves / perf lines 509x19 px",
     "o470F NIGHT 282x19 px"
    ],
-   "root_cause": "two lines laid out edge to edge on a sheet turned 1-2\u00b0.",
+   "root_cause": "two lines laid out edge to edge on a sheet turned 1-2°.",
    "fix": "12 dp (Box) / 10 dp (Night) between the lines.",
    "verified": "o470h / o470hs / k470h / k470hs PASS"
   },
@@ -2593,7 +2593,7 @@
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 update 470 own screenshot review (k470h NIGHT_OWN_main)",
-   "where": "NIGHT \u00b7 Own \u00b7 KONKR",
+   "where": "NIGHT · Own · KONKR",
    "evidence": [
     "k470h NIGHT_OWN_main.png"
    ],
@@ -2603,12 +2603,12 @@
   },
   {
    "id": "D228",
-   "title": "Magazine at font 1.3: '\u25b8 ACHIEVEMENTS' broke into '\u25b8 / ACHIEVEMENT / S' (S hidden); its box touched the next column",
+   "title": "Magazine at font 1.3: '▸ ACHIEVEMENTS' broke into '▸ / ACHIEVEMENT / S' (S hidden); its box touched the next column",
    "rule": "R18",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 update 470 k470hs MAGAZINE_OWN (geometry FAIL 3x59 px)",
-   "where": "MAGAZINE \u00b7 Own \u00b7 KONKR font 1.3",
+   "where": "MAGAZINE · Own · KONKR font 1.3",
    "evidence": [
     "k470hs MAGAZINE_OWN_main.png"
    ],
@@ -2619,7 +2619,7 @@
   {
    "id": "D229",
    "title": "Popup backdrops drawn from a small in-memory copy (Stadium 2 popup soft, Bubbles sharp)",
-   "rule": "\u2014",
+   "rule": "—",
    "severity": "medium",
    "status": "fixed",
    "found": "2026-11-04 owner review of the 469 PDF (pages 14 vs Stadium 2 popup)",
@@ -2664,12 +2664,12 @@
   },
   {
    "id": "D232",
-   "title": "Cover details \u00b7 More: Made by / Genre / Played / Trophies labels shown, their values scrolled away under the keys",
+   "title": "Cover details · More: Made by / Genre / Played / Trophies labels shown, their values scrolled away under the keys",
    "rule": "R26",
    "severity": "high",
    "status": "verified",
    "found": "2026-11-04 owner + ChatGPT review of the 470 PDF (page 6); confirmed in k470f / k470fs dumps",
-   "where": "COVERDETAILS \u00b7 Own, More open (KONKR 1.0 and 1.3; also main at 280 dpi and Row reveal)",
+   "where": "COVERDETAILS · Own, More open (KONKR 1.0 and 1.3; also main at 280 dpi and Row reveal)",
    "evidence": [
     "k470fs COVERDETAILS_OWN_more.json: HAL Laboratory / Simulator, Strategy shown 0 px",
     "k470f: Never played / 0 / 109 shown 0 px"
@@ -2690,7 +2690,7 @@
     "selftest test_fact_label_without_its_value_fails (real k470fs dump)"
    ],
    "root_cause": "geometry checked controls, clipping and overlaps, never whether information sat in view.",
-   "fix": "new 'facts' check: a capitals fact label shown >= 50 % with the value directly under it < 60 % shown FAILs; labels with the value beside them (Box) excluded. It also found Resume, Cards, Pocket (More), Pocket classic, Blades at 1.0 / 1.3 / 280 dpi \u2014 fixed by D232's automatic one-line facts and D240.",
+   "fix": "new 'facts' check: a capitals fact label shown >= 50 % with the value directly under it < 60 % shown FAILs; labels with the value beside them (Box) excluded. It also found Resume, Cards, Pocket (More), Pocket classic, Blades at 1.0 / 1.3 / 280 dpi — fixed by D232's automatic one-line facts and D240.",
    "verified": "test_qa.py 98 OK"
   },
   {
@@ -2700,22 +2700,22 @@
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-04 owner review (470 PDF page 1)",
-   "where": "BOX \u00b7 Own",
+   "where": "BOX · Own",
    "evidence": [
     "470 k470f BOX_OWN_main, box470 D-pad frames"
    ],
    "root_cause": "the whole story sat after six fact lines in a 100 dp box; the box was a D-pad stop that scrolled 0.6 page per press and handed DOWN to the nearest key.",
-   "fix": "the sheet shows the story's opening sentences (whole sentences, no '\u2026') \u2014 first on short sheets \u2014 with 'THE WHOLE STORY: CONTENTS'; Contents has all of it. The box is a D-pad stop only when it scrolls, moves 0.9 view per press, and DOWN at its end goes to Play.",
+   "fix": "the sheet shows the story's opening sentences (whole sentences, no '…') — first on short sheets — with 'THE WHOLE STORY: CONTENTS'; Contents has all of it. The box is a D-pad stop only when it scrolls, moves 0.9 view per press, and DOWN at its end goes to Play.",
    "verified": "k471b/o471b PASS; g471 D-pad: UP story, DOWN end, DOWN again Play (A -> launch blocked, Stadium 2)"
   },
   {
    "id": "D235",
    "title": "Box / case windows: 'Tap the case to open it' shown while the window is already open beside the case",
-   "rule": "\u2014",
+   "rule": "—",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-04 owner review",
-   "where": "windows that open by taking the case out (Box, Case flow\u2026)",
+   "where": "windows that open by taking the case out (Box, Case flow…)",
    "evidence": [
     "470 PDF page 1"
    ],
@@ -2741,7 +2741,7 @@
   {
    "id": "D237",
    "title": "Full details (Bubbles): the name sat on the banner art's characters",
-   "rule": "\u2014",
+   "rule": "—",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-04 owner review (470 PDF page 14)",
@@ -2756,11 +2756,11 @@
   {
    "id": "D238",
    "title": "Magazine at 1.3: the arrow stood alone above ACHIEVEMENTS",
-   "rule": "\u2014",
+   "rule": "—",
    "severity": "low",
    "status": "verified",
    "found": "2026-11-04 (470 shortcoming)",
-   "where": "MAGAZINE \u00b7 Own \u00b7 font 1.3",
+   "where": "MAGAZINE · Own · font 1.3",
    "evidence": [
     "k470ks MAGAZINE_OWN_main"
    ],
@@ -2771,11 +2771,11 @@
   {
    "id": "D239",
    "title": "Case flow window opened on the game's gameplay clip, cropped and zoomed (soft Stadium 2 banner)",
-   "rule": "\u2014",
+   "rule": "—",
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-04 (470 trace; owner decision 471)",
-   "where": "CASEFLOW \u00b7 Own (CaseFlowMedia)",
+   "where": "CASEFLOW · Own (CaseFlowMedia)",
    "evidence": [
     "log 'clip size 640x480 in 852x193'"
    ],
@@ -2790,7 +2790,7 @@
    "severity": "medium",
    "status": "verified",
    "found": "2026-11-04 facts gate (k470f, k470fs, o470fs)",
-   "where": "BLADES \u00b7 Own",
+   "where": "BLADES · Own",
    "evidence": [
     "k471s BLADES_OWN_main facts FAIL"
    ],
@@ -2805,7 +2805,7 @@
    "severity": "low",
    "status": "verified",
    "found": "2026-11-04 k471a ROW_OPENS (KONKR)",
-   "where": "Row opens \u00b7 every layout",
+   "where": "Row opens · every layout",
    "evidence": [
     "k471a *_ROW_OPENS_main"
    ],
@@ -2846,7 +2846,7 @@
   },
   {
    "id": "D244",
-   "title": "Cover details \u00b7 More at display size larger (KONKR 280 dpi): the second info line cut, the played / trophies line squeezed to nothing",
+   "title": "Cover details · More at display size larger (KONKR 280 dpi): the second info line cut, the played / trophies line squeezed to nothing",
    "rule": "R26",
    "severity": "medium",
    "status": "verified",
@@ -2868,11 +2868,11 @@
    "found": "2026-11-04 update 474 squeezed check re-run on the update 471 sweeps (graded PASS by the old gate): KONKR 17 combinations (k471a / k471r: *_ROW_OPENS on 15 layouts, TV / CROSS ROW_REVEAL), Odin 5 (ARCADE / ARCTIC / CINEMA / CROSS ROW_OPENS, CROSS / TV ROW_REVEAL)",
    "where": "ui/RowRevealWindow.kt info room (Column of fixed height infoH: summary maxLines 3 / 5 with TextOverflow.Ellipsis, then the facts Row and the achievements line)",
    "evidence": [
-    "k471r DASH_ROW_OPENS_main (screenshot: Nintendo 64 \u00b7 Never played, the story cut with an ellipsis, no facts, no achievements line)",
+    "k471r DASH_ROW_OPENS_main (screenshot: Nintendo 64 · Never played, the story cut with an ellipsis, no facts, no achievements line)",
     "o471a CINEMA_ROW_OPENS_main"
    ],
-   "root_cause": "RowRevealWindow's info room is a fixed-height Column: the story (3-5 lines) was laid out first and the facts Row and the achievements line under it got the height that was left \u2014 none on the KONKR.",
-   "fix": "update 475: facts (developer, genre, year and the achievements count as a fact) are laid out first; the story takes the room left in whole lines (StoryLines, gives way entirely on a short screen \u2014 the whole story is on Details); the achievements bar only when the room is tall. Same look otherwise.",
+   "root_cause": "RowRevealWindow's info room is a fixed-height Column: the story (3-5 lines) was laid out first and the facts Row and the achievements line under it got the height that was left — none on the KONKR.",
+   "fix": "update 475: facts (developer, genre, year and the achievements count as a fact) are laid out first; the story takes the room left in whole lines (StoryLines, gives way entirely on a short screen — the whole story is on Details); the achievements bar only when the room is tall. Same look otherwise.",
    "verified": "k475v (KONKR): DASH / TV / CROSS / AIRY / STORAGE / CLASSIC ROW_OPENS + ROW_REVEAL geometry PASS (were FAIL); o475v (Odin): ARCADE / ARCTIC / CINEMA / CROSS / TV / STORAGE / AIRY ROW_OPENS + ROW_REVEAL all PASS. RevealFacts475Test."
   },
   {
@@ -2888,7 +2888,7 @@
     "o471a STORAGE_OWN_main"
    ],
    "root_cause": "the Storage window's facts sit in a Column given the height the menu leaves (weight, no scroll): on the KONKR only RELEASED fitted; the rows after it were laid out with no height and PLAYED with 10 of its 36 px.",
-   "fix": "update 475: WholeRows \u2014 the facts show whole or not at all (every fact is on the Details page); marked as giving way. Design unchanged.",
+   "fix": "update 475: WholeRows — the facts show whole or not at all (every fact is on the Details page); marked as giving way. Design unchanged.",
    "verified": "k475v STORAGE_OWN geometry PASS (KONKR), o475v PASS (Odin). WholeRows475Test."
   },
   {
@@ -2903,7 +2903,7 @@
     "k471a AIRY_OWN_main"
    ],
    "root_cause": "Airy's story Text (maxLines 4) came after the chips in a full-height column; when the 8 round keys wrap to a second row (KONKR width) no room was left and it was laid out with no height.",
-   "fix": "update 475: StoryLines \u2014 whole lines in the room the chips leave, none when no line fits (Details has the story), marked as giving way. Owner decision (recommendation, not done): 10 dp instead of 14 dp between the round keys keeps all 8 on one row on the KONKR, which would leave room for 1-2 story lines.",
+   "fix": "update 475: StoryLines — whole lines in the room the chips leave, none when no line fits (Details has the story), marked as giving way. Owner decision (recommendation, not done): 10 dp instead of 14 dp between the round keys keeps all 8 on one row on the KONKR, which would leave room for 1-2 story lines.",
    "verified": "k475v AIRY_OWN PASS (KONKR), o475v PASS (Odin, story shown)."
   },
   {
@@ -2913,7 +2913,7 @@
    "severity": "low",
    "status": "fixed in staging (475a); the original sequence (first visit after a start) still to be re-run",
    "found": "2026-11-04 update 474 navclip k474r (KONKR, build qa-0.6.68-474c): jump FAIL, same game, its title 141 px elsewhere at s0 than at s4",
-   "where": "ui/GameDock.kt / GameCard.kt (the name row under the capsule) \u2014 not analysed",
+   "where": "ui/GameDock.kt / GameCard.kt (the name row under the capsule) — not analysed",
    "evidence": [
     "k474r CLASSIC_s0 / CLASSIC_s4 (+ dumps)"
    ],
@@ -2943,13 +2943,13 @@
    "rule": "R23 / R26",
    "severity": "medium",
    "status": "closed - not an app bug: QA harness assumption (update 477)",
-   "found": "2026-11-04 update 475 popup sweep k475P1 (KONKR) + o475P1 (Odin), build qa-0.6.68-475a: open FAIL 'the first A opened nothing (a second A did)'; re-run k475r1 / o475r1 (game re-selected before the combination): open FAIL 'the window shows another game' \u2014 home focus Pokemon Stadium 2 / WWE, window Activision Anthology / Asobi (the first item of Blades' own list)",
+   "found": "2026-11-04 update 475 popup sweep k475P1 (KONKR) + o475P1 (Odin), build qa-0.6.68-475a: open FAIL 'the first A opened nothing (a second A did)'; re-run k475r1 / o475r1 (game re-selected before the combination): open FAIL 'the window shows another game' — home focus Pokemon Stadium 2 / WWE, window Activision Anthology / Asobi (the first item of Blades' own list)",
    "where": "Blades home / its window (not analysed)",
    "evidence": [
     "k475P1 / o475P1 BLADES_OWN",
     "k475r1 / o475r1 BLADES_OWN"
    ],
-   "root_cause": "On Blades, \u25b6 moves from the Games blade to the Systems blade (hint 'Open its games', first system highlighted) while the view model's focused game stays the run's game; A there opens that system's game list (no window) and the next A opened the window for the game then focused (Activision Anthology / Asobi). The test hook voltcap_test_game selects the game but does not bring Blades back to its Games blade, so later key sequences acted on whatever blade was active (k477b round 2: Media blade -> Music -> Spotify page).",
+   "root_cause": "On Blades, ▶ moves from the Games blade to the Systems blade (hint 'Open its games', first system highlighted) while the view model's focused game stays the run's game; A there opens that system's game list (no window) and the next A opened the window for the game then focused (Activision Anthology / Asobi). The test hook voltcap_test_game selects the game but does not bring Blades back to its Games blade, so later key sequences acted on whatever blade was active (k477b round 2: Media blade -> Music -> Spotify page).",
    "fix": "QA: popclip grades a window opened after the first A changed the selection as INFRA, the Play tap is checked against the window's own game (f71c809); d250.sh documents the trace. App unchanged.",
    "verified": "k477b / o477b (qa-0.6.68-477a): reproduced on both devices with focus / popup identity traced per key; the app does what its UI shows. UX note for the owner: the Systems blade highlights its first system, not the focused game's system (recommendation, not changed).",
    "kind": "QA expectation corrected"
@@ -2960,7 +2960,7 @@
    "rule": "R26 (QA)",
    "severity": "high (QA)",
    "status": "fixed (QA tools)",
-   "found": "2026-11-04 k475P1 / o475P1: 37 combinations graded INFRA by the new 'home on another game' rule \u2014 before update 474 they would have been graded on the wrong content",
+   "found": "2026-11-04 k475P1 / o475P1: 37 combinations graded INFRA by the new 'home on another game' rule — before update 474 they would have been graded on the wrong content",
    "where": "tools/qa/device/popclip.sh",
    "evidence": [
     "k475P1",
@@ -2988,7 +2988,7 @@
   },
   {
    "id": "D253",
-   "title": "Cross: the details page's text column is 61 dp wide on the KONKR \u2014 words break mid-word ('HAL Laborator / y', 'Achievem / ents'), the story runs 114 lines",
+   "title": "Cross: the details page's text column is 61 dp wide on the KONKR — words break mid-word ('HAL Laborator / y', 'Achievem / ents'), the story runs 114 lines",
    "rule": "R26 / rule 11 (readability)",
    "severity": "high",
    "status": "fixed in staging (476a); verified",
@@ -3031,12 +3031,12 @@
     "vol1 / vol2 pages (k475r1 / o475r1)"
    ],
    "root_cause": "Dash: story Text maxLines 3 with no overflow - cut silently mid-sentence; name drawn over the art strip's lower part where the art's own logo sits",
-   "fix": "StoryWithCue: whole lines, last line 'Full story on Details \u203a' when longer; name moved under the art strip (art unchanged)",
+   "fix": "StoryWithCue: whole lines, last line 'Full story on Details ›' when longer; name moved under the art strip (art unchanged)",
    "verified": "k476d / o476d DASH main: name under the art, story cue"
   },
   {
    "id": "D256",
-   "title": "Spotlight + Hero: the popup background looks low-resolution \u2014 audit the source image, decode size and cache; a sharp still where one exists",
+   "title": "Spotlight + Hero: the popup background looks low-resolution — audit the source image, decode size and cache; a sharp still where one exists",
    "rule": "R26 / rule 11 (readability)",
    "severity": "medium",
    "kind": "defect (objective: decode size)",
@@ -3111,7 +3111,7 @@
     "vol1 / vol2 pages (k475r1 / o475r1)"
    ],
    "root_cause": "SceneFactsBody (Classic and other scenes) fades the story at the box edge with no cue",
-   "fix": "'Full story on Details \u203a' at the box's bottom edge while it can scroll further",
+   "fix": "'Full story on Details ›' at the box's bottom edge while it can scroll further",
    "verified": "k476b / k476d CLASSIC main: cue at the box edge"
   },
   {
@@ -3196,7 +3196,7 @@
   },
   {
    "id": "D266",
-   "title": "Airy window (KONKR): the chips' second line ('Played Never played', '\u2605 0 / 109') is not shown - two facts missing",
+   "title": "Airy window (KONKR): the chips' second line ('Played Never played', '★ 0 / 109') is not shown - two facts missing",
    "rule": "R26 / rule 11",
    "severity": "medium",
    "kind": "defect (missing facts)",
@@ -3212,7 +3212,7 @@
   },
   {
    "id": "D267",
-   "title": "Arctic: after \u25b6 \u25c0 the same game sits one slot further left (the row scrolls only as far as needed)",
+   "title": "Arctic: after ▶ ◀ the same game sits one slot further left (the row scrolls only as far as needed)",
    "rule": "R23",
    "severity": "low",
    "kind": "recommendation (owner decision)",
@@ -3238,7 +3238,7 @@
    "evidence": [
     "o477t TERMINAL_s0 / s2 (pixel shift -6 confirmed), TERMINAL.mp4"
    ],
-   "root_cause": "Terminal's command line drew '\u2588' or ' ' each blink; '\u2588' comes from a fallback font with a taller line, so the line (and the preview above it) changed height every blink.",
+   "root_cause": "Terminal's command line drew '█' or ' ' each blink; '█' comes from a fallback font with a taller line, so the line (and the preview above it) changed height every blink.",
    "fix": "the block is always laid out; only its colour blinks (StyleTerminal TermPrompt)",
    "verified": "o478T / o478U navclip TERMINAL jump PASS"
   },
@@ -3264,7 +3264,7 @@
    "rule": "",
    "severity": "low",
    "kind": "recommendation (deferred by the owner)",
-   "status": "PARTIAL - code in staging (478a): the upper screen shows the piece + 'platform \u00b7 year \u00b7 played' when the screens are apart; one screen keeps the name. Two-screen check NOT TESTED (Thor not on USB)",
+   "status": "PARTIAL - code in staging (478a): the upper screen shows the piece + 'platform · year · played' when the screens are apart; one screen keeps the name. Two-screen check NOT TESTED (Thor not on USB)",
    "found": "owner review update 476",
    "where": "Pocket Ribbon",
    "evidence": [],
@@ -3373,11 +3373,11 @@
   },
   {
    "id": "D277",
-   "title": "Cardboard box with a single box: \u25c0 on the first case went round to the last (Endless), \u25b6 on the last case only bumped",
+   "title": "Cardboard box with a single box: ◀ on the first case went round to the last (Endless), ▶ on the last case only bumped",
    "rule": "R23",
    "severity": "low",
    "kind": "defect",
-   "status": "fixed in staging (482a) - Odin box5: \u25b6 1 2 3 4 0, \u25c0 0 4 3 2 1 0; KONKR / Thor NOT TESTED",
+   "status": "fixed in staging (482a) - Odin box5: ▶ 1 2 3 4 0, ◀ 0 4 3 2 1 0; KONKR / Thor NOT TESTED",
    "found": "update 482 B5 sweep b5b (rowaudit selection: L0 -> L4 but R4 stayed)",
    "where": "ui/StyleCardboardBox.kt cardboardBoxKey",
    "evidence": [
@@ -3396,7 +3396,7 @@
    "found": "update 482 A5 stale-heading run a5s (Blades Systems blade: Android '0 games' while the category opens 7)",
    "where": "LauncherUiState.countIn / gamesIn, StyleHomes.categoryCounts, 7 layouts",
    "evidence": [
-    "a5s BLADES_s1: Systems \u203a Android '0 games'; DASH fresh Android '7 games'"
+    "a5s BLADES_s1: Systems › Android '0 games'; DASH fresh Android '7 games'"
    ],
    "root_cause": "each layout grouped state.games by platform instead of asking for the category's own list (Android games are picked by package, collections by key, apps only when in the library)",
    "fix": "one count source: the category's visible list through the shared memo (Batch482Test.categoryCountsMatchTheCategory)"
@@ -3419,7 +3419,7 @@
   },
   {
    "id": "D280",
-   "title": "Pokemon Silver (KONKR): Case Flow and Case stacks cut the box print \u2014 top margin and the 'SILVER VERSION' / ESRB / Nintendo foot lost \u2014 while Inspect showed the whole box",
+   "title": "Pokemon Silver (KONKR): Case Flow and Case stacks cut the box print — top margin and the 'SILVER VERSION' / ESRB / Nintendo foot lost — while Inspect showed the whole box",
    "rule": "E3",
    "severity": "high",
    "kind": "defect",
@@ -3430,7 +3430,7 @@
     "media dump: the owner's picked cover is a SteamGridDB portrait grid (aspect 0.667) on a 117 x 117 mm Game Boy Color box; FACES front=cover",
     "QA trace: CaseArt picked aspect=0.667 case=(117,117) scan=false"
    ],
-   "root_cause": "update 317's rule (a cover > 8 % off the case's shape gives way to the box scan) only knew a cover's shape once a flat card had drawn it (CoverAspects) \u2014 Case Flow decodes its own; Case stacks' flat case (StyleArt / CaseArt) is never handed a scan for a picked cover (update 235)",
+   "root_cause": "update 317's rule (a cover > 8 % off the case's shape gives way to the box scan) only knew a cover's shape once a flat card had drawn it (CoverAspects) — Case Flow decodes its own; Case stacks' flat case (StyleArt / CaseArt) is never handed a scan for a picked cover (update 235)",
    "fix": "Case3D reads the shape from its own decode (front held, no flash of the cut cover); CaseArt looks up the game's box-front scan itself for a far-off picked cover; a picked cover of the box's shape stays the front (Batch485Test)"
   },
   {
@@ -3527,10 +3527,12 @@
    "rule": "QA",
    "severity": "high",
    "kind": "incident",
-   "status": "closed - RetroArch force-stopped; no save or state file written (checked by mtime); RetroArch content_history.lpl gained an entry; Voltcap may show 007 as recently played",
+   "status": "fixed in staging (489b/489d) - QA launch protection is fail-safe; verified on the KONKR (489d)",
    "found": "update 489",
    "root_cause": "popclip.sh removes qa_nolaunch when it finishes; a manual tap afterwards ran without the launch block.",
-   "fix": "every manual test step re-creates qa_nolaunch first (cycle489.sh refuses to run without it)."
+   "fix": "App (QA builds only, test hooks on): launching is blocked by default; switching voltcap_test_nolaunch off or deleting qa_nolaunch no longer unblocks - only <files>/qa_allow_launch (an owner-approved run) does. The block sits at every launch path: vm.launch, vm.launchNow (Play / Continue / offline prompt / save conflicts), vm.launchApp, GameLauncher.launch / launchAppOn (last step before Android), QuickResume.resume, ScreenLayouts.startApp, hero dock. The hooks file stops counting after 24 h (QA_HOOKS_TTL_MS) so a forgotten one never blocks normal use; release / normal installs are untouched. Scripts: qaguard.sh asks the running build (qa_launch_check -> qa_launch_state) and only 'blocked' passes; every Play tap (popclip, cycle489, d287v) sits behind it; no QA script lifts the block any more (24 old scripts cleaned) - only the final clean-up with the release build back.",
+   "regression": "Batch489Test d287QaBuildsBlockLaunchesUnlessAllowed + d287EveryLaunchPathIsGuarded; test_qa.py TestLaunchGuard (guard requires 'blocked'; no device script lifts the block; Play taps only after qa_guard; d287v order)",
+   "evidence": "KONKR qa-0.6.68-489d, d287v.sh: 1 guard blocked PASS; 2 nolaunch false + file removed -> blocked PASS; 3 allow file ALLOWED -> removed blocked PASS; 4 real Play press on Pokemon Silver -> LAUNCH blocked x1, asked 0, Voltcap stayed in front PASS; 5 RetroArch history md5 unchanged PASS. popclip p489k: 6/6 Play taps blocked. Silver .srm md5 unchanged (7e07a4186713)."
   }
  ]
 }

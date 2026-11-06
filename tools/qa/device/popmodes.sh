@@ -17,5 +17,5 @@ for L in $2; do
     echo "$L $st opened=$([ "$W1" != "$H" ] && echo window || echo inline) closed_by_B=$([ "$W2" = "$H" ] && echo yes || echo "NO${W2b:+(2nd B: $([ "$W2b" = "$H" ] && echo closed || echo open))}") launches=$LB" >> $OUT/log.txt; W2b=
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
+A --ez voltcap_test_preview false; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat $F/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt; echo DONE >> $OUT/log.txt

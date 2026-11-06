@@ -13,5 +13,5 @@ for i in $(seq 1 $R); do k BUTTON_A 1.6; k BUTTON_B 1.6; m popup; done
 for i in $(seq 1 $R); do am start -a android.settings.SETTINGS > /dev/null 2>&1; sleep 2; logcat -c; input keyevent KEYCODE_HOME; sleep 2.5; m return; done
 A --ez voltcap_test_preview true; A --es voltcap_test_layout TILES; sleep 4; k DPAD_DOWN 0.5; k BUTTON_A 1.5; logcat -c
 for i in $(seq 1 $R); do for j in 1 2 3 4 5 6 7 8; do k DPAD_DOWN 0.25; done; for j in 1 2 3 4 5 6 7 8; do k DPAD_UP 0.25; done; sleep 0.5; m drawer; done
-k BUTTON_B 1; A --ez voltcap_test_preview false; A --ez voltcap_test_nolaunch false; sleep 1
+k BUTTON_B 1; A --ez voltcap_test_preview false; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat /sdcard/Android/data/$P/files/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt; echo DONE >> $OUT/log.txt

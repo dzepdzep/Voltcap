@@ -64,7 +64,7 @@ for lay in $LAYS; do
   case "$fg" in *com.shelf.launcher*) ;; *) echo "STOP: not Voltcap in front after $lay" >> $OUT/log.txt; break;; esac
   echo "$lay done" >> $OUT/log.txt
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT
 echo DONE >> $OUT/log.txt

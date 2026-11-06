@@ -26,6 +26,6 @@ while [ $r -lt $N ]; do
     k BUTTON_B 1.3; [ -n "$(fg ${r}_${seq}_a1 popupGame)" ] || true
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT; echo DONE >> $OUT/log.txt

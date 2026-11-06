@@ -25,5 +25,5 @@ for mode in false true; do
     g0; sleep 3; m "hold=$mode home_idle"
   done
 done
-A --ez voltcap_test_panelhold true; A --ez voltcap_test_nolaunch false; sleep 1
+A --ez voltcap_test_panelhold true; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat /sdcard/Android/data/$P/files/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt; echo DONE >> $OUT/log.txt

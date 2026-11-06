@@ -23,6 +23,6 @@ while [ $r -lt $N ]; do
     echo "$r $kind before=$(foc ${r}_${kind}_a) after=$(foc ${r}_${kind}_b)" >> $OUT/trials.txt
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT; echo DONE >> $OUT/log.txt

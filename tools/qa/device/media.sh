@@ -11,5 +11,5 @@ for C in $3; do
     input keyevent KEYCODE_DPAD_RIGHT; sleep 1.5; screencap -p $OUT/${n}_${L}_1.png
   done
 done
-A --ez voltcap_test_preview false; A --ez voltcap_test_nolaunch false; sleep 1
+A --ez voltcap_test_preview false; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat $F/voltcap_test_snapshot_verify.txt)" > $OUT/log.txt

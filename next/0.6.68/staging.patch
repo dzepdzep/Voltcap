@@ -23,10 +23,19 @@ index 4acd436..8d8ef6c 100644
      fun isContinueApp(game: Game): Boolean =
          game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.continueApps } == true && !isAndroidGame(game)
 diff --git a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
-index 4e2bb89..54489b7 100644
+index 4e2bb89..e9a9cf5 100644
 --- a/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
 +++ b/app/src/main/java/com/shelf/launcher/LauncherViewModel.kt
-@@ -5426,7 +5426,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+@@ -3604,6 +3604,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+             setStatusMessage("${app.name} has nothing to open.")
+             return
+         }
++        // (Update 489c, D287: and every app or emulator opened from Voltcap — a QA build never starts one.)
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.app", pkg)) return
+         val state = _uiState.value
+         // Update 200: every Android game (Voltcap's "Android games" category) takes the game path, wherever it's
+         // opened from (second-screen dock, app drawer, L1 shortcuts, hotkeys, notifications). It also required the app
+@@ -5426,7 +5428,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
  
      private fun recombineGames() {
          val lastPlayed = recentlyPlayedStore.loadVisible() // (Update 244: without games taken off Continue playing)
@@ -40,6 +49,15 @@ index 4e2bb89..54489b7 100644
              applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
              .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
          _uiState.update { current ->
+@@ -5765,6 +5772,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
+      * order, because the controller goes to whatever started last.
+      */
+     private fun launchNow(game: Game) {
++        // (Update 489c, D287: every game start ends here (Play, Continue, offline prompt, conflicts) — a QA build blocks it here too.)
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launchNow", game.stableKey)) return
+         val override = nextLaunchLayoutId
+         nextLaunchLayoutId = null
+         val plan = screenPlanFor(game)
 diff --git a/app/src/main/java/com/shelf/launcher/MainActivity.kt b/app/src/main/java/com/shelf/launcher/MainActivity.kt
 index e33cd4f..3ef5396 100644
 --- a/app/src/main/java/com/shelf/launcher/MainActivity.kt
@@ -271,6 +289,39 @@ index 55c357d..660fa0f 100644
      /** The cases' size, in % of the standard. */
      val cfSize = IntPref("cf_size", 100, 70..120)
      /** How far the cases either side turn, degrees. */
+diff --git a/app/src/main/java/com/shelf/launcher/data/GameLauncher.kt b/app/src/main/java/com/shelf/launcher/data/GameLauncher.kt
+index ef2c1cd..48c8bd8 100644
+--- a/app/src/main/java/com/shelf/launcher/data/GameLauncher.kt
++++ b/app/src/main/java/com/shelf/launcher/data/GameLauncher.kt
+@@ -48,6 +48,8 @@ object GameLauncher {
+         newInstance: Boolean = false
+     ): AppLaunchResult {
+         val name = label ?: packageName
++        // (Update 489c, D287: the last step before Android starts anything — a QA build refuses here as well.)
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("launcher.app", packageName)) return AppLaunchResult.Failed("QA build: launching is blocked.")
+         val pm = context.packageManager
+         val enabled = try {
+             pm.getApplicationInfo(packageName, 0).enabled
+@@ -92,6 +94,7 @@ object GameLauncher {
+         extras: List<LaunchExtra> = emptyList()
+     ): LaunchOutcome {
+         val options = ScreenPlacement.optionsFor(displayId)
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("launcher.game", game.stableKey)) return LaunchOutcome.Error("QA build: launching is blocked.")
+         return when (game.sourceType) {
+             SourceType.APP -> launchApp(context, game, options)
+             SourceType.ROM -> launchRom(context, game, config, romRoot, options, extras)
+diff --git a/app/src/main/java/com/shelf/launcher/data/QuickResume.kt b/app/src/main/java/com/shelf/launcher/data/QuickResume.kt
+index ee3ba72..69e4ab2 100644
+--- a/app/src/main/java/com/shelf/launcher/data/QuickResume.kt
++++ b/app/src/main/java/com/shelf/launcher/data/QuickResume.kt
+@@ -39,6 +39,7 @@ object QuickResume {
+      * with a crash). New launches always had their screen; only this path didn't.
+      */
+     fun resume(context: Context, pkg: String, displayId: Int? = null): Boolean = runCatching {
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("resume", pkg)) return false
+         val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return false
+         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+         // No CLEAR_TASK / CLEAR_TOP: those would end the running game.
 diff --git a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
 index 976dac9..8f72be1 100644
 --- a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
@@ -338,6 +389,18 @@ index 976dac9..8f72be1 100644
          folderGames.forEach { dir ->
              val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
              games += Game(
+diff --git a/app/src/main/java/com/shelf/launcher/data/ScreenLayouts.kt b/app/src/main/java/com/shelf/launcher/data/ScreenLayouts.kt
+index 7073316..5f3219d 100644
+--- a/app/src/main/java/com/shelf/launcher/data/ScreenLayouts.kt
++++ b/app/src/main/java/com/shelf/launcher/data/ScreenLayouts.kt
+@@ -311,6 +311,7 @@ object ScreenPlacement {
+ 
+     /** Starts an installed app on [displayId]. False if Android refused. */
+     fun startApp(context: Context, packageName: String, displayId: Int): Boolean {
++        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("screens.app", packageName)) return false
+         val intent = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
+         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+         return runCatching { context.startActivity(intent, optionsFor(displayId)); true }.getOrDefault(false)
 diff --git a/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt b/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt
 index 07d1ef9..11ce125 100644
 --- a/app/src/main/java/com/shelf/launcher/data/SteamShortcutImport.kt
@@ -1886,7 +1949,7 @@ index 0000000..5527ac4
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
-index c9b959a..3a9099e 100644
+index c9b959a..a8121d7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/QaClip.kt
 @@ -28,6 +28,10 @@ internal object QaClip {
@@ -1900,7 +1963,39 @@ index c9b959a..3a9099e 100644
      /**
       * Update 467: a dump asked for by a file, not an intent — an `am start` reaches the activity and closes the popups that
       * live inside the home screen (Classic, Row reveal, Shared), so the dump would show the home. popclip.sh writes the tag
-@@ -87,6 +91,7 @@ internal object QaClip {
+@@ -35,6 +39,9 @@ internal object QaClip {
+      */
+     @Volatile private var nlFile: java.io.File? = null
+     fun noLaunchFile(): Boolean = nlFile?.exists() == true
++    @Volatile private var allowFile: java.io.File? = null
++    /** Update 489b (D287): launching allowed during QA only while <external files>/qa_allow_launch exists. */
++    fun allowLaunchFile(): Boolean = allowFile?.exists() == true
+ 
+     @Volatile private var watching = false
+     fun watch(context: android.content.Context) {
+@@ -45,6 +52,10 @@ internal object QaClip {
+         // (The same for More: `echo on > qa_winmore_req` — voltcap_test_winmore without an intent.)
+         val more = java.io.File(app.getExternalFilesDir(null), "qa_winmore_req")
+         nlFile = java.io.File(app.getExternalFilesDir(null), "qa_nolaunch")
++        allowFile = java.io.File(app.getExternalFilesDir(null), "qa_allow_launch")
++        // (Update 489b, D287: a QA script asks whether a tap on Play would start a game — answered in qa_launch_state.)
++        val launchCheck = java.io.File(app.getExternalFilesDir(null), "qa_launch_check")
++        val launchState = java.io.File(app.getExternalFilesDir(null), "qa_launch_state")
+         val poll = object : Runnable {
+             override fun run() {
+                 runCatching {
+@@ -53,6 +64,10 @@ internal object QaClip {
+                         req.delete()
+                         request(app, tag, 0)
+                     }
++                    if (launchCheck.exists()) {
++                        launchCheck.delete()
++                        launchState.writeText(TestHooks.launchState() + "\n")
++                    }
+                     if (more.exists()) {
+                         TestHooks.winMore.value = more.readText().trim() != "off"
+                         more.delete()
+@@ -87,6 +102,7 @@ internal object QaClip {
      }
  
      private fun scrolls(n: SemanticsNode): Boolean {
@@ -1908,7 +2003,7 @@ index c9b959a..3a9099e 100644
          var p = n.parent
          while (p != null) {
              val c = p.config
-@@ -144,9 +149,64 @@ internal object QaClip {
+@@ -144,9 +160,64 @@ internal object QaClip {
                  sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
                  sb.append("\"focused\":${c.getOrNull(SemanticsProperties.Focused) == true || r.ring},\"scroll\":${scrolls(n)},\"tilt\":${tilted(n)},\"paged\":${paged(n)},\"id\":${n.id}}")
              }
@@ -2126,10 +2221,17 @@ index 0000000..05d27e1
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
-index 8ea7122..8875d28 100644
+index 8ea7122..60f31d7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
-@@ -414,7 +414,9 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
+@@ -1,5 +1,6 @@
+ package com.shelf.launcher.ui
+ 
++import kotlinx.coroutines.ensureActive
+ import androidx.compose.foundation.Image
+ import androidx.compose.animation.core.animateFloat
+ import androidx.compose.foundation.background
+@@ -414,7 +415,9 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
      val f = com.shelf.launcher.data.Features
      val scans = scans0.withoutFlat()
      // (Update 235, #24: not with a cover you picked for the game — its cover is the case front, see UserCovers.)
@@ -2140,14 +2242,21 @@ index 8ea7122..8875d28 100644
          BoxTexture.front(scans, g.platform) else null) ?: cover
      val spine = if (LookStyles.spineForAll()) null
          else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
-@@ -458,6 +460,19 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
-             near.map { g -> g.stableKey to case3dModels(g, c.cover(g), c.state.physicalMedia[g.stableKey], realFront && c.state.artOverrides[g.stableKey]?.cover == null) }
-         }
-         warmCase3d(context, models.map { it.second }, backs = false, prepare = TestHooks.warmMode != "noprepare")
-+        // (Update 489, K4: the named spines of the cases ahead too — nearest first, at most the reach, through the same cache
-+        // (SpineCache, ~118 kept) — so a case sliding in never shows its spine without its name for its first frames.)
-+        if (TestHooks.warmMode != "nospines") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-+            for (g in near) {
+@@ -449,6 +452,27 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
+     // at most [WARM_REACH_MAX] cases ahead in the direction you move and one behind, fronts and spines only (a back shows
+     // only once a case is turned), and the pictures it decoded for cases that are now far away are let go — WarmWindow.)
+     val window = androidx.compose.runtime.remember { WarmWindow() }
++    // (Update 489, K4: the named spines of the cases ahead — nearest first, through the same bounded cache (SpineCache,
++    // ~118 kept). 489b: in their own effect, before and apart from the pictures: a held D-pad moves faster than the case
++    // pictures decode, so behind them the spines were never reached (Thor: 11 of 80 still shown nameless).)
++    val spineWindow = androidx.compose.runtime.remember { WarmWindow() }
++    androidx.compose.runtime.LaunchedEffect(focus, games) {
++        if (games.isEmpty() || TestHooks.warmMode == "off" || TestHooks.warmMode == "nospines") return@LaunchedEffect
++        val idx = spineWindow.indices(focus, SPINE_AHEAD, games.size, loop)
++            .sortedBy { i -> val d = kotlin.math.abs(i - focus); if (loop) minOf(d, games.size - d) else d }
++        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
++            for (g in idx.map { games[it] }.distinct()) {
++                ensureActive()
 +                val res = case3dSpineRes(g.platform) ?: continue
 +                if (OwnSpines.isOwn(res)) continue
 +                val title = gameDisplayName(g.name)
@@ -2157,10 +2266,21 @@ index 8ea7122..8875d28 100644
 +                QaTrace.event("spine ahead", title.take(24))
 +            }
 +        }
-         val loader = coil.Coil.imageLoader(context)
-         for ((k, m) in models) window.remember(k, listOfNotNull(m.first?.let { softKey(480, it, true) }, m.second?.let { softKey(600, it, false) }))
-         // Pictures decoded here for cases far from the one in focus (beyond three times the reach) leave the memory cache.
-@@ -773,7 +788,17 @@ internal fun CaseArt(
++    }
+     androidx.compose.runtime.LaunchedEffect(focus, games, realFront) {
+         if (games.isEmpty() || TestHooks.warmMode == "off") return@LaunchedEffect
+         kotlinx.coroutines.delay(40)
+@@ -469,6 +493,9 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
+ /** Update 461 (D137): the largest number of cases decoded ahead of the one in focus. */
+ internal const val WARM_REACH_MAX = 6
+ 
++/** Update 489b (K4): how many named spines ahead of the scroll [WarmCaseNeighbours] makes (cheap; same bounded cache). */
++internal const val SPINE_AHEAD = 8
++
+ /**
+  * Update 461 (D137): which cases [WarmCaseNeighbours] decodes and which of its pictures it lets go (pure apart from its own
+  * memory — unit-tested). Moving right: [reach] cases to the right and one to the left (and the other way round); standing
+@@ -773,7 +800,17 @@ internal fun CaseArt(
      // cover whose shape wasn't known yet stayed whole until some other view had measured it. Both are measured now — a
      // small decode, only while the shape isn't known.)
      val cover = rememberWrapFront(cover0, LookStyles.casePlatform(platform), decode = true)
@@ -2977,6 +3097,18 @@ index e9a9ac9..35f641e 100644
      val n = systems.size
      val cur = GreenCoreNav.system.coerceIn(0, (n - 1).coerceAtLeast(0))
      val pos = remember { Animatable(cur.toFloat()) }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHeroTiles.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHeroTiles.kt
+index c5ca4d6..c246d95 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleHeroTiles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleHeroTiles.kt
+@@ -442,6 +442,7 @@ private fun heroSystemApps(context: android.content.Context): List<Triple<String
+ }
+ 
+ private fun heroLaunch(context: android.content.Context, intent: android.content.Intent?) {
++    if (TestHooks.interceptLaunch("hero", intent?.`package` ?: intent?.component?.packageName ?: "?")) return
+     val ok = intent != null && runCatching {
+         context.startActivity(android.content.Intent(intent).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+     }.isSuccess
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
 index 17d4aed..1c4d6c7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
@@ -3194,7 +3326,7 @@ index 977fe34..b440170 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..e3c92f5 100644
+index 536f473..3a057df 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -16,6 +16,8 @@ internal object TestHooks {
@@ -3206,7 +3338,22 @@ index 536f473..e3c92f5 100644
      /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
      val bg = mutableStateOf<String?>(null)
      /**
-@@ -70,6 +72,11 @@ internal object TestHooks {
+@@ -50,8 +52,13 @@ internal object TestHooks {
+     }
+ 
+     fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
+-        java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
++        // (Update 489b, D287: a hooks file left behind for more than a day is ignored — it only counts for a QA session.)
++        java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").let { it.exists() && hooksFresh(it.lastModified(), System.currentTimeMillis()) }
+     }.getOrDefault(false).also { enabledCache = it }
++
++    /** Update 489b (D287): the test hooks count for a day after their file was written (QA scripts touch it). */
++    const val QA_HOOKS_TTL_MS = 24L * 60 * 60 * 1000
++    fun hooksFresh(modified: Long, now: Long): Boolean = modified > 0 && now - modified in 0..QA_HOOKS_TTL_MS
+     /**
+      * Update 329: `--es voltcap_test_tilewalk all` (or a comma list of tile ids) — every R1 tile shown here pressed and
+      * checked on both screens (TileCheck), this session only. [lastTiles]: the tiles the R1 panel showed last.
+@@ -70,6 +77,11 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
@@ -3218,7 +3365,35 @@ index 536f473..e3c92f5 100644
      /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
      val panelHold = mutableStateOf(true)
      /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
-@@ -271,6 +278,12 @@ internal object TestHooks {
+@@ -118,11 +130,24 @@ internal object TestHooks {
+         // (Update 467: also while <external files>/qa_nolaunch exists — a sweep's block survives Voltcap restarting mid-run,
+         // which the intent's in-memory switch did not: the first tap on Play after a restart would have started the game.)
+         if (!noLaunch && QaTrace.on && QaClip.noLaunchFile()) noLaunch = true
+-        if (!noLaunch && !QaTrace.on) return false
++        // Without the test hooks (every normal install) nothing here: games start as always.
++        if (!QaTrace.on) return false
++        val block = launchBlocked()
+         val who = Throwable().stackTrace.drop(1).take(14).joinToString(" < ") { "${it.fileName}:${it.lineNumber}" }
+-        android.util.Log.e("VoltcapQA", "LAUNCH ${if (noLaunch) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
+-        return noLaunch
++        android.util.Log.e("VoltcapQA", "LAUNCH ${if (block) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
++        return block
+     }
++
++    /**
++     * Update 489b (D287, a game started during a QA tap: a finished sweep had switched the block off and removed its file).
++     * With the test hooks on, launching is now blocked by default — whatever a script switched off or deleted — and only
++     * <external files>/qa_allow_launch (written for a run the owner approved) lets a game start. The test hooks are QA-only:
++     * a hooks file older than [QA_HOOKS_TTL_MS] no longer counts, so a forgotten one can't stop games for good.
++     */
++    fun launchBlocked(): Boolean = !QaClip.allowLaunchFile()
++
++    /** The launch state for a QA script's check (`qa_launch_check` → `qa_launch_state`, QaClip.watch). */
++    fun launchState(): String = if (!QaTrace.on) "off" else if (launchBlocked()) "blocked" else "ALLOWED"
+     /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
+     val shortcuts = mutableStateOf<String?>(null)
+     /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
+@@ -271,6 +296,12 @@ internal object TestHooks {
          // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
          // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
          intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
@@ -3231,7 +3406,7 @@ index 536f473..e3c92f5 100644
          if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
          // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
          if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
-@@ -318,6 +331,10 @@ internal object TestHooks {
+@@ -318,6 +349,10 @@ internal object TestHooks {
              panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
              android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
          }
@@ -3242,7 +3417,7 @@ index 536f473..e3c92f5 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -350,6 +367,17 @@ internal object TestHooks {
+@@ -350,6 +385,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -5552,10 +5727,10 @@ index 0000000..9991bd5
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt
 new file mode 100644
-index 0000000..f3f6d1e
+index 0000000..0cc3c0b
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt
-@@ -0,0 +1,67 @@
+@@ -0,0 +1,101 @@
 +package com.shelf.launcher.ui
 +
 +import org.junit.Assert.assertEquals
@@ -5596,6 +5771,7 @@ index 0000000..f3f6d1e
 +        val c = src("Case3D.kt"); val r = src("RealMedia.kt")
 +        assertTrue(c.contains("internal fun case3dSpineRes(platform: String): Int?"))
 +        assertTrue(r.contains("val res = case3dSpineRes(g.platform) ?: continue"))
++        assertTrue(r.contains("spineWindow.indices(focus, SPINE_AHEAD, games.size, loop)"))
 +        assertTrue(r.contains("SpineCache.titled(context, res, title, false, key)"))
 +    }
 +
@@ -5621,6 +5797,39 @@ index 0000000..f3f6d1e
 +            }
 +        }
 +        assertTrue("turned layers without flatTextFor3d: $missing", missing.isEmpty())
++    }
++
++    @Test fun d287QaBuildsBlockLaunchesUnlessAllowed() {
++        val t = src("TestHooks.kt")
++        val f = t.substring(t.indexOf("fun interceptLaunch("), t.indexOf("fun launchState()"))
++        // normal installs (no hooks): untouched
++        assertTrue(f.contains("if (!QaTrace.on) return false"))
++        // with the hooks: blocked unless qa_allow_launch — the nolaunch switch / file can't unblock it
++        assertTrue(f.contains("val block = launchBlocked()"))
++        assertTrue(f.contains("fun launchBlocked(): Boolean = !QaClip.allowLaunchFile()"))
++        assertTrue(src("QaClip.kt").contains("\"qa_allow_launch\""))
++        // a forgotten hooks file stops counting after a day
++        assertTrue(TestHooks.hooksFresh(1_000L, 1_000L + 60_000L))
++        assertTrue(!TestHooks.hooksFresh(1_000L, 1_000L + TestHooks.QA_HOOKS_TTL_MS + 1))
++        assertTrue(!TestHooks.hooksFresh(0L, 5L))
++    }
++
++    private fun main(rel: String): String = listOf(File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel"))
++        .first { it.exists() }.readText()
++
++    /** 489c (D287): every way Voltcap starts a game or an app goes through the QA block, down to the last call before Android. */
++    @Test fun d287EveryLaunchPathIsGuarded() {
++        val vm = main("LauncherViewModel.kt")
++        for ((fn, tag) in listOf("fun launch(game: Game)" to "vm.launch", "private fun launchNow(game: Game)" to "vm.launchNow", "fun launchApp(app: Game" to "vm.app")) {
++            val body = vm.substring(vm.indexOf(fn)).take(1200)
++            assertTrue("$fn guarded", body.contains("TestHooks.interceptLaunch(\"$tag\""))
++        }
++        val gl = main("data/GameLauncher.kt")
++        assertTrue(gl.substring(gl.indexOf("fun launchAppOn(")).take(600).contains("interceptLaunch(\"launcher.app\""))
++        assertTrue(gl.substring(gl.indexOf("    fun launch(")).take(900).contains("interceptLaunch(\"launcher.game\""))
++        assertTrue(main("data/QuickResume.kt").let { it.substring(it.indexOf("fun resume(")).take(300) }.contains("interceptLaunch(\"resume\""))
++        assertTrue(main("data/ScreenLayouts.kt").let { it.substring(it.indexOf("fun startApp(")).take(300) }.contains("interceptLaunch(\"screens.app\""))
++        assertTrue(src("StyleHeroTiles.kt").let { it.substring(it.indexOf("private fun heroLaunch(")).take(300) }.contains("interceptLaunch(\"hero\""))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

@@ -385,6 +385,17 @@
    "patch_sha256": "1a0722f65658f96c6698122ae10dec2e59a34146c9802187715a0ebc2aea5b3b",
    "tree_hash": "",
    "note": "update 489c: 489b + Carousel.spread as a state (Case stacks spacing reaches its carousel)"
+  },
+  {
+   "id": "qa-0.6.68-489d",
+   "apk_sha256": "bb646d4893f931f83517342324007b8519588d380632aaf3fe81c4200b6dbb0b",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "6eee477db088270eac39cccdc03539c00695c55e5e66cb13c929107731f3b556",
+   "tree_hash": "",
+   "note": "update 489d: D287 launch guards at every launch path (vm.launchNow / vm.app / GameLauncher / QuickResume / ScreenLayouts / hero dock) + K4 spines in their own effect (SPINE_AHEAD 8, nearest first)"
   }
  ]
 }

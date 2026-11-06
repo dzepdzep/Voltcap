@@ -18,6 +18,6 @@ for key in DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT DPAD_RIGHT BUTTON_A DPAD_DOWN DPAD_R
   n=$((n+1)); k $key; dump ${n}_$key; echo "$n $key focus=$(foc ${n}_$key)" >> $OUT/walk.txt
 done
 k BUTTON_B 1.3; k BUTTON_B 1.3
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT; echo DONE >> $OUT/log.txt

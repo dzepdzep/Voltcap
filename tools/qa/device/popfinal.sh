@@ -48,5 +48,5 @@ for c in $COMBOS; do
 done
 logcat -d -s VoltcapQA | grep -E "LAUNCH|win close|glance|reveal" > $OUT/qa.txt
 logcat -d | grep -E "FATAL|AndroidRuntime" > $OUT/crash.txt
-A --ez voltcap_test_nolaunch false
+# (489c, D287: the launch block stays on — only the release build's clean-up removes it)
 echo done > $OUT/DONE

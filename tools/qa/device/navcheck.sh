@@ -10,5 +10,5 @@ for L in $2; do
     logcat -d -s VoltcapQA | grep -E " focus |category stop|win |LAUNCH|second" | cut -c19-220 >> $OUT/${L}.txt; logcat -c; done
   screencap -p $OUT/${L}_1.png
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
+A --ez voltcap_test_preview false; sleep 1
 A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cat $F/voltcap_test_snapshot_verify.txt)" > $OUT/log.txt

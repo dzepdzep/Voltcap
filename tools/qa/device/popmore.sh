@@ -16,5 +16,5 @@ for L in $2; do
   echo "$L home=$H open=$W1 more=$W3 afterB=$W4 afterBB=$W5" >> $OUT/log.txt
   [ "$W5" != "$H" ] && { k BUTTON_B 1; echo "$L extra B" >> $OUT/log.txt; }
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false
+A --ez voltcap_test_preview false
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt; echo DONE >> $OUT/log.txt

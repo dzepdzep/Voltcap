@@ -26,5 +26,5 @@ for lay in $LAYS; do
     case "$fg" in *com.shelf.launcher*) ;; *) echo "STOP: not Voltcap in front after $n" >> $OUT/fg.txt; echo done > $OUT/DONE; exit 1;; esac
   done
 done
-A --ez voltcap_test_nolaunch false
+# (489c, D287: the launch block stays on — only the release build's clean-up removes it)
 echo done > $OUT/DONE

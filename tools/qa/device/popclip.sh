@@ -11,11 +11,12 @@ OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 . "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
+. $(dirname $0)/qaguard.sh
 k() { input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 # Is a popup (a Play / Continue action) up? — a probe dump, so B is never pressed once too often (B on the home opens the
 # category chooser, and the next layout would start from there).
 # The layouts' words for Play and Details (GameWindow.kt WinLook; the same lists as geomcheck.PLAY_WORDS / DETAILS_WORDS).
-PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Start|Power on|Run|Play it!|Continue!|Rent & Play)"
+PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Start|Power on|Run|Play it!|Continue!|Rent & Play|Rent & Continue|Rent & Resume)"
 DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve notes|Card text|Turn over|Summary|The story|Type NFO|Catalogue card)"
 # (Counted against the home step: a layout whose home screen has its own Play button — Custom — is not "a popup up".)
 pc() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' $1 2>/dev/null | wc -l; }
@@ -104,7 +105,8 @@ for lay in $LAYS; do
       else echo "$n More not on screen" >> $OUT/log.txt; fi
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.
-    if [ -f $F/qa_nolaunch ]; then
+    # (Update 489b, D287: only when the running build confirms the block — qaguard.sh; else the tap is skipped.)
+    if qa_guard 2>> $OUT/log.txt; then
       up || { k BUTTON_A 1.9; up; }
       logcat -c
       if tapat "$PLAYW" probe; then sleep 1.3
@@ -122,7 +124,9 @@ for lay in $LAYS; do
   fg=$(dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity")
   case "$fg" in *com.shelf.launcher*) ;; *) echo "STOP: not Voltcap in front after $lay" >> $OUT/log.txt; break;; esac
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+# (Update 489b, D287: the launch block stays — qa_nolaunch is removed only by the final clean-up with the release build back.
+# Switching it off here let a later hand-made tap start a game.)
+A --ez voltcap_test_preview false
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
 ev_end $OUT

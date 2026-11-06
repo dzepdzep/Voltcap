@@ -7,4 +7,4 @@ for spec in "Pokemon_Crystal_Kaizo|gbc|0|0" "Pokemon_Crystal_Version|gbc|0|0" "P
   input keyevent 224; A --es voltcap_test_inspect "$spec"; sleep 7
   screencap -p $O/label_$(echo $spec | cut -d'|' -f1-2 | tr '|' '_').png; k BUTTON_B 1.2; k BUTTON_B 1.2
 done
-A --ez voltcap_test_nolaunch false; echo DONE > $O/DONE
+echo DONE > $O/DONE

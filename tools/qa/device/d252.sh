@@ -31,6 +31,6 @@ while [ $r -lt $N ]; do
     echo "$r $kind f0=$(foc ${r}_${kind}_0) f1=$(foc ${r}_${kind}_1) f2=$(foc ${r}_${kind}_2) pop1=$(pop ${r}_${kind}_1) keys_seen=$(grep -c ' key ' $OUT/${r}_${kind}_log.txt) tm=$(grep ' touchmode ' $OUT/${r}_${kind}_log.txt | head -2 | tr '\n' ';')" >> $OUT/trials.txt
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; rm -f $F/qa_nolaunch
+A --ez voltcap_test_preview false
 mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null
 ev_end $OUT; echo DONE >> $OUT/log.txt

@@ -1012,7 +1012,8 @@ class TestPopclipScript(unittest.TestCase):
     def test_play_tap_only_with_launches_blocked(self):
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
         self.assertIn("touch $F/qa_nolaunch", sh)
-        self.assertRegex(sh, r'\[ -f \$F/qa_nolaunch \]')
+        # (Update 489b, D287: the tap waits for the build's own answer that launching is blocked — qaguard.sh.)
+        self.assertIn("if qa_guard", sh)
 
 
     def test_picker_answered_and_a_opens_everywhere(self):
@@ -1428,6 +1429,48 @@ class TestVisualpdfMissingSteps476(unittest.TestCase):
         r = visualpdf.missing_reason(run, "X", "OWN", "more")
         self.assertTrue(r.startswith("not offered") or r.startswith("NOT CAPTURED"), r)
         shutil.rmtree(tmp)
+
+
+class TestLaunchGuard(unittest.TestCase):
+    """Update 489b (D287): a game started during a hand-made tap after a sweep had switched the launch block off."""
+    DEV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device")
+
+    def read(self, name):
+        return open(os.path.join(self.DEV, name), encoding="utf-8").read()
+
+    def test_guard_requires_blocked_answer(self):
+        g = self.read("qaguard.sh")
+        self.assertIn('[ "$qg_s" = blocked ]', g)
+        self.assertNotIn("rm -f $QG_F/qa_nolaunch", g)
+
+    def test_scripts_that_tap_play_use_the_guard_and_keep_the_block(self):
+        for name in ("popclip.sh", "cycle489.sh"):
+            s = self.read(name)
+            self.assertIn("qaguard.sh", s, name)
+            self.assertNotIn("voltcap_test_nolaunch false", s, name)
+            self.assertNotIn("rm -f $F/qa_nolaunch", s, name)
+        # the Play tap in the popup sweep sits behind the guard
+        s = self.read("popclip.sh")
+        self.assertLess(s.index("if qa_guard"), s.index('tapat "$PLAYW" probe'))
+
+    def test_no_device_script_lifts_the_block(self):
+        # 489c: the block is only ever removed by the final clean-up with the release build back, never by a QA script.
+        for name in sorted(os.listdir(self.DEV)):
+            if not name.endswith(".sh") or name == "d287v.sh":
+                continue
+            s = self.read(name)
+            self.assertNotIn("voltcap_test_nolaunch false", s, name)
+            self.assertNotRegex(s, r"rm -f \$\w+/qa_nolaunch", name)
+            self.assertNotIn("qa_allow_launch", s.replace("rm -f $QG_F/qa_allow_launch", ""), name)
+
+    def test_d287_check_presses_play_only_behind_the_guard(self):
+        s = self.read("d287v.sh")
+        first_a = s.index("input keyevent KEYCODE_BUTTON_A")
+        self.assertLess(s.rindex("if qa_guard", 0, first_a), first_a)
+        # the allow file is removed straight after it is read, before anything is pressed
+        self.assertLess(s.index("rm -f $F/qa_allow_launch"), first_a)
+        self.assertTrue(s.rstrip().endswith("cat $R"))
+        self.assertIn("touch $F/qa_nolaunch\ncat $R", s)
 
 
 if __name__ == "__main__":

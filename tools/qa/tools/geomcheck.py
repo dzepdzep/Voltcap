@@ -142,7 +142,7 @@ CLIP_DEFAULTS = dict(clip_px=1.5, overlap_px=2.0, touch_dp=24.0, touch_note_dp=3
 # The layouts' own words for the window's actions (GameWindow.kt WinLook: play / details / back) — popclip.sh keeps the same
 # lists (PLAYW / DETW; the selftest checks they match).
 PLAY_WORDS = ("play", "continue", "resume", "start", "start game", "continue game", "play game", "press start", "power on",
-              "run", "play it!", "continue!", "rent & play")
+              "run", "play it!", "continue!", "rent & play", "rent & continue", "rent & resume")
 DETAILS_WORDS = ("details", "full details", "information", "info", "game info", "contents", "status", "sleeve notes",
                  "card text", "turn over", "summary", "the story", "type nfo", "catalogue card")
 BACK_WORDS = ("back", "home", "put back", "exit", "stop", "close")

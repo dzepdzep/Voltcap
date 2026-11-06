@@ -17,7 +17,7 @@ for G in "GBA@/storage/emulated/0/ROMs/gba/Super Mario Advance 4 - Super Mario B
     input keyevent KEYCODE_BUTTON_B; sleep 0.9; input keyevent KEYCODE_BUTTON_B; sleep 1.2
   done
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; sleep 1
+A --ez voltcap_test_preview false; sleep 1
 cp $OUT/owner_view.json $F/voltcap_test_snapshot_view.json
 A --es voltcap_test_snapshot restore; sleep 3; echo "owner restore: $(cat $F/voltcap_test_snapshot_verify.txt)" >> $OUT/log.txt
 echo DONE >> $OUT/log.txt

@@ -12,4 +12,4 @@ for L in $2; do
   LB=$((LB+$(logcat -d -s VoltcapQA | grep -c "LAUNCH blocked")))
   echo "$L$r launches_blocked=$LB" >> $OUT/log.txt
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false; echo DONE >> $OUT/log.txt
+A --ez voltcap_test_preview false; echo DONE >> $OUT/log.txt

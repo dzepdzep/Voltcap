@@ -17,6 +17,6 @@ for L in $LAYS; do
   input keyevent KEYCODE_BUTTON_B; sleep 1.2
   [ "$(W)" != "$H" ] && { input keyevent KEYCODE_BUTTON_B; sleep 1; echo "$L: B again" >> $OUT/log.txt; }
 done
-A --ez voltcap_test_nolaunch false; A --ez voltcap_test_preview false
+A --ez voltcap_test_preview false
 logcat -d -s VoltcapQA | grep -c "LAUNCH blocked" >> $OUT/log.txt
 echo DONE >> $OUT/log.txt

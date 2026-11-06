@@ -4,7 +4,8 @@
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pc/cyc; mkdir -p $OUT
 L=$1; LAY=$2; ST=$3; N=${4:-10}; GAME=$5; MODE=$6
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
-[ -f $F/qa_nolaunch ] || { echo "qa_nolaunch missing - stop"; exit 1; }
+. $(dirname $0)/qaguard.sh
+qa_guard || { echo "launch block not confirmed - stop"; exit 1; }
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; A --es voltcap_test_layout $LAY; sleep 3
 A --es voltcap_test_pref "popup_style_by_layout=$LAY=$ST"; sleep 1
 [ -n "$GAME" ] && { A --es voltcap_test_game "$GAME"; sleep 2.5; }

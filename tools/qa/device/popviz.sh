@@ -19,5 +19,5 @@ for lay in $LAYS; do
   done
 done
 logcat -d -s VoltcapQA | grep "LAUNCH" > $OUT/launch.txt
-A --ez voltcap_test_nolaunch false
+# (489c, D287: the launch block stays on — only the release build's clean-up removes it)
 echo done > $OUT/DONE

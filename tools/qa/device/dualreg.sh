@@ -16,5 +16,5 @@ for L in TWIN_DESK TWIN_ICONS TWIN_SHOWCASE POCKET_CLASSIC POCKET_RIBBON; do
   k DPAD_RIGHT 0.8; S ${L}_4moved
   echo "$L done" >> $OUT/log.txt
 done
-A --es voltcap_test_twindash off; A --ez voltcap_test_preview false; A --ez voltcap_test_nolaunch false
+A --es voltcap_test_twindash off; A --ez voltcap_test_preview false
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt; echo DONE >> $OUT/log.txt
