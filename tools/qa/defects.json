@@ -3503,9 +3503,12 @@
    "rule": "R26",
    "severity": "high",
    "kind": "defect",
-   "status": "open - pre-existing: same ANR on v0.6.67 (p488h, 2 ANRs) and on 488 / 488b (p488f, p488g, 3 ANRs); not caused by 488. Root cause not found yet",
+   "status": "fixed in staging (489) - verified on the Thor",
    "found": "update 488 Thor popup sweep p488f (PANELS_ROW_REVEAL), reproduced p488g (Row reveal page->close, Shared main->close) and on v0.6.67 p488h",
-   "note": "dropbox data_app_anr 09:23:54, 09:32:46, 09:33:22 (0.6.68-qa), 09:36:03, 09:36:16 (0.6.67): main thread waiting in DrawFrameTask::drawFrame; RenderThread state R in GrTextBlob::Key::operator== <- GrTextBlobRedrawCoordinator::internalRemove <- drawGlyphRunList (Skia's text blob cache scanning one blob's many variants - text drawn at a new size / colour every frame). Next: find the Panels / popup text animated per frame (scale or colour) during the close and draw it through a layer or at a fixed size."
+   "note": "dropbox data_app_anr 09:23:54, 09:32:46, 09:33:22 (0.6.68-qa), 09:36:03, 09:36:16 (0.6.67): main thread waiting in DrawFrameTask::drawFrame; RenderThread state R in GrTextBlob::Key::operator== <- GrTextBlobRedrawCoordinator::internalRemove <- drawGlyphRunList (Skia's text blob cache scanning one blob's many variants - text drawn at a new size / colour every frame). Next: find the Panels / popup text animated per frame (scale or colour) during the close and draw it through a layer or at a fixed size.",
+   "root_cause": "The Panel dashboard turns each receding panel (rotationY up to -16 deg, perspective) and its faces hold text (titles, logo text). Text drawn under a changing 3D turn is cached again for every new matrix in Android 13 Skia text-blob cache; on popup open/close and the screensaver start the panels re-draw under changing transforms and the cache cleanup (GrTextBlobRedrawCoordinator::internalRemove, linear) stalls the RenderThread past 5 s. The same mechanism update 177 fixed for other 3D layouts (flatTextFor3d); the Panels layer and the window open/close scenes never got it.",
+   "fix": "update 489: flatTextFor3d() in every turned graphicsLayer (Panels faces, 8 window scenes, 7 home layers); Batch489Test fails on any new turned layer without it.",
+   "evidence": "v0.6.67 (published): ANR at cycle 3 / 5 of Panels + Row reveal + Details (cycle489.sh, 3DS category) and in popclip p489a; 489a: 24 cycles no ANR, p99 28-30 -> 16-25 ms, popclip p489b Panels 4 styles PASS, 5 screensaver starts no ANR."
   },
   {
    "id": "D286",
@@ -3513,8 +3516,21 @@
    "rule": "R26",
    "severity": "low",
    "kind": "suspect",
-   "status": "suspect - not investigated; v0.6.67 baseline NOT TESTED",
-   "found": "update 488 Thor sweep p488f (ARCTIC_CLASSIC, SIDE_CLASSIC; also 'no Details action', 'More not on screen')"
+   "status": "not a defect - QA artefact (fixed in the tool)",
+   "found": "update 488 Thor sweep p488f (ARCTIC_CLASSIC, SIDE_CLASSIC; also 'no Details action', 'More not on screen')",
+   "root_cause": "With the Classic popup style the Thor opens the details window on the lower (second) screen; popclip.sh taps with input tap on display 0, so the tap hit the home. input -d 4 tap on the window's Play asks for the launch (blocked) - Play works.",
+   "fix": "popclip.py grades that tap NOT TESTED (Play in a window on the second screen) instead of FAIL."
+  },
+  {
+   "id": "D287",
+   "title": "QA incident: a game was launched on the Thor during the D286 check (007 in RetroArch, ~18 s)",
+   "rule": "QA",
+   "severity": "high",
+   "kind": "incident",
+   "status": "closed - RetroArch force-stopped; no save or state file written (checked by mtime); RetroArch content_history.lpl gained an entry; Voltcap may show 007 as recently played",
+   "found": "update 489",
+   "root_cause": "popclip.sh removes qa_nolaunch when it finishes; a manual tap afterwards ran without the launch block.",
+   "fix": "every manual test step re-creates qa_nolaunch first (cycle489.sh refuses to run without it)."
   }
  ]
 }

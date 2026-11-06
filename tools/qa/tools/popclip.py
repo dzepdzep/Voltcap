@@ -79,6 +79,19 @@ def load(run, name):
     return None
 
 
+def _play_on_second_screen(dd):
+    """Update 489 (D286): the window's Play sits in an unfocused window narrower than the main screen (the Thor's lower
+    screen) — popclip.sh's `input tap` reaches only the main screen, so that tap can't say anything about the button."""
+    if not dd: return False
+    sw = (dd.get("screen") or [0])[0]
+    for w in dd.get("windows") or []:
+        at = w.get("at") or [0, 0, 0, 0]
+        if w.get("focus") or not sw or at[2] >= sw: continue
+        if any(x.get("kind") == "control" and re.search(r"(^|[^A-Za-z])(Play|Continue)$", x.get("label") or "") for x in w.get("nodes") or []):
+            return True
+    return False
+
+
 def grade(run, n):
     out = {}
     png = {s: os.path.join(run, f"{n}_{s}.png") for s in STEPS}
@@ -206,6 +219,7 @@ def grade(run, n):
                  or (not win and want and want not in norm(k))]
         if m and int(m.group(1)) > 0 and wrong: probs.append("a tap on Play asked to launch another game")
         elif m and int(m.group(1)) > 0: notes.append("a tap on Play asks for the launch (blocked)" + (" of the right game" if keys and want else ""))
+        elif _play_on_second_screen(d.get("main")): notes.append("Play is in a window on the second screen: the touch tap went to the main screen, not tested (D286)")
         else: probs.append("a tap on Play asked for no launch")
     else:
         notes.append("Play tap not recorded")

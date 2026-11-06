@@ -1,3 +1,46 @@
+# Update 489 (6 Nov 2026) — checkpoint 12: D285 Panels ANR root cause + fix (verified), D286 = QA artefact, K4 spines ready ahead, K1 Case stacks spacing, Save Vault check; QA incident D287
+
+Staging = 488c + the changes below; QA builds qa-0.6.68-489a / 489b / 489c (versionCode 74, Thor only). Nothing published.
+- **D285 Panel dashboard freeze / ANR — root cause found, fixed, verified (Thor):**
+  - *Reproduced on the published v0.6.67:* Panels + Row reveal, open → Details → close (`tools/qa/device/cycle489.sh`): ANR at cycle 3
+    (Adventure Time, 3DS) and cycle 5 (Mario Kart 7, 3DS); with 007 (N64) 15 cycles ran clean. Also via popclip (p489a, ANR 10:13).
+  - *Evidence:* every ANR (5 on 0.6.67, 3 on staging) has the main thread waiting in `DrawFrameTask::drawFrame` and the
+    RenderThread in Skia's text-blob cache (`GrTextBlobRedrawCoordinator::internalRemove`). The RenderThread ran 60–80 % from the
+    moment the 3DS row was shown until the ANR (`rtwatch489.sh` / sampled every 2 s); the rested N64 home ran ~20 %.
+  - *Cause in Voltcap:* Panels turns each receding panel in 3D (`rotationY` up to −16°, `StylePanels.kt`) and the faces carry text
+    (3DS looks with titles, logo text). Text drawn under a turn that changes is cached again for every new matrix and the cache's
+    clean-up slows until input times out — the mechanism update 177 fixed elsewhere with `flatTextFor3d()`; the Panels layer and
+    the windows' open / close turns never got it. Not the long-name slide: Mario Kart 7 (no slide) froze too.
+  - *Fix:* `flatTextFor3d()` (the layer is drawn flat into its own buffer only while turned) in the Panels faces, 8 window
+    open / close scenes (WinScenesConsole ×4, LiveTiles, Twin, Card / Cube) and 7 home layers that turn (Orbit deck, Rental shop,
+    Category blades, Magazine page, Bubbles, profile roll-out ×2). `Batch489Test` fails on any turned layer without it.
+  - *Verified (489a):* the same cycles 24 / 24 without ANR (p99 frame 28–30 → 16–25 ms); popclip Panels Row opens / Row reveal /
+    Shared / Own 4/4 PASS (were INFRA / NOT TESTED); 5 screensaver starts over Panels with a long 3DS title: no ANR.
+- **D286 Play in Arctic / Side with the Classic style — not a Voltcap bug:** on the Thor that window opens on the lower screen
+  (its dump: a window 1240 px wide, unfocused); popclip's `input tap` goes to the top screen and hit the home. `input -d 4 tap` on
+  the window's Play asks for the launch (blocked). popclip.py now grades that tap NOT TESTED instead of FAIL.
+- **D287 QA incident:** during that check a tap launched *007* in RetroArch (~18 s, force-stopped) — popclip removes the launch
+  block when it ends and I tapped by hand without re-creating it. No save / state file written (mtimes checked); RetroArch's
+  history list (`content_history.lpl`) gained an entry; Voltcap may list 007 as recently played. Every manual step now
+  re-creates `qa_nolaunch` first.
+- **K4 spines — first appearance:** the named spines of the cases just ahead are made with the cases' pictures
+  (`WarmCaseNeighbours` → `case3dSpineRes`, nearest first, at most the reach, same 48 MB cache). Thor Case Flow SNES, cold,
+  fast key bursts: 25 steps nameless 30 → 3 (A/B on the same build, `voltcap_test_warm nospines`); 80 steps 95 (488b) → 11; second
+  pass 0. PSS after the 80-step walk 581 MB. Case stacks: its spines are drawn live (GameSpine), not from this cache. Owner check.
+- **K1 Case stacks spacing:** cause — the Thor's Case stacks is shown as a carousel (R1 › Carousel), which ignored the stacks'
+  slider; now the slider scales that carousel too (`hostGap`, `Carousel.spread` made a state so it applies at once).
+  Thor 50 / 100 / 250 % visibly change; 100 % = as before. Other layouts: no new ones this batch.
+- **Save Vault (KONKR, read-only):** Pokémon Silver `.srm` unchanged today — last written 3 Nov 22:32 (md5 7e07a4186713); no
+  backup made today (Voltcap backs a save up before every download — three from 3 Nov 22:27–22:33 exist in
+  Voltcap/Sync backups). The vault's "Last saved 9:41 / Google Drive → this device" was the sync check time plus the 3 Nov
+  download. Nothing restored or synced.
+- **Devices:** Thor back on v0.6.67, snapshot t489o 4/4 identical, QA files removed. KONKR not used this batch.
+- **Files (src_copy):** ui/StylePanels.kt, WinScenesConsole.kt, WinScenesHomes2.kt, WinSceneTwin.kt, WinScenesMore.kt,
+  ProfileSelect.kt, StyleMagazine.kt, StyleRentalShop.kt, CategoryLooks.kt, StyleBubbles.kt, StyleOrbitDeck.kt, Case3D.kt,
+  RealMedia.kt, Carousel.kt, StyleCaseStacks.kt. Tests: Batch489Test (staging). QA: rtwatch489.sh, cycle489.sh, k4wait488.sh
+  (counts "spine ahead"), popclip.py (second-screen Play). **Checked:** unit tests + assembleRelease green; QA selftest OK.
+  **Not tested:** the 7 home layouts' turned layers on hardware (unit-checked only), KONKR.
+
 # Update 488 (6 Nov 2026) — checkpoint 11: D284 fixed (Thor + KONKR), K3 verified, K4 reproduced + returning spines fixed, K1 Voltcap row / Tiles / Shelf / Cover details checked, D285 ANR found (pre-existing)
 
 Staging = 487 + the changes below (`next/0.6.68/staging.patch`); QA builds qa-0.6.68-488 / 488b / 488c at versionCode 74 (installed

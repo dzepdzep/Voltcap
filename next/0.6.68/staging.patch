@@ -465,6 +465,39 @@ index 7c6eaf1..b734cc8 100644
  /**
   * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
   * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
+index b9286ca..b14152e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
+@@ -415,7 +415,9 @@ internal object Carousel {
+      * Update 182: with only a few games the carousel spreads them out (set by GameCarousel from how many there are), so
+      * the sides aren't a small huddle in the middle with empty stage round it.
+      */
+-    @Volatile var spread = 1f
++    // (Update 489, K1: a state, so a change — Case stacks' Game spacing through hostGap — moves the games at once; a plain
++    // field was only read again when something else rebuilt the carousel.)
++    var spread by androidx.compose.runtime.mutableFloatStateOf(1f)
+ 
+     /**
+      * Update 187: how fast the carousel is moving now (games a second; read while placing, every moving frame), for Box
+@@ -715,6 +717,8 @@ internal fun GameCarousel(
+     onNeedPhysical: (Game) -> Unit,
+     modifier: Modifier = Modifier,
+     showName: Boolean = false,
++    /** Update 489 (K1): the hosting layout's own Game spacing (Case stacks shown as a carousel), times the carousel's Spacing. 1 = as before. */
++    hostGap: Float = 1f,
+     /** Update 135: Endless (R1) on — the games go round, so both sides are always filled (even on the first game). */
+     loop: Boolean = false,
+     /** The view model's D-pad step count and direction, for the endless place ([rememberLoopFocus]). */
+@@ -953,7 +957,7 @@ internal fun GameCarousel(
+         // Update 182: few games, spread out (the packed views most, their boxes are slim).
+         val packed = view == CarouselView.BOX_FLOW || view == CarouselView.SPINE_WALL
+         val spreadNow = if (!Features.carouselSpread.state.value) 1f else if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
+-        androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow }
++        androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow * hostGap }
+         val bigH = bigW / 0.72f
+         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
+         // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt b/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
 index 00fd4af..a2dc26a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
@@ -479,7 +512,7 @@ index 00fd4af..a2dc26a 100644
          if (m != null) Text(
              ShellMaterials.hexOf(m.base) + (if (m.back != 0) " / " + ShellMaterials.hexOf(m.back) else "") + " (approx.)",
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
-index 707c345..4669a07 100644
+index 707c345..f743fb6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
 @@ -77,14 +77,27 @@ internal fun Case3D(
@@ -512,7 +545,15 @@ index 707c345..4669a07 100644
      // (Update 240, #27/#58: a "Box" scan that is really the whole unfolded box — back | spine | front side by side, far wider
      // than the real case's front (CaseCatalog) — has its front cut out of it (BoxTexture), not its middle cut to the case's
      // shape: that showed the spine and the back's edge as the front. The case's shape stays the catalog's whatever the scan.)
-@@ -1456,7 +1469,10 @@ private object CaseDraw {
+@@ -129,6 +142,7 @@ internal fun Case3D(
+         (!scansKnown && !forAll && !matching && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
+     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
+     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
++    // (Update 489, K4: the same rule as case3dSpineRes, which the cases ahead are made from — keep the two together.)
+     val tpl = if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
+     // (Made once per game, away from the screen's thread: SpineCache.)
+     // (Update 305: a Steam / Android spine takes its accent from the game's cover — the same one the shelves use.)
+@@ -1456,7 +1470,10 @@ private object CaseDraw {
              shaderMatrix.postTranslate(0f, floorY)
              fadeDown.setLocalMatrix(shaderMatrix)
              fade.shader = fadeDown
@@ -524,6 +565,36 @@ index 707c345..4669a07 100644
              fade.shader = null
              c.restoreToCount(l)
          }
+@@ -1581,3 +1598,16 @@ private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.
+     }.getOrDefault(src)
+ }
+ 
++
++
++/**
++ * Update 489 (K4): the console spine [Case3D] writes a game's name on (its `tpl`) — null when it uses none. The cases just
++ * ahead of the scroll have their named spines made from it in advance ([WarmCaseNeighbours]), so a case sliding in shows its
++ * name from its first frame. Same rule as Case3D's `tpl`.
++ */
++internal fun case3dSpineRes(platform: String): Int? {
++    val forAll = LookStyles.spineForAll()
++    val matching = Features.spinesOwn.state.value
++    val ownCase = MediaCovers.own(platform).takeIf { !forAll }
++    return if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(platform))?.res else null
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
+index fac7bea..4fe1597 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt
+@@ -440,6 +440,8 @@ internal fun BladesLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
+                         // (A shadow only under the blade coming forward — the GPU's cost was every blade's.)
+                         shadowElevation = if (a < 1f) (14f * (1f - a)).dp.toPx() else 0f
+                         shape = RoundedCornerShape(14.dp); clip = true
++                        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++                        flatTextFor3d()
+                     }
+                     .zIndex(if (on) 30f else 20f - abs(i - selected))
+                     .background(Brush.linearGradient(listOf(lookHue(tile, 0.34f, 0.45f), lookHue(tile, 0.14f, 0.5f)), Offset.Zero, Offset(900f, 900f)))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt b/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt
 index 3a1facd..e2d20e2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CategoryScreen.kt
@@ -1729,6 +1800,28 @@ index 897cce8..35c10a6 100644
              }
              // Small captions under the picture: the category, and where you are in it.
              // (Update 315: off for this layout — Categories tile / Settings — no caption.)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
+index a1c672c..b768581 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/ProfileSelect.kt
+@@ -581,6 +581,8 @@ internal fun Modifier.rolloutItem(): Modifier = this.composed {
+             val k = 0.9f + 0.1f * e
+             scaleX = k; scaleY = k
+             cameraDistance = 14f * this.density
++            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++            flatTextFor3d()
+         }
+ }
+ 
+@@ -600,6 +602,8 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
+         val k = 0.96f + 0.04f * e
+         scaleX = k; scaleY = k
+         cameraDistance = 14f * density
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }
+ }
+ 
 diff --git a/app/src/main/java/com/shelf/launcher/ui/QaArt.kt b/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
 new file mode 100644
 index 0000000..5527ac4
@@ -2033,7 +2126,7 @@ index 0000000..05d27e1
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
-index 8ea7122..84905fb 100644
+index 8ea7122..8875d28 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 @@ -414,7 +414,9 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
@@ -2047,7 +2140,27 @@ index 8ea7122..84905fb 100644
          BoxTexture.front(scans, g.platform) else null) ?: cover
      val spine = if (LookStyles.spineForAll()) null
          else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
-@@ -773,7 +775,17 @@ internal fun CaseArt(
+@@ -458,6 +460,19 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
+             near.map { g -> g.stableKey to case3dModels(g, c.cover(g), c.state.physicalMedia[g.stableKey], realFront && c.state.artOverrides[g.stableKey]?.cover == null) }
+         }
+         warmCase3d(context, models.map { it.second }, backs = false, prepare = TestHooks.warmMode != "noprepare")
++        // (Update 489, K4: the named spines of the cases ahead too — nearest first, at most the reach, through the same cache
++        // (SpineCache, ~118 kept) — so a case sliding in never shows its spine without its name for its first frames.)
++        if (TestHooks.warmMode != "nospines") kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
++            for (g in near) {
++                val res = case3dSpineRes(g.platform) ?: continue
++                if (OwnSpines.isOwn(res)) continue
++                val title = gameDisplayName(g.name)
++                val key = SpineCache.key(res, false, title, com.shelf.launcher.data.Packs.version.intValue)
++                if (SpineCache.peekTitled(key) != null) continue
++                SpineCache.titled(context, res, title, false, key)
++                QaTrace.event("spine ahead", title.take(24))
++            }
++        }
+         val loader = coil.Coil.imageLoader(context)
+         for ((k, m) in models) window.remember(k, listOfNotNull(m.first?.let { softKey(480, it, true) }, m.second?.let { softKey(600, it, false) }))
+         // Pictures decoded here for cases far from the one in focus (beyond three times the reach) leave the memory cache.
+@@ -773,7 +788,17 @@ internal fun CaseArt(
      // cover whose shape wasn't known yet stayed whole until some other view had measured it. Both are measured now — a
      // small decode, only while the shape isn't known.)
      val cover = rememberWrapFront(cover0, LookStyles.casePlatform(platform), decode = true)
@@ -2522,7 +2635,7 @@ index 865f678..7f56c13 100644
              )
          }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt b/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
-index eae6ae6..bd0fdbd 100644
+index eae6ae6..c3b80ca 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleBubbles.kt
 @@ -612,7 +612,7 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
@@ -2534,6 +2647,15 @@ index eae6ae6..bd0fdbd 100644
      BoxWithConstraints(Modifier.fillMaxSize()) {
          val fullW = with(density) { maxWidth.toPx() }
          val wPx = fullW * 0.94f
+@@ -726,6 +726,8 @@ private fun LiveAreaPage(c: StyleCtx, g: Game, open: Float, active: Boolean) {
+                 cameraDistance = 14f * density.density
+                 translationX = slide.value * size.width * 0.35f
+                 alpha = (open * 1.6f).coerceIn(0f, 1f) * (1f - abs(slide.value) * 0.6f)
++                // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++                flatTextFor3d()
+             }
+         ) {
+             Box(Modifier.fillMaxSize().clip(peelShape(k))) { LiveAreaBody(c, g, compactPage) }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt
 index c6fe26a..3b59ecf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCardboardBox.kt
@@ -2552,10 +2674,21 @@ index c6fe26a..3b59ecf 100644
                  }
                  // (After a knock: the first press only knocks against the box's wall.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-index 4972c11..1c1d8f2 100644
+index 4972c11..5595050 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-@@ -374,7 +374,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -211,7 +211,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
+                 onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
+                 physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
+                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
+-                modifier = stage
++                modifier = stage,
++                // (Update 489, K1 on the Thor: shown as a carousel (R1 › Carousel) the stacks' Game spacing did nothing.)
++                hostGap = Features.stacksSpacing.state.value / 100f
+             ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
+             if (barRoom) Box(
+                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
+@@ -374,7 +376,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val spineW = caseH * STACKS_SPINE
          val gapSide = (caseW * 0.12f).coerceIn(12.dp, 40.dp)
          val x0 = caseW / 2 + gapSide + spineW * STACKS_SPINE_K / 2
@@ -2565,7 +2698,7 @@ index 4972c11..1c1d8f2 100644
          val avail = (w / 2 - x0 - 4.dp).coerceAtLeast(0.dp)
          val depthK = if (depth) STACKS_DEPTH_K else 0f
          // How many spines fit in each stack before the screen's edge.
-@@ -382,7 +383,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -382,7 +385,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val nSide = if (depthK > 0f) {
              ((exp(depthK * (avail / pitch)) - 1f) / depthK).coerceIn(0f, 1000f).toInt() + 2
          } else (avail / pitch).coerceIn(0f, 1000f).toInt() + 2
@@ -2575,7 +2708,7 @@ index 4972c11..1c1d8f2 100644
              with(density) {
                  StacksGeo(
                      caseW, caseH, spineW, caseW.toPx(), caseH.toPx(), spineW.toPx(),
-@@ -576,7 +578,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -576,7 +580,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
              StacksProgress(c, g, on)
          }
      } else if (caseLook && !spines && caseMarker(g.platform) != null) {
@@ -2587,7 +2720,7 @@ index 4972c11..1c1d8f2 100644
          Box(modifier.gameOrigin(k, on).rolloutItem()) {
              MediaFocus(on) {
                  CaseArt(
-@@ -584,7 +589,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -584,7 +591,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                      g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                      caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
                      // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
@@ -2596,7 +2729,7 @@ index 4972c11..1c1d8f2 100644
                  )
              }
              // (Update 202: the case's printed band shows the console already.)
-@@ -722,3 +727,7 @@ internal fun CaseStacksSettings() {
+@@ -722,3 +729,7 @@ internal fun CaseStacksSettings() {
          PickedFacingChoice(note = false)
      }
  }
@@ -2929,11 +3062,46 @@ index 74e489f..103d68c 100644
                  modifier = Modifier
                      .padding(end = if (compact) 16.dp else 26.dp)
                      .pointerInput(d) { detectTapGestures { if (d != 0) move(d) } }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt b/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
+index dd8bcea..cae8018 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleMagazine.kt
+@@ -316,6 +316,8 @@ private fun MagTurnPage(modifier: Modifier, origin: TransformOrigin, angle: Floa
+         transformOrigin = origin
+         rotationY = angle
+         cameraDistance = 9f * density.density
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }) {
+         content()
+         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleOrbitDeck.kt b/app/src/main/java/com/shelf/launcher/ui/StyleOrbitDeck.kt
+index 7af1956..ca88e8d 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleOrbitDeck.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleOrbitDeck.kt
+@@ -271,6 +271,8 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
+                             alpha = (if (smallRing) 1f else edge) *
+                                 // (Its window's disc takes over as it flies out — and hands back as it lands.)
+                                 (if (on && MediaInspect.key == g.stableKey) 1f - MediaInspect.amount.floatValue else 1f)
++                            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++                            flatTextFor3d()
+                         }
+                         .zIndex(zNow)
+                         .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt b/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
-index 8982b8f..63b1d09 100644
+index 8982b8f..3198c81 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StylePanels.kt
-@@ -553,7 +553,8 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
+@@ -447,6 +447,8 @@ private fun PanelChannel(c: StyleCtx, p: PanelPalette, ch: Int, on: Boolean, row
+                                     d > 4.5f -> (1f - (d - 4.5f)).coerceIn(0f, 1f)
+                                     else -> 1f
+                                 }
++                                // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++                                flatTextFor3d()
+                             }
+                             .pointerInput(i) {
+                                 detectTapGestures {
+@@ -553,7 +555,8 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
              }
          }
          PanelNav.SYSTEMS -> c.stops.getOrNull(PanelNav.systems.getOrNull(focus) ?: -1)?.let { st ->
@@ -2967,10 +3135,19 @@ index b49603d..f156101 100644
                              else -> null
                          }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
-index 762f07a..6d0f288 100644
+index 762f07a..d874440 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleRentalShop.kt
-@@ -453,7 +453,7 @@ private fun ShopTalker(c: StyleCtx, g: Game, modifier: Modifier) {
+@@ -399,6 +399,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
+                                         // The far ends of the wall go dimmer.
+                                         val d = abs((cc - cam.value) * colW) / (wPx / 2f)
+                                         alpha = (1.25f - d * 0.5f).coerceIn(0.35f, 1f)
++                                        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++                                        flatTextFor3d()
+                                     }
+                                     .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else { select(i); rsSound(KitSound.MOVE, UiSound.MOVE) } } }
+                             ) {
+@@ -453,7 +455,7 @@ private fun ShopTalker(c: StyleCtx, g: Game, modifier: Modifier) {
  @Composable
  private fun ShopMap(c: StyleCtx, sc: ShopColors, systems: List<Int>, modifier: Modifier) {
      val sel = ShopNav.mapSel
@@ -3544,10 +3721,19 @@ index 0000000..ea8b463
 +    return (avail - gap * (v - 1)) / v
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
-index f7cf41e..d1c3fca 100644
+index f7cf41e..4771292 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
-@@ -166,26 +166,39 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
+@@ -85,6 +85,8 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
+         cameraDistance = 12f * density
+         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
+         if (desk) { shadowElevation = 12.dp.toPx() * e; shape = RoundedCornerShape(14.dp) }
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }) {
+         // ── Top screen: the picture and the game's name strip.
+         Row(
+@@ -166,26 +168,39 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
      }
  }
  
@@ -3888,10 +4074,19 @@ index 1f14765..e801c9b 100644
 +/** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
 +internal const val ARCADE_LINE = 1.35f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-index 96dda3b..06a45b8 100644
+index 96dda3b..2f27fc8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-@@ -159,7 +159,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+@@ -120,6 +120,8 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
+             transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+             cameraDistance = 14f * density
+             alpha = (e * 1.6f).coerceIn(0f, 1f)
++            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++            flatTextFor3d()
+         }
+     ) {
+         // The blade itself: a curved leading edge, its colour, a gloss and a lit rim.
+@@ -159,7 +161,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
              drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
          }
          Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
@@ -3902,7 +4097,16 @@ index 96dda3b..06a45b8 100644
              Text(
                  ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""),
                  color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1
-@@ -301,7 +303,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+@@ -293,6 +297,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+                 cameraDistance = 14f * density
+                 alpha = (k * 2.5f).coerceIn(0f, 1f)
+             }
++            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++            flatTextFor3d()
+         }.drawWithContent {
+             if (!ctx.closing()) { drawContent(); return@drawWithContent }
+             val pk = (1f - ctx.reveal()).coerceIn(0f, 1f)
+@@ -301,7 +307,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
              drawPeelFlap(pk)
          }.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0D1520))
      ) {
@@ -3911,7 +4115,7 @@ index 96dda3b..06a45b8 100644
          Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
          Row(Modifier.fillMaxSize().padding(18.dp)) {
              Column(Modifier.weight(0.5f).fillMaxHeight()) {
-@@ -312,8 +314,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
+@@ -312,8 +318,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                      }
                      Spacer(Modifier.width(10.dp))
                      Column {
@@ -3921,7 +4125,7 @@ index 96dda3b..06a45b8 100644
                          Text(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
                      }
                  }
-@@ -460,7 +461,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
+@@ -460,7 +465,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
              }
              Spacer(Modifier.width(u * 6))
              Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -3930,7 +4134,14 @@ index 96dda3b..06a45b8 100644
                  Spacer(Modifier.height(u))
                  Box(Modifier.fillMaxWidth().height(u).background(c0))
                  Spacer(Modifier.height(u * 3))
-@@ -529,22 +530,29 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -524,27 +529,36 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+             cameraDistance = 12f * density
+             translationX = -(1f - e) * size.width * 0.06f
+             alpha = (k * 1.6f).coerceIn(0f, 1f)
++            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++            flatTextFor3d()
+         }.clip(RoundedCornerShape(6.dp)).background(p.panel).border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+     ) {
          Column(Modifier.fillMaxSize()) {
              // The art strip with the name.
              Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
@@ -3965,7 +4176,7 @@ index 96dda3b..06a45b8 100644
                                      .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                  verticalAlignment = Alignment.CenterVertically
                              ) {
-@@ -556,6 +564,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -556,6 +570,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                          }
                      }
                  }
@@ -3973,7 +4184,16 @@ index 96dda3b..06a45b8 100644
                  Spacer(Modifier.width(14.dp))
                  Box(Modifier.weight(0.55f).fillMaxHeight()) {
                      if (ctx.page == WinPage.MAIN) Row(Modifier.fillMaxSize()) {
-@@ -651,10 +660,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+@@ -626,6 +641,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+             rotationZ = -2f + (1f - e) * -9f
+             translationY = (1f - e) * size.height * 0.12f
+             alpha = (k * 1.8f).coerceIn(0f, 1f)
++            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++            flatTextFor3d()
+         }
+     ) {
+         // The paper with its torn edge.
+@@ -651,10 +668,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
              Column(Modifier.weight(1f).fillMaxHeight()) {
                  Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
                      fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
@@ -3988,7 +4208,7 @@ index 96dda3b..06a45b8 100644
                  Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
                  Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                  if (ctx.page == WinPage.MAIN) {
-@@ -770,7 +779,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -770,7 +787,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
          }
          Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = tearDp)) {
              if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
@@ -3997,7 +4217,7 @@ index 96dda3b..06a45b8 100644
                  maxLines = if (short) 2 else 3)
              Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
              Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
-@@ -901,7 +910,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
+@@ -901,7 +918,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
              Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                  Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                  Spacer(Modifier.height(4.dp))
@@ -4143,7 +4363,7 @@ index 876c06e..54a2301 100644
                      if (!compact && !tight) {
                          Spacer(Modifier.width(18.dp))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-index d320f64..2e0777d 100644
+index d320f64..d80c6f9 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 @@ -57,8 +57,8 @@ private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else
@@ -4157,7 +4377,16 @@ index d320f64..2e0777d 100644
  }
  
  /** A full-width list row key (icon + word), lit as a band. */
-@@ -136,7 +136,7 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
+@@ -122,6 +122,8 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
+         transformOrigin = TransformOrigin(0f, 0.5f)
+         cameraDistance = 10f * density
+         alpha = if (ctx.reveal() < 0.02f) 0f else 1f
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }.background(Color(0xFF111111).copy(alpha = 0.94f)).padding(16.dp)) {
+         Text(ctx.console.lowercase(), color = a, fontSize = 13.sp, fontWeight = FontWeight.Light)
+         StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = 30.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 32.sp)
+@@ -136,7 +138,7 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
          Spacer(Modifier.height(10.dp))
          // The keys as small flat tiles in the accent.
          KeyRow(sceneKeys(ctx), 4.dp) { k ->
@@ -4166,7 +4395,7 @@ index d320f64..2e0777d 100644
                  Color.Transparent, Color.White, RectangleShape, height = 40.dp)
          }
      }
-@@ -158,12 +158,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
+@@ -158,12 +160,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
      }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
          // Header strip with the art.
          Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.3f, 150.dp))) {
@@ -4186,7 +4415,7 @@ index d320f64..2e0777d 100644
          }
          Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = false)) {
              if (ctx.page == WinPage.MAIN) {
-@@ -176,12 +178,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
+@@ -176,12 +180,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
                          }
                      }
                  }
@@ -4203,7 +4432,7 @@ index d320f64..2e0777d 100644
                      Color.White.copy(alpha = 0.1f), a, RoundedCornerShape(8.dp), height = 34.dp)
              }
          }
-@@ -200,7 +204,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+@@ -200,7 +206,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
              shadowElevation = 20.dp.toPx()
          }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
              Box(Modifier.fillMaxWidth().aspectRatio(2.1f)) {
@@ -4212,7 +4441,7 @@ index d320f64..2e0777d 100644
                  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
              }
              Column(Modifier.padding(horizontal = 14.dp)) {
-@@ -210,9 +214,17 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+@@ -210,9 +216,17 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
              Spacer(Modifier.height(8.dp))
              if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp))
              // The menu's own rows, with the accent bar on the one you're on.
@@ -4232,7 +4461,7 @@ index d320f64..2e0777d 100644
                          Box(Modifier.width(4.dp).fillMaxHeight().background(if (on) a else Color.Transparent))
                          Spacer(Modifier.width(12.dp))
                          Icon(k.icon, null, tint = if (on) a else Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
-@@ -221,6 +233,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+@@ -221,6 +235,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
                      }
                  }
              }
@@ -4240,7 +4469,7 @@ index d320f64..2e0777d 100644
          }
      }
  }
-@@ -238,20 +251,27 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
+@@ -238,20 +253,27 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
          scaleX = s; scaleY = s
          shape = RoundedCornerShape(6.dp); clip = true
      }.background(Color.Black)) {
@@ -4271,7 +4500,7 @@ index d320f64..2e0777d 100644
                      Color.White.copy(alpha = 0.35f), Color.White, RoundedCornerShape(50), height = 36.dp, upper = true, size = 11.sp)
              }
          }
-@@ -285,19 +305,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
+@@ -285,19 +307,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                  if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
                  Spacer(Modifier.height(12.dp))
                  // The actions as round dock icons with their names under them.
@@ -4309,7 +4538,7 @@ index d320f64..2e0777d 100644
              }
              // The pointer down to the dock.
              Canvas(Modifier.size(22.dp, 10.dp)) {
-@@ -332,7 +368,7 @@ internal fun HubPlate(ctx: WinSceneCtx) {
+@@ -332,7 +370,7 @@ internal fun HubPlate(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.height(8.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4318,7 +4547,7 @@ index d320f64..2e0777d 100644
                      Color.White.copy(alpha = 0.2f), Color.White, RoundedCornerShape(4.dp))
              }
          }
-@@ -370,7 +406,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
+@@ -370,7 +408,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.weight(0.01f))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4327,7 +4556,7 @@ index d320f64..2e0777d 100644
                      Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
              }
          }
-@@ -439,7 +475,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+@@ -439,7 +477,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
      }.background(Color(0xFF1B2838))) {
          // The hero banner across the top, logo on it.
          Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
@@ -4336,7 +4565,7 @@ index d320f64..2e0777d 100644
              Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1B2838)))))
              Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                  ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-@@ -450,7 +486,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+@@ -450,7 +488,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
          Row(Modifier.fillMaxWidth().background(Color(0xFF16202D)).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
              Box(Modifier.weight(1f)) {
                  KeyRow(sceneKeys(ctx)) { k ->
@@ -4345,7 +4574,7 @@ index d320f64..2e0777d 100644
                          Color.White, Color.White, Color.Transparent, Color.White, RoundedCornerShape(3.dp), height = if (k.primary) 40.dp else 34.dp, upper = k.primary)
                  }
              }
-@@ -509,7 +545,7 @@ internal fun TimelineEntry(ctx: WinSceneCtx) {
+@@ -509,7 +547,7 @@ internal fun TimelineEntry(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.height(8.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4354,7 +4583,7 @@ index d320f64..2e0777d 100644
                      Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(6.dp))
              }
          }
-@@ -530,7 +566,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+@@ -530,7 +568,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
          alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
          shape = RoundedCornerShape(16.dp); clip = true
      }.background(Color.Black)) {
@@ -4363,7 +4592,7 @@ index d320f64..2e0777d 100644
          Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
          Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
              ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-@@ -546,7 +582,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+@@ -546,7 +584,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
              else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx), 8.dp) { k ->
@@ -4372,7 +4601,7 @@ index d320f64..2e0777d 100644
                      Color.Transparent, Color.White, RoundedCornerShape(50), height = 38.dp)
              }
          }
-@@ -579,7 +615,7 @@ internal fun TileCard(ctx: WinSceneCtx) {
+@@ -579,7 +617,7 @@ internal fun TileCard(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, ink.copy(alpha = 0.5f), ink, upperLabels = false)
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4381,7 +4610,7 @@ index d320f64..2e0777d 100644
                      ink.copy(alpha = 0.15f), a, RoundedCornerShape(50), height = 38.dp)
              }
          }
-@@ -619,9 +655,16 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+@@ -619,9 +657,16 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
              }
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4400,7 +4629,7 @@ index d320f64..2e0777d 100644
 + */
 +internal fun dockShortLabel(label: String): String = label.substringBefore(" · ").trim().ifEmpty { label }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
-index 00bae26..1a01a08 100644
+index 00bae26..e3e119f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
 @@ -99,22 +99,57 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (Win
@@ -4496,6 +4725,24 @@ index 00bae26..1a01a08 100644
  internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
  
  // ───────────────────────────── Record crate: the sleeve's back, the record slides out of it ─────────────────────────────
+@@ -247,6 +293,8 @@ internal fun CardBack(ctx: WinSceneCtx) {
+         alpha = if (ctx.reveal() < 0.02f) 0f else 1f
+         shape = RoundedCornerShape(14.dp); clip = true
+         shadowElevation = 16.dp.toPx() * e
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }.background(foil).padding(7.dp).clip(RoundedCornerShape(10.dp)).background(face)) {
+         Column(Modifier.fillMaxSize().padding(10.dp)) {
+             Row(verticalAlignment = Alignment.CenterVertically) {
+@@ -373,6 +421,8 @@ internal fun CubeFace(ctx: WinSceneCtx) {
+         cameraDistance = 10f * density
+         alpha = if (ctx.reveal() < 0.02f) 0f else 1f
+         shape = RoundedCornerShape(10.dp); clip = true
++        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
++        flatTextFor3d()
+     }.background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.35f), androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.72f))))
+         .border(3.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(10.dp))) {
+         // The face's bevel and the art faint behind the text.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt b/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
 index 049f87d..b7d1ece 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
@@ -5301,6 +5548,79 @@ index 0000000..9991bd5
 +        val s = src("SaveExplorer.kt")
 +        assertTrue(s.contains("val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS\n"))
 +        assertTrue(src("TestHooks.kt").contains("voltcap_test_ps2browser"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt
+new file mode 100644
+index 0000000..f3f6d1e
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt
+@@ -0,0 +1,67 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 489 (staging only). */
++class Batch489Test {
++    private fun src(name: String): String = listOf(
++        File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name")
++    ).first { it.exists() }.readText()
++
++    /** Every graphicsLayer block in [file] that turns its content (rotationX / rotationY) draws its text flat. */
++    private fun turnedBlocksFlat(file: String): Int {
++        val s = src(file); var n = 0
++        Regex("graphicsLayer\\s*\\{").findAll(s).forEach { m ->
++            var i = m.range.last + 1; var d = 1
++            while (d > 0) { if (s[i] == '{') d++ else if (s[i] == '}') d--; i++ }
++            val b = s.substring(m.range.first, i)
++            if (Regex("\\brotation[XY]\\s*=").containsMatchIn(b)) {
++                assertTrue("$file: a turned layer without flatTextFor3d", b.contains("flatTextFor3d()") || b.contains("Offscreen")); n++
++            }
++        }
++        return n
++    }
++
++    @Test fun d285TurnedPanelsAndWindowsDrawTextFlat() {
++        // Thor, v0.6.67 and staging: Panel dashboard + a game window closing -> ANR in Skia's text cache (D285).
++        assertEquals(1, turnedBlocksFlat("StylePanels.kt"))
++        assertEquals(4, turnedBlocksFlat("WinScenesConsole.kt"))
++        assertTrue(turnedBlocksFlat("WinScenesHomes2.kt") >= 1)
++        assertTrue(turnedBlocksFlat("WinSceneTwin.kt") >= 1)
++        assertTrue(turnedBlocksFlat("WinScenesMore.kt") >= 2)
++    }
++
++    @Test fun k4SpinesAheadUseCase3dsOwnRule() {
++        val c = src("Case3D.kt"); val r = src("RealMedia.kt")
++        assertTrue(c.contains("internal fun case3dSpineRes(platform: String): Int?"))
++        assertTrue(r.contains("val res = case3dSpineRes(g.platform) ?: continue"))
++        assertTrue(r.contains("SpineCache.titled(context, res, title, false, key)"))
++    }
++
++    @Test fun k1StacksSpacingReachesItsCarousel() {
++        assertTrue(src("StyleCaseStacks.kt").contains("hostGap = Features.stacksSpacing.state.value / 100f"))
++        assertTrue(src("Carousel.kt").contains("Carousel.spread = spreadNow * hostGap"))
++        assertTrue(src("Carousel.kt").contains("var spread by androidx.compose.runtime.mutableFloatStateOf(1f)"))
++    }
++
++    @Test fun everyTurnedLayerDrawsItsTextFlat() {
++        // D285 / update 177: text under a changing 3D turn fills Android 13's text cache until the app stops answering.
++        // Left out on purpose: a fixed tilt (CategoryLooks' 18° floor) and the carousel's Canvas side band (no text).
++        val dir = listOf(File("src/main/java/com/shelf/launcher/ui"), File("app/src/main/java/com/shelf/launcher/ui")).first { it.exists() }
++        val missing = mutableListOf<String>()
++        dir.listFiles()!!.filter { it.name.endsWith(".kt") && it.name != "ThemeShaders.kt" }.forEach { f ->
++            val s = f.readText()
++            Regex("graphicsLayer\\s*\\{").findAll(s).forEach { m ->
++                var i = m.range.last + 1; var d = 1
++                while (d > 0 && i < s.length) { if (s[i] == '{') d++ else if (s[i] == '}') d--; i++ }
++                val b = s.substring(m.range.first, i)
++                if (Regex("\\brotation[XY]\\s*=").containsMatchIn(b) && !b.contains("flatTextFor3d") && !b.contains("Offscreen") &&
++                    !b.contains("rotationX = 18f") && !b.contains("rotationY = turnNow.value()")) missing += f.name + ":" + s.substring(0, m.range.first).count { it == '\n' }.plus(1)
++            }
++        }
++        assertTrue("turned layers without flatTextFor3d: $missing", missing.isEmpty())
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

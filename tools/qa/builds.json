@@ -352,6 +352,39 @@
    "patch_sha256": "a7960ad88a307d4f36d890222c56b701aaa08614beed85ae7dcc6b53a08cd2e4",
    "tree_hash": "",
    "note": "update 488c: 488b + Case stacks geometry keyed on the spacing pitch (K1)"
+  },
+  {
+   "id": "qa-0.6.68-489a",
+   "apk_sha256": "316c0fbb3f7737ecff73f3d1c9c093931fe68929a6ebd436c1ef6c5ea2546501",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "",
+   "tree_hash": "",
+   "note": "update 489a: 488c + D285 turned Panels faces / window scenes draw text flat (flatTextFor3d); patch not recorded (K4 / K1 edits followed before 489b)"
+  },
+  {
+   "id": "qa-0.6.68-489b",
+   "apk_sha256": "ed96eb1f91a468a86c2dada65d8156355237d7d013b73111b2847f9f2eb1d551",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "",
+   "tree_hash": "",
+   "note": "update 489b: 489a + every turned layer draws text flat (6 more), K4 named spines made ahead (WarmCaseNeighbours), K1 Case stacks hostGap (no effect yet: spread not a state)"
+  },
+  {
+   "id": "qa-0.6.68-489c",
+   "apk_sha256": "f83a14a2881441c09bea61f0492ce72ba3948d94b7e9b4052c9aa0642d6661e9",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "1a0722f65658f96c6698122ae10dec2e59a34146c9802187715a0ebc2aea5b3b",
+   "tree_hash": "",
+   "note": "update 489c: 489b + Carousel.spread as a state (Case stacks spacing reaches its carousel)"
   }
  ]
 }
