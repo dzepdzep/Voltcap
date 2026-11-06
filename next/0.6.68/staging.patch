@@ -2576,10 +2576,119 @@ index 55c73a8..02b687a 100644
                  }
                  Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..6b81b12 100644
+index f580972..8e4d979 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-@@ -613,6 +613,9 @@ fun SettingsDialog(
+@@ -1,3 +1,5 @@
++@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
++
+ package com.shelf.launcher.ui
+ 
+ import com.shelf.launcher.data.categoryBarHere
+@@ -6,6 +8,7 @@ import androidx.compose.ui.graphics.toArgb
+ import androidx.compose.ui.graphics.Brush
+ import androidx.compose.ui.draw.drawBehind
+ import androidx.compose.ui.focus.onFocusChanged
++import androidx.compose.foundation.relocation.bringIntoViewRequester
+ import androidx.compose.foundation.gestures.detectTapGestures
+ import androidx.compose.foundation.background
+ import androidx.compose.foundation.border
+@@ -169,6 +172,28 @@ private val CATEGORIES = listOf(
+     SettingsCategory("Updates & downloads", "Voltcap's version, checking GitHub for a new one and installing it, and the extra art packs (cartridges, spines, discs, 3D models).", Icons.Filled.SystemUpdate),
+ )
+ 
++/**
++ * Update 490 (owner-approved S1, read-only grouping): headers over the sidebar in the order it already has — each group is
++ * a run of neighbouring categories, nothing moved, renamed or reset. A group starts at the category named here.
++ * (Music & sound sits with Achievements and Controls, not under System.)
++ */
++internal val SETTINGS_GROUPS: List<Pair<String, String>> = listOf(
++    "Look" to "Home",                     // Home, Game look, Theme, Screensaver, Categories
++    "Play & sound" to "Achievements",     // Achievements, Music & sound, Controls
++    "Library & launching" to "Library",   // Library, Accounts, Emulators, Screens, Metadata
++    "While you play" to "Performance",    // Performance, Overlay
++    "System & data" to "Sync"             // Sync, Permissions, Device, Diagnostics, Backup, Updates & downloads
++)
++
++/** Update 490: the group header a category sits under ([SETTINGS_GROUPS]); null before the first group starts. */
++internal fun settingsGroupOf(label: String, order: List<String> = SETTINGS_CATEGORY_NAMES): String? {
++    val i = order.indexOf(label).takeIf { it >= 0 } ?: return null
++    return SETTINGS_GROUPS.filter { (_, first) -> order.indexOf(first).let { it in 0..i } }.maxByOrNull { order.indexOf(it.second) }?.first
++}
++
++/** Update 490: the group whose first category this is, for its header in the sidebar. */
++private fun settingsGroupStartingAt(label: String): String? = SETTINGS_GROUPS.firstOrNull { it.second == label }?.first
++
+ /** QA (RP Classic pass): the category names, for the explorer to open each one directly (QaExplore "SETTINGS"). */
+ internal val SETTINGS_CATEGORY_NAMES: List<String> get() = CATEGORIES.map { it.label }
+ 
+@@ -291,6 +316,10 @@ fun SettingsDialog(
+     }
+     // Settings search (the box in the header): while it has text, the results replace the page.
+     var searchQuery by remember { mutableStateOf("") }
++    // (Update 490, QA builds only: a query typed into this same box by the test hook — the search itself is unchanged.)
++    androidx.compose.runtime.LaunchedEffect(TestHooks.settingsSearch.value) {
++        TestHooks.settingsSearch.value?.let { searchQuery = it; TestHooks.settingsSearch.value = null }
++    }
+     // (Update 148: a search jump that finds nothing on the page gives up after a moment, so the groups close again.)
+     LaunchedEffect(SettingsJump.pending) {
+         if (SettingsJump.pending != null) { kotlinx.coroutines.delay(2_000); SettingsJump.pending = null }
+@@ -435,9 +464,22 @@ fun SettingsDialog(
+                                 .padding(16.dp)
+                         ) {
+                             CATEGORIES.forEach { entry ->
+-                                Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
++                                // (Update 490, S1: a group's header above its first category — text only, never focused. When that
++                                // category gets the focus its header is brought into view with it, so ▲ back to the top shows "Look".)
++                                val groupTitle = settingsGroupStartingAt(entry.label)
++                                val groupView = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
++                                val groupScope = androidx.compose.runtime.rememberCoroutineScope()
++                                Column(Modifier.then(if (groupTitle != null) Modifier.bringIntoViewRequester(groupView) else Modifier)) {
++                                groupTitle?.let { g -> SettingsGroupHeader(g, first = entry == CATEGORIES.first()) }
++                                Box(
++                                    (if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier)
++                                        .then(if (groupTitle != null) Modifier.onFocusChanged { f ->
++                                            if (f.hasFocus) groupScope.launch { kotlinx.coroutines.delay(120); runCatching { groupView.bringIntoView() } }
++                                        } else Modifier)
++                                ) {
+                                     NavItem(entry, selected = entry == category) { category = entry }
+                                 }
++                                }
+                                 Spacer(Modifier.height(4.dp))
+                             }
+                         }
+@@ -455,18 +497,28 @@ fun SettingsDialog(
+                         if (compact) {
+                             // (Update 294: whole chips only, "+N ›" for the rest; the page you're on, or the chip with the
+                             // D-pad's focus, always whole — WholeChipRow.)
++                            // (Update 490, S1: the group of the page you're on, in front of the chips — compact screens have no sidebar.)
++                            // (The chip with the D-pad's focus decides, so ◀ ▶ along the chips show the group they reach.)
++                            var chipFocus by remember(category) { mutableStateOf(-1) }
++                            Row(Modifier.fillMaxWidth().padding(start = 10.dp), verticalAlignment = Alignment.CenterVertically) {
++                            settingsGroupOf((CATEGORIES.getOrNull(chipFocus) ?: category).label)?.let { g ->
++                                Text(g, color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
++                                    modifier = Modifier.width(84.dp))
++                            }
+                             WholeChipRow(
+                                 CATEGORIES.size, CATEGORIES.indexOf(category),
+-                                Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), spacing = 6.dp,
++                                Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp), spacing = 6.dp,
+                                 hintColor = ShelfTheme.textMuted
+                             ) { ci ->
+                                     val entry = CATEGORIES[ci]
+-                                    Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
++                                    Box((if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier)
++                                        .onFocusChanged { f -> if (f.hasFocus) chipFocus = ci else if (chipFocus == ci) chipFocus = -1 }) {
+                                         // Update 202: the compact chips get the update dot as a "•" after the name.
+                                         val dot = entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()
+                                         Chip(entry.label + (if (dot) " •" else ""), accent = entry == category) { category = entry }
+                                     }
+                             }
++                            }
+                             ThinDivider()
+                         }
+                         // A fresh scroll position per category: sharing one kept
+@@ -613,6 +665,9 @@ fun SettingsDialog(
                                      SecondScreenExtras(appearance, onAppearanceChange, hasSecondScreen)
                                      // Update 188.
                                      if (hasSecondScreen) {
@@ -2589,7 +2698,7 @@ index f580972..6b81b12 100644
                                          Spacer(Modifier.height(12.dp))
                                          FoldGroup("Dim the second screen", summary = "When nobody uses it, also during a game", key = "second_dim") { ShelfCard { SecondDimSettings() } }
                                      }
-@@ -819,6 +822,21 @@ private fun HomeContent(
+@@ -819,6 +874,21 @@ private fun HomeContent(
          }
      }
      CollapsibleSection("Animations") {
@@ -2611,7 +2720,32 @@ index f580972..6b81b12 100644
              // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
              ShelfCard {
                  SectionLabel("Moving between games")
-@@ -3558,6 +3576,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -1152,6 +1222,8 @@ private fun ThemeContent(
+         FoldGroup("Themes", summary = currentTheme.label, key = "theme_browser", startOpen = true) {
+             ShelfCard {
+                 ColorsFollowRow(currentTheme)
++                // (Update 490, display only: where the colours on screen come from now.)
++                ColorOriginLine()
+                 Spacer(Modifier.height(10.dp))
+                 ThemeSwatches(currentTheme, onSelectTheme)
+             }
+@@ -2986,6 +3058,15 @@ private fun <T> ToggleChips(
+     }
+ }
+ 
++/** Update 490 (S1): a sidebar group header — small muted text, not focusable, so the D-pad still steps category to category. */
++@Composable
++private fun SettingsGroupHeader(title: String, first: Boolean) {
++    Text(
++        title.uppercase(), color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
++        modifier = Modifier.padding(start = 14.dp, top = if (first) 0.dp else 10.dp, bottom = 4.dp)
++    )
++}
++
+ @Composable
+ private fun NavItem(entry: SettingsCategory, selected: Boolean, onClick: () -> Unit) {
+     com.shelf.launcher.Breadcrumbs.mark("NavItem")
+@@ -3558,6 +3639,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
          SectionLabel(appearance.homeLayout.label)
          MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
          Spacer(Modifier.height(8.dp))
@@ -2620,7 +2754,7 @@ index f580972..6b81b12 100644
          // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
          if (tileLayout) {
              val F = com.shelf.launcher.data.Features
-@@ -3570,6 +3590,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3570,6 +3653,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                      "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
                      F.tileSwitch.state.value, { F.tileSwitch.value = it }
                  )
@@ -2633,7 +2767,7 @@ index f580972..6b81b12 100644
                  if (F.tileSwitch.state.value) {
                      SwitchRow(
                          Icons.Filled.Wallpaper, "Plain background",
-@@ -3744,6 +3770,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3744,6 +3833,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
              GameSizeSlider(appearance, onChange)
              Spacer(Modifier.height(8.dp))
          }
@@ -2646,7 +2780,7 @@ index f580972..6b81b12 100644
          // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar): each its own options (StyleHomeSettings.kt).
          if (appearance.homeLayout.styleHome) FoldGroup(
              "${appearance.homeLayout.label} options", summary = styleHomeSummary(appearance.homeLayout),
-@@ -3850,6 +3882,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3850,6 +3945,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
              RowChoice("Game you're on", com.shelf.launcher.data.FocusPosition.values(), appearance.focusPosition, { it.label }) {
                  onChange(appearance.copy(focusPosition = it))
              }
@@ -2658,7 +2792,7 @@ index f580972..6b81b12 100644
              // "Wide for the first game only" makes sense only with the game you're on at the left end.
              val leftEnd = appearance.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT
              RowChoice(
-@@ -4254,15 +4291,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -4254,15 +4354,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -2695,6 +2829,297 @@ index f580972..6b81b12 100644
          }
          // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
          item { m ->
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
+index dc7b881..06ddf87 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
+@@ -242,11 +242,11 @@ internal object SettingsIndex {
+         E("Clean up game names", "Home", "Name & logo", null, null),
+         E("Hide everything in brackets", "Home", "Name & logo", null, null),
+         E("Logos from RetroAchievements", "Home", "Name & logo", null, null),
+-        E("Game logos", "Home", "Name & logo", null, null),
++        E("Game logo (game logos)", "Home", "Name & logo", null, null),
+         E("Full console names", "Home", "Name & logo", null, null),
+         E("Console name on the wide card", "Home", "Name & logo", null, null),
+         E("Short console names", "Home", "Name & logo", null, null),
+-        E("Where the logo goes", "Home", "Name & logo", null, null),
++        E("Game logo: where the logo goes", "Home", "Name & logo", null, null),
+         E("Next to the row", "Home", "Next to the row", null, null),
+         E("Music player", "Home", "Music player", null, null),
+         E("Position", "Home", "Music player", null, null),
+@@ -360,7 +360,7 @@ internal object SettingsIndex {
+         E("Wide capsules source", "Metadata", "Artwork source per look", null, null),
+         E("Moving between games (next game slides in)", "Home", "Animations", null, null),
+         E("Slide speed between games (Quick Smooth Slow)", "Home", "Animations", null, null),
+-        E("Scrolling animation", "Home", "Animations", null, null),
++        E("Motion (scrolling animation)", "Home", "Animations", null, null),
+         E("How far the game you're on stands out", "Home", "Animations", null, null),
+         // Update 151 / 295: one choice — plug in the media (default), the cover rises, or off.
+         E("Starting a game (plug in the media, cover rises)", "Home", "Animations", null, null),
+@@ -373,7 +373,7 @@ internal object SettingsIndex {
+         E("Cover → wide capsule (roll out, slide, flip…)", "Home", "Animations", null, null),
+         E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
+         E("Pages slide (turn off, preview)", "Home", "Animations", null, null),
+-        E("Game info rises in (turn off, preview)", "Home", "Animations", null, null),
++        E("The game's info (everywhere): rises in, turn off, preview", "Home", "Animations", null, null),
+         E("Pictures fade over each other (turn off, preview)", "Home", "Animations", null, null),
+         E("Animation previews", "Home", "Animations", null, null),
+         E("Game details", "Home", "Details window", "home_details", "Game details"),
+@@ -688,6 +688,253 @@ internal object SettingsIndex {
+         E("Space it may use", "Metadata", "Saved on this device", null, null),
+         E("Save new artwork automatically", "Metadata", "Saved on this device", null, null),
+         E("Keep getting artwork in the background", "Metadata", "Saved on this device", null, null),
+-        E("Save game details automatically", "Metadata", "Saved on this device", null, null)
++        E("Save game details automatically", "Metadata", "Saved on this device", null, null),
++        // Update 490 (search audit): visible settings the index had missed — every layout's own options (Home › Layout
++        // options shows the layout in use; the name in front says which layout), and controls added since update 226.
++        E("Dashboard: Now playing card", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Dashboard: Player card", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Dashboard: System status", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Dashboard: Panels", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Dashboard: Panel strength", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Dashboard: Cut corners", "Home", "Layout options", "style_DASH", "Dashboard options"),
++        E("Live tiles: Tiles per page", "Home", "Layout options", "style_LIVE", "Live tiles options"),
++        E("Live tiles: Category names on top", "Home", "Layout options", "style_LIVE", "Live tiles options"),
++        E("Live tiles: Names on the tiles", "Home", "Layout options", "style_LIVE", "Live tiles options"),
++        E("Side menu: Menu width", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Side menu: Power capsule", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Side menu: Gold trim", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Side menu: Capitals", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Side menu: Game art behind", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Side menu: Category name above the row", "Home", "Layout options", "style_SIDE", "Side menu options"),
++        E("Cross menu: Colour wash", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Cross menu: Ribbons", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Cross menu: Cut-out logos", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Cross menu: Details under the game", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Cross menu: Achievements in the menu's style", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Cross menu: Lists in the strip", "Home", "Layout options", "style_CROSS", "Cross menu options"),
++        E("Spotlight: Tiles along the top", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Tiles sit at the", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Name of the game", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Big title across", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Big title sits", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Logo as the title", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Activity cards", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Category names", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Game art behind", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Spotlight: Shade over the art", "Home", "Layout options", "style_SPOT", "Spotlight options"),
++        E("Icon bar: Tabs along the top", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Only the category you're in", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Games sit at the", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: The game you're on pops out", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Names on every tile", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Name, Start and time played", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Game art behind", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Icon bar: Cut at the middle", "Home", "Layout options", "style_BAR", "Icon bar options"),
++        E("Game shelf: The games stand", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Game shelf: Game spacing", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Game shelf: Pulled out, it shows", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Game shelf: Spine depth", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Game shelf: Bookcase background", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Game shelf: Original spines and cases", "Home", "Layout options", "style_SHELF", "Game shelf options"),
++        E("Console hub: Game art behind", "Home", "Layout options", "style_HUB", "Console hub options"),
++        E("Resume & discover: Game art behind", "Home", "Layout options", "style_RESUME", "Resume & discover options"),
++        E("Channel grid: Channel palette", "Home", "Layout options", "style_CHAN", "Channel grid options"),
++        E("Channel grid: Name on the tile you're on", "Home", "Layout options", "style_CHAN", "Channel grid options"),
++        E("Channel grid: Scroll on continuously", "Home", "Layout options", "style_CHAN", "Channel grid options"),
++        E("Channel grid: Corner symbol", "Home", "Layout options", "style_CHAN", "Channel grid options"),
++        E("Circuit board: Board colours", "Home", "Layout options", "style_CIRCUIT", "Circuit board options"),
++        E("Circuit board: Current flowing", "Home", "Layout options", "style_CIRCUIT", "Circuit board options"),
++        E("Circuit board: Chip labels", "Home", "Layout options", "style_CIRCUIT", "Circuit board options"),
++        E("Circuit board: Behind the board", "Home", "Layout options", "style_CIRCUIT", "Circuit board options"),
++        E("Library panel: Game panel on the left", "Home", "Layout options", "style_LIBRARY", "Library panel options"),
++        E("Library panel: Category tabs along the top", "Home", "Layout options", "style_LIBRARY", "Library panel options"),
++        E("Timeline: Dates on the line", "Home", "Layout options", "style_TIMELINE", "Timeline options"),
++        E("Arcade cabinets: Cabinet", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Camera", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Screens show", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Marquee glow", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Screen lines", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Tube effect", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Cabinets in the game's colours", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Side art", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Moving camera", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Arcade sounds", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Arcade cabinets: Sound volume", "Home", "Layout options", "style_ARCADE", "Arcade cabinets options"),
++        E("Console stack: Console pictures", "Home", "Layout options", "style_CONSOLES", "Console stack options"),
++        E("Disc station: About the game", "Home", "Layout options", "style_DISCS", "Disc station options"),
++        E("Twin desk: Top screen shows", "Home", "Layout options", "style_TWIN_DESK", "Twin desk options"),
++        E("Twin desk: Gap between panels", "Home", "Layout options", "style_TWIN_DESK", "Twin desk options"),
++        E("Twin icons: Gap between icons", "Home", "Layout options", "style_TWIN_ICONS", "Twin icons options"),
++        E("Twin showcase: Gap between icons", "Home", "Layout options", "style_TWIN_SHOWCASE", "Twin showcase options"),
++        E("Layout Studio: Add layouts", "Home", "Layout options", "style_CUSTOM", "Layout Studio options"),
++        E("Pocket classic: Clock with hands", "Home", "Layout options", "style_POCKET_CLASSIC", "Pocket classic options"),
++        E("Pocket classic: Small icons along the bottom", "Home", "Layout options", "style_POCKET_CLASSIC", "Pocket classic options"),
++        E("Pocket classic: Game picture", "Home", "Layout options", "style_POCKET_CLASSIC", "Pocket classic options"),
++        E("Pocket classic: Game on the top screen while browsing", "Home", "Layout options", "style_POCKET_CLASSIC", "Pocket classic options"),
++        E("Pocket ribbon: Top screen picture", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Slideshow", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Status line", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Cartridge in front", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Console under the name", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Open on the categories", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Icon size", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Space between icons", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Pocket ribbon: Top screen's share (one display)", "Home", "Layout options", "style_POCKET_RIBBON", "Pocket ribbon options"),
++        E("Green Core (2001): Green glow intensity", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Sphere animation speed", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Background motion", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Game browsing style", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Interface sounds", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Sound volume", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Green Core (2001): Ambient hum", "Home", "Layout options", "style_GREENCORE", "Green Core (2001) options"),
++        E("Pocket Quest: Parallax", "Home", "Layout options", "style_POCKET", "Pocket Quest options"),
++        E("Pocket Quest: Games shown as", "Home", "Layout options", "style_POCKET", "Pocket Quest options"),
++        E("Pocket Quest: Collection size", "Home", "Layout options", "style_POCKET", "Pocket Quest options"),
++        E("Pocket Quest: Animation speed", "Home", "Layout options", "style_POCKET", "Pocket Quest options"),
++        E("Pocket Quest: Retro sound volume", "Home", "Layout options", "style_POCKET", "Pocket Quest options"),
++        E("Cube menu: Cube home screen", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Cube menu: While you browse the games, the cube sits", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Cube menu: Cube faces show", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Cube menu: Cube colour", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Cube menu: Big cube size", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Cube menu: Cube room backdrop", "Home", "Layout options", "style_CUBE", "Cube menu options"),
++        E("Memory card (2000): Icon size", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Arrangement", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Depth", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): The icon you're on", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Save icons from your memory cards", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Icons from PS2IODB", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Title at the top right", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Memory card (2000): Floating icons", "Home", "Layout options", "style_MEMCARD", "Memory card (2000) options"),
++        E("Case flow: Cases either side show", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Case flow: Curve", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Case flow: Turn of the cases either side", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Case flow: Looking down on them", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Case flow: Reflections", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Case flow: Name under the cases", "Home", "Layout options", "style_CASEFLOW", "Case flow options"),
++        E("Cardboard box: Cardboard dividers", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Packing", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Camera angle", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: How far it comes out", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Box label", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Past a box's side", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Cardboard", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Cardboard box: Wear and tape", "Home", "Layout options", "style_BOX", "Cardboard box options"),
++        E("Storage boxes: Box size", "Home", "Layout options", "style_STORAGE", "Storage boxes options"),
++        E("Storage boxes: Room round the icons", "Home", "Layout options", "style_STORAGE", "Storage boxes options"),
++        E("Storage boxes: Wallpapers", "Home", "Layout options", "style_STORAGE", "Storage boxes options"),
++        E("Storage boxes: Pointer", "Home", "Layout options", "style_STORAGE", "Storage boxes options"),
++        E("File select (1996): Files on a page", "Home", "Layout options", "style_FILESELECT", "File select (1996) options"),
++        E("File select (1996): Block colours", "Home", "Layout options", "style_FILESELECT", "File select (1996) options"),
++        E("File select (1996): Moving pattern", "Home", "Layout options", "style_FILESELECT", "File select (1996) options"),
++        E("File select (1996): Console-era blips", "Home", "Layout options", "style_FILESELECT", "File select (1996) options"),
++        E("Orbit deck (1995): Discs round the orbit", "Home", "Layout options", "style_ORBIT", "Orbit deck (1995) options"),
++        E("Orbit deck (1995): The disc you're on spins", "Home", "Layout options", "style_ORBIT", "Orbit deck (1995) options"),
++        E("Orbit deck (1995): Twinkling stars", "Home", "Layout options", "style_ORBIT", "Orbit deck (1995) options"),
++        E("Orbit deck (1995): The games' own discs", "Home", "Layout options", "style_ORBIT", "Orbit deck (1995) options"),
++        E("Airy home (1999): How much the row bows", "Home", "Layout options", "style_AIRY", "Airy home (1999) options"),
++        E("Airy home (1999): Drifting bubbles", "Home", "Layout options", "style_AIRY", "Airy home (1999) options"),
++        E("Airy home (1999): Pixel display", "Home", "Layout options", "style_AIRY", "Airy home (1999) options"),
++        E("Night menu (2006): Games on the screen", "Home", "Layout options", "style_NIGHT", "Night menu (2006) options"),
++        E("Night menu (2006): Full moon", "Home", "Layout options", "style_NIGHT", "Night menu (2006) options"),
++        E("Night menu (2006): Water", "Home", "Layout options", "style_NIGHT", "Night menu (2006) options"),
++        E("Blades (2005): Start on", "Home", "Layout options", "style_BLADES", "Blades (2005) options"),
++        E("Blades (2005): Achievement badges", "Home", "Layout options", "style_BLADES", "Blades (2005) options"),
++        E("Blades (2005): Moving light", "Home", "Layout options", "style_BLADES", "Blades (2005) options"),
++        E("Blades (2005): Interface sounds", "Home", "Layout options", "style_BLADES", "Blades (2005) options"),
++        E("Blades (2005): Sound volume", "Home", "Layout options", "style_BLADES", "Blades (2005) options"),
++        E("Bubble home (2011): Opens on", "Home", "Layout options", "style_BUBBLES", "Bubble home (2011) options"),
++        E("Bubble home (2011): Wallpaper", "Home", "Layout options", "style_BUBBLES", "Bubble home (2011) options"),
++        E("Bubble home (2011): Floating", "Home", "Layout options", "style_BUBBLES", "Bubble home (2011) options"),
++        E("Bubble home (2011): Interface sounds", "Home", "Layout options", "style_BUBBLES", "Bubble home (2011) options"),
++        E("Bubble home (2011): Sound volume", "Home", "Layout options", "style_BUBBLES", "Bubble home (2011) options"),
++        E("Pocket camera (1998): Palette", "Home", "Layout options", "style_CAMERA", "Pocket camera (1998) options"),
++        E("Pocket camera (1998): Moving on", "Home", "Layout options", "style_CAMERA", "Pocket camera (1998) options"),
++        E("Pocket camera (1998): Screen dots", "Home", "Layout options", "style_CAMERA", "Pocket camera (1998) options"),
++        E("Pocket camera (1998): Interface sounds", "Home", "Layout options", "style_CAMERA", "Pocket camera (1998) options"),
++        E("Pocket camera (1998): Sound volume", "Home", "Layout options", "style_CAMERA", "Pocket camera (1998) options"),
++        E("Panel dashboard (2008): Start on", "Home", "Layout options", "style_PANELS", "Panel dashboard (2008) options"),
++        E("Panel dashboard (2008): Your profile", "Home", "Layout options", "style_PANELS", "Panel dashboard (2008) options"),
++        E("Panel dashboard (2008): Interface sounds", "Home", "Layout options", "style_PANELS", "Panel dashboard (2008) options"),
++        E("Panel dashboard (2008): Sound volume", "Home", "Layout options", "style_PANELS", "Panel dashboard (2008) options"),
++        E("Game magazine: Editorial style", "Home", "Layout options", "style_MAGAZINE", "Game magazine options"),
++        E("Game magazine: Product shot", "Home", "Layout options", "style_MAGAZINE", "Game magazine options"),
++        E("Game magazine: Wooden desk", "Home", "Layout options", "style_MAGAZINE", "Game magazine options"),
++        E("Game magazine: Interface sounds", "Home", "Layout options", "style_MAGAZINE", "Game magazine options"),
++        E("Game magazine: Sound volume", "Home", "Layout options", "style_MAGAZINE", "Game magazine options"),
++        E("Rental shop: The games as", "Home", "Layout options", "style_SHOP", "Rental shop options"),
++        E("Rental shop: Walls", "Home", "Layout options", "style_SHOP", "Rental shop options"),
++        E("Rental shop: Buzzing neon", "Home", "Layout options", "style_SHOP", "Rental shop options"),
++        E("Rental shop: Interface sounds", "Home", "Layout options", "style_SHOP", "Rental shop options"),
++        E("Rental shop: Sound volume", "Home", "Layout options", "style_SHOP", "Rental shop options"),
++        E("Terminal: Monitor", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Terminal: CRT effects", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Terminal: Pixel type", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Terminal: Boot screen", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Terminal: Interface sounds", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Terminal: Sound volume", "Home", "Layout options", "style_TERMINAL", "Terminal options"),
++        E("Cinema: Billboard", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Highlight colour", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Gameplay previews", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Logo on the billboard", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Story rolls up", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Continue playing", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Your favourites", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Most played", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Cinema: Not played yet", "Home", "Layout options", "style_CINEMA", "Cinema options"),
++        E("Arctic hub: Navigation rail", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: First widget", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: Clock on the rail", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: Widgets", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: Continue playing", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: Most played", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Arctic hub: Not played yet", "Home", "Layout options", "style_ARCTIC", "Arctic hub options"),
++        E("Coverflow details: Game spacing", "Home", "Layout options", "style_COVERDETAILS", "Coverflow details options"),
++        E("Case stacks: Game spacing", "Home", "Layout options", "style_STACKS", "Case stacks options"),
++        E("Tile home: Game spacing", "Home", "Layout options", null, null),
++        E("Game spacing (room between the games, this layout)", "Home", "Layout options", null, null),
++        E("Cover details: Game spacing", "Home", "Layout options", null, null),
++        E("TV room: Pulled out, it shows", "Home", "Layout options", null, null),
++        E("TV room: Games each side", "Home", "Layout options", null, null),
++        E("Its style (default for all layouts)", "Home", "Layout options", "lo_window", "Game window"),
++        E("Its motion (default for all layouts)", "Home", "Layout options", "lo_window", "Game window"),
++        E("Its colours (all layouts)", "Home", "Layout options", "lo_window", "Game window"),
++        E("Tilt direction", "Home", "Layout options", null, null),
++        E("Tilt which games", "Home", "Layout options", null, null),
++        E("Behind them (game info parts)", "Home", "Layout options", null, null),
++        E("Colours for this layout", "Home", "Layout options", "lo_layout_colors", "Colours for this layout"),
++        E("Move & resize (Edit Home)", "Home", "Move & resize (Edit Home)", null, null),
++        E("Game details per view", "Home", "Next to the row", "game_facts", "Game details per view"),
++        E("How far the game you're on stands out (this layout)", "Home", "Animations", null, null),
++        E("Start-up", "Home", "Animations", null, null),
++        E("Pages and categories (everywhere)", "Home", "Animations", null, null),
++        E("The game's info (everywhere)", "Home", "Animations", null, null),
++        E("Each layout its own (animations)", "Home", "Animations", null, null),
++        E("Themes & colours", "Theme", "Themes & colours", null, null),
++        E("Your own themes & visualizers", "Theme", "Themes & colours", "theme_custom_packs", "Your own themes & visualizers"),
++        E("Scene on the second screen", "Theme", "Background", null, null),
++        E("A game's achievements", "Achievements", "Achievement views", null, null),
++        E("The Achievements screen", "Achievements", "Achievement views", null, null),
++        E("Achievements on cards & pop-ups", "Achievements", "Achievements on cards & pop-ups", null, null),
++        E("Where on the game (achievement badge)", "Achievements", "Achievements on cards & pop-ups", null, null),
++        E("Spine depth", "Game look", "Covers, cases & discs", "look_more", "More look options"),
++        E("Age rating on generated backs", "Game look", "Covers, cases & discs", "look_more", "More look options"),
++        E("Box sides (cardboard boxes)", "Game look", "Covers, cases & discs", "look_more", "More look options"),
++        E("Sides in the cover's colours", "Game look", "Covers, cases & discs", "look_more", "More look options"),
++        E("Categories with their own game look", "Categories", null, "cat_game_looks", "Game look per category"),
++        E("Home layout per category", "Categories", null, "cat_layouts", "Home layout per category"),
++        E("Game look per category", "Categories", null, "cat_game_looks", "Game look per category"),
++        E("ES-DE artwork", "Library", null, "lib_esde", "ES-DE artwork"),
++        E("Battery watcher", "Device", null, "dev_battery", "Battery watcher"),
++        E("Works on this device", "Device", null, "dev_compat", "Works on this device"),
++        E("Second screen tools", "Screens", null, "second_tools", "Second screen tools"),
++        E("Consoles look like", "Screens", null, "second_games", "Second screen Games page"),
++        E("Manuals on this device", "Metadata", "Scraping", null, null),
++        E("Achievements overlay options", "Overlay", null, null, null),
++        E("Overlay size (100 = normal)", "Overlay", null, null, null),
++        E("Auto-fade controls", "Overlay", null, null, null),
++        E("Fade after", "Overlay", null, null, null),
++        E("Faded visibility", "Overlay", null, null, null),
++        E("Fully hide after", "Overlay", null, null, null)
+     )
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt b/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
 index efddabd..8595ed8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
@@ -3326,19 +3751,21 @@ index 977fe34..b440170 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..3a057df 100644
+index 536f473..03d2ab7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-@@ -16,6 +16,8 @@ internal object TestHooks {
+@@ -16,6 +16,10 @@ internal object TestHooks {
      val game = mutableStateOf<String?>(null)
      /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
      val settings = mutableStateOf<String?>(null)
++    /** Update 490 (search QA): `--es voltcap_test_settings Home --es voltcap_test_settings_search spacing` — typed into Settings' own search box. */
++    val settingsSearch = mutableStateOf<String?>(null)
 +    /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
 +    val screensaver = mutableStateOf(false)
      /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
      val bg = mutableStateOf<String?>(null)
      /**
-@@ -50,8 +52,13 @@ internal object TestHooks {
+@@ -50,8 +54,13 @@ internal object TestHooks {
      }
  
      fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
@@ -3353,7 +3780,7 @@ index 536f473..3a057df 100644
      /**
       * Update 329: `--es voltcap_test_tilewalk all` (or a comma list of tile ids) — every R1 tile shown here pressed and
       * checked on both screens (TileCheck), this session only. [lastTiles]: the tiles the R1 panel showed last.
-@@ -70,6 +77,11 @@ internal object TestHooks {
+@@ -70,6 +79,11 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
@@ -3365,7 +3792,7 @@ index 536f473..3a057df 100644
      /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
      val panelHold = mutableStateOf(true)
      /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
-@@ -118,11 +130,24 @@ internal object TestHooks {
+@@ -118,11 +132,24 @@ internal object TestHooks {
          // (Update 467: also while <external files>/qa_nolaunch exists — a sweep's block survives Voltcap restarting mid-run,
          // which the intent's in-memory switch did not: the first tap on Play after a restart would have started the game.)
          if (!noLaunch && QaTrace.on && QaClip.noLaunchFile()) noLaunch = true
@@ -3393,7 +3820,7 @@ index 536f473..3a057df 100644
      /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
      val shortcuts = mutableStateOf<String?>(null)
      /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
-@@ -271,6 +296,12 @@ internal object TestHooks {
+@@ -271,6 +298,12 @@ internal object TestHooks {
          // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
          // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
          intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
@@ -3406,7 +3833,7 @@ index 536f473..3a057df 100644
          if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
          // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
          if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
-@@ -318,6 +349,10 @@ internal object TestHooks {
+@@ -318,6 +351,10 @@ internal object TestHooks {
              panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
              android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
          }
@@ -3417,7 +3844,7 @@ index 536f473..3a057df 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -350,6 +385,17 @@ internal object TestHooks {
+@@ -350,6 +387,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -3435,11 +3862,19 @@ index 536f473..3a057df 100644
          val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
          if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
              // (A walk only ever previews: nothing it changes is saved.)
+@@ -474,6 +522,7 @@ internal object TestHooks {
+         if (cat != null) category.value = cat.replace('_', ' ')
+         if (lk != null && com.shelf.launcher.data.CardArtType.values().any { it.name == lk }) look.value = lk
+         if (st != null) settings.value = st.replace('_', ' ')
++        intent?.getStringExtra("voltcap_test_settings_search")?.let { settingsSearch.value = it.replace('_', ' ') }
+         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
+         if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
+         if (th != null && com.shelf.launcher.ui.theme.AppTheme.values().any { it.name == th }) theme.value = th
 diff --git a/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt b/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
-index 0d3f901..357ad9e 100644
+index 0d3f901..cc7a68c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/ThemeLookSettings.kt
-@@ -232,3 +232,56 @@ private fun shiftLabel(v: Int): String = when {
+@@ -232,3 +232,70 @@ private fun shiftLabel(v: Int): String = when {
      v <= 15 -> "Lower"
      else -> "Much lower"
  }
@@ -3467,6 +3902,8 @@ index 0d3f901..357ad9e 100644
 +            }
 +        }
 +        Spacer(Modifier.height(4.dp))
++        // (Update 490, display only: what is drawn now, and why this layout's colours may not show.)
++        ColorOriginLine()
 +        MutedNote(
 +            when (now.palette) {
 +                Features.Palette.THEME -> "This layout uses the theme's colours (Theme › Theme look)."
@@ -3495,6 +3932,18 @@ index 0d3f901..357ad9e 100644
 +            Chip("Reset: same as the theme", accent = false) { set(Features.LayoutColors()) }
 +        }
 +    }
++}
++
++
++/**
++ * Update 490 (owner request, display only): where the colours on screen come from now — Theme, Custom, Game, Music or
++ * Layout override — as ShelfLauncherTheme worked them out (ColorOrigin.now), and why a theme or layout can't be recoloured.
++ * Nothing here changes a colour or a saved setting.
++ */
++@androidx.compose.runtime.Composable
++internal fun ColorOriginLine() {
++    val o = com.shelf.launcher.ui.theme.ColorOrigin.now ?: return
++    MutedNote(if (o.note != null) "${o.line}. ${o.note}" else o.line)
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
 index 830a9b6..f5c31b3 100644
@@ -4952,10 +5401,10 @@ index 049f87d..b7d1ece 100644
 +internal fun statusTone(surface: Color, light: Color, dark: Color): Color =
 +    if (surface.luminance() > 0.45f) light else dark
 diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
-index 4648169..876d7aa 100644
+index 4648169..cd3a422 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
-@@ -101,19 +101,27 @@ fun ShelfLauncherTheme(
+@@ -101,19 +101,38 @@ fun ShelfLauncherTheme(
      // stays yours — your Custom accent when you picked one, else the theme's — and it is never recoloured by the art.)
      val keepAccent = artDriven && appTheme.recolorable && com.shelf.launcher.data.Features.artKeepAccent.state.value
      val manualAccent: Int? = if (keepAccent) look.accent else null
@@ -4985,10 +5434,21 @@ index 4648169..876d7aa 100644
 +    // (Update 480, C2 readability guard: a layout's own accent is kept readable too — 3:1 on the background, only its
 +    // lightness moves.)
 +    val adjustAccent = (artDriven && manualAccent == null && !(custom && !music) && layoutOwn.acc == null) || layoutOwn.acc != null
++    // (Update 490, display only: where these colours come from, in the order worked out above — read by Settings, never
++    // fed back into the colours.)
++    val origin = describeColorOrigin(
++        recolorable = appTheme.recolorable, musicTheme = music, useAlbum = useAlbum, albumNow = album != null,
++        gamePaletteNow = gamePalette != null, layoutBg = layoutOwn.bg != null, layoutAcc = layoutOwn.acc != null,
++        customBg = custom && !music && look.background != null, customAcc = custom && !music && look.accent != null,
++        keepAccent = keepAccent, keptAccentPicked = look.accent != null,
++        greyArtAccent = artDriven && saturationOf(base0.accent) < 0.15f,
++        layoutAsks = com.shelf.launcher.data.Features.layoutColorsFor(appearance.homeLayout.name).let { it.bg != null || it.acc != null }
++    )
++    androidx.compose.runtime.SideEffect { if (ColorOrigin.now != origin) ColorOrigin.now = origin }
      val fixedAccent = remember(chosenAccent, background, surfaceRaised, adjustAccent) {
          if (adjustAccent) legibleArtAccent(chosenAccent, background, surfaceRaised) else chosenAccent
      }
-@@ -129,8 +137,19 @@ fun ShelfLauncherTheme(
+@@ -129,8 +148,19 @@ fun ShelfLauncherTheme(
      val surfaceA by animateColorAsState(surface, fade, label = "surface")
      val raisedA by animateColorAsState(surfaceRaised, fade, label = "raised")
      val secondaryA by animateColorAsState(secondaryTuned, fade, label = "secondary")
@@ -5010,7 +5470,7 @@ index 4648169..876d7aa 100644
  
      val colors = base.copy(
          background = backgroundA,
-@@ -147,12 +166,13 @@ fun ShelfLauncherTheme(
+@@ -147,12 +177,13 @@ fun ShelfLauncherTheme(
      // draw light with dark writing instead of the dark defaults. (A light custom background keeps the dark scheme:
      // its writing stays the theme's light text.)
      // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
@@ -5027,6 +5487,67 @@ index 4648169..876d7aa 100644
      val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
          if (lightTheme) androidx.compose.material3.lightColorScheme(
              background = background,
+@@ -272,3 +303,60 @@ internal fun Color.tuned(saturation: Float, brightness: Float): Color {
+     hsv[2] = (hsv[2] * brightness).coerceIn(0f, 1f)
+     return Color(android.graphics.Color.HSVToColor((alpha * 255).toInt(), hsv))
+ }
++
++
++/**
++ * Update 490 (owner request, display only): where the colours on screen come from — Theme, Custom, Game, Music or Layout
++ * override — for the background and the accent separately, plus why a theme or layout can't be recoloured. Worked out by
++ * [describeColorOrigin] in [ShelfLauncherTheme]'s own order; it only describes, nothing reads it to pick a colour.
++ */
++data class ColorOrigin(val background: String, val accent: String, val note: String? = null) {
++    /** One short line: "Background: Game · Accent: Layout override". */
++    val line: String get() = if (background == accent) "Colours from: $background" else "Background: $background · Accent: $accent"
++
++    companion object {
++        const val THEME = "Theme"
++        const val CUSTOM = "Custom"
++        const val GAME = "Game"
++        const val MUSIC = "Music"
++        const val LAYOUT = "Layout override"
++        /** The last colours drawn (set by ShelfLauncherTheme). */
++        var now by mutableStateOf<ColorOrigin?>(null)
++    }
++}
++
++/** Update 490: [ShelfLauncherTheme]'s precedence as words — keep in step with it (Batch490Test checks the cases). */
++internal fun describeColorOrigin(
++    recolorable: Boolean, musicTheme: Boolean, useAlbum: Boolean, albumNow: Boolean, gamePaletteNow: Boolean,
++    layoutBg: Boolean, layoutAcc: Boolean, customBg: Boolean, customAcc: Boolean,
++    keepAccent: Boolean, keptAccentPicked: Boolean, greyArtAccent: Boolean, layoutAsks: Boolean
++): ColorOrigin {
++    // base0: the album when it wins and something plays, else the game's palette, else (music themes) the album, else the theme.
++    val base = when {
++        useAlbum -> if (albumNow) ColorOrigin.MUSIC else ColorOrigin.THEME
++        gamePaletteNow -> ColorOrigin.GAME
++        musicTheme && albumNow -> ColorOrigin.MUSIC
++        else -> ColorOrigin.THEME
++    }
++    val artDriven = base != ColorOrigin.THEME
++    val bg = when {
++        layoutBg -> ColorOrigin.LAYOUT
++        customBg -> ColorOrigin.CUSTOM
++        else -> base
++    }
++    val acc = when {
++        layoutAcc -> ColorOrigin.LAYOUT
++        customAcc -> ColorOrigin.CUSTOM
++        keepAccent && keptAccentPicked -> ColorOrigin.CUSTOM
++        keepAccent -> ColorOrigin.THEME
++        artDriven && greyArtAccent -> ColorOrigin.THEME
++        else -> base
++    }
++    val note = when {
++        !recolorable && layoutAsks -> "This theme can't be recoloured: it keeps its own colours, so this layout's colours wait until another theme."
++        !recolorable -> "This theme can't be recoloured: it keeps its own colours."
++        musicTheme && layoutAsks -> "A music theme: the album's colours win over this layout's own colours."
++        else -> null
++    }
++    return ColorOrigin(bg, acc, note)
++}
 diff --git a/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt b/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt
 new file mode 100644
 index 0000000..e5c75e5
@@ -5830,6 +6351,107 @@ index 0000000..0cc3c0b
 +        assertTrue(main("data/QuickResume.kt").let { it.substring(it.indexOf("fun resume(")).take(300) }.contains("interceptLaunch(\"resume\""))
 +        assertTrue(main("data/ScreenLayouts.kt").let { it.substring(it.indexOf("fun startApp(")).take(300) }.contains("interceptLaunch(\"screens.app\""))
 +        assertTrue(src("StyleHeroTiles.kt").let { it.substring(it.indexOf("private fun heroLaunch(")).take(300) }.contains("interceptLaunch(\"hero\""))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch490Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch490Test.kt
+new file mode 100644
+index 0000000..a60be63
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch490Test.kt
+@@ -0,0 +1,95 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.ui.theme.ColorOrigin
++import com.shelf.launcher.ui.theme.describeColorOrigin
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 490 (staging only): S1 settings groups, settings search coverage, colour origin readout. */
++class Batch490Test {
++    private fun src(rel: String): String = listOf(
++        File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel")
++    ).first { it.exists() }.readText()
++
++    /** The sidebar's category names in their order, read from the source (no Compose needed). */
++    private fun order(): List<String> {
++        val s = src("ui/SettingsDialog.kt")
++        val block = s.substring(s.indexOf("private val CATEGORIES = listOf("), s.indexOf("internal val SETTINGS_CATEGORY_NAMES"))
++        return Regex("SettingsCategory\\(\"([^\"]+)\"").findAll(block).map { it.groupValues[1] }.toList()
++    }
++
++    @Test fun s1GroupsKeepTheOrderAndAreContiguous() {
++        val o = order()
++        assertEquals(21, o.size)
++        // nothing moved: the order the sidebar had before update 490
++        assertEquals(listOf("Home", "Game look", "Theme", "Screensaver", "Categories", "Achievements", "Music & sound", "Controls",
++            "Library", "Accounts", "Emulators", "Screens", "Metadata", "Performance", "Overlay", "Sync", "Permissions", "Device",
++            "Diagnostics", "Backup", "Updates & downloads"), o)
++        val starts = SETTINGS_GROUPS.map { o.indexOf(it.second) }
++        assertTrue("every group starts at a real category", starts.all { it >= 0 })
++        assertEquals("groups follow the sidebar order", starts.sorted(), starts)
++        assertEquals("the first group starts at the top", 0, starts.first())
++        assertEquals("Play & sound", settingsGroupOf("Music & sound", o))
++        assertEquals("Look", settingsGroupOf("Categories", o))
++        assertEquals("System & data", settingsGroupOf("Updates & downloads", o))
++        assertFalse(settingsGroupOf("Music & sound", o) == "System & data")
++        // headers only: category labels unchanged (search, QaExplore and saved sub-pages key on them)
++        assertTrue(src("ui/SettingsDialog.kt").contains("settingsGroupStartingAt(entry.label)?.let { g -> SettingsGroupHeader("))
++    }
++
++    private val entry = Regex("E\\(\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"([^\"]*)\",\\s*(null|\"[^\"]*\"),\\s*(null|\"[^\"]*\"),\\s*(null|\"[^\"]*\")\\)")
++
++    @Test fun searchIndexPointsAtRealSectionsAndCoversNewControls() {
++        val o = order().toSet()
++        val idx = src("ui/SettingsIndex.kt")
++        val all = entry.findAll(idx).map { it.groupValues }.toList()
++        assertTrue(all.size > 850)
++        all.forEach { assertTrue("section of ${it[1]}: ${it[2]}", it[2] in o) }
++        val labels = all.map { it[1] }
++        // the same label twice in one section would list twice
++        assertEquals(labels.size, all.map { it[1] + "|" + it[2] }.toSet().size)
++        for (want in listOf("Game spacing (room between the games, this layout)", "Case stacks: Game spacing", "Colours for this layout",
++                "Cube menu: Cube colour", "Battery watcher", "Its motion (default for all layouts)", "Second screen tools"))
++            assertTrue("search finds $want", want in labels)
++        // layout options name their layout and open that layout's own group
++        assertTrue(idx.contains("E(\"Dashboard: Panels\", \"Home\", \"Layout options\", \"style_DASH\", \"Dashboard options\")"))
++        // outdated names now lead to the real control (the jump's fallback needs its title inside the label)
++        assertTrue("Motion (scrolling animation)" in labels)
++        assertFalse("Scrolling animation" in labels)
++    }
++
++    @Test fun colourOriginFollowsThePrecedence() {
++        fun o(recolorable: Boolean = true, music: Boolean = false, useAlbum: Boolean = false, album: Boolean = false, game: Boolean = false,
++              lBg: Boolean = false, lAcc: Boolean = false, cBg: Boolean = false, cAcc: Boolean = false, keep: Boolean = false,
++              picked: Boolean = false, grey: Boolean = false, asks: Boolean = false) =
++            describeColorOrigin(recolorable, music, useAlbum, album, game, lBg, lAcc, cBg, cAcc, keep, picked, grey, asks)
++        assertEquals(ColorOrigin("Theme", "Theme"), o())
++        assertEquals(ColorOrigin("Game", "Game"), o(game = true))
++        assertEquals(ColorOrigin("Music", "Music"), o(useAlbum = true, album = true, game = true))
++        assertEquals(ColorOrigin("Theme", "Theme"), o(useAlbum = true, album = false))
++        assertEquals(ColorOrigin("Layout override", "Layout override"), o(game = true, lBg = true, lAcc = true, cBg = true, cAcc = true, asks = true))
++        assertEquals(ColorOrigin("Custom", "Custom"), o(cBg = true, cAcc = true))
++        assertEquals(ColorOrigin("Game", "Custom"), o(game = true, keep = true, picked = true))
++        assertEquals(ColorOrigin("Game", "Theme"), o(game = true, keep = true))
++        assertEquals(ColorOrigin("Game", "Theme"), o(game = true, grey = true))
++        assertEquals("Colours from: Game", o(game = true).line)
++        assertEquals("Background: Game · Accent: Theme", o(game = true, keep = true).line)
++        assertTrue(o(recolorable = false, asks = true).note!!.contains("can't be recoloured"))
++        assertTrue(o(music = true, album = true, asks = true).note!!.contains("music theme", ignoreCase = true))
++        assertNull(o(game = true).note)
++    }
++
++    @Test fun colourOriginIsDisplayOnly() {
++        val t = src("ui/theme/Theme.kt")
++        // the readout is published after the colours are worked out and never read back by the theme
++        assertTrue(t.contains("androidx.compose.runtime.SideEffect { if (ColorOrigin.now != origin) ColorOrigin.now = origin }"))
++        assertEquals(1, Regex("ColorOrigin\\.now").findAll(t.substringBefore("data class ColorOrigin")).count() - 1)
++        // the precedence lines are the ones from update 480 / 240, unchanged
++        assertTrue(t.contains("val customBackground = layoutOwn.bg ?: if (custom && !music) look.background else null"))
++        assertTrue(t.contains("val chosenAccent = ((layoutOwn.acc ?: (if (custom && !music) look.accent else manualAccent))?.let { Color(it) }"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

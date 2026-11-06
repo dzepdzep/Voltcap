@@ -1,3 +1,50 @@
+# Update 490 (6 Nov 2026) — checkpoint 14: K4 final validation (KONKR), Settings S1 groups, Settings search coverage, colour source readout, R1 plan
+
+Staging = 489d + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched; games, saves,
+cloud sync, recent-games history and device settings untouched by QA. Both devices back on v0.6.67 (1586accc), snapshots
+byte-identical to this session's baselines (Thor t490o = t489o; KONKR k490o — see note below).
+- **K4 — spines ahead, cold A/B on the KONKR (QA build, 80 steps out + back, then the same warm, ~7 presses / s):**
+
+  | Case flow, GBA | spines ahead off | on |
+  |---|---|---|
+  | nameless spines on first appearance (out) | 82 (+4 low-res) | **0** (81 made ahead) |
+  | nameless on returning (back) | 1 | **0** |
+  | second, warm pass | 0 | 0 |
+  | janky frames / p50 / p90 / p99 | 33.5 % / 21 / 73 / 117 ms | 32.2 % / 21 / 69 / 117 ms |
+  | PSS right after / settled 20 s | 801 / 790 MB | 847 / 803 MB |
+
+  Case stacks (owner's carousel mode, GBA): no generated-spine events in either mode (the carousel draws no named spines);
+  janky 67.3 → 56.0 %, p99 200 / 200 ms, settled PSS 630 / 613 MB — no regression (the high jank is the same with the
+  spines off, i.e. pre-existing in carousel Case stacks on the KONKR). Thor (489d): nameless 90 → 0, frames unchanged,
+  settled 579–605 MB. **K4: fixed in staging by measurement on both devices; owner visual check pending.**
+- **Settings S1 (owner-approved) — group headers, nothing moved:** the sidebar keeps its order; headers over contiguous runs:
+  Look (Home … Categories) · Play & sound (Achievements, Music & sound, Controls) · Library & launching (Library … Metadata) ·
+  While you play (Performance, Overlay) · System & data (Sync … Updates & downloads). Headers are text, never focused; the
+  header comes into view with its first category (▲ back to the top shows "Look"). Compact screens (no sidebar): the group of
+  the chip with the focus is shown before the chip row. No labels, keys, defaults or prefs changed.
+  - *Device:* Thor sidebar — D-pad one category per press both ways, headers scroll with it, Theme / Updates pages open; KONKR
+    compact — chips step one per press, group label follows (Look → Play & sound → Library & launching → System & data).
+- **Settings search — the existing box, wider index:** audit of every titled control in the settings files: ~180 visible controls
+  were not findable (raw count, incl. a few status labels). Added 245 entries (627 → 872) (every layout's own options, prefixed with the layout's name and opening that layout's
+  group; Game spacing for each layout; Game window style / motion / colours; Colours for this layout; Battery watcher,
+  ES-DE artwork, overlay fade controls, Second screen tools…). Outdated names now lead to the real control (e.g. "Scrolling
+  animation" → "Motion (scrolling animation)", "Game logos" → "Game logo"). Search behaviour unchanged. KONKR: "spacing" 8,
+  "colour" 58, "cube" 10, "battery watcher" 1 (picked → Settings › Device, group "System & data"), "scrolling animation" →
+  Motion. QA-only hook `voltcap_test_settings_search` types into the same box.
+- **Colour source readout (display only):** ShelfLauncherTheme describes what it drew — Theme / Custom / Game / Music / Layout
+  override, background and accent separately — and Settings › Theme › Themes & colours and Home › Layout options › Colours
+  for this layout show it ("Colours from: Game"; "Background: Game · Accent: Theme"), plus why a theme can't be recoloured or
+  a music theme overrides the layout's colours. Precedence code unchanged (test pins its lines); Thor showed "Colours from: Game".
+- **R1:** plan only — `docs/R1_PLAN_490.md` (found: a new tile today would be inserted mid-row; R0 fixes that first).
+- **Tests:** Batch490Test 4/4 (groups contiguous and in order, Music & sound not under System; every index entry points at a
+  real section, no duplicates, new controls findable; colour origin cases; precedence lines unchanged); full unit tests green;
+  QA selftest OK.
+- **Observed, not caused by QA:** KONKR's Pokemon Silver `.srm` changed at 18:21 today — before this session's first device
+  action (19:13); the Thor shows Silver "Played today". Consistent with the owner playing and save sync; RetroArch history
+  unchanged on both. KONKR's features snapshot differs from 489 only in `auto_backup_at` (the weekly automatic backup).
+- **Copy:** staging only. Files: ui/SettingsDialog.kt, ui/SettingsIndex.kt, ui/ThemeLookSettings.kt, ui/theme/Theme.kt,
+  ui/TestHooks.kt; tools/qa/device (k4ab489.sh, settings490.sh, search490.sh); docs/R1_PLAN_490.md.
+
 # Update 489d (6 Nov 2026) — checkpoint 13: D287 fail-safe launch block (verified), D285 KONKR regression, K4 spines A/B, K2 before/after, Settings proposal (read-only)
 
 Staging = 489c + the changes below; QA build qa-0.6.68-489d (bb646d48…, versionCode 74). Nothing published; no game launched; no
