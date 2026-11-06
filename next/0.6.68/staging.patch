@@ -143,7 +143,7 @@ index b8fdb4e..38d63e9 100644
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..cc95089 100644
+index 55c357d..a85425b 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -247,6 +247,24 @@ index 55c357d..cc95089 100644
      val dashStatus = BoolPref("dash_status", true)
      /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
      val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())
+@@ -1543,6 +1609,8 @@ object Features {
+     /** Update 114: every game's box scans (its spine) looked up in the background (Settings › Metadata › Saved on this device). */
+     val spineScrape = BoolPref("spine_scrape", false)
+     val shelfStand = EnumPref("shelf_stand", ShelfStand.SPINES, ShelfStand.values())
++    /** Update 487 (K1): Game shelf — room between the games, % of the standard gap (100 = as before). */
++    val shelfSpacing = IntPref("shelf_spacing", 100, 50..250)
+     enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }
+     val shelfLook = EnumPref("shelf_look", ShelfLook.DARK, ShelfLook.values())
+     /** Game shelf: the whole screen behind the shelves is the bookcase (back panel, side uprights, top crown). */
+@@ -1921,6 +1989,8 @@ object Features {
+     val cfCurve = IntPref("cf_curve", 45, 0..100)
+     /** Room between the cases, in % of the standard. */
+     val cfSpacing = IntPref("cf_spacing", 100, 60..160)
++    /** Update 487 (K1): Cover details — room between the spines on its shelf, % (100 = packed as before). */
++    val cdSpacing = IntPref("cd_spacing", 100, 50..250)
+     /** The cases' size, in % of the standard. */
+     val cfSize = IntPref("cf_size", 100, 70..120)
+     /** How far the cases either side turn, degrees. */
 diff --git a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt b/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
 index 976dac9..8f72be1 100644
 --- a/app/src/main/java/com/shelf/launcher/data/RomScanner.kt
@@ -529,6 +547,51 @@ index 3a1facd..e2d20e2 100644
                          )
                      )
                  com.shelf.launcher.data.CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).forEach { p ->
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt b/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
+index ac5dd3f..ee5457d 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
+@@ -190,6 +190,17 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean,
+  * Update 134: the console spines, decoded and flattened once each (and the games' titled ones, kept while there's room),
+  * made on a background thread. Pictures stay the same until your spine pack changes (its version is in every key).
+  */
++/** Update 487 (K4): the longest side a console spine picture is kept at (px). */
++internal const val SPINE_MAX_PX = 1280
++
++/** Update 487 (K4): the size a [w] × [h] spine picture is scaled to (its longest side at most [SPINE_MAX_PX]); null: as it is. */
++internal fun spineFitSize(w: Int, h: Int, max: Int = SPINE_MAX_PX): Pair<Int, Int>? {
++    val long = maxOf(w, h)
++    if (long <= max || w <= 0 || h <= 0) return null
++    val k = max.toFloat() / long
++    return (w * k).toInt().coerceAtLeast(1) to (h * k).toInt().coerceAtLeast(1)
++}
++
+ internal object SpineCache {
+     class Ready(val key: String, val image: ImageBitmap, val ink: Color)
+     /** A titled spine: [done] once it has been tried ([bitmap] null then: there's no picture for it). */
+@@ -232,7 +243,13 @@ internal object SpineCache {
+             if (res >= 0) android.graphics.BitmapFactory.decodeResource(context.resources, res)
+             else PackSpines.load(res).asAndroidBitmap().takeIf { it.width > 1 }
+         }.getOrNull() ?: return null
+-        val out = runCatching { flatOnAverage(src) }.getOrNull() ?: return null
++        // Update 487 (K4, owner: "generated / custom spines flicker while scrolling"): the pack's pictures were kept at full
++        // size, so the titled cache (24–48 MB) held only a handful — a shelf of generated spines made them again and again,
++        // each shown first without its name. Now no longer than SPINE_MAX_PX (a whole screen's height and more).
++        val fit = spineFitSize(src.width, src.height)
++        val small = if (fit == null) src else runCatching { android.graphics.Bitmap.createScaledBitmap(src, fit.first, fit.second, true) }.getOrDefault(src)
++        QaTrace.event("spine src", "${src.width}x${src.height} -> ${small.width}x${small.height}")
++        val out = runCatching { flatOnAverage(small) }.getOrNull() ?: return null
+         flat.put(k, out)
+         return out
+     }
+@@ -271,6 +288,7 @@ internal object SpineCache {
+         val named = if (tpl != null && !title.isNullOrBlank()) runCatching { spineWithTitle(f, tpl, title) }.getOrDefault(f) else f
+         val out = orientSpine(named, landscape)
+         titledMap.put(key, out)
++        QaTrace.event("spine made", "${out.width}x${out.height} cache=${titledMap.size() / 1024}/${titledMap.maxSize() / 1024}KB")
+         return out
+     }
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt b/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
 index 0bc1e0d..8955b99 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CubeHub.kt
@@ -719,7 +782,7 @@ index 920f03a..e7ce3cb 100644
          com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
          // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
-index 169d875..2d6bbef 100644
+index 169d875..bafd0c0 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/GameWindow.kt
 @@ -323,7 +323,10 @@ private class WinLook(
@@ -752,7 +815,19 @@ index 169d875..2d6bbef 100644
          )
          // Update 330: File select — the block opened out: chunky blue with a thick light bevel, yellow for the lit button.
          HomeLayout.FILESELECT -> WinLook(
-@@ -1760,13 +1763,14 @@ private fun TvControls(
+@@ -1191,6 +1194,11 @@ internal fun GameWindow(
+                 return@onPreviewKeyEvent true
+             }
+             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
++            // Update 487 (D265): L2 / R2 turn the open window's story (Twin hinge window) when it has pages.
++            if (WinStory.pager != null && !closingFlag[0]) {
++                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) { if (WinStory.key(e.key)) return@onPreviewKeyEvent true }
++                else if (e.key == androidx.compose.ui.input.key.Key.ButtonL2 || e.key == androidx.compose.ui.input.key.Key.ButtonR2) return@onPreviewKeyEvent true
++            }
+             false
+         }) {
+         val playFocus = remember { FocusRequester() }
+@@ -1760,13 +1768,14 @@ private fun TvControls(
          }
          val status = LocalWinStatus.current
          Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -769,7 +844,7 @@ index 169d875..2d6bbef 100644
              // (Update 213: Performance as a round button in the TV's small strip.)
              if (page == WinPage.MAIN && status?.perf != null) Box(Modifier.focusRequester(status.perfFocus)) {
                  WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 32.dp, status.onPerf)
-@@ -1859,7 +1863,7 @@ private fun WindowBody(
+@@ -1859,7 +1868,7 @@ private fun WindowBody(
          fun btnMod(l: String, isPlay: Boolean): Modifier =
              if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
          if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
@@ -778,7 +853,7 @@ index 169d875..2d6bbef 100644
              // (Update 119: the game's options, achievements and save sync under them.)
              if (!details) WinIcons(look, extras)
              WinStatusLine(look)
-@@ -1875,13 +1879,13 @@ private fun WindowBody(
+@@ -1875,13 +1884,13 @@ private fun WindowBody(
            Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
              if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                  // [share]: the buttons share the width (a narrow column).
@@ -794,7 +869,7 @@ index 169d875..2d6bbef 100644
              } else {
                  // (Update 291, Toni: "the icon isn't reachable": the Inspect icon was the fifth round icon, and on the Cube
                  // layout's window (Mario Party, Animal Crossing) it ran past the window's right edge — the estimate above is
-@@ -1890,9 +1894,9 @@ private fun WindowBody(
+@@ -1890,9 +1899,9 @@ private fun WindowBody(
                      horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
                      itemVerticalAlignment = Alignment.CenterVertically
                  ) {
@@ -806,7 +881,7 @@ index 169d875..2d6bbef 100644
                      if (!details && !iconsBelow) WinIcons(look, extras, 44.dp)
                  }
              }
-@@ -2241,7 +2245,10 @@ internal val MORE_SCENES = setOf(
+@@ -2241,7 +2250,10 @@ internal val MORE_SCENES = setOf(
      WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
      WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
      WinScene.TILE_CARD, WinScene.POCKET_LCD, WinScene.DISC_PANEL, WinScene.CORE_PANEL, WinScene.CUBE_FACE, WinScene.RECORD_SLEEVE,
@@ -818,7 +893,7 @@ index 169d875..2d6bbef 100644
  )
  
  /** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
-@@ -2266,9 +2273,9 @@ private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, ma
+@@ -2266,9 +2278,9 @@ private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, ma
              Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
              verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically
          ) {
@@ -830,7 +905,7 @@ index 169d875..2d6bbef 100644
          }
      }
  }
-@@ -2283,7 +2290,7 @@ private fun ExpandedWinPage(
+@@ -2283,7 +2295,7 @@ private fun ExpandedWinPage(
      // (The window's own panel; a look whose parts float on the veil takes its details paper — the Wii window's white — and
      // only a look with neither gets a dark glass.)
      val own = look.panel != null || look.paper != null
@@ -839,7 +914,7 @@ index 169d875..2d6bbef 100644
      val ink = if (own) look.ink else Color.White
      val muted = if (own) look.muted else Color.White.copy(alpha = 0.7f)
      val compact = maxH < 420.dp
-@@ -2349,7 +2356,9 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
+@@ -2349,7 +2361,9 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
      val shape = RoundedCornerShape(50)
      val warn = Color(0xFFFFB74D)
      Row(
@@ -850,7 +925,7 @@ index 169d875..2d6bbef 100644
              .background(if (focused) look.btnOnFill else solid(if (urgent) warn.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.22f)))
              .then(if (urgent && !focused) Modifier.border(1.dp, warn.copy(alpha = 0.7f), shape) else Modifier)
              .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
-@@ -2359,7 +2368,8 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
+@@ -2359,7 +2373,8 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
          val ink = if (focused) look.btnOnInk else if (urgent) warn else Color.White.copy(alpha = 0.82f)
          androidx.compose.material3.Icon(icon, null, tint = ink, modifier = Modifier.size(13.dp))
          Spacer(Modifier.width(5.dp))
@@ -860,7 +935,7 @@ index 169d875..2d6bbef 100644
              text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 2,
              fontFamily = if (look.mono) FontFamily.Monospace else null
          )
-@@ -2394,7 +2404,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
+@@ -2394,7 +2409,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
          perfRows(s, st.hasFan, st.onPerfAdvanced).forEachIndexed { i, row ->
              WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = { row.onClick?.invoke() }) { on ->
                  Column(Modifier.weight(1f)) {
@@ -869,7 +944,7 @@ index 169d875..2d6bbef 100644
                      androidx.compose.material3.Text(
                          if (look.caps) row.label.uppercase() else row.label, color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                          maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
-@@ -2450,7 +2460,7 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
+@@ -2450,7 +2465,7 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                  Column(Modifier.weight(1f)) {
                      val ink = when {
                          on -> look.btnOnInk
@@ -878,7 +953,7 @@ index 169d875..2d6bbef 100644
                          else -> look.btnInk
                      }
                      androidx.compose.material3.Text(
-@@ -2604,13 +2614,12 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
+@@ -2604,13 +2619,12 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
  
  @Composable
  private fun WinText(look: WinLook, text: String, color: Color, size: Int, weight: FontWeight, shadow: Boolean = false) {
@@ -897,7 +972,7 @@ index 169d875..2d6bbef 100644
      )
  }
  
-@@ -2656,17 +2665,55 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
+@@ -2656,17 +2670,55 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
                  fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                  style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
              )
@@ -960,7 +1035,7 @@ index 169d875..2d6bbef 100644
  /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
  @Composable
  private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
-@@ -2676,13 +2723,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+@@ -2676,13 +2728,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
      val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
      val meta = state.metadata[g.stableKey]
      val titles = LocalTitleOptions.current
@@ -994,7 +1069,7 @@ index 169d875..2d6bbef 100644
              // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
              // scrolls, so the name and the facts wrap in full.)
              // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
-@@ -2710,4 +2774,24 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
+@@ -2710,4 +2779,24 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
              androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
          }
      }
@@ -1141,6 +1216,22 @@ index 1ef0d90..6baa0b9 100644
                  Text(
                      modifier = Modifier.tapOnly(onProgressClick),
                      text = 
+diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt b/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt
+index 631c2c7..e860477 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt
+@@ -264,6 +264,11 @@ object HomeWidgets {
+  * first), but under the game popup, the category screen, the screensaver… (0 while one of those is up, set by the home
+  * screen; the order they're drawn in decides then).
+  */
++/** Update 487 (K2): the screensaver's layer on the home screen — above every home piece (they use 4–9). */
++internal const val SCREENSAVER_Z = 20f
++/** Update 487 (K2): the classic details window's layer — above the home's pieces (≤ 6.5), under Edit Home's tools (9). */
++internal const val DETAILS_Z = 8f
++
+ internal object PartsLayer {
+     var z by androidx.compose.runtime.mutableFloatStateOf(6f)
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
 index 2f264a2..1faa8e3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
@@ -1213,7 +1304,7 @@ index 2f264a2..1faa8e3 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..153da8c 100644
+index eca8853..314dfee 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
@@ -1260,6 +1351,15 @@ index eca8853..153da8c 100644
      // (Update 261: a Settings page asked for by a test walk.)
      val testSettings = TestHooks.settings.value
      LaunchedEffect(testSettings) {
+@@ -1195,7 +1209,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         closeAllDialogs(); categoryScreenOpen = false; showDetails = false
+         kotlinx.coroutines.delay(200)
+         // (Update 426: `--es voltcap_test_settings Save_Vault` opens the Save Vault, for its visual QA.)
+-        if (cat == "Save_Vault") showSaveExplorer = true
++        if (cat == "Save_Vault" || cat == "Save Vault") showSaveExplorer = true
+         else { menuStartCategory = cat; showMenu = true }
+         // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
+         TestHooks.settings.value = null
 @@ -1428,7 +1442,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // Worked out off the main thread, and only while the category screen is open
      // (or once, so it is ready the first time it opens). Each category's list
@@ -1362,6 +1462,39 @@ index eca8853..153da8c 100644
                  }
                  if (tileCategoryBelow && showCats) {
                      Spacer(Modifier.height(4.dp))
+@@ -4578,6 +4624,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         SideEffect { HomeEditState.artLook = artLookHere }
+         // Update 125: the floating parts over the games — but under anything that opens over the home screen.
+         val homeCovered = showDetails || showControlsHelp || categoryScreenOpen || screensaverOn || stickLetter != null
++        // (Update 487, K2: the screensaver and the classic details window no longer rely on this — they sit above every home
++        // piece (SCREENSAVER_Z / DETAILS_Z); PartsLayer is one value for the whole app, and two Voltcap homes can be open.)
+         SideEffect { PartsLayer.z = if (homeCovered) 0f else 6f }
+         // The description part needs the game's details (update 104), once you rest on a game.
+         val wantsDesc = HomeWidgets.DESC in overlayParts
+@@ -4779,7 +4827,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+             enter = if (popupZoom) fadeIn(tween(140)) + scaleIn(androidx.compose.animation.core.spring(dampingRatio = 0.72f, stiffness = 420f), initialScale = 0.3f, transformOrigin = zoomOrigin)
+             else fadeIn(tween(160)) + scaleIn(tween(160), initialScale = 0.96f),
+             exit = if (popupZoom) fadeOut(tween(140)) + androidx.compose.animation.scaleOut(tween(160), targetScale = 0.4f, transformOrigin = zoomOrigin)
+-            else fadeOut(tween(120))
++            else fadeOut(tween(120)),
++            // (Update 487, K2: the classic details window — the Voltcap row's popup — above the home's pieces too.)
++            modifier = Modifier.zIndex(DETAILS_Z)
+         ) {
+             val game = focusedGame
+             if (game != null) DetailsWindow(game, fillScreen = false)
+@@ -4976,7 +5026,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+         AnimatedVisibility(
+             visible = screensaverOn,
+             enter = fadeIn(tween(1200)),
+-            exit = fadeOut(tween(250))
++            exit = fadeOut(tween(250)),
++            // Update 487 (K2): over every piece of the home screen. The home's own pieces carry layers 4–6.5 (the corner
++            // shortcuts, the dock, the folder preview, Edit Home's moved parts); at layer 0 the screensaver went under them —
++            // "Continue playing" and a pinned PXPlay over the screensaver (owner, Voltcap row with Edit Home changes).
++            modifier = Modifier.zIndex(SCREENSAVER_Z)
+         ) {
+             val slides = remember(state.games, state.art, state.artOverrides) {
+                 state.games.mapNotNull { game ->
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt b/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
 new file mode 100644
 index 0000000..f23c1b8
@@ -1909,6 +2042,96 @@ index 418ffc1..a3111b1 100644
 +    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
+index 9e499ab..0ef81bb 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
+@@ -587,6 +587,11 @@ internal fun SaveExplorerDialog(
+                 val d = detail
+                 if (d != null) SaveDetail(
+                     game = d.first, st = d.second, icon = iconFor(d.first), phase = phase,
++                    // (Update 487, K3: the same object as the grid's slot.)
++                    ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value) {
++                        if (com.shelf.launcher.data.Ps2BrowserStyle.isPs2(d.first.platform)) ps2RefsOf(capsuleByKey[d.first.stableKey]) else emptyList()
++                    } else null,
++                    logo = if (ps2Style) logoFor(d.first) else null,
+                     capsule = capsuleByKey[d.first.stableKey],
+                     hidden = d.first.stableKey in capsuleOptions.hidden,
+                     onHide = { h -> com.shelf.launcher.data.SaveCapsules.setHidden(context, d.first.stableKey, h); close() },
+@@ -952,7 +957,10 @@ private fun SaveDetail(
+     /** Reports where the icon sits in this window (root px), for the flight to land on. */
+     onIconSpot: (androidx.compose.ui.geometry.Rect) -> Unit,
+     onOpenSave: () -> Unit,
+-    onBack: () -> Unit
++    onBack: () -> Unit,
++    /** (Update 487, K3: with the PS2 browser style, what the grid's slot draws — the PS2 saves / the logo.) */
++    ps2: List<Ps2SaveRef>? = null,
++    logo: String? = null
+ ) {
+     val focus = remember { FocusRequester() }
+     LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
+@@ -1026,7 +1034,7 @@ private fun SaveDetail(
+                         Modifier
+                             .fillMaxSize()
+                             .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) },
+-                        look = look
++                        look = look, state = st.state, ps2 = ps2, logo = logo
+                     )
+                 }
+             }
+@@ -1094,15 +1102,50 @@ private fun SaveDetail(
+  * on it turns [angle] degrees about its upright axis (the back: the same cover darkened, with the
+  * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
+  */
++/** Update 487 (K3): what a save is drawn as — in the grid, in flight and up close alike (pure; Batch487Test). */
++internal enum class SaveObjectKind { PS2_BROWSER, CARD_3D, DRAWN, CAPSULE, ICON }
++
++internal fun saveObjectKind(ps2Browser: Boolean, style: Features.SaveVaultStyle, has3dCard: Boolean): SaveObjectKind = when {
++    ps2Browser -> SaveObjectKind.PS2_BROWSER
++    style == Features.SaveVaultStyle.CARD_3D -> if (has3dCard) SaveObjectKind.CARD_3D else SaveObjectKind.DRAWN
++    style == Features.SaveVaultStyle.MEMORY_CARD || style == Features.SaveVaultStyle.SD_CARD || style == Features.SaveVaultStyle.FLOPPY -> SaveObjectKind.DRAWN
++    style == Features.SaveVaultStyle.CAPSULE -> SaveObjectKind.CAPSULE
++    else -> SaveObjectKind.ICON
++}
++
+ @Composable
+ private fun SaveIconCard(
+     game: Game, icon: String?, angle: () -> Float, modifier: Modifier = Modifier,
+     /** (Update 236, #42/#43: the save's colours — its rim and back, the 3D card's shell / badge; null: the original.) */
+-    look: SaveLook? = null
++    look: SaveLook? = null,
++    /** (Update 487: its sync state, for the drawn cards' badge.) */
++    state: SyncState = SyncState.PENDING,
++    /** (Update 487, K3: the PS2 browser style's slot — its PS2 saves, or for any other game its logo.) */
++    ps2: List<Ps2SaveRef>? = null,
++    logo: String? = null
+ ) {
+     val turnOn = Features.saveTurn.state.value
++    // Update 487 (K3, owner: "a physical save-card look shows a plain cover in the grid, a memory card once opened"): the
++    // save up close (and in flight) is the same object the grid draws — saveObjectKind, one rule for both. The PS2 browser
++    // style draws every save as the PS2 browser does in the grid (the icon / logo), so it does up close too; the drawn
++    // cards (memory card, SD card, floppy, capsule) are drawn up close as well (they showed the plain cover there).
++    val vaultStyle = Features.saveVaultStyle.state.value
++    val kind = saveObjectKind(com.shelf.launcher.data.Ps2BrowserStyle.on.value, vaultStyle, Models3D.saveCardIdFor(look) != null)
++    if (kind == SaveObjectKind.PS2_BROWSER && ps2 != null) {
++        Box(modifier, contentAlignment = Alignment.Center) {
++            Ps2SaveTile(ps2, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, game = game, logo = logo)
++        }
++        return
++    }
++    if (kind == SaveObjectKind.DRAWN || kind == SaveObjectKind.CAPSULE) {
++        Box(modifier, contentAlignment = Alignment.Center) {
++            if (kind == SaveObjectKind.CAPSULE) CapsuleSaveCard(icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, look)
++            else StyledSaveCard(vaultStyle, icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, platform = game.platform, look = look)
++        }
++        return
++    }
+     // Update 141: with the 3D card style, the whole 3D card turns (it used to be its picture turning on its own).
+-    val card = if (Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D) Models3D.saveCardIdFor(look) else null
++    val card = if (kind == SaveObjectKind.CARD_3D) Models3D.saveCardIdFor(look) else null
+     if (card != null) {
+         if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
+         else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt b/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
 index 5c94cb3..7305477 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
@@ -1937,6 +2160,48 @@ index 5c94cb3..7305477 100644
              if (lp.screenBrightness != want) { lp.screenBrightness = want; w.attributes = lp }
          }
      }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt b/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
+index 55c73a8..02b687a 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SecondScreenHome.kt
+@@ -450,19 +450,26 @@ fun SecondScreenHome(
+                 // Update 195: ‹ › fixed at the screen's left and right edges, half-way down, to step through the pages
+                 // (swiping still works); reachable with the controller too.
+                 if (visiblePages.size > 1 || gameOpen) for (dir in intArrayOf(-1, 1)) {
++                    // (Update 487, E7 tiny controls: the same 30 × 64 dp tab, in a 48 × 80 dp touch box at the edge — the tab
++                    // alone measured 28 dp wide on the Thor.)
+                     Box(
+-                        Modifier.align(if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd).padding(horizontal = 2.dp)
+-                            .size(width = 30.dp, height = 64.dp)
+-                            .padTarget(if (dir < 0) "sc-edge-prev" else "sc-edge-next") { latestStep(dir) }
+-                            .clip(RoundedCornerShape(15.dp)).background(Color.Black.copy(alpha = 0.42f))
+-                            .clickable { latestStep(dir) },
+-                        contentAlignment = Alignment.Center
++                        Modifier.align(if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd)
++                            .size(width = 48.dp, height = 80.dp)
++                            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { latestStep(dir) },
++                        contentAlignment = if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd
+                     ) {
+-                        Icon(
+-                            if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
+-                            else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+-                            if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(24.dp)
+-                        )
++                        Box(
++                            Modifier.padding(horizontal = 2.dp).size(width = 30.dp, height = 64.dp)
++                                .padTarget(if (dir < 0) "sc-edge-prev" else "sc-edge-next") { latestStep(dir) }
++                                .clip(RoundedCornerShape(15.dp)).background(Color.Black.copy(alpha = 0.42f)),
++                            contentAlignment = Alignment.Center
++                        ) {
++                            Icon(
++                                if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
++                                else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
++                                if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(24.dp)
++                            )
++                        }
+                     }
+                 }
+                 Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 index f580972..083d1aa 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
@@ -2032,6 +2297,30 @@ index f580972..083d1aa 100644
          }
          // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
          item { m ->
+diff --git a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt b/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
+index efddabd..8595ed8 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
+@@ -122,7 +122,9 @@ private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlat
+  * and takes the first that holds them all; past three shelves the bookcase scrolls.
+  */
+ private fun planShelves(games: List<Game>, width: Dp, height: Dp, real: Boolean, stand: Features.ShelfStand): ShelfPlan {
+-    val gap = when (stand) { Features.ShelfStand.SPINES -> 2.dp; Features.ShelfStand.FRONTS -> 8.dp; Features.ShelfStand.ANGLED -> 4.dp }
++    // (Update 487, K1: Layout options › Game spacing scales the gap; 100 % is the standard one.)
++    val gap = when (stand) { Features.ShelfStand.SPINES -> 2.dp; Features.ShelfStand.FRONTS -> 8.dp; Features.ShelfStand.ANGLED -> 4.dp } *
++        (Features.shelfSpacing.value / 100f)
+     val maxMm = if (real) games.maxOfOrNull { realCaseMm(it.platform)?.second ?: 190f } ?: 190f else 190f
+     var plan: ShelfPlan? = null
+     // The R1 Size tile (update 104): taller or shorter shelves.
+@@ -182,7 +184,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
+         val stand = Features.shelfStand.state.value
+         // (Update 228, #18: laid out again when one case or spine is picked for every game — their shapes set the slots.)
+         val plan = remember(games, real, areaW, areaH, templates, stand, Features.layoutScale.state.value, com.shelf.launcher.data.Packs.version.intValue,
+-            Features.caseStyle.state.value, Features.spineStyle.state.value) { planShelves(games, areaW, areaH, real, stand) }
++            Features.caseStyle.state.value, Features.spineStyle.state.value, Features.shelfSpacing.state.value) { planShelves(games, areaW, areaH, real, stand) }
+         // (Update 130: worked out once per plan, not on every redraw — with hundreds of games that added up.)
+         val rowOf = remember(plan) { IntArray(plan.slots.size) { plan.slots[it].row } }
+         // Each shelf is centred in the room: the keys ▲ / ▼ look for the neighbour above / below with that offset.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
 index e6215a3..2ab6b88 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
@@ -2146,6 +2435,151 @@ index d887f82..22323ad 100644
                  val context = androidx.compose.ui.platform.LocalContext.current
                  val request = remember(logo) {
                      coil.request.ImageRequest.Builder(context).data(logo)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt
+index aceba8f..1c9c3a8 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt
+@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
+ import androidx.compose.ui.unit.sp
+ import androidx.compose.ui.zIndex
+ import coil.imageLoader
++import com.shelf.launcher.data.Features
+ import com.shelf.launcher.data.Game
+ import com.shelf.launcher.ui.theme.ShelfTheme
+ import kotlin.math.abs
+@@ -101,6 +102,9 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
+ }
+ 
+ private const val SHELF_GAP_DP = 0.5f
++
++/** Update 487 (K1): the gap between Cover details' spines for its Game spacing [pct] (100 = the packed 0.5 dp). */
++internal fun coverShelfGapDp(pct: Int): Float = (SHELF_GAP_DP + 4f * (pct - 100) / 100f).coerceAtLeast(0f)
+ private const val SHELF_MAX_SIDE = 46
+ 
+ @Composable
+@@ -217,50 +221,65 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
+ private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
+     val titles = LocalTitleOptions.current
+     val meta = c.state.metadata[g.stableKey]
+-    Column(modifier, verticalArrangement = Arrangement.Center) {
+-        StableFullText(
+-            titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 36.sp, fontWeight = FontWeight.Bold,
+-            maxLines = 2, modifier = Modifier.fillMaxWidth()
+-        )
+-        Spacer(Modifier.height(4.dp))
+-        Text(
+-            titles.console(g.platform), color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold,
+-            letterSpacing = 1.sp, lineHeight = 18.sp
+-        )
+-        Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
+-        // Label / value pairs, each only when there is a value.
+-        val facts = buildList {
+-            meta?.releaseYear?.let { add("Released" to it.toString()) }
+-            meta?.developer?.takeIf { it.isNotBlank() }?.let { add("Developer" to it) }
+-            meta?.publisher?.takeIf { it.isNotBlank() && it != meta.developer }?.let { add("Publisher" to it) }
+-            meta?.genres?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { add("Genre" to it.take(3).joinToString(", ")) }
+-            c.playtime(g)?.let { add("Played" to stylePlaytime(it, true)) }
+-            c.progress(g)?.let { (e, t) -> add("Achievements" to "$e / $t") }
+-        }
+-        FlowRow(horizontalArrangement = Arrangement.spacedBy(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-            for ((label, value) in facts) Column(Modifier.widthIn(max = 260.dp)) {
+-                Text(label.uppercase(), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+-                Text(value, color = Color.White.copy(alpha = 0.92f), fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp)
++    val story = meta?.summary?.takeIf { it.isNotBlank() }
++    BoxWithConstraints(modifier) {
++        // Update 487 (D281, Thor 1080p): a two-line title and facts wrapped to two rows used the whole column and the story
++        // (lines = 0) was dropped. When the column is short and there is a story, the facts go on one line under the console
++        // (achievements beside the console) and the title is a little smaller, so the story keeps ≥ 3 whole lines.
++        val tight = !compact && story != null && maxHeight < coverDetailsTightBelow
++        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
++            StableFullText(
++                titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else if (tight) 30.sp else 36.sp, fontWeight = FontWeight.Bold,
++                maxLines = 2, modifier = Modifier.fillMaxWidth()
++            )
++            Spacer(Modifier.height(4.dp))
++            val ach = c.progress(g)
++            Text(
++                if (tight && ach != null) titles.console(g.platform) + " · " + ach.first + " / " + ach.second + " achievements" else titles.console(g.platform),
++                color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold,
++                letterSpacing = 1.sp, lineHeight = 18.sp
++            )
++            Spacer(Modifier.height(if (compact) 8.dp else if (tight) 8.dp else 14.dp))
++            // Label / value pairs, each only when there is a value.
++            val facts = buildList {
++                meta?.releaseYear?.let { add("Released" to it.toString()) }
++                meta?.developer?.takeIf { it.isNotBlank() }?.let { add("Developer" to it) }
++                if (!tight) meta?.publisher?.takeIf { it.isNotBlank() && it != meta.developer }?.let { add("Publisher" to it) }
++                meta?.genres?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { add("Genre" to it.take(if (tight) 2 else 3).joinToString(", ")) }
++                if (!tight) c.playtime(g)?.let { add("Played" to stylePlaytime(it, true)) }
++                if (!tight) ach?.let { (e, t) -> add("Achievements" to "$e / $t") }
+             }
+-        }
+-        val story = meta?.summary?.takeIf { it.isNotBlank() }
+-        if (story != null) {
+-            Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
+-            // (Update 432: only as tall as the room left — a fixed 104 dp pushed the column past the stage on 1080p screens.)
+-            val want = if (compact) 54.dp else 104.dp
+-            val line = if (compact) 17.dp else 20.dp
+-            Box(Modifier.weight(1f, fill = false)) {
+-                BoxWithConstraints {
+-                    // Whole lines only (Odin: a half line showed at the bottom edge).
+-                    val lines = (minOf(want, maxHeight) / line).toInt()
+-                    val room = line * lines
+-                    if (lines >= 1) RollingStory(story, Color.White.copy(alpha = 0.8f), if (compact) 12.sp else 14.sp, if (compact) 17.sp else 20.sp, room)
++            if (tight) {
++                if (facts.isNotEmpty()) Text(
++                    facts.joinToString("  ·  ") { it.second }, color = Color.White.copy(alpha = 0.92f), fontSize = 14.sp,
++                    fontWeight = FontWeight.Medium, lineHeight = 19.sp, maxLines = 1,
++                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis   // qa-ok: TRUNCATE (all facts on Details)
++                )
++            } else FlowRow(horizontalArrangement = Arrangement.spacedBy(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
++                for ((label, value) in facts) Column(Modifier.widthIn(max = 260.dp)) {
++                    Text(label.uppercase(), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
++                    Text(value, color = Color.White.copy(alpha = 0.92f), fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp)
++                }
++            }
++            if (story != null) {
++                Spacer(Modifier.height(if (compact || tight) 8.dp else 14.dp))
++                // (Update 432: only as tall as the room left. Update 487 (D263, owner-approved): whole-line pages with a page
++                // count instead of the endless roll — never a half line, nothing moving while you read.)
++                val small = compact || tight
++                Box(Modifier.weight(1f, fill = false)) {
++                    PagedStory(
++                        story, Color.White.copy(alpha = 0.8f), if (small) 13.sp else 14.sp, if (small) 18.sp else 20.sp,
++                        maxLines = if (compact) 3 else 5, modifier = Modifier.fillMaxWidth(), auto = true
++                    )
+                 }
+             }
+         }
+     }
+ }
+ 
++/** Update 487: below this column height (with a story) Cover details puts its facts on one line (D281). */
++internal val coverDetailsTightBelow = 270.dp
++
+ /** What one spine on the shelf needs: its place's game, width and height in px. */
+ private class ShelfSpine(val w: Float, val h: Float)
+ 
+@@ -286,7 +305,8 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
+     BoxWithConstraints(modifier.clipToBounds().onGloballyPositioned { CoverFlight.shelf = it.boundsInWindow() }) {
+         val wPx = with(density) { maxWidth.toPx() }
+         val spineHmax = with(density) { (shelfH * 0.80f).toPx() }
+-        val gap = with(density) { SHELF_GAP_DP.dp.toPx() }
++        // (Update 487, K1: Layout options › Game spacing — 100 % is the packed shelf; each 10 % adds 0.4 dp.)
++        val gap = with(density) { coverShelfGapDp(Features.cdSpacing.state.value).dp.toPx() }
+         val minW = with(density) { 12.dp.toPx() }
+         val maxW = with(density) { 56.dp.toPx() }
+         // A spine's size from its console: the real width / height of the case it came in.
+@@ -393,6 +413,9 @@ internal fun CoverDetailsSettings() {
+             "story beside it, and a shelf of upright spines along the bottom that glides as one row. ◀ ▶ move along the shelf, A or a tap opens the game, " +
+             "swipe the shelf to move. The box faces you or stands turned like the others (Game look › The one you're on)."
+     )
++    Spacer(Modifier.height(8.dp))
++    // Update 487 (K1): this layout's own room between the spines (100 % = packed, as before).
++    PercentSlider("Game spacing", Features.cdSpacing.state.value, { Features.cdSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
+ }
+ 
+ /**
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt
 index e614012..468b487 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCrossMenu.kt
@@ -2217,6 +2651,19 @@ index e9a9ac9..35f641e 100644
      val n = systems.size
      val cur = GreenCoreNav.system.coerceIn(0, (n - 1).coerceAtLeast(0))
      val pos = remember { Animatable(cur.toFloat()) }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
+index 17d4aed..7bd6664 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
+@@ -447,6 +447,8 @@ private fun ShelfSettings() {
+     MutedNote("The category as a bookcase: every game shows its spine, the one you're on is pulled out to show its front. ◀ ▶ along the shelf, ▲ ▼ to the shelf above / below. The more games, the more shelves (up to three on screen, then it scrolls).")
+     Spacer(Modifier.height(10.dp))
+     StyleChoice("The games stand", Features.ShelfStand.values(), Features.shelfStand.state.value, { it.label }) { Features.shelfStand.value = it }
++    // Update 487 (K1): this layout's own room between the games (100 % = as before).
++    PercentSlider("Game spacing", Features.shelfSpacing.state.value, { Features.shelfSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
+     MutedNote(
+         when (Features.shelfStand.state.value) {
+             Features.ShelfStand.SPINES -> "Spines out, like books in a bookcase: the most games per shelf."
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
 index 672cfd1..4e2f2f2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt
@@ -2583,10 +3030,10 @@ index 057b5ab..cd7d6bd 100644
          fun endFor(s: Int): Int {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
 new file mode 100644
-index 0000000..885cc81
+index 0000000..9ac1d71
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,243 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.runtime.Composable
@@ -2594,6 +3041,16 @@ index 0000000..885cc81
 +import androidx.compose.ui.layout.Layout
 +import androidx.compose.ui.semantics.semantics
 +import androidx.compose.ui.unit.Constraints
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.setValue
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.width
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.wrapContentHeight
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.input.pointer.pointerInput
++import androidx.compose.foundation.gestures.detectTapGestures
 +
 +/**
 + * Update 475 (D246): a column that shows its rows whole or not at all. Rows are laid out top to bottom at their own height;
@@ -2693,8 +3150,189 @@ index 0000000..885cc81
 +    room == 1 -> 1 to false
 +    else -> (room - 1) to true
 +}
++
++/**
++ * Update 487 (E7, owner-approved D263 / D265): the first line of each page of a story [total] lines long shown [room] whole
++ * lines at a time. Pages follow on whole lines; the last page ends with the story's last line and is filled from above
++ * (it repeats the end of the page before), so a page is never half empty or cut. Empty when not one line fits.
++ */
++internal fun storyPageStarts(total: Int, room: Int): List<Int> {
++    if (room <= 0 || total <= 0) return emptyList()
++    if (total <= room) return listOf(0)
++    val out = ArrayList<Int>()
++    var s = 0
++    while (s + room < total) { out += s; s += room }
++    out += total - room
++    return out.distinct()
++}
++
++/** Which page a story is on, turned by the window's keys (manual) or by [PagedStory] itself (auto). */
++internal class StoryPager {
++    var page by androidx.compose.runtime.mutableIntStateOf(0)
++    var pages by androidx.compose.runtime.mutableIntStateOf(1)
++    /** One page on (wraps to the first); false when the story has only one page (the key is not used). */
++    fun next(): Boolean { if (pages <= 1) return false; page = (page + 1) % pages; return true }
++    fun prev(): Boolean { if (pages <= 1) return false; page = (page - 1 + pages) % pages; return true }
++}
++
++/**
++ * Update 487 (D265): the story pager of the game window that is open (Twin hinge window), turned by L2 / R2 (and Page Up /
++ * Page Down) in GameWindow's key handler. Set while that story is on screen with more than one page.
++ */
++internal object WinStory {
++    var pager: StoryPager? = null
++    /** Turns the open window's story for [key]; true when it was used. */
++    fun key(key: androidx.compose.ui.input.key.Key): Boolean {
++        val p = pager ?: return false
++        return when (key) {
++            androidx.compose.ui.input.key.Key.ButtonR2, androidx.compose.ui.input.key.Key.PageDown -> p.next()
++            androidx.compose.ui.input.key.Key.ButtonL2, androidx.compose.ui.input.key.Key.PageUp -> p.prev()
++            else -> false
++        }
++    }
++}
++
++/** The "2 / 3" under-the-story count. */
++internal fun storyPageLabel(page: Int, pages: Int): String = "${page + 1} / $pages"
++
++/**
++ * Update 487 (E7, D263 / D265): a story shown as pages of whole lines, never a moving or half line. When it fits, it is
++ * plain text. When it doesn't, a page count ("1 / 3") sits beside its last line (width, not height, so no line is lost to
++ * it); [auto] turns a page every [holdMs] while the home is awake and animations are on, else [pager] is turned by keys.
++ * The text is laid out once (TextMeasurer); each page shows its own lines from that layout, so it starts and ends on a line.
++ */
++@Composable
++internal fun PagedStory(
++    text: String, color: androidx.compose.ui.graphics.Color, fontSize: androidx.compose.ui.unit.TextUnit,
++    lineHeight: androidx.compose.ui.unit.TextUnit, maxLines: Int, modifier: Modifier = Modifier,
++    pager: StoryPager = androidx.compose.runtime.remember { StoryPager() }, auto: Boolean = true, holdMs: Long = 7000,
++    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
++    countColor: androidx.compose.ui.graphics.Color = color.copy(alpha = color.alpha * 0.6f),
++    /** A tap on the story turns its page (windows, where the story is touched; the home screens leave taps to the games). */
++    tapToTurn: Boolean = false,
++    /** The window's own story: registered as [WinStory.pager] while it has pages, so L2 / R2 turn it. */
++    windowKeys: Boolean = false
++) {
++    androidx.compose.foundation.layout.BoxWithConstraints(modifier.semantics { this[QaClip.GivesWay] = true }) {
++        val density = androidx.compose.ui.platform.LocalDensity.current
++        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
++        val style = androidx.compose.ui.text.TextStyle(color = color, fontSize = fontSize, lineHeight = lineHeight, fontFamily = fontFamily)
++        val countStyle = androidx.compose.ui.text.TextStyle(color = countColor, fontSize = fontSize * 0.8f, lineHeight = lineHeight,
++            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
++        val w = constraints.maxWidth
++        if (w == Constraints.Infinity || w <= 0) return@BoxWithConstraints
++        val lineH = with(density) { lineHeight.toPx() }
++        val full = androidx.compose.runtime.remember(text, w, style) { measurer.measure(text, style, constraints = Constraints(maxWidth = w)) }
++        val roomAll = storyLinesThatFit(constraints.maxHeight, lineH, maxLines)
++        if (roomAll < 1) return@BoxWithConstraints
++        if (full.lineCount <= roomAll) {
++            androidx.compose.material3.Text(text, style = style)
++            return@BoxWithConstraints
++        }
++        // Paged: the count takes a column at the right, the story wraps in the rest.
++        val countW = androidx.compose.runtime.remember(countStyle) { measurer.measure("99 / 99", countStyle).size.width }
++        val gap = with(density) { 10.dp.roundToPx() }
++        val textW = (w - countW - gap).coerceAtLeast(w / 2)
++        val lay = androidx.compose.runtime.remember(text, textW, style) { measurer.measure(text, style, constraints = Constraints(maxWidth = textW)) }
++        val starts = androidx.compose.runtime.remember(lay.lineCount, roomAll) { storyPageStarts(lay.lineCount, roomAll) }
++        androidx.compose.runtime.SideEffect { pager.pages = starts.size; if (pager.page >= starts.size) pager.page = 0 }
++        if (windowKeys) androidx.compose.runtime.DisposableEffect(pager) {
++            WinStory.pager = pager
++            onDispose { if (WinStory.pager === pager) WinStory.pager = null }
++        }
++        androidx.compose.runtime.LaunchedEffect(text) { pager.page = 0 }
++        val calm = HomeIdle.calm
++        val animate = rememberAnimationsEnabled()
++        androidx.compose.runtime.LaunchedEffect(text, auto, calm, animate, pager.page, starts.size) {
++            if (!auto || calm || !animate || starts.size <= 1) return@LaunchedEffect
++            kotlinx.coroutines.delay(holdMs)
++            pager.next()
++        }
++        val page = pager.page.coerceIn(0, (starts.size - 1).coerceAtLeast(0))
++        val boxH = with(density) { (lineH * roomAll).toDp() }
++        androidx.compose.foundation.layout.Row(
++            Modifier.semantics { this[androidx.compose.ui.semantics.SemanticsProperties.Text] = listOf(androidx.compose.ui.text.AnnotatedString(text)) }
++                .then(if (tapToTurn) Modifier.pointerInput(starts.size) {
++                    detectTapGestures { pager.next() }
++                } else Modifier),
++            verticalAlignment = androidx.compose.ui.Alignment.Bottom
++        ) {
++            androidx.compose.animation.Crossfade(
++                page, label = "story-page",
++                animationSpec = androidx.compose.animation.core.tween(if (animate) 320 else 0),
++                modifier = Modifier.width(with(density) { textW.toDp() }).height(boxH)
++            ) { p ->
++                // The page's own lines as text of their own (the same breaks: each page starts at a line start at the same
++                // width) — never a picture of the whole story clipped to the box, which cut the last line's descenders.
++                val st = starts.getOrElse(p) { 0 }
++                val a = lay.getLineStart(st)
++                val e = lay.getLineEnd((st + roomAll).coerceAtMost(lay.lineCount) - 1)
++                // (Not clipped to the box: a last line's descenders ("g", "p") reach a little below its line height.)
++                androidx.compose.material3.Text(text.substring(a, e).trimEnd(), style = style, maxLines = roomAll,
++                    overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
++                    modifier = Modifier.fillMaxWidth().wrapContentHeight(androidx.compose.ui.Alignment.Top, unbounded = true))
++            }
++            androidx.compose.foundation.layout.Spacer(Modifier.width(with(density) { gap.toDp() }))
++            androidx.compose.material3.Text(storyPageLabel(page, starts.size), style = countStyle, maxLines = 1)
++        }
++    }
++}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
+index f7cf41e..d1c3fca 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
+@@ -166,26 +166,39 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
+     }
+ }
+ 
+-/** The facts as label-over-value cells (3 a row when the window is wide enough) and the summary — whole rows / lines only. */
++/**
++ * The facts as label-over-value cells (3 a row when the window is wide enough) and the summary. Update 487 (D265,
++ * owner-approved): the facts stay put; only the story turns, in pages of whole lines with a "1 / 2" count, by L2 / R2 or a
++ * tap on it — never by itself (the whole box used to page every 2.8 s: facts gone, a half line on top, a near-empty last page).
++ */
+ @Composable
+ private fun HingeFacts(ctx: WinSceneCtx, label: Color, value: Color) {
+     BoxWithConstraints(Modifier.fillMaxWidth()) {
+         val cols = if (maxWidth >= 430.dp) 3 else 2
+         val facts = remember(ctx.g, ctx.played, ctx.last, ctx.earned, ctx.total) { sceneFacts(ctx) }
+         val summary = ctx.summary
+-        SnapRows(Modifier.fillMaxWidth(), textLine = if (summary != null) 14.dp else 0.dp, textTop = 2.dp) {
+-            facts.chunked(cols).forEach { row ->
+-                Row(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+-                    row.forEach { (l, v) ->
+-                        Column(Modifier.weight(1f).padding(end = 8.dp)) {
+-                            Text(l.uppercase(), color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, softWrap = false)
+-                            Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
++        Column(Modifier.fillMaxWidth()) {
++            WholeRows(Modifier.fillMaxWidth()) {
++                facts.chunked(cols).forEach { row ->
++                    Row(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
++                        row.forEach { (l, v) ->
++                            Column(Modifier.weight(1f).padding(end = 8.dp)) {
++                                Text(l.uppercase(), color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, softWrap = false)
++                                Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
++                            }
+                         }
++                        repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                     }
+-                    repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
+                 }
+             }
+-            if (summary != null) Text(summary, color = value.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 2.dp))
++            if (summary != null) {
++                val pager = remember(ctx.g.stableKey) { StoryPager() }
++                PagedStory(
++                    summary, value.copy(alpha = 0.8f), 11.sp, 14.sp, maxLines = 40,
++                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp), pager = pager, auto = false,
++                    countColor = label, tapToTurn = true, windowKeys = true
++                )
++            }
+         }
+     }
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
-index ce010b0..02742be 100644
+index ce010b0..042939f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenes.kt
 @@ -462,7 +462,8 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
@@ -2749,7 +3387,61 @@ index ce010b0..02742be 100644
                      Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 2,
                          )
                  }
-@@ -1321,7 +1324,7 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
+@@ -1043,15 +1046,23 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+             ctx.buttons.forEach { a ->
+                 SceneControl(a, Modifier) { on ->
++                    // Update 487 (E7, owner-approved): Play is the glossy accent pill even while another key is lit (it looked
++                    // like the glass keys), and the word on a lit pill is checked against its lighter top (white on lilac
++                    // was 2.6 : 1); a lit Play gets a white ring.
++                    val lit = on || a.primary
++                    val top = mixS(accent, Color.White, if (on) 0.3f else 0.12f)
++                    val inkLit = com.shelf.launcher.ui.theme.textOn(top, onAccent).let { c ->
++                        if (com.shelf.launcher.ui.theme.contrastRatio(c, accent) >= 4.5f) c else com.shelf.launcher.ui.theme.textOn(accent, onAccent)
++                    }
+                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                         Box(
+                             Modifier.height(if (a.primary) 46.dp else 40.dp).clip(RoundedCornerShape(50))
+-                                .background(if (on) Brush.verticalGradient(listOf(mixS(accent, Color.White, 0.3f), accent)) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f))))
+-                                .border(1.dp, if (on) Color.White.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
++                                .background(if (lit) Brush.verticalGradient(listOf(top, if (on) accent else mixS(accent, Color.Black, 0.12f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f))))
++                                .border(if (on && a.primary) 2.5.dp else 1.dp, if (on) Color.White.copy(alpha = if (a.primary) 0.95f else 0.6f) else if (lit) accent.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
+                                 .padding(horizontal = if (a.primary) 24.dp else 16.dp),
+                             contentAlignment = Alignment.Center
+                         ) {
+-                            Text(a.label, color = if (on) onAccent else Color.White, fontSize = if (a.primary) 17.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
++                            Text(a.label, color = if (lit) inkLit else Color.White, fontSize = if (a.primary) 17.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                         }
+                         // Its reflection.
+                         Box(Modifier.width(if (a.primary) 70.dp else 50.dp).height(6.dp).graphicsLayer { alpha = if (on) 0.45f else 0.15f }
+@@ -1060,12 +1071,20 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
+                 }
+             }
+             if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+-                SceneControl(a, Modifier.size(40.dp)) { on ->
+-                    Box(
+-                        Modifier.fillMaxSize().clip(CircleShape)
+-                            .background(if (on) accent else Color.White.copy(alpha = 0.09f)).border(1.dp, Color.White.copy(alpha = if (on) 0.6f else 0.18f), CircleShape),
+-                        contentAlignment = Alignment.Center
+-                    ) { Icon(a.icon, a.label, tint = if (on) onAccent else Color.White, modifier = Modifier.size(19.dp)) }
++                // Update 487 (E7 tiny controls, owner-approved): the round tool keys keep their 40 dp look in a 48 dp touch
++                // box, and their word is written under them (where the pills' reflection is) — they were icon-only.
++                SceneControl(a, Modifier.widthIn(min = 48.dp)) { on ->
++                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
++                        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
++                            Box(
++                                Modifier.size(40.dp).clip(CircleShape)
++                                    .background(if (on) accent else Color.White.copy(alpha = 0.09f)).border(1.dp, Color.White.copy(alpha = if (on) 0.6f else 0.18f), CircleShape),
++                                contentAlignment = Alignment.Center
++                            ) { Icon(a.icon, a.label, tint = if (on) com.shelf.launcher.ui.theme.textOn(accent, onAccent) else Color.White, modifier = Modifier.size(19.dp)) }
++                        }
++                        Text(sceneLabel(a.label), color = Color.White.copy(alpha = if (on) 0.95f else 0.7f), fontSize = 10.sp, lineHeight = 12.sp,
++                            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
++                    }
+                 }
+             }
+         }
+@@ -1321,7 +1340,7 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
              }
              Spacer(Modifier.height(2.dp))
              Text(ctx.name.uppercase(), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
@@ -2758,7 +3450,7 @@ index ce010b0..02742be 100644
              Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.5.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0.05f)))))
              @Composable
              fun readout(k: String, v: String?) {
-@@ -1400,6 +1403,10 @@ private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this)
+@@ -1400,6 +1419,10 @@ private fun Float.roundToIntSafe() = if (isNaN()) 0 else kotlin.math.round(this)
  @OptIn(ExperimentalLayoutApi::class)
  private fun AiryPanel(ctx: WinSceneCtx) {
      val accent = Color(com.shelf.launcher.data.Features.ahAccent.state.value.argb)
@@ -2769,7 +3461,7 @@ index ce010b0..02742be 100644
      val w = minOf(ctx.maxW * 0.92f, 860.dp)
      val h = minOf(ctx.maxH * 0.9f, 480.dp)
      Column(
-@@ -1420,43 +1427,41 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+@@ -1420,43 +1443,41 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                  if (ctx.page == WinPage.MAIN) {
                      Row(verticalAlignment = Alignment.Top) {
                          Column(Modifier.weight(1f)) {
@@ -2831,7 +3523,7 @@ index ce010b0..02742be 100644
          }
          if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
              ctx.chips.forEach { a ->
-@@ -1468,6 +1473,48 @@ private fun AiryPanel(ctx: WinSceneCtx) {
+@@ -1468,6 +1489,48 @@ private fun AiryPanel(ctx: WinSceneCtx) {
      }
  }
  
@@ -2880,7 +3572,7 @@ index ce010b0..02742be 100644
  // ---------------------------------------------------------------------------------------------------------------------
  // Night menu: the status screen
  // ---------------------------------------------------------------------------------------------------------------------
-@@ -1495,8 +1542,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
+@@ -1495,8 +1558,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
              Row(verticalAlignment = Alignment.CenterVertically) {
                  Text("STATUS", color = hi.copy(alpha = 1f).let { mixS(it, Color.Black, 0.45f) }, fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                  Spacer(Modifier.width(16.dp))
@@ -3019,26 +3711,61 @@ index 96dda3b..5ed0638 100644
                  fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 2) }
                  line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
-index 876c06e..d16dbae 100644
+index 876c06e..93ca8b5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
-@@ -126,10 +126,11 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+@@ -97,7 +97,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                     LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 44.dp else 66.dp).fillMaxWidth(0.55f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Black, maxLines = 2) }
+                 }
+             }
+-            Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
++            // Update 487 (E7 Cinema actions, owner-approved): the round keys run under both columns (the page's whole width)
++            // instead of under the facts only — there, 5 of the 8 fitted and Manual / Inspect / Back wrapped below the window.
++            Column(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
++            Row(Modifier.weight(1f).fillMaxWidth()) {
+                 Column(Modifier.weight(1.25f).fillMaxHeight()) {
+                     // The line of facts, the "mastered" green like a match score.
+                     Row(verticalAlignment = Alignment.CenterVertically) {
+@@ -107,8 +110,6 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                     Spacer(Modifier.height(10.dp))
+                     if (ctx.page == WinPage.MAIN) {
+                         val play = ctx.buttons.filter { it.primary }
+-                        val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
+-                        val back = ctx.buttons.filter { it.back }
+                         Row(verticalAlignment = Alignment.CenterVertically) {
+                             play.forEach { a ->
+                                 SceneControl(a, Modifier) { on ->
+@@ -125,29 +126,6 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                                 }
                              }
                          }
-                         Spacer(Modifier.height(10.dp))
+-                        Spacer(Modifier.height(10.dp))
 -                        // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate").
 -                        // One line of keys that scrolls sideways: the key you move to is brought into view, so every action is
 -                        // reachable however many a game has; each key is as wide as its name, which stays whole on one line.
 -                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-+                        // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate");
-+                        // each key is as wide as its name, which stays whole on one line.
-+                        // (Update 478, R26: they wrap to a second line instead of scrolling sideways — a key half under the
-+                        // window's edge measured 18 px wide on the Odin (T3 o477T3A), and actions never sit in a scrolling row.)
-+                        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                             (rest + back).forEach { a ->
-                                 SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
-                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-@@ -167,7 +168,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+-                            (rest + back).forEach { a ->
+-                                SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
+-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+-                                        Box(
+-                                            Modifier.size(if (compact) 38.dp else 44.dp).clip(CircleShape)
+-                                                .background(if (on) Color.White else Color(0xFF2A2A2A))
+-                                                .border(2.dp, if (a.urgent) accent else if (on) Color.White else Color.White.copy(alpha = 0.45f), CircleShape),
+-                                            contentAlignment = Alignment.Center
+-                                        ) { Icon(a.icon, null, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
+-                                        Spacer(Modifier.height(3.dp))
+-                                        // (v0.6.66 popup polish: 10 sp at 72 % was hard to read on the GT78's small screen.)
+-                                        Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.86f), fontSize = if (compact) 12.sp else 11.sp,
+-                                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, softWrap = false,
+-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+-                                    }
+-                                }
+-                            }
+-                        }
+                     } else {
+                         Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                         Spacer(Modifier.height(6.dp))
+@@ -167,7 +145,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                      Column(Modifier.weight(1f).fillMaxHeight()) {
                          val s = rememberScrollState()
                          // (Update 428, D107: reachable with the D-pad — it only scrolled by touch.)
@@ -3050,10 +3777,55 @@ index 876c06e..d16dbae 100644
                              ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 19.sp) }
                              Spacer(Modifier.height(8.dp))
                              Text(listOfNotNull(ctx.developer?.let { "Developer: $it" }, ctx.genres?.let { "Genres: $it" }).joinToString("\n"),
+@@ -184,6 +165,35 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
+                     }
+                 }
+             }
++            if (ctx.page == WinPage.MAIN) {
++                val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
++                val back = ctx.buttons.filter { it.back }
++                Spacer(Modifier.height(8.dp))
++                // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate");
++                // each key is as wide as its name, which stays whole on one line.
++                // (Update 478, R26: they wrap to a second line instead of scrolling sideways — a key half under the
++                // window's edge measured 18 px wide on the Odin (T3 o477T3A), and actions never sit in a scrolling row.)
++                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
++                    (rest + back).forEach { a ->
++                        SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
++                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
++                                Box(
++                                    Modifier.size(if (compact) 38.dp else 44.dp).clip(CircleShape)
++                                        .background(if (on) Color.White else Color(0xFF2A2A2A))
++                                        .border(2.dp, if (a.urgent) accent else if (on) Color.White else Color.White.copy(alpha = 0.45f), CircleShape),
++                                    contentAlignment = Alignment.Center
++                                ) { Icon(a.icon, null, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
++                                Spacer(Modifier.height(3.dp))
++                                // (v0.6.66 popup polish: 10 sp at 72 % was hard to read on the GT78's small screen.)
++                                Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.86f), fontSize = if (compact) 12.sp else 11.sp,
++                                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, softWrap = false,
++                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
++                            }
++                        }
++                    }
++                }
++            }
++            }
+         }
+     }
+ }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-index d320f64..c90611e 100644
+index d320f64..dcf4969 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
+@@ -136,7 +136,7 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
+         Spacer(Modifier.height(10.dp))
+         // The keys as small flat tiles in the accent.
+         KeyRow(sceneKeys(ctx), 4.dp) { k ->
+-            SceneKey(k, if (k.primary) a else Color(0xFF2A2A2A), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
++            SceneKeyStyled(k, if (k.primary) a else Color(0xFF2A2A2A), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
+                 Color.Transparent, Color.White, RectangleShape, height = 40.dp)
+         }
+     }
 @@ -158,12 +158,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
      }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
          // Header strip with the art.
@@ -3074,7 +3846,7 @@ index d320f64..c90611e 100644
          }
          Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = false)) {
              if (ctx.page == WinPage.MAIN) {
-@@ -176,7 +178,9 @@ internal fun DashCard(ctx: WinSceneCtx) {
+@@ -176,12 +178,14 @@ internal fun DashCard(ctx: WinSceneCtx) {
                          }
                      }
                  }
@@ -3085,6 +3857,12 @@ index d320f64..c90611e 100644
              } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
          }
          Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp)) {
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
++                SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
+                     Color.White.copy(alpha = 0.1f), a, RoundedCornerShape(8.dp), height = 34.dp)
+             }
+         }
 @@ -200,7 +204,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
              shadowElevation = 20.dp.toPx()
          }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
@@ -3094,7 +3872,7 @@ index d320f64..c90611e 100644
                  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
              }
              Column(Modifier.padding(horizontal = 14.dp)) {
-@@ -238,14 +242,21 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
+@@ -238,20 +242,27 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
          scaleX = s; scaleY = s
          shape = RoundedCornerShape(6.dp); clip = true
      }.background(Color.Black)) {
@@ -3118,6 +3896,13 @@ index d320f64..c90611e 100644
                  ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
              Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
                  modifier = Modifier.padding(vertical = 6.dp))
+             if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().height(h * 0.4f))
+             KeyRow(sceneKeys(ctx), 8.dp) { k ->
+-                SceneKey(k, if (k.primary) Color.White else Color.Black.copy(alpha = 0.4f), Color(0xFFFFE9A8), if (k.primary) Color.Black else Color.White, Color.Black,
++                SceneKeyStyled(k, if (k.primary) Color.White else Color.Black.copy(alpha = 0.4f), Color(0xFFFFE9A8), if (k.primary) Color.Black else Color.White, Color.Black,
+                     Color.White.copy(alpha = 0.35f), Color.White, RoundedCornerShape(50), height = 36.dp, upper = true, size = 11.sp)
+             }
+         }
 @@ -285,19 +296,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                  if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
                  Spacer(Modifier.height(12.dp))
@@ -3156,6 +3941,24 @@ index d320f64..c90611e 100644
              }
              // The pointer down to the dock.
              Canvas(Modifier.size(22.dp, 10.dp)) {
+@@ -332,7 +359,7 @@ internal fun HubPlate(ctx: WinSceneCtx) {
+             SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
+             Spacer(Modifier.height(8.dp))
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) ctx.accent else Color.Black.copy(alpha = 0.3f), Color.White, if (k.primary) onColor(ctx.accent) else Color.White, Color.Black,
++                SceneKeyStyled(k, if (k.primary) ctx.accent else Color.Black.copy(alpha = 0.3f), Color.White, if (k.primary) onColor(ctx.accent) else Color.White, Color.Black,
+                     Color.White.copy(alpha = 0.2f), Color.White, RoundedCornerShape(4.dp))
+             }
+         }
+@@ -370,7 +397,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
+             SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
+             Spacer(Modifier.weight(0.01f))
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
++                SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
+                     Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
+             }
+         }
 @@ -439,7 +466,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
      }.background(Color(0xFF1B2838))) {
          // The hero banner across the top, logo on it.
@@ -3165,6 +3968,24 @@ index d320f64..c90611e 100644
              Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1B2838)))))
              Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                  ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
+@@ -450,7 +477,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+         Row(Modifier.fillMaxWidth().background(Color(0xFF16202D)).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+             Box(Modifier.weight(1f)) {
+                 KeyRow(sceneKeys(ctx)) { k ->
+-                    SceneKey(k, if (k.primary) green else Color.White.copy(alpha = 0.08f), if (k.primary) Color(0xFF79C843) else Color.White.copy(alpha = 0.2f),
++                    SceneKeyStyled(k, if (k.primary) green else Color.White.copy(alpha = 0.08f), if (k.primary) Color(0xFF79C843) else Color.White.copy(alpha = 0.2f),
+                         Color.White, Color.White, Color.Transparent, Color.White, RoundedCornerShape(3.dp), height = if (k.primary) 40.dp else 34.dp, upper = k.primary)
+                 }
+             }
+@@ -509,7 +536,7 @@ internal fun TimelineEntry(ctx: WinSceneCtx) {
+             SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
+             Spacer(Modifier.height(8.dp))
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
++                SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
+                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(6.dp))
+             }
+         }
 @@ -530,7 +557,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
          alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
          shape = RoundedCornerShape(16.dp); clip = true
@@ -3174,7 +3995,32 @@ index d320f64..c90611e 100644
          Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
          Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
              ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-@@ -625,3 +652,10 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+@@ -546,7 +573,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+             else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
+             Spacer(Modifier.height(10.dp))
+             KeyRow(sceneKeys(ctx), 8.dp) { k ->
+-                SceneKey(k, if (k.primary) Color.White else Color.White.copy(alpha = 0.16f), a, if (k.primary) Color.Black else Color.White, onColor(a),
++                SceneKeyStyled(k, if (k.primary) Color.White else Color.White.copy(alpha = 0.16f), a, if (k.primary) Color.Black else Color.White, onColor(a),
+                     Color.Transparent, Color.White, RoundedCornerShape(50), height = 38.dp)
+             }
+         }
+@@ -579,7 +606,7 @@ internal fun TileCard(ctx: WinSceneCtx) {
+             SceneFactsBody(ctx, ink.copy(alpha = 0.5f), ink, upperLabels = false)
+             Spacer(Modifier.height(10.dp))
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) ink else Color.White, a, if (k.primary) Color.White else ink, onColor(a),
++                SceneKeyStyled(k, if (k.primary) ink else Color.White, a, if (k.primary) Color.White else ink, onColor(a),
+                     ink.copy(alpha = 0.15f), a, RoundedCornerShape(50), height = 38.dp)
+             }
+         }
+@@ -619,9 +646,16 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+             }
+             Spacer(Modifier.height(10.dp))
+             KeyRow(sceneKeys(ctx)) { k ->
+-                SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
++                SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
+                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(8.dp), height = 36.dp)
+             }
          }
      }
  }
@@ -3186,10 +4032,73 @@ index d320f64..c90611e 100644
 + */
 +internal fun dockShortLabel(label: String): String = label.substringBefore(" · ").trim().ifEmpty { label }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
-index 00bae26..02e3b51 100644
+index 00bae26..1a01a08 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesMore.kt
-@@ -142,7 +142,10 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+@@ -99,22 +99,57 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (Win
+ @Composable
+ internal fun SceneKey(
+     a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
+-    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false
++    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false,
++    /** The caller already draws the primary key (Play) its own way; else Play gets the lit colour as a tint (update 487). */
++    primaryStyled: Boolean = false
+ ) {
++    // Update 487 (E7 popup hierarchy, owner-approved): Play is the clear first action in every window. A window that drew
++    // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
++    // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
++    val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
++    // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
++    // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
++    // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
+     SceneControl(a, Modifier) { on ->
+         Row(
+-            Modifier.heightIn(min = height).clip(shape).background(if (on) onFill else fill)
+-                .border(if (on) 2.dp else 1.dp, if (on) onEdge else edge, shape).padding(horizontal = pad),
++            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else k.fill)
++                .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
+             verticalAlignment = Alignment.CenterVertically
+         ) {
+-            Icon(a.icon, null, tint = if (on) onInk else ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
++            Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
+             Spacer(Modifier.width(5.dp))
+-            Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) onInk else if (a.urgent) Color(0xFFFF8A3D) else ink,
++            Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) k.onInk else if (a.urgent) Color(0xFFFF8A3D) else k.ink,
+                 fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2)
+         }
+     }
+ }
+ 
++/** [SceneKey] for the windows that already draw Play their own way (a filled Play key). */
++@Composable
++internal fun SceneKeyStyled(
++    a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
++    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false
++) = SceneKey(a, fill, onFill, ink, onInk, edge, onEdge, shape, font, size, pad, height, upper, primaryStyled = true)
++
++internal class SceneKeyColors(val fill: Color, val onFill: Color, val ink: Color, val onInk: Color, val edge: Color, val onEdge: Color, val firmEdge: Boolean)
++
++/** Update 487: the colours a scene key is drawn in (pure; SceneKey487Test). */
++internal fun sceneKeyColors(
++    primary: Boolean, primaryStyled: Boolean, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color
++): SceneKeyColors {
++    // A lit word must read on the lit colour (only judged where that colour is solid; a see-through one depends on the scene).
++    val onInkR = if (onFill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(onFill, onInk) else onInk
++    val inkR = if (fill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(fill, ink) else ink
++    // The ring of a lit key must show against the key itself (Twin: the accent ring on the accent key vanished).
++    val ringR = if (onFill.alpha >= 0.9f && onEdge.alpha >= 0.5f && com.shelf.launcher.ui.theme.contrastRatio(onEdge, onFill) < 1.4f) onInkR else onEdge
++    if (!primary || primaryStyled) return SceneKeyColors(fill, onFill, inkR, onInkR, edge, ringR, false)
++    // Play in a window that draws all keys alike: tinted with the lit colour, its edge in that colour.
++    val tintFill = if (fill.alpha >= 0.9f) androidx.compose.ui.graphics.lerp(fill, onFill.copy(alpha = 1f), 0.28f)
++        else onFill.copy(alpha = (fill.alpha + 0.24f).coerceAtMost(0.5f))
++    val tintInk = if (tintFill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(tintFill, ink) else ink
++    return SceneKeyColors(tintFill, onFill, tintInk, onInkR, onFill.copy(alpha = 1f), ringR, true)
++}
++
+ /**
+  * Update 422: a key's word without a symbol the layout's look puts in front of it ("▶ continue" in Hero / Disc looks — the
+  * key already draws its icon, so it read "▶ ▶ continue"), first letter capitalised.
+@@ -142,7 +177,10 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
          var tight by androidx.compose.runtime.remember(ctx.g.stableKey, ctx.tools.size, ctx.chips.size) { androidx.compose.runtime.mutableStateOf(false) }
          val asLines = inline || tight
          androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
@@ -3201,7 +4110,7 @@ index 00bae26..02e3b51 100644
              if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
          }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
              val facts = shownFacts(ctx, omit)
-@@ -169,9 +172,17 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
+@@ -169,9 +207,17 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
              }
              ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
          }
@@ -3826,6 +4735,122 @@ index 0000000..531e8c2
 +        assertTrue(src("SettingsDialog.kt").contains("ShelfCard { SecondBrightnessChoice() }"))
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
+new file mode 100644
+index 0000000..1cebe28
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
+@@ -0,0 +1,110 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.ui.graphics.Color
++import com.shelf.launcher.ui.theme.contrastRatio
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++import com.shelf.launcher.data.Features.SaveVaultStyle as S
++
++/** Update 487: E7 owner-approved — paged stories (D263 / D281 / D265), Play hierarchy, touch sizes, Cinema actions. */
++class Batch487Test {
++    private fun src(name: String): String = listOf(
++        File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
++    ).first { it.exists() }.readText()
++
++    @Test fun pagesStartOnWholeLinesAndTheLastIsFull() {
++        assertEquals(emptyList<Int>(), storyPageStarts(10, 0))
++        assertEquals(listOf(0), storyPageStarts(4, 5))
++        assertEquals(listOf(0), storyPageStarts(5, 5))
++        // 13 lines in a 9-line box (the Twin window's 007 story): page 2 ends on the last line, no empty half.
++        assertEquals(listOf(0, 4), storyPageStarts(13, 9))
++        assertEquals(listOf(0, 3, 6, 7), storyPageStarts(10, 3))
++        storyPageStarts(37, 4).forEach { assertTrue(it + 4 <= 37) }
++    }
++
++    @Test fun pagerWrapsAndIgnoresSinglePage() {
++        val p = StoryPager()
++        assertFalse(p.next())
++        p.pages = 3
++        assertTrue(p.next()); assertTrue(p.next()); assertTrue(p.next())
++        assertEquals(0, p.page)
++        assertTrue(p.prev()); assertEquals(2, p.page)
++        assertEquals("3 / 3", storyPageLabel(2, 3))
++    }
++
++    @Test fun litKeyWordIsReadable() {
++        // Tiles: white on lilac measured 2.9 : 1.
++        val lilac = Color(0xFF9D94AF)
++        val k = sceneKeyColors(true, true, Color(0xFF222222), lilac, Color.White, Color.White, Color.Gray, lilac)
++        assertTrue(contrastRatio(k.onInk, lilac) >= 4.5f)
++        // A lit ring the same colour as the key is replaced by one that shows.
++        assertTrue(contrastRatio(k.onEdge, lilac) >= 1.4f)
++    }
++
++    @Test fun playStandsOutWhereAllKeysWereAlike() {
++        val a = Color(0xFF6A4FC9)
++        val play = sceneKeyColors(true, false, Color.White, a, Color(0xFF222222), Color.White, Color(0xFFDDDDDD), a)
++        val other = sceneKeyColors(false, false, Color.White, a, Color(0xFF222222), Color.White, Color(0xFFDDDDDD), a)
++        assertTrue(play.fill != other.fill)
++        assertTrue(play.firmEdge)
++        assertTrue(contrastRatio(play.ink, play.fill) >= 4.5f)
++    }
++
++    @Test fun coverDetailsKeepsItsStory() {
++        val c = src("StyleCoverDetails.kt")
++        assertTrue(c.contains("PagedStory("))
++        assertFalse(c.contains("RollingStory(story"))
++        assertTrue(c.contains("val tight = !compact && story != null && maxHeight < coverDetailsTightBelow"))
++    }
++
++    @Test fun twinStoryTurnsByHandWithFactsPinned() {
++        val t = src("WinSceneTwin.kt")
++        assertTrue(t.contains("auto = false"))
++        assertTrue(t.contains("windowKeys = true"))
++        assertFalse(t.contains("SnapRows(Modifier.fillMaxWidth(), textLine"))
++        assertTrue(src("GameWindow.kt").contains("WinStory.key(e.key)"))
++    }
++
++    @Test fun touchSizesAndCinemaRow() {
++        assertFalse(src("WinScenesMore.kt").contains("minTouch = SCENE_KEY_TOUCH"))
++        assertTrue(src("SecondScreenHome.kt").contains(".size(width = 48.dp, height = 80.dp)"))
++        assertTrue(src("WinScenes.kt").contains("Box(Modifier.size(48.dp), contentAlignment = Alignment.Center)"))
++        assertTrue(src("WinScenesHomes.kt").contains("the round keys run under both columns"))
++    }
++
++    @Test fun saveLooksTheSameInGridAndUpClose() {
++        assertEquals(SaveObjectKind.PS2_BROWSER, saveObjectKind(true, S.CARD_3D, true))
++        assertEquals(SaveObjectKind.CARD_3D, saveObjectKind(false, S.CARD_3D, true))
++        assertEquals(SaveObjectKind.DRAWN, saveObjectKind(false, S.CARD_3D, false))
++        assertEquals(SaveObjectKind.DRAWN, saveObjectKind(false, S.MEMORY_CARD, false))
++        assertEquals(SaveObjectKind.CAPSULE, saveObjectKind(false, S.CAPSULE, false))
++        assertEquals(SaveObjectKind.ICON, saveObjectKind(false, S.CLASSIC, false))
++        assertTrue(src("SaveExplorer.kt").contains("look = look, state = st.state, ps2 = ps2, logo = logo"))
++    }
++
++    @Test fun spinePicturesAreKeptAtScreenSize() {
++        assertEquals(null, spineFitSize(80, 1000))
++        assertEquals(93 to 1280, spineFitSize(300, 4096))
++        assertEquals(1280 to 93, spineFitSize(4096, 300))
++        assertTrue(src("CoverCases.kt").contains("val fit = spineFitSize(src.width, src.height)"))
++    }
++
++    @Test fun screensaverAndDetailsAboveTheHomePieces() {
++        assertTrue(SCREENSAVER_Z > 9f && DETAILS_Z > 6.5f && DETAILS_Z < 9f)
++        val l = src("LauncherScreen.kt")
++        assertTrue(l.contains("modifier = Modifier.zIndex(SCREENSAVER_Z)"))
++        assertTrue(l.contains("modifier = Modifier.zIndex(DETAILS_Z)"))
++    }
++
++    @Test fun gameSpacingIsPerLayoutAndKeepsTheDefault() {
++        assertEquals(0.5f, coverShelfGapDp(100), 0.001f)
++        assertEquals(0f, coverShelfGapDp(50), 0.001f)
++        assertEquals(6.5f, coverShelfGapDp(250), 0.001f)
++        val f = File(listOf("../src_copy/data/Features.kt", "src/main/java/com/shelf/launcher/data/Features.kt", "app/src/main/java/com/shelf/launcher/data/Features.kt").first { File(it).exists() }).readText()
++        assertTrue(f.contains("val shelfSpacing = IntPref(\"shelf_spacing\", 100, 50..250)"))
++        assertTrue(f.contains("val cdSpacing = IntPref(\"cd_spacing\", 100, 50..250)"))
++    }
++}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
 new file mode 100644
 index 0000000..aa0ba08
@@ -4152,3 +5177,17 @@ index 0000000..1cfb60f
 +        assertEquals(1, LogoAspects.decode(text).size)
 +    }
 +}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/TwinHinge142Test.kt b/app/src/test/java/com/shelf/launcher/ui/TwinHinge142Test.kt
+index 018bc29..5429342 100644
+--- a/app/src/test/java/com/shelf/launcher/ui/TwinHinge142Test.kt
++++ b/app/src/test/java/com/shelf/launcher/ui/TwinHinge142Test.kt
+@@ -58,7 +58,8 @@ class TwinHinge142Test {
+     @Test fun hingeReservesTheKeysAndSnapsTheFacts() {
+         val s = src("WinSceneTwin.kt")
+         assertTrue("facts take what the keys leave", s.contains("Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {") && s.contains("KeyRow(sceneKeys(ctx))"))
+-        assertTrue("whole rows", s.contains("SnapRows(Modifier.fillMaxWidth()"))
++        // (Update 487, D265: whole rows of facts that stay, the story in whole-line pages.)
++        assertTrue("whole rows", s.contains("WholeRows(Modifier.fillMaxWidth())") && s.contains("PagedStory("))
+         assertTrue("touch half keeps its room", s.contains("coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))"))
+         assertTrue("old hinge removed", !src("WinScenesMore.kt").contains("internal fun TwinHinge("))
+         assertTrue("Twin desk's own pale veil", src("GameWindow.kt").contains("layout == HomeLayout.TWIN_DESK) twinDeskVeil"))

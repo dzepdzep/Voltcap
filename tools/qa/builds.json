@@ -297,6 +297,28 @@
    "patch_sha256": "50a8d1fb1f32c0829f0430ab66670b4e5e39e031740e8ec1e83b629cfe1c5098",
    "tree_hash": "",
    "note": "update 485: 484 + E3 picked cover far off the case's shape gives way to the box scan in Case3D (decoded shape) and CaseArt (D280), D3 second-screen brightness; KONKR + Thor, restored to v0.6.67 (1586accc) after"
+  },
+  {
+   "id": "qa-0.6.68-487",
+   "apk_sha256": "9c148082f7f5eec32d3ee19ed7eee79019bfddb1abcacdaf4df514dd4ef5f0d8",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "1a5bcbefb2b6265507985f6beaf3f3e9f98727f84ea29e7656c4874661b31e4f",
+   "tree_hash": "",
+   "note": "update 487: E7 owner-approved (Cover details whole-line story pages + compact facts D263/D281, Twin story pages by L2/R2 D265, Play hierarchy + readable lit keys, 48 dp touch boxes, Cinema actions full width), K2 screensaver / details above home pieces, K3 Save Vault same object in grid and up close, K4 spine pictures capped 1280 px, K1 Game shelf / Cover details game spacing"
+  },
+  {
+   "id": "qa-0.6.68-487b",
+   "apk_sha256": "6816ac4befb176031d4ebae0e5f9704a43e225dd515747720cd27c163a858365",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "e47b92cf5501f17dccc5cda6683771328003b1b8769cca7ffc0349e476293985",
+   "tree_hash": "",
+   "note": "update 487b: 487 without the 48 dp layout box on scene keys (it grew key rows: cut / overlapping keys in tight windows, k487 / p487t); Compose widens small clickables to 48 dp touch by itself"
   }
  ]
 }

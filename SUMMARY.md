@@ -1,3 +1,63 @@
+# Update 487 (6 Nov 2026) — checkpoint 10: E7 owner-approved changes, K2 / K3 fixed, K4 guard, K1 started, E1 / E2 photo list
+
+Staging = 486 + the changes below (`next/0.6.68/staging.patch`); QA builds qa-0.6.68-487 / 487b at versionCode 74 (installed
+over v0.6.67 on the Thor and the KONKR, v0.6.67 put back after). Nothing launched, nothing published. CI K5: owner reran
+579debd — both workflows green (no code change).
+- **E7 (owner-approved 6 Nov), Thor:**
+  - **D263 / D281 Cover details:** the story was missing on the Thor (2-line title + wrapped facts left it 0 lines). Now a short
+    column with a story puts the facts on one line (achievements beside the console, title 30 sp) and the story in
+    `PagedStory` (WholeRows.kt): whole-line pages, a "1 / 13" count beside the last line, a page every 7 s while the home is
+    awake (rests with HomeIdle / animations off). Thor: 007's story 3 lines a page, never a half line.
+  - **D265 Twin window:** facts stay (WholeRows); only the story pages — L2 / R2 (and Page Up / Down) or a tap turn it
+    (`WinStory`, GameWindow's key handler), no auto-turn (9 s idle: still 2 / 2), the last page ends on the story's last line
+    and is full. First build cut the last line's descenders — fixed (each page is its own text, not a clipped picture).
+  - **Popup hierarchy:** `SceneKey` reads its lit word against the lit colour (≥ 4.5 : 1 — Tiles' lit Play white on lilac
+    2.9 : 1 → black, 7.4 : 1); a lit ring the same colour as its key is replaced by one that shows; windows that drew every
+    key alike tint Play with the lit colour (SceneKeyStyled = the windows that already fill Play). Case Flow: Play is the
+    accent pill even unlit, its word checked against the pill's light top (now black on lilac), a lit Play gets a white ring.
+  - **Tiny controls:** Case Flow's Inspect / More: 40 dp circles in 48 dp touch boxes, their names under them; the Thor's
+    second-screen edge tabs keep their 30 × 64 dp look in a 48 × 80 dp touch box (dump: 28 → 46 dp). A 48 dp layout box on
+    every scene key (487) grew key rows and cut / overlapped keys in tight windows (KONKR Cover details, Thor Crate /
+    Circuit) — removed in 487b; Compose already widens a small clickable's touch area to 48 dp where nothing else is under it.
+  - **Cinema:** the round actions run under both columns (whole page width): all 8 in one row (5 fitted before; Manual /
+    Inspect / Back wrapped below the window).
+- **K2 (home pieces over the screensaver / popups) — fixed, owner check pending:** the screensaver and the Voltcap row's
+  classic details window sat at layer 0 beside home pieces with fixed layers 4–6.5 (corner / floating shortcuts like a pinned
+  PXPlay, Edit Home's moved parts like the category "Continue playing"; PartsLayer is one app-wide value that two Voltcap
+  homes — the Thor's MainActivity and HomeAlias tasks — both write). Now `SCREENSAVER_Z` 20, `DETAILS_Z` 8 on the covers.
+  Not reproduced on hardware (needs the owner's Edit Home setup).
+- **K3 (Save Vault) — fixed, Thor:** reproduced with the owner's own vault settings (PS2 browser style on, 3D card style):
+  logo slabs in the grid, a grey 3D card when opened. `saveObjectKind()` now decides for grid, flight and close-up; the opened
+  save shows the grid's object (PS2 tile / logo, 3D card, drawn card, capsule). Only looked at — no save data touched (the
+  vault ran its usual Drive sync on opening).
+- **K4 (generated spines flicker) — not reproduced:** Thor Game shelf GBA and Case Flow SNES, 12 quick steps out and back:
+  no blink measured; Case Flow made 9–11 titled spines going out and none again coming back. Guard: pack spine pictures kept
+  ≤ 1280 px (`spineFitSize`) so the 48 MB cache holds ~68. Needs the owner's layout / console.
+- **K1 (game spacing) — started:** Game shelf and Cover details: Layout options › Game spacing 50–250 % (default 100 % = as
+  before; `Features.shelfSpacing`, `cdSpacing`). Case Flow / Box / Storage / File select / Carousel / Arctic / Memory card /
+  Ribbon / Twin already had their own. Others NOT STARTED. Not checked on hardware yet (default unchanged).
+- **E1 / E2:** `tools/qa/E1E2_REFS_487.md` — the references already verified and the 9 essential photos (BLOCKED without).
+- **D2 / D4:** not started (no launches until the owner allows).
+- **R26 popup gate (popclip.sh + popclip.py, launches blocked):**
+  - Thor 487 (with the 48 dp key boxes), all 53 layouts, own window: 28 PASS / 25 FAIL — most "visual" fails were the
+    taller touch boxes (drawn key shorter than its box) and overlaps / cuts in tight windows (Crate, Circuit, Dash, Library).
+  - Thor 487b (boxes removed), the 25 failing + Tiles / Classic / Case Flow / Cinema: **26 / 29 PASS**; FAIL: Arctic, Panels,
+    Side — their last action (Back) cut 13–57 px at the bottom of a 1080p window. Panels and Side fail the same on the
+    published v0.6.67 (p487v): pre-existing → **D284** (Arctic didn't open on v0.6.67 in that run: baseline NOT TESTED).
+  - KONKR 487b: Cover details, Tiles, Twin desk, Case Flow, Cinema, Classic — **6 / 6 PASS**. (KONKR 487: Airy readability
+    FAIL = facts dropped with More open, D266 known; Cover details keys cut by the 48 dp boxes → removed in 487b.)
+- Tests: Batch487Test (pages, pager, lit-key contrast, Play tint, Cover details / Twin wiring, save object kind, spine fit,
+  covers' layers, spacing), TwinHinge142Test updated. PC unit tests + assembleRelease green; static_checks PASS.
+- Devices: Thor and KONKR back on v0.6.67 (1586accc), settings snapshots byte-identical (t487o / k487o), hooks /
+  qa_nolaunch / dumps removed.
+- Copy: src_copy `ui/WholeRows.kt` (staging-only), `ui/StyleCoverDetails.kt`, `ui/WinSceneTwin.kt`, `ui/GameWindow.kt`,
+  `ui/WinScenesMore.kt`, `ui/WinScenesHomes2.kt`, `ui/WinScenes.kt`, `ui/WinScenesHomes.kt`, `ui/SecondScreenHome.kt`,
+  `ui/LauncherScreen.kt`, `ui/HomeEdit.kt`, `ui/SaveExplorer.kt`, `ui/CoverCases.kt`, `ui/ShelfHome.kt`,
+  `ui/StyleHomeSettings.kt`, `data/Features.kt` (in the patch).
+- QA scripts: `tools/qa/device/e7v487.sh`, `k3vault487.sh`, `k4spine487.sh`.
+- **Next action:** D284 (Arctic / Panels / Side Back cut on the Thor), K1 other layouts, owner: K2 check, K4 layout /
+  console, E1 / E2 photos, D2 / D4 launch OK; QA tiers; R1–R3 on approval.
+
 # Update 486 (5 Nov 2026) — E7 review for the owner, backlog K1–K5, D281
 
 No code change: staging is still qa-0.6.68-485 (`next/0.6.68/staging.patch`). Nothing launched, nothing published.

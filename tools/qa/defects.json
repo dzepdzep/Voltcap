@@ -3439,7 +3439,7 @@
    "rule": "E7 / D263",
    "severity": "medium",
    "kind": "defect",
-   "status": "open - fix depends on the owner's D263 choice (review page update 486)",
+   "status": "fixed in staging (487) - Thor: 007 story in whole-line pages (\"1 / 13\"), facts on one line under the console",
    "found": "update 486 Thor (E7 captures)",
    "where": "ui/StyleCoverDetails.kt CoverDetailsInfo",
    "evidence": [
@@ -3447,6 +3447,54 @@
     "QaClip CD7: Genre on row 1, Achievements laid out 0 x 0, no story text node"
    ],
    "root_cause": "the info column (stage height less the shelf allowance) is used up by the 2-line title and the wrapped facts; the story box gets under one 20 dp line and lines = 0 drops it",
+   "fix": "Cover details: a short column with a story puts the facts on one line (achievements beside the console, title 30 sp) and the story in PagedStory (whole-line pages, page count); Batch487Test"
+  },
+  {
+   "id": "D282",
+   "title": "Save Vault (K3): with the PS2 browser style on and the 3D card style, the grid shows logo slabs but an opened save shows a grey 3D memory card",
+   "rule": "K3",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (487) - Thor: the opened save shows the grid's own object",
+   "found": "update 487 Thor (owner report)",
+   "where": "ui/SaveExplorer.kt SaveIconCard / SaveDetail",
+   "evidence": [
+    "k3vault487.sh grid_before / detail_before: logo slab in the grid, grey 3D card opened",
+    "after: the same logo slab opened"
+   ],
+   "root_cause": "the grid follows the PS2 browser style (update 343) but SaveIconCard only knew the 3D card style; drawn cards showed the plain cover up close",
+   "fix": "saveObjectKind() decides for grid, flight and close-up; SaveDetail gets the grid's PS2 refs / logo; Batch487Test"
+  },
+  {
+   "id": "D283",
+   "title": "Home pieces (corner / floating shortcuts, Edit Home's moved parts) can be drawn over the screensaver and the Voltcap row's details window (K2)",
+   "rule": "K2",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "fixed in staging (487) - not reproduced on hardware (owner's Edit Home setup); owner check pending",
+   "found": "update 487 code review of the owner's report (Voltcap row, Edit Home, 'Continue playing' + PXPlay over the screensaver)",
+   "where": "ui/LauncherScreen.kt (screensaver / details AnimatedVisibility), ui/HomeEdit.kt (PartsLayer)",
+   "evidence": [
+    "screensaver and classic details at zIndex 0 in the same Box as pieces at 4-6.5 (CornerShortcuts 5-6, dock 5.5, folder preview 6.5)",
+    "PartsLayer.z is one app-wide value written by each Voltcap home's SideEffect (MainActivity and the HomeAlias task can both be alive)"
+   ],
+   "root_cause": "layer order relied on a shared global and fixed z values below the covers",
+   "fix": "SCREENSAVER_Z = 20, DETAILS_Z = 8 on the covers themselves; Batch487Test"
+  },
+  {
+   "id": "D284",
+   "title": "Thor 1080p: Arctic, Panels and Side menu windows cut their last action (Back) 13-57 px at the window's bottom",
+   "rule": "R26",
+   "severity": "medium",
+   "kind": "defect",
+   "status": "open - pre-existing (Panels / Side identical on v0.6.67, p487v); Arctic baseline NOT TESTED",
+   "found": "update 487 Thor popup sweep p487u",
+   "where": "ui/WinScenesHomes.kt ArcticDrawer, PANEL_DETAIL and SIDE_DRAWER scenes",
+   "evidence": [
+    "p487u ARCTIC_OWN Back full 79 px shown 22 px; PANELS_OWN 73 / 58; SIDE_OWN 97 / 84",
+    "p487v (v0.6.67) PANELS / SIDE the same numbers"
+   ],
+   "root_cause": "",
    "fix": ""
   }
  ]
