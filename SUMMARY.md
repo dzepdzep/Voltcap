@@ -1,3 +1,61 @@
+# Update 491 (7 Nov 2026) — checkpoint 15: R0 / R1 / R2 (owner-approved), Settings search exact-group jump, D137 measured (read-only)
+
+Staging = 490 + the changes below (QA build 0.6.68-qa, versionCode 74). Nothing published, no game launched; games, saves,
+cloud sync, recent-games history and device settings untouched. Both devices back on v0.6.67 (1586accc); snapshots
+byte-identical to the baselines (Thor t490o: 15f763763b30 / 42c3db4f584e / ed4d75db4278; KONKR k490o: d46733f623f1 /
+24eea8cb0c36 / ed4d75db4278 / e13fedd12342); RetroArch history unchanged (Thor 161629e583b9, KONKR 03ba8fa1421f).
+- **R0 — the R1 order is kept:** `r1Order()` (R1Extras.kt) replaces the update-325 "insert after its neighbour" rule. Saved tiles
+  never move; tiles the saved order doesn't have go after all of them (in More, per page); hidden tiles stay hidden (the hidden set
+  filters after the order, untouched); nothing is written. With no saved order (fresh install, or the Thor / KONKR, which were
+  never rearranged) the tiles new since 490 (`R1_APPENDED`: Layout options, Spacing) still go last, so every older tile keeps its
+  exact slot (first Thor build put Layout options mid-grid and shifted Magnifier — fixed and re-checked). Top row unchanged.
+- **R1 — Layout options:** the Layout tile keeps tap (next layout) and hold (the list); the list gains "Options for <layout>…",
+  and the optional "Layout options" tile (More). Both open Settings › Home at the active layout's own options group
+  (`layoutOptionsTarget`: "<layout> options" index entries for the style homes, else the Layout options page).
+- **R2 — Game spacing tile (optional, More):** only on the 5 layouts with their own spacing slider (Classic row_spacing, Tiles,
+  Shelf, Cover details, Case stacks) — hidden elsewhere (R1TileRules). Tap steps 80/100/120/150 % (wraps; an in-between saved
+  value goes to the next step up); hold = the same slider and range as Settings. Same pref as the Settings slider; game size and
+  carousel spacing untouched; defaults and saved values unchanged.
+- **Settings search — exact group:** cause of the KONKR Battery watcher miss: the page scrolled while every group stood open for
+  the search, then the other groups folded and the result moved away; a result that is itself a group stayed folded. Now
+  (SettingsJump / FoldGroup) the jump is claimed first, the result's group opens, and after the page settles (420 ms) it is
+  scrolled into view and given the D-pad focus, then lit. No navigation rewrite.
+- **Layout list (R26, D288, found on the Thor):** the picture + blurb were taller than the 1080p screen and pushed Apply / Options /
+  Cancel off the bottom (pre-existing); both columns now share the list's height, the left one scrolls. Actions whole on screen.
+- **QA snapshot:** now also saves / restores the R1 panel's own prefs (`r1_tiles`: order, hidden, use counts) — `qaSavePrefs` /
+  `qaRestorePrefs` in TestHooks. `tools/qa/device/r1qa491.sh TAG base|now N|back` (diff of every snapshot key vs the base).
+- *Device (Thor, Pocket ribbon, no saved order):* R1 panel top row and every older tile in place, Layout options last on Quick
+  (before Edit), Spacing hidden (layout has no spacing control); Layout options tile → "Pocket ribbon options" opened at the top;
+  Layout hold → list with "Options for Pocket ribbon…", actions whole, touch → the same group; search Battery watcher (sidebar)
+  controller: lands on the group, open, focus on its header, ▼ goes inside. Snapshot diff before restore: nothing changed.
+- *Device (KONKR, Case flow; Case stacks via the preview hook):* Case flow: Layout options shown, Spacing hidden. Case stacks:
+  Layout options + Spacing last on Quick; tap Spacing 100 → 120 ("Roomy", stacks visibly wider); diff = stacks_spacing 100→120
+  and use_spacing only (plus the preview's own layout switch); hold → slider at 120 % with focus; search Battery watcher (compact
+  chips) → Device › Battery watcher, open, focused — the owner's report fixed. All restored, QA build state == base, then v0.6.67.
+- *Not tested:* Spacing on Classic / Tiles / Shelf / Cover details on hardware (unit test: same prefs + ranges); a layout assigned
+  to a category (same per-layout pref by design); the slider's ◀▶ needs A first like the Settings slider (unchanged). After a
+  *touch* tap on a search result the page is right but no focus ring shows until a D-pad press (touch mode); controller path OK.
+- *QA incident (no harm):* two "Voltcap closed unexpectedly (ANR: no focused window)" screens on the Thor — my key presses while
+  the screen was off / Recents was on top; Continue closed them. A `svc power stayon usb` slip was reverted at once (0 → 2 → 0).
+- **D137 (Case stacks, read-only + measurement, KONKR v0.6.67, GBA, k4ab 25 steps × 4 walks, temporary prefs restored):**
+
+  | mode | janky | p90 | p99 | gpu p99 |
+  |---|---|---|---|---|
+  | as set (mirror + depth) | 27.1 % | 101 ms | 250 ms | 9 ms |
+  | mirror off | 23.2 % | 97 ms | 250 ms | 9 ms |
+  | depth off | 22.9 % | 61 ms | 150 ms | 9 ms |
+  | as set, again | 22.4 % | 65 ms | 150 ms | 9 ms |
+
+  GPU ≤ 9 ms in every mode and the two identical runs differ as much as the A/B, so the reflections (offscreen layers) and the
+  3-D tilt are not the cost — a picture / layer cache would not help (none implemented). The slow frames are CPU-side: code
+  reading shows every step changes `dist` for every visible case (its zIndex modifier and mirror flag are composition
+  parameters), so all ~2×nSide StacksItems recompose per move, on top of the known root recomposition per focus change
+  (LauncherScreen, updates 451/452). Proposed next step (needs approval): count recompositions per move with the existing
+  QaTrace, then move the per-step values (z order, mirror range) out of composition — no caching.
+- Files: ui/R1Extras.kt, ui/QuickSettings.kt, ui/R1TileRules.kt, ui/LayoutPicker.kt, ui/SettingsJump.kt, ui/FoldGroup.kt,
+  ui/SettingsIndex.kt, ui/TestHooks.kt; tests Batch491Test (staging), Batch490Test; tools/qa/device/r1qa491.sh, d137ab491.sh.
+  Unit tests green (864), assembleRelease OK.
+
 # Update 490 (6 Nov 2026) — checkpoint 14: K4 final validation (KONKR), Settings S1 groups, Settings search coverage, colour source readout, R1 plan
 
 Staging = 489d + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched; games, saves,
