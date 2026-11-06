@@ -143,7 +143,7 @@ index b8fdb4e..38d63e9 100644
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..a85425b 100644
+index 55c357d..660fa0f 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -247,16 +247,22 @@ index 55c357d..a85425b 100644
      val dashStatus = BoolPref("dash_status", true)
      /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
      val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())
-@@ -1543,6 +1609,8 @@ object Features {
+@@ -1543,6 +1609,14 @@ object Features {
      /** Update 114: every game's box scans (its spine) looked up in the background (Settings › Metadata › Saved on this device). */
      val spineScrape = BoolPref("spine_scrape", false)
      val shelfStand = EnumPref("shelf_stand", ShelfStand.SPINES, ShelfStand.values())
++    /** Update 488 (K1): Tile home — room between the tiles, % of the standard (100 = as before). */
++    val tilesSpacing = IntPref("tiles_spacing", 100, 50..250)
++    /** Update 488 (K1): Case stacks — room between the stacked spines, % (100 = as before). */
++    val stacksSpacing = IntPref("stacks_spacing", 100, 50..250)
++    /** Update 488 (K1): the Voltcap row — room between the games, % of the standard gap (100 = as before). */
++    val rowSpacing = IntPref("row_spacing", 100, 50..300)
 +    /** Update 487 (K1): Game shelf — room between the games, % of the standard gap (100 = as before). */
 +    val shelfSpacing = IntPref("shelf_spacing", 100, 50..250)
      enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }
      val shelfLook = EnumPref("shelf_look", ShelfLook.DARK, ShelfLook.values())
      /** Game shelf: the whole screen behind the shelves is the bookcase (back panel, side uprights, top crown). */
-@@ -1921,6 +1989,8 @@ object Features {
+@@ -1921,6 +1995,8 @@ object Features {
      val cfCurve = IntPref("cf_curve", 45, 0..100)
      /** Room between the cases, in % of the standard. */
      val cfSpacing = IntPref("cf_spacing", 100, 60..160)
@@ -548,15 +554,39 @@ index 3a1facd..e2d20e2 100644
                      )
                  com.shelf.launcher.data.CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).forEach { p ->
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt b/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
-index ac5dd3f..ee5457d 100644
+index ac5dd3f..3b68fb5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/CoverCases.kt
-@@ -190,6 +190,17 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean,
+@@ -175,11 +175,20 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean,
+     val stale = if (own && res != null) made?.takeIf {
+         SpineCache.sameOwnSpine(it.first, SpineCache.key(res, landscape, title, com.shelf.launcher.data.Packs.version.intValue))
+     }?.second else null
++    // (Update 488, K4 QA: a spine shown without its name while its titled one is made — what a "flicker" would be.)
++    if (QaTrace.on && res != null && now == null && made?.first != key) androidx.compose.runtime.SideEffect {
++        QaTrace.event("spine wait", "${key.substringAfterLast('|').take(24)} stale=${stale != null} low=${SpineCache.peekLow(key) != null} untitled=${SpineCache.peekUntitled(res, landscape) != null}")
++    }
++    // (Update 488, K4 measured on the Thor: Case flow SNES, 80 games out and back — the full-size cache holds ~68, so 27 spines
++    // coming back were made again and each showed first WITHOUT its name for 1–4 frames: the "flicker returning to games".
++    // A small named copy of every spine made is kept (hundreds fit), shown for those frames instead of the nameless one.)
++    val low = if (res != null && now == null && got == null && stale == null) SpineCache.peekLow(key) else null
+     return when {
+         res == null -> SpineCache.Titled(true, null)
+         now != null -> SpineCache.Titled(true, now)
+         got != null -> SpineCache.Titled(true, got.second)
+         stale != null -> SpineCache.Titled(false, stale)
++        low != null -> SpineCache.Titled(false, low)
+         // (Update 348: while it's being made, the console's spine without the name — not a dark strip flashing in.
+         // Update 369: the own Steam / Android spine too — OwnSpine drew a dark strip while it was made.)
+         else -> SpineCache.Titled(false, SpineCache.peekUntitled(res, landscape))
+@@ -190,6 +199,20 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean,
   * Update 134: the console spines, decoded and flattened once each (and the games' titled ones, kept while there's room),
   * made on a background thread. Pictures stay the same until your spine pack changes (its version is in every key).
   */
 +/** Update 487 (K4): the longest side a console spine picture is kept at (px). */
-+internal const val SPINE_MAX_PX = 1280
++internal const val SPINE_MAX_PX = 960
++
++/** Update 488 (K4): the long side of the small named copy kept of every titled spine ([SpineCache.peekLow]). */
++internal const val SPINE_LOW_PX = 320
 +
 +/** Update 487 (K4): the size a [w] × [h] spine picture is scaled to (its longest side at most [SPINE_MAX_PX]); null: as it is. */
 +internal fun spineFitSize(w: Int, h: Int, max: Int = SPINE_MAX_PX): Pair<Int, Int>? {
@@ -569,7 +599,24 @@ index ac5dd3f..ee5457d 100644
  internal object SpineCache {
      class Ready(val key: String, val image: ImageBitmap, val ink: Color)
      /** A titled spine: [done] once it has been tried ([bitmap] null then: there's no picture for it). */
-@@ -232,7 +243,13 @@ internal object SpineCache {
+@@ -223,6 +246,16 @@ internal object SpineCache {
+     fun peekReady(key: String): Ready? = readyMap.get(key)
+     fun peekTitled(key: String): android.graphics.Bitmap? = titledMap.get(key)
+ 
++    /** Update 488 (K4): small named copies of the titled spines (long side SPINE_LOW_PX, ~16 MB: a few hundred). */
++    private val lowMap = object : android.util.LruCache<String, android.graphics.Bitmap>(16 * 1024 * 1024) {
++        override fun sizeOf(key: String, value: android.graphics.Bitmap): Int = value.allocationByteCount
++    }
++    fun peekLow(key: String): android.graphics.Bitmap? = lowMap.get(key)
++    private fun keepLow(key: String, b: android.graphics.Bitmap) {
++        val fit = spineFitSize(b.width, b.height, SPINE_LOW_PX) ?: return
++        runCatching { lowMap.put(key, android.graphics.Bitmap.createScaledBitmap(b, fit.first, fit.second, true)) }
++    }
++
+     /** The console's picture laid on its own average colour, upright as it comes (decoded once). */
+     @Synchronized
+     private fun flatOf(context: android.content.Context, res: Int): android.graphics.Bitmap? {
+@@ -232,7 +265,13 @@ internal object SpineCache {
              if (res >= 0) android.graphics.BitmapFactory.decodeResource(context.resources, res)
              else PackSpines.load(res).asAndroidBitmap().takeIf { it.width > 1 }
          }.getOrNull() ?: return null
@@ -584,10 +631,19 @@ index ac5dd3f..ee5457d 100644
          flat.put(k, out)
          return out
      }
-@@ -271,6 +288,7 @@ internal object SpineCache {
+@@ -258,6 +297,7 @@ internal object SpineCache {
+         if (untitled.get(uk) == null) runCatching { flatOf(context, res)?.let { untitled.put(uk, orientSpine(it, landscape)) } }
+         val out = runCatching { orientSpine(OwnSpines.compose(context, res, title, accent), landscape) }.getOrNull() ?: return null
+         titledMap.put(key, out)
++        keepLow(key, out)
+         return out
+     }
+ 
+@@ -271,6 +311,8 @@ internal object SpineCache {
          val named = if (tpl != null && !title.isNullOrBlank()) runCatching { spineWithTitle(f, tpl, title) }.getOrDefault(f) else f
          val out = orientSpine(named, landscape)
          titledMap.put(key, out)
++        keepLow(key, out)
 +        QaTrace.event("spine made", "${out.width}x${out.height} cache=${titledMap.size() / 1024}/${titledMap.maxSize() / 1024}KB")
          return out
      }
@@ -754,6 +810,31 @@ index c5dcaf5..f746344 100644
                  onError = { failed = true },
                  modifier = Modifier.width(slotWidth).height(logoHeight)
              )
+diff --git a/app/src/main/java/com/shelf/launcher/ui/GameDock.kt b/app/src/main/java/com/shelf/launcher/ui/GameDock.kt
+index d69fb17..d22e99e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/GameDock.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/GameDock.kt
+@@ -168,7 +168,10 @@ internal fun GameDock(
+         val glideDiscRoom by animateDpAsState(discRoom, dockMotion(), label = "dockDiscRoom")
+         // Small, even gap between every card (about 1/27 of a cover's width —
+         // tight, but never touching).
+-        val spacing = maxOf(DockSpacing * 0.36f, coverWidth / 27.5f)
++        // (Update 488, K1: Layout options › Game spacing scales the gap between the cards; 100 % is the standard one. The row's
++        // left edge and the name above / under it keep the standard gap, so they stay lined up — dockTextStart.)
++        val baseSpacing = maxOf(DockSpacing * 0.36f, coverWidth / 27.5f)
++        val spacing = baseSpacing * (com.shelf.launcher.data.Features.rowSpacing.state.value / 100f)
+         val stride = coverWidth + spacing
+ 
+         // Where the game you're on sits: at the left end, or in the middle.
+@@ -179,7 +182,7 @@ internal fun GameDock(
+         val framed = look.focusBorder || look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE
+         val focusX = if (!pinnedFirst && (carousel || look.focusPosition == com.shelf.launcher.data.FocusPosition.CENTER)) {
+             (screenWidth - bannerWidth) / 2
+-        } else if (framed) maxOf(spacing, 6.dp) else 0.dp
++        } else if (framed) maxOf(baseSpacing, 6.dp) else 0.dp
+         // Enough covers to fill the screen on both sides of the focus, plus two
+         // spare so cards enter and leave the window while fully off-screen.
+         val bigCoverWidth = coverWidth * grow
 diff --git a/app/src/main/java/com/shelf/launcher/ui/GamePopupStatus.kt b/app/src/main/java/com/shelf/launcher/ui/GamePopupStatus.kt
 index f859a52..1d06281 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/GamePopupStatus.kt
@@ -1304,7 +1385,7 @@ index 2f264a2..1faa8e3 100644
 +    setContentView(v, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
-index eca8853..314dfee 100644
+index eca8853..36d8912 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt
 @@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
@@ -1335,7 +1416,7 @@ index eca8853..314dfee 100644
          viewModel.setSearchQuery("")
          viewModel.setPlatformFilter(g.platform)
          kotlinx.coroutines.delay(400)
-@@ -1188,6 +1193,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1188,6 +1193,18 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          viewModel.previewAppearance(state.appearance.copy(sceneFromCover = on))
          TestHooks.sceneCover.value = null
      }
@@ -1348,10 +1429,13 @@ index eca8853..314dfee 100644
 +        android.util.Log.e("VoltcapQA", "motionprobe tween=$probeMs real=${(System.nanoTime() - t0) / 1_000_000} level=${com.shelf.launcher.data.Features.motion.value} scale=${MotionLevel.scaleFactor}")
 +        TestHooks.motionProbe.value = 0
 +    }
++    // (Update 488, K2 QA: the screensaver asked for by a test — the idle timer's own path.)
++    val testSaver = TestHooks.screensaver.value
++    LaunchedEffect(testSaver) { if (testSaver) { screensaverOn = true; TestHooks.screensaver.value = false } }
      // (Update 261: a Settings page asked for by a test walk.)
      val testSettings = TestHooks.settings.value
      LaunchedEffect(testSettings) {
-@@ -1195,7 +1209,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1195,7 +1212,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          closeAllDialogs(); categoryScreenOpen = false; showDetails = false
          kotlinx.coroutines.delay(200)
          // (Update 426: `--es voltcap_test_settings Save_Vault` opens the Save Vault, for its visual QA.)
@@ -1360,7 +1444,7 @@ index eca8853..314dfee 100644
          else { menuStartCategory = cat; showMenu = true }
          // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
          TestHooks.settings.value = null
-@@ -1428,7 +1442,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -1428,7 +1445,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
      // Worked out off the main thread, and only while the category screen is open
      // (or once, so it is ready the first time it opens). Each category's list
      // comes from the state's memoized visibleGames.
@@ -1371,7 +1455,7 @@ index eca8853..314dfee 100644
      val tilesBuiltOpen = remember { BooleanArray(1) }
      LaunchedEffect(
          tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,
-@@ -2807,6 +2823,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -2807,6 +2826,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              paleBehind = paleBehind,
              // (Update 333: dressed for the layout — StatusLooks.)
              lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
@@ -1379,7 +1463,7 @@ index eca8853..314dfee 100644
              modifier = modifier,
              menuSlot = menuSlot,
              onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
-@@ -3368,7 +3385,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3368,7 +3388,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  !(tileLayout && TileSwitch.plain)
          }
          // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
@@ -1392,7 +1476,7 @@ index eca8853..314dfee 100644
          // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
          if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
  
-@@ -3408,7 +3429,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -3408,7 +3432,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                      allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                          !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                  },
@@ -1402,7 +1486,7 @@ index eca8853..314dfee 100644
              )
          }
          // The status bar's real height (taller with the music player in it), so what sits under it
-@@ -4063,9 +4085,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4063,9 +4088,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                  statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                  modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                      .padding(
@@ -1418,7 +1502,7 @@ index eca8853..314dfee 100644
                      )
              )
          } else if (tvLayout) {
-@@ -4175,8 +4201,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4175,8 +4204,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              }
              // Tile-style: tiles a little above the middle, round buttons under them.
              // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
@@ -1434,7 +1518,7 @@ index eca8853..314dfee 100644
              Column(
                  Modifier
                      .align(
-@@ -4274,6 +4306,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4274,6 +4309,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                              // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
                              val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
                              TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
@@ -1442,7 +1526,7 @@ index eca8853..314dfee 100644
                      TileHomeRow(
                          lastPlayedAt = state.lastPlayedAt,
                          onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
-@@ -4302,6 +4335,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4302,6 +4338,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                          loopTick = state.loopTick, loopStep = state.loopStep
                      )
                      }
@@ -1462,7 +1546,7 @@ index eca8853..314dfee 100644
                  }
                  if (tileCategoryBelow && showCats) {
                      Spacer(Modifier.height(4.dp))
-@@ -4578,6 +4624,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4578,6 +4627,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          SideEffect { HomeEditState.artLook = artLookHere }
          // Update 125: the floating parts over the games — but under anything that opens over the home screen.
          val homeCovered = showDetails || showControlsHelp || categoryScreenOpen || screensaverOn || stickLetter != null
@@ -1471,7 +1555,7 @@ index eca8853..314dfee 100644
          SideEffect { PartsLayer.z = if (homeCovered) 0f else 6f }
          // The description part needs the game's details (update 104), once you rest on a game.
          val wantsDesc = HomeWidgets.DESC in overlayParts
-@@ -4779,7 +4827,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4779,7 +4830,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
              enter = if (popupZoom) fadeIn(tween(140)) + scaleIn(androidx.compose.animation.core.spring(dampingRatio = 0.72f, stiffness = 420f), initialScale = 0.3f, transformOrigin = zoomOrigin)
              else fadeIn(tween(160)) + scaleIn(tween(160), initialScale = 0.96f),
              exit = if (popupZoom) fadeOut(tween(140)) + androidx.compose.animation.scaleOut(tween(160), targetScale = 0.4f, transformOrigin = zoomOrigin)
@@ -1482,7 +1566,7 @@ index eca8853..314dfee 100644
          ) {
              val game = focusedGame
              if (game != null) DetailsWindow(game, fillScreen = false)
-@@ -4976,7 +5026,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
+@@ -4976,7 +5029,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
          AnimatedVisibility(
              visible = screensaverOn,
              enter = fadeIn(tween(1200)),
@@ -2043,22 +2127,47 @@ index 418ffc1..a3111b1 100644
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
-index 9e499ab..0ef81bb 100644
+index 9e499ab..d1034a1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
-@@ -587,6 +587,11 @@ internal fun SaveExplorerDialog(
+@@ -126,7 +126,10 @@ internal fun SaveExplorerDialog(
+     remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
+     // (Update 285: PS2 saves show their own icon in Icons only — never on the cards.)
+     // (Update 325: and with the "PS2 browser style" switch back, in the card styles too.)
+-    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS || com.shelf.launcher.data.Ps2BrowserStyle.on.value
++    // (Update 488, K3, owner: "if I choose Memory Card, SD Card, Floppy … it should show that physical object": the PS2 browser
++    // switch now does what its note says — a PS2 game's save shows its own PS2 save icon; every other save keeps the chosen
++    // physical card with its cover, in the grid and up close alike. Logos instead of covers only with the Icons look.)
++    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS
+     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
+     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
+     remember { com.shelf.launcher.data.CloudSync.load(context) }
+@@ -566,9 +569,8 @@ internal fun SaveExplorerDialog(
+                                 // (Update 343, Toni: "the PS2 save icon: either all memory cards or all logos, no mix — toggle between those
+                                 // two": "PS2 browser style" on draws EVERY save as the PS2 browser does (a PS2 game its own 3D save icon,
+                                 // any other game its logo turning in its place); off, every save gets the vault's own look.)
+-                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value) {
+-                                    if (com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsuleByKey[game.stableKey]) else emptyList()
+-                                } else null
++                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform))
++                                    ps2RefsOf(capsuleByKey[game.stableKey]) else null
+                             )
+                           }
+                         }
+@@ -586,7 +588,11 @@ internal fun SaveExplorerDialog(
+             ) {
                  val d = detail
                  if (d != null) SaveDetail(
-                     game = d.first, st = d.second, icon = iconFor(d.first), phase = phase,
+-                    game = d.first, st = d.second, icon = iconFor(d.first), phase = phase,
++                    game = d.first, st = d.second, icon = if (ps2Style) logoFor(d.first) else iconFor(d.first), phase = phase,
 +                    // (Update 487, K3: the same object as the grid's slot.)
-+                    ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value) {
-+                        if (com.shelf.launcher.data.Ps2BrowserStyle.isPs2(d.first.platform)) ps2RefsOf(capsuleByKey[d.first.stableKey]) else emptyList()
-+                    } else null,
++                    ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(d.first.platform))
++                        ps2RefsOf(capsuleByKey[d.first.stableKey]) else null,
 +                    logo = if (ps2Style) logoFor(d.first) else null,
                      capsule = capsuleByKey[d.first.stableKey],
                      hidden = d.first.stableKey in capsuleOptions.hidden,
                      onHide = { h -> com.shelf.launcher.data.SaveCapsules.setHidden(context, d.first.stableKey, h); close() },
-@@ -952,7 +957,10 @@ private fun SaveDetail(
+@@ -952,7 +958,10 @@ private fun SaveDetail(
      /** Reports where the icon sits in this window (root px), for the flight to land on. */
      onIconSpot: (androidx.compose.ui.geometry.Rect) -> Unit,
      onOpenSave: () -> Unit,
@@ -2070,7 +2179,7 @@ index 9e499ab..0ef81bb 100644
  ) {
      val focus = remember { FocusRequester() }
      LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
-@@ -1026,7 +1034,7 @@ private fun SaveDetail(
+@@ -1026,12 +1035,16 @@ private fun SaveDetail(
                          Modifier
                              .fillMaxSize()
                              .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) },
@@ -2079,7 +2188,25 @@ index 9e499ab..0ef81bb 100644
                      )
                  }
              }
-@@ -1094,15 +1102,50 @@ private fun SaveDetail(
+             Spacer(Modifier.width(if (compact) 14.dp else 24.dp))
+-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
++            // (Update 488b, popup gate R26: the buttons sat at the end of the scrolling column — focusing "Save options" on open
++            // scrolled the title's first lines out of the window on the Thor (k3s: "Compatible)" of "Pokemon Silver Version (GB
++            // Compatible)"). The facts scroll in the room the buttons leave; the buttons stay whole under them.)
++            Column(Modifier.weight(1f)) {
++            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                 Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 3)
+                 Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                 Spacer(Modifier.height(12.dp))
+@@ -1069,6 +1082,7 @@ private fun SaveDetail(
+                         items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
+                     }
+                 }
++            }
+                 Spacer(Modifier.height(if (compact) 12.dp else 18.dp))
+                 // (Update 274, Toni: "buttons a bit down … centred".)
+                 ChipFlow(center = true) {
+@@ -1094,15 +1108,50 @@ private fun SaveDetail(
   * on it turns [angle] degrees about its upright axis (the back: the same cover darkened, with the
   * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
   */
@@ -2112,7 +2239,7 @@ index 9e499ab..0ef81bb 100644
 +    // style draws every save as the PS2 browser does in the grid (the icon / logo), so it does up close too; the drawn
 +    // cards (memory card, SD card, floppy, capsule) are drawn up close as well (they showed the plain cover there).
 +    val vaultStyle = Features.saveVaultStyle.state.value
-+    val kind = saveObjectKind(com.shelf.launcher.data.Ps2BrowserStyle.on.value, vaultStyle, Models3D.saveCardIdFor(look) != null)
++    val kind = saveObjectKind(com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform), vaultStyle, Models3D.saveCardIdFor(look) != null)
 +    if (kind == SaveObjectKind.PS2_BROWSER && ps2 != null) {
 +        Box(modifier, contentAlignment = Alignment.Center) {
 +            Ps2SaveTile(ps2, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, game = game, logo = logo)
@@ -2132,6 +2259,19 @@ index 9e499ab..0ef81bb 100644
      if (card != null) {
          if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
          else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt b/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt
+index aadd90a..d0ec8b7 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt
+@@ -871,7 +871,7 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
+                 }
+             }
+             if (ps2On) Text(
+-                "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\".",
++                "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\". Every other save keeps the look picked above.",
+                 color = label, fontSize = 11.sp
+             )
+         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt b/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
 index 5c94cb3..7305477 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SecondDim.kt
@@ -2203,7 +2343,7 @@ index 55c73a8..02b687a 100644
                  }
                  Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..083d1aa 100644
+index f580972..6b81b12 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 @@ -613,6 +613,9 @@ fun SettingsDialog(
@@ -2260,7 +2400,32 @@ index f580972..083d1aa 100644
                  if (F.tileSwitch.state.value) {
                      SwitchRow(
                          Icons.Filled.Wallpaper, "Plain background",
-@@ -4254,15 +4280,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -3744,6 +3770,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+             GameSizeSlider(appearance, onChange)
+             Spacer(Modifier.height(8.dp))
+         }
++        // Update 488 (K1): Tile home's own room between the tiles (100 % = as before).
++        if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
++            PercentSlider("Game spacing", com.shelf.launcher.data.Features.tilesSpacing.state.value,
++                { com.shelf.launcher.data.Features.tilesSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
++            Spacer(Modifier.height(8.dp))
++        }
+         // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar): each its own options (StyleHomeSettings.kt).
+         if (appearance.homeLayout.styleHome) FoldGroup(
+             "${appearance.homeLayout.label} options", summary = styleHomeSummary(appearance.homeLayout),
+@@ -3850,6 +3882,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+             RowChoice("Game you're on", com.shelf.launcher.data.FocusPosition.values(), appearance.focusPosition, { it.label }) {
+                 onChange(appearance.copy(focusPosition = it))
+             }
++            // Update 488 (K1): the Voltcap row's own room between the games (100 % = as before).
++            if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC) PercentSlider(
++                "Game spacing", com.shelf.launcher.data.Features.rowSpacing.state.value,
++                { com.shelf.launcher.data.Features.rowSpacing.value = it.coerceIn(50, 300) }, min = 50, max = 300, valueText = { "$it%" }
++            )
+             // "Wide for the first game only" makes sense only with the game you're on at the left end.
+             val leftEnd = appearance.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT
+             RowChoice(
+@@ -4254,15 +4291,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -2387,10 +2552,30 @@ index c6fe26a..3b59ecf 100644
                  }
                  // (After a knock: the first press only knocks against the box's wall.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-index 4972c11..d386bdf 100644
+index 4972c11..1c1d8f2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-@@ -576,7 +576,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -374,7 +374,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+         val spineW = caseH * STACKS_SPINE
+         val gapSide = (caseW * 0.12f).coerceIn(12.dp, 40.dp)
+         val x0 = caseW / 2 + gapSide + spineW * STACKS_SPINE_K / 2
+-        val pitch = spineW * STACKS_SPINE_K + 1.5.dp
++        // (Update 488, K1: Layout options › Game spacing — 100 % is the standard pitch; more opens a gap between the spines.)
++        val pitch = spineW * STACKS_SPINE_K * stacksPitchK(com.shelf.launcher.data.Features.stacksSpacing.state.value) + 1.5.dp
+         val avail = (w / 2 - x0 - 4.dp).coerceAtLeast(0.dp)
+         val depthK = if (depth) STACKS_DEPTH_K else 0f
+         // How many spines fit in each stack before the screen's edge.
+@@ -382,7 +383,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+         val nSide = if (depthK > 0f) {
+             ((exp(depthK * (avail / pitch)) - 1f) / depthK).coerceIn(0f, 1000f).toInt() + 2
+         } else (avail / pitch).coerceIn(0f, 1000f).toInt() + 2
+-        val geo = remember(w, h, caseW, caseH, depthK, density, mirror) {
++        // (Update 488b, K1 on the Thor: the spacing slider changed nothing until the screen was rebuilt — the pitch wasn't a key.)
++        val geo = remember(w, h, caseW, caseH, depthK, density, mirror, pitch, nSide) {
+             with(density) {
+                 StacksGeo(
+                     caseW, caseH, spineW, caseW.toPx(), caseH.toPx(), spineW.toPx(),
+@@ -576,7 +578,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
              StacksProgress(c, g, on)
          }
      } else if (caseLook && !spines && caseMarker(g.platform) != null) {
@@ -2402,7 +2587,7 @@ index 4972c11..d386bdf 100644
          Box(modifier.gameOrigin(k, on).rolloutItem()) {
              MediaFocus(on) {
                  CaseArt(
-@@ -584,7 +587,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -584,7 +589,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                      g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                      caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
                      // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
@@ -2411,6 +2596,14 @@ index 4972c11..d386bdf 100644
                  )
              }
              // (Update 202: the case's printed band shows the console already.)
+@@ -722,3 +727,7 @@ internal fun CaseStacksSettings() {
+         PickedFacingChoice(note = false)
+     }
+ }
++
++
++/** Update 488 (K1): Case stacks' spine pitch factor for its Game spacing [pct] (100 = the standard pitch, 1.0). */
++internal fun stacksPitchK(pct: Int): Float = (1f + (pct - 100) / 200f).coerceAtLeast(0.75f)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt b/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
 index d887f82..22323ad 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt
@@ -2652,10 +2845,22 @@ index e9a9ac9..35f641e 100644
      val cur = GreenCoreNav.system.coerceIn(0, (n - 1).coerceAtLeast(0))
      val pos = remember { Animatable(cur.toFloat()) }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt b/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
-index 17d4aed..7bd6664 100644
+index 17d4aed..1c4d6c7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleHomeSettings.kt
-@@ -447,6 +447,8 @@ private fun ShelfSettings() {
+@@ -177,6 +177,11 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
+         HomeLayout.ARTLIB -> ArtLibrarySettings()
+         else -> Unit
+     }
++    // Update 488 (K1): Case stacks' own room between the spines (100 % = as before).
++    if (layout == HomeLayout.STACKS) {
++        Spacer(Modifier.height(8.dp))
++        PercentSlider("Game spacing", Features.stacksSpacing.state.value, { Features.stacksSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
++    }
+     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
+     if (layout != HomeLayout.SPOT && layout != HomeLayout.BAR) {
+         Spacer(Modifier.height(10.dp))
+@@ -447,6 +452,8 @@ private fun ShelfSettings() {
      MutedNote("The category as a bookcase: every game shows its spine, the one you're on is pulled out to show its front. ◀ ▶ along the shelf, ▲ ▼ to the shelf above / below. The more games, the more shelves (up to three on screen, then it scrolls).")
      Spacer(Modifier.height(10.dp))
      StyleChoice("The games stand", Features.ShelfStand.values(), Features.shelfStand.state.value, { it.label }) { Features.shelfStand.value = it }
@@ -2812,10 +3017,19 @@ index 977fe34..b440170 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..e9ba930 100644
+index 536f473..e3c92f5 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-@@ -70,6 +70,11 @@ internal object TestHooks {
+@@ -16,6 +16,8 @@ internal object TestHooks {
+     val game = mutableStateOf<String?>(null)
+     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
+     val settings = mutableStateOf<String?>(null)
++    /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
++    val screensaver = mutableStateOf(false)
+     /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
+     val bg = mutableStateOf<String?>(null)
+     /**
+@@ -70,6 +72,11 @@ internal object TestHooks {
      val sceneCover = mutableStateOf<Boolean?>(null)
      /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
      val noVideo = mutableStateOf(false)
@@ -2827,7 +3041,20 @@ index 536f473..e9ba930 100644
      /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
      val panelHold = mutableStateOf(true)
      /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
-@@ -318,6 +323,10 @@ internal object TestHooks {
+@@ -271,6 +278,12 @@ internal object TestHooks {
+         // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
+         // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
+         intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
++        // Update 488 (K3): `--es voltcap_test_ps2browser on|off` — the Save Vault's PS2 browser style for this session only
++        // (not saved: the owner's own switch stays as it is).
++        if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
++        intent?.getStringExtra("voltcap_test_ps2browser")?.let { v -> if (enabled(context)) {
++            com.shelf.launcher.data.Ps2BrowserStyle.load(context); com.shelf.launcher.data.Ps2BrowserStyle.on.value = v == "on"
++        } }
+         if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
+         // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
+         if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
+@@ -318,6 +331,10 @@ internal object TestHooks {
              panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
              android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
          }
@@ -2838,7 +3065,7 @@ index 536f473..e9ba930 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -350,6 +359,17 @@ internal object TestHooks {
+@@ -350,6 +367,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -2918,7 +3145,7 @@ index 0d3f901..357ad9e 100644
 +    }
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
-index 830a9b6..6b51b69 100644
+index 830a9b6..f5c31b3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TileHome.kt
 @@ -31,6 +31,9 @@ import androidx.compose.foundation.shape.CircleShape
@@ -2945,16 +3172,28 @@ index 830a9b6..6b51b69 100644
  /** Geometry of the row, shared by the tiles, the name above them and the touch handling. */
  internal class TileRowMetrics(
      val tile: Dp,
-@@ -124,7 +134,7 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
+@@ -124,15 +134,17 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
      // (Update 317as, Toni: "with the coloured frame the frame seems cut off": the frame and its glow reach ~12 dp out from
      // the tile, a little more with the lift — 22 dp in now, so all of it shows.)
      val start = 22.dp
 -    val byHeight = screen.height * tileFraction(size) * scale
+-    val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
 +    val byHeight = screen.height * tileFraction(size) * scale * LocalTileRoom.current
-     val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
++    // (Update 488, K1: Layout options › Game spacing scales the gap; 100 % is the standard one.)
++    val gapK = com.shelf.launcher.data.Features.tilesSpacing.state.value / 100f
++    val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) * gapK }
      // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
      // and never taller than about two thirds of the screen.
-@@ -1149,3 +1159,48 @@ internal fun tileCenterAnchor(vFocus: Int, rowW: Float, tile: Float, start: Floa
+     val across = (4.2f / scale).coerceIn(1.6f, 4.2f)
+     val maxByWidth = minOf((screen.width - start * 2 - spacingFor(byHeight) * 3) / across, screen.height * 0.62f)
+     // Layout options › Games across the screen: exactly that many tiles across (capped at two thirds of the height).
+     val n = com.shelf.launcher.data.Features.rowGamesFor(com.shelf.launcher.data.HomeLayout.TILES)
+-    val tile = if (n > 0) minOf((screen.width - start * 2) / (n + 0.075f * (n - 1)), screen.height * 0.62f)
++    val tile = if (n > 0) minOf((screen.width - start * 2) / (n + 0.075f * gapK * (n - 1)), screen.height * 0.62f)
+         else minOf(byHeight, maxByWidth)
+     val spacing = spacingFor(tile)
+     val visible = floor(((screen.width - start * 2 + spacing) / (tile + spacing)).toDouble()).toInt().coerceAtLeast(1)
+@@ -1149,3 +1161,48 @@ internal fun tileCenterAnchor(vFocus: Int, rowW: Float, tile: Float, start: Floa
  /** Update 369: whether the row jumps to [target] instead of gliding: a long way ([visible] + 1 tiles), or the row was resized. */
  internal fun tileScrollSnaps(target: Float, current: Float, stride: Float, visible: Int, resized: Boolean): Boolean =
      resized || abs(target - current) > stride * (visible + 1)
@@ -3030,10 +3269,10 @@ index 057b5ab..cd7d6bd 100644
          fun endFor(s: Int): Int {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
 new file mode 100644
-index 0000000..9ac1d71
+index 0000000..ea8b463
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
-@@ -0,0 +1,243 @@
+@@ -0,0 +1,270 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.runtime.Composable
@@ -3276,6 +3515,33 @@ index 0000000..9ac1d71
 +            androidx.compose.material3.Text(storyPageLabel(page, starts.size), style = countStyle, maxLines = 1)
 +        }
 +    }
++}
++
++/**
++ * Update 488 (D284, Thor 1080p: Back cut at the bottom of Arctic / Panels / Side): the height for each of [n] action rows
++ * so that all of them fit [avail] with [gap] between them — [max] (the design's own) when there is room, never below [min];
++ * null when even [min] doesn't fit (the list keeps scrolling then, as before).
++ */
++internal fun fitRowHeight(avail: androidx.compose.ui.unit.Dp, n: Int, gap: androidx.compose.ui.unit.Dp,
++                          max: androidx.compose.ui.unit.Dp, min: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp? {
++    if (n <= 0) return max
++    val each = (avail - gap * (n - 1)) / n
++    return when {
++        each >= max -> max
++        each >= min -> each
++        else -> null
++    }
++}
++
++/** (Update 488b, D284) When the rows can't all fit, the scrolling list is cut into whole rows: the row height is stretched or
++ *  shrunk a little (never under [min]) so a whole number of rows fills [avail] exactly. Focus scrolling then moves by whole rows,
++ *  so no row is ever shown cut at the list's edge. Near [target]; null when even one row at [min] doesn't fit or [avail] is unbounded. */
++internal fun snapRowHeight(avail: androidx.compose.ui.unit.Dp, n: Int, gap: androidx.compose.ui.unit.Dp,
++                           target: androidx.compose.ui.unit.Dp, min: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp? {
++    if (n <= 0 || avail == androidx.compose.ui.unit.Dp.Infinity || avail < min) return null
++    var v = kotlin.math.round((avail + gap) / (target + gap)).toInt().coerceIn(1, n)
++    while (v > 1 && (avail - gap * (v - 1)) / v < min) v--
++    return (avail - gap * (v - 1)) / v
 +}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt b/app/src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt
 index f7cf41e..d1c3fca 100644
@@ -3622,7 +3888,7 @@ index 1f14765..e801c9b 100644
 +/** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
 +internal const val ARCADE_LINE = 1.35f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
-index 96dda3b..5ed0638 100644
+index 96dda3b..06a45b8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesConsole.kt
 @@ -159,7 +159,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
@@ -3664,7 +3930,7 @@ index 96dda3b..5ed0638 100644
                  Spacer(Modifier.height(u))
                  Box(Modifier.fillMaxWidth().height(u).background(c0))
                  Spacer(Modifier.height(u * 3))
-@@ -529,10 +530,10 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+@@ -529,22 +530,29 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
          Column(Modifier.fillMaxSize()) {
              // The art strip with the name.
              Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
@@ -3677,7 +3943,37 @@ index 96dda3b..5ed0638 100644
                      Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                  }
                  Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
-@@ -651,10 +652,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
+             }
+             Row(Modifier.fillMaxSize().padding(14.dp)) {
+-                Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+-                    val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
++                // (Update 488, D284: the rows share the column's height — on the Thor (1080p) Back was cut 15 px at the bottom of the
++                // scrolling list. Each row as tall as the design's when there is room, shorter (down to 26 dp) when not; the list
++                // only scrolls when even that doesn't fit.)
++                androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.45f).fillMaxHeight()) {
++                val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
++                val primaryH = if (short) 38.dp else 44.dp
++                val nPrimary = rows.count { it.primary }
++                val restH = fitRowHeight(maxHeight - primaryH * nPrimary - 2.dp * nPrimary, (rows.size - nPrimary).coerceAtLeast(1), 2.dp, if (short) 30.dp else 36.dp, 26.dp)
++                Column(Modifier.fillMaxSize().then(if (restH == null) fadeScroll() else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                     rows.forEach { a ->
+                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
+                             Row(
+                                 // (Update 467, popup gate: Back's last 3 dp were cut on the KONKR — short rows a little shorter.)
+-                                Modifier.fillMaxWidth().height(if (a.primary) (if (short) 38.dp else 44.dp) else if (short) 30.dp else 36.dp)
++                                Modifier.fillMaxWidth().height(if (a.primary) primaryH else restH ?: if (short) 30.dp else 36.dp)
+                                     .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
+                                 verticalAlignment = Alignment.CenterVertically
+                             ) {
+@@ -556,6 +564,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
+                         }
+                     }
+                 }
++                }
+                 Spacer(Modifier.width(14.dp))
+                 Box(Modifier.weight(0.55f).fillMaxHeight()) {
+                     if (ctx.page == WinPage.MAIN) Row(Modifier.fillMaxSize()) {
+@@ -651,10 +660,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
              Column(Modifier.weight(1f).fillMaxHeight()) {
                  Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
                      fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
@@ -3692,7 +3988,7 @@ index 96dda3b..5ed0638 100644
                  Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
                  Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                  if (ctx.page == WinPage.MAIN) {
-@@ -770,7 +771,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
+@@ -770,7 +779,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
          }
          Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = tearDp)) {
              if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
@@ -3701,7 +3997,7 @@ index 96dda3b..5ed0638 100644
                  maxLines = if (short) 2 else 3)
              Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
              Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
-@@ -901,7 +902,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
+@@ -901,7 +910,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
              Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                  Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                  Spacer(Modifier.height(4.dp))
@@ -3711,7 +4007,7 @@ index 96dda3b..5ed0638 100644
                  fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 2) }
                  line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
-index 876c06e..93ca8b5 100644
+index 876c06e..54a2301 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes.kt
 @@ -97,7 +97,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
@@ -3813,10 +4109,54 @@ index 876c06e..93ca8b5 100644
          }
      }
  }
+@@ -243,11 +253,12 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
+                     // The actions as a media-centre list.
+                     val s = rememberScrollState()
+                     val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+-                    @Composable fun actionRow(a: WinAction, m: Modifier) {
++                    @Composable fun actionRow(a: WinAction, m: Modifier, fixed: Boolean = false) {
+                             SceneControl(a, m) { on ->
+                                 Row(
+-                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+-                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
++                                    // ([fixed]: the row's height is set by its slot (D284) — the band fills it, the word centred.)
++                                    Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxHeight() else Modifier).clip(RoundedCornerShape(8.dp))
++                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (fixed) 0.dp else if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
+                                     verticalAlignment = Alignment.CenterVertically
+                                 ) {
+                                     Icon(a.icon, null, tint = if (on) Color.Black else if (a.urgent) accent else Color.White.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
+@@ -267,8 +278,14 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
+                                 }
+                             }
+                         }
+-                    } else Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+-                        acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth()) }
++                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.9f).fillMaxHeight()) {
++                        // (Update 488, D284: the rows share the drawer's room — on the Thor (1080p) Back was cut 57 px at the bottom of
++                        // the scrolling list. Each row its design height when there is room, down to a 26 dp row; scrolling below that.)
++                        val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
++                        val rowH = fitRowHeight(maxHeight, acts.size, 2.dp, lineH + (if (dense) 6.dp else if (compact || tight || h < 500.dp) 12.dp else 18.dp), maxOf(26.dp, lineH + 6.dp))
++                        Column(Modifier.fillMaxSize().then(if (rowH == null) Modifier.sceneFadeEdges(s).verticalScroll(s) else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
++                            acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth().then(if (rowH != null) Modifier.height(rowH) else Modifier), fixed = rowH != null) }
++                        }
+                     }
+                     if (!compact && !tight) {
+                         Spacer(Modifier.width(18.dp))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
-index d320f64..dcf4969 100644
+index d320f64..2e0777d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt
+@@ -57,8 +57,8 @@ private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else
+ 
+ /** A column of keys (menus that run down the screen: Cross menu, Side menu); scrolls when it doesn't fit. */
+ @Composable
+-private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, key: @Composable (WinAction) -> Unit) {
+-    Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) { keys.forEach { key(it) } }
++private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true, key: @Composable (WinAction) -> Unit) {
++    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) { keys.forEach { key(it) } }
+ }
+ 
+ /** A full-width list row key (icon + word), lit as a band. */
 @@ -136,7 +136,7 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
          Spacer(Modifier.height(10.dp))
          // The keys as small flat tiles in the accent.
@@ -3872,7 +4212,35 @@ index d320f64..dcf4969 100644
                  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
              }
              Column(Modifier.padding(horizontal = 14.dp)) {
-@@ -238,20 +242,27 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
+@@ -210,9 +214,17 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+             Spacer(Modifier.height(8.dp))
+             if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp))
+             // The menu's own rows, with the accent bar on the one you're on.
+-            KeyColumn(sceneKeys(ctx), Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) { k ->
++            // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
++            // when there is room, down to 30 dp when not, scrolling only below that.)
++            val keys = sceneKeys(ctx)
++            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) {
++            val rowH = fitRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp)
++            // (Update 488b: with many rows (the Thor's 8) the list scrolls — then a whole number of rows fills the room, so
++            // the last one shown is never cut, p488d: Back cut 13 px.)
++            val snapH = if (rowH == null) snapRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp) else null
++            KeyColumn(keys, Modifier.fillMaxWidth(), scroll = rowH == null) { k ->
+                 SceneControl(k, Modifier.fillMaxWidth()) { on ->
+-                    Row(Modifier.fillMaxWidth().height(40.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) {
++                    Row(Modifier.fillMaxWidth().height(rowH ?: snapH ?: 40.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) {
+                         Box(Modifier.width(4.dp).fillMaxHeight().background(if (on) a else Color.Transparent))
+                         Spacer(Modifier.width(12.dp))
+                         Icon(k.icon, null, tint = if (on) a else Color.White.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+@@ -221,6 +233,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
+                     }
+                 }
+             }
++            }
+         }
+     }
+ }
+@@ -238,20 +251,27 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
          scaleX = s; scaleY = s
          shape = RoundedCornerShape(6.dp); clip = true
      }.background(Color.Black)) {
@@ -3903,7 +4271,7 @@ index d320f64..dcf4969 100644
                      Color.White.copy(alpha = 0.35f), Color.White, RoundedCornerShape(50), height = 36.dp, upper = true, size = 11.sp)
              }
          }
-@@ -285,19 +296,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
+@@ -285,19 +305,35 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                  if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
                  Spacer(Modifier.height(12.dp))
                  // The actions as round dock icons with their names under them.
@@ -3941,7 +4309,7 @@ index d320f64..dcf4969 100644
              }
              // The pointer down to the dock.
              Canvas(Modifier.size(22.dp, 10.dp)) {
-@@ -332,7 +359,7 @@ internal fun HubPlate(ctx: WinSceneCtx) {
+@@ -332,7 +368,7 @@ internal fun HubPlate(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.height(8.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -3950,7 +4318,7 @@ index d320f64..dcf4969 100644
                      Color.White.copy(alpha = 0.2f), Color.White, RoundedCornerShape(4.dp))
              }
          }
-@@ -370,7 +397,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
+@@ -370,7 +406,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.weight(0.01f))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -3959,7 +4327,7 @@ index d320f64..dcf4969 100644
                      Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
              }
          }
-@@ -439,7 +466,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+@@ -439,7 +475,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
      }.background(Color(0xFF1B2838))) {
          // The hero banner across the top, logo on it.
          Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
@@ -3968,7 +4336,7 @@ index d320f64..dcf4969 100644
              Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF1B2838)))))
              Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                  ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-@@ -450,7 +477,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
+@@ -450,7 +486,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
          Row(Modifier.fillMaxWidth().background(Color(0xFF16202D)).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
              Box(Modifier.weight(1f)) {
                  KeyRow(sceneKeys(ctx)) { k ->
@@ -3977,7 +4345,7 @@ index d320f64..dcf4969 100644
                          Color.White, Color.White, Color.Transparent, Color.White, RoundedCornerShape(3.dp), height = if (k.primary) 40.dp else 34.dp, upper = k.primary)
                  }
              }
-@@ -509,7 +536,7 @@ internal fun TimelineEntry(ctx: WinSceneCtx) {
+@@ -509,7 +545,7 @@ internal fun TimelineEntry(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
              Spacer(Modifier.height(8.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -3986,7 +4354,7 @@ index d320f64..dcf4969 100644
                      Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(6.dp))
              }
          }
-@@ -530,7 +557,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+@@ -530,7 +566,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
          alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
          shape = RoundedCornerShape(16.dp); clip = true
      }.background(Color.Black)) {
@@ -3995,7 +4363,7 @@ index d320f64..dcf4969 100644
          Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
          Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
              ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-@@ -546,7 +573,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
+@@ -546,7 +582,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
              else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx), 8.dp) { k ->
@@ -4004,7 +4372,7 @@ index d320f64..dcf4969 100644
                      Color.Transparent, Color.White, RoundedCornerShape(50), height = 38.dp)
              }
          }
-@@ -579,7 +606,7 @@ internal fun TileCard(ctx: WinSceneCtx) {
+@@ -579,7 +615,7 @@ internal fun TileCard(ctx: WinSceneCtx) {
              SceneFactsBody(ctx, ink.copy(alpha = 0.5f), ink, upperLabels = false)
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4013,7 +4381,7 @@ index d320f64..dcf4969 100644
                      ink.copy(alpha = 0.15f), a, RoundedCornerShape(50), height = 38.dp)
              }
          }
-@@ -619,9 +646,16 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
+@@ -619,9 +655,16 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
              }
              Spacer(Modifier.height(10.dp))
              KeyRow(sceneKeys(ctx)) { k ->
@@ -4737,10 +5105,10 @@ index 0000000..531e8c2
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
 new file mode 100644
-index 0000000..1cebe28
+index 0000000..3d5d777
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,114 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.ui.graphics.Color
@@ -4826,12 +5194,16 @@ index 0000000..1cebe28
 +        assertEquals(SaveObjectKind.CAPSULE, saveObjectKind(false, S.CAPSULE, false))
 +        assertEquals(SaveObjectKind.ICON, saveObjectKind(false, S.CLASSIC, false))
 +        assertTrue(src("SaveExplorer.kt").contains("look = look, state = st.state, ps2 = ps2, logo = logo"))
++        // (488: the PS2 switch only for PS2 games — every other save keeps its physical look.)
++        assertTrue(src("SaveExplorer.kt").contains("Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform), vaultStyle"))
 +    }
 +
 +    @Test fun spinePicturesAreKeptAtScreenSize() {
-+        assertEquals(null, spineFitSize(80, 1000))
-+        assertEquals(93 to 1280, spineFitSize(300, 4096))
-+        assertEquals(1280 to 93, spineFitSize(4096, 300))
++        assertEquals(null, spineFitSize(80, 900))
++        // (Update 488: SPINE_MAX_PX 1280 -> 960, K4 — twice as many fit the cache.)
++        assertEquals(93 to 1280, spineFitSize(300, 4096, 1280))
++        assertEquals(70 to 960, spineFitSize(300, 4096))
++        assertEquals(960 to 70, spineFitSize(4096, 300))
 +        assertTrue(src("CoverCases.kt").contains("val fit = spineFitSize(src.width, src.height)"))
 +    }
 +
@@ -4849,6 +5221,86 @@ index 0000000..1cebe28
 +        val f = File(listOf("../src_copy/data/Features.kt", "src/main/java/com/shelf/launcher/data/Features.kt", "app/src/main/java/com/shelf/launcher/data/Features.kt").first { File(it).exists() }).readText()
 +        assertTrue(f.contains("val shelfSpacing = IntPref(\"shelf_spacing\", 100, 50..250)"))
 +        assertTrue(f.contains("val cdSpacing = IntPref(\"cd_spacing\", 100, 50..250)"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch488Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch488Test.kt
+new file mode 100644
+index 0000000..9991bd5
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch488Test.kt
+@@ -0,0 +1,74 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.ui.unit.dp
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 488: D284 action rows that fit, K1 spacing (Voltcap row, Tiles, Case stacks), K3 / K2 / K4 QA hooks. */
++class Batch488Test {
++    private fun src(name: String): String = listOf(
++        File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
++    ).first { it.exists() }.readText()
++
++    @Test fun rowsShareTheRoomOrScroll() {
++        assertEquals(40.dp, fitRowHeight(400.dp, 8, 2.dp, 40.dp, 30.dp))
++        // 8 rows in 300 dp with 2 dp gaps: 35.75 dp each.
++        assertEquals(35.75f, fitRowHeight(300.dp, 8, 2.dp, 40.dp, 30.dp)!!.value, 0.01f)
++        assertNull(fitRowHeight(200.dp, 8, 2.dp, 40.dp, 30.dp))
++    }
++
++    @Test fun scrollingRowsShowWholeRowsOnly() {
++        // p488d (Thor, Side): 160 dp for 8 rows -> 4 whole rows of 38.5 dp, none cut at the edge
++        val h = snapRowHeight(160.dp, 8, 2.dp, 40.dp, 30.dp)!!
++        assertEquals(38.5f, h.value, 0.01f)
++        assertEquals(160f, (h * 4 + 2.dp * 3).value, 0.01f)
++        assertTrue(snapRowHeight(100.dp, 8, 2.dp, 40.dp, 30.dp)!!.value >= 30f)
++        assertNull(snapRowHeight(20.dp, 8, 2.dp, 40.dp, 30.dp))
++        assertTrue(src("WinScenesHomes2.kt").contains("rowH ?: snapH ?: 40.dp"))
++    }
++
++    @Test fun saveDetailButtonsOutsideTheScroll() {
++        val s = src("SaveExplorer.kt")
++        val d = s.substring(s.indexOf("private fun SaveDetail("), s.indexOf("internal enum class SaveObjectKind"))
++        assertTrue(d.contains("Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()))"))
++        assertTrue(!d.contains("Column(Modifier.weight(1f).verticalScroll(rememberScrollState()))"))
++    }
++
++    @Test fun k4SpinesComingBackKeepTheirName() {
++        assertEquals(960, SPINE_MAX_PX)
++        // 144 x 1280 (the Thor's SNES pack spine) -> the small named copy: 36 x 320, ~46 KB: ~360 in 16 MB
++        assertEquals(36 to 320, spineFitSize(144, 1280, SPINE_LOW_PX))
++        val s = src("CoverCases.kt")
++        assertTrue(s.contains("low != null -> SpineCache.Titled(false, low)"))
++        assertTrue(s.indexOf("low != null -> SpineCache.Titled(false, low)") < s.indexOf("else -> SpineCache.Titled(false, SpineCache.peekUntitled(res, landscape))"))
++        assertEquals(2, Regex("keepLow\\(key, out\\)").findAll(s).count())
++    }
++
++    @Test fun stacksSpacingRebuildsTheGeometry() {
++        // 488b, Thor k1s: 50 / 100 / 250 % looked the same - the pitch wasn't one of the geometry's keys
++        assertTrue(src("StyleCaseStacks.kt").contains("val geo = remember(w, h, caseW, caseH, depthK, density, mirror, pitch, nSide)"))
++    }
++
++    @Test fun d284ScenesUseFittedRows() {
++        assertTrue(src("WinScenesConsole.kt").contains("val restH = fitRowHeight("))
++        assertTrue(src("WinScenesHomes2.kt").contains("val rowH = fitRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp)"))
++        assertTrue(src("WinScenesHomes.kt").contains("val rowH = fitRowHeight(maxHeight, acts.size"))
++    }
++
++    @Test fun spacingDefaultsKeepTodaysGaps() {
++        assertEquals(1f, stacksPitchK(100), 0.0001f)
++        assertTrue(stacksPitchK(50) >= 0.75f)
++        val f = File(listOf("../src_copy/data/Features.kt", "src/main/java/com/shelf/launcher/data/Features.kt", "app/src/main/java/com/shelf/launcher/data/Features.kt").first { File(it).exists() }).readText()
++        for (k in listOf("\"row_spacing\", 100", "\"tiles_spacing\", 100", "\"stacks_spacing\", 100")) assertTrue(k, f.contains(k))
++        assertTrue(src("GameDock.kt").contains("baseSpacing * (com.shelf.launcher.data.Features.rowSpacing.state.value / 100f)"))
++    }
++
++    @Test fun ps2SwitchOnlyForPs2Saves() {
++        val s = src("SaveExplorer.kt")
++        assertTrue(s.contains("val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS\n"))
++        assertTrue(src("TestHooks.kt").contains("voltcap_test_ps2browser"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

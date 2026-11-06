@@ -3487,7 +3487,7 @@
    "rule": "R26",
    "severity": "medium",
    "kind": "defect",
-   "status": "open - pre-existing (Panels / Side identical on v0.6.67, p487v); Arctic baseline NOT TESTED",
+   "status": "fixed in staging (488b) - Thor p488e ARCTIC / PANELS / SIDE OWN 3/3 PASS; p488f other styles: geometry PASS in all 13 opened (ARCTIC / SIDE CLASSIC: Play tap asked no launch; PANELS ROW_* / SHARED: D285 ANR) ; KONKR NOT TESTED",
    "found": "update 487 Thor popup sweep p487u",
    "where": "ui/WinScenesHomes.kt ArcticDrawer, PANEL_DETAIL and SIDE_DRAWER scenes",
    "evidence": [
@@ -3495,7 +3495,26 @@
     "p487v (v0.6.67) PANELS / SIDE the same numbers"
    ],
    "root_cause": "",
-   "fix": ""
+   "fix": "update 488: fitRowHeight - the rows share the window height (design height when there is room, down to 26-30 dp); 488b: Side with more rows than fit snaps to whole rows (snapRowHeight) so the last row shown is never cut; touch: Compose 48 dp expansion verified on the Thor (32 dp Watch clip: hit 7 dp outside, miss 10 dp)"
+  },
+  {
+   "id": "D285",
+   "title": "Thor: Voltcap ANR (Input dispatching timed out) on the Panel dashboard (2008) home around popup close with Row opens / Row reveal / Shared popup styles - RenderThread busy in Skia GrTextBlobRedrawCoordinator (text blob cache)",
+   "rule": "R26",
+   "severity": "high",
+   "kind": "defect",
+   "status": "open - pre-existing: same ANR on v0.6.67 (p488h, 2 ANRs) and on 488 / 488b (p488f, p488g, 3 ANRs); not caused by 488. Root cause not found yet",
+   "found": "update 488 Thor popup sweep p488f (PANELS_ROW_REVEAL), reproduced p488g (Row reveal page->close, Shared main->close) and on v0.6.67 p488h",
+   "note": "dropbox data_app_anr 09:23:54, 09:32:46, 09:33:22 (0.6.68-qa), 09:36:03, 09:36:16 (0.6.67): main thread waiting in DrawFrameTask::drawFrame; RenderThread state R in GrTextBlob::Key::operator== <- GrTextBlobRedrawCoordinator::internalRemove <- drawGlyphRunList (Skia's text blob cache scanning one blob's many variants - text drawn at a new size / colour every frame). Next: find the Panels / popup text animated per frame (scale or colour) during the close and draw it through a layer or at a fixed size."
+  },
+  {
+   "id": "D286",
+   "title": "Thor popup sweep: Arctic and Side menu homes with the Classic popup style - a tap on Play asked for no launch (QA blocks launches; none was asked)",
+   "rule": "R26",
+   "severity": "low",
+   "kind": "suspect",
+   "status": "suspect - not investigated; v0.6.67 baseline NOT TESTED",
+   "found": "update 488 Thor sweep p488f (ARCTIC_CLASSIC, SIDE_CLASSIC; also 'no Details action', 'More not on screen')"
   }
  ]
 }

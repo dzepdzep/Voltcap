@@ -1,3 +1,57 @@
+# Update 488 (6 Nov 2026) — checkpoint 11: D284 fixed (Thor + KONKR), K3 verified, K4 reproduced + returning spines fixed, K1 Voltcap row / Tiles / Shelf / Cover details checked, D285 ANR found (pre-existing)
+
+Staging = 487 + the changes below (`next/0.6.68/staging.patch`); QA builds qa-0.6.68-488 / 488b / 488c at versionCode 74 (installed
+over v0.6.67 on the Thor and the KONKR, v0.6.67 put back after). Nothing launched, nothing published, no save file touched by a test.
+- **D284 (Back cut in Arctic / Panels / Side) — fixed + verified:** `fitRowHeight` (WholeRows.kt) gives the rows the window's
+  height — the design height when there is room, never under 26–30 dp; Side with more rows than fit (the Thor's 11) snaps to whole
+  rows (`snapRowHeight`), so the last row shown is never cut and focus scrolling moves by whole rows. Popup gate R26: Thor p488e
+  ARCTIC / PANELS / SIDE (own style) 3/3 PASS (p488d 2/3: Side Back still cut 13 px → 488b); Thor p488f the other 5 styles:
+  geometry PASS in all 13 that opened; KONKR k488a–c 3/3 PASS.
+- **Touch hit areas measured on the Thor (not assumed):** Case Flow window's "Watch clip" (32 dp tall, 102 dp wide): taps 4 and 7 dp
+  above / below its drawn edge start the clip, 10 and 14 dp don't; 4–10 dp beside it don't. So Compose widens a small control to
+  48 dp only in the short direction, and only where no other control is. The stacked key rows (Arctic 30 dp, Panels 29 dp, Side
+  38.5 dp, 2 dp apart) touch exactly where drawn — all over the 24 dp gate minimum.
+- **K3 (Save Vault physical looks) — verified:** Thor, Memory card / SD card / Floppy / Capsule / 3D card × PS2 browser style on /
+  off: the grid and the opened save show the same object for every look; with PS2 browser on only the PS2 save (WWE SmackDown)
+  becomes the PS2 tile, every other save keeps the picked look (k3s). Found and fixed: the opened save's window kept its buttons at
+  the end of its scrolling column — focusing "Save options" scrolled the title to "Compatible)" and pushed Hide / Back off the
+  window (Thor). Buttons now sit under the scrolling facts (R26 rule). KONKR checked too. The 3D card turns in the close-up as
+  before (a shot at 3 s shows its back). Note: opening the vault ran Voltcap's normal Drive sync — on the KONKR it fetched the
+  Pokémon Silver save from Drive (9:41, then "Google wants you to sign in again"); the tests themselves only looked.
+- **K4 (generated spines) — reproduced, returning fixed, first view still open:** new trace "spine wait" (a spine drawn without its
+  name). Thor Case Flow SNES (153 games), 80 steps out and back: the 48 MB cache held ~68 spines of 144×1280, so 27 were made again
+  coming back, each shown nameless for 1–4 frames (41 times) — the "flicker returning to games". Now pack spines ≤ 960 px (~118 fit)
+  plus a small named copy of every spine made (320 px, 16 MB, a few hundred) shown while a big one is remade: 80 out / back → none
+  remade on return; 150 out / back → 44 remade, all with the small named copy (0 nameless), second run 0 nameless. Still open: a
+  spine's very first appearance in a session shows the nameless spine 1–4 frames (95 times for 80 new games) — next: make the spines
+  just ahead of the scroll. Case stacks on the Thor shows its N64 / SNES / GBA games front-on (no generated spines) — not measured
+  there. NOT marked fixed (owner check).
+- **K1 (game spacing):** Thor 50 / 100 / max, same game: Voltcap row (Look › Game spacing, 50–300 %), Tile home, Game shelf and
+  Cover details move their games apart / together, 100 % = today's picture, no overlap or cut seen (k1s). Case stacks: the slider
+  changed nothing — its geometry wasn't keyed on the pitch (fixed in 488c) and still nothing on the Thor's front-on N64 row (open:
+  that view spaces its fronts elsewhere). Layouts with their own spacing now: Voltcap row, Tiles, Game shelf, Cover details, Case Flow,
+  Box, Storage, File select, Carousel, Arctic, Memory card, Ribbon, Twin icons / desk; Case stacks partial; the rest NOT STARTED.
+- **K2 (home pieces over screensaver / popups) — still awaiting the owner:** test hook `voltcap_test_screensaver`: over the Voltcap row
+  home the screensaver covers everything (no chips / bars on top); with a game window open the screensaver doesn't start, and after a
+  wake key the window still has Play focused. Over the Panel dashboard the screensaver start ran into D285.
+- **D285 (NEW, high, pre-existing in v0.6.67):** Thor ANR "Input dispatching timed out" on the Panel dashboard (2008) home — closing a
+  Row opens / Row reveal / Shared window, or the screensaver starting. RenderThread stuck in Skia's text-blob cache
+  (`GrTextBlobRedrawCoordinator::internalRemove`) — the same family as update 177's `flatTextFor3d`. 5 ANRs today, 2 of them on the
+  published v0.6.67 (p488h). The RenderThread runs ~22 % on that home at rest and 60–74 % with a window open. Root cause not found;
+  no code change yet. Also open from the sweep: Arctic / Side with the Classic style — "a tap on Play asked for no launch" (not
+  investigated).
+- **E1 / E2:** nothing new modelable without the photos in tools/qa/E1E2_REFS_487.md (unchanged). **D2 / D4:** not started (no launches).
+- **Devices:** Thor and KONKR back on v0.6.67 (1586accc); settings snapshots byte-identical (Thor t488o 4/4, KONKR k487o 4/4); hooks,
+  QA files removed. The Thor's feature prefs keep five new keys at their default 100 % (row / tiles / stacks / shelf / cd spacing,
+  written by the K1 test; v0.6.67 doesn't read them). The ANR during the K2 test was closed by a test key (Close app); Voltcap then
+  showed its "closed unexpectedly" page (nothing reset).
+- **Files (src_copy):** ui/WholeRows.kt (fitRowHeight, snapRowHeight), ui/WinScenesHomes.kt, ui/WinScenesHomes2.kt,
+  ui/WinScenesConsole.kt, ui/SaveExplorer.kt, ui/SaveVaultStyles.kt, ui/CoverCases.kt, ui/StyleCaseStacks.kt, ui/LauncherScreen.kt,
+  ui/TestHooks.kt (+ 487's). Tests: Batch487Test (updated), Batch488Test. QA: tools/qa/device/k3styles488.sh, k4wait488.sh,
+  k1spacing488.sh; builds.json 488 / 488b / 488c; defects D284 fixed, D285 new.
+- **Checked:** testDebugUnitTest + assembleRelease green (PC); static checks PASS; popup gate as above. **Not tested:** K1 on the
+  KONKR, K4 on the KONKR / Case stacks with spines, D284 with font 1.3.
+
 # Update 487 (6 Nov 2026) — checkpoint 10: E7 owner-approved changes, K2 / K3 fixed, K4 guard, K1 started, E1 / E2 photo list
 
 Staging = 486 + the changes below (`next/0.6.68/staging.patch`); QA builds qa-0.6.68-487 / 487b at versionCode 74 (installed

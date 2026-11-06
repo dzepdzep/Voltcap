@@ -79,3 +79,4 @@ tools/themes/refresh-review/sheet-*
 # A stray file from a shell command on the PC (update 485) — never committed
 /bject FullName, Length
 /app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch488Test.kt

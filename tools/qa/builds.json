@@ -319,6 +319,39 @@
    "patch_sha256": "e47b92cf5501f17dccc5cda6683771328003b1b8769cca7ffc0349e476293985",
    "tree_hash": "",
    "note": "update 487b: 487 without the 48 dp layout box on scene keys (it grew key rows: cut / overlapping keys in tight windows, k487 / p487t); Compose widens small clickables to 48 dp touch by itself"
+  },
+  {
+   "id": "qa-0.6.68-488",
+   "apk_sha256": "a4047b98482e2053ee832ea7f7ebd78111fb122898884a6663c1b8ec814bad98",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "0a55ecea8eb44f0f9b5d60c69f8b761197547c492a80ee7122822d1db7ac0385",
+   "tree_hash": "",
+   "note": "update 488: D284 fitted key rows (Arctic / Panels / Side), K3 physical save styles win for non-PS2 saves, K4 spine wait trace, screensaver / ps2browser test hooks"
+  },
+  {
+   "id": "qa-0.6.68-488b",
+   "apk_sha256": "15102f4ad88fbaf781901c2c25b82896fbe8d1e5ab98e2423c37682e75a39525",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "009432149e782a9ffe6f72b5435d52506522ce73dfedcd19b9ce6ad7027b5add",
+   "tree_hash": "",
+   "note": "update 488b: Side rows snap to whole rows when scrolling (p488d Back cut 13 px), Save Vault detail buttons outside the scroll (k3s title cut), K4 spines 960 px + small named copies (Case flow SNES 80 out/back: 27 remade nameless)"
+  },
+  {
+   "id": "qa-0.6.68-488c",
+   "apk_sha256": "eb9c5d58e19ddcc4ab4e27e7978eb85dd94a855fdd36570afed843df36eb15ea",
+   "version_name": "0.6.68-qa",
+   "version_code": 74,
+   "variant": "release (QA only; versionCode 74, installs over v0.6.67 on the Thor / KONKR, v0.6.67 goes back after)",
+   "base_commit": "f0dfe14",
+   "patch_sha256": "a7960ad88a307d4f36d890222c56b701aaa08614beed85ae7dcc6b53a08cd2e4",
+   "tree_hash": "",
+   "note": "update 488c: 488b + Case stacks geometry keyed on the spacing pitch (K1)"
   }
  ]
 }
