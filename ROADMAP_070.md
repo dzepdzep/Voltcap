@@ -67,7 +67,8 @@ Status: DONE (verified) · PARTIAL · BLOCKED · NOT STARTED. Priority: P1 (Batc
 | K4 | Custom spine flickers while scrolling | FIXED in staging (490, measured), owner visual check pending — cold A/B, 80 steps: KONKR Case flow GBA nameless 82 → 0 (return 1 → 0), Thor Case flow SNES 90 → 0; frames unchanged; settled PSS +13 MB KONKR; Case stacks no regression |
 | R0–R2 | R1 order kept; Layout options; Game spacing tile | IN STAGING (491, Thor + KONKR verified), owner review — docs/R1_PLAN_490.md |
 | S-search | Search result lands on its exact group | FIXED in staging (491; KONKR Battery watcher verified) |
-| D137 | Case stacks scrolling | MEASURED (491): not GPU-bound; per-move recomposition is the lead; next step awaits approval |
+| D137 | Case stacks scrolling | MEASURED (492): CarouselItem re-runs 33/move with unchanged inputs; modifier hypothesis disproven; next step (composition trace) awaits approval |
+| 3D faces | Seam / connector lines / clear sides (D289–D291) | FIXED in staging (492, Thor); owner visual check on the video device and RP Classic |
 | K5 | CI: staging job for 579debd hung in the static / selftest step (apt ffmpeg). Do not change working code for it; rerun / investigate separately | RESOLVED — owner reran: both workflows green on 579debd (6 Nov); no code change |
 | K6 | D284: Back cut at the bottom of Arctic / Panels / Side windows (Thor 1080p) | FIXED + VERIFIED (488b) — rows share the window height (fitRowHeight), Side scrolls by whole rows (snapRowHeight); R26 Thor 3/3 + other styles geometry PASS, KONKR 3/3 PASS; touch measured on the Thor (small controls widen to 48 dp in their short direction only) |
 | K8 | D286: Arctic / Side Classic-style Play tap did nothing | NOT A BUG (489) — that window is on the Thor's lower screen; the QA tap went to the top screen. Play on the lower screen asks for the launch (blocked). popclip.py grades it NOT TESTED |

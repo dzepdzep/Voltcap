@@ -529,7 +529,7 @@ index 7c6eaf1..b734cc8 100644
   * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
   * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
-index b9286ca..b14152e 100644
+index b9286ca..d97a694 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 @@ -415,7 +415,9 @@ internal object Carousel {
@@ -561,6 +561,16 @@ index b9286ca..b14152e 100644
          val bigH = bigW / 0.72f
          // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
          // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
+@@ -1442,6 +1446,9 @@ private fun CarouselItem(
+         val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
+         QaTrace.count("CarRun")
+         for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
++        // (Update 492, D137: an input equal to the last but a new object — Compose's strong skipping compares those by
++        // identity, so it re-runs the game although nothing changed. Counted as CarSame_<input>.)
++        for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] == now[k]) QaTrace.count("CarSame_" + names[k])
+         for (k in now.indices) prev[k] = now[k]
+     }
+     val relNow = rememberUpdatedState(relOf)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt b/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
 index 00fd4af..a2dc26a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
@@ -574,6 +584,65 @@ index 00fd4af..a2dc26a 100644
          )
          if (m != null) Text(
              ShellMaterials.hexOf(m.base) + (if (m.back != 0) " / " + ShellMaterials.hexOf(m.back) else "") + " (approx.)",
+diff --git a/app/src/main/java/com/shelf/launcher/ui/CartUnderside.kt b/app/src/main/java/com/shelf/launcher/ui/CartUnderside.kt
+index 092508b..f190564 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/CartUnderside.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/CartUnderside.kt
+@@ -593,16 +593,26 @@ internal object CartUndersides {
+         hole(ds, g.main, g, v, plastic, opacity, contents = true)
+     }
+ 
++    /** Update 492: how squarely (facing 0…1) an opening must face you before what's inside it shows in full. */
++    internal const val SLOT_SEEN = 0.2f
++
+     private fun hole(ds: DrawScope, h: Hole, g: Geo, v: View, plastic: Int, opacity: Float, contents: Boolean) {
+         val t = v.t
+         // The openings it shows through, on screen.
+         clip.reset()
+         var any = false
+-        if (v.bottomShows) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x0, 0f, h.z1)); any = true }
+-        if (h.back && h.backH > 0f && v.facing(0f, 0f, 1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, t, h.x1, 0f, t, h.x1, h.backH, t, h.x0, h.backH, t)); any = true }
+-        if (h.front && v.facing(0f, 0f, -1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, 0f, h.x1, 0f, 0f, h.x1, h.y1, 0f, h.x0, h.y1, 0f)); any = true }
+-        if (h.left && v.facing(-1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x0, 0f, h.z1, h.x0, h.y1, h.z1, h.x0, h.y1, h.z0)); any = true }
+-        if (h.right && v.facing(1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x1, h.y1, h.z1, h.x1, h.y1, h.z0)); any = true }
++        // (Update 492, owner's Inspect video: green / yellow lines along the lower edges as the cartridge turned. With an
++        // opening turned almost edge-on its outline is a sliver one or two pixels high, and the board and gold contacts
++        // drawn inside it filled the sliver end to end: a bright line along the edge. Seen that flat, the slot's near lip
++        // hides what's inside. [see] is how squarely the openings face you; the contents fade in with it, so a sliver
++        // shows the slot's dark plastic walls. Seen from below or behind, they're drawn as before.)
++        var see = 0f
++        fun opening(f: Float) { see = maxOf(see, ((f - 0.01f) / (SLOT_SEEN - 0.01f)).coerceIn(0f, 1f)) }
++        if (v.bottomShows) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x0, 0f, h.z1)); any = true; opening(v.facing(0f, -1f, 0f)) }
++        if (h.back && h.backH > 0f && v.facing(0f, 0f, 1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, t, h.x1, 0f, t, h.x1, h.backH, t, h.x0, h.backH, t)); any = true; opening(v.facing(0f, 0f, 1f)) }
++        if (h.front && v.facing(0f, 0f, -1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, 0f, h.x1, 0f, 0f, h.x1, h.y1, 0f, h.x0, h.y1, 0f)); any = true; opening(v.facing(0f, 0f, -1f)) }
++        if (h.left && v.facing(-1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x0, 0f, h.z1, h.x0, h.y1, h.z1, h.x0, h.y1, h.z0)); any = true; opening(v.facing(-1f, 0f, 0f)) }
++        if (h.right && v.facing(1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x1, h.y1, h.z1, h.x1, h.y1, h.z0)); any = true; opening(v.facing(1f, 0f, 0f)) }
+         if (!any) return
+         val inner = maxOf(opacity, 0.9f)
+         ds.clipPath(clip) {
+@@ -619,18 +629,18 @@ internal object CartUndersides {
+             // Its back wall — up from the cut-out where it opens to the back face, all of it where it doesn't.
+             val by0 = if (h.back) h.backH else 0f
+             if (by0 < h.y1) wall(0f, 0f, -1f, pts(h.x0, by0, h.z1, h.x1, by0, h.z1, h.x1, h.y1, h.z1, h.x0, h.y1, h.z1))
+-            if (!contents) return@clipPath
++            if (!contents || see <= 0f) return@clipPath
+             // The boards, far to near, then their fingers, then the plates and ribs, far to near.
+-            for (s in sorted(g.boards, v)) solid(this, s, v, plastic, inner)
++            for (s in sorted(g.boards, v)) solid(this, s, v, plastic, inner * see)
+             val gold = g.fingerArgb
+             for (f in g.fingers) {
+                 val nz = if (f.back) 1f else -1f
+                 if (v.facing(0f, 0f, nz) <= 0.01f) continue
+                 val z = f.z + nz * 0.02f
+                 quad(path, v, pts(f.x0, f.y0, z, f.x1, f.y0, z, f.x1, f.y1, z, f.x0, f.y1, z))
+-                drawPath(path, shade(gold, 0.55f + 0.5f * v.light(0f, 0f, nz), 1f))
++                drawPath(path, shade(gold, 0.55f + 0.5f * v.light(0f, 0f, nz), see))
+             }
+-            for (s in sorted(g.after, v)) solid(this, s, v, plastic, inner)
++            for (s in sorted(g.after, v)) solid(this, s, v, plastic, inner * see)
+         }
+     }
+ 
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt b/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
 index 707c345..f743fb6 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Case3D.kt
@@ -1764,6 +1833,39 @@ index 9411fa8..cb1ebb0 100644
                  Chip("Cancel", accent = false, onClick = onDismiss)
              }
          } } }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
+index 5182f80..e52f2ff 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
+@@ -1962,9 +1962,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+                         cv.saveLayer(androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h), androidx.compose.ui.graphics.Paint().apply { alpha = SlabSide.CLEAR_SIDE_ALPHA })
+                     }
+                     val layer = if (clear) ring else edge
++                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
++                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
++                    // (Update 492, owner's Inspect video: drawn in its place among the slices, far to near — drawn after all of
++                    // them, its darkened copy of the whole outline lay over the nearer slices: a dark band down the side.)
++                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
++                    var seamDone = false
+                     for (k in 0..n) {
+                         val f = k.toFloat() / n
+                         val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
++                        if (!seamDone && (if (c >= 0f) z > seamZ else z < seamZ)) { seamDone = true; at(seamZ) { drawLayer(seam) } }
+                         // (Rounded edges: the slices within 0.5 mm of a face drawn a little smaller — a 0.5 mm radius.)
+                         val d = (depth / 2f - abs(z)) / zpm
+                         val r = SlabSide.EDGE_R
+@@ -1972,10 +1979,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+                         atIn(z, inset) { drawLayer(layer) }
+                         if (ss.grips && z >= seamZ) atIn(z, inset) { drawLayer(grips) }
+                     }
+-                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
+-                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
+-                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
+-                    at(seamZ) { drawLayer(seam) }
++                    if (!seamDone) at(seamZ) { drawLayer(seam) }
+                     if (clear) drawContext.canvas.restore()
+                 }
+                 // (Update 275: the bottom face round the openings — a drawn shell's own.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt b/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
 new file mode 100644
 index 0000000..f23c1b8
@@ -2464,6 +2566,58 @@ index 658bd0c..e51435c 100644
      "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "artdrop",
      "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
      "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
+diff --git a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
+index df11396..ade4b0c 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
+@@ -504,7 +504,7 @@ internal class RaOverlayView(
+     private fun loadComments(id: Int, into: LinearLayout) {
+         into.removeAllViews()
+         val loading = TextView(context).apply {
+-            text = "Loading comments…"; setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
++            text = "Loading comments…"; setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
+         }
+         into.addView(loading)
+         scope.launch {
+@@ -526,14 +526,25 @@ internal class RaOverlayView(
+                         is com.shelf.launcher.data.ra.RaResult.Error -> result.error.message
+                         else -> "No comments yet."
+                     }
+-                    setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
++                    setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
+                 })
+             }
+-            list.take(12).forEach { c ->
++            // (Update 492, owner: the pinned achievement's comments were much smaller than the same comments opened from the
++            // Achievements list — 10 sp, name and text run together. They now read as there: the name and date in 11 sp, the
++            // comment in 12 sp on its own lines, newest first, cleaned the same way. Only the opened panel; the pinned
++            // summary over the game keeps its size.)
++            list.sortedByDescending { it.Submitted ?: "" }.take(12).forEach { c ->
+                 into.addView(TextView(context).apply {
+-                    text = "${c.User ?: "?"}: ${c.CommentText?.trim()}"
+-                    setTextColor(0xDDFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+-                    setPadding(px(6f), px(3f), 0, px(3f))
++                    text = (c.User ?: "Someone") + (c.Submitted?.take(10)?.let { "  ·  $it" } ?: "")
++                    setTextColor(if (cfg?.raThemed == true) accent else gold); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
++                    setTypeface(typeface, Typeface.BOLD)
++                    setPadding(px(6f), px(5f), 0, 0)
++                })
++                into.addView(TextView(context).apply {
++                    text = cleanComment(c.CommentText.orEmpty())
++                    setTextColor(0xEEFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_TEXT_SP)
++                    setLineSpacing(0f, 1.15f)
++                    setPadding(px(6f), px(1f), 0, px(4f))
+                 })
+             }
+         }
+@@ -574,3 +585,7 @@ internal class CapsuleBar(context: Context) : View(context) {
+         }
+     }
+ }
++
++/** Update 492: the opened panel's comments at the Achievements list's sizes (AchievementDetailDialog: 11 / 12 sp). */
++internal const val COMMENT_NAME_SP = 11f
++internal const val COMMENT_TEXT_SP = 12f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 index 8ea7122..60f31d7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
@@ -3492,7 +3646,7 @@ index d171f0c..0228843 100644
              val a = flash.value
              if (a > 0f) drawRoundRect(accent.copy(alpha = 0.28f * a), cornerRadius = CornerRadius(12.dp.toPx()))
 diff --git a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt b/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
-index efddabd..8595ed8 100644
+index efddabd..5f1c237 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/ShelfHome.kt
 @@ -122,7 +122,9 @@ private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlat
@@ -3515,6 +3669,102 @@ index efddabd..8595ed8 100644
          // (Update 130: worked out once per plan, not on every redraw — with hundreds of games that added up.)
          val rowOf = remember(plan) { IntArray(plan.slots.size) { plan.slots[it].row } }
          // Each shelf is centred in the room: the keys ▲ / ▼ look for the neighbour above / below with that offset.
+@@ -651,6 +653,7 @@ private fun Spine(c: StyleCtx, g: Game, modifier: Modifier) = GameSpine(g, c.sta
+  */
+ @Composable
+ internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false, realFirst: Boolean = false, onTone: ((Int) -> Unit)? = null) {
++    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("Spine") } // (Update 492, D137: rebuilds per move)
+     // [fit]: kept at a spine's shape in the middle of a box of another shape (a cover-shaped slot).
+     // [realFirst] (Update 348, Game shelf): the game's real spine wins over a spine picked for all / Matching spines.
+     if (fit) {
+diff --git a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
+index 039e4ad..bc41a60 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/SolidPiece.kt
+@@ -758,7 +758,13 @@ internal fun Modifier.solidPiece(
+                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(cSide)).coerceAtLeast(1.5f) else 0f
+                 val span = depthPx * abs(sn)
+                 val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
+-                edgeL.alpha = if (edgeLeaf != null) {
++                // (Update 492, owner — Save Vault cards on the RP Classic "missing side faces": a see-through piece's slices
++                // were each faint enough that all of them stacked made its plastic, but out on the side only the slices nearer
++                // the face reach a point, so the side faded to nothing toward its far edge and, turned far, was gone. Its
++                // slices are now drawn solid into one layer, laid down at the plastic's own strength — one even sheet, its
++                // exact outline (as Inspect's clear walls). The Game Boy clear paks keep their tuned walls.)
++                val sheet = clear != null && spec.gb == null
++                edgeL.alpha = if (sheet) 1f else if (edgeLeaf != null) {
+                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
+                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
+                 // (Update 325, Toni: "a floating layer over the Game Boy cartridges on top and a bit on the left": the copies
+@@ -837,8 +843,9 @@ internal fun Modifier.solidPiece(
+                         alpha = if (spec.clear != null) spec.clear.coerceIn(0.2f, 0.8f) * ((0.15f - abs(c)) / 0.12f).coerceIn(0f, 1f) else 1f,
+                         colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
+                 }
+-                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf) }
+-                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf)
++                // (Update 492: recorded first and drawn in its place among the copies — drawSideCopies(atZ).)
++                var seamZ = Float.NaN
++                var seamDraw: (androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit)? = null
+                 // (Update 469: the seam between the halves, 5.8 mm from the front — one darker copy of the side there.)
+                 if (gbs != null && zpm != null && side != null && artPos != null && artSize != null && !mirror && !far && abs(sn) > 0.3f) {
+                     val padN = (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
+@@ -850,9 +857,16 @@ internal fun Modifier.solidPiece(
+                     }
+                     val zs = depthPx / 2f - SlabSide.FRONT_HALF * zpm
+                     val dk = depthK(zs)
+-                    val drawSeam: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
+-                    if (cut != null) clipPath(cut) { drawSeam() } else drawSeam()
++                    seamZ = zs
++                    seamDraw = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
+                 }
++                if (sheet) drawContext.canvas.saveLayer(
++                    androidx.compose.ui.geometry.Rect(-nodeC.x * 2f, -nodeC.y * 2f, nodeC.x * 4f, nodeC.y * 4f),
++                    androidx.compose.ui.graphics.Paint().apply { alpha = clear!!.coerceIn(0.2f, 0.8f) }
++                )
++                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf, seamZ, seamDraw) }
++                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf, seamZ, seamDraw)
++                if (sheet) drawContext.canvas.restore()
+                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
+                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
+                 if (clear != null) {
+@@ -1073,11 +1087,20 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
+ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
+     edgeLeaf: androidx.compose.ui.graphics.layer.GraphicsLayer?, nLeaf: Int, n: Int, fill: Int, c: Float, sn: Float, depthPx: Float,
+     nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float,
+-    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize
++    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize,
++    /**
++     * Update 492: something drawn at depth [atZ] in its place among the copies (far to near) — the GB pak's seam. It was drawn
++     * after all of them, so its darkened copy of the whole outline lay over the nearer copies: a black side on the home
++     * screen's wobble, a dark band down the back half in Inspect.
++     */
++    atZ: Float = Float.NaN, onZ: (androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit)? = null
+ ) {
++    var zDone = onZ == null || atZ.isNaN()
++    fun passed(z: Float) = if (c >= 0f) z > atZ else z < atZ
+     if (edgeLeaf != null) for (k in 0 until nLeaf) {
+         val f = k.toFloat() / nLeaf
+         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
++        if (!zDone && passed(z)) { zDone = true; onZ!!.invoke(this) }
+         val dk = depthK(z)
+         scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
+     }
+@@ -1091,6 +1114,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
+     if (n > 0 && edgeLeaf == null) for (k in 0..n) {
+         val f = k.toFloat() / n
+         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
++        if (!zDone && passed(z)) { zDone = true; onZ!!.invoke(this) }
+         // (The nearest slice alone: nothing past it to fill.)
+         val dk = depthK(z)
+         scale(dk, dk, pivot = nodeC) {
+@@ -1098,6 +1122,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
+             else translate(z * sn, 0f) { drawLayer(edge) }
+         }
+     }
++    if (!zDone) onZ!!.invoke(this)
+ }
+ 
+ /**
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
 index e6215a3..2ab6b88 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SteamImportDialog.kt
@@ -3590,10 +3840,18 @@ index c6fe26a..3b59ecf 100644
                  }
                  // (After a knock: the first press only knocks against the box's wall.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-index 4972c11..5595050 100644
+index 4972c11..75c1518 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-@@ -211,7 +211,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
+@@ -124,6 +124,7 @@ private const val STACKS_CASE_YAW = 24f
+ 
+ @Composable
+ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
++    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkRoot") } // (Update 492, D137: rebuilds per move)
+     val g0 = c.game
+     // (Update 461, D137: no decoding ahead here — measured on the KONKR (A/B, same build, cold start, 2 x 3 runs each) it held
+     // 25-35 MB more for no smoother scrolling and no fewer bare cases: Case stacks shows one 3D case, the stacks are spines.)
+@@ -211,7 +212,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
                  onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                  physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                  loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
@@ -3604,7 +3862,15 @@ index 4972c11..5595050 100644
              ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
              if (barRoom) Box(
                  Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
-@@ -374,7 +376,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -288,6 +291,7 @@ private class StacksGeo(
+ /** The stage: the room's floor, the two stacks and the case in the middle; swipe to move along. */
+ @Composable
+ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
++    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkStage") } // (Update 492, D137: rebuilds per move)
+     val select by rememberUpdatedState(c.actions.select)
+     val open by rememberUpdatedState(c.actions.open)
+     val latestFocus by rememberUpdatedState(c.focus)
+@@ -374,7 +378,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val spineW = caseH * STACKS_SPINE
          val gapSide = (caseW * 0.12f).coerceIn(12.dp, 40.dp)
          val x0 = caseW / 2 + gapSide + spineW * STACKS_SPINE_K / 2
@@ -3614,7 +3880,7 @@ index 4972c11..5595050 100644
          val avail = (w / 2 - x0 - 4.dp).coerceAtLeast(0.dp)
          val depthK = if (depth) STACKS_DEPTH_K else 0f
          // How many spines fit in each stack before the screen's edge.
-@@ -382,7 +385,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -382,7 +387,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val nSide = if (depthK > 0f) {
              ((exp(depthK * (avail / pitch)) - 1f) / depthK).coerceIn(0f, 1000f).toInt() + 2
          } else (avail / pitch).coerceIn(0f, 1000f).toInt() + 2
@@ -3624,7 +3890,23 @@ index 4972c11..5595050 100644
              with(density) {
                  StacksGeo(
                      caseW, caseH, spineW, caseW.toPx(), caseH.toPx(), spineW.toPx(),
-@@ -576,7 +580,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -468,6 +474,7 @@ private fun StacksItem(
+     // [centre] whether it is the place you're on.
+     game: Int = i, centre: Boolean = i == c.focus
+ ) {
++    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkItem") } // (Update 492, D137: rebuilds per move)
+     val g = c.games[game]
+     val onTap by rememberUpdatedState(tap)
+     Box(
+@@ -556,6 +563,7 @@ private fun StacksItem(
+  */
+ @Composable
+ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifier) {
++    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkFront") } // (Update 492, D137: rebuilds per move)
+     val k = g.stableKey
+     val on = k == c.game?.stableKey
+     val accent = ShelfTheme.accent
+@@ -576,7 +584,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
              StacksProgress(c, g, on)
          }
      } else if (caseLook && !spines && caseMarker(g.platform) != null) {
@@ -3636,7 +3918,7 @@ index 4972c11..5595050 100644
          Box(modifier.gameOrigin(k, on).rolloutItem()) {
              MediaFocus(on) {
                  CaseArt(
-@@ -584,7 +591,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -584,7 +595,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                      g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                      caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
                      // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
@@ -3645,7 +3927,7 @@ index 4972c11..5595050 100644
                  )
              }
              // (Update 202: the case's printed band shows the console already.)
-@@ -722,3 +729,7 @@ internal fun CaseStacksSettings() {
+@@ -722,3 +733,7 @@ internal fun CaseStacksSettings() {
          PickedFacingChoice(note = false)
      }
  }
@@ -6998,6 +7280,90 @@ index 0000000..ebd8000
 +        assertTrue(hit.indexOf("SettingsJump.pending = null") < hit.indexOf("req.bringIntoView()"))
 +        assertTrue(hit.contains("delay(JUMP_SETTLE_MS)") && hit.contains("focusReq.requestFocus()"))
 +        assertTrue(src("ui/FoldGroup.kt").contains("jumpAnchor(title, onHit = { foldOpen[key] = true })"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch492Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch492Test.kt
+new file mode 100644
+index 0000000..4272a0e
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch492Test.kt
+@@ -0,0 +1,78 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 492 (staging only): 3D media faces (seam order, connector slot, clear sides), pinned comments' size. */
++class Batch492Test {
++    private fun src(rel: String): String = listOf(
++        File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel")
++    ).first { it.exists() }.readText()
++
++    @Test fun seamIsDrawnInItsPlaceAmongTheSlicesNotOnTop() {
++        // Home screen / Save Vault pieces: the seam goes through drawSideCopies(atZ), not after the copies.
++        val sp = src("ui/SolidPiece.kt")
++        assertTrue(sp.contains("if (!zDone && passed(z)) { zDone = true; onZ!!.invoke(this) }"))
++        assertTrue(!sp.contains("if (cut != null) clipPath(cut) { drawSeam() } else drawSeam()"))
++        assertTrue(sp.contains("smear, edge, m, step, buf, seamZ, seamDraw)"))
++        // Inspect: inside the slice loop, far to near.
++        val mi = src("ui/MediaInspectView.kt")
++        val loop = mi.substring(mi.indexOf("var seamDone = false"), mi.indexOf("if (!seamDone) at(seamZ) { drawLayer(seam) }"))
++        assertTrue(loop.contains("if (!seamDone && (if (c >= 0f) z > seamZ else z < seamZ)) { seamDone = true; at(seamZ) { drawLayer(seam) } }"))
++        assertTrue(loop.indexOf("seamDone = true") < loop.indexOf("atIn(z, inset) { drawLayer(layer) }"))
++    }
++
++    /** The order rule itself: far to near, the seam lands right before the first slice nearer than it — both ways round. */
++    @Test fun seamOrderFarToNear() {
++        fun order(c: Float, depth: Float, n: Int, seamZ: Float): List<String> {
++            val out = ArrayList<String>(); var done = false
++            for (k in 0..n) {
++                val f = k.toFloat() / n
++                val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
++                if (!done && (if (c >= 0f) z > seamZ else z < seamZ)) { done = true; out += "seam" }
++                out += "s$k"
++            }
++            if (!done) out += "seam"
++            return out
++        }
++        // Facing you (front nearest): the seam 2 mm from the back of 7.8 is near the far end of the slices.
++        val front = order(1f, 7.8f, 8, 7.8f / 2f - 5.8f)
++        assertTrue(front.indexOf("seam") in 1..4)
++        // Seen from behind: the seam is near the start (the back is nearest now, so the front half is drawn first).
++        val back = order(-1f, 7.8f, 8, 7.8f / 2f - 5.8f)
++        assertTrue(back.indexOf("seam") >= 5)
++        assertEquals(10, front.size); assertEquals(10, back.size)
++    }
++
++    @Test fun connectorContentsFadeAsTheOpeningTurnsEdgeOn() {
++        val u = src("ui/CartUnderside.kt")
++        assertTrue(u.contains("internal const val SLOT_SEEN = 0.2f"))
++        assertTrue(u.contains("if (!contents || see <= 0f) return@clipPath"))
++        assertTrue(u.contains("solid(this, s, v, plastic, inner * see)"))
++        assertTrue(u.contains("shade(gold, 0.55f + 0.5f * v.light(0f, 0f, nz), see)"))
++        // The walls of the slot stay as they were (plastic, unfaded): the sliver shows them.
++        assertTrue(u.contains("drawPath(path, shade(plastic, 0.5f * v.light(nx, ny, nz), inner))"))
++    }
++
++    @Test fun clearPiecesKeepAWholeSide() {
++        val sp = src("ui/SolidPiece.kt")
++        // solid slices in one layer, laid down at the plastic's strength (not each slice faint)
++        assertTrue(sp.contains("val sheet = clear != null && spec.gb == null"))
++        assertTrue(sp.contains("edgeL.alpha = if (sheet) 1f else"))
++        assertTrue(sp.contains("androidx.compose.ui.graphics.Paint().apply { alpha = clear!!.coerceIn(0.2f, 0.8f) }"))
++        assertTrue(sp.contains("if (sheet) drawContext.canvas.restore()"))
++    }
++
++    @Test fun pinnedCommentsReadAsTheListsDo() {
++        val o = src("ui/RaOverlayView.kt")
++        assertEquals(11f, COMMENT_NAME_SP); assertEquals(12f, COMMENT_TEXT_SP)
++        assertTrue(o.contains("text = cleanComment(c.CommentText.orEmpty())"))
++        assertTrue(o.contains("list.sortedByDescending { it.Submitted ?: \"\" }.take(12)"))
++        assertTrue(!o.contains("setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)\n                    setPadding(px(6f), px(3f), 0, px(3f))"))
++        // The list's detail view uses the same sizes.
++        val d = src("ui/AchievementDetailDialog.kt")
++        assertTrue(d.contains("fontSize = 11.sp, fontWeight = FontWeight.SemiBold") && d.contains("fontSize = 12.sp, lineHeight = 16.sp"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

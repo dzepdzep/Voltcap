@@ -1,3 +1,78 @@
+# Update 492 (7 Nov 2026) — checkpoint 16: physical-media 3D faces (seam order, connector slot, clear sides), D137 rebuilds measured, Game Spacing checks, pinned comments' size
+
+Staging = 491 + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched (launch guard
+"blocked" on both devices), no save, sync, history or library touched by QA. Both devices back on v0.6.67 (1586accc); snapshots
+byte-identical to the baselines (Thor t490o 15f763763b30 / 42c3db4f584e / ed4d75db4278 / 5c45e162ef71; KONKR k490o
+d46733f623f1 / 24eea8cb0c36 / ed4d75db4278 / e13fedd12342); RetroArch history unchanged (Thor 161629e583b9, KONKR 03ba8fa1421f).
+RP Classic: not connected — NOT TESTED on it.
+
+**Rendering paths (traced):** Inspect turns a piece with `InspectSlab` (MediaInspectView.kt: side slices, `SlabSide` seam /
+grips / clear walls, `CartUndersides` connector end). The home rows' wobble and the Save Vault 3D cards use `solidPiece`
+(SolidPiece.kt: side copies, `GbSide` seam / board, see-through `clear`). Shared: the GB-family measurements (SlabSide /
+GbSide: seam 5.8 mm from the front) and the connector geometry (CartUnderside.kt). Three separate causes:
+- **D289 — seam drawn over the near side (black sides / dark band).** Both renderers drew the pak's seam — a copy of the whole
+  outline, darkened (home: 16 % light) — *after* every side slice, so it lay over the nearer ones. Home screen (Thor, Classic,
+  cartridge look, pieces held at 35 / 50 / 70°): the GBC cartridges' near side was black → now silver plastic with its grip
+  grooves (generated / custom GB-family carts such as your Pokémon Brown take the same path — not on the Thor / KONKR, so not
+  checked on it). Inspect from behind (96–105°): a dark band down the back half → a thin seam line. Fix: the seam is drawn in its
+  place among the slices, far to near (`drawSideCopies(atZ, onZ)`; InspectSlab's loop) — no extra draws.
+- **D290 — green / yellow lines at the connector end (your Inspect video).** With the connector opening turned almost edge-on
+  its outline is a 1–2 px sliver, and the board (green) and gold contacts drawn inside it filled the sliver end to end — a
+  bright line along the lower edge. Fix (CartUnderside.hole): the contents fade in with how squarely an opening faces you
+  (full from facing 0.2); a sliver shows the slot's own dark plastic walls. Seen into the opening (from below, or the GBC's
+  rear cut-out) the board and contacts are drawn exactly as before (pixel counts identical at those poses). Note: neither
+  device draws Pokémon Silver as the light silver cartridge in the video (both use a dark scan); reproduced with the silver
+  edition material on the drawn shell. **Owner visual check wanted on the device from the video.**
+- **D291 — Save Vault see-through cards losing their sides.** A clear piece's slices were each faint enough that all stacked
+  made its plastic, but out on the side only the near ones reach a point: the side faded to nothing toward its far edge and was
+  gone when turned far (Thor, Silver's clear card at 60 / 80°). Fix: the slices are drawn solid into one layer, laid down at the
+  plastic's strength — one even sheet with the card's exact outline (as Inspect's clear walls). GB clear paks unchanged.
+  (A first try with a rectangular side wall overhung the card's rounded bottom — replaced, re-checked.)
+- Not a defect: the WWE (PS2) save shows its own spinning PS2 icon — the PS2 browser style.
+- Checked on the Thor: Inspect sweeps (yaw 60–300, pitch −89…+89, scan and silver material), home poses 15–210°, Save Vault
+  30 / 60 / 80°. KONKR: Inspect sweep of the scan (no artefacts in the sides). Static poses only — continuous motion is the same
+  code per frame; the video's moment itself needs your eye.
+
+**D137 (Case stacks, KONKR, owner's carousel view, GBA, 3 × 20 moves 0.4 s apart, frames from `gfxinfo framestats`):**
+- Rebuilds per move (QaTrace): home Screen 3.6–4.2, `CarouselItem` 33 (≈ every visible case twice per move), its inputs that
+  change: `on` 2, `atFocus` 2 per move. The StacksStage path (`StkStage/StkItem`) isn't used in this view.
+- New counter `CarSame_<input>` (an input equal to the last but a new object): only `mod` (the items' `Modifier.align`, new each
+  pass) ≈ 32 / move. Tested the smallest change (one remembered modifier): `CarSame_mod` 0, but `CarouselItem` still 33 / move and
+  frames unchanged — **not the cause; reverted.** Per your instruction no further speculative change or cache.
+
+  | KONKR, 3 runs each | janky (missed deadline) | p50 | p90 | p99 | PSS |
+  |---|---|---|---|---|---|
+  | baseline | 30.9 % (31 / 30 / 32) | 27.6 ms | 56.3 ms | 83.1 ms | 622–652 MB |
+  | one modifier (reverted) | 31.4 % (39 / 26 / 30) | 27.6 ms | 56.5 ms | 94.0 ms | 624–637 MB |
+
+  Next lead (needs approval): why every case re-runs with unchanged inputs — the carousel's Box content (inside BoxWithConstraints)
+  is re-composed per frame of the glide; a Compose composition trace of one move would name the reader. QA tools:
+  `tools/qa/device/d137rc492.sh`, `tools/qa/tools/fsmerge492.py`.
+- QA incident (no harm): `dumpsys gfxinfo reset` aborted Voltcap on the KONKR once (Android 11 HWUI JankTracker, "Impossible
+  totalDuration 0" — the platform bug D137 already noted); the script now samples `framestats` instead. Two "closed unexpectedly
+  (ANR: no focused window)" screens on the Thor came from my key presses while its screen was asleep; Continue closed them.
+
+**Game Spacing (Priority 3, Thor):** Voltcap row (row_spacing), Tiles, Game shelf, Cover details — each layout's own pref set
+to 150 % visibly widens that layout's gaps (Classic's row 6th cartridge +15 px; Shelf / Cover details spines spread); snapshot
+diff afterwards: no other value changed (game size, carousel prefs untouched). R1 ordering / Layout options: code untouched since
+checkpoint 15 (Batch491Test green); Thor R1 dump this build lists layoutopts + spacing (Classic) as before.
+
+**Pinned achievement comments:** the overlay over games (RaOverlayView, pinned → tap → comments) drew them at 10 sp, name and
+text run together; the Achievements list's detail uses 11 sp names / 12 sp text. The opened panel now uses the list's sizes,
+newest first, cleaned the same way (cleanComment); the pinned summary keeps its size. Not checked on a device (needs a game
+running — not launched).
+
+**Charging indicator (investigated, not built):** the Volt battery (HomeExtras.VoltBattery) already pulses its bolt while
+charging (rememberFocusPulse); the plain style shows Material's static BatteryChargingFull. Low-overhead option: one 1.2 s
+fill sweep (or bolt fade) drawn in the Canvas reading the animation in the draw phase only (no recomposition), off when
+animations are reduced (rememberAnimationsEnabled / MotionLevel) and after ~10 s idle on the home screen.
+
+**Layout-aware windows:** future proposal only — not started.
+
+Files: ui/SolidPiece.kt, ui/MediaInspectView.kt, ui/CartUnderside.kt, ui/RaOverlayView.kt, ui/Carousel.kt (QA counter only),
+ui/StyleCaseStacks.kt + ui/ShelfHome.kt (QA counters only); Batch492Test (staging); tools/qa/device/insp492.sh, d137rc492.sh,
+r1qa491.sh (diff fix), tools/qa/tools/fsmerge492.py. Unit tests green, assembleRelease OK.
+
 # Update 491 (7 Nov 2026) — checkpoint 15: R0 / R1 / R2 (owner-approved), Settings search exact-group jump, D137 measured (read-only)
 
 Staging = 490 + the changes below (QA build 0.6.68-qa, versionCode 74). Nothing published, no game launched; games, saves,
