@@ -1,3 +1,42 @@
+# Update 496 (8 Nov 2026) — checkpoint 20: Layout-aware windows phase 3 (Material tones, Save Vault frame), D293 layout-look gate, overlay fixture + panel fit, charging-light check, no Drive sync in QA sessions
+
+Staging = 495 + the changes below (QA build 0.6.68-qa). Nothing published or pushed to staging, no game launched, no save
+changed, no history / artwork change. Thor + KONKR back on v0.6.67, hooks removed, snapshots equal to their bases (no value
+changed). Thor QA ran ~30 min (over the 15-min guideline: mostly scripted screenshot runs + 4 rebuild/installs).
+Sheets: Claude outputs windows496_comparison.jpg, overlay496_fixture.jpg.
+
+**1. Layout-aware windows phase 3 (still opt-in, off by default).** Channel grid window: Material's remaining light tones
+(off tracks, outlines, menus, containers, disabled states) in the Channel grid's blue-greys (`WindowColors` scheme), glass
+card edges, Volt switch off-track / edge, theme and colour swatch rims and progress tracks drawn in the window's writing colour
+(`winTint` — exactly `Color.White.copy(a)` outside a Channel window, so with the switch off nothing changes). Cross menu:
+unchanged (translucent / dark). Save Vault: only its FRAME follows the layout (`windowRim`: Channel rounder corner + soft blue
+rim, Cross near-square + hairline); the vault's own dark scene, cards and colours are untouched. Presentation only.
+QA: `--ez voltcap_test_vault_dry true` opens the vault showing its last list only — no search, no list rewrite, no sync, no
+connect, no cover lookups (`SaveCapsules.showCached`).
+**2. D293 follow-up.** `LayoutLookGate`: the home screen applies a layout's standard look only for a real layout switch (or
+Layout standard switched on) — not when it first appears / is rebuilt on the layout it already has, and not when a QA preview
+ends and your layout comes back (that re-applied and SAVED the standard look over later adjustments). Thor: six layout
+previews + look + theme + Settings open/close + preview end → only `held` changes, setguard "no saved setting changes";
+intended writes (`voltcap_test_pref`) SAVED as before; after preview end + force restart the snapshot = base. KONKR (focused):
+four layout previews + Settings + end + restart → snapshot = base. Settings search hook now reaches an already-open Settings.
+**QA safety (new finding):** a QA install / restart ran the owner's Drive sync (launch sync 5 s after start, and on resume the
+after-game sync / Drive watcher). The Save Vault's status line showed "Last checked" at the install times (16:38 on 0.6.67
+code, 16:55 on the staging build before the full gate) — a check, no transfer shown. Now, while the QA hooks file is there,
+`CloudSync.qaPaused` stops every sync path (full, scoped / after-game, watcher, periodic worker, launch); without the hooks
+file nothing changes. Restoring 0.6.67 at the end of a QA run still starts the owner's normal launch sync (old code).
+**3. Overlay.** QA fixture (`--es voltcap_test_raoverlay "open=1,scale=1.3,width=420"`, staging only, `QaOverlayFixture.kt`):
+the real overlay view with made-up long content, no game, no RA request, pins never saved. Found + fixed: with the pinned
+comments open the panel ran past the screen (tabs cut, list off-screen) — the panel now fits (list gives up room, min 96 dp;
+pinned comments 30 % of the screen, and with large text the comments box shrinks too, min 72 dp; both scroll). Long titles / descriptions / comments wrap; the compact summary's description keeps its
+documented 3-line HUD limit (qa-ok). Text ×1.6: the pinned row alone is taller than the room (tabs below the edge) — open risk. Real in-game check: PENDING owner approval. (D294)
+**4. Charging light.** Thor, plain status bar (preview of Voltcap row, volt_battery temporarily off then restored): while
+charging and active the light draws ~24/s with NO recomposition of the battery or the status bar; resting / behind Settings
+/ full: no drawing; a level change = one recomposition. The owner's own layouts keep their own battery indicators.
+D137, D289–D293 untouched. Tests: testDebugUnitTest + assembleRelease green (Batch496Test new; 492/495 source checks updated).
+Copy: `src_copy\ui\WindowLook.kt`, `VoltUi.kt`, `SettingsDialog.kt`, `SaveExplorer.kt`, `RaOverlayView.kt`, `HomeChrome.kt`,
+`GameLookPicker.kt`, `LauncherScreen.kt`, `TestHooks.kt`, `QaOverlayFixture.kt`, `data\SaveCapsules.kt`, `data\CloudSyncWorker.kt`,
+`LauncherViewModel.kt`; tools/qa/device/win496.sh.
+
 # Update 495 (8 Nov 2026) — checkpoint 19: D293 cause + fix (QA settings guard), overlay titles whole, Channel grid light windows, charging light polish
 
 Staging = 494 + the changes below (QA build 0.6.68-qa). Nothing published, no game launched (launch guard "blocked" before the

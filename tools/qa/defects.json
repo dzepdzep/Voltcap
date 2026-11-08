@@ -3587,6 +3587,24 @@
    "status": "fixed (staging 495, Thor-verified: held, no drift)",
    "found": "2026-11-08 update 494 (r1qa491 now vs base)",
    "note": "Restored by snapshot back (verified). Likely layout-scoped values applied during a layout preview combined with voltcap_test_pref writes; QA-only path, not traced. | Update 495: cause = layoutStandardLook() writes Features switches when a previewed layout changes (Layout standard on); preview kept appearance unsaved but not those. Fix: Features.holdWrites during QA previews + setting-change log (setguard495.sh)."
+  },
+  {
+   "id": "D294",
+   "title": "Achievements overlay open panel ran past the screen with the pinned row's comments open (tabs cut, list off-screen)",
+   "rule": "GEOMETRY",
+   "severity": "medium",
+   "status": "fixed (staging 496, Thor QA fixture at text 1.0/1.3; text 1.6: pinned row itself still taller than the room, tabs below the edge)",
+   "found": "2026-11-08 update 496 (QaOverlayFixture, Thor)",
+   "note": "Panel measures its content and trims the list (min 96 dp) then the pinned comments box (min 72 dp); pinned comments 30 % of the screen (40 %). Real in-game check pending owner approval."
+  },
+  {
+   "id": "D295",
+   "title": "QA install / restart ran the owner's Google Drive sync (launch sync, after-game / watcher)",
+   "rule": "QA-SAFETY",
+   "severity": "high",
+   "status": "fixed (staging 496: CloudSync.qaPaused while the hooks file exists; Thor + KONKR logged 'sync paused' / 'launch sync skipped')",
+   "found": "2026-11-08 update 496 (Save Vault dry view showed 'Last checked' at the install times 16:38 / 16:55, Thor)",
+   "note": "Status line = check only, no transfer shown. Pre-existing in every earlier QA batch (0.6.67 code has no gate). Restoring 0.6.67 still runs its normal launch sync."
   }
  ]
 }
