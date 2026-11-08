@@ -24,6 +24,9 @@ while [ $r -le $R ]; do
   logcat -d -s VoltcapQA:E | grep " recomp " | sed -E 's/.* recomp [0-9]+ms //' | tr ' ' '\n' | awk -F= -v n=$N 'NF==2{s[$1]+=$2} END{for(k in s) printf "%s=%.1f ", k, s[k]/n; print ""}' > /data/local/tmp/rc.txt
   { echo "run $r per-move: $(cat /data/local/tmp/rc.txt)"
     dumpsys meminfo $P | grep -E 'TOTAL PSS' | tr -s ' '
+    # (Update 494: CPU side — the slow frames' phases, averaged: count and mean ms of input/anim/layout/draw/sync/cmd/gpu.)
+    logcat -d -s VoltcapQA:E | grep ' slow ' | sed -E 's/.* slow ([0-9.]+) budget=[0-9.]+ //' | tr ' ' '\n' | awk -F= 'NF==2{s[$1]+=$2;n[$1]++} END{printf "slow-frame phases (mean ms):"; for(k in s) printf " %s=%.1f", k, s[k]/n[k]; print ""}'
+    echo "slow frames: $(logcat -d -s VoltcapQA:E | grep -c ' slow ')"
     logcat -d -s VoltcapQA:E | grep ' locchg ' | sed -E 's/.* locchg //' | sort | uniq -c | sort -rn | head -12; } >> $OUT
   # back to the start, untimed
   i=0; while [ $i -lt $N ]; do input -d 0 keyevent KEYCODE_DPAD_LEFT; i=$((i+1)); done; sleep 2

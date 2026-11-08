@@ -160,8 +160,22 @@ index b8fdb4e..38d63e9 100644
              .build()
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/data/CloudSync.kt b/app/src/main/java/com/shelf/launcher/data/CloudSync.kt
+index 29f2dde..99c2a1e 100644
+--- a/app/src/main/java/com/shelf/launcher/data/CloudSync.kt
++++ b/app/src/main/java/com/shelf/launcher/data/CloudSync.kt
+@@ -848,7 +848,8 @@ object CloudSync {
+                             outcome.uploaded > 0 -> SyncDirection.UPLOAD
+                             else -> old.lastDirection
+                         },
+-                        fileCount = if (moved > 0) moved else old.fileCount
++                        fileCount = if (moved > 0) moved else old.fileCount,
++                        lastTransferAt = if (moved > 0) now else old.lastTransferAt // (Update 493, D292)
+                     )
+                 }
+             }
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
-index 55c357d..660fa0f 100644
+index 55c357d..97c1d77 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
 +++ b/app/src/main/java/com/shelf/launcher/data/Features.kt
 @@ -120,6 +120,8 @@ object Features {
@@ -183,7 +197,19 @@ index 55c357d..660fa0f 100644
      val pageAnim = EnumPref("anim_page", PageAnim.NONE, PageAnim.values())
      val focusPop = IntPref("focus_pop", 100, 0..400)
      val motionFocusedOnly = BoolPref("motion_focused_only", false)
-@@ -564,6 +569,54 @@ object Features {
+@@ -447,6 +452,11 @@ object Features {
+     // ---- 32-bit pixel style ----
+     /** Square / cut pixel corners on panels, chips and dialogs (the type is [uiFont] now). */
+     val pixelUi = BoolPref("pixel_ui", false)
++    /**
++     * Update 493 (Layout-aware windows, phase 1): Settings and Achievements take a window frame matching the home layout
++     * where one exists (Channel grid, Cross menu); every other layout and window as before. Off by default.
++     */
++    val windowsFollowLayout = BoolPref("windows_follow_layout", false)
+     /**
+      * The interface font (Appearance › Interface style › Font). Normal: the 32-bit font only where it fits — the
+      * headings, with the 32-bit console style. 32-bit everywhere: every text in it, game names, categories and
+@@ -564,6 +574,54 @@ object Features {
          }
      }
  
@@ -238,7 +264,7 @@ index 55c357d..660fa0f 100644
      /** Every theme's own look, as JSON {"THEME_NAME": {...}}. Themes not in it use [themeLookDefault]. */
      val themeLooks = StringPref("theme_looks", "")
      /** The look themes start with: what the old global colour settings were (migrated once), else plain. */
-@@ -997,6 +1050,9 @@ object Features {
+@@ -997,6 +1055,9 @@ object Features {
      val secondDimLevel = IntPref("second_dim_level2", 45, 10..90)
      /** Update 188: its backlight turned down too while dimmed. */
      val secondDimBacklight = BoolPref("second_dim_backlight", true)
@@ -248,7 +274,7 @@ index 55c357d..660fa0f 100644
  
      // ---- Save Vault ----
      /** The save grid wraps round: scrolling past the end starts again at the beginning. */
-@@ -1450,6 +1506,16 @@ object Features {
+@@ -1450,6 +1511,16 @@ object Features {
      fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
      /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
      val statusMatchesLayout = BoolPref("status_matches_layout", true)
@@ -265,7 +291,7 @@ index 55c357d..660fa0f 100644
      val dashStatus = BoolPref("dash_status", true)
      /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
      val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())
-@@ -1543,6 +1609,14 @@ object Features {
+@@ -1543,6 +1614,14 @@ object Features {
      /** Update 114: every game's box scans (its spine) looked up in the background (Settings › Metadata › Saved on this device). */
      val spineScrape = BoolPref("spine_scrape", false)
      val shelfStand = EnumPref("shelf_stand", ShelfStand.SPINES, ShelfStand.values())
@@ -280,7 +306,7 @@ index 55c357d..660fa0f 100644
      enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }
      val shelfLook = EnumPref("shelf_look", ShelfLook.DARK, ShelfLook.values())
      /** Game shelf: the whole screen behind the shelves is the bookcase (back panel, side uprights, top crown). */
-@@ -1921,6 +1995,8 @@ object Features {
+@@ -1921,6 +2000,8 @@ object Features {
      val cfCurve = IntPref("cf_curve", 45, 0..100)
      /** Room between the cases, in % of the standard. */
      val cfSpacing = IntPref("cf_spacing", 100, 60..160)
@@ -416,6 +442,56 @@ index 07d1ef9..11ce125 100644
              lower.endsWith(".url") -> readText(n, MAX_TEXT_BYTES)?.let { t ->
                  val line = t.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("URL=", true) } ?: return
                  addRunId(line, base, "${n.name} (Steam shortcut)", P_URL, found, nonSteam)
+diff --git a/app/src/main/java/com/shelf/launcher/data/SyncStatusStore.kt b/app/src/main/java/com/shelf/launcher/data/SyncStatusStore.kt
+index 9ae23f0..8840e74 100644
+--- a/app/src/main/java/com/shelf/launcher/data/SyncStatusStore.kt
++++ b/app/src/main/java/com/shelf/launcher/data/SyncStatusStore.kt
+@@ -18,9 +18,44 @@ data class GameSyncStatus(
+     /** Files moved by the last successful transfer. */
+     val fileCount: Int = 0,
+     val message: String? = null,
+-    val updatedAt: Long = 0L
++    val updatedAt: Long = 0L,
++    /**
++     * Update 493 (D292): when files last actually moved (0 = not recorded: entries from before 493, or never). A check that
++     * moves nothing updates [lastSuccessAt] only, so the two tell "checked" from "uploaded / downloaded".
++     */
++    val lastTransferAt: Long = 0L
+ )
+ 
++/** Update 493 (D292): what Save Vault says about a game's last sync — from the recorded events only, nothing guessed. */
++data class SyncLine(val at: Long, val label: String)
++
++fun syncLine(st: GameSyncStatus): SyncLine? {
++    fun files() = if (st.fileCount > 0) " · ${st.fileCount} file${if (st.fileCount == 1) "" else "s"}" else ""
++    return when (st.state) {
++        SyncState.OFFLINE -> SyncLine(st.updatedAt, "Offline · sync skipped")
++        SyncState.ERROR -> SyncLine(st.updatedAt, "Sync failed")
++        SyncState.NEEDS_SIGN_IN -> SyncLine(st.updatedAt, "Sign-in needed")
++        SyncState.CONFLICT -> SyncLine(st.updatedAt, "Conflict found")
++        SyncState.UPLOADING -> SyncLine(st.updatedAt, "Uploading")
++        SyncState.DOWNLOADING -> SyncLine(st.updatedAt, "Downloading")
++        SyncState.SYNCED, SyncState.PENDING -> when {
++            st.lastSuccessAt <= 0L -> null
++            // The last successful sync itself moved files: say which way.
++            st.lastTransferAt > 0L && st.lastTransferAt == st.lastSuccessAt -> SyncLine(st.lastSuccessAt, when (st.lastDirection) {
++                SyncDirection.UPLOAD -> "Uploaded to Drive" + files()
++                SyncDirection.DOWNLOAD -> "Downloaded from Drive" + files()
++                SyncDirection.NONE -> "Synced with Drive"
++            })
++            // Recorded: files moved earlier, the last check found nothing new.
++            st.lastTransferAt > 0L -> SyncLine(st.lastSuccessAt, "Checked · no changes")
++            // Never moved anything, as far as recorded.
++            st.lastDirection == SyncDirection.NONE -> SyncLine(st.lastSuccessAt, "Checked · no changes")
++            // Older entry: a transfer happened once, but whether the last check moved anything wasn't recorded.
++            else -> SyncLine(st.lastSuccessAt, "Last checked")
++        }
++    }
++}
++
+ /**
+  * Per-game sync status (Game.stableKey → [GameSyncStatus]) in the "sync_status" prefs — plain, non-secret,
+  * device-local (see SettingsScopes). [all] lets the UI react without reading files.
 diff --git a/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt b/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt
 index a05a490..61db7f7 100644
 --- a/app/src/main/java/com/shelf/launcher/data/perf/FpsSource.kt
@@ -504,6 +580,18 @@ index 5045841..6952ef0 100644
              Spacer(Modifier.width(6.dp))
              Text(
                  "Linked by title, not by the game file — achievements may belong to a different version (e.g. Gold vs Silver).",
+diff --git a/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt b/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt
+index ab492bb..8308c7e 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt
+@@ -174,6 +174,7 @@ fun AchievementListDialog(
+         subtitle = game.name,
+         onDismiss = onDismiss,
+         maxContentHeightFraction = 0.7f,
++        layoutAware = true, // (Update 493: Layout-aware windows, phase 1)
+         footer = {
+             if (onOpenHub != null) Chip("All games", accent = false) { onOpenHub() }
+             Chip("Close", onClick = onDismiss)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt b/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt
 index 7c6eaf1..b734cc8 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/BatterySaverUi.kt
@@ -529,7 +617,7 @@ index 7c6eaf1..b734cc8 100644
   * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
   * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
-index b9286ca..9f32638 100644
+index b9286ca..2846a7f 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 @@ -415,7 +415,9 @@ internal object Carousel {
@@ -569,7 +657,54 @@ index b9286ca..9f32638 100644
          val bigH = bigW / 0.72f
          // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
          // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
-@@ -1152,6 +1157,7 @@ internal fun GameCarousel(
+@@ -966,9 +971,13 @@ internal fun GameCarousel(
+             val stageGame = games.getOrNull(focus)
+             val stageCover = if (Features.carouselStageGameColor.state.value) stageGame?.let { overrides[it.stableKey]?.cover ?: art[it.stableKey]?.gridUrl } else null
+             val stagePalette = rememberArtPalette(stageCover, stageCover != null)
+-            val stageTarget = (if (stageCover != null) stagePalette?.accent else null) ?: com.shelf.launcher.ui.theme.ShelfTheme.accent
+-            val accent by androidx.compose.animation.animateColorAsState(stageTarget, tween(700), label = "stageTint")
+-            val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
++            // (Update 493, D137: the stage's tint is read where it's drawn, not while composing. Read here, its 700 ms glide —
++            // and, with no palette, the theme accent's own 600 ms glide — re-ran this whole carousel box (its loop over ~30
++            // places) on every frame of the glide: ~20–27 runs per move on the KONKR. Same colours, same timing.)
++            val stageLive = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
++            val palAcc = if (stageCover != null) stagePalette?.accent else null
++            val stageA = remember { androidx.compose.animation.Animatable(androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { palAcc ?: stageLive.value.accent }) }
++            LaunchedEffect(palAcc) { stageA.animateTo(palAcc ?: stageLive.value.accent, tween(700)) }
+             val bigHpx = with(androidx.compose.ui.platform.LocalDensity.current) { bigH.toPx() }
+             // (Update 215: across the whole screen — it stopped at the carousel's own edges, a little in from the screen's,
+             // so a dark box stood on the background with the games running on past it at both sides.)
+@@ -977,6 +986,9 @@ internal fun GameCarousel(
+             androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f).onGloballyPositioned { lc ->
+                 val o = lc.positionInWindow(); stageAt[0] = o.x; stageAt[1] = o.y
+             }) {
++                // (Update 493: no palette and not gliding to one — the theme's accent as it glides, as before.)
++                val accent = if (palAcc == null && !stageA.isRunning) stageLive.value.accent else stageA.value
++                val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
+                 val floorY = size.height * floorK
+                 val below = size.height * 1.5f
+                 val cx = size.width / 2f
+@@ -1087,7 +1099,9 @@ internal fun GameCarousel(
+         val reflectOn = Features.carouselReflect.state.value
+         // (Update 231, #59: the accent is no longer a reason for a new ctx — while the colours glide to the focused game's
+         // it changed every frame and rebuilt every game in the carousel; only the focused frame reads it now, via accentOf.)
+-        val accentNow = rememberUpdatedState(ShelfTheme.accent)
++        // (Update 493, D137: read when drawn — the theme accent read here re-ran this box on every frame of the theme's
++        // colour glide while the colours follow the art.)
++        val accentLive = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
+         // (v0.6.66, D137 QA: which key rebuilt the ctx — and with it every game in the row — counted as CtxK_<key>.)
+         if (QaTrace.on) {
+             val prevK = remember { arrayOfNulls<Any?>(24) }
+@@ -1107,7 +1121,7 @@ internal fun GameCarousel(
+             CarouselCtx(
+                 view, side, bigW, bigH, if (recede) -maxWidth / 2 + recedeLeft else null, unitState, recede, cases3d, modelLook,
+                 spines, spinesAside, spinesRight, recede, reflectOn, dens, cardArtType, art, overrides,
+-                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, { accentNow.value }, pulseOn
++                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, { accentLive.value.accent }, pulseOn
+             )
+         }
+         ctx.caseRefMm = caseRefMm
+@@ -1152,6 +1166,7 @@ internal fun GameCarousel(
          // allocated at once as the inspect view opened). Overlapping cases no longer show through each other while dimmed.
          // (Wider and taller than the carousel, round the same middle: the games run on past its sides and their reflections
          // under it, and a faded group is cut to its own bounds.)
@@ -577,7 +712,7 @@ index b9286ca..9f32638 100644
          Box(
              Modifier.layout { m, cons ->
                  val bw = if (cons.hasBoundedWidth) cons.maxWidth else cons.minWidth
-@@ -1196,6 +1202,7 @@ internal fun GameCarousel(
+@@ -1196,6 +1211,7 @@ internal fun GameCarousel(
                              else ({ i - curPos() })
                          }
                          val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
@@ -585,7 +720,7 @@ index b9286ca..9f32638 100644
                          vcTrace("VC:CarouselItem") { CarouselItem(
                              ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
                              relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
-@@ -1442,6 +1449,9 @@ private fun CarouselItem(
+@@ -1442,6 +1458,9 @@ private fun CarouselItem(
          val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
          QaTrace.count("CarRun")
          for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
@@ -595,7 +730,7 @@ index b9286ca..9f32638 100644
          for (k in now.indices) prev[k] = now[k]
      }
      val relNow = rememberUpdatedState(relOf)
-@@ -1951,3 +1961,29 @@ private fun CarouselArt(
+@@ -1951,3 +1970,29 @@ private fun CarouselArt(
  internal object BackdropHold {
      val gliding = androidx.compose.runtime.mutableStateOf(false)
  }
@@ -918,6 +1053,34 @@ index 0bc1e0d..8955b99 100644
                          val logo = logos[p]
                          if (logo != null) Image(logo, st.label, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxWidth().weight(1f))
                          else Icon(Icons.Filled.SportsEsports, null, tint = Color.White, modifier = Modifier.size(34.dp).weight(1f))
+diff --git a/app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt b/app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt
+index 0605b4c..49605f4 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt
+@@ -417,9 +417,13 @@ fun ShelfDialog(
+     footer: (@Composable RowScope.() -> Unit)? = null,
+     // false → the body is a plain height-bounded Column (no verticalScroll) so it can host a lazy list.
+     scrollable: Boolean = true,
++    // Update 493 (Layout-aware windows, phase 1): true → the frame follows the home layout when that's switched on
++    // (WindowLook). Only the windows that ask for it; every other popup keeps its frame.
++    layoutAware: Boolean = false,
+     content: @Composable ColumnScope.() -> Unit
+ ) {
+     com.shelf.launcher.Breadcrumbs.mark("ShelfDialog")
++    val winStyle = if (layoutAware) WindowLook.current() else WindowLook.Style.OWN
+     val screen = screenSizeDp()
+     val sounds = LocalUiSounds.current
+     LaunchedEffect(Unit) { sounds?.play(UiSound.OPEN) }
+@@ -438,8 +442,7 @@ fun ShelfDialog(
+             Modifier
+                 .fillMaxWidth(widthFraction)
+                 .heightIn(max = screen.height * 0.94f)
+-                .voltSurface(uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp), base = ShelfTheme.colors.surface)
+-                .border(1.dp, Color.White.copy(alpha = 0.08f), uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp))
++                .windowFrame(winStyle, uiRounded(WindowLook.corner(winStyle, if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp, false, com.shelf.launcher.data.Features.pixelUi.value)))
+         ) {
+             Column(Modifier.fillMaxWidth()) {
+                 DialogHeader(icon = icon, title = title, subtitle = subtitle, onDismiss = onDismiss)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/FitText.kt b/app/src/main/java/com/shelf/launcher/ui/FitText.kt
 index 11b8faf..501b41c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/FitText.kt
@@ -1503,7 +1666,7 @@ index 06392a7..a195039 100644
          AnimatedContent(
              targetState = p,
 diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
-index 1ef0d90..6baa0b9 100644
+index 1ef0d90..78d4f4d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/HomeChrome.kt
 @@ -158,7 +158,9 @@ internal fun StatusBar(
@@ -1532,7 +1695,7 @@ index 1ef0d90..6baa0b9 100644
                  Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
                  if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
                  if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
-@@ -249,10 +251,10 @@ internal fun StatusBar(
+@@ -249,26 +251,22 @@ internal fun StatusBar(
                      )
                  }
              }
@@ -1545,7 +1708,12 @@ index 1ef0d90..6baa0b9 100644
                  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                      // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
                      if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
-@@ -264,11 +266,11 @@ internal fun StatusBar(
+-                    else Icon(
+-                        if (battery.charging) Icons.Filled.BatteryChargingFull else batteryIconFor(battery.percent, false), null,
+-                        tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
+-                        modifier = Modifier.size(look.iconSize)
+-                    )
++                    else PlainBattery(battery.percent, battery.charging, ink, look.iconSize)
                      if (bar.showPercent && !(compact && voltGauge)) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
                  }
              }
@@ -1559,7 +1727,7 @@ index 1ef0d90..6baa0b9 100644
                  if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
                      Text(
                          "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
-@@ -354,7 +356,7 @@ internal fun StatusBar(
+@@ -354,7 +352,7 @@ internal fun StatusBar(
          )
          // With the player there it takes (nearly) all the spare room; the readouts get the rest.
          Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
@@ -1568,6 +1736,77 @@ index 1ef0d90..6baa0b9 100644
                  Text(
                      modifier = Modifier.tapOnly(onProgressClick),
                      text = 
+@@ -376,6 +374,59 @@ internal fun StatusBar(
+ 
+ internal val LowBatteryColor = Color(0xFFFF6B6B)
+ 
++/**
++ * Update 493: the plain status-bar battery. Not charging: as before. Charging: the bars for the real level with a soft
++ * light rising through the battery's own shape, once every ~1.8 s (drawn only — the bar isn't recomposed for it; same
++ * icon size, so nothing beside it moves). With animations off, Voltcap resting or behind a panel: the charging icon as
++ * before, still.
++ */
++@Composable
++internal fun PlainBattery(percent: Int, charging: Boolean, ink: Color, iconSize: androidx.compose.ui.unit.Dp) {
++    val anim = charging && rememberIsActive() && rememberAnimationsEnabled() && !calmHere()
++    if (!anim) Icon(
++        if (charging) Icons.Filled.BatteryChargingFull else batteryIconFor(percent, false), null,
++        tint = if (!charging && percent < 15) LowBatteryColor else ink,
++        modifier = Modifier.size(iconSize)
++    ) else {
++        val phase = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
++        LaunchedEffect(Unit) {
++            val start = androidx.compose.runtime.withFrameMillis { it }
++            while (true) {
++                // ~30 updates a second is plenty for a soft gradient this small.
++                kotlinx.coroutines.delay(33)
++                androidx.compose.runtime.withFrameMillis { t -> phase.floatValue = ((t - start) % CHARGE_SWEEP_MS) / CHARGE_SWEEP_MS.toFloat() }
++            }
++        }
++        val live = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
++        Icon(
++            chargingLevelIcon(percent), null, tint = ink,
++            modifier = Modifier.size(iconSize)
++                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
++                .drawWithContent {
++                    drawContent()
++                    // A band rising from the bottom of the battery to its top, painted onto the icon's own pixels only.
++                    val p = phase.floatValue
++                    val band = size.height * 0.45f
++                    val y = size.height + band - p * (size.height + band * 2f)
++                    val glow = androidx.compose.ui.graphics.lerp(ink, live.value.accent, 0.75f)
++                    drawRect(
++                        androidx.compose.ui.graphics.Brush.verticalGradient(
++                            0f to Color.Transparent, 0.5f to glow.copy(alpha = 0.9f), 1f to Color.Transparent,
++                            startY = y - band, endY = y + band
++                        ),
++                        blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop
++                    )
++                }
++        )
++    }
++}
++
++/** Update 493: the bars for [percent] while charging (never the low-battery alert — it's filling up). */
++internal fun chargingLevelIcon(percent: Int): androidx.compose.ui.graphics.vector.ImageVector =
++    if (percent < 15) Icons.Filled.Battery1Bar else batteryIconFor(percent, false)
++
++internal const val CHARGE_SWEEP_MS = 1800L
++
+ /** Level 0..100 and whether it's charging; [charging] is true while plugged in and not yet full. */
+ internal data class BatteryInfo(val percent: Int = 100, val charging: Boolean = false)
+ 
+@@ -431,7 +482,9 @@ internal fun rememberBatteryInfo(): BatteryInfo {
+         onDispose { runCatching { context.unregisterReceiver(receiver) } }
+     }
+ 
+-    return info
++    // (Update 493, QA builds only: `voltcap_test_battery "pct|charging"` shows that state for this session — nothing on the
++    // device changes.)
++    return TestHooks.battery.value ?: info
+ }
+ 
+ @Composable
 diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt b/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt
 index 631c2c7..e860477 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/HomeEdit.kt
@@ -1583,6 +1822,29 @@ index 631c2c7..e860477 100644
 +
  internal object PartsLayer {
      var z by androidx.compose.runtime.mutableFloatStateOf(6f)
+ }
+diff --git a/app/src/main/java/com/shelf/launcher/ui/HomeExtras.kt b/app/src/main/java/com/shelf/launcher/ui/HomeExtras.kt
+index 50d031f..2acde37 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/HomeExtras.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/HomeExtras.kt
+@@ -153,7 +153,8 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
+     val accent = ShelfTheme.accent
+     val second = lerpColor(accent, ShelfTheme.colors.secondary, 0.6f)
+     val pixel = VoltUi.pixel
+-    val pulse = if (charging) rememberFocusPulse(animate = true) else 1f
++    // (Update 493: the pulse read while drawing — read here it re-ran the gauge every frame of the pulse.)
++    val pulseS = rememberFocusPulseState(animate = charging)
+     Canvas(Modifier.size(width = 26.dp, height = 13.dp)) {
+         val nub = 2.5.dp.toPx()
+         val w = size.width - nub
+@@ -181,7 +182,7 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
+             drawPath(Path().apply {
+                 moveTo(x0 + bw * 0.62f, y0); lineTo(x0 + bw * 0.05f, y0 + bh * 0.58f); lineTo(x0 + bw * 0.46f, y0 + bh * 0.58f)
+                 lineTo(x0 + bw * 0.34f, y0 + bh); lineTo(x0 + bw * 0.95f, y0 + bh * 0.38f); lineTo(x0 + bw * 0.54f, y0 + bh * 0.38f); close()
+-            }, outline.copy(alpha = 0.6f + 0.4f * pulse))
++            }, outline.copy(alpha = 0.6f + 0.4f * pulseS.value))
+         }
+     }
  }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt b/app/src/main/java/com/shelf/launcher/ui/KeyInput.kt
 index 2f264a2..1faa8e3 100644
@@ -2621,10 +2883,24 @@ index 658bd0c..e51435c 100644
      "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
      "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
-index df11396..ade4b0c 100644
+index df11396..ce35d2d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
-@@ -504,7 +504,7 @@ internal class RaOverlayView(
+@@ -477,7 +477,12 @@ internal class RaOverlayView(
+         }
+         box.addView(line)
+         val comments = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+-        box.addView(comments)
++        // (Update 493: the pinned row sits above the scrolling list, outside it — its opened comments ran on past the
++        // screen's edge with no way to scroll to the rest. They scroll in a box of their own now, at most ~40 % of the
++        // screen; list rows are inside the list's scroll already.)
++        if (pinnedRow) box.addView(MaxHeightScroll(context, (context.resources.displayMetrics.heightPixels * PINNED_COMMENTS_MAX).toInt()).apply {
++            isVerticalScrollBarEnabled = true; addView(comments)
++        }) else box.addView(comments)
+         box.setOnClickListener {
+             if (openKey in openComments) { openComments -= openKey; comments.removeAllViews() }
+             else { openComments += openKey; loadComments(item.id, comments) }
+@@ -504,7 +509,7 @@ internal class RaOverlayView(
      private fun loadComments(id: Int, into: LinearLayout) {
          into.removeAllViews()
          val loading = TextView(context).apply {
@@ -2633,7 +2909,7 @@ index df11396..ade4b0c 100644
          }
          into.addView(loading)
          scope.launch {
-@@ -526,14 +526,25 @@ internal class RaOverlayView(
+@@ -526,14 +531,25 @@ internal class RaOverlayView(
                          is com.shelf.launcher.data.ra.RaResult.Error -> result.error.message
                          else -> "No comments yet."
                      }
@@ -2659,12 +2935,12 @@ index df11396..ade4b0c 100644
 +                into.addView(TextView(context).apply {
 +                    text = cleanComment(c.CommentText.orEmpty())
 +                    setTextColor(0xEEFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_TEXT_SP)
-+                    setLineSpacing(0f, 1.15f)
++                    setLineSpacing(0f, COMMENT_LINE_MULT) // (Update 493: the list's 16 sp lines for 12 sp text)
 +                    setPadding(px(6f), px(1f), 0, px(4f))
                  })
              }
          }
-@@ -574,3 +585,7 @@ internal class CapsuleBar(context: Context) : View(context) {
+@@ -574,3 +590,18 @@ internal class CapsuleBar(context: Context) : View(context) {
          }
      }
  }
@@ -2672,6 +2948,17 @@ index df11396..ade4b0c 100644
 +/** Update 492: the opened panel's comments at the Achievements list's sizes (AchievementDetailDialog: 11 / 12 sp). */
 +internal const val COMMENT_NAME_SP = 11f
 +internal const val COMMENT_TEXT_SP = 12f
++/** Update 493: the list's line height (12 sp text on 16 sp lines, AchievementDetailDialog). */
++internal const val COMMENT_LINE_MULT = 16f / 12f
++/** Update 493: the pinned row's opened comments scroll within this share of the screen's height. */
++internal const val PINNED_COMMENTS_MAX = 0.4f
++
++/** A ScrollView that grows with its content up to [maxPx], then scrolls. */
++internal class MaxHeightScroll(context: Context, private val maxPx: Int) : ScrollView(context) {
++    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
++        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxPx, MeasureSpec.AT_MOST))
++    }
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt b/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
 index 8ea7122..60f31d7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RealMedia.kt
@@ -2812,7 +3099,7 @@ index 418ffc1..a3111b1 100644
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
-index 9e499ab..d1034a1 100644
+index 9e499ab..a3f6c6a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
 @@ -126,7 +126,10 @@ internal fun SaveExplorerDialog(
@@ -2883,7 +3170,19 @@ index 9e499ab..d1034a1 100644
                  Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 3)
                  Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                  Spacer(Modifier.height(12.dp))
-@@ -1069,6 +1082,7 @@ private fun SaveDetail(
+@@ -1042,8 +1055,9 @@ private fun SaveDetail(
+                 DetailRow("Last move", when (st.lastDirection) {
+                     SyncDirection.UPLOAD -> "This device → Google Drive"
+                     SyncDirection.DOWNLOAD -> "Google Drive → this device"
+-                    SyncDirection.NONE -> "Checked, nothing to move"
+-                })
++                    SyncDirection.NONE -> "Nothing moved yet"
++                } + (if (st.lastTransferAt > 0L) " (${syncAgo(st.lastTransferAt)})" else "")) // (Update 493, D292: the move's own time when recorded)
++                com.shelf.launcher.data.syncLine(st)?.takeIf { it.at > 0L }?.let { DetailRow("Last sync", "${it.label} (${syncAgo(it.at)})") }
+                 if (st.fileCount > 0) DetailRow("Files", "${st.fileCount}")
+                 DetailRow("Status", when (st.state) {
+                     SyncState.SYNCED -> "Safe on Google Drive"
+@@ -1069,6 +1083,7 @@ private fun SaveDetail(
                          items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
                      }
                  }
@@ -2891,7 +3190,7 @@ index 9e499ab..d1034a1 100644
                  Spacer(Modifier.height(if (compact) 12.dp else 18.dp))
                  // (Update 274, Toni: "buttons a bit down … centred".)
                  ChipFlow(center = true) {
-@@ -1094,15 +1108,50 @@ private fun SaveDetail(
+@@ -1094,15 +1109,50 @@ private fun SaveDetail(
   * on it turns [angle] degrees about its upright axis (the back: the same cover darkened, with the
   * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
   */
@@ -2944,6 +3243,31 @@ index 9e499ab..d1034a1 100644
      if (card != null) {
          if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
          else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
+@@ -1412,7 +1462,10 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
+     val context = LocalContext.current
+     val fmt = remember { android.text.format.DateFormat.getMediumDateFormat(context) }
+     val time = remember { android.text.format.DateFormat.getTimeFormat(context) }
+-    val last = maxOf(st.lastSuccessAt, capsule?.lastSaved ?: st.updatedAt)
++    // (Update 493, D292: the time and words come from what was recorded — a check that moved nothing no longer reads
++    // Fetched-from-Drive.)
++    val line = com.shelf.launcher.data.syncLine(st)
++    val last = line?.at?.takeIf { it > 0L } ?: (capsule?.lastSaved ?: st.updatedAt)
+     val synced = st.lastSuccessAt > 0 || st.state != SyncState.PENDING
+     // Update 152: saves that are only on Google Drive (synced from another handheld) said "on this device".
+     val elsewhere = capsule?.saves?.takeIf { it.isNotEmpty() }?.takeIf { list ->
+@@ -1452,11 +1505,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
+                 maxLines = 1, overflow = TextOverflow.Ellipsis
+             )
+             Text(
+-                if (!synced) "Last saved" else when (st.lastDirection) {
+-                    SyncDirection.UPLOAD -> "Saved to Drive"
+-                    SyncDirection.DOWNLOAD -> "Fetched from Drive"
+-                    SyncDirection.NONE -> "Checked"
+-                } + if (st.fileCount > 0) " · ${st.fileCount} file${if (st.fileCount == 1) "" else "s"}" else "",
++                line?.label ?: "Last saved",
+                 color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+             )
+         }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt b/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt
 index aadd90a..d0ec8b7 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SaveVaultStyles.kt
@@ -3028,7 +3352,7 @@ index 55c73a8..02b687a 100644
                  }
                  Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
-index f580972..8e4d979 100644
+index f580972..647c37d 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt
 @@ -1,3 +1,5 @@
@@ -3085,7 +3409,26 @@ index f580972..8e4d979 100644
      // (Update 148: a search jump that finds nothing on the page gives up after a moment, so the groups close again.)
      LaunchedEffect(SettingsJump.pending) {
          if (SettingsJump.pending != null) { kotlinx.coroutines.delay(2_000); SettingsJump.pending = null }
-@@ -435,9 +464,22 @@ fun SettingsDialog(
+@@ -353,6 +382,7 @@ fun SettingsDialog(
+             contentAlignment = Alignment.Center
+         ) {
+         val compact = maxWidth < 640.dp || maxHeight < 440.dp
++        val winStyle = WindowLook.current()
+         Box(
+             Modifier
+                 // (Update 261: a D-pad press before the page's entry has the focus goes to that entry, not the list's top.)
+@@ -364,8 +394,8 @@ fun SettingsDialog(
+                 }
+                 .fillMaxWidth(if (compact) 0.98f else 0.94f)
+                 .fillMaxHeight(if (compact) 0.96f else 0.94f)
+-                .voltSurface(uiRounded(if (compact) 16.dp else 24.dp), base = ShelfTheme.colors.surface)
+-                .border(1.dp, Color.White.copy(alpha = 0.08f), uiRounded(if (compact) 16.dp else 24.dp))
++                // (Update 493: the frame follows the home layout when that's switched on — WindowLook; as before otherwise.)
++                .windowFrame(winStyle, uiRounded(WindowLook.corner(winStyle, if (compact) 16.dp else 24.dp, compact, com.shelf.launcher.data.Features.pixelUi.value)))
+         ) {
+             Column(Modifier.fillMaxSize()) {
+                 // Header: icon badge + title + subtitle, close button at the end.
+@@ -435,9 +465,22 @@ fun SettingsDialog(
                                  .padding(16.dp)
                          ) {
                              CATEGORIES.forEach { entry ->
@@ -3109,7 +3452,7 @@ index f580972..8e4d979 100644
                                  Spacer(Modifier.height(4.dp))
                              }
                          }
-@@ -455,18 +497,28 @@ fun SettingsDialog(
+@@ -455,18 +498,28 @@ fun SettingsDialog(
                          if (compact) {
                              // (Update 294: whole chips only, "+N ›" for the rest; the page you're on, or the chip with the
                              // D-pad's focus, always whole — WholeChipRow.)
@@ -3140,7 +3483,7 @@ index f580972..8e4d979 100644
                              ThinDivider()
                          }
                          // A fresh scroll position per category: sharing one kept
-@@ -613,6 +665,9 @@ fun SettingsDialog(
+@@ -613,6 +666,9 @@ fun SettingsDialog(
                                      SecondScreenExtras(appearance, onAppearanceChange, hasSecondScreen)
                                      // Update 188.
                                      if (hasSecondScreen) {
@@ -3150,7 +3493,7 @@ index f580972..8e4d979 100644
                                          Spacer(Modifier.height(12.dp))
                                          FoldGroup("Dim the second screen", summary = "When nobody uses it, also during a game", key = "second_dim") { ShelfCard { SecondDimSettings() } }
                                      }
-@@ -819,6 +874,21 @@ private fun HomeContent(
+@@ -819,6 +875,21 @@ private fun HomeContent(
          }
      }
      CollapsibleSection("Animations") {
@@ -3172,7 +3515,7 @@ index f580972..8e4d979 100644
              // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
              ShelfCard {
                  SectionLabel("Moving between games")
-@@ -1152,6 +1222,8 @@ private fun ThemeContent(
+@@ -1152,6 +1223,8 @@ private fun ThemeContent(
          FoldGroup("Themes", summary = currentTheme.label, key = "theme_browser", startOpen = true) {
              ShelfCard {
                  ColorsFollowRow(currentTheme)
@@ -3181,7 +3524,7 @@ index f580972..8e4d979 100644
                  Spacer(Modifier.height(10.dp))
                  ThemeSwatches(currentTheme, onSelectTheme)
              }
-@@ -2986,6 +3058,15 @@ private fun <T> ToggleChips(
+@@ -2986,6 +3059,15 @@ private fun <T> ToggleChips(
      }
  }
  
@@ -3197,7 +3540,7 @@ index f580972..8e4d979 100644
  @Composable
  private fun NavItem(entry: SettingsCategory, selected: Boolean, onClick: () -> Unit) {
      com.shelf.launcher.Breadcrumbs.mark("NavItem")
-@@ -3558,6 +3639,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3558,6 +3640,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
          SectionLabel(appearance.homeLayout.label)
          MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
          Spacer(Modifier.height(8.dp))
@@ -3206,7 +3549,7 @@ index f580972..8e4d979 100644
          // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
          if (tileLayout) {
              val F = com.shelf.launcher.data.Features
-@@ -3570,6 +3653,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3570,6 +3654,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                      "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
                      F.tileSwitch.state.value, { F.tileSwitch.value = it }
                  )
@@ -3219,7 +3562,7 @@ index f580972..8e4d979 100644
                  if (F.tileSwitch.state.value) {
                      SwitchRow(
                          Icons.Filled.Wallpaper, "Plain background",
-@@ -3744,6 +3833,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3744,6 +3834,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
              GameSizeSlider(appearance, onChange)
              Spacer(Modifier.height(8.dp))
          }
@@ -3232,7 +3575,7 @@ index f580972..8e4d979 100644
          // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar): each its own options (StyleHomeSettings.kt).
          if (appearance.homeLayout.styleHome) FoldGroup(
              "${appearance.homeLayout.label} options", summary = styleHomeSummary(appearance.homeLayout),
-@@ -3850,6 +3945,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
+@@ -3850,6 +3946,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
              RowChoice("Game you're on", com.shelf.launcher.data.FocusPosition.values(), appearance.focusPosition, { it.label }) {
                  onChange(appearance.copy(focusPosition = it))
              }
@@ -3244,7 +3587,7 @@ index f580972..8e4d979 100644
              // "Wide for the first game only" makes sense only with the game you're on at the left end.
              val leftEnd = appearance.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT
              RowChoice(
-@@ -4254,15 +4354,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
+@@ -4254,15 +4355,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                  modifier = m
              )
          }
@@ -3282,10 +3625,18 @@ index f580972..8e4d979 100644
          // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
          item { m ->
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
-index dc7b881..dab6707 100644
+index dc7b881..6743bc3 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SettingsIndex.kt
-@@ -242,11 +242,11 @@ internal object SettingsIndex {
+@@ -49,6 +49,7 @@ internal object SettingsIndex {
+         E("32-bit details", "Theme", "Interface style", null, null),
+         E("Voltage line sparks", "Theme", "Interface style", null, null),
+         E("Focus glow", "Theme", "Interface style", null, null),
++        E("Windows follow the home layout", "Theme", "Interface style", null, null),
+         E("Soft blur behind the games", "Theme", "Interface style", null, null),
+         E("Cover light", "Theme", "Interface style", null, null),
+         E("Charge gauge battery", "Theme", "Interface style", null, null),
+@@ -242,11 +243,11 @@ internal object SettingsIndex {
          E("Clean up game names", "Home", "Name & logo", null, null),
          E("Hide everything in brackets", "Home", "Name & logo", null, null),
          E("Logos from RetroAchievements", "Home", "Name & logo", null, null),
@@ -3299,7 +3650,7 @@ index dc7b881..dab6707 100644
          E("Next to the row", "Home", "Next to the row", null, null),
          E("Music player", "Home", "Music player", null, null),
          E("Position", "Home", "Music player", null, null),
-@@ -360,7 +360,7 @@ internal object SettingsIndex {
+@@ -360,7 +361,7 @@ internal object SettingsIndex {
          E("Wide capsules source", "Metadata", "Artwork source per look", null, null),
          E("Moving between games (next game slides in)", "Home", "Animations", null, null),
          E("Slide speed between games (Quick Smooth Slow)", "Home", "Animations", null, null),
@@ -3308,7 +3659,7 @@ index dc7b881..dab6707 100644
          E("How far the game you're on stands out", "Home", "Animations", null, null),
          // Update 151 / 295: one choice — plug in the media (default), the cover rises, or off.
          E("Starting a game (plug in the media, cover rises)", "Home", "Animations", null, null),
-@@ -373,7 +373,7 @@ internal object SettingsIndex {
+@@ -373,7 +374,7 @@ internal object SettingsIndex {
          E("Cover → wide capsule (roll out, slide, flip…)", "Home", "Animations", null, null),
          E("Moving discs, cartridges & cases (spin, bounce)", "Home", "Animations", null, null),
          E("Pages slide (turn off, preview)", "Home", "Animations", null, null),
@@ -3317,7 +3668,7 @@ index dc7b881..dab6707 100644
          E("Pictures fade over each other (turn off, preview)", "Home", "Animations", null, null),
          E("Animation previews", "Home", "Animations", null, null),
          E("Game details", "Home", "Details window", "home_details", "Game details"),
-@@ -688,6 +688,302 @@ internal object SettingsIndex {
+@@ -688,6 +689,302 @@ internal object SettingsIndex {
          E("Space it may use", "Metadata", "Saved on this device", null, null),
          E("Save new artwork automatically", "Metadata", "Saved on this device", null, null),
          E("Keep getting artwork in the background", "Metadata", "Saved on this device", null, null),
@@ -4467,7 +4818,7 @@ index 977fe34..b440170 100644
  
  /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */
 diff --git a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
-index 536f473..a0b6693 100644
+index 536f473..7bb75e2 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/TestHooks.kt
 @@ -16,6 +16,10 @@ internal object TestHooks {
@@ -4536,7 +4887,24 @@ index 536f473..a0b6693 100644
      /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
      val shortcuts = mutableStateOf<String?>(null)
      /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
-@@ -271,6 +298,12 @@ internal object TestHooks {
+@@ -165,6 +192,8 @@ internal object TestHooks {
+      * for before / after pictures of the sides; `off` ends it. This session only, nothing saved.
+      */
+     val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
++    /** Update 493: `--es voltcap_test_battery "40|true"` — the status bar shows that level / charging state (this session only); `off` ends it. */
++    val battery = mutableStateOf<BatteryInfo?>(null)
+ 
+     /** Update 431: the test tuner profile for [spec] (Result.success(null) = "off"), or null when it doesn't parse. */
+     internal fun tuneProfile(spec: String): Result<com.shelf.launcher.device.tune.TuneProfile?>? {
+@@ -255,6 +284,7 @@ internal object TestHooks {
+         val pr = intent?.getStringExtra("voltcap_test_pref")
+         val th = intent?.getStringExtra("voltcap_test_theme")
+         val pm = intent?.getStringExtra("voltcap_test_perf")
++        intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
+         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
+         // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
+         // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
+@@ -271,6 +301,12 @@ internal object TestHooks {
          // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
          // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
          intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
@@ -4549,7 +4917,7 @@ index 536f473..a0b6693 100644
          if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
          // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
          if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
-@@ -318,6 +351,10 @@ internal object TestHooks {
+@@ -318,6 +354,10 @@ internal object TestHooks {
              panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
              android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
          }
@@ -4560,7 +4928,7 @@ index 536f473..a0b6693 100644
          if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
              noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
              android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
-@@ -350,6 +387,17 @@ internal object TestHooks {
+@@ -350,6 +390,17 @@ internal object TestHooks {
              if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
              else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
          }
@@ -4578,7 +4946,7 @@ index 536f473..a0b6693 100644
          val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
          if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
              // (A walk only ever previews: nothing it changes is saved.)
-@@ -394,6 +442,8 @@ internal object TestHooks {
+@@ -394,6 +445,8 @@ internal object TestHooks {
                      java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_appearance.json").writeText(o.toString())
                      android.util.Log.e("VoltcapTest", "appearance saved: home_layout=${o.optString("home_layout")}")
                  }
@@ -4587,7 +4955,7 @@ index 536f473..a0b6693 100644
                  android.util.Log.e("VoltcapTest", "snapshot saved")
              } else if (snap == "restore" && f.exists()) {
                  val j = org.json.JSONObject(f.readText())
-@@ -431,6 +481,7 @@ internal object TestHooks {
+@@ -431,6 +484,7 @@ internal object TestHooks {
                      e.commit()
                      android.util.Log.e("VoltcapTest", "appearance restored: home_layout=${o.optString("home_layout")}")
                  }
@@ -4595,7 +4963,7 @@ index 536f473..a0b6693 100644
                  android.util.Log.e("VoltcapTest", "snapshot restored")
              }
          }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
-@@ -474,6 +525,7 @@ internal object TestHooks {
+@@ -474,6 +528,7 @@ internal object TestHooks {
          if (cat != null) category.value = cat.replace('_', ' ')
          if (lk != null && com.shelf.launcher.data.CardArtType.values().any { it.name == lk }) look.value = lk
          if (st != null) settings.value = st.replace('_', ' ')
@@ -4603,7 +4971,7 @@ index 536f473..a0b6693 100644
          if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
          if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
          if (th != null && com.shelf.launcher.ui.theme.AppTheme.values().any { it.name == th }) theme.value = th
-@@ -571,3 +623,35 @@ internal object LabelAudit {
+@@ -571,3 +626,35 @@ internal object LabelAudit {
          android.util.Log.e("VoltcapTest", "labelaudit scans: done")
      }
  }
@@ -4812,6 +5180,18 @@ index 830a9b6..f5c31b3 100644
 +        }
 +    }
 +}
+diff --git a/app/src/main/java/com/shelf/launcher/ui/VoltSettings.kt b/app/src/main/java/com/shelf/launcher/ui/VoltSettings.kt
+index 4f67cb5..31e40fc 100644
+--- a/app/src/main/java/com/shelf/launcher/ui/VoltSettings.kt
++++ b/app/src/main/java/com/shelf/launcher/ui/VoltSettings.kt
+@@ -108,6 +108,7 @@ internal fun InterfaceStyleSettings() {
+         item { m -> SwitchRow(Icons.Filled.AutoAwesome, "Focus glow", "A soft glow inside the accent outline of what you're on. Off: just the outline.", F.uiGlow.state.value, { F.uiGlow.value = it }, m) }
+         item { m -> SwitchRow(Icons.Filled.BlurOn, "Soft blur behind the games", "A light blur and shade only behind the games, their names and the categories, so they read on busy backgrounds.", F.rowBlur.state.value > 0, { F.rowBlur.value = if (it) 35 else 0 }, m) }
+         item { m -> SwitchRow(Icons.Filled.Lightbulb, "Cover light", "A soft light in the colours of the game you're on, behind its card.", F.coverLight.state.value, { F.coverLight.value = it }, m) }
++        item { m -> SwitchRow(Icons.Filled.Dashboard, "Windows follow the home layout", "Settings and Achievements take a frame matching your home layout where it has one (Channel grid, Cross menu). Other layouts and windows stay as they are.", F.windowsFollowLayout.state.value, { F.windowsFollowLayout.value = it }, m) }
+         item { m -> SwitchRow(Icons.Filled.BatteryChargingFull, "Charge gauge battery", "The status bar's battery as a little gauge in your theme's colours.", F.voltBattery.state.value, { F.voltBattery.value = it }, m) }
+     }
+     RowBlurStrength()
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt b/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
 index 057b5ab..cd7d6bd 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/WholeChipRow.kt
@@ -6136,6 +6516,82 @@ index 00bae26..e3e119f 100644
      }.background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.35f), androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.72f))))
          .border(3.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(10.dp))) {
          // The face's bevel and the art faint behind the text.
+diff --git a/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt b/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt
+new file mode 100644
+index 0000000..4c3d158
+--- /dev/null
++++ b/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt
+@@ -0,0 +1,70 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.foundation.background
++import androidx.compose.foundation.border
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.draw.clip
++import androidx.compose.ui.graphics.Brush
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.Shape
++import androidx.compose.ui.graphics.lerp
++import androidx.compose.ui.unit.Dp
++import androidx.compose.ui.unit.dp
++import com.shelf.launcher.data.Features
++import com.shelf.launcher.data.HomeLayout
++import com.shelf.launcher.ui.theme.ShelfTheme
++
++/**
++ * Update 493 — Layout-aware windows, phase 1: one small set of window-frame tokens (corner, surface, rim) chosen from the
++ * home layout, used by a window's outer frame only. Content, lists, focus, headers and buttons are untouched. Off by
++ * default (Settings › Theme › Interface style › "Windows follow the home layout"); layouts without a look of their own
++ * keep the window exactly as before ([Style.OWN] draws what the windows drew).
++ */
++internal object WindowLook {
++    enum class Style { OWN, CHANNEL, CROSS }
++
++    /** Which frame [layout] gives a window; [OWN] unless following is on and the layout has one. */
++    fun styleFor(layout: HomeLayout, follow: Boolean): Style = if (!follow) Style.OWN else when (layout) {
++        HomeLayout.CHAN -> Style.CHANNEL
++        HomeLayout.CROSS -> Style.CROSS
++        else -> Style.OWN
++    }
++
++    @Composable
++    fun current(): Style = styleFor(MotionPrefs.layout, Features.windowsFollowLayout.state.value)
++
++    /** The frame's corner: Channel grid rounder, Cross menu nearly square; [own] otherwise (also with square pixel corners). */
++    fun corner(style: Style, own: Dp, compact: Boolean, pixel: Boolean): Dp = when {
++        pixel || style == Style.OWN -> own
++        style == Style.CHANNEL -> if (compact) 20.dp else 30.dp
++        else -> if (compact) 6.dp else 8.dp
++    }
++}
++
++/**
++ * A window's outer frame in [style]. [Style.OWN] is exactly the frame the windows had (voltSurface + a faint rim).
++ * Channel grid: clean, rounded, a soft blue-tinted panel with a white-blue rim. Cross menu: a restrained translucent
++ * panel with a hairline rim. Both on the theme's own surface colour, so the content's text keeps its contrast.
++ */
++@Composable
++internal fun Modifier.windowFrame(style: WindowLook.Style, shape: Shape): Modifier {
++    val surface = ShelfTheme.colors.surface
++    return when (style) {
++        WindowLook.Style.OWN -> this.voltSurface(shape, base = surface).border(1.dp, Color.White.copy(alpha = 0.08f), shape)
++        WindowLook.Style.CHANNEL -> {
++            // Kept dark enough under the theme's light writing: a blue tint over the theme's surface, a touch lighter at the top.
++            val base = lerp(surface, WINDOW_CHANNEL_BLUE, 0.28f).copy(alpha = 1f)
++            this.clip(shape)
++                .background(Brush.verticalGradient(listOf(lerp(base, Color.White, 0.07f), base)))
++                .border(2.dp, WINDOW_CHANNEL_RIM.copy(alpha = 0.85f), shape)
++        }
++        WindowLook.Style.CROSS -> this.clip(shape)
++            .background(surface.copy(alpha = surface.alpha * WINDOW_CROSS_ALPHA))
++            .border(0.5.dp, Color.White.copy(alpha = 0.14f), shape)
++    }
++}
++
++internal val WINDOW_CHANNEL_BLUE = Color(0xFF2F6FB0)
++internal val WINDOW_CHANNEL_RIM = Color(0xFFDDEBF7)
++internal const val WINDOW_CROSS_ALPHA = 0.82f
 diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt b/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
 index 049f87d..b7d1ece 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/theme/ShelfColors.kt
@@ -7499,6 +7955,98 @@ index 0000000..1ba4385
 +        assertTrue(d.contains("focusedBorderColor = ShelfTheme.accent"))
 +        val sl = src("ui/SettingsSlider.kt")
 +        assertTrue(sl.contains("thumbColor = ShelfTheme.accent") && sl.contains("activeTrackColor = ShelfTheme.accent"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt
+new file mode 100644
+index 0000000..59856c3
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt
+@@ -0,0 +1,86 @@
++package com.shelf.launcher.ui
++
++import com.shelf.launcher.data.GameSyncStatus
++import com.shelf.launcher.data.HomeLayout
++import com.shelf.launcher.data.SyncDirection
++import com.shelf.launcher.data.SyncState
++import com.shelf.launcher.data.syncLine
++import androidx.compose.ui.unit.dp
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 494 (staging only): D137 draw-time reads, D292 sync wording, charging battery, pinned comments, windows follow layout. */
++class Batch494Test {
++    private fun src(rel: String): String = listOf(
++        File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel")
++    ).first { it.exists() }.readText()
++
++    @Test fun carouselBoxReadsGlidingColoursOnlyWhenDrawing() {
++        val c = src("ui/Carousel.kt")
++        val box = c.substring(c.indexOf("val sizeK = Features.carouselSize.state.value / 100f"), c.indexOf("if (QaTrace.on) { QaTrace.count(\"CarBwc\")"))
++        // No theme colour or animated tint read while composing the carousel's box.
++        assertTrue(!box.contains("ShelfTheme.accent") && !box.contains("rememberUpdatedState(ShelfTheme"))
++        assertTrue(!box.contains("val accent by androidx.compose.animation.animateColorAsState(stageTarget"))
++        assertTrue(box.contains("val accent = if (palAcc == null && !stageA.isRunning) stageLive.value.accent else stageA.value"))
++        assertTrue(box.contains("{ accentLive.value.accent }"))
++    }
++
++    private val t0 = 1_000_000L
++    @Test fun syncWordingFollowsRecordedEvents() {
++        // A check that moved nothing after an earlier download: not "Fetched from Drive".
++        val checked = GameSyncStatus(SyncState.SYNCED, lastSuccessAt = t0 + 50, lastDirection = SyncDirection.DOWNLOAD, fileCount = 1, lastTransferAt = t0)
++        assertEquals("Checked · no changes", syncLine(checked)!!.label); assertEquals(t0 + 50, syncLine(checked)!!.at)
++        // The last sync itself moved files.
++        assertEquals("Downloaded from Drive · 1 file", syncLine(checked.copy(lastTransferAt = t0 + 50))!!.label)
++        assertEquals("Uploaded to Drive · 2 files", syncLine(checked.copy(lastTransferAt = t0 + 50, lastDirection = SyncDirection.UPLOAD, fileCount = 2))!!.label)
++        // Older entries (no transfer time recorded): nothing guessed.
++        assertEquals("Last checked", syncLine(checked.copy(lastTransferAt = 0))!!.label)
++        assertEquals("Checked · no changes", syncLine(GameSyncStatus(SyncState.SYNCED, lastSuccessAt = t0))!!.label)
++        // Offline / failed / never.
++        assertEquals("Offline · sync skipped", syncLine(GameSyncStatus(SyncState.OFFLINE, updatedAt = t0))!!.label)
++        assertEquals("Sync failed", syncLine(GameSyncStatus(SyncState.ERROR, updatedAt = t0))!!.label)
++        assertNull(syncLine(GameSyncStatus(SyncState.PENDING)))
++        val ui = src("ui/SaveExplorer.kt")
++        assertTrue(!ui.contains("\"Fetched from Drive\""))
++        assertTrue(src("data/CloudSync.kt").contains("lastTransferAt = if (moved > 0) now else old.lastTransferAt"))
++    }
++
++    @Test fun chargingBatteryKeepsItsSizeAndShowsTheLevel() {
++        val h = src("ui/HomeChrome.kt")
++        assertTrue(h.contains("else PlainBattery(battery.percent, battery.charging, ink, look.iconSize)"))
++        // Animated only while charging, active, with animations on and not calm; drawn, not recomposed.
++        assertTrue(h.contains("val anim = charging && rememberIsActive() && rememberAnimationsEnabled() && !calmHere()"))
++        assertTrue(h.contains("modifier = Modifier.size(iconSize)\n                .graphicsLayer"))
++        assertTrue(h.contains("val p = phase.floatValue"))
++        assertEquals(batteryIconFor(20, false), chargingLevelIcon(5))
++        assertEquals(batteryIconFor(55, false), chargingLevelIcon(55))
++        assertEquals(batteryIconFor(100, false), chargingLevelIcon(100))
++        // The Volt gauge's bolt pulse is read while drawing.
++        assertTrue(src("ui/HomeExtras.kt").contains("outline.copy(alpha = 0.6f + 0.4f * pulseS.value)"))
++    }
++
++    @Test fun pinnedCommentsScrollAndUseTheListsLines() {
++        val o = src("ui/RaOverlayView.kt")
++        assertEquals(16f / 12f, COMMENT_LINE_MULT, 0.0001f)
++        assertTrue(o.contains("setLineSpacing(0f, COMMENT_LINE_MULT)"))
++        assertTrue(o.contains("if (pinnedRow) box.addView(MaxHeightScroll(context"))
++        assertTrue(o.contains("list.sortedByDescending { it.Submitted ?: \"\" }.take(12)"))
++    }
++
++    @Test fun windowsFollowTheLayoutOnlyWhenAskedAndWhereThereIsALook() {
++        assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(HomeLayout.CHAN, false))
++        assertEquals(WindowLook.Style.CHANNEL, WindowLook.styleFor(HomeLayout.CHAN, true))
++        assertEquals(WindowLook.Style.CROSS, WindowLook.styleFor(HomeLayout.CROSS, true))
++        assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(HomeLayout.STACKS, true))
++        assertEquals(24.dp, WindowLook.corner(WindowLook.Style.OWN, 24.dp, false, false))
++        assertEquals(0.dp, WindowLook.corner(WindowLook.Style.CHANNEL, 0.dp, false, true))
++        assertEquals(false, com.shelf.launcher.data.Features.windowsFollowLayout.default)
++        // OWN draws exactly the old frame; only Settings and Achievements ask.
++        assertTrue(src("ui/WindowLook.kt").contains("WindowLook.Style.OWN -> this.voltSurface(shape, base = surface).border(1.dp, Color.White.copy(alpha = 0.08f), shape)"))
++        assertTrue(src("ui/AchievementListDialog.kt").contains("layoutAware = true"))
++        assertTrue(src("ui/DialogChrome.kt").contains("val winStyle = if (layoutAware) WindowLook.current() else WindowLook.Style.OWN"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

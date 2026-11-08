@@ -1,3 +1,72 @@
+# Update 494 (8 Nov 2026) — checkpoint 18: D137 carousel box per-frame recomposition removed, D292 sync wording, charging battery, pinned comments scroll, Layout-aware windows phase 1
+
+Staging = 493 + the changes below (QA build 0.6.68-qa, versionCode 74). Nothing published, no game launched (launch guard
+checked "blocked" on both devices before any automation), no save / sync / history / library change. Both devices back on
+v0.6.67; snapshots equal to the QA-build bases (appearance / categories / view md5 as t490o / k490o) — the only extra key is
+`windows_follow_layout=false` (new pref, its default; v0.6.67 ignores it). History unchanged (Thor 161629e583b9, KONKR
+03ba8fa1421f). RP Classic, Pokémon Brown, the light cartridge: NOT TESTED.
+
+**1. D137 — the carousel box's remaining work (KONKR, same 3 × 20 walk):** root cause: two colours were read *while composing*
+the carousel's box — the stage tint (`animateColorAsState`, 700 ms glide each move) and `ShelfTheme.accent` (the theme's own
+600 ms glide while colours follow the art). Every frame of either glide re-ran the box and its loop over ~30 places. Fix: both
+read where drawn (`LocalShelfColorsLive`, an `Animatable` read in the Canvas). Same colours and timing.
+
+  | per move | box (CarBwc) | loop passes | case re-runs | Screen |
+  |---|---|---|---|---|
+  | 493 build | 20–27 | 660–825 | 3–4.5 | 2.5–3.6 |
+  | 494 build | 2.1 | ~65 | 4.5–6 | 2.2–3.9 |
+
+  | frames (KONKR) | janky | p50 | p90 | p99 | PSS |
+  |---|---|---|---|---|---|
+  | 493, all 3 runs | 27.0 % | 27.4 | 53.0 | 80.2 | 625–668 MB |
+  | 494, all 3 runs | 26.9 % | 26.6 | 52.1 | 80.0 | 573–612 MB |
+  | warm runs 2–3: 493 → 494 | 19.2 → 21.1 % | 26.8 → 26.3 | 45.2 → 44.5 | 65.9 → 62.2 | |
+
+  Composition work per move fell ~90 %, frame timing is unchanged within noise: the remaining cost is rendering. Slow-frame
+  phases (494): command issue 12–13 ms, GPU 7 ms, animation 6–8 ms, draw 4 ms, layout 0 — the 3D cases' draw commands, not
+  rebuilding. Stopped there (no caching). 900 ms Material scheme (493) unchanged; ShelfTheme accents still glide at once.
+- Also: the Volt battery's bolt pulse was read while composing (the gauge re-ran every pulse frame) — read when drawn now.
+
+**2. D292 fixed:** `GameSyncStatus.lastTransferAt` (set only when files actually moved; old entries 0) + `syncLine()`: "Uploaded to
+Drive / Downloaded from Drive · n files" only when the last sync moved them; "Checked · no changes" after a check; "Last checked"
+for older entries where it isn't recorded; "Offline · sync skipped", "Sync failed", "Sign-in needed", "Conflict found". Save
+Vault detail: "Last move" with its own time when recorded, plus "Last sync". Nothing synced or fetched while testing (unit tests).
+
+**3. Charging battery (plain status-bar icon):** charging now shows the real level bars with a soft accent light rising through
+the icon once per 1.8 s (~30 updates/s, draw only; same icon size). Still the old charging icon when animations are off, Voltcap is
+resting/calm or behind a panel. Volt gauge unchanged (pulse kept). Verified on the KONKR with a test-only battery state
+(`voltcap_test_battery`) and the plain icon switched on temporarily: neighbours don't move, 40 % / 100 % / not-charging correct.
+The Thor's pixel layout draws its own battery (not this icon) — unchanged.
+
+**4. Achievements:** pinned row's opened comments now scroll in their own box (max 40 % of the screen) — before, they ran past
+the screen edge with no way to reach the rest (the pinned row sits outside the list's scroll). Comment lines at the list's
+16 sp-for-12 sp spacing. Sizes / newest-first unchanged. NOT TESTED on a device (overlay exists only over a running game).
+Progressive achievement loading: diagnosis only — data is keyed per game (no stale cross-game display); the list arrives from
+the disk cache then the network after the window opens. No safe small fix without a reproduction; not changed.
+
+**5. Layout-aware windows, phase 1:** `ui/WindowLook.kt` — one frame token set (corner, surface, rim) picked from the home layout
+when Settings › Theme › Interface style › "Windows follow the home layout" is on (default off). Channel grid: rounder, blue-tinted
+panel with a white-blue rim; Cross menu: translucent panel, near-square corners, hairline rim; every other layout `OWN` = the old
+frame exactly. Applied to Settings and Achievements (`ShelfDialog(layoutAware = true)`); all other popups unchanged. Thor:
+Settings in both layouts, own vs follow — content, focus, D-pad, B close identical. Achievements: same frame code; NOT TESTED on
+a device. Note for the owner: the Channel grid's own game window is light; the Settings frame stays dark-blue because the
+settings content is light text — a light Wii-style Settings would need the content recoloured (phase 2).
+
+**6. Overlay polish:** the pinned-comments scroll (above). Larger items left for later: overlay ellipsized titles (rule 11) and
+per-corner safe-area offsets.
+
+**7. 3D:** renderers untouched — no regression run needed. The ~96° gold strip: physically plausible (the GB pak's contacts sit
+in a rear cut-out ~1 mm deep; at 6° from edge-on a sliver of contacts shows) — left as is, owner's eye wanted.
+
+**QA observation (D293, suspect):** after this session's hooks the QA snapshot showed Thor `carousel_wide` false→true and KONKR
+`model_finish` REAL→OFF; restored by the snapshot (verified equal). Cause not traced (probably layout-scoped values applied while
+a layout was previewed and a `voltcap_test_pref` was written). QA-only path; logged.
+
+Copy: `src_copy\ui\Carousel.kt`, `ui\HomeChrome.kt`, `ui\HomeExtras.kt`, `ui\RaOverlayView.kt`, `ui\SaveExplorer.kt`,
+`ui\TestHooks.kt`, `ui\DialogChrome.kt`, `ui\SettingsDialog.kt`, `ui\AchievementListDialog.kt`, `ui\VoltSettings.kt`,
+`ui\SettingsIndex.kt`, `ui\WindowLook.kt` (new), `data\SyncStatusStore.kt`, `data\CloudSync.kt`, `data\Features.kt`; test
+`Batch494Test` (staging). Checked: testDebugUnitTest (876) + assembleRelease green.
+
 # Update 493 (8 Nov 2026) — checkpoint 17: D137 cause found + fixed (Material colour scheme), final 3D visual QA on staging, pinned comments
 
 Staging = 492 + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched (QA launch block
