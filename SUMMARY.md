@@ -1,3 +1,35 @@
+# Update 502 (8 Nov 2026) — checkpoint 26: physical cases get a top face on the Game shelf, achievement tabs no longer hidden at ×1.6, Pokémon Brown–path pak and memory cards checked through a production-renderer fixture
+
+All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa502-qa; manifest read before install: QA id, no HOME).
+Owner's v0.6.67 untouched (Thor pid 15178, GT78 pid 26828 unchanged). AYN service: **0 calls** from the QA app. No game launched,
+no save / Drive / setting / artwork of the owner touched. KONKR not connected. Staging patch sha256
+**b3ed3ca65362fc322508531327f6fa474fff1bcd3a1cd5d6d33961a088acce2b** (162 files, applies on 589fdd4) in staging_local only
+(staging_local/0.6.68/staging.patch + backups/staging_502_b3ed3ca6.patch); 498–501 backups kept.
+
+**Fixes (staging)**
+1. **Game shelf — case thickness reads from above (physical-media realism).** Spine-standing cases get a thin top face (`shelfCapHeight` =
+   min(8.5 % of the spine, 5.5 % of the row)) drawn on the spine picture itself (`LocalCaseTopVanish` → `SpineSlot` → `drawCaseTop` with the
+   picture's inset), leaning toward the view centre, so every case shows depth instead of a flat strip. Material by media: cardboard-box consoles
+   (SNES, N64, NES, GB, GBC, GBA, VB) get a light grey board top, keep-case consoles a dark plastic top (`caseTopTones`, `cardboardBoxConsole`).
+   Spacing sliders, scans, overrides, pull-out (transform origin moved so the pull still lifts from the case centre) unchanged; Cover Details
+   call unchanged. Thor before/after: Claude outputs/s502 (b502_SHELF.png → a502_cardboard.png).
+   Perf, Thor Game shelf 12 moves: 1351 frames, 1.92 % janky, p50 12, p90 14, p95 16, p99 29 ms (501: 2.36 %, p50 12, p90 15, p95 19) — no regression.
+2. **Achievements overlay ×1.6 (GT78).** ▲▼ moved from the tab row into the header next to ✕, the tabs' scroller gets the full width:
+   all three tabs whole at ×1.6 (420 dp and 360 dp). Trade-off: the long fixture title wraps more lines in the header.
+3. **QA fixtures (staging, QA app only).** `voltcap_test_cards "0,40,90"|spin|off` shows the production `SwayingModel` for opaque blue,
+   translucent blue, smoke, red and SD cards (QaCardSheet.kt). Fixture library adds "Pokemon Brown (Hack).gb" (fixroms500.sh) — the generated /
+   custom GB shell path; cart502.sh holds it at 17 yaws + pitch ±25 with a synthetic cover.
+
+**Checked on hardware (Thor):** Pokémon Brown–path pak at 0…330° and edge-on 88/90/92/268/272: all faces, no black side flash, seams in order
+(log confirms the match to "Pokemon Brown (Hack)"). Cards at 0/40/80/89/90/140/180 + spin: opaque and translucent correct, translucent backs
+show the engraving faintly, edge-on clean (D289–D291 untouched). This is the fixture path, NOT the owner's real Pokémon Brown or RP Classic.
+
+**Not done / owner-only:** Inspect pinch (needs fingers); real Pokémon Brown, light-up cartridge, RP Classic; KONKR; badge preloading, title
+jump during art load, layout-aware window colour polish, a second layout (Case Stacks) for case tops; Thor Drive switches (owner).
+
+**Copy:** none to main (staging only). Main gets docs + tools/qa/device/cart502.sh + fixroms500.sh; .gitignore adds QaCardSheet.kt.
+Tests: testDebugUnitTest (Batch501Test extended) pass; assembleDebug (QA) and assembleRelease on the staging tree.
+
 # Update 501 (8 Nov 2026) — checkpoint 25: three verified fixes in Voltcap QA (shelf case shadow, whole names on coverless cards, menu sheets on short screens) + device QA on the Thor and the ARBOR GT78
 
 All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa501-qa; application ID read from the APK's

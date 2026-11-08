@@ -102,3 +102,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch500Test.kt
 /tools/qa/device/touch500.sh
 /app/src/test/java/com/shelf/launcher/ui/Batch501Test.kt
+# Update 502: QA memory-card sheet (staging only).
+/app/src/main/java/com/shelf/launcher/ui/QaCardSheet.kt
