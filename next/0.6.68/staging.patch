@@ -169,6 +169,19 @@ index b8fdb4e..38d63e9 100644
              .build()
              // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
              .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }
+diff --git a/app/src/main/java/com/shelf/launcher/data/AutoBackupWorker.kt b/app/src/main/java/com/shelf/launcher/data/AutoBackupWorker.kt
+index 9d03d96..8047b50 100644
+--- a/app/src/main/java/com/shelf/launcher/data/AutoBackupWorker.kt
++++ b/app/src/main/java/com/shelf/launcher/data/AutoBackupWorker.kt
+@@ -23,6 +23,8 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
+     override suspend fun doWork(): Result {
+         val app = applicationContext
+         Features.init(app)
++        // Update 497 (D295): a QA session uploads no backup and leaves auto_backup_at alone (seen moving on the KONKR, k490o).
++        if (CloudSync.qaPaused(app)) return Result.success()
+         val every = Features.autoBackup.value
+         if (every == Every.OFF) return Result.success()
+         CloudSync.load(app)
 diff --git a/app/src/main/java/com/shelf/launcher/data/CloudSync.kt b/app/src/main/java/com/shelf/launcher/data/CloudSync.kt
 index 29f2dde..f2d51aa 100644
 --- a/app/src/main/java/com/shelf/launcher/data/CloudSync.kt
@@ -247,6 +260,29 @@ index d458ce3..09862be 100644
          val outcome = CloudSync.sync(app, skipSaves = gameIsRunning(app))
          // Done, or Google genuinely wants the sign-in confirmed (retrying can't help until the
          // player does that): success. Offline, timeouts and other hiccups: Android retries later
+diff --git a/app/src/main/java/com/shelf/launcher/data/DriveOnlySaves.kt b/app/src/main/java/com/shelf/launcher/data/DriveOnlySaves.kt
+index 72b9946..51ad34c 100644
+--- a/app/src/main/java/com/shelf/launcher/data/DriveOnlySaves.kt
++++ b/app/src/main/java/com/shelf/launcher/data/DriveOnlySaves.kt
+@@ -58,7 +58,8 @@ internal object DriveOnlySaves {
+         val cached = memory ?: readCache(app)?.also { memory = it }
+         val age = if (cached != null) now - cached.first else -1L
+         val list = if (cached != null && !stale && age >= 0L && age < MAX_AGE_MS) cached.second
+-        else if (!allowFetch) cached?.second.orEmpty()
++        // Update 497 (D295): a QA session lists only the copy on disk — no Drive request.
++        else if (!allowFetch || CloudSync.qaPaused(app)) cached?.second.orEmpty()
+         else fetch(app)?.also { fresh -> memory = now to fresh; stale = false; runCatching { writeCache(app, now, fresh) } }
+             ?: cached?.second.orEmpty()
+         return list.filter { it.folder.lowercase() !in mine }
+@@ -141,7 +142,7 @@ internal object DriveOnlySaves {
+         val name = (e.md5 ?: e.id).replace(Regex("[^A-Za-z0-9]"), "")
+         val cache = File(File(app.cacheDir, "remote_saves"), "$name.bin")
+         if (cache.length() > 0) return@runCatching cache.readBytes()
+-        if (!allowNetwork) return@runCatching null // (Update 241, #76)
++        if (!allowNetwork || CloudSync.qaPaused(app)) return@runCatching null // (Update 241, #76; 497 D295: none in QA)
+         if (!CloudSync.state.value.settings.connected) return@runCatching null
+         val bytes = DriveClient(app).downloadBytes(e.id, maxBytes)
+         if (bytes.isEmpty() || bytes.size > maxBytes) return@runCatching null
 diff --git a/app/src/main/java/com/shelf/launcher/data/Features.kt b/app/src/main/java/com/shelf/launcher/data/Features.kt
 index 55c357d..c039188 100644
 --- a/app/src/main/java/com/shelf/launcher/data/Features.kt
@@ -438,6 +474,18 @@ index ef2c1cd..48c8bd8 100644
          return when (game.sourceType) {
              SourceType.APP -> launchApp(context, game, options)
              SourceType.ROM -> launchRom(context, game, config, romRoot, options, extras)
+diff --git a/app/src/main/java/com/shelf/launcher/data/LastPlayedSync.kt b/app/src/main/java/com/shelf/launcher/data/LastPlayedSync.kt
+index 9e93e51..55fc61e 100644
+--- a/app/src/main/java/com/shelf/launcher/data/LastPlayedSync.kt
++++ b/app/src/main/java/com/shelf/launcher/data/LastPlayedSync.kt
+@@ -56,6 +56,7 @@ object LastPlayedSync {
+     fun sync(context: Context, games: List<Game>, store: RecentlyPlayedStore, afterGame: Boolean = false): Int {
+         if (!Features.syncLastPlayed.value || !CloudSync.isActive(context) || DriveAuth.needsSignIn(context)) return 0
+         if (GameMode.active || !due(afterGame)) return 0
++        if (CloudSync.qaPaused(context)) return 0 // Update 497 (D295): no Drive round in a QA session
+         running = true
+         try {
+             lastRoundAt = System.currentTimeMillis()
 diff --git a/app/src/main/java/com/shelf/launcher/data/QuickResume.kt b/app/src/main/java/com/shelf/launcher/data/QuickResume.kt
 index ee3ba72..69e4ab2 100644
 --- a/app/src/main/java/com/shelf/launcher/data/QuickResume.kt
@@ -673,7 +721,7 @@ index 8f84258..812e91c 100644
          val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
          listener = l
 diff --git a/app/src/main/java/com/shelf/launcher/ui/AchievementDetailDialog.kt b/app/src/main/java/com/shelf/launcher/ui/AchievementDetailDialog.kt
-index 5045841..6952ef0 100644
+index 5045841..faf650c 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/AchievementDetailDialog.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/AchievementDetailDialog.kt
 @@ -49,7 +49,7 @@ internal fun MissableIcon(markedMissed: Boolean = false, modifier: Modifier = Mo
@@ -703,6 +751,43 @@ index 5045841..6952ef0 100644
              Spacer(Modifier.width(6.dp))
              Text(
                  "Linked by title, not by the game file — achievements may belong to a different version (e.g. Gold vs Silver).",
+@@ -133,7 +133,8 @@ fun AchievementDetailDialog(
+         title = achievement.title ?: "Unknown achievement",
+         subtitle = achievement.points?.let { "$it points" },
+         onDismiss = onDismiss,
+-        maxContentHeightFraction = 0.75f
++        maxContentHeightFraction = 0.75f,
++        layoutAware = true // (Update 497, 1C: the detail / comments window follows the home layout like the list)
+     ) {
+         ShelfCard {
+             Row(verticalAlignment = Alignment.CenterVertically) {
+@@ -149,7 +150,7 @@ fun AchievementDetailDialog(
+                             .alpha(if (achievement.isUnlocked) 1f else 0.4f)
+                     )
+                 } else {
+-                    Box(Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.08f)))
++                    Box(Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(winTint(0.08f)))
+                 }
+                 Spacer(Modifier.width(14.dp))
+                 Column(Modifier.weight(1f)) {
+@@ -222,7 +223,7 @@ fun AchievementDetailDialog(
+                             .fillMaxWidth()
+                             .padding(vertical = 3.dp)
+                             .clip(RoundedCornerShape(10.dp))
+-                            .background(Color.White.copy(alpha = 0.06f))
++                            .background(winTint(0.06f))
+                             .padding(horizontal = 10.dp, vertical = 7.dp)
+                     ) {
+                         Text(
+@@ -291,7 +292,7 @@ internal fun AchievementInlineDetail(
+             .fillMaxWidth()
+             .padding(start = 50.dp, end = 4.dp, bottom = 8.dp)
+             .clip(RoundedCornerShape(10.dp))
+-            .background(Color.White.copy(alpha = 0.05f))
++            .background(winTint(0.05f))
+             .padding(horizontal = 10.dp, vertical = 8.dp)
+     ) {
+         // Facts on one or two short lines.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt b/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt
 index ab492bb..21c4300 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/AchievementListDialog.kt
@@ -2445,10 +2530,88 @@ index 9411fa8..cb1ebb0 100644
              }
          } } }
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-index 5182f80..e52f2ff 100644
+index 5182f80..7987bf1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/MediaInspectView.kt
-@@ -1962,9 +1962,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
+ import androidx.compose.ui.graphics.drawscope.scale
+ import androidx.compose.ui.graphics.graphicsLayer
+ import androidx.compose.ui.input.pointer.pointerInput
++import androidx.compose.ui.input.pointer.positionChanged
++import androidx.compose.foundation.gestures.awaitEachGesture
++import androidx.compose.foundation.gestures.awaitFirstDown
++import androidx.compose.foundation.gestures.calculateZoom
++import androidx.compose.foundation.gestures.calculatePan
+ import androidx.compose.ui.layout.onGloballyPositioned
+ import androidx.compose.ui.layout.positionInWindow
+ import androidx.compose.ui.platform.LocalDensity
+@@ -659,6 +664,19 @@ internal const val FLING_FRICTION = 1.9f
+ internal class InspectMotion {
+     /** 0 = in its place on the home screen, 1 = out in front. */
+     val lift = mutableFloatStateOf(0f)
++    /**
++     * Update 498 (Batch C, Inspect): two-finger pinch zoom (1..[INSPECT_ZOOM_MAX]) and pan, read only while drawing.
++     * One finger still turns it; Y / a long press puts zoom and pan back with the pose. Faded out with [lift] on the way back.
++     */
++    val zoom = mutableFloatStateOf(1f)
++    val panX = mutableFloatStateOf(0f)
++    val panY = mutableFloatStateOf(0f)
++    fun pinch(dz: Float, dx: Float, dy: Float, w: Float, h: Float) {
++        if (closing || !started) return
++        val (z, x, y) = inspectPinchStep(zoom.floatValue, panX.floatValue, panY.floatValue, dz, dx, dy, w, h)
++        zoom.floatValue = z; panX.floatValue = x; panY.floatValue = y
++    }
++    fun resetZoom() { zoom.floatValue = 1f; panX.floatValue = 0f; panY.floatValue = 0f }
+     /** The showcase turn, degrees (positive: the front turns right, so its left side — a case's spine — shows). */
+     val turn = mutableFloatStateOf(0f)
+     /** Your own turn on top (drag / right stick). */
+@@ -824,7 +842,9 @@ internal class InspectMotion {
+      * whatever the return settings say.
+      */
+     fun resetPose(scope: CoroutineScope) {
+-        if (closing || !started || handsOff) return
++        if (closing || !started) return
++        resetZoom() // (Update 498: zoom and pan back too — also with Wobble on, which only blocks the turn)
++        if (handsOff) return
+         spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel(); stopSway()
+         easeJob = scope.launch {
+             val total = turn.floatValue + manual.floatValue
+@@ -1309,6 +1329,34 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
+                 Modifier
+                     .offset { IntOffset((left - win[0]).roundToInt(), (top - win[1]).roundToInt()) }
+                     .size(with(density) { w.toDp() }, with(density) { h.toDp() })
++                    // (Update 498, Batch C: pinch zoom / pan — draw-time only, scaled in with the lift so the flight back
++                    // starts from where it is without a jump.)
++                    .graphicsLayer {
++                        val k = motion.lift.floatValue
++                        val z = 1f + (motion.zoom.floatValue - 1f) * k
++                        if (z != 1f || motion.panX.floatValue != 0f || motion.panY.floatValue != 0f) {
++                            scaleX = z; scaleY = z
++                            translationX = motion.panX.floatValue * k; translationY = motion.panY.floatValue * k
++                        }
++                    }
++                    // Two fingers: pinch / pan, taken in the Initial pass so the one-finger turn and the tap below see
++                    // those touches as consumed (their gestures stop); a single finger is never touched here.
++                    .pointerInput(piece.kind) {
++                        awaitEachGesture {
++                            awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
++                            while (true) {
++                                val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
++                                val down = ev.changes.count { it.pressed }
++                                if (down == 0) break
++                                if (down >= 2) {
++                                    val dz = ev.calculateZoom()
++                                    val dp = ev.calculatePan()
++                                    motion.pinch(dz, dp.x * motion.zoom.floatValue, dp.y * motion.zoom.floatValue, size.width.toFloat(), size.height.toFloat()) // (local deltas are scaled by the zoom layer above)
++                                    ev.changes.forEach { if (it.positionChanged()) it.consume() }
++                                }
++                            }
++                        }
++                    }
+                     .graphicsLayer {
+                         val k = motion.lift.floatValue
+                         alpha = motion.fade.floatValue
+@@ -1962,9 +2010,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                          cv.saveLayer(androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h), androidx.compose.ui.graphics.Paint().apply { alpha = SlabSide.CLEAR_SIDE_ALPHA })
                      }
                      val layer = if (clear) ring else edge
@@ -2465,7 +2628,7 @@ index 5182f80..e52f2ff 100644
                          // (Rounded edges: the slices within 0.5 mm of a face drawn a little smaller — a 0.5 mm radius.)
                          val d = (depth / 2f - abs(z)) / zpm
                          val r = SlabSide.EDGE_R
-@@ -1972,10 +1979,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
+@@ -1972,10 +2027,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                          atIn(z, inset) { drawLayer(layer) }
                          if (ss.grips && z >= seamZ) atIn(z, inset) { drawLayer(grips) }
                      }
@@ -2477,6 +2640,25 @@ index 5182f80..e52f2ff 100644
                      if (clear) drawContext.canvas.restore()
                  }
                  // (Update 275: the bottom face round the openings — a drawn shell's own.)
+@@ -2253,3 +2305,18 @@ private fun DiscDataSide(format: DiscFormat, yawOf: () -> Float, modifier: Modif
+  * (Update 200: InspectModel and its helpers — the 3D shape library's pre-rendered pictures, every 20° round, crossfaded —
+  * are gone with the MODEL kind: they turned like a slide show. The drawn pieces turn smoothly as SLABs.)
+  */
++
++
++/** Update 498: the most a piece is zoomed in Inspect. */
++internal const val INSPECT_ZOOM_MAX = 3f
++
++/**
++ * Update 498: one pinch step — zoom kept in 1..[INSPECT_ZOOM_MAX], the pan kept so the zoomed piece still covers its own place
++ * (at zoom 1 there is nothing to pan: it snaps back to the middle).
++ */
++internal fun inspectPinchStep(zoom: Float, panX: Float, panY: Float, dz: Float, dx: Float, dy: Float, w: Float, h: Float): Triple<Float, Float, Float> {
++    val z = (zoom * (if (dz.isFinite() && dz > 0f) dz else 1f)).coerceIn(1f, INSPECT_ZOOM_MAX)
++    val mx = (z - 1f) * w / 2f
++    val my = (z - 1f) * h / 2f
++    return Triple(z, (panX + dx).coerceIn(-mx, mx), (panY + dy).coerceIn(-my, my))
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt b/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
 new file mode 100644
 index 0000000..f23c1b8
@@ -3302,10 +3484,10 @@ index 658bd0c..e51435c 100644
      "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
      "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
 diff --git a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
-index df11396..c1df69b 100644
+index df11396..7392e85 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/RaOverlayView.kt
-@@ -65,6 +65,14 @@ internal class RaOverlayView(
+@@ -65,6 +65,13 @@ internal class RaOverlayView(
       *  id, so after opening the pinned one's comments the same achievement's list row needed two taps). */
      private val openComments = mutableSetOf<String>()
  
@@ -3315,12 +3497,11 @@ index df11396..c1df69b 100644
 +     */
 +    internal var fixture: OverlayFixture? = null
 +    /** Update 496: the pinned row's comments box (it gives up room last when the open panel doesn't fit). */
-+    private var pinnedScroll: MaxHeightScroll? = null
 +
      private val accent get() = LightsTheme.accent or 0xFF000000.toInt()
      private val gold = 0xFFFFC94D.toInt()
  
-@@ -86,19 +94,52 @@ internal class RaOverlayView(
+@@ -86,19 +93,53 @@ internal class RaOverlayView(
          setTextColor(color)
          setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
          if (bold) setTypeface(typeface, Typeface.BOLD)
@@ -3356,22 +3537,23 @@ index df11396..c1df69b 100644
 +            if (lp == null) { super.onMeasure(widthMeasureSpec, heightMeasureSpec); return }
 +            val want = (resources.displayMetrics.heightPixels * 0.5f).toInt()
 +            lp.height = want
-+            val pinWant = (resources.displayMetrics.heightPixels * PINNED_COMMENTS_MAX).toInt()
-+            pinnedScroll?.maxPx = pinWant
++            val pinWant = (resources.displayMetrics.heightPixels * PINNED_FRAME_MAX).toInt()
++            pinnedFrame.maxPx = pinWant
 +            val free = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-+            // (Measured first without a height limit: the whole content's height, then the list trimmed to fit, then — large
-+            // text — the pinned row's comments box too; both keep scrolling, so nothing is lost.)
++            // (Measured first without a height limit: the whole content's height, then the list trimmed to fit, then the
++            // pinned section; both keep scrolling, so nothing is lost. Update 497, D294 at text ×1.6: only the pinned row's
++            // comments could give way before — its name and description, the header and the tabs did not, so the tabs and
++            // the list were still pushed past the screen. Now the WHOLE pinned section ([pinnedFrame]: name, description,
++            // comments) scrolls in one box and gives way, and as a last step the list goes below its usual minimum: the
++            // header, ✕ and the tabs always stay on screen.)
 +            super.onMeasure(widthMeasureSpec, free)
-+            var over = measuredHeight - maxH
-+            if (over > 0) {
-+                lp.height = (want - over).coerceAtLeast(px(LIST_MIN_DP))
++            val pinH = if (pinnedFrame.visibility == View.VISIBLE) pinnedFrame.measuredHeight else 0
++            val fixed = measuredHeight - pinH - want
++            val (listH, pinMax) = overlayPanelFit(maxH, fixed, pinH, want, px(LIST_MIN_DP), px(PINNED_MIN_DP), px(LIST_FLOOR_DP))
++            if (listH != want || pinMax != pinH) {
++                lp.height = listH
++                if (pinH > 0) pinnedFrame.maxPx = pinMax
 +                super.onMeasure(widthMeasureSpec, free)
-+                over = measuredHeight - maxH
-+                val pin = pinnedScroll
-+                if (over > 0 && pin != null && pin.isAttachedToWindow) {
-+                    pin.maxPx = (minOf(pinWant, pin.measuredHeight) - over).coerceAtLeast(px(PINNED_MIN_DP))
-+                    super.onMeasure(widthMeasureSpec, free)
-+                }
 +            }
 +            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
 +        }
@@ -3379,7 +3561,7 @@ index df11396..c1df69b 100644
          orientation = LinearLayout.VERTICAL
          visibility = View.GONE
          val pad = px(10f)
-@@ -106,7 +147,7 @@ internal class RaOverlayView(
+@@ -106,13 +147,17 @@ internal class RaOverlayView(
      }
      private val header = TextView(context).apply {
          setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f); setTypeface(typeface, Typeface.BOLD)
@@ -3388,16 +3570,43 @@ index df11396..c1df69b 100644
      }
      private val headerBar = CapsuleBar(context)
      private val headerStats = TextView(context).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f) }
-@@ -367,7 +408,7 @@ internal class RaOverlayView(
-                 setSpan(android.text.style.ForegroundColorSpan(0x99FFFFFF.toInt()), s2, length, 0)
-             }
-         }
--        pinnedBox.removeAllViews()
-+        pinnedBox.removeAllViews(); pinnedScroll = null
+     private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+     /** The pinned achievement (the one you're working on), on top of the open panel. */
+-    private val pinnedBox = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
++    private val pinnedBox = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
++    /** Update 497 (D294): the whole pinned section in one scrolling box that gives way at large text (see [panel]). */
++    private val pinnedFrame = MaxHeightScroll(context, Int.MAX_VALUE / 4).apply {
++        isVerticalScrollBarEnabled = true; visibility = View.GONE; addView(pinnedBox)
++    }
+     private val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+     private val scroll = ScrollView(context).apply { addView(list); isVerticalScrollBarEnabled = true }
+ 
+@@ -143,7 +188,7 @@ internal class RaOverlayView(
+         panel.addView(top, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT))
+         panel.addView(headerBar, LinearLayout.LayoutParams(px(320f), px(8f)).apply { topMargin = px(6f) })
+         panel.addView(headerStats, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(4f) })
+-        panel.addView(pinnedBox, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
++        panel.addView(pinnedFrame, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
+         // (Update 224: the tabs on the left, the ▲ ▼ list switch at the right of the same row.)
+         val tabRow = LinearLayout(context).apply {
+             orientation = LinearLayout.HORIZONTAL
+@@ -370,13 +415,13 @@ internal class RaOverlayView(
+         pinnedBox.removeAllViews()
          val pin = pinnedOf(st)
          if (pin != null) {
-             pinnedBox.visibility = View.VISIBLE
-@@ -449,11 +490,12 @@ internal class RaOverlayView(
+-            pinnedBox.visibility = View.VISIBLE
++            pinnedFrame.visibility = View.VISIBLE
+             pinnedBox.addView(TextView(context).apply {
+                 text = "📌 PINNED — WORKING ON"
+                 setTextColor(if (c.raThemed) accent else gold); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9f); setTypeface(typeface, Typeface.BOLD)
+             })
+             pinnedBox.addView(row(pin, unlocked = pin.id in st.unlockedIds, c, pinnedRow = true))
+-        } else pinnedBox.visibility = View.GONE
++        } else pinnedFrame.visibility = View.GONE
+         tabs.removeAllViews()
+         val missables = st.left.filter { it.missable }
+         // Update 224 (#83): the lists made from the same data — Recommended: missables still to get first, then the most
+@@ -449,11 +494,12 @@ internal class RaOverlayView(
                  (item.percent?.let { "  · %.0f%%".format(it) } ?: "")
              setTextColor(if (item.missable && !unlocked) 0xFFFFB74D.toInt() else Color.WHITE)
              setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f); setTypeface(typeface, Typeface.BOLD)
@@ -3412,7 +3621,7 @@ index df11396..c1df69b 100644
              })
          }
          if (unlocked) item.earned?.let { e ->
-@@ -465,19 +507,28 @@ internal class RaOverlayView(
+@@ -465,19 +511,28 @@ internal class RaOverlayView(
          // Pin / unpin while playing: the one you're working on stays on top (and in the small summary).
          val gid = state?.gameId
          if (!unlocked && gid != null) {
@@ -3433,18 +3642,17 @@ index df11396..c1df69b 100644
          }
          box.addView(line)
          val comments = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
--        box.addView(comments)
 +        // (Update 493: the pinned row sits above the scrolling list, outside it — its opened comments ran on past the
 +        // screen's edge with no way to scroll to the rest. They scroll in a box of their own now, at most ~40 % of the
 +        // screen; list rows are inside the list's scroll already.)
-+        if (pinnedRow) box.addView(MaxHeightScroll(context, (context.resources.displayMetrics.heightPixels * PINNED_COMMENTS_MAX).toInt()).also { pinnedScroll = it }.apply {
-+            isVerticalScrollBarEnabled = true; addView(comments)
-+        }) else box.addView(comments)
++        // (Update 493: the pinned row sits above the scrolling list, outside it. Update 497: its comments scroll with the
++        // rest of the pinned section in [pinnedFrame] — one scroll, no box inside a box.)
+         box.addView(comments)
 +        if (pinnedRow && fixture?.openPinned == true) { openComments += openKey; loadComments(item.id, comments) }
          box.setOnClickListener {
              if (openKey in openComments) { openComments -= openKey; comments.removeAllViews() }
              else { openComments += openKey; loadComments(item.id, comments) }
-@@ -489,6 +540,7 @@ internal class RaOverlayView(
+@@ -489,6 +544,7 @@ internal class RaOverlayView(
  
      /** The pinned achievement of this game, when pinned and shown (Overlay settings). */
      private fun pinnedOf(st: RaOverlayData.State): RaOverlayData.Item? {
@@ -3452,7 +3660,7 @@ index df11396..c1df69b 100644
          if (!com.shelf.launcher.data.Features.raShowPinned.value) return null
          val gid = st.gameId ?: return null
          val id = com.shelf.launcher.data.RaPin.pinnedFor(gid) ?: return null
-@@ -504,9 +556,10 @@ internal class RaOverlayView(
+@@ -504,9 +560,10 @@ internal class RaOverlayView(
      private fun loadComments(id: Int, into: LinearLayout) {
          into.removeAllViews()
          val loading = TextView(context).apply {
@@ -3464,7 +3672,7 @@ index df11396..c1df69b 100644
          scope.launch {
              val result = withContext(Dispatchers.IO) {
                  runCatching {
-@@ -526,20 +579,39 @@ internal class RaOverlayView(
+@@ -526,20 +583,39 @@ internal class RaOverlayView(
                          is com.shelf.launcher.data.ra.RaResult.Error -> result.error.message
                          else -> "No comments yet."
                      }
@@ -3511,7 +3719,7 @@ index df11396..c1df69b 100644
  private fun blend(a: Int, b: Int, t: Float): Int {
      fun ch(s: Int) = ((((a shr s) and 0xFF) * (1 - t)) + (((b shr s) and 0xFF) * t)).toInt() and 0xFF
      return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
-@@ -574,3 +646,24 @@ internal class CapsuleBar(context: Context) : View(context) {
+@@ -574,3 +650,44 @@ internal class CapsuleBar(context: Context) : View(context) {
          }
      }
  }
@@ -3529,8 +3737,28 @@ index df11396..c1df69b 100644
 +internal const val PANEL_MAX_H = 0.94f
 +internal const val LIST_MIN_DP = 96f
 +internal const val PINNED_MIN_DP = 72f
++/** Update 497 (D294): the pinned section's usual height (name, description and up to ~30 % of comments). */
++internal const val PINNED_FRAME_MAX = 0.4f
++/** Update 497 (D294): the list's last-resort minimum, so the tabs stay on screen at text ×1.6 on a short screen. */
++internal const val LIST_FLOOR_DP = 56f
 +
 +/** A ScrollView that grows with its content up to [maxPx], then scrolls. */
++/**
++ * Update 497 (D294): how the open panel shares the screen. [fixed]: the header, bar, stats, tabs and margins (never
++ * shrunk); [pin]: the pinned section's height (0 = none); [list]: the list's usual height. Returns the list's height and
++ * the pinned section's cap: the list gives way first (to [listMin]), then the pinned section (to [pinMin]), then the
++ * list again (to [listFloor]) — so header, ✕ and tabs stay inside [maxH] whatever the text size.
++ */
++internal fun overlayPanelFit(maxH: Int, fixed: Int, pin: Int, list: Int, listMin: Int, pinMin: Int, listFloor: Int): Pair<Int, Int> {
++    val avail = maxH - fixed
++    if (pin + list <= avail) return list to pin
++    var l = maxOf(minOf(list, listMin), avail - pin)
++    if (pin + l <= avail) return l to pin
++    val p = if (pin == 0) 0 else maxOf(minOf(pin, pinMin), avail - l)
++    if (p + l > avail) l = maxOf(minOf(l, listFloor), avail - p)
++    return l to p
++}
++
 +internal class MaxHeightScroll(context: Context, var maxPx: Int) : ScrollView(context) {
 +    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 +        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxPx, MeasureSpec.AT_MOST))
@@ -3676,7 +3904,7 @@ index 418ffc1..a3111b1 100644
 +    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 +)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
-index 9e499ab..11bc76d 100644
+index 9e499ab..c12bef1 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt
 @@ -126,7 +126,10 @@ internal fun SaveExplorerDialog(
@@ -3731,7 +3959,7 @@ index 9e499ab..11bc76d 100644
              connecting = true
              connectProblem = null
              driveConnect {
-@@ -378,11 +387,17 @@ internal fun SaveExplorerDialog(
+@@ -378,11 +387,19 @@ internal fun SaveExplorerDialog(
              if (baseColors.textPrimary.luminance() < 0.5f) baseColors.copy(textPrimary = Color.White, textMuted = Color.White.copy(alpha = 0.62f)) else baseColors
          }
          androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides vaultColors) {
@@ -3740,17 +3968,19 @@ index 9e499ab..11bc76d 100644
 +        // The vault's own dark scene, cards and colours stay exactly as they are; off (the default) nothing changes.)
 +        val winStyle = WindowLook.current()
 +        val vaultShape = RoundedCornerShape(WindowLook.corner(winStyle, 20.dp, compact, false))
++        // (Update 497: the Channel rim in the layout's real tile-edge + accent colours, not a fixed blue.)
++        val vaultRim = windowRimColor(winStyle)
          Box(
              Modifier
                  .fillMaxWidth(0.94f)
                  .fillMaxHeight(0.92f)
 -                .clip(RoundedCornerShape(20.dp))
 +                .clip(vaultShape)
-+                .windowRim(winStyle, vaultShape)
++                .windowRim(winStyle, vaultShape, vaultRim)
                  .onGloballyPositioned { hostOffset = it.positionInRoot() }
          ) {
              // The background (Save Vault settings): the theme's (a glow and drifting specks of light),
-@@ -566,9 +581,8 @@ internal fun SaveExplorerDialog(
+@@ -566,9 +583,8 @@ internal fun SaveExplorerDialog(
                                  // (Update 343, Toni: "the PS2 save icon: either all memory cards or all logos, no mix — toggle between those
                                  // two": "PS2 browser style" on draws EVERY save as the PS2 browser does (a PS2 game its own 3D save icon,
                                  // any other game its logo turning in its place); off, every save gets the vault's own look.)
@@ -3762,7 +3992,7 @@ index 9e499ab..11bc76d 100644
                              )
                            }
                          }
-@@ -586,7 +600,11 @@ internal fun SaveExplorerDialog(
+@@ -586,7 +602,11 @@ internal fun SaveExplorerDialog(
              ) {
                  val d = detail
                  if (d != null) SaveDetail(
@@ -3775,7 +4005,7 @@ index 9e499ab..11bc76d 100644
                      capsule = capsuleByKey[d.first.stableKey],
                      hidden = d.first.stableKey in capsuleOptions.hidden,
                      onHide = { h -> com.shelf.launcher.data.SaveCapsules.setHidden(context, d.first.stableKey, h); close() },
-@@ -952,7 +970,10 @@ private fun SaveDetail(
+@@ -952,7 +972,10 @@ private fun SaveDetail(
      /** Reports where the icon sits in this window (root px), for the flight to land on. */
      onIconSpot: (androidx.compose.ui.geometry.Rect) -> Unit,
      onOpenSave: () -> Unit,
@@ -3787,7 +4017,7 @@ index 9e499ab..11bc76d 100644
  ) {
      val focus = remember { FocusRequester() }
      LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
-@@ -1026,12 +1047,16 @@ private fun SaveDetail(
+@@ -1026,12 +1049,16 @@ private fun SaveDetail(
                          Modifier
                              .fillMaxSize()
                              .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) },
@@ -3806,7 +4036,7 @@ index 9e499ab..11bc76d 100644
                  Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 3)
                  Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                  Spacer(Modifier.height(12.dp))
-@@ -1042,8 +1067,9 @@ private fun SaveDetail(
+@@ -1042,8 +1069,9 @@ private fun SaveDetail(
                  DetailRow("Last move", when (st.lastDirection) {
                      SyncDirection.UPLOAD -> "This device → Google Drive"
                      SyncDirection.DOWNLOAD -> "Google Drive → this device"
@@ -3818,7 +4048,7 @@ index 9e499ab..11bc76d 100644
                  if (st.fileCount > 0) DetailRow("Files", "${st.fileCount}")
                  DetailRow("Status", when (st.state) {
                      SyncState.SYNCED -> "Safe on Google Drive"
-@@ -1069,6 +1095,7 @@ private fun SaveDetail(
+@@ -1069,6 +1097,7 @@ private fun SaveDetail(
                          items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
                      }
                  }
@@ -3826,7 +4056,7 @@ index 9e499ab..11bc76d 100644
                  Spacer(Modifier.height(if (compact) 12.dp else 18.dp))
                  // (Update 274, Toni: "buttons a bit down … centred".)
                  ChipFlow(center = true) {
-@@ -1094,15 +1121,50 @@ private fun SaveDetail(
+@@ -1094,15 +1123,50 @@ private fun SaveDetail(
   * on it turns [angle] degrees about its upright axis (the back: the same cover darkened, with the
   * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
   */
@@ -3879,7 +4109,7 @@ index 9e499ab..11bc76d 100644
      if (card != null) {
          if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
          else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
-@@ -1412,7 +1474,10 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
+@@ -1412,7 +1476,10 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
      val context = LocalContext.current
      val fmt = remember { android.text.format.DateFormat.getMediumDateFormat(context) }
      val time = remember { android.text.format.DateFormat.getTimeFormat(context) }
@@ -3891,7 +4121,7 @@ index 9e499ab..11bc76d 100644
      val synced = st.lastSuccessAt > 0 || st.state != SyncState.PENDING
      // Update 152: saves that are only on Google Drive (synced from another handheld) said "on this device".
      val elsewhere = capsule?.saves?.takeIf { it.isNotEmpty() }?.takeIf { list ->
-@@ -1452,11 +1517,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
+@@ -1452,11 +1519,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
                  maxLines = 1, overflow = TextOverflow.Ellipsis
              )
              Text(
@@ -7290,10 +7520,10 @@ index 00bae26..e3e119f 100644
          // The face's bevel and the art faint behind the text.
 diff --git a/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt b/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt
 new file mode 100644
-index 0000000..8f57706
+index 0000000..cf02ca2
 --- /dev/null
 +++ b/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,316 @@
 +package com.shelf.launcher.ui
 +
 +import androidx.compose.foundation.background
@@ -7313,6 +7543,9 @@ index 0000000..8f57706
 +import com.shelf.launcher.data.Features
 +import com.shelf.launcher.data.HomeLayout
 +import com.shelf.launcher.ui.theme.ShelfTheme
++import com.shelf.launcher.ui.theme.legibleArtAccent
++import com.shelf.launcher.ui.theme.legibleOn
++import com.shelf.launcher.ui.theme.textOn
 +
 +/**
 + * Update 493 — Layout-aware windows, phase 1: one small set of window-frame tokens (corner, surface, rim) chosen from the
@@ -7321,12 +7554,23 @@ index 0000000..8f57706
 + * keep the window exactly as before ([Style.OWN] draws what the windows drew).
 + */
 +internal object WindowLook {
-+    enum class Style { OWN, CHANNEL, CROSS }
++    /**
++     * Update 497 (1D): a few reusable families, not one look per layout. Colour families ([colored]) draw the window's
++     * content in the layout's own panels (Channel grid's palette; Arctic's slate; Cinema's black) with the resolved accent;
++     * frame families (Cross menu, [DESK], [SHELF]) keep the theme's content colours and only take the layout's corner and an
++     * accent-tinted rim.
++     */
++    enum class Style(val colored: Boolean = false) { OWN, CHANNEL(true), CROSS, ARCTIC(true), CINEMA(true), DESK, SHELF }
 +
 +    /** Which frame [layout] gives a window; [OWN] unless following is on and the layout has one. */
 +    fun styleFor(layout: HomeLayout, follow: Boolean): Style = if (!follow) Style.OWN else when (layout) {
 +        HomeLayout.CHAN -> Style.CHANNEL
 +        HomeLayout.CROSS -> Style.CROSS
++        HomeLayout.ARCTIC -> Style.ARCTIC
++        HomeLayout.CINEMA -> Style.CINEMA
++        HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE -> Style.DESK
++        HomeLayout.STACKS, HomeLayout.CASEFLOW, HomeLayout.SHELF, HomeLayout.DISCS, HomeLayout.CRATE, HomeLayout.BOX,
++        HomeLayout.STORAGE, HomeLayout.COVERDETAILS, HomeLayout.SHOP -> Style.SHELF
 +        else -> Style.OWN
 +    }
 +
@@ -7337,68 +7581,213 @@ index 0000000..8f57706
 +    fun corner(style: Style, own: Dp, compact: Boolean, pixel: Boolean): Dp = when {
 +        pixel || style == Style.OWN -> own
 +        style == Style.CHANNEL -> if (compact) 20.dp else 30.dp
-+        else -> if (compact) 6.dp else 8.dp
++        // (Update 497: the corners those layouts' own tiles / panels use.)
++        style == Style.ARCTIC -> if (compact) 10.dp else 12.dp
++        style == Style.DESK -> if (compact) 14.dp else 18.dp
++        style == Style.SHELF -> if (compact) 10.dp else 14.dp
++        else -> if (compact) 6.dp else 8.dp // Cross menu, Cinema
 +    }
 +}
 +
 +/**
 + * A window's outer frame in [style]. [Style.OWN] is exactly the frame the windows had (voltSurface + a faint rim).
-+ * Channel grid: clean, rounded, a soft blue-tinted panel with a white-blue rim. Cross menu: a restrained translucent
-+ * panel with a hairline rim. Both on the theme's own surface colour, so the content's text keeps its contrast.
++ * Channel grid: the layout's own panel colours ([channelWindowTokens]: its palette, light or dark, and the accent the home
++ * screen really shows) with a rim in the tile-edge colour. Cross menu: a restrained translucent panel with a hairline rim.
 + */
 +@Composable
 +internal fun Modifier.windowFrame(style: WindowLook.Style, shape: Shape): Modifier {
 +    val surface = ShelfTheme.colors.surface
 +    return when (style) {
 +        WindowLook.Style.OWN -> this.voltSurface(shape, base = surface).border(1.dp, Color.White.copy(alpha = 0.08f), shape)
-+        // (Update 495, phase 2: light, like the Channel grid's own game window — white to a pale blue, a soft blue rim. The
-+        // window's content takes the light colours with it: WindowColors.)
-+        WindowLook.Style.CHANNEL -> this.clip(shape)
-+            .background(Brush.verticalGradient(listOf(Color.White, WINDOW_CHANNEL_PALE)))
-+            .border(2.dp, WINDOW_CHANNEL_RIM, shape)
++        // (Update 495, phase 2: light, like the Channel grid's own game window. Update 497: in the layout's real colours —
++        // its palette (Original Pale, Light Blue / Yellow, OLED, Custom) and the accent the home screen shows, not a fixed blue.)
++        WindowLook.Style.CHANNEL -> {
++            val t = rememberChannelWindowTokens()
++            this.clip(shape).background(Brush.verticalGradient(listOf(t.frameTop, t.frameBottom))).border(2.dp, t.rim, shape)
++        }
 +        WindowLook.Style.CROSS -> this.clip(shape)
 +            .background(surface.copy(alpha = surface.alpha * WINDOW_CROSS_ALPHA))
 +            .border(0.5.dp, Color.White.copy(alpha = 0.14f), shape)
++        // (Update 497, 1D: Arctic's slate / Cinema's black panel, rim in the layout's edge colour mixed with the accent.)
++        WindowLook.Style.ARCTIC, WindowLook.Style.CINEMA -> {
++            val t = rememberWindowTokens(style)!!
++            this.clip(shape).background(Brush.verticalGradient(listOf(t.frameTop, t.frameBottom))).border(1.dp, t.rim, shape)
++        }
++        // (Update 497, 1D frame families: the theme's own panel, the layout's corner, a rim in the settled accent.)
++        WindowLook.Style.DESK, WindowLook.Style.SHELF ->
++            this.voltSurface(shape, base = surface).border(if (style == WindowLook.Style.SHELF) 1.5.dp else 1.dp, windowRimColor(style), shape)
 +    }
 +}
 +
++/**
++ * Update 497: the rim colour of a window in [style] (also the Save Vault's rim). Frame families mix the settled accent
++ * (Material's scheme — not the gliding one, D137) into a faint white edge.
++ */
++@Composable
++internal fun windowRimColor(style: WindowLook.Style): Color = when (style) {
++    WindowLook.Style.OWN -> Color.White.copy(alpha = 0.08f)
++    WindowLook.Style.CROSS -> Color.White.copy(alpha = 0.14f)
++    WindowLook.Style.DESK, WindowLook.Style.SHELF -> {
++        val acc = (LocalOuterScheme.current ?: androidx.compose.material3.MaterialTheme.colorScheme).primary
++        androidx.compose.runtime.remember(acc, style) { lerp(Color.White.copy(alpha = 0.12f), acc, if (style == WindowLook.Style.SHELF) 0.45f else 0.35f) }
++    }
++    else -> rememberWindowTokens(style)!!.rim
++}
++
++/**
++ * Update 497 (1A): everything a Channel grid window is drawn in, worked out from the colours the home layout really uses —
++ * the Channel grid's own palette ([ChanColors]: light or dark, the owner's Custom base) and [accent], the theme's resolved
++ * accent (layout colours › Custom › game / album art › theme, in ShelfLauncherTheme's own order; nothing is re-decided
++ * here). Writing, muted writing, outlines and the accent are nudged in lightness only until they read on the panels.
++ */
++internal class ChannelWindowTokens(
++    val colors: com.shelf.launcher.ui.theme.ShelfColors, val light: Boolean,
++    val frameTop: Color, val frameBottom: Color, val rim: Color,
++    val track: Color, val outline: Color, val outlineSoft: Color, val soft: Color, val deep: Color, val onAccent: Color
++)
++
++/**
++ * [darkSurfaces]: the theme's own (background, surface, raised) for a Channel grid drawn on the theme (Channel colours off),
++ * as the home layout then does.
++ */
++internal fun channelWindowTokens(
++    accent: Color, pal: ChanColors, lightLook: Boolean, chanOwnDark: Boolean,
++    darkSurfaces: Triple<Color, Color, Color>, themeText: Color, themeMuted: Color
++): ChannelWindowTokens {
++    val (bg, surface, raised) = when {
++        lightLook -> Triple(pal.bgTop, pal.surface, pal.surface2)
++        pal.pure && chanOwnDark -> Triple(Color.Black, Color(0xFF111316), Color(0xFF202328))
++        pal.darkBase != null && chanOwnDark -> Triple(pal.bgBottom, pal.surface, pal.surface2)
++        else -> darkSurfaces
++    }
++    val ink0 = if (lightLook) pal.ink else if (chanOwnDark) Color.White else themeText
++    val edge = if (lightLook) pal.edge else if (pal.pure && chanOwnDark) Color(0xFF3A414C) else Color(0xFFB9C3D0)
++    return windowTokens(accent, bg, surface, raised, ink0, if (lightLook || chanOwnDark) null else themeMuted, edge, lightLook)
++}
++
++/**
++ * Update 497 (1D): the shared token maths for every colour family — [muted0] null = the writing faded towards the panel.
++ * Lightness-only nudges keep writing ≥ 7:1 (≥ 4.5:1 on raised panels), muted ≥ 4.5:1, the accent ≥ 3:1 with ≥ 4.5:1 text on it.
++ */
++internal fun windowTokens(
++    accent: Color, bg: Color, surface: Color, raised: Color, ink0: Color, muted0: Color?, edge: Color, light: Boolean
++): ChannelWindowTokens {
++    val lightLook = light
++    val panels = listOf(surface, raised)
++    val ink = ink0.legibleOn(7f, listOf(surface)).legibleOn(4.5f, panels)
++    val muted = (muted0 ?: lerp(ink, surface, 0.28f)).legibleOn(4.5f, panels)
++    val acc = legibleArtAccent(accent, surface, raised)
++    val onAcc = textOn(acc, Color.White)
++    val track = lerp(surface, ink, if (lightLook) 0.16f else 0.22f)
++    val outline = lerp(surface, ink, 0.5f).legibleOn(3f, listOf(surface)).legibleOn(2f, listOf(track))
++    val soft = lerp(surface, acc, if (lightLook) 0.2f else 0.3f)
++    val deep = (if (lightLook) lerp(acc, Color.Black, 0.35f) else lerp(acc, Color.White, 0.55f)).legibleOn(4.5f, listOf(soft))
++    val colors = com.shelf.launcher.ui.theme.ShelfColors(
++        background = bg, surface = surface, surfaceRaised = raised, accent = acc, accentGlow = acc.copy(alpha = 0.45f),
++        secondary = lerp(acc, surface, 0.45f), textPrimary = ink, textMuted = muted
++    )
++    return ChannelWindowTokens(
++        colors, lightLook,
++        frameTop = surface, frameBottom = lerp(surface, raised, 0.7f), rim = lerp(edge, acc, 0.3f),
++        track = track, outline = outline, outlineSoft = lerp(surface, ink, 0.2f), soft = soft, deep = deep, onAccent = onAcc
++    )
++}
++
++/**
++ * The tokens for the window being composed. Keyed on Material's scheme from ShelfLauncherTheme (the resolved TARGET colours,
++ * handed on once art colours are still — D137) and the Channel grid's palette prefs, so an open window takes a new accent /
++ * palette at once without re-composing on every frame of a colour glide.
++ */
++@Composable
++internal fun rememberChannelWindowTokens(): ChannelWindowTokens {
++    val outer = androidx.compose.material3.MaterialTheme.colorScheme
++    val pal = chanColors()
++    val lightLook = chanLightLook()
++    val own = Features.chanLight.state.value
++    // (Inside a window the scheme is the window's own: take the outer one the window was opened on.)
++    val src = LocalOuterScheme.current ?: outer
++    return androidx.compose.runtime.remember(src.primary, src.background, src.surface, src.surfaceVariant, src.onSurface, pal.palette, pal.surface, pal.ink, lightLook, own) {
++        channelWindowTokens(src.primary, pal, lightLook, own, Triple(src.background, src.surface, src.surfaceVariant),
++            src.onSurface, lerp(src.onSurface, src.surface, 0.3f))
++    }
++}
++
++/** Update 497 (1D): the tokens of a colour family ([WindowLook.Style.colored]); null for the frame-only ones. */
++@Composable
++internal fun rememberWindowTokens(style: WindowLook.Style): ChannelWindowTokens? = when (style) {
++    WindowLook.Style.CHANNEL -> rememberChannelWindowTokens()
++    WindowLook.Style.ARCTIC -> {
++        val acc = (LocalOuterScheme.current ?: androidx.compose.material3.MaterialTheme.colorScheme).primary
++        androidx.compose.runtime.remember(acc) { arcticWindowTokens(acc) }
++    }
++    WindowLook.Style.CINEMA -> {
++        val acc = (LocalOuterScheme.current ?: androidx.compose.material3.MaterialTheme.colorScheme).primary
++        // (Cinema's own red when its accent option says so, as the home layout does — else the resolved accent.)
++        val red = Features.cnAccent.state.value == Features.CnAccent.CINEMA
++        androidx.compose.runtime.remember(acc, red) { cinemaWindowTokens(if (red) CINEMA_RED else acc) }
++    }
++    else -> null
++}
++
++/** Arctic hub's slate panels (StyleArctic: 0D141D / 1B2633 tiles, white focus edge). */
++internal fun arcticWindowTokens(accent: Color) = windowTokens(
++    accent, Color(0xFF080C12), Color(0xFF0D141D), Color(0xFF1B2633), Color.White, Color(0xFFB7C3D1), Color(0xFF5A6B80), false
++)
++
++/** Cinema's near-black panels (StyleCinema: 17171B / 222226 tiles). */
++internal fun cinemaWindowTokens(accent: Color) = windowTokens(
++    accent, Color(0xFF060607), Color(0xFF17171B), Color(0xFF222226), Color.White, Color(0xFFB3B3B3), Color(0xFF3A3A40), false
++)
++internal val CINEMA_RED = Color(0xFFE50914)
++
++/** Update 497: Material's scheme of the screen a window opened on (before the window's own), for [rememberChannelWindowTokens]. */
++internal val LocalOuterScheme = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.material3.ColorScheme?> { null }
++
++/** Kept for the Channel grid's Original Pale defaults (tests and the Save Vault rim's fallback). */
 +internal val WINDOW_CHANNEL_BLUE = Color(0xFF2F7BC0)
 +internal val WINDOW_CHANNEL_PALE = Color(0xFFEAF2FA)
 +internal val WINDOW_CHANNEL_RIM = Color(0xFF8DBDE6)
 +
-+/**
-+ * Update 495 (phase 2): the colours inside a Channel grid window — light panels, dark writing, the Channel grid's blue as the
-+ * accent (the light theme Lobby's proportions, which Settings is already readable in). Voltcap's own colours and Material's
-+ * scheme are given for the window's content only; every other style passes its content through unchanged.
-+ */
-+internal fun channelWindowColors(base: com.shelf.launcher.ui.theme.ShelfColors) = base.copy(
-+    background = Color(0xFFF3F6FA), surface = Color(0xFFFFFFFF), surfaceRaised = Color(0xFFE4ECF5),
-+    accent = WINDOW_CHANNEL_BLUE, accentGlow = WINDOW_CHANNEL_BLUE.copy(alpha = 0.45f), secondary = Color(0xFF9CC9EA),
-+    textPrimary = Color(0xFF26303B), textMuted = Color(0xFF55606D)
-+)
++/** Update 495 (phase 2) / 497: the colours inside a Channel grid window, for [base]'s accent on Original Pale (tests). */
++internal fun channelWindowColors(base: com.shelf.launcher.ui.theme.ShelfColors) =
++    channelWindowTokens(base.accent, chanColorsFor(Features.ChanPalette.PALE, 0), true, true,
++        Triple(base.background, base.surface, base.surfaceRaised), base.textPrimary, base.textMuted).colors
 +
 +@Composable
 +internal fun WindowColors(style: WindowLook.Style, content: @Composable () -> Unit) {
 +    if (style == WindowLook.Style.OWN) { content(); return }
-+    if (style != WindowLook.Style.CHANNEL) { androidx.compose.runtime.CompositionLocalProvider(LocalWindowStyle provides style, content = content); return }
-+    val base = ShelfTheme.colors
-+    val c = androidx.compose.runtime.remember(base) { channelWindowColors(base) }
++    val outer = androidx.compose.material3.MaterialTheme.colorScheme
++    if (!style.colored) {
++        androidx.compose.runtime.CompositionLocalProvider(LocalWindowStyle provides style, LocalOuterScheme provides (LocalOuterScheme.current ?: outer), content = content)
++        return
++    }
++    val t = rememberWindowTokens(style)!!
++    val c = t.colors
 +    val live = androidx.compose.runtime.rememberUpdatedState(c)
-+    val scheme = androidx.compose.runtime.remember(c) {
-+        androidx.compose.material3.lightColorScheme(
-+            primary = c.accent, onPrimary = Color.White, background = c.background, surface = c.surface,
++    val scheme = androidx.compose.runtime.remember(t) {
++        // (Update 496, phase 3: the rest of Material's tones in the window's colours, so its own switches, sliders, fields,
++        // menus, dialogs and disabled states match the window. Update 497: from the layout's real palette and accent.)
++        if (t.light) androidx.compose.material3.lightColorScheme(
++            primary = c.accent, onPrimary = t.onAccent, background = c.background, surface = c.surface,
 +            surfaceVariant = c.surfaceRaised, surfaceContainer = c.surface, onBackground = c.textPrimary, onSurface = c.textPrimary,
 +            onSurfaceVariant = c.textMuted, secondary = c.secondary,
-+            // (Update 496, phase 3: the rest of Material's light tones in the Channel grid's blue-greys, so its own switches,
-+            // sliders, fields, menus, dialogs and disabled states match the window instead of the default lilac greys.)
-+            surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF7FAFD), surfaceContainerHigh = c.surfaceRaised,
-+            surfaceContainerHighest = WINDOW_CHANNEL_TRACK, outline = WINDOW_CHANNEL_OUTLINE, outlineVariant = WINDOW_CHANNEL_OUTLINE_SOFT,
-+            primaryContainer = WINDOW_CHANNEL_SOFT, onPrimaryContainer = WINDOW_CHANNEL_DEEP,
-+            secondaryContainer = WINDOW_CHANNEL_SOFT, onSecondaryContainer = WINDOW_CHANNEL_DEEP, surfaceTint = c.accent
++            surfaceContainerLowest = c.surface, surfaceContainerLow = lerp(c.surface, c.surfaceRaised, 0.3f), surfaceContainerHigh = c.surfaceRaised,
++            surfaceContainerHighest = t.track, outline = t.outline, outlineVariant = t.outlineSoft,
++            primaryContainer = t.soft, onPrimaryContainer = t.deep,
++            secondaryContainer = t.soft, onSecondaryContainer = t.deep, surfaceTint = c.accent
++        ) else androidx.compose.material3.darkColorScheme(
++            primary = c.accent, onPrimary = t.onAccent, background = c.background, surface = c.surface,
++            surfaceVariant = c.surfaceRaised, surfaceContainer = c.surface, onBackground = c.textPrimary, onSurface = c.textPrimary,
++            onSurfaceVariant = c.textMuted, secondary = c.secondary,
++            surfaceContainerLowest = c.background, surfaceContainerLow = c.surface, surfaceContainerHigh = c.surfaceRaised,
++            surfaceContainerHighest = t.track, outline = t.outline, outlineVariant = t.outlineSoft,
++            primaryContainer = t.soft, onPrimaryContainer = t.deep,
++            secondaryContainer = t.soft, onSecondaryContainer = t.deep, surfaceTint = c.accent
 +        )
 +    }
 +    androidx.compose.runtime.CompositionLocalProvider(
 +        LocalWindowStyle provides style,
++        LocalOuterScheme provides (LocalOuterScheme.current ?: outer),
 +        com.shelf.launcher.ui.theme.LocalShelfColors provides c,
 +        com.shelf.launcher.ui.theme.LocalShelfColorsLive provides live,
 +        androidx.compose.material3.LocalContentColor provides c.textPrimary
@@ -7407,11 +7796,6 @@ index 0000000..8f57706
 +    }
 +}
 +internal const val WINDOW_CROSS_ALPHA = 0.82f
-+internal val WINDOW_CHANNEL_TRACK = Color(0xFFD5E1EE)
-+internal val WINDOW_CHANNEL_OUTLINE = Color(0xFF7E93A9)
-+internal val WINDOW_CHANNEL_OUTLINE_SOFT = Color(0xFFC5D3E2)
-+internal val WINDOW_CHANNEL_SOFT = Color(0xFFD6E7F6)
-+internal val WINDOW_CHANNEL_DEEP = Color(0xFF1D4F7C)
 +
 +/** Update 496 (phase 3): the window style the content is drawn in ([WindowColors]); [WindowLook.Style.OWN] outside one. */
 +internal val LocalWindowStyle = androidx.compose.runtime.staticCompositionLocalOf { WindowLook.Style.OWN }
@@ -7431,10 +7815,10 @@ index 0000000..8f57706
 + * Update 496 (phase 3): the rim of a window that draws its own scene inside (the Save Vault) — only the frame follows
 + * the layout there: Channel grid's soft blue rim, Cross menu's hairline; nothing at all for [WindowLook.Style.OWN].
 + */
-+internal fun Modifier.windowRim(style: WindowLook.Style, shape: Shape): Modifier {
++internal fun Modifier.windowRim(style: WindowLook.Style, shape: Shape, rimColor: Color = WINDOW_CHANNEL_RIM): Modifier {
 +    if (style == WindowLook.Style.OWN) return this
-+    val color = if (style == WindowLook.Style.CHANNEL) WINDOW_CHANNEL_RIM else Color.White.copy(alpha = 0.14f)
-+    val width = if (style == WindowLook.Style.CHANNEL) 2.dp else 0.5.dp
++    val color = rimColor
++    val width = when (style) { WindowLook.Style.CHANNEL -> 2.dp; WindowLook.Style.CROSS -> 0.5.dp; else -> 1.dp }
 +    // Drawn over the content (the vault paints its whole scene inside), inside the bounds: never changes a size.
 +    return this.drawWithContent {
 +        drawContent()
@@ -8823,10 +9207,10 @@ index 0000000..1ba4385
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt
 new file mode 100644
-index 0000000..c8af76e
+index 0000000..ef58d38
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,87 @@
 +package com.shelf.launcher.ui
 +
 +import com.shelf.launcher.data.GameSyncStatus
@@ -8895,7 +9279,7 @@ index 0000000..c8af76e
 +        val o = src("ui/RaOverlayView.kt")
 +        assertEquals(16f / 12f, COMMENT_LINE_MULT, 0.0001f)
 +        assertTrue(o.contains("setLineSpacing(0f, COMMENT_LINE_MULT)"))
-+        assertTrue(o.contains("if (pinnedRow) box.addView(MaxHeightScroll(context"))
++        assertTrue(o.contains("private val pinnedFrame = MaxHeightScroll(context")) // (497: the whole pinned section scrolls)
 +        assertTrue(o.contains("list.sortedByDescending { it.Submitted ?: \"\" }.take(12)"))
 +    }
 +
@@ -8903,7 +9287,8 @@ index 0000000..c8af76e
 +        assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(HomeLayout.CHAN, false))
 +        assertEquals(WindowLook.Style.CHANNEL, WindowLook.styleFor(HomeLayout.CHAN, true))
 +        assertEquals(WindowLook.Style.CROSS, WindowLook.styleFor(HomeLayout.CROSS, true))
-+        assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(HomeLayout.STACKS, true))
++        assertEquals(WindowLook.Style.SHELF, WindowLook.styleFor(HomeLayout.STACKS, true)) // (497: frame family)
++        assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(HomeLayout.CLASSIC, true))
 +        assertEquals(24.dp, WindowLook.corner(WindowLook.Style.OWN, 24.dp, false, false))
 +        assertEquals(0.dp, WindowLook.corner(WindowLook.Style.CHANNEL, 0.dp, false, true))
 +        assertEquals(false, com.shelf.launcher.data.Features.windowsFollowLayout.default)
@@ -8915,7 +9300,7 @@ index 0000000..c8af76e
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch495Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch495Test.kt
 new file mode 100644
-index 0000000..9cd5d80
+index 0000000..03d063e
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch495Test.kt
 @@ -0,0 +1,67 @@
@@ -8971,7 +9356,7 @@ index 0000000..9cd5d80
 +        assertTrue(contrastRatio(c.textPrimary, c.surface) >= 7f)
 +        assertTrue(contrastRatio(c.textPrimary, c.surfaceRaised) >= 4.5f)
 +        assertTrue(contrastRatio(c.textMuted, c.surface) >= 4.5f)
-+        assertTrue(contrastRatio(androidx.compose.ui.graphics.Color.White, c.accent) >= 4f)
++        assertTrue(maxOf(contrastRatio(androidx.compose.ui.graphics.Color.White, c.accent), contrastRatio(androidx.compose.ui.graphics.Color.Black, c.accent)) >= 4.5f) // (497: the real accent; text on it white or black)
 +        val w = src("ui/WindowLook.kt")
 +        assertTrue(w.contains("if (style == WindowLook.Style.OWN) { content(); return }")) // (496: Cross passes its style on, colours unchanged)
 +        // Both windows put their content inside WindowColors; tints that vanished on light panels follow the writing colour.
@@ -8988,7 +9373,7 @@ index 0000000..9cd5d80
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt
 new file mode 100644
-index 0000000..e7021a4
+index 0000000..8dd13bf
 --- /dev/null
 +++ b/app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt
 @@ -0,0 +1,108 @@
@@ -9034,14 +9419,14 @@ index 0000000..e7021a4
 +    }
 +
 +    @Test fun channelMaterialTonesStayReadable() {
-+        val white = Color.White
-+        // Material's own off tracks, outlines, menus and containers inside the light window.
-+        assertTrue(contrastRatio(WINDOW_CHANNEL_OUTLINE, white) >= 3f)
-+        assertTrue(contrastRatio(WINDOW_CHANNEL_OUTLINE, WINDOW_CHANNEL_TRACK) >= 2f)
-+        assertTrue(contrastRatio(WINDOW_CHANNEL_DEEP, WINDOW_CHANNEL_SOFT) >= 4.5f)
-+        assertTrue(contrastRatio(Color(0xFF26303B), WINDOW_CHANNEL_TRACK) >= 4.5f)
++        // (Update 497: the tones come from the layout's own palette now — channelWindowTokens, checked in Batch497Test.)
++        val t = channelWindowTokens(Color(0xFF2F7BC0), chanColorsFor(com.shelf.launcher.data.Features.ChanPalette.PALE, 0), true, true,
++            Triple(Color.Black, Color.Black, Color.Black), Color.White, Color.White)
++        assertTrue(contrastRatio(t.outline, t.colors.surface) >= 3f)
++        assertTrue(contrastRatio(t.outline, t.track) >= 2f)
++        assertTrue(contrastRatio(t.deep, t.soft) >= 4.5f)
 +        val w = src("ui/WindowLook.kt")
-+        assertTrue(w.contains("surfaceContainerHighest = WINDOW_CHANNEL_TRACK, outline = WINDOW_CHANNEL_OUTLINE"))
++        assertTrue(w.contains("surfaceContainerHighest = t.track, outline = t.outline"))
 +        // Off / other layouts: the faint tint is exactly the white one it replaced.
 +        assertTrue(w.contains("else Color.White.copy(alpha = alpha)"))
 +        val v = src("ui/VoltUi.kt")
@@ -9051,7 +9436,7 @@ index 0000000..e7021a4
 +
 +    @Test fun saveVaultFrameOnlyAndDryViewWritesNothing() {
 +        val s = src("ui/SaveExplorer.kt")
-+        assertTrue(s.contains(".windowRim(winStyle, vaultShape)"))
++        assertTrue(s.contains(".windowRim(winStyle, vaultShape"))
 +        // The vault's own dark scene is unchanged: no WindowColors inside it.
 +        assertFalse(s.contains("WindowColors("))
 +        // Dry view: no search, no sync, no connect, no list rewritten.
@@ -9074,7 +9459,7 @@ index 0000000..e7021a4
 +        assertTrue(o.contains("fixture?.let { f -> into.removeAllViews(); f.comments.forEach"))
 +        assertTrue(o.contains("fixture?.let { f -> return f.pinnedId?.let"))
 +        // The open panel fits the screen: the list gives up room (found with the fixture: tabs cut, list off-screen).
-+        assertTrue(o.contains("lp.height = (want - over).coerceAtLeast(px(LIST_MIN_DP))")); assertTrue(o.contains("pin.maxPx = (minOf(pinWant, pin.measuredHeight) - over).coerceAtLeast(px(PINNED_MIN_DP))"))
++        assertTrue(o.contains("overlayPanelFit(maxH, fixed, pinH, want, px(LIST_MIN_DP), px(PINNED_MIN_DP), px(LIST_FLOOR_DP))")) // (497: Batch497Test)
 +        assertEquals(0.3f, PINNED_COMMENTS_MAX); assertEquals(0.94f, PANEL_MAX_H)
 +        // The fixture's own text is long enough to need wrapping in the 320 dp panel.
 +        assertTrue(QaOverlayFixture.items.first().title.length > 80)
@@ -9098,6 +9483,244 @@ index 0000000..e7021a4
 +        // The phase is read only while drawing (never while composing): the light never re-composes the bar.
 +        val body = h.substring(h.indexOf("internal fun PlainBattery"), h.indexOf("internal fun chargingLevelIcon"))
 +        assertEquals(1, Regex("phase\\.floatValue(?! =)").findAll(body).count())
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt
+new file mode 100644
+index 0000000..8a404a6
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt
+@@ -0,0 +1,127 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.luminance
++import com.shelf.launcher.data.Features.ChanPalette
++import com.shelf.launcher.data.HomeLayout
++import com.shelf.launcher.ui.theme.contrastRatio
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 497 (staging only): D295 remaining Drive paths, Channel windows in the layout's real colours, D294 at text ×1.6. */
++class Batch497Test {
++    private fun root(): File = listOf(File("src/main/java/com/shelf/launcher"), File("app/src/main/java/com/shelf/launcher")).first { it.exists() }
++    private fun src(rel: String): String = File(root(), rel).readText()
++
++    @Test fun qaSessionTouchesNoDriveAutomatically() {
++        assertTrue(src("data/AutoBackupWorker.kt").contains("if (CloudSync.qaPaused(app)) return Result.success()"))
++        assertTrue(src("data/LastPlayedSync.kt").contains("if (CloudSync.qaPaused(context)) return 0"))
++        val d = src("data/DriveOnlySaves.kt")
++        assertTrue(d.contains("else if (!allowFetch || CloudSync.qaPaused(app)) cached?.second.orEmpty()"))
++        assertTrue(d.contains("if (!allowNetwork || CloudSync.qaPaused(app)) return@runCatching null"))
++        // Every file that talks to Drive is either gated in a QA session or only runs on the owner's own button press.
++        // A new Drive caller fails here until it is added to one of the two lists.
++        val gated = setOf("CloudSync.kt", "LastPlayedSync.kt", "DriveOnlySaves.kt", "DriveClient.kt")
++        val ownButton = setOf("Backup.kt", "SettingsTransfer.kt") // (Backup's automatic run: AutoBackupWorker, gated above)
++        val callers = File(root(), "data").walkTopDown().filter { it.isFile && it.extension == "kt" && it.readText().contains("DriveClient(") }.map { it.name }.toSet()
++        assertEquals(emptySet<String>(), callers - gated - ownButton)
++        val backupCalls = root().walkTopDown().filter { it.isFile && it.extension == "kt" }
++            .filter { it.readText().contains("Backup.exportToDrive(") }.map { it.name }.toSet()
++        assertEquals(setOf("AutoBackupWorker.kt", "SettingsDialog.kt"), backupCalls)
++    }
++
++    private val palettes = listOf(
++        chanColorsFor(ChanPalette.PALE, 0), chanColorsFor(ChanPalette.OLED, 0), chanColorsFor(ChanPalette.BLUE, 0),
++        chanColorsFor(ChanPalette.YELLOW, 0), chanColorsFor(ChanPalette.CUSTOM, 0xFFDCE8F4.toInt()),
++        chanColorsFor(ChanPalette.CUSTOM, 0xFF402060.toInt()), chanColorsFor(ChanPalette.CUSTOM, 0xFFFFE9A0.toInt())
++    )
++    private val accents = listOf(Color(0xFF2F7BC0), Color(0xFF8E44D8), Color(0xFFFFE000), Color(0xFF808080), Color(0xFFFF2D55), Color(0xFF00FFC8))
++    private val themeDark = Triple(Color(0xFF101218), Color(0xFF1A1D25), Color(0xFF252A34))
++
++    @Test fun channelWindowTakesTheOwnersAccent() {
++        // The owner's example: Channel grid's accent changed from blue to purple — the window shows purple, not the old blue.
++        val purple = Color(0xFF8E44D8)
++        val t = channelWindowTokens(purple, chanColorsFor(ChanPalette.PALE, 0), true, true, themeDark, Color.White, Color.White)
++        val a = t.colors.accent
++        assertTrue(a.blue > a.green && a.red > a.green)
++        assertFalse(a == WINDOW_CHANNEL_BLUE)
++        // The rim follows it too (tile edge mixed with the accent, as the home tiles do).
++        assertTrue(t.rim.red > chanColorsFor(ChanPalette.PALE, 0).edge.red - 0.3f)
++        // Older helper (tests, Save Vault fallback) also follows the base accent now.
++        assertTrue(channelWindowColors(com.shelf.launcher.ui.theme.AppTheme.EMBER.colors).accent != WINDOW_CHANNEL_BLUE)
++    }
++
++    @Test fun everyPaletteAndAccentStaysReadable() {
++        for (pal in palettes) for (acc in accents) for (own in listOf(true, false)) {
++            val light = own && pal.light
++            val t = channelWindowTokens(acc, pal, light, own, themeDark, Color(0xFFECEFF4), Color(0xFFAEB4BE))
++            val c = t.colors
++            val why = "${pal.palette} light=$light own=$own acc=$acc"
++            assertEquals(why, light, t.light)
++            assertTrue(why, contrastRatio(c.textPrimary, c.surface) >= 7f || contrastRatio(c.textPrimary, c.surface) >= 4.5f && !light)
++            assertTrue(why, contrastRatio(c.textPrimary, c.surfaceRaised) >= 4.5f)
++            assertTrue(why, contrastRatio(c.textMuted, c.surface) >= 4.5f)
++            assertTrue(why, contrastRatio(c.accent, c.surface) >= 3f)
++            assertTrue(why, contrastRatio(t.onAccent, c.accent) >= 4.5f)
++            assertTrue(why, contrastRatio(t.outline, c.surface) >= 3f)
++            assertTrue(why, contrastRatio(t.deep, t.soft) >= 4.5f)
++            // Light panels for a light Channel grid, dark ones otherwise (not one rule for every layout).
++            if (light) assertTrue(why, c.surface.luminance() > 0.5f) else assertTrue(why, c.surface.luminance() < 0.25f)
++        }
++    }
++
++    @Test fun channelDrawnOnTheThemeUsesTheThemesPanels() {
++        val t = channelWindowTokens(Color(0xFF8E44D8), chanColorsFor(ChanPalette.PALE, 0), false, false, themeDark, Color(0xFFECEFF4), Color(0xFFAEB4BE))
++        assertEquals(themeDark.second, t.colors.surface)
++        assertEquals(themeDark.third, t.colors.surfaceRaised)
++        val w = src("ui/WindowLook.kt")
++        // Keyed on Material's settled scheme (D137), never on the gliding ShelfTheme colours.
++        assertTrue(w.contains("androidx.compose.runtime.remember(src.primary, src.background, src.surface, src.surfaceVariant, src.onSurface, pal.palette"))
++        assertFalse(w.contains("remember(base) { channelWindowColors(base) }"))
++        assertTrue(src("ui/SaveExplorer.kt").contains("val vaultRim = windowRimColor(winStyle)"))
++    }
++
++    @Test fun overlayPanelFitsAtLargeText() {
++        // Thor-like screen (1080 px tall, ~2.6 px/dp), panel 94 %; fixed parts grow with the text scale.
++        val maxH = 1015; val list = 540; val listMin = 250; val pinMin = 187; val floor = 146
++        for (fixed in 200..560 step 20) for (pin in listOf(0, 120, 300, 432)) {
++            val (l, p) = overlayPanelFit(maxH, fixed, pin, list, listMin, pinMin, floor)
++            assertTrue("fixed=$fixed pin=$pin", l <= list && p <= pin)
++            assertTrue("fixed=$fixed pin=$pin", l >= minOf(list, floor) && (pin == 0 || p >= minOf(pin, pinMin)))
++            // Whenever it can fit with the minimums, it does: header, ✕ and tabs stay on screen.
++            if (fixed + minOf(pin, pinMin) + floor <= maxH) assertTrue("fixed=$fixed pin=$pin", fixed + l + p <= maxH)
++        }
++        // At text ×1.0 nothing changes.
++        assertEquals(list to 300, overlayPanelFit(maxH, 150, 300, list, listMin, pinMin, floor))
++        val o = src("ui/RaOverlayView.kt")
++        assertTrue(o.contains("panel.addView(pinnedFrame, LinearLayout.LayoutParams(px(320f)"))
++        assertFalse(o.contains("if (pinnedRow) box.addView(MaxHeightScroll(")) // no scroll inside the pinned scroll
++        assertTrue(LIST_FLOOR_DP < LIST_MIN_DP)
++    }
++
++    @Test fun layoutFamiliesAreFewAndReadable() {
++        assertEquals(WindowLook.Style.ARCTIC, WindowLook.styleFor(HomeLayout.ARCTIC, true))
++        assertEquals(WindowLook.Style.CINEMA, WindowLook.styleFor(HomeLayout.CINEMA, true))
++        assertEquals(WindowLook.Style.DESK, WindowLook.styleFor(HomeLayout.TWIN_DESK, true))
++        assertEquals(WindowLook.Style.SHELF, WindowLook.styleFor(HomeLayout.DISCS, true))
++        assertEquals(WindowLook.Style.SHELF, WindowLook.styleFor(HomeLayout.CASEFLOW, true))
++        // Off (the default for everyone): every layout keeps the window it had.
++        for (l in HomeLayout.values()) assertEquals(WindowLook.Style.OWN, WindowLook.styleFor(l, false))
++        // A handful of families, not one per layout.
++        assertTrue(WindowLook.Style.values().size <= 8)
++        for (acc in accents) for (t in listOf(arcticWindowTokens(acc), cinemaWindowTokens(acc), cinemaWindowTokens(CINEMA_RED))) {
++            val c = t.colors
++            assertTrue(contrastRatio(c.textPrimary, c.surface) >= 7f)
++            assertTrue(contrastRatio(c.textMuted, c.surface) >= 4.5f)
++            assertTrue(contrastRatio(c.accent, c.surface) >= 3f && contrastRatio(t.onAccent, c.accent) >= 4.5f)
++            assertFalse(t.light)
++        }
++        // Game popup presentation styles (Own / Banner / Classic / Row) never read the window look.
++        for (f in listOf("ui/GameWindow.kt", "ui/GameWindowBanner.kt", "ui/RowRevealWindow.kt", "ui/GameDetailsOverlay.kt"))
++            assertFalse(f, src(f).contains("WindowLook") || src(f).contains("windowFrame("))
++        assertTrue(src("ui/AchievementDetailDialog.kt").contains("layoutAware = true"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt
+new file mode 100644
+index 0000000..ab1ec94
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt
+@@ -0,0 +1,99 @@
++package com.shelf.launcher.ui
++
++import androidx.compose.ui.graphics.Color
++import androidx.compose.ui.graphics.lerp
++import androidx.compose.ui.graphics.toArgb
++import com.shelf.launcher.data.Features.ChanPalette
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 498 (staging only): Inspect pinch / pan / reset; PC fixture sheet of the layout-aware window colours. */
++class Batch498Test {
++    private fun root(): File = listOf(File("src/main/java/com/shelf/launcher"), File("app/src/main/java/com/shelf/launcher")).first { it.exists() }
++    private fun src(rel: String): String = File(root(), rel).readText()
++
++    @Test fun inspectPinchStaysInBounds() {
++        // Zoom in 2x on a 400 x 300 piece, then pan far: it stops where the piece still covers its place.
++        var (z, x, y) = inspectPinchStep(1f, 0f, 0f, 2f, 0f, 0f, 400f, 300f)
++        assertEquals(2f, z, 0.001f)
++        val p = inspectPinchStep(z, x, y, 1f, 900f, -900f, 400f, 300f); z = p.first; x = p.second; y = p.third
++        assertEquals(200f, x, 0.001f); assertEquals(-150f, y, 0.001f)
++        // Never past the maximum, never below 1; at 1 the pan snaps back to the middle.
++        assertEquals(INSPECT_ZOOM_MAX, inspectPinchStep(2.9f, 0f, 0f, 5f, 0f, 0f, 400f, 300f).first, 0.001f)
++        val back = inspectPinchStep(z, x, y, 0.1f, 0f, 0f, 400f, 300f)
++        assertEquals(1f, back.first, 0.001f); assertEquals(0f, back.second, 0.001f); assertEquals(0f, back.third, 0.001f)
++        // A bad zoom value from the platform changes nothing.
++        assertEquals(1.5f, inspectPinchStep(1.5f, 0f, 0f, Float.NaN, 0f, 0f, 400f, 300f).first, 0.001f)
++        val m = src("ui/MediaInspectView.kt")
++        // Two fingers only, Initial pass; draw-time reads (no recomposition per pinch frame); Y / long press reset it.
++        assertTrue(m.contains("if (down >= 2) {"))
++        assertTrue(m.contains("awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)"))
++        assertTrue(m.contains("val z = 1f + (motion.zoom.floatValue - 1f) * k"))
++        assertTrue(m.contains("resetZoom() // (Update 498"))
++        // The one-finger turn and the tap are unchanged.
++        assertTrue(m.contains("if (drag.x != 0f) motion.nudge(drag.x * 0.42f * motion.yawSign())"))
++        assertTrue(m.contains("detectTapGestures(onLongPress = { motion.resetPose(scope) }"))
++    }
++
++    /** A labelled PC fixture (token maths drawn with java.awt) — NOT a device screenshot. Written to build/fixtures498. */
++    @Test fun windowFixtureSheet() {
++        System.setProperty("java.awt.headless", "true")
++        val pale = chanColorsFor(ChanPalette.PALE, 0)
++        val theme = Triple(Color(0xFF14161C), Color(0xFF1E2129), Color(0xFF2A2E38))
++        val blue = Color(0xFF3D7BFF); val purple = Color(0xFF8E44D8)
++        data class Cell(val label: String, val t: ChannelWindowTokens?, val rim: Color? = null)
++        fun frame(acc: Color) = lerp(Color.White.copy(alpha = 0.12f), acc, 0.45f)
++        val cells = listOf(
++            Cell("OFF (default): own window", null),
++            Cell("Channel · Pale · theme blue", channelWindowTokens(blue, pale, true, true, theme, Color.White, Color(0xFFB0B6C0))),
++            Cell("Channel · Pale · owner purple", channelWindowTokens(purple, pale, true, true, theme, Color.White, Color(0xFFB0B6C0))),
++            Cell("Channel · Light Yellow · purple", channelWindowTokens(purple, chanColorsFor(ChanPalette.YELLOW, 0), true, true, theme, Color.White, Color(0xFFB0B6C0))),
++            Cell("Channel · OLED · purple", channelWindowTokens(purple, chanColorsFor(ChanPalette.OLED, 0), false, true, theme, Color.White, Color(0xFFB0B6C0))),
++            Cell("Channel · Custom dark · purple", channelWindowTokens(purple, chanColorsFor(ChanPalette.CUSTOM, 0xFF402060.toInt()), false, true, theme, Color.White, Color(0xFFB0B6C0))),
++            Cell("Arctic · theme blue", arcticWindowTokens(blue)),
++            Cell("Arctic · owner purple", arcticWindowTokens(purple)),
++            Cell("Cinema · Cinema red", cinemaWindowTokens(CINEMA_RED)),
++            Cell("Cinema · theme purple", cinemaWindowTokens(purple)),
++            Cell("Shelf (frame only) · blue", null, frame(blue)),
++            Cell("Shelf (frame only) · purple", null, frame(purple)),
++        )
++        val cw = 300; val ch = 190; val cols = 3; val rows = (cells.size + cols - 1) / cols
++        val img = java.awt.image.BufferedImage(cols * cw, rows * ch + 30, java.awt.image.BufferedImage.TYPE_INT_ARGB)
++        val g = img.createGraphics()
++        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON)
++        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
++        g.color = java.awt.Color(0x0B0C10); g.fillRect(0, 0, img.width, img.height)
++        fun c(x: Color) = java.awt.Color(x.toArgb(), true)
++        g.color = java.awt.Color(0xFFD27A); g.font = java.awt.Font("SansSerif", java.awt.Font.BOLD, 14)
++        g.drawString("PC FIXTURE — window colour tokens from WindowLook.kt (update 498). Not a device screenshot.", 10, 20)
++        cells.forEachIndexed { i, cell ->
++            val x0 = (i % cols) * cw + 10; val y0 = (i / cols) * ch + 40; val w = cw - 20; val h = ch - 20
++            val t = cell.t
++            val surface = t?.colors?.surface ?: theme.second
++            val ink = t?.colors?.textPrimary ?: Color(0xFFECEFF4)
++            val muted = t?.colors?.textMuted ?: Color(0xFFB0B6C0)
++            val acc = t?.colors?.accent ?: (if (cell.rim != null) (if (cell.label.contains("purple")) purple else blue) else blue)
++            g.paint = java.awt.GradientPaint(0f, y0.toFloat(), c(t?.frameTop ?: surface), 0f, (y0 + h).toFloat(), c(t?.frameBottom ?: surface))
++            g.fillRoundRect(x0, y0, w, h, 26, 26)
++            g.color = c(t?.rim ?: cell.rim ?: Color.White.copy(alpha = 0.08f)); g.stroke = java.awt.BasicStroke(2f); g.drawRoundRect(x0, y0, w, h, 26, 26)
++            g.color = c(ink); g.font = java.awt.Font("SansSerif", java.awt.Font.BOLD, 13); g.drawString(cell.label, x0 + 12, y0 + 24)
++            g.color = c(muted); g.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12); g.drawString("Muted line · settings text", x0 + 12, y0 + 44)
++            g.color = c(t?.colors?.surfaceRaised ?: theme.third); g.fillRoundRect(x0 + 12, y0 + 56, w - 24, 44, 14, 14)
++            g.color = c(ink); g.drawString("Card on a raised panel", x0 + 22, y0 + 83)
++            g.color = c(acc); g.fillRoundRect(x0 + 12, y0 + 112, 92, 30, 14, 14)
++            g.color = c(t?.onAccent ?: Color.White); g.font = java.awt.Font("SansSerif", java.awt.Font.BOLD, 12); g.drawString("Play", x0 + 44, y0 + 132)
++            g.color = c(t?.track ?: Color.White.copy(alpha = 0.1f)); g.fillRoundRect(x0 + 120, y0 + 118, 46, 20, 20, 20)
++            g.color = c(acc); g.fillOval(x0 + 146, y0 + 118, 20, 20)
++            g.color = c(t?.soft ?: acc.copy(alpha = 0.2f)); g.fillRoundRect(x0 + 180, y0 + 114, w - 192, 28, 14, 14)
++            g.color = c(t?.deep ?: ink); g.font = java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11); g.drawString("Selected", x0 + 190, y0 + 132)
++        }
++        g.dispose()
++        val out = File(File(root(), "../../../../../..").canonicalFile, "build/fixtures498").apply { mkdirs() }
++        javax.imageio.ImageIO.write(img, "png", File(out, "windows498_fixture.png"))
++        assertTrue(File(out, "windows498_fixture.png").length() > 1000)
++        assertFalse(cells.any { it.t != null && it.t.colors.accent == WINDOW_CHANNEL_BLUE })
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

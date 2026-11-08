@@ -91,3 +91,4 @@ tools/themes/refresh-review/sheet-*
 /app/src/main/java/com/shelf/launcher/ui/QaOverlayFixture.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt

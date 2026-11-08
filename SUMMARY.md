@@ -1,3 +1,35 @@
+# Update 498 (8 Nov 2026) — checkpoint 22: Batches C/D (safe parts): Inspect pinch zoom / pan / reset, window fixture sheet, supervised-QA procedure (D295 option C)
+
+Code / PC only — **no device touched** (owner: no install / restart / restore / sync until the device is prepared).
+Staging = 497 + below. `testDebugUnitTest` BUILD SUCCESSFUL (all JVM tests incl. Batch498Test), `assembleRelease` BUILD SUCCESSFUL (R8, staging tree;
+the release output was rebuilt from the RC afterwards, so no staging APK is left under the 0.6.67 name), `static_checks.py --strict` PASS. Patch `next/0.6.68/staging.patch` sha256 599ff1f9…c6a6
+(138 files), applies cleanly on 589fdd4 — now written to BOTH next/0.6.68 and project_copy/next/0.6.68 (update 497's copy had
+been put back to 496 by sync_sources from project_copy; restored before this work). PC tree restored to the RC afterwards.
+
+- **D295 option C procedure:** docs/QA_SUPERVISED_D295.md. Owner switches "Sync game saves", "Sync favourites and playtime"
+  and Automatic backup OFF on the RUNNING v0.6.67 before anything is installed (every v0.6.67 sync path checks those:
+  `CloudSync.isActive`, worker cancel, auto-backup OFF); QA build adds the hooks-file gate; v0.6.67 goes back with sync off;
+  owner switches back afterwards.
+- **Inspect (Batch C), confirmed missing:** there was no two-finger zoom or pan at all. Now: pinch 1×–3×, two-finger pan kept
+  inside the piece's own area, both faded with the lift (no jump on the way back), Y / long press resets zoom + pan with the
+  pose (also with Wobble on). Two-finger events are taken in the Initial pass, so the one-finger turn / fling / tap are
+  untouched and a pinch never opens the case. Draw-time state only (no recomposition per pinch frame). Unit-tested
+  (`inspectPinchStep`); NOT hardware-tested.
+- **Window fixture sheet:** `Batch498Test.windowFixtureSheet` draws the real WindowLook tokens (OFF, Channel Pale blue /
+  purple, Light Yellow, OLED, Custom dark, Arctic, Cinema red / purple, Shelf) → app/build/fixtures498/windows498_fixture.png,
+  copy in Claude outputs. A PC fixture of the colour maths, not a device screenshot.
+- **Reviewed, no change needed (already in place):** popup flight out of / back into the exact game (113 / 294 GameOrigin),
+  rapid A/B tokens (453, D108), reduced motion for every window animation (480 MotionLevel, system "remove animations" wins);
+  status-bar battery uses the status-bar ink + the live accent at draw time (494–496); R1 already reaches Display, Bluetooth
+  (controllers), Wi-Fi, Airplane, Do not disturb and Android settings by hold — Sound / Battery Android pages would need new
+  tiles (owner call; not added).
+- **Pending hardware / owner (not changed blind):** case thickness / spine shading / contact shadows / shelf packing, Cover
+  Details case switch, generated-cartridge and clear memory-card geometry, navigation sound levels, stale-art / clipping /
+  focus repros — each needs device screenshots (R25 / R26) or an owner side-by-side; no PC renderer for Compose 3D exists in
+  the project (adding Robolectric/Paparazzi = a new QA framework, not done).
+
+Files (staging): ui/MediaInspectView.kt; test Batch498Test (new). Docs: docs/QA_SUPERVISED_D295.md.
+
 # Update 497 (8 Nov 2026) — checkpoint 21: D295 remaining Drive paths gated, layout-aware windows in the layout's real colours + 4 reusable families, D294 ×1.6 overlay fit
 
 Staging = 496 + the changes below. Code-only checkpoint: **no device was touched** (no install, no restart, no game, no sync,
