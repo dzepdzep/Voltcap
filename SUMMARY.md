@@ -1,3 +1,59 @@
+# Update 500 (8 Nov 2026) — checkpoint 24: isolated QA app "Voltcap QA" (D295 permanent fix), fixture library, vendor-service lock-out
+
+**D295 solved without touching the owner's settings: a second, isolated app.** Staging adds build type `qa`
+(package **com.shelf.launcher.qa**, versionName suffix `-qa`, name "Voltcap QA", green icon background with QA stripes).
+Claude's PC tool can only run assembleDebug, so a root `qa_variant.properties` (gitignored, PC only) with `debugIsQa=true`
+turns the debug build into the same QA app; it is left at **false** now, so Android Studio debug builds are the ordinary
+Voltcap. Another package id = its own private data: it never sees the owner's settings, history, profiles, artwork,
+sign-ins or Drive state, and installing / restarting it never restarts the owner's Voltcap. Isolation by code, not settings
+(`data/QaVariant.kt`, package-name / process-name check): no Drive sync / backup / last-played / Drive-only saves
+(CloudSync.qaPaused), every launch blocked (no file can allow one), no charge-limit control (ChargeLimiter.start), never
+offered as home (HomeLauncher), no permissions prompt, and — found on the Thor — **no root commands / stick lights through
+AYN's PServerBinder** (RootShell, VendorAdapter): the first QA-app start made 5 calls to the vendor service before this gate;
+after it, 0. Manifest overlay `app/src/qa/AndroidManifest.xml` drops all-files access, read storage, secure / system
+settings, install / delete packages, boot, the home alias, the update receiver, the charge-limit boot receiver and the
+notification listener (verified in the built APK).
+**Fixture library:** `tools/qa/device/fixroms500.sh` writes 17 tiny stand-in ROM files (SNES, N64, GBA, GB, GBC, NES,
+Genesis, NDS, PS1, PS2, GameCube) into the QA app's OWN folder; `--ez voltcap_test_fixture_roms true` (QA app only) scans
+it. The QA app also downloaded the "consoles I have" art packs into its own storage. Home, categories, game window and
+Inspect all work with it on the Thor.
+**What still needs the owner's real install:** the real library / artwork / custom art, history, Save Vault with real
+saves, Drive sync behaviour, home-app role, notification listener / now playing, charge limit, tuner, stick lights, RA
+with the owner's account. Everything else (layouts, Settings, windows, 3D media, Inspect, controller navigation, overlay
+fixtures) can be QA'd in Voltcap QA with no rollback and no sync risk.
+
+**Thor (3140972f, USB):** owner's Voltcap untouched the whole session — same process (pid 15178, never restarted),
+versionName 0.6.67, lastUpdateTime 19:18:13, its external-files listing unchanged, /sdcard/Voltcap metadata md5 equal
+before / after (209d933b…), HOME still the system launcher. Its three Drive switches were NOT touched (still off from 499 —
+owner to switch back on). Voltcap QA 0.6.68-qa500-qa **is left installed** (stopped) for future QA. KONKR not used,
+RP Classic not connected. No game launched (QA app can't), no save touched.
+
+**Inspect touch (pinch / pan): NOT verified — needs fingers.** The Thor's touchscreen node ignores injected events
+(sendevent reaches the kernel but Android registers no touch), `input` has one pointer, and an in-app synthetic
+MotionEvent injector reached the window but not the Compose handlers (a synthetic tap on Back didn't close it either), so
+it was dropped. Added: QA log lines `inspect pinch zoom=… pan=…` / `inspect reset …` and `tools/qa/device/insp500.sh
+<Game>` (opens the game's Inspect in Voltcap QA and records what the app saw while the owner pinches / pans / presses Y).
+
+**Not done this round:** physical-media realism items (thickness / spine / shading / packing / cartridge geometry /
+memory-card sides / Cover Details), focus / scroll / clipping / title-jump / badge repros. Observed (not changed): the
+classic row's no-art name label shortens a long title with "…" at its minimum size ("The Legend Of Zelda A Link T…"); the
+full name shows when focused.
+
+**Tests / build (staging tree):** testDebugUnitTest BUILD SUCCESSFUL (new Batch500Test; PlayProtect406Test now allows only
+the `.qa` suffix; Batch489Test launch-block expression), assembleRelease BUILD SUCCESSFUL (Voltcap-0.6.68-qa500-release.apk,
+not installed), assembleDebug = Voltcap QA. PC tree restored to the RC (git: only docs / .gitignore / QA scripts).
+
+**Staging:** `staging_local/0.6.68/staging.patch` sha256 2513a83c14bdca6510759064dbe149be6d8c58a0de2f7cdb410e4c8788830e97,
+155 files, applies on 589fdd4 (read back from the PC: equal); backup `staging_local/backups/staging_500_2513a83c.patch`;
+498 / 499 backups untouched. Rule learned: **device_commit_files reuses an earlier upload of the same staged path** — a
+re-commit from an unchanged path can write the OLD content (seen 3×). Always stage under a new name per version and read
+back sizes / sha.
+
+Files (staging): data/QaVariant.kt (new), MainActivity, data/CloudSync, data/HomeLauncher, device/ChargeLimiter,
+device/RootShell, device/VendorAdapter, ui/TestHooks, ui/LauncherScreen, ui/PermissionsSetup, ui/MediaInspectView,
+app/build.gradle.kts, app/src/qa/** (new); tests Batch500Test (new), Batch489Test, PlayProtect406Test.
+Main: docs, .gitignore, tools/qa/device/fixroms500.sh + insp500.sh.
+
 # Update 499 (8 Nov 2026) — checkpoint 23: staging protection, Save Vault in the window family, stale in-between art, shelf contact shadow; Thor QA under D295 option C
 
 **Staging protection (owner request).** The v0.6.68 staging patch is no longer committed to main. It now lives in

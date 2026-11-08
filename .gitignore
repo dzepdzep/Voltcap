@@ -94,3 +94,10 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt
 /staging_local/
 /app/src/test/java/com/shelf/launcher/ui/Batch499Test.kt
+# Update 500: the isolated QA app (staging only) — its source set, PC switch and staging-only files / tests.
+/app/src/qa/
+/qa_variant.properties
+/app/src/main/java/com/shelf/launcher/data/QaVariant.kt
+/app/src/main/java/com/shelf/launcher/ui/QaTouch.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch500Test.kt
+/tools/qa/device/touch500.sh
