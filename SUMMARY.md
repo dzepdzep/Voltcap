@@ -1,3 +1,41 @@
+# Update 495 (8 Nov 2026) — checkpoint 19: D293 cause + fix (QA settings guard), overlay titles whole, Channel grid light windows, charging light polish
+
+Staging = 494 + the changes below (QA build 0.6.68-qa). Nothing published, no game launched (launch guard "blocked" before the
+Thor run), no save / sync / history change. Thor back on v0.6.67, snapshot equal to the base (plus the new
+`windows_follow_layout` key at its default), history 161629e583b9; hooks removed. KONKR not used this batch.
+
+**A. D293 — root cause found and fixed.** With Game look › "Layout standard" on (both devices: `look_from_layout=true`),
+`LauncherScreen` applies a layout's standard look whenever the layout changes. A QA preview (`voltcap_test_preview`) kept
+the appearance unsaved (`previewAppearance`), but `layoutStandardLook()` also sets the look's switches directly in Features
+(carousel_wide, spines, tiles, model_finish via setModelsLook…) — and those were written to the saved settings. Previewing
+Channel grid / Cross menu on the Thor saved carousel_wide=true; the KONKR's model_finish OFF came the same way (STACKS'
+standard look is cases → setModelsLook(false)). Normal use (no hooks) was not affected: switching layouts there is meant to
+apply the standard look.
+- Fix: `Features.holdWrites` — while a QA preview runs, a setting change stays in memory only; snapshot restore and
+  `voltcap_test_pref` write on purpose (`TestHooks.allowWrites`); ending the preview reloads the saved settings.
+- Guard: every setting change is logged (`VoltcapQA setting <key> <old>-><new> held|SAVED`); `tools/qa/device/setguard495.sh`
+  lists them after a run (exit 1 if anything was SAVED). Thor re-run: `carousel_wide false->true held`, only the two
+  intended test_pref writes SAVED; snapshot after restart equal to the base — no drift.
+
+**B. Overlay titles (rule 11):** the panel's game title (was 1 line + "…") and each achievement row's title / description
+(2 / 3 lines + "…") now show whole — the list scrolls. The compact summary over the game is 280 dp wide (260), title and
+"next" lines 3 lines (2); its description keeps a limit (HUD) with the whole text one tap away in the panel (marked qa-ok).
+Unit-tested; NOT TESTED on a device (needs a running game).
+
+**C. Layout-aware windows phase 2:** Channel grid windows are light now — white to pale-blue frame, soft blue rim, and the
+window's content in light colours (`WindowColors`: Voltcap colours + a light Material scheme for that window only; the
+Lobby theme's proportions; text 7:1+, muted 4.5:1+). Faint white tints that vanished on light panels (dividers, field edges,
+slider track, achievement rows) use `inkTint()` — identical on dark themes. Thor: Settings Home + Game look in Channel grid
+(readable, selected states blue), Cross menu unchanged. Save Vault not extended (its own window code; left for later).
+
+**D. Charging light:** charging but not animating (animations off, resting, behind a panel) now shows the level bars with
+the light held still instead of the full-battery charging icon — level stays readable. Size fixed; unplugging returns to the
+plain bars; no loop runs when not moving.
+
+D137 / D289–D291 untouched. Tests: testDebugUnitTest + assembleRelease green (Batch495Test new).
+Copy: `src_copy\data\Features.kt`, `ui\TestHooks.kt`, `ui\QaTrace.kt`, `ui\RaOverlayView.kt`, `ui\WindowLook.kt`,
+`ui\SettingsDialog.kt`, `ui\DialogChrome.kt`, `ui\SettingsSlider.kt`, `ui\AchievementListDialog.kt`, `ui\HomeChrome.kt`.
+
 # Update 494 (8 Nov 2026) — checkpoint 18: D137 carousel box per-frame recomposition removed, D292 sync wording, charging battery, pinned comments scroll, Layout-aware windows phase 1
 
 Staging = 493 + the changes below (QA build 0.6.68-qa, versionCode 74). Nothing published, no game launched (launch guard

@@ -3584,9 +3584,9 @@
    "title": "QA snapshot drift after hooks: Thor carousel_wide false->true, KONKR model_finish REAL->OFF",
    "rule": "SETTINGS",
    "severity": "medium",
-   "status": "suspect",
+   "status": "fixed (staging 495, Thor-verified: held, no drift)",
    "found": "2026-11-08 update 494 (r1qa491 now vs base)",
-   "note": "Restored by snapshot back (verified). Likely layout-scoped values applied during a layout preview combined with voltcap_test_pref writes; QA-only path, not traced."
+   "note": "Restored by snapshot back (verified). Likely layout-scoped values applied during a layout preview combined with voltcap_test_pref writes; QA-only path, not traced. | Update 495: cause = layoutStandardLook() writes Features switches when a previewed layout changes (Layout standard on); preview kept appearance unsaved but not those. Fix: Features.holdWrites during QA previews + setting-change log (setguard495.sh)."
   }
  ]
 }
