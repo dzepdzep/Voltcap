@@ -1,3 +1,54 @@
+# Update 503 (8 Nov 2026) — checkpoint 27: badges show as one panel (and ahead of the move), logo titles no longer blank on every visit, Case Stacks spines lit like the Game shelf; late-art QA fixture
+
+All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa503-qa; manifest read before each install: QA id, no HOME).
+Owner's v0.6.67 untouched (Thor pid 15178, GT78 pid 26828 unchanged). AYN service: **0 calls** from the QA app (Thor + GT78). No game
+launched, no save / Drive / setting / artwork of the owner touched; scratch files removed from both devices' Download. KONKR not connected.
+Staging patch sha256 **2a97688421f6ed20d84bc5b672f0c09a3380f562e1132cde988cfe8d01414a04** (168 files, applies on 589fdd4), in
+staging_local only (0.6.68/staging.patch + backups/staging_503_2a976884.patch); 498–502 backups kept.
+
+**QA fixture (QA app only):** `--es voltcap_test_artfix "delay=800"` gives the fixture library generated covers (every third none), logos
+(one missing file), synthetic achievement sets whose badges are local files (asked by their normal RetroAchievements address, answered from
+<QA files>/qa_art — no network), and holds every such picture back N ms when not in memory (badges staggered 90 ms apart, like single
+storage reads). tools/qa/device/art503.sh + Claude outputs/qa503/qa_art. `--es voltcap_test_badgewarm off` = the strips as before (A/B).
+
+**Fixes (staging)**
+1. **Achievement badges pop in one by one (owner report) — confirmed and fixed.** Cause: each badge of a strip is its own AsyncImage; each
+   read + decode lands on its own frame, so a strip filled square by square on every move (Thor, Blades, 30 fps count of drawn badges:
+   before 8 → 6 for 730 ms → 7 → 8; after: 8 in every frame, no intermediate state). BadgeWarm.kt: (a) the focused game's and 2 neighbours'
+   badges are read from the **disk cache only** (network disabled — no new requests) into memory 120 ms after the selection settles,
+   at their own 64 px size (unsampled, so one copy serves every strip size); ≤ 12 per game, the last batch cancelled on every move;
+   (b) a strip whose badges aren't all in memory stays invisible in its own space (≤ 450 ms) and shows as one panel with a short fade that the
+   motion level scales (Off / reduced motion: at once). Keyed by the game's own list — never another game's badges. Strips: Home
+   achievements part, Blades, Bubbles, Magazine, Hero, Spotlight. Perf (Blades, 12 moves): off 10.78 % janky p90 20 / p95 28 ms, on 10.75 % p90 22 / p95 30 ms (noise; Blades' own scene).
+2. **Title blank on every visit (Arctic and every layout using LogoOrName; Voltcap row / banner LogoAndName; the Home logo part).** Cause
+   (reproduced with the fixture, Thor, Arctic): a game whose logo can't be read — or is square, so its name is shown — left the title slot
+   empty for the whole read and only then showed the name, on EVERY visit (second visit blank 733 ms). What a logo turned out to be (failed /
+   shape) is now remembered for the session (LogoAspects.noteFailed / isFailed + shape), so later visits show the name in the first frame
+   (after: 0 blank frames on the second visit). LogoAndName / GameLogo: the name no longer starts a logo-slot to the right and jumps left.
+   Home logo part: a logo that fails shows the name instead of an empty part for good. Checked, no change needed: Voltcap row showcase header
+   (title box constant within a game while the 800 ms cover arrives, 20 fps recording).
+3. **Case Stacks spines lit like the Game shelf (physical realism).** The stack spines reuse the shelf's Spine depth draw (SpineDepth.kt:
+   bevelled edges, the case's rounded back, a per-game tone) — drawn once in each spine's own layer, follows Settings › Spine depth (Off = as
+   before; default Subtle). Thor before/after in qa503_before_after.jpg; perf 12 moves: depth Off 9.89 % janky p50 10 / p95 36 ms, Subtle 8.30 %
+   p50 10 / p95 36 ms (no cost). No top face added: the stacks are seen at eye level, a top would be invisible. Owner look decision (R25: a
+   new look by default needs the owner's side-by-side approval).
+
+**Checked on hardware:** layout-aware windows with a customised Arctic accent (magenta, QA app prefs): Settings takes the custom accent on
+Arctic's slate, not a default accent. Focus after closing Settings (Arctic): same game, pixel-identical. GT78 960×640 Blades / Voltcap row:
+no new clipping (long names slide).
+
+**Findings left (not changed):** Case Stacks / Shelf template spines cut long names ("…Link To The"), Hero wheel side labels end in "…" —
+both pre-existing fixed-size text; Inspect pinch (owner fingers); real Pokémon Brown / RP Classic / KONKR.
+
+**What still blocks a v0.6.68 feature freeze / final release QA:** (1) owner side-by-side approval of the new default looks (502 shelf
+case tops, 503 stacks spine depth, 497–499 window families / Save Vault colours); (2) owner finger test of Inspect pinch / pan; (3) checks
+only the owner can do: own artwork and real Pokémon Brown / light cartridge, RP Classic, KONKR; (4) D295: the owner switches the Thor's three
+Drive settings back on, then one supervised sync / backup regression on the real install; (5) the staging patch merged into main (owner's go)
+and the full PRE_RELEASE_CHECKLIST on the merged build — static checks, popclip R26 for every changed window, catswitch R24, RealScans464Test,
+release build; (6) rule-11 leftovers: template spine names and Hero wheel side labels that still cut long names.
+
+Tests: testDebugUnitTest (Batch503Test) pass; assembleDebug (QA) + assembleRelease on the staging tree pass. Main gets docs + QA scripts only.
+
 # Update 502 (8 Nov 2026) — checkpoint 26: physical cases get a top face on the Game shelf, achievement tabs no longer hidden at ×1.6, Pokémon Brown–path pak and memory cards checked through a production-renderer fixture
 
 All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa502-qa; manifest read before install: QA id, no HOME).

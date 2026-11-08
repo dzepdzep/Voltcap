@@ -104,3 +104,7 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch501Test.kt
 # Update 502: QA memory-card sheet (staging only).
 /app/src/main/java/com/shelf/launcher/ui/QaCardSheet.kt
+# Update 503: staging-only badge panel / late-art fixture / tests.
+/app/src/main/java/com/shelf/launcher/ui/BadgeWarm.kt
+/app/src/main/java/com/shelf/launcher/ui/QaArtFixture.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch503Test.kt
