@@ -1,3 +1,71 @@
+# Update 504 (8 Nov 2026) — checkpoint 28: Inspect pauses while you handle a piece and settles back 3 s after you let go; Disc Station and Circuit popups in their layout's colours; popup coverage matrix; master backlog
+
+All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa504-qa; manifest read before each install: QA id, no HOME).
+Owner's v0.6.67 untouched (Thor pid 15178 unchanged, versionName 0.6.67). AYN service: **0 calls** from the QA app (Thor, last log window).
+No game launched (no LAUNCH line; the "launch sync skipped (QA session)" line is the app-start Drive sync being skipped), no save / Drive /
+setting / artwork of the owner touched; the Thor's Drive switches were not looked at or changed. GT78 not used this update. Scratch files
+removed from the Thor's Download. Staging patch sha256 **6c0125ffb73bee8b3140864561498dd1ca3f760772fd662f5ee6896a39058ad3** (169 files,
+applies on 589fdd4), in staging_local only (0.6.68/staging.patch + backups/staging_504_6c0125ff.patch, read back and checked); 498–503
+backups kept. PC tree back to the RC code (242 files byte-checked against 589fdd4), qa_variant.properties debugIsQa=false.
+
+**Implemented (staging)**
+1. **Inspect: automatic motion pauses while handled, settles back, resumes (owner request).** Same InspectMotion system, no new engine.
+   Any finger down (Initial pass, before the gestures) stops the showcase turn, the fling, the settle-back, the sway and the slow turn of
+   what came out of a case (`touchDown`, `idlePaused`). The wait only starts when the LAST finger lifts (`touchUp` → `release`, which
+   returns at once while `fingers > 0`); a fling counts as part of the interaction (the wait starts when it stops). After the hold (default
+   now **3 s**, Features.inspectHold S2 → S3) zoom, pan, tilt and turn ease back together in **360 ms** FastOutSlowIn (`INSPECT_IDLE_RETURN_MS`);
+   the stick keeps the "Turning back" speed. "Turned pieces turn back by themselves" off: the pose stays, zoom / pan still come back. Then
+   the sway fades back in and the content's slow turn continues from where it stopped (a pausable frame clock `contentPhase` instead of an
+   infinite transition — no restart, no jump; nothing ticks while Inspect is closed). A new touch cancels a running settle-back at once.
+   Taps and long press right after a pinch (450 ms) are ignored, so a pinch never opens / shuts the case or resets.
+   **Device finding + fix:** opening a case or taking the piece out by tap cancelled the settle-back and left the idle motion paused until
+   the next drag (Thor, N64 cartridge out: 0.00 motion for 6 s). Every case step (toggle, openLid, takeOut, putBack) now ends in
+   `caseStepDone()` (resumes unless a finger is down); closeCase already ended in startSway.
+2. **Disc Station popup** (WinScenesMore DiscPlayerPanel): was a silver deck with a fixed teal display; now the home's smoked-glass deck
+   with the theme accent made legible on its dark display (legibleArtAccent).
+3. **Circuit popup** (WinScenesHomes2 ChipSheet): was always a green board; now follows the layout's Board colours (Green / Dark / Theme)
+   via circuitSheetColorsFor (silk dark or light by the board's luminance, traces = legible accent).
+4. QA-only trace lines `inspect pause / settle / resume (case step)` (logged only with the hooks file).
+
+**Device evidence (Thor, Voltcap QA, Blades layout, one finger via `input swipe`)**
+- PS1 case: log `pause fingers=1` → fling → `settle hold=3000 dur=360 touch=true` → `resume` 374 ms later. Recording (20 fps, frame
+  differences): idle sway 0.7–1.5 → drag/fling → **0.0 for the whole hold** → ease to the front (~0.4 s) → sway back in with small first
+  steps (0.4–0.6, no jump). Strip: q504_inspect_case_strip.png.
+- PS1 case opened + disc out: same log sequence; still through the hold; settled. The fixture disc is a plain label, so the disc's own spin
+  can't be seen in pixels — **CD spin pause = code + unit test only.**
+- N64 box (closed and open) and cartridge out: same log sequence and still-hold; after the case-step fix, with no touch at all after taking
+  the cartridge out, its idle motion runs in regular ~3 s cycles (before the fix: flat 0.00).
+- **Not verified: two-finger pinch / pan pausing and settling.** `input` injects one pointer and the Thor's touchscreen ignores sendevent,
+  so a single-finger test proves nothing about multitouch — owner finger test (tools/qa/device/insp500.sh records the log).
+- Disc Station + Circuit popups on the Thor: q504_disc_circuit_popups.png (Theme board).
+- Not tested this update: GT78, reduced-motion Inspect on device, controller-only Inspect resume (stick path unchanged except the shared
+  release), dual-screen popups.
+
+**Popup coverage matrix (code audit, 53 layouts)**
+- 51 / 53 have their own game-window scene; TV opens on its own TV screen and Custom uses the standard window (both by design).
+- Shared families with per-layout variants: INDEX_CARD (Game shelf / Case Stacks / Consoles / Cover details), POCKET_LCD (Pocket / Pocket
+  Quest ribbon / Pocket classic), TWIN_HINGE (Twin desk / icons / showcase), HERO_BANNER (Hero / Hero tiles), TILE_CARD (Tiles / Grid).
+- Every scene has an entrance animation except FileCardBack and CaseFlowMedia (open: batch 505).
+- Priority layouts: Wii Channel (WII_PREVIEW, done 425/497), Cross Menu (CROSS_OPTIONS — fixed palette, review 505), Arctic (ARCTIC_DRAWER,
+  family colours), Cinema (CINEMA_PREMIERE, family colours), Disc Station (fixed 504), Twin Desk (TWIN_HINGE), Case Stacks / Game shelf
+  (INDEX_CARD variants), Pocket Quest (POCKET_LCD), Blades (BLADE_GUIDE), Bubbles (BUBBLE_CARD — fixed palette, review 505), Magazine
+  (MAG_PAGE), Rental Shop (SHOP_TAG — fixed palette, review 505), Terminal (TERM_RUN).
+- Remaining fixed-palette scenes to compare with their home (batch 505): RentalTag, BubbleCard, SpotPoster, LibraryPage, GalleryPlacard,
+  RecordSleeve, PocketClassicMenu, CrossOptions. Own / Banner / Classic / Row popup styles are never overridden; game popup styles and
+  Layout-Aware Application Windows stay separate.
+
+**Master backlog:** docs/MASTER_BACKLOG.md (new; one line per request, statuses DONE-V / DONE-O / OPEN / DEFER / SUPER).
+
+**Checks:** testDebugUnitTest pass (917 + Batch504Test; Batch498Test's long-press assertion updated for the pinch guard),
+assembleDebug (QA) + assembleRelease pass, staging patch apply-check on 589fdd4, PC patch sha read back.
+
+**Files (staging patch only — not on main):** ui/MediaInspectView.kt, data/Features.kt, ui/WinScenesMore.kt, ui/WinScenesHomes2.kt,
+app/build.gradle.kts (0.6.68-qa504), test Batch504Test.kt (new, gitignored), Batch498Test.kt.
+**On main:** SUMMARY.md, COWORK_HANDOFF.md, CURRENT_TASK.md, docs/MASTER_BACKLOG.md, .gitignore (Batch504Test).
+
+**Proposed, not implemented:** batch 505 palette review of the 8 scenes above + entrance motion for FileCardBack / CaseFlowMedia;
+a fixture disc with a printed label so the CD spin pause can be seen on video.
+
 # Update 503 (8 Nov 2026) — checkpoint 27: badges show as one panel (and ahead of the move), logo titles no longer blank on every visit, Case Stacks spines lit like the Game shelf; late-art QA fixture
 
 All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa503-qa; manifest read before each install: QA id, no HOME).
