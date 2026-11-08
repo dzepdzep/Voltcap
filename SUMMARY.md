@@ -1,3 +1,55 @@
+# Update 497 (8 Nov 2026) — checkpoint 21: D295 remaining Drive paths gated, layout-aware windows in the layout's real colours + 4 reusable families, D294 ×1.6 overlay fit
+
+Staging = 496 + the changes below. Code-only checkpoint: **no device was touched** (no install, no restart, no game, no sync,
+no setting written), because restoring v0.6.67 afterwards would run its ordinary Drive sync (see D295 below). Compiled and
+unit-tested on the PC (`testDebugUnitTest` BUILD SUCCESSFUL, every JVM unit test incl. the new Batch497Test), `static_checks.py --strict` PASS, QA
+self-test OK. New patch `next/0.6.68/staging.patch` sha256 25f8d59c…7318 (137 files), applies cleanly on 589fdd4.
+PC tree restored to the RC afterwards (src_copy byte-exact from backups, then sync_sources); staging-only files keep 497.
+
+**Batch A**
+- **D295 (QA no-sync), traced every Drive caller.** Already gated (496): launch sync, periodic `CloudSyncWorker`, full /
+  scoped / after-game sync, watcher. **Found ungated:** `AutoBackupWorker` (uploads the whole backup to Drive and rewrites
+  `auto_backup_at` — this is the KONKR `auto_backup_at moved` seen in update 490), `LastPlayedSync` (Drive read + write of the
+  last-played file), `DriveOnlySaves` (Save Vault listing / byte downloads of Drive-only saves). All three now stop while the QA
+  hooks file exists (`CloudSync.qaPaused`); outside a QA session nothing changes. Owner's sync settings, accounts, Android
+  network settings untouched. Remaining Drive calls are owner button presses only (Backup export / import, SettingsTransfer).
+  Batch497Test fails if a new file starts talking to Drive without being gated or listed.
+  **BLOCKER (needs owner approval):** published v0.6.67 has none of these gates; reinstalling it after a staging QA build
+  restarts it (UpdatedReceiver as home app) and its launch / periodic sync and weekly auto-backup run as normal. There is no
+  verified way to prevent that without changing the owner's sync preference or Android settings, so no device QA was done.
+  Options for the owner: (a) allow a sync check on restore (it found nothing to move in 496), (b) keep a QA build on the
+  QA device between sessions, (c) temporarily switch Drive sync / auto-backup off yourself before QA.
+- **1A Channel grid windows use the layout's real colours.** The fixed blue (2F7BC0) and fixed white/blue panels are gone:
+  `channelWindowTokens` takes the Channel grid's own palette (Original Pale, Light Blue / Yellow, OLED Black, Custom light or
+  dark, Channel colours off → the theme's panels) and the accent the theme engine already resolved (layout colours › Custom ›
+  game / album art › theme — ShelfLauncherTheme's order, nothing re-decided). Writing ≥ 7:1, muted ≥ 4.5:1, accent ≥ 3:1 with
+  ≥ 4.5:1 text on it, outline ≥ 3:1 — lightness-only nudges, unit-tested over 7 palettes × 6 accents (blue, purple, yellow,
+  grey, red, cyan). Keyed on Material's settled scheme (D137: no recomposition per glide frame); an open window updates when
+  the accent / palette changes. Save Vault rim follows the same tokens. Nested windows read the outer scheme (`LocalOuterScheme`).
+- **D294 ×1.6 achievement overlay.** Cause: at large text the pinned row's NAME + DESCRIPTION (not only its comments) plus the
+  wrapped header pushed the tabs and list below the screen — only the comments box could give way. Now the whole pinned
+  section scrolls in one box (`pinnedFrame`, no scroll inside a scroll) and the panel shares the height by `overlayPanelFit`:
+  list gives way first (to 96 dp), then the pinned section (to 72 dp), then the list to a 56 dp floor — header, ✕ and tabs stay
+  on screen. ×1.0 unchanged. Unit-tested (sweep of fixed heights). In-game check still pending owner approval.
+
+**Batch B**
+- **1D reusable families (still opt-in, off by default for everyone).** Colour families: CHANNEL, ARCTIC (Arctic hub's slate
+  0D141D / 1B2633), CINEMA (17171B / 222226; Cinema red when its accent option says so). Frame families (theme content kept,
+  layout corner + settled-accent rim): CROSS, DESK (Twin desk / icons / showcase), SHELF (Case stacks, Case flow, Game shelf,
+  Disc station, Record crate, Cardboard box, Storage boxes, Coverflow details, Rental shop). Game popup styles (Own / Banner /
+  Classic / Row) never read the window look (test).
+- **1C** Achievement detail / comments window is layout-aware like the list; its white tints use `winTint`.
+- **2C** achievement loading: progress is one library-wide cached map (`raProgress`, restored at start) — no per-scroll fetch
+  found; the progressive look is most likely badge image decode. Needs a device repro (pending, nothing changed).
+
+**Not done / pending:** all device / screenshot QA (D295 blocker); owner visual approval of Channel windows in custom colours
+and of the new families; Save Vault content styling beyond the rim (kept as is to protect the save cards); Batch C (3D media,
+shelves, popup transitions) and Batch D (status bar, R1) — need device verification / R25 references, not started.
+
+Files (staging only, in the patch): data/AutoBackupWorker.kt, data/LastPlayedSync.kt, data/DriveOnlySaves.kt,
+ui/WindowLook.kt, ui/SaveExplorer.kt, ui/RaOverlayView.kt, ui/AchievementDetailDialog.kt; tests Batch494/495/496 (updated),
+Batch497Test (new).
+
 # Update 496 (8 Nov 2026) — checkpoint 20: Layout-aware windows phase 3 (Material tones, Save Vault frame), D293 layout-look gate, overlay fixture + panel fit, charging-light check, no Drive sync in QA sessions
 
 Staging = 495 + the changes below (QA build 0.6.68-qa). Nothing published or pushed to staging, no game launched, no save
