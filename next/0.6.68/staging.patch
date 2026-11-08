@@ -529,7 +529,7 @@ index 7c6eaf1..b734cc8 100644
   * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
   * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
-index b9286ca..d97a694 100644
+index b9286ca..9f32638 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/Carousel.kt
 @@ -415,7 +415,9 @@ internal object Carousel {
@@ -552,7 +552,15 @@ index b9286ca..d97a694 100644
      /** Update 135: Endless (R1) on — the games go round, so both sides are always filled (even on the first game). */
      loop: Boolean = false,
      /** The view model's D-pad step count and direction, for the endless place ([rememberLoopFocus]). */
-@@ -953,7 +957,7 @@ internal fun GameCarousel(
+@@ -920,6 +924,7 @@ internal fun GameCarousel(
+     val kNow: () -> Float = remember { { val v = swap.k.value; if (swap.kPending) 0f else v } }
+     // Which games are near enough to draw changes only once per game passed (not every frame).
+     val posFloor by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(curPos()).toInt() } }
++    if (QaTrace.on) { QaTrace.count("CarTop"); QaProbe("CarPTop", 0); QaLocals("Car") }
+     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+     // Update 134: Turned row has the name above the games.
+     val nameAbove = view == CarouselView.TURNED
+@@ -953,7 +958,7 @@ internal fun GameCarousel(
          // Update 182: few games, spread out (the packed views most, their boxes are slim).
          val packed = view == CarouselView.BOX_FLOW || view == CarouselView.SPINE_WALL
          val spreadNow = if (!Features.carouselSpread.state.value) 1f else if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
@@ -561,7 +569,23 @@ index b9286ca..d97a694 100644
          val bigH = bigW / 0.72f
          // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
          // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
-@@ -1442,6 +1446,9 @@ private fun CarouselItem(
+@@ -1152,6 +1157,7 @@ internal fun GameCarousel(
+         // allocated at once as the inspect view opened). Overlapping cases no longer show through each other while dimmed.
+         // (Wider and taller than the carousel, round the same middle: the games run on past its sides and their reflections
+         // under it, and a faded group is cut to its own bounds.)
++        if (QaTrace.on) { QaTrace.count("CarBwc"); QaProbe("CarPBwc", 0) }
+         Box(
+             Modifier.layout { m, cons ->
+                 val bw = if (cons.hasBoundedWidth) cons.maxWidth else cons.minWidth
+@@ -1196,6 +1202,7 @@ internal fun GameCarousel(
+                             else ({ i - curPos() })
+                         }
+                         val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
++                        if (QaTrace.on) { QaTrace.count("CarLoop"); QaProbe("CarPItem", 0) }
+                         vcTrace("VC:CarouselItem") { CarouselItem(
+                             ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
+                             relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
+@@ -1442,6 +1449,9 @@ private fun CarouselItem(
          val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
          QaTrace.count("CarRun")
          for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
@@ -571,6 +595,36 @@ index b9286ca..d97a694 100644
          for (k in now.indices) prev[k] = now[k]
      }
      val relNow = rememberUpdatedState(relOf)
+@@ -1951,3 +1961,29 @@ private fun CarouselArt(
+ internal object BackdropHold {
+     val gliding = androidx.compose.runtime.mutableStateOf(false)
+ }
++
++/** Update 493 (D137, QA only): a child with one unchanged stable input. It runs again only when its parent's re-run
++ *  cannot skip children at all (forced: e.g. a changed CompositionLocal above), so its count tells a forced subtree from
++ *  per-game causes. Counted as its [name] in the "recomp" line. */
++@Composable
++internal fun QaProbe(name: String, @Suppress("UNUSED_PARAMETER") n: Int) { QaTrace.count(name) }
++
++/** Update 493 (D137, QA only): which CompositionLocal values differ from this place's last run (a changed static local, or
++ *  one that is not equal to itself across runs, makes every composable under it re-run: no skipping). Counted as
++ *  LocChg; the first few changed entries are logged as `locchg <where> <entry>` events. */
++private val qaLocPrev = HashMap<String, Map<*, *>>()
++private var qaLocLogged = 0
++@Composable
++@androidx.compose.runtime.NonSkippableComposable
++internal fun QaLocals(where: String) {
++    val now = androidx.compose.runtime.currentComposer.currentCompositionLocalMap as? Map<*, *> ?: return
++    val prev = qaLocPrev.put(where, now) ?: return
++    if (prev === now) { QaTrace.count("LocSame_$where"); return }
++    var n = 0
++    for ((k, v) in now) if (prev[k] != v) {
++        n++
++        if (qaLocLogged < 40) { qaLocLogged++; QaTrace.event("locchg", "$where ${v.toString().take(90).replace(' ', '_')}") }
++    }
++    for (k in prev.keys) if (k !in now) n++
++    QaTrace.count(if (n > 0) "LocChg_$where" else "LocEq_$where")
++}
 diff --git a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt b/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
 index 00fd4af..a2dc26a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/CartShellPicker.kt
@@ -3840,18 +3894,27 @@ index c6fe26a..3b59ecf 100644
                  }
                  // (After a knock: the first press only knocks against the box's wall.)
 diff --git a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-index 4972c11..75c1518 100644
+index 4972c11..c6bacaf 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/StyleCaseStacks.kt
-@@ -124,6 +124,7 @@ private const val STACKS_CASE_YAW = 24f
+@@ -124,6 +124,8 @@ private const val STACKS_CASE_YAW = 24f
  
  @Composable
  internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
 +    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkRoot") } // (Update 492, D137: rebuilds per move)
++    if (QaTrace.on) { QaProbe("StkPRoot", 0); QaLocals("Root") } // (Update 493, D137 probe)
      val g0 = c.game
      // (Update 461, D137: no decoding ahead here — measured on the KONKR (A/B, same build, cold start, 2 x 3 runs each) it held
      // 25-35 MB more for no smoother scrolling and no fewer bare cases: Case stacks shows one 3D case, the stacks are spines.)
-@@ -211,7 +212,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
+@@ -167,6 +169,7 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
+ @Composable
+ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, modifier: Modifier) {
+     BoxWithConstraints(modifier.fillMaxSize()) {
++        if (QaTrace.on) { QaTrace.count("StkBwc"); QaProbe("StkPBwc", 0); QaLocals("Stk") } // (Update 493, D137 probe)
+         val compact = maxHeight < 380.dp
+         // Update 325 (Toni: "two different sizes show when editing Home"): a part hidden on the home screen still shows in
+         // Edit Home (faint, to bring it back) — but it took its room there too, so the games stood smaller and lower than on
+@@ -211,7 +214,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
                  onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                  physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                  loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
@@ -3862,7 +3925,7 @@ index 4972c11..75c1518 100644
              ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
              if (barRoom) Box(
                  Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
-@@ -288,6 +291,7 @@ private class StacksGeo(
+@@ -288,6 +293,7 @@ private class StacksGeo(
  /** The stage: the room's floor, the two stacks and the case in the middle; swipe to move along. */
  @Composable
  private fun StacksStage(c: StyleCtx, modifier: Modifier) {
@@ -3870,7 +3933,7 @@ index 4972c11..75c1518 100644
      val select by rememberUpdatedState(c.actions.select)
      val open by rememberUpdatedState(c.actions.open)
      val latestFocus by rememberUpdatedState(c.focus)
-@@ -374,7 +378,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -374,7 +380,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val spineW = caseH * STACKS_SPINE
          val gapSide = (caseW * 0.12f).coerceIn(12.dp, 40.dp)
          val x0 = caseW / 2 + gapSide + spineW * STACKS_SPINE_K / 2
@@ -3880,7 +3943,7 @@ index 4972c11..75c1518 100644
          val avail = (w / 2 - x0 - 4.dp).coerceAtLeast(0.dp)
          val depthK = if (depth) STACKS_DEPTH_K else 0f
          // How many spines fit in each stack before the screen's edge.
-@@ -382,7 +387,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+@@ -382,7 +389,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
          val nSide = if (depthK > 0f) {
              ((exp(depthK * (avail / pitch)) - 1f) / depthK).coerceIn(0f, 1000f).toInt() + 2
          } else (avail / pitch).coerceIn(0f, 1000f).toInt() + 2
@@ -3890,7 +3953,7 @@ index 4972c11..75c1518 100644
              with(density) {
                  StacksGeo(
                      caseW, caseH, spineW, caseW.toPx(), caseH.toPx(), spineW.toPx(),
-@@ -468,6 +474,7 @@ private fun StacksItem(
+@@ -468,6 +476,7 @@ private fun StacksItem(
      // [centre] whether it is the place you're on.
      game: Int = i, centre: Boolean = i == c.focus
  ) {
@@ -3898,7 +3961,7 @@ index 4972c11..75c1518 100644
      val g = c.games[game]
      val onTap by rememberUpdatedState(tap)
      Box(
-@@ -556,6 +563,7 @@ private fun StacksItem(
+@@ -556,6 +565,7 @@ private fun StacksItem(
   */
  @Composable
  internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifier) {
@@ -3906,7 +3969,7 @@ index 4972c11..75c1518 100644
      val k = g.stableKey
      val on = k == c.game?.stableKey
      val accent = ShelfTheme.accent
-@@ -576,7 +584,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -576,7 +586,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
              StacksProgress(c, g, on)
          }
      } else if (caseLook && !spines && caseMarker(g.platform) != null) {
@@ -3918,7 +3981,7 @@ index 4972c11..75c1518 100644
          Box(modifier.gameOrigin(k, on).rolloutItem()) {
              MediaFocus(on) {
                  CaseArt(
-@@ -584,7 +595,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
+@@ -584,7 +597,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                      g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                      caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
                      // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
@@ -3927,7 +3990,7 @@ index 4972c11..75c1518 100644
                  )
              }
              // (Update 202: the case's printed band shows the console already.)
-@@ -722,3 +733,7 @@ internal fun CaseStacksSettings() {
+@@ -722,3 +735,7 @@ internal fun CaseStacksSettings() {
          PickedFacingChoice(note = false)
      }
  }
@@ -6107,7 +6170,7 @@ index 049f87d..b7d1ece 100644
 +internal fun statusTone(surface: Color, light: Color, dark: Color): Color =
 +    if (surface.luminance() > 0.45f) light else dark
 diff --git a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
-index 4648169..cd3a422 100644
+index 4648169..cdbc15a 100644
 --- a/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
 +++ b/app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt
 @@ -101,19 +101,38 @@ fun ShelfLauncherTheme(
@@ -6176,7 +6239,7 @@ index 4648169..cd3a422 100644
  
      val colors = base.copy(
          background = backgroundA,
-@@ -147,12 +177,13 @@ fun ShelfLauncherTheme(
+@@ -147,13 +177,14 @@ fun ShelfLauncherTheme(
      // draw light with dark writing instead of the dark defaults. (A light custom background keeps the dark scheme:
      // its writing stays the theme's light text.)
      // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
@@ -6188,12 +6251,45 @@ index 4648169..cd3a422 100644
      // colours followed the game. Voltcap's own colours (LocalShelfColors) still glide; Material's controls switch.)
 -    val targetText = base.textPrimary
 -    val targetMuted = base.textMuted
+-    val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
 +    val targetText = guardedText
 +    val targetMuted = guardedMuted
-     val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
++    val schemeNow = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
          if (lightTheme) androidx.compose.material3.lightColorScheme(
              background = background,
-@@ -272,3 +303,60 @@ internal fun Color.tuned(saturation: Float, brightness: Float): Color {
+             surface = surface,
+@@ -181,6 +212,20 @@ fun ShelfLauncherTheme(
+         )
+     }
+ 
++    // Update 493 (D137, measured on the KONKR): Material's colour scheme is a *static* CompositionLocal, and a ColorScheme
++    // is a new object whenever a colour in it changes — so with the colours following the game's art, every game moved to
++    // made everything under the theme re-run without skipping: each 3D case in Case stacks ~once per move (33 a move, the
++    // carousel's ~31 visible games). Voltcap's own colours (ShelfTheme, gliding as before) carry the art's accent; Material's
++    // scheme only gives defaults to its own controls (switches, sliders, fields — given ShelfTheme colours where they show
++    // the accent), none of them on the home screen. So while the colours follow the art, the scheme is handed on once they
++    // have been still SCHEME_SETTLE_MS; any other change (theme, music, custom colours) is handed on at once, as before.
++    val followArt = useGame && artDriven
++    var heldScheme by remember { mutableStateOf(schemeNow) }
++    LaunchedEffect(schemeNow, followArt) {
++        if (followArt) delay(SCHEME_SETTLE_MS)
++        heldScheme = schemeNow
++    }
++    val scheme = if (followArt) heldScheme else schemeNow
+     val density = LocalDensity.current
+     // "32-bit everywhere": the pixel font's glyphs are wide, so all text is a step smaller (names used to be cut
+     // off or wrap onto two lines).
+@@ -223,6 +268,9 @@ fun ShelfLauncherTheme(
+  */
+ private const val ART_SETTLE_MS = 300L
+ 
++/** Update 493 (D137): how long the art's colours stay still before Material's colour scheme takes them (see ShelfLauncherTheme). */
++internal const val SCHEME_SETTLE_MS = 900L
++
+ /**
+  * A lively accent from a cover image: its average colour, pushed to a bright,
+  * saturated tone so it reads well as an accent on dark backgrounds. Null
+@@ -272,3 +320,60 @@ internal fun Color.tuned(saturation: Float, brightness: Float): Color {
      hsv[2] = (hsv[2] * brightness).coerceIn(0f, 1f)
      return Color(android.graphics.Color.HSVToColor((alpha * 255).toInt(), hsv))
  }
@@ -7364,6 +7460,45 @@ index 0000000..4272a0e
 +        // The list's detail view uses the same sizes.
 +        val d = src("ui/AchievementDetailDialog.kt")
 +        assertTrue(d.contains("fontSize = 11.sp, fontWeight = FontWeight.SemiBold") && d.contains("fontSize = 12.sp, lineHeight = 16.sp"))
++    }
++}
+diff --git a/app/src/test/java/com/shelf/launcher/ui/Batch493Test.kt b/app/src/test/java/com/shelf/launcher/ui/Batch493Test.kt
+new file mode 100644
+index 0000000..1ba4385
+--- /dev/null
++++ b/app/src/test/java/com/shelf/launcher/ui/Batch493Test.kt
+@@ -0,0 +1,33 @@
++package com.shelf.launcher.ui
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++import java.io.File
++
++/** Update 493 (staging only): D137 — Material's colour scheme no longer changes with every game while colours follow the art. */
++class Batch493Test {
++    private fun src(rel: String): String = listOf(
++        File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel")
++    ).first { it.exists() }.readText()
++
++    @Test fun schemeIsHandedOnOnceTheArtColoursSettle() {
++        val t = src("ui/theme/Theme.kt")
++        assertEquals(900L, com.shelf.launcher.ui.theme.SCHEME_SETTLE_MS)
++        assertTrue(t.contains("val followArt = useGame && artDriven"))
++        assertTrue(t.contains("if (followArt) delay(SCHEME_SETTLE_MS)"))
++        assertTrue(t.contains("val scheme = if (followArt) heldScheme else schemeNow"))
++        // MaterialTheme gets the held scheme; Voltcap's own colours still glide at once.
++        assertTrue(t.contains("MaterialTheme(colorScheme = scheme, typography = typography, content = content)"))
++        assertTrue(t.contains("LocalShelfColors provides colors"))
++    }
++
++    /** The accent-coloured Material controls take ShelfTheme's accent, not the scheme's, so the held scheme doesn't show. */
++    @Test fun accentControlsUseShelfColours() {
++        val d = src("ui/DialogChrome.kt")
++        assertTrue(d.contains("checkedTrackColor = ShelfTheme.accent"))
++        assertTrue(d.contains("focusedBorderColor = ShelfTheme.accent"))
++        val sl = src("ui/SettingsSlider.kt")
++        assertTrue(sl.contains("thumbColor = ShelfTheme.accent") && sl.contains("activeTrackColor = ShelfTheme.accent"))
 +    }
 +}
 diff --git a/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt b/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt

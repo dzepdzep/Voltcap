@@ -1,3 +1,58 @@
+# Update 493 (8 Nov 2026) — checkpoint 17: D137 cause found + fixed (Material colour scheme), final 3D visual QA on staging, pinned comments
+
+Staging = 492 + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched (QA launch block
+on: hooks file present only during QA, launches blocked by default), no save, sync, history or library touched by QA. Both
+devices back on v0.6.67; snapshots byte-identical to the QA-build bases (appearance / categories / view = t490o 42c3db4f584e /
+ed4d75db4278 / 5c45e162ef71 and k490o 24eea8cb0c36 / ed4d75db4278 / e13fedd12342); RetroArch history unchanged (Thor
+161629e583b9, KONKR 03ba8fa1421f); hooks files removed. RP Classic, Pokémon Brown, the original light cartridge: NOT TESTED.
+
+**D137 — why every Case stacks case re-ran ~33× per move (KONKR, owner's carousel view, GBA):**
+- Probes (QA only): a child with one unchanged constant input next to each case (`CarPItem`), at the carousel's top
+  (`CarPTop`), its box (`CarPBwc`), Case stacks' root and box (`StkPRoot`, `StkPBwc`), plus a check of the CompositionLocal map
+  at three places (`QaLocals`). Result per move: every probe re-ran once (31 cases + the levels above) → the subtree was
+  *forced* (no skipping at all), not per-case inputs; the local map changed once per move at Case stacks' root.
+- The changed entry, logged: Material's `LocalColorScheme` (a static CompositionLocal) — a new `ColorScheme` with the next
+  game's art accent each move (colours follow the art). A static local's change re-runs everything under it.
+- Fix (ui/theme/Theme.kt, minimal): while the colours follow the art, Material's scheme is handed on once they have been
+  still `SCHEME_SETTLE_MS` = 900 ms; any other change (theme, music, custom colours) at once, as before. Voltcap's own colours
+  (ShelfTheme — backgrounds, accent, everything on the home screen) glide exactly as before. Material's scheme only gives
+  defaults to its own controls; the accent-coloured ones (switch, slider, text field, progress bars) already take ShelfTheme's
+  accent. Only visible difference: a dialog opened < 0.9 s after moving could show Material's defaults (e.g. the Steam import
+  spinner, text selection) in the previous game's tint until the scheme catches up.
+
+  | KONKR, same walk (3 × 20 moves, 0.4 s) | CarouselItem / move | probe (forced) / move | janky | p50 | p90 | p99 | PSS |
+  |---|---|---|---|---|---|---|---|
+  | before (probe build) | 33 | 31 | 33.5 % (40.8 / 26.6 / 34.0) | 28.6 ms | 57.2 ms | 90.9 ms | 604–673 MB |
+  | after (fix build) | 3.0–4.5 | 1.0–2.5 | 27.0 % (44.8 / 21.3 / 17.2) | 27.4 ms | 53.0 ms | 80.2 ms | 625–668 MB |
+  | warm runs 2–3 only | | | 30.3 → 19.3 % | 28.4 → 26.7 | 53.8 → 45.1 | 75 → 65 | |
+
+  Run 1 of each set is the first walk after installing (cold palettes / JIT) and noisy both times. Still open in D137: the
+  carousel's box content runs ~20–27× per move (a loop over ~30 places, no case composed) and the frames are still often over
+  budget on the KONKR — render cost, measured before (D137 notes 442–461).
+
+**3D visual QA (Thor, staging fix build; screens in `Claude outputs\qa493\q3d493\`):**
+- Inspect, Pokémon Silver real scan and the silver material at yaw 30 / 60 / 96 / 105 / 150 / 200 / 250 / 300 (pitch 0), and
+  30 / 96 / 150 / 250 at pitch +30 and −35: sides plastic with grip grooves, no black side, no dark band from behind, connector
+  end clean when edge-on, contacts drawn when the opening faces you. Observation (not changed): at 96° the rear cut-out's
+  contacts show as a 2–3 px gold strip — the opening is ~6° from edge-on there; the owner's video moment needs your eye.
+- Generated / custom shells: pack:gb, cc:GBC, cc:GBA at 35 / 96 / 150 / 250 — sides, back and connector consistent.
+- Home (Classic, cartridge look, GBC): poses 30 / 50 / 70 / 150 — clear carts' sides clear-tinted, black carts black (their
+  plastic), none black by mistake; wobble frames normal.
+- Save Vault: clear card (Silver) and opaque card (GoldenEye) at 30 / 60 / 80 / 90°: even sides with the card's outline,
+  edge-on a solid slab; sway normal.
+- Not tested: Pokémon Brown, the original light cartridge, RP Classic (not connected).
+
+**Pinned achievement comments:** no safe route to the overlay without a game (RaOverlayView exists only over a running game via
+PerfOverlayService) — NOT TESTED on a device; Batch492Test covers the sizes.
+
+**Noticed (logged, not changed):** D292 — Save Vault's line under a game says "Fetched from Drive" with the time of the last
+*successful check*: Voltcap's own sync check at app start (13:29 today, nothing moved — .srm unchanged since 7 Nov) kept the old
+direction word. Misleading wording only.
+
+Copy: `src_copy\ui\theme\Theme.kt` (fix); QA only: `src_copy\ui\Carousel.kt` (QaProbe / QaLocals), `src_copy\ui\StyleCaseStacks.kt`
+(probes); test `Batch493Test` (staging); tools `tools/qa/device/q3d493.sh`, `d137rc492.sh` (locchg lines). Checked: assembleRelease
++ testDebugUnitTest green.
+
 # Update 492 (7 Nov 2026) — checkpoint 16: physical-media 3D faces (seam order, connector slot, clear sides), D137 rebuilds measured, Game Spacing checks, pinned comments' size
 
 Staging = 491 + the changes below (QA builds 0.6.68-qa, versionCode 74). Nothing published, no game launched (launch guard

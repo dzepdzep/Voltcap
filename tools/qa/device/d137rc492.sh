@@ -23,7 +23,8 @@ while [ $r -le $R ]; do
   sleep 1.2; log -t VoltcapQA -p e "WALK end"; touch /data/local/tmp/fs_stop; sleep 1.5
   logcat -d -s VoltcapQA:E | grep " recomp " | sed -E 's/.* recomp [0-9]+ms //' | tr ' ' '\n' | awk -F= -v n=$N 'NF==2{s[$1]+=$2} END{for(k in s) printf "%s=%.1f ", k, s[k]/n; print ""}' > /data/local/tmp/rc.txt
   { echo "run $r per-move: $(cat /data/local/tmp/rc.txt)"
-    dumpsys meminfo $P | grep -E 'TOTAL PSS' | tr -s ' '; } >> $OUT
+    dumpsys meminfo $P | grep -E 'TOTAL PSS' | tr -s ' '
+    logcat -d -s VoltcapQA:E | grep ' locchg ' | sed -E 's/.* locchg //' | sort | uniq -c | sort -rn | head -12; } >> $OUT
   # back to the start, untimed
   i=0; while [ $i -lt $N ]; do input -d 0 keyevent KEYCODE_DPAD_LEFT; i=$((i+1)); done; sleep 2
   r=$((r+1))
