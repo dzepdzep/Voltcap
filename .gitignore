@@ -92,3 +92,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt
+/staging_local/
+/app/src/test/java/com/shelf/launcher/ui/Batch499Test.kt

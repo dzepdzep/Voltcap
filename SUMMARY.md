@@ -1,3 +1,52 @@
+# Update 499 (8 Nov 2026) — checkpoint 23: staging protection, Save Vault in the window family, stale in-between art, shelf contact shadow; Thor QA under D295 option C
+
+**Staging protection (owner request).** The v0.6.68 staging patch is no longer committed to main. It now lives in
+`staging_local/0.6.68/staging.patch` (+ `staging.sha256`) on the PC, gitignored, ROOT ONLY — deliberately not in project_copy,
+because sync_sources copies project_copy over the root (that is how update 497's patch was put back to 496). Every version is
+also kept as `staging_local/backups/staging_<update>_<sha8>.patch` and never overwritten (498 599ff1f9, 499 7b00581a).
+`next/0.6.68/staging.patch` on main is now a short stub pointing there; earlier versions stay in the Git history (not rewritten).
+Patch 499: sha256 7b00581a5386aafce9aa41a02857fcbdc2dca6256729f4c30d70a3c5923b9a52, 140 files, `git apply --check` OK on
+589fdd4; the PC copy and the backup were read back and match byte-for-byte.
+QA APKs carry `versionName 0.6.68-qa<update>` (this one 0.6.68-qa499, code 74) and are installed with install_apk and an
+explicit path — never install_build (newest-mtime pick). The genuine v0.6.67 rollback APK (sha256 1586accc…) is never
+rebuilt or overwritten; the stale staging APK that had been left under the 0.6.67 name is now a note file.
+D295 safeguards kept (CloudSync.qaPaused, QA launch block, setguard495).
+
+**Implemented (staging only)**
+- **Save Vault follows the window family beyond its frame.** With "windows follow layout" on and a coloured family
+  (Channel / Arctic / Cinema), the vault's panels, text, info bar and background glow use the family's colours
+  (`vaultFamilyColors`, `vaultFloor`, `LocalVaultFamily`) instead of the old fixed accent glow — Arctic is now slate, not brown.
+  Save cards and their art untouched; switch off = unchanged. Verified on the Thor (before/after image).
+- **Stale art during rapid selection.** A→B→C quickly could show B's art for a moment before C's. `HeldLayers` now drops any
+  middle layer that finishes loading after a newer selection exists (`heldOutdated`); the current and the outgoing layer are
+  untouched. Unit-tested; on the Thor no stale frame in the mid-move captures.
+- **Shelf contact shadow.** The board's top face gets a soft dark falloff under the media (`shelfContactAlpha`: 0.34, glass
+  0.16) — media now sit on the board instead of floating. Draw-only. Visible but subtle on the Thor: owner visual check.
+- **QA hook `voltcap_test_cloudhold show|off`** (only with the hooks file): notes the owner's original Drive switches once
+  (`voltcap_test_cloudhold.json`, never overwritten) and can only switch them OFF. It never switches anything on.
+
+**Device QA (Thor only; KONKR not used; RP Classic not connected).** Snapshot first (version, settings, data metadata).
+Drive switches noted (syncSaves on, syncLauncherData on, auto-backup weekly) and switched off before installing 0.6.68-qa499.
+No game launched, no save touched. Checked: Channel windows follow the effective (purple) accent; Arctic / Cinema / Stacks
+Settings + vault dry view; D294 overlay fixture at text 1.0 / 1.3 / 1.6 / 1.6 narrow — header, tabs, list and pinned section all
+on screen, pinned section scrolls (×1.6 now verified on hardware); Cover Details case swap (old case settles, new rises —
+already correct, no change). Evidence: Claude outputs\w499, w499b, w499c, w499d.
+Afterwards: genuine v0.6.67 reinstalled (versionName 0.6.67), qa_nolaunch removed, hooks file as before the session, snapshot
+restored (setguard: only intended writes). **The three Drive switches are left OFF** — switching them back on would schedule a
+Drive sync that cannot be controlled, so per the owner's rule that step is the owner's: Settings › Sync "Sync game saves" and
+"Sync favourites and playtime" on, Settings › Backup "Automatic backup to Google Drive" = Every week.
+
+**Tests / build:** testDebugUnitTest BUILD SUCCESSFUL on the staging tree (new Batch499Test; Batch495Test count 2 → 3 for the
+cloudhold write); assembleRelease of 0.6.68-qa499 OK. PC tree restored to the RC afterwards (src_copy from byte-exact backups,
+sync_sources; git shows only docs / QA script).
+
+**Not done / pending:** focus + scroll after dialogs, compact-screen clipping, badge preloading, title/logo jumps (no repro
+captured this session); case thickness / packing beyond the contact shadow; Inspect pinch on a real touch screen; owner look at
+the families and the shelf shadow.
+
+Files (staging): ui/SaveExplorer.kt, ui/Motion.kt, ui/ShelfHome.kt, ui/TestHooks.kt; tests Batch499Test (new), Batch495Test.
+Main: docs, .gitignore (+ /staging_local/, Batch499Test), next/0.6.68/staging.patch stub, tools/qa/device/win499.sh.
+
 # Update 498 (8 Nov 2026) — checkpoint 22: Batches C/D (safe parts): Inspect pinch zoom / pan / reset, window fixture sheet, supervised-QA procedure (D295 option C)
 
 Code / PC only — **no device touched** (owner: no install / restart / restore / sync until the device is prepared).
