@@ -1,3 +1,44 @@
+# Update 501 (8 Nov 2026) — checkpoint 25: three verified fixes in Voltcap QA (shelf case shadow, whole names on coverless cards, menu sheets on short screens) + device QA on the Thor and the ARBOR GT78
+
+All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa501-qa; application ID read from the APK's
+manifest before each install). Owner's v0.6.67 untouched on both devices (Thor pid 15178 and GT78 pid 26828 never
+restarted, same version / update time; GT78 home app still Voltcap's HomeAlias). AYN service: **0 calls** from the QA app,
+including a first launch after clearing the QA app's own data (Thor) and the whole session (Thor + GT78). No game
+launched, no save / Drive / setting / artwork of the owner touched. KONKR not connected this session (Thor + ARBOR GT78
+960×640, Android 12, used as the compact screen).
+
+**Fixes (staging)**
+1. **Game shelf — the pulled-out case sits above the board, not pasted on it.** A soft oval shadow on the board under the
+   case, growing with the pull (`pulledShadowAlpha`: 0 in its slot → 0.5 out, 0.28 on Glass). One extra oval only on the
+   pulled case's frames; spines, board, spacing, scans unchanged. Thor before/after: Claude outputs/qa501_before_after.jpg.
+   Thor Game shelf, 12 moves: 891 frames, 2.36 % janky, p50 12 ms, p90 15 ms, p95 19 ms (no pre-change number on this
+   build).
+2. **Voltcap row — coverless card names whole.** The name on a card without a cover had 2 lines at a fixed 10 sp (fitMin(10)
+   = 10, so no shrink) → "The Legend Of Zelda A Link T…". Now 3 lines (`NO_ART_NAME_LINES`); "…" stays only for a name that
+   can't fit 3 lines (whole when focused). Thor before/after in the same image.
+3. **Menu sheets (ShelfMenuDialog) on short screens.** Header + a 66 %-high list ran past a 640 px screen: "Download extra
+   art?" lost its bottom and "Not now" couldn't be reached. Sheet now ≤ 94 % of the screen, header padding 12 dp below
+   480 dp, and the list gives up the room (weight, scrolls with the D-pad). GT78: "Not now" reached and fully on screen —
+   Claude outputs/qa501_compact_menu.jpg. Same look where the sheet already fitted.
+
+**Checked, no change needed:** focus after closing the game window and the options sheet stays on the same game (Thor,
+Voltcap row); 8-press D-pad burst lands on the right game with matching title / art, no flicker; Case stacks with the
+fixture library; boxes held at 0 / 40 / 90 / 140 / 180 / −60° (GB, GBC, GBA, N64) on Thor (art packs) and GT78 (drawn):
+all faces present, no black strips, correct order; achievement overlay fixture ×1.0 / 1.3 / 1.6 / 1.6 narrow on the GT78:
+close button, tabs, ▲▼ and the pinned section reachable (third tab partly behind ▲▼ at ×1.6 — in its sideways-scrolling
+row, by design).
+
+**Not covered:** cartridges / memory cards themselves (the fixtures inspect as boxes; the QA app has no saves for Save Vault
+cards), Pokémon Brown / light cartridge / RP Classic (not available), Inspect pinch (needs fingers: insp500.sh), Cover
+Details (verified in 499, untouched), case thickness / packing beyond the shadow.
+
+**Tests / builds (staging tree):** testDebugUnitTest BUILD SUCCESSFUL (Batch501Test new), assembleRelease BUILD SUCCESSFUL
+(0.6.68-qa501, not installed), assembleDebug = Voltcap QA. PC tree back to the RC, qa_variant.properties debugIsQa=false.
+**Staging:** staging_local/0.6.68/staging.patch sha256 3ed1752c96bad2112e41a5f9d5f675873b8892b48902c681ac2266d3b13f4574,
+160 files, applies on 589fdd4, read back = equal; backup staging_501_3ed1752c.patch; 498 / 499 / 500 backups untouched.
+Files (staging): ui/ShelfHome.kt, ui/GameCard.kt, ui/DialogChrome.kt; test Batch501Test. Main: docs, .gitignore,
+tools/qa/device/{shots501,nav501,ovl501,cart501}.sh.
+
 # Update 500 (8 Nov 2026) — checkpoint 24: isolated QA app "Voltcap QA" (D295 permanent fix), fixture library, vendor-service lock-out
 
 **D295 solved without touching the owner's settings: a second, isolated app.** Staging adds build type `qa`
