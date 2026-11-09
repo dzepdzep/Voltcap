@@ -98,14 +98,18 @@ internal fun WholeChipRow(
         val padS = startPadding.roundToPx()
         val padE = endPadding.roundToPx()
         val gap = spacing.roundToPx()
-        val childCs = Constraints(0, (avail - padS - padE).coerceAtLeast(0), 0, cs.maxHeight)
+        // (Update 481, A5: a chip never wider than the room left beside both "‹ +N" / "+N ›" hints — a very long category
+        // name kept whole ran past the row's right edge, under the hint (Live tiles' header, the Cube's pills). The chip's
+        // own FullText then shrinks it and slides it.)
+        val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width
+        val roomMax = (avail - padS - padE - (if (count > 1) 2 * (hw + gap) else 0)).coerceAtLeast(0)
+        val childCs = Constraints(0, roomMax, 0, cs.maxHeight)
         val ps: List<Placeable> = (0 until count).map { i ->
             subcompose("c$i") {
                 val bring = remember(i) { { win.keep = i; win.manual = false; tick.intValue++; Unit } }
                 Box(Modifier.then(ChipBringElement(bring)).onFocusChanged { if (it.hasFocus) focusIdx.intValue = i }) { if (i < liveCount.value) chip(i) }
             }.first().measure(childCs)
         }
-        val hw = subcompose("probe") { ChipHint("+99 ›", hintColor, hintSize) {} }.first().measure(Constraints()).width
 
         // The last chip that fits whole when the window starts at [s] (at least [s] itself).
         fun endFor(s: Int): Int {

@@ -40,6 +40,17 @@ internal const val WRAP_MAX = 2.2f
  */
 internal const val UNFOLDED_SCAN = 1.7f
 
+/**
+ * Update 514: and at most this much wider. A real wrap is two fronts and a spine — about 2.0 to 2.25 times its front (a
+ * DVD case 2.1, an N64 box 2.2), a little more with a scanner's margin. A 16:9 picture on a keep case is 2.5 times its
+ * front: it was taken for a wrap, and its right 40 % cut out as "the front" (findSpine falls back to a spine in the middle
+ * when it sees no folds) — a wide cover's case showed the wrong part of the picture. Wider than this, it's a picture.
+ */
+internal const val UNFOLDED_MAX = 2.4f
+
+/** Update 514: a picture of [ratio] (width / height) is the whole unfolded box of a case whose front is [front] wide. */
+internal fun looksUnfolded(ratio: Float, front: Float): Boolean = front > 0f && ratio > front * UNFOLDED_SCAN && ratio <= front * UNFOLDED_MAX
+
 internal object BoxTexture {
     private const val PREFIX = "voltcrop:"
 

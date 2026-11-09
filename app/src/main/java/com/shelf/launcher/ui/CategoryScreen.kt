@@ -504,17 +504,19 @@ fun buildCategoryTiles(
         .mapNotNull { g -> state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl }
         .take(12).toList()
     // (Update 214: in your own order of the tiles, each one on its own — CategoryTileOrder.)
+    // (A5, update 483: "All games" = what L2 / R2's All opens — the library, not every installed app.)
+    val library = state.libraryGames()
     return com.shelf.launcher.data.CategoryTileOrder.sort(buildList {
         state.categoryOrder.forEach { key ->
             when (key) {
                 com.shelf.launcher.data.CategorySettings.ALL ->
                     add(
                         CategoryTile(
-                            "ALL", "All games", gamesCount(state.games.size), coversOf(state.games), 210,
-                            slides = slidesOf(state.games.shuffled(java.util.Random(7))), customImage = categoryImages["ALL"],
-                            count = state.games.size, favorites = favsOf(state.games),
-                            lastPlayedCover = coverOf(lastOf(state.games)), lastPlayedTitle = lastOf(state.games)?.name,
-                            lastPlayedArt = wideOf(lastOf(state.games) ?: state.games.firstOrNull()), coverSlides = coverSlidesOf(state.games)
+                            "ALL", "All games", gamesCount(library.size), coversOf(library), 210,
+                            slides = slidesOf(library.shuffled(java.util.Random(7))), customImage = categoryImages["ALL"],
+                            count = library.size, favorites = favsOf(library),
+                            lastPlayedCover = coverOf(lastOf(library)), lastPlayedTitle = lastOf(library)?.name,
+                            lastPlayedArt = wideOf(lastOf(library) ?: library.firstOrNull()), coverSlides = coverSlidesOf(library)
                         )
                     )
                 com.shelf.launcher.data.CategorySettings.CONSOLES -> com.shelf.launcher.data.PlatformOrder.sort(state.availablePlatforms).forEach { p ->

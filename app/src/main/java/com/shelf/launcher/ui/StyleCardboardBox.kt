@@ -193,9 +193,10 @@ internal fun cardboardBoxKey(ctx: StyleKeyCtx): Boolean {
                 val next = box + dir
                 // The first box's left side: the home screen's own (its menu beside it).
                 if (next < 0) return false
-                // (Endless: from the last box on round to the first.)
+                // (Endless: from the last box on round to the first. B5, update 482: also with a single box — ◀ on its first
+                // case already went round to the last one through the home screen's row, ▶ on the last case only bumped.)
                 if (next >= BoxNav.boxes) {
-                    if (StyleLoop.on && BoxNav.boxes > 1) { BoxNav.knocked = 0; return go(boxEnd(0, row, last = false)) }
+                    if (StyleLoop.on) { BoxNav.knocked = 0; return go(boxEnd(0, row, last = false)) }
                     if (ctx.first) EdgeBump.hit(dir); return ctx.take()
                 }
                 // (After a knock: the first press only knocks against the box's wall.)

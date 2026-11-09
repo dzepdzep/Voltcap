@@ -109,6 +109,19 @@ internal fun BatterySaverSettings() {
 }
 
 /**
+ * D3 (update 485): the second screen's own brightness, apart from the main screen's. Android lets an app set it only for its
+ * own window there, so it holds while Voltcap's second-screen view is up (Settings › Screens).
+ */
+@Composable
+internal fun SecondBrightnessChoice() {
+    StyleChoice(
+        "Second screen brightness", arrayOf(0, 10, 25, 50, 75, 100), Features.secondBrightness.state.value,
+        { if (it == 0) "Same as main" else "$it %" }
+    ) { Features.secondBrightness.value = it; SecondDim.settingsChanged() }
+    MutedNote("While Voltcap's view is on the second screen; a game there uses the system brightness.")
+}
+
+/**
  * Update 188: when the second screen dims (SecondDim.kt): after how long unused, how dark, and the backlight.
  * (Settings › Screens › Dim the second screen, and Settings › Device › Battery saver.)
  */

@@ -2586,6 +2586,39 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll()) }
     }
 
+    /**
+     * Update 503 (QA app only, com.shelf.launcher.qa — returns at once in the ordinary Voltcap): the fixture library's art and
+     * achievements (ui/QaArtFixture.kt). Covers / logos are the QA app's own files; achievements are synthetic and live only in
+     * this session's state (no RetroAchievements account in the QA app, so nothing is fetched).
+     */
+    fun qaArtFixture() {
+        val app = getApplication<android.app.Application>()
+        if (!com.shelf.launcher.data.QaVariant.isolated(app)) return
+        val dir = app.getExternalFilesDir("qa_art")?.absolutePath ?: return
+        val games = _uiState.value.games.filter { it.sourceType != com.shelf.launcher.data.SourceType.APP }.sortedBy { it.stableKey }
+        val details = HashMap<String, List<RaAchievementDetail>>()
+        val progress = HashMap<String, RaGameProgress>()
+        games.forEachIndexed { i, g ->
+            artOverridesStore.set(g.stableKey, ArtSlot.COVER, if (i % 3 == 2) null else "$dir/cover_${i % 6}.png")
+            artOverridesStore.set(g.stableKey, ArtSlot.LOGO, if (i % 2 == 0) (if (i % 6 == 4) "$dir/logo_missing.png" else "$dir/logo_${i % 4}.png") else null)
+            if (i % 4 != 3) {
+                overridesStore.setRaId(g.stableKey, 990000 + i)
+                val earned = (i % 5) * 2
+                details[g.stableKey] = (0 until 10).map { k ->
+                    RaAchievementDetail(
+                        id = 990000 + i * 10 + k, title = "QA achievement ${k + 1} of game ${i + 1}", description = "Synthetic fixture (QA app).",
+                        points = 5 + k, badgeName = "qa_${(i * 10 + k) % 12}", type = null,
+                        dateEarned = if (k < earned) "2026-11-01 10:00:00" else null, dateEarnedHardcore = null,
+                        unlockPercent = 10f + k * 7, displayOrder = k
+                    )
+                }
+                progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = 10, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
+            }
+        }
+        recombineGames()
+        _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll(), raAchievementDetails = it.raAchievementDetails + details, raProgress = it.raProgress + progress) }
+    }
+
     /** Background upscaling for one game: null = automatic, 1 = off, 2/4/6/8 = times. */
     fun setHeroUpscale(game: Game, factor: Int?) {
         heroUpscaleStore.set(game.stableKey, factor)
@@ -2598,11 +2631,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun connectIgdb(clientId: String, clientSecret: String) {
-        if (clientId.isBlank() || clientSecret.isBlank()) return
+        // (Update 516: no key typed → Voltcap's own, built in; saved blank so it is only resolved when loaded.)
+        val typed = com.shelf.launcher.data.IgdbBuiltInKey.of(clientId, clientSecret)
+        val key = typed ?: com.shelf.launcher.data.IgdbBuiltInKey.builtIn ?: return
         viewModelScope.launch {
-            val ok = igdbRepository.testConnection(clientId.trim(), clientSecret.trim())
+            val ok = igdbRepository.testConnection(key.clientId, key.clientSecret)
             if (ok) {
-                igdbCredentialsStore.save(IgdbCredentials(clientId.trim(), clientSecret.trim()))
+                igdbCredentialsStore.save(typed ?: IgdbCredentials("", ""))
                 _uiState.update {
                     it.copy(
                         igdbConnected = true,
@@ -3013,15 +3048,19 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             username = username.trim().ifBlank { null },
             password = password.ifBlank { null }
         )
-        if (creds.devId.isBlank() || creds.devPassword.isBlank()) {
+        // (Update 516: no developer key typed → the one built into Voltcap; it is not saved, only resolved when loaded.)
+        val key = com.shelf.launcher.data.ScreenScraperDevKey.resolve(creds.devId, creds.devPassword, com.shelf.launcher.data.ScreenScraperDevKey.builtIn)
+        if (key == null) {
             setStatusMessage("ScreenScraper needs a developer ID and password.")
             return
         }
+        val typedKey = creds.devId.isNotBlank() && creds.devPassword.isNotBlank()
+        val test = creds.copy(devId = key.first, devPassword = key.second)
         _uiState.update { it.copy(statusMessage = "Testing ScreenScraper…") }
         viewModelScope.launch {
-            val error = screenScraperRepository.testConnection(creds)
+            val error = screenScraperRepository.testConnection(test)
             if (error == null) {
-                screenScraperStore.save(creds)
+                screenScraperStore.save(if (typedKey) test else creds.copy(devId = "", devPassword = ""))
                 _uiState.update {
                     it.copy(
                         screenScraperConnected = true,
@@ -3604,6 +3643,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             setStatusMessage("${app.name} has nothing to open.")
             return
         }
+        // (Update 489c, D287: and every app or emulator opened from Voltcap — a QA build never starts one.)
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.app", pkg)) return
         val state = _uiState.value
         // Update 200: every Android game (Voltcap's "Android games" category) takes the game path, wherever it's
         // opened from (second-screen dock, app drawer, L1 shortcuts, hotkeys, notifications). It also required the app
@@ -5426,7 +5467,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private fun recombineGames() {
         val lastPlayed = recentlyPlayedStore.loadVisible() // (Update 244: without games taken off Continue playing)
-        val merged = (applyOverrides(currentRomGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
+        // (Update 478, D1: a Steam game added by hand / folder import AND found as a GameNative `.steam` export is one game —
+        // the hand-added entry wins; two exports of one AppID (two folders) count once.)
+        val handSteam = currentSteamGames.mapTo(HashSet()) { it.stableKey }
+        val scannedSteam = HashSet<String>()
+        val romGames = currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }
+        val merged = (applyOverrides(romGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
             applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
             .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
         _uiState.update { current ->
@@ -5765,6 +5811,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
      * order, because the controller goes to whatever started last.
      */
     private fun launchNow(game: Game) {
+        // (Update 489c, D287: every game start ends here (Play, Continue, offline prompt, conflicts) — a QA build blocks it here too.)
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.launchNow", game.stableKey)) return
         val override = nextLaunchLayoutId
         nextLaunchLayoutId = null
         val plan = screenPlanFor(game)
@@ -7097,6 +7145,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             kotlinx.coroutines.delay(5_000)
             if (com.shelf.launcher.CrashGuard.safeMode) return@launch // safe mode: no background sync
+            // (Update 496: not during a QA session — the hooks file is there: a QA install / restart must not run a Drive sync.)
+            if (com.shelf.launcher.ui.TestHooks.enabled(application)) { android.util.Log.e("VoltcapQA", "launch sync skipped (QA session)"); return@launch }
             com.shelf.launcher.data.CloudSync.syncInBackground(application)
         }
         viewModelScope.launch {

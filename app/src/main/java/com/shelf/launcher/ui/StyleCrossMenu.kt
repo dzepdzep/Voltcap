@@ -138,13 +138,8 @@ internal fun StyleCrossMenu(c: StyleCtx, modifier: Modifier) {
 internal fun CrossBackdrop() {
     val tint = Features.crossTint.state.value
     val accent = ShelfTheme.accent
-    val (top, bottom) = when (tint) {
-        Features.CrossTint.DUSK -> Color(0xFF3B2350) to Color(0xFFB59AD8)
-        Features.CrossTint.OCEAN -> Color(0xFF0E2A48) to Color(0xFF5E9BD0)
-        Features.CrossTint.EMBER -> Color(0xFF3A1014) to Color(0xFFC0704E)
-        Features.CrossTint.THEME -> ShelfTheme.colors.background to accent
-        Features.CrossTint.NONE -> Color.Transparent to Color.Transparent
-    }
+    // (Update 505: the wash is shared with the options column of its game window — crossWash.)
+    val (top, bottom) = crossWash(tint, ShelfTheme.colors.background, accent) ?: (Color.Transparent to Color.Transparent)
     if (tint != Features.CrossTint.NONE) {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(top.copy(alpha = 0.92f), bottom.copy(alpha = 0.88f)))))
     }
@@ -448,7 +443,8 @@ internal fun CrossIconTile(stop: StyleStop, size: Dp) {
         var failed by androidx.compose.runtime.remember(stop.logo) { androidx.compose.runtime.mutableStateOf(false) }
         val logo = stop.logo.takeIf { !failed }
         // Update 166: the console logos baked into the app, drawn at once (no SVG decoding, no popping in).
-        val baked = androidx.compose.runtime.remember(logo) { logo?.let { PlatformLogos.bakedForUrl(context, it) } }
+        // (Update 480, A5: cut out in one colour → the plain icon, so GBA / Sega CD keep their lettering instead of becoming a blob / bar.)
+        val baked = androidx.compose.runtime.remember(logo, cut) { logo?.let { (if (cut) stop.platform?.let { p -> PlatformLogos.plain(context, p) } else null) ?: PlatformLogos.bakedForUrl(context, it) } }
         if (baked != null) {
             androidx.compose.foundation.Image(
                 baked, stop.label, contentScale = androidx.compose.ui.layout.ContentScale.Fit,

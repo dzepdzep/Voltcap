@@ -317,8 +317,8 @@ internal fun ShelfTextField(
             modifier
                 .fillMaxWidth()
                 .clip(uiRounded(12.dp))
-                .background(Color.White.copy(alpha = 0.05f))
-                .border(1.dp, Color.White.copy(alpha = 0.15f), uiRounded(12.dp))
+                .background(inkTint(0.05f))
+                .border(1.dp, inkTint(0.15f), uiRounded(12.dp))
                 .focusRequester(boxFocus)
                 .shelfClickable { editing = true }
                 .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -369,7 +369,7 @@ internal fun ShelfTextField(
                 focusedTextColor = ShelfTheme.colors.textPrimary,
                 unfocusedTextColor = ShelfTheme.colors.textPrimary,
                 focusedBorderColor = ShelfTheme.accent,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.15f),
+                unfocusedBorderColor = inkTint(0.15f),
                 focusedLabelColor = ShelfTheme.accent,
                 unfocusedLabelColor = ShelfTheme.textMuted,
                 cursorColor = ShelfTheme.accent
@@ -417,9 +417,13 @@ fun ShelfDialog(
     footer: (@Composable RowScope.() -> Unit)? = null,
     // false → the body is a plain height-bounded Column (no verticalScroll) so it can host a lazy list.
     scrollable: Boolean = true,
+    // Update 493 (Layout-aware windows, phase 1): true → the frame follows the home layout when that's switched on
+    // (WindowLook). Only the windows that ask for it; every other popup keeps its frame.
+    layoutAware: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     com.shelf.launcher.Breadcrumbs.mark("ShelfDialog")
+    val winStyle = if (layoutAware) WindowLook.current() else WindowLook.Style.OWN
     val screen = screenSizeDp()
     val sounds = LocalUiSounds.current
     LaunchedEffect(Unit) { sounds?.play(UiSound.OPEN) }
@@ -438,9 +442,8 @@ fun ShelfDialog(
             Modifier
                 .fillMaxWidth(widthFraction)
                 .heightIn(max = screen.height * 0.94f)
-                .voltSurface(uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp), base = ShelfTheme.colors.surface)
-                .border(1.dp, Color.White.copy(alpha = 0.08f), uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp))
-        ) {
+                .windowFrame(winStyle, uiRounded(WindowLook.corner(winStyle, if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp, false, com.shelf.launcher.data.Features.pixelUi.value)))
+        ) { WindowColors(winStyle) {
             Column(Modifier.fillMaxWidth()) {
                 DialogHeader(icon = icon, title = title, subtitle = subtitle, onDismiss = onDismiss)
                 HeaderDivider()
@@ -466,7 +469,7 @@ fun ShelfDialog(
                     if (footer != null) footer() else Chip("Close", onClick = onDismiss)
                 }
             }
-        }
+        } }
     }
 }
 
@@ -498,8 +501,15 @@ fun ShelfMenuDialog(
         // Same look as the Select menu: icon badge header, rows as cards.
         Box(
             Modifier
-                .fillMaxWidth(0.62f)
+                // (Update 514, RP Nova 640 × 480 dp: at 62 % of a narrow screen the sheet was 397 dp wide, the question's
+                // explanation ran to six lines and "Not now" of "Download extra art?" sat below the sheet's edge, reachable
+                // only by scrolling. Under 720 dp wide the sheet takes 80 % — fewer lines, every choice in view.)
+                .fillMaxWidth(if (screen.width < 720.dp) 0.8f else 0.62f)
                 .widthIn(min = 320.dp, max = 720.dp)
+                // (Update 501, ARBOR GT78 960x640: header + a 66 %-high list ran past a short screen — "Not now" of
+                // "Download extra art?" was cut off and couldn't be reached. The whole sheet now fits the screen and the
+                // list gives up the room, scrolling, as the D-pad walks it.)
+                .heightIn(max = screen.height * MENU_SHEET_MAX_H)
                 .voltSurface(uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp), base = ShelfTheme.colors.surface)
                 .border(1.dp, Color.White.copy(alpha = 0.08f), uiRounded(if (com.shelf.launcher.data.Features.pixelUi.value) 0.dp else 24.dp))
         ) {
@@ -507,7 +517,7 @@ fun ShelfMenuDialog(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                        .padding(horizontal = 24.dp, vertical = if (screen.height <= 480.dp) 12.dp else 20.dp), // (514: 480 dp high — the Nova — is short too)
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (icon != null) {
@@ -531,6 +541,7 @@ fun ShelfMenuDialog(
                 val menuScroll = rememberScrollState()
                 Column(
                     Modifier
+                        .weight(1f, fill = false)
                         .heightIn(max = screen.height * 0.66f)
                         .dpadScroll(menuScroll)
                         .verticalScroll(menuScroll)
@@ -575,8 +586,8 @@ internal fun CloseButton(onClick: () -> Unit, size: Dp = 36.dp) {
         Modifier
             .size(size)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.06f))
-            .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
+            .background(inkTint(0.06f))
+            .border(1.dp, inkTint(0.12f), CircleShape)
             .shelfClickable(CircleShape) { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -593,7 +604,7 @@ internal fun HeaderDivider() {
 @Composable
 internal fun ThinDivider() {
     com.shelf.launcher.Breadcrumbs.mark("ThinDivider")
-    Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.08f)))
+    Box(Modifier.fillMaxWidth().height(1.dp).background(inkTint(0.08f)))
 }
 
 // ---- Cards & rows ----
@@ -880,10 +891,10 @@ internal fun Chip(label: String, accent: Boolean = true, enabled: Boolean = true
             .clip(uiRounded(50))
             .background(
                 when {
-                    !enabled -> androidx.compose.ui.graphics.SolidColor(Color.White.copy(alpha = 0.05f))
+                    !enabled -> androidx.compose.ui.graphics.SolidColor(inkTint(0.05f))
                     accent && volt -> voltFill()
                     accent -> androidx.compose.ui.graphics.SolidColor(ShelfTheme.accent)
-                    else -> androidx.compose.ui.graphics.SolidColor(Color.White.copy(alpha = if (volt) 0.06f else 0.08f))
+                    else -> androidx.compose.ui.graphics.SolidColor(inkTint(if (volt) 0.06f else 0.08f))
                 }
             )
             .then(if (volt && !accent && enabled) Modifier.border(1.dp, VoltUi.hairline, uiRounded(50)) else Modifier)
@@ -1000,3 +1011,6 @@ internal fun Modifier.initialFocus(): Modifier {
     }
     return this.focusRequester(r).onFocusChanged { if (it.isFocused) got[0] = true }
 }
+
+/** Update 501: the most of the screen's height a menu sheet (ShelfMenuDialog) takes; its list scrolls inside. */
+internal const val MENU_SHEET_MAX_H = 0.94f

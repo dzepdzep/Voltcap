@@ -108,6 +108,7 @@ internal fun InterfaceStyleSettings() {
         item { m -> SwitchRow(Icons.Filled.AutoAwesome, "Focus glow", "A soft glow inside the accent outline of what you're on. Off: just the outline.", F.uiGlow.state.value, { F.uiGlow.value = it }, m) }
         item { m -> SwitchRow(Icons.Filled.BlurOn, "Soft blur behind the games", "A light blur and shade only behind the games, their names and the categories, so they read on busy backgrounds.", F.rowBlur.state.value > 0, { F.rowBlur.value = if (it) 35 else 0 }, m) }
         item { m -> SwitchRow(Icons.Filled.Lightbulb, "Cover light", "A soft light in the colours of the game you're on, behind its card.", F.coverLight.state.value, { F.coverLight.value = it }, m) }
+        item { m -> SwitchRow(Icons.Filled.Dashboard, "Windows follow the home layout", "Settings and Achievements take a frame matching your home layout where it has one (Channel grid, Cross menu). Other layouts and windows stay as they are.", F.windowsFollowLayout.state.value, { F.windowsFollowLayout.value = it }, m) }
         item { m -> SwitchRow(Icons.Filled.BatteryChargingFull, "Charge gauge battery", "The status bar's battery as a little gauge in your theme's colours.", F.voltBattery.state.value, { F.voltBattery.value = it }, m) }
     }
     RowBlurStrength()

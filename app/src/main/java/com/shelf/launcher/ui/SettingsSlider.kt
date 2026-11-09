@@ -116,7 +116,7 @@ internal fun PercentSlider(
             colors = SliderDefaults.colors(
                 thumbColor = ShelfTheme.accent,
                 activeTrackColor = ShelfTheme.accent,
-                inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+                inactiveTrackColor = inkTint(0.15f)
             )
         )
     }

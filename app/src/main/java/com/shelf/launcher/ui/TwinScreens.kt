@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.shelf.launcher.LauncherUiState
 import com.shelf.launcher.data.HomeLayout
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 
 /*
  * Update 158: the two-screen layouts, Twin desk (TwinDesk.kt) and Twin icons (TwinIcons.kt). Each has a top part
@@ -60,6 +63,8 @@ import com.shelf.launcher.data.HomeLayout
 
 /** Update 158: the twin layout's context as the main screen drew it last (null while no twin layout is on). */
 internal object TwinScreens {
+    /** Update 507: how far the game window is open over a Twin layout (0…1, GameWindow) — the other screen dims with it. */
+    val popupReveal = androidx.compose.runtime.mutableFloatStateOf(0f)
     var ctx by mutableStateOf<StyleCtx?>(null)
     /**
      * Update 180: the top part fills the whole main screen with its own background, the theme's background off (two
@@ -257,6 +262,12 @@ internal fun TwinSecondScreen(c: StyleCtx) {
                 }
             }
         }
+        // Update 507 (owner review: "ensure correct dual-screen behaviour"): while the game window is open on the top screen this
+        // screen dims with it and stops taking taps (a tap here closes the window, as a tap beside it does up there), so a game
+        // can't be started under the open window. Twin layouts only (Pocket classic / ribbon have their own windows).
+        val twin = c.state.appearance.homeLayout == HomeLayout.TWIN_DESK || c.state.appearance.homeLayout == HomeLayout.TWIN_ICONS ||
+            c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE
+        if (twin && TwinScreens.popupReveal.floatValue > 0f) TwinPopupShade()
         // Desk, icons, Ribbon and Classic (when its toolbar is visible) have native buttons.
         // Showcase, and Classic when the toolbar is hidden, get this accessible fallback.
         if ((c.state.appearance.homeLayout == HomeLayout.TWIN_SHOWCASE ||
@@ -287,6 +298,17 @@ internal fun TwinSecondScreen(c: StyleCtx) {
             }
         }
     }
+}
+
+/** Update 507: the other screen's shade while the game window is open over a Twin layout; a tap closes the window. */
+@Composable
+private fun TwinPopupShade() {
+    Box(Modifier.fillMaxSize().drawBehind {
+        val k = TwinScreens.popupReveal.floatValue
+        drawRect(Color.Black.copy(alpha = 0.55f * k))
+        // The hinge's shadow along the top edge, where the window's screen is.
+        drawRect(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.35f * k), Color.Transparent), endY = 24.dp.toPx()))
+    }.pointerInput(Unit) { detectTapGestures { GamePopup.requestClose?.invoke() } })
 }
 
 /** Optional, consistent category selection for layouts that use different built-in navigation. */

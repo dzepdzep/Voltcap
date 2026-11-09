@@ -315,6 +315,8 @@ object PermissionsPrompt {
     private const val PREFS = "permissions_prompt"
 
     fun shouldShow(context: android.content.Context): Boolean {
+        // (Update 500: the isolated QA app asks for nothing — it has no all-files access or root by design.)
+        if (com.shelf.launcher.data.QaVariant.isolated(context)) return false
         if (!com.shelf.launcher.data.FirstRun.isDone(context)) return false
         val missing = Permissions.missing(context).filter { it != VoltPermission.FPS || Permissions.canGrantDirectly }
         if (missing.isEmpty()) return false

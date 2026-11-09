@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -122,7 +123,9 @@ private fun customSpineAspect(platform0: String): Float? = (LookStyles.spinePlat
  * and takes the first that holds them all; past three shelves the bookcase scrolls.
  */
 private fun planShelves(games: List<Game>, width: Dp, height: Dp, real: Boolean, stand: Features.ShelfStand): ShelfPlan {
-    val gap = when (stand) { Features.ShelfStand.SPINES -> 2.dp; Features.ShelfStand.FRONTS -> 8.dp; Features.ShelfStand.ANGLED -> 4.dp }
+    // (Update 487, K1: Layout options › Game spacing scales the gap; 100 % is the standard one.)
+    val gap = when (stand) { Features.ShelfStand.SPINES -> 2.dp; Features.ShelfStand.FRONTS -> 8.dp; Features.ShelfStand.ANGLED -> 4.dp } *
+        (Features.shelfSpacing.value / 100f)
     val maxMm = if (real) games.maxOfOrNull { realCaseMm(it.platform)?.second ?: 190f } ?: 190f else 190f
     var plan: ShelfPlan? = null
     // The R1 Size tile (update 104): taller or shorter shelves.
@@ -182,7 +185,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         val stand = Features.shelfStand.state.value
         // (Update 228, #18: laid out again when one case or spine is picked for every game — their shapes set the slots.)
         val plan = remember(games, real, areaW, areaH, templates, stand, Features.layoutScale.state.value, com.shelf.launcher.data.Packs.version.intValue,
-            Features.caseStyle.state.value, Features.spineStyle.state.value) { planShelves(games, areaW, areaH, real, stand) }
+            Features.caseStyle.state.value, Features.spineStyle.state.value, Features.shelfSpacing.state.value) { planShelves(games, areaW, areaH, real, stand) }
         // (Update 130: worked out once per plan, not on every redraw — with hundreds of games that added up.)
         val rowOf = remember(plan) { IntArray(plan.slots.size) { plan.slots[it].row } }
         // Each shelf is centred in the room: the keys ▲ / ▼ look for the neighbour above / below with that offset.
@@ -289,9 +292,28 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         }
         // Update 156: the shelf (counted on round the endless bookcase) a game going back stands on.
         fun backVRow(b: ShelfBack): Int = (indexOf[b.key]?.let { plan.slots.getOrNull(it)?.row } ?: -1) + b.lap * plan.rows
+        // Update 513 (owner: "the next game's picture flashes before its case moves"; seen frame by frame on the RP Nova): the
+        // focus moves in the frame the key arrives, but the effect above only takes the new game over after that frame is
+        // composed — so for one frame the NEW game was drawn at the OLD game's pull (fully out, at its own place) while the
+        // game you left stood back in the shelf, then both jumped back and the move started. Until the effect has run, the
+        // frame now shows exactly what the effect is about to start from: the new game at its own pull (0, or where it was
+        // on its way back) and the game you left still at its pull, as the first frame of its way back.
+        val focusKeyNow = games.getOrNull(c.focus)?.stableKey
+        fun focusPending(): Boolean = focusKeyNow != shownKey || lap != shownLap
+        // (A helper: read in the spines' layers and by Pulled, where pull.value was read before.) qa-ok: GLIDE-COMPOSE
+        fun focusPull(): Float = // qa-ok: GLIDE-COMPOSE
+            if (!focusPending()) pull.value else backs.firstOrNull { it.key == focusKeyNow && it.lap == lap }?.a?.value ?: 0f
+        /** The game you just left, until the effect has made it a [ShelfBack] (drawn at the pull it still has). */
+        fun pendingBack(): ShelfBack? {
+            if (!focusPending()) return null
+            val k = shownKey ?: return null
+            if (k == focusKeyNow || k !in indexOf || pull.value <= 0f || backs.any { it.key == k }) return null
+            return ShelfBack(k, shownLap, pull)
+        }
         /** How far [i], on shelf [r] (counted on round the endless bookcase), is pulled out right now. */
         fun pulled(i: Int, r: Int): Float {
-            if (i == c.focus && r == focusVRow) return pull.value
+            if (i == c.focus && r == focusVRow) return focusPull()
+            pendingBack()?.let { pb -> if (games.getOrNull(i)?.stableKey == pb.key && r == backVRow(pb)) return pb.a.value }
             if (backs.isEmpty()) return 0f
             val k = games.getOrNull(i)?.stableKey ?: return 0f
             for (b in backs) if (b.key == k && r == backVRow(b)) return b.a.value
@@ -361,19 +383,28 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     val s = plan.slots[i]
                     val g = games[i]
                     key(g.stableKey) {
+                        // Update 501: a standing spine shows the top of its case — the plastic running back toward the
+                        // middle of the view, lit at the front edge (drawCaseTop, as on Cover details' shelf). Drawn inside the
+                        // spine's own kept layer (made [cap] taller), so it moves and turns with the spine and costs nothing
+                        // per frame; the spine's place, size and picture are unchanged. Off with Spine depth Off.
+                        val cap = if (stand == Features.ShelfStand.SPINES) shelfCapHeight(s.h, plan.rowH) else 0.dp
+                        val vanish = areaW / 2 - (rowLeft + s.x)
                         Box(
                             Modifier
-                                .offset { IntOffset((rowLeft + s.x).roundToPx(), (lift + plan.rowH * 0.9f - s.h).roundToPx()) }
-                                .size(s.w, s.h)
+                                .offset { IntOffset((rowLeft + s.x).roundToPx(), (lift + plan.rowH * 0.9f - s.h - cap).roundToPx()) }
+                                .size(s.w, s.h + cap)
                                 // Pulled out: it slides up out of its place; a spine then turns away as the front comes round,
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
                                 .graphicsLayer {
                                     val pv = pulled(i, r)
-                                    var room = makeRoom(i, r, c.focus, focusVRow, pull.value)
+                                    var room = makeRoom(i, r, c.focus, focusVRow, focusPull())
                                     for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
+                                    pendingBack()?.let { pb -> room += makeRoom(i, r, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value) }
                                     translationX = room.toPx()
+                                    // (Update 501: turned round the spine's own middle, not the taller layer's.)
+                                    if (cap > 0.dp) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, (cap.toPx() + s.h.toPx() / 2f) / size.height)
                                     if (pv > 0f) {
-                                        translationY = -size.height * PULL_LIFT * shelfSlide(pv)
+                                        translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
                                             rotationY = 90f * shelfTurn(pv)
                                             cameraDistance = 14f * density
@@ -389,7 +420,12 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                 .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
                         ) {
                             when (stand) {
-                                Features.ShelfStand.SPINES -> Spine(c, g, Modifier.fillMaxSize())
+                                Features.ShelfStand.SPINES -> Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(s.h)) {
+                                    // (The top is drawn on the spine picture itself — SpineSlot — which can be narrower than its slot.)
+                                    androidx.compose.runtime.CompositionLocalProvider(LocalCaseTopVanish provides CaseTop(with(androidx.compose.ui.platform.LocalDensity.current) { vanish.toPx() }, cardboardBoxConsole(g.platform))) {
+                                        Spine(c, g, Modifier.fillMaxSize())
+                                    }
+                                }
                                 Features.ShelfStand.FRONTS -> PulledCase(c, g, false, Modifier.fillMaxSize(), detail = 240)
                                 Features.ShelfStand.ANGLED -> AngledCase(c, g, Modifier.fillMaxSize())
                             }
@@ -436,8 +472,37 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val h = startH + (bigH - startH) * turn
                 // (Update 228, #17: the bob carries on, fading out with the turn, while the game goes back — it stopped
                 // dead the moment you moved on, a jump of up to 14° and 3 % of its height.)
-                val bob = if (Features.shelfBob.state.value && (!resting || p >= 0.999f)) rememberShelfBob() else null
+                // Update 510 (owner: Game shelf at rest kept the GT78 drawing 60 frames a second, ~35 % CPU): ~10 s without input
+                // (HomeIdle.settled, with Save power when idle) — or the home covered by Settings / the drawer — the bob eases
+                // to its rest pose and its clock is dropped, so nothing redraws; the first press brings it back from that same
+                // pose (the clock restarts at 0, where both bob and turn are at rest) with the swing easing in — no jump.
+                val settle = resting && (HomeIdle.settled || LocalSceneCovered.current)
+                val bobAmp = androidx.compose.animation.core.animateFloatAsState(
+                    if (settle) 0f else 1f, androidx.compose.animation.core.tween(if (settle) SHELF_BOB_SETTLE_MS else SHELF_BOB_RESUME_MS), label = "bobAmp"
+                )
+                val bobAtRest by remember { androidx.compose.runtime.derivedStateOf { bobAmp.value <= 0f } }
+                val bob = if (Features.shelfBob.state.value && (!resting || p >= 0.999f) && !(settle && bobAtRest)) rememberShelfBob() else null
                 val bobK = if (resting) 1f else turn
+                // Update 501: its shadow on the board under it — the case is held a little above its shelf, and with only the
+                // graphics-layer shadow round its edges it read as a flat picture pasted over the shelf. A soft oval on the
+                // board, growing with the pull, sets it apart from its neighbours. Drawn once per frame of the pull only (it
+                // follows the same [turn]); the board itself and the spines are untouched.
+                val boardY = rowTop + plan.rowH * 0.9f
+                val shadowW = w * 1.08f
+                val shadowH = (plan.rowH * 0.07f).coerceAtLeast(6.dp)
+                val caseX = startX + (endX - startX) * turn
+                Box(
+                    Modifier
+                        .offset { IntOffset((caseX + (w - shadowW) / 2).roundToPx(), (boardY - shadowH * 0.55f).roundToPx()) }
+                        .size(shadowW, shadowH)
+                        .drawBehind {
+                            val a = pulledShadowAlpha(turn, Features.shelfLook.state.value)
+                            if (a > 0f) drawOval(Brush.radialGradient(
+                                0f to Color.Black.copy(alpha = a), 0.55f to Color.Black.copy(alpha = a * 0.45f), 1f to Color.Transparent,
+                                center = center, radius = size.width / 2f
+                            ), size = size)
+                        }
+                )
                 Box(
                     Modifier
                         .offset { IntOffset((startX + (endX - startX) * turn).roundToPx(), (startY + (endY - startY) * turn).roundToPx()) }
@@ -445,8 +510,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                         .then(if (resting) Modifier.focusedCard() else Modifier)
                         .graphicsLayer {
                             // Comes round from edge-on (its spine side) to facing you, then (resting) bobs and turns gently.
-                            rotationY = fromAngle * (1f - turn) + (bob?.let { 14f * bobK * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
-                            translationY = bob?.let { -size.height * 0.03f * bobK * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
+                            val amp = bobK * bobAmp.value
+                            rotationY = fromAngle * (1f - turn) + (bob?.let { 14f * amp * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
+                            translationY = bob?.let { -size.height * 0.03f * amp * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
                             cameraDistance = 14f * density
                             // A soft shadow grows under it as it comes off the shelf.
                             shadowElevation = 14f * density * turn
@@ -466,6 +532,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             val shown = buildList<ShelfBack?> {
                 val seenKeys = HashSet<String>()
                 for (b in backs) if (b.key != focusKey && b.key in indexOf && seenKeys.add(b.key)) add(b)
+                pendingBack()?.let { pb -> if (seenKeys.add(pb.key)) add(pb) }
                 if (c.game != null && focusKey != null) add(null)
             }
             // (Update 246, #60: picked before the loop — a `continue` in it gave each pass its own group, so the pulled
@@ -477,7 +544,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
             }
             for ((b, k, idx) in pulled) {
                 key(k) {
-                    Pulled(idx, if (b == null) ({ pull.value }) else ({ b.a.value }), resting = b == null, vrow = if (b == null) focusVRow else backVRow(b))
+                    Pulled(idx, if (b == null) ({ focusPull() }) else ({ b.a.value }), resting = b == null, vrow = if (b == null) focusVRow else backVRow(b))
                 }
             }
         }
@@ -558,6 +625,10 @@ private fun pulledAspect(platform0: String, side: Boolean): Float {
     val cov = MediaCovers.used(platform)
     return (cov?.frontAspect ?: 0.7f).coerceIn(0.55f, 1.45f)
 }
+
+/** Update 510: how long the bob takes to ease to rest when the home settles, and to swing back in on the first press. */
+internal const val SHELF_BOB_SETTLE_MS = 900
+internal const val SHELF_BOB_RESUME_MS = 600
 
 /** The resting motion clocks (bob, turn), on their own beats. */
 @Composable
@@ -651,6 +722,7 @@ private fun Spine(c: StyleCtx, g: Game, modifier: Modifier) = GameSpine(g, c.sta
  */
 @Composable
 internal fun GameSpine(g: Game, physical: List<Pair<String, String>>?, modifier: Modifier, fit: Boolean = false, realFirst: Boolean = false, onTone: ((Int) -> Unit)? = null) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("Spine") } // (Update 492, D137: rebuilds per move)
     // [fit]: kept at a spine's shape in the middle of a box of another shape (a cover-shaped slot).
     // [realFirst] (Update 348, Game shelf): the game's real spine wins over a spine picked for all / Matching spines.
     if (fit) {
@@ -770,9 +842,22 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, seed: Int, content: @Co
         // (Update 393: a scan close to the slot's shape fills it, so neighbours touch; a very different one keeps its own shape.)
         val w = if (maxHeight == androidx.compose.ui.unit.Dp.Infinity || maxWidth == androidx.compose.ui.unit.Dp.Infinity || maxHeight <= 0.dp) maxWidth
             else maxHeight * CaseThickness.spineFill(maxWidth / maxHeight, aspect)
-        content(Modifier.width(w).fillMaxHeight().spineDepth(seed))
+        // (Update 501: on the Game shelf, the top of the case above the picture — LocalCaseTopVanish, the view's middle from
+        // the slot's left edge; moved to the picture's own left edge here.)
+        val caseTop = LocalCaseTopVanish.current
+        val top = if (caseTop == null) Modifier else {
+            val inset = with(androidx.compose.ui.platform.LocalDensity.current) { ((maxWidth - w) / 2).toPx() }
+            Modifier.drawBehind { drawCaseTop(Features.spineDepth.state.value, caseTop.vanish - inset, caseTop.cardboard) }
+        }
+        content(Modifier.width(w).fillMaxHeight().then(top).spineDepth(seed))
     }
 }
+
+/** Update 501: set by the Game shelf round a standing spine — where the view's middle is, in px from the spine slot's left edge. */
+internal val LocalCaseTopVanish = androidx.compose.runtime.compositionLocalOf<CaseTop?> { null }
+
+/** Update 501: [vanish] in px from the slot's left edge; [cardboard]: the console's games came in cardboard boxes. */
+internal class CaseTop(val vanish: Float, val cardboard: Boolean)
 
 /**
  * Update 124: a game's name up its spine — as big as fits (11 sp down to 6 sp), over two lines when it has to, so long
@@ -790,15 +875,19 @@ internal fun SpineName(name: String, ink: Color, modifier: Modifier, shadow: and
         val density = androidx.compose.ui.platform.LocalDensity.current
         val along = constraints.maxHeight
         val across = constraints.maxWidth
-        val fit = remember(name, along, across, density) {
+        // (Update 505, rule 11 — Case Stacks / Game shelf template spines showed "The Legend Of Zelda A Link To The" and "Super
+        // Mario World 2 Yoshi's": the name was measured in a bare TextStyle but drawn in the screen's text style, whose letter
+        // spacing made it wider, so its last word wrapped onto a line the spine had no room for. Measured and drawn in the
+        // same style now.)
+        val base = androidx.compose.material3.LocalTextStyle.current.let { if (shadow != null) it.copy(shadow = shadow) else it }
+        val fit = remember(name, along, across, density, base) {
             var s = 11f
             var rows = 1
             if (along > 0 && along != Constraints.Infinity && across > 0 && across != Constraints.Infinity) {
                 while (true) {
                     rows = (across / (s * 1.05f * density.fontScale * density.density)).toInt().coerceAtLeast(1)
                     val r = measurer.measure(
-                        name, androidx.compose.ui.text.TextStyle(fontSize = s.sp, fontWeight = FontWeight.Bold, lineHeight = (s * 1.05f).sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center),
+                        name, spineNameStyle(base, s),
                         overflow = TextOverflow.Clip, maxLines = rows, constraints = Constraints(maxWidth = along, maxHeight = across)
                     )
                     if (!r.hasVisualOverflow || s <= 3.5f) break
@@ -808,9 +897,8 @@ internal fun SpineName(name: String, ink: Color, modifier: Modifier, shadow: and
             s to rows
         }
         Text(
-            name, color = ink, fontSize = fit.first.sp, fontWeight = FontWeight.Bold, maxLines = fit.second, overflow = TextOverflow.Clip,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = (fit.first * 1.05f).sp,
-            style = if (shadow != null) androidx.compose.ui.text.TextStyle(shadow = shadow) else androidx.compose.material3.LocalTextStyle.current,
+            name, color = ink, maxLines = fit.second, overflow = TextOverflow.Clip,
+            style = spineNameStyle(base, fit.first),
             modifier = modifier
         )
     }
@@ -850,6 +938,19 @@ private fun shelfPalette(look: Features.ShelfLook): ShelfPalette = when (look) {
     )
 }
 
+/** Update 499: how dark the games' contact shadow on a shelf's top face starts (lighter on glass). */
+/**
+ * Update 501: room above a standing spine for the top of its case (drawCaseTop draws up to 8.5 % of the spine's height),
+ * kept under the shelf above: never more than 5.5 % of the shelf's height (the spines' tops stand 6 % below it).
+ */
+internal fun shelfCapHeight(spineH: Dp, rowH: Dp): Dp = minOf(spineH * 0.085f, rowH * 0.055f)
+
+/** Update 501: the pulled-out case's shadow on the board — none while it is still in its slot, lighter on glass. */
+internal fun pulledShadowAlpha(turn: Float, look: Features.ShelfLook): Float =
+    turn.coerceIn(0f, 1f) * (if (look == Features.ShelfLook.GLASS) 0.28f else 0.5f)
+
+internal fun shelfContactAlpha(look: Features.ShelfLook): Float = if (look == Features.ShelfLook.GLASS) 0.16f else 0.34f
+
 /**
  * One shelf of the bookcase: the back of the row (darker toward the board, so the games sit in a recess) and a board
  * with a lit top face, a front edge that catches the light, and a shadow thrown on the games' feet and on the wall below.
@@ -874,6 +975,12 @@ private fun ShelfBoard(look: Features.ShelfLook, modifier: Modifier) {
         drawRect(
             Brush.verticalGradient(pal.topFace, startY = boardTop, endY = boardTop + topFaceH),
             topLeft = androidx.compose.ui.geometry.Offset(0f, boardTop), size = androidx.compose.ui.geometry.Size(w, topFaceH)
+        )
+        // (Update 499, Batch C: a soft contact shadow where the games stand — the spines sat on the lit top face with no
+        // shadow at their feet, so the row read as flat strips stuck to the board. One gradient per shelf, in the kept layer.)
+        drawRect(
+            Brush.verticalGradient(listOf(Color.Black.copy(alpha = shelfContactAlpha(look)), Color.Transparent), startY = boardTop, endY = boardTop + topFaceH * 0.75f),
+            topLeft = androidx.compose.ui.geometry.Offset(0f, boardTop), size = androidx.compose.ui.geometry.Size(w, topFaceH * 0.75f)
         )
         // … its front …
         drawRect(
@@ -969,3 +1076,8 @@ internal object RealSpineShape {
 
     fun of(platform: String?): Float? = platform?.let { shape[it] }
 }
+
+/** Update 505: the one style a spine's name is both measured and drawn in (size [s] sp, bold, centred, tight lines). */
+internal fun spineNameStyle(base: androidx.compose.ui.text.TextStyle, s: Float): androidx.compose.ui.text.TextStyle =
+    base.merge(androidx.compose.ui.text.TextStyle(fontSize = s.sp, fontWeight = FontWeight.Bold, lineHeight = (s * 1.05f).sp,
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center))

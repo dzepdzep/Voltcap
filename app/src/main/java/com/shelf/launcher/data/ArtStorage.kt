@@ -119,6 +119,8 @@ object ArtStorage {
             .components {
                 // Update 157: card-sized pictures share one decode with their warm-up (StyleArtRequests.kt).
                 add(com.shelf.launcher.ui.SharedArtInterceptor(com.shelf.launcher.ui.styleArtPx(context)))
+                // (Update 503: the QA app's late-arriving fixture pictures, QaArtFixture.kt — never in the ordinary Voltcap.)
+                if (QaVariant.isolated(context)) add(com.shelf.launcher.ui.QaArtFixture.Delay())
                 // Update 181: the picture's address goes along, so only the game you're on moves (AnimatedArt.Gate).
                 add(AnimatedArt.SourceTag())
                 add(AnimatedArt.Factory())
@@ -127,6 +129,8 @@ object ArtStorage {
                 // Update 114: saved pictures from their files; your games' pictures saved the first time they load.
                 add(SavedArtInterceptor())
             }
+            // (Update 474: QA only, with the hooks file — timings and sizes of delivered pictures for tools/qa, QaArt.kt.)
+            .apply { if (com.shelf.launcher.ui.TestHooks.enabled(context)) eventListener(com.shelf.launcher.ui.QaArt) }
             .build()
             // Update 200: an animated cover's first frame stands in while it's decoded again (StillFirst).
             .let { if (android.os.Build.VERSION.SDK_INT >= 28) AnimatedArt.StillFirst(it) else it }

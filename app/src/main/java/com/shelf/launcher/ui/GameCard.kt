@@ -801,7 +801,10 @@ fun GameCard(
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
+                    // (Update 501: three lines — a blank card has the room, and two cut "The Legend of Zelda - A Link to the
+                    // Past" to "…Link T…" on the Thor's row. The "…" stays only as the last resort for a really long name,
+                    // which the card shows whole as soon as it's focused.)
+                    maxLines = NO_ART_NAME_LINES,
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -997,14 +1000,14 @@ fun GameCard(
 @Composable
 internal fun GameLogo(url: String?, height: androidx.compose.ui.unit.Dp, maxWidth: androidx.compose.ui.unit.Dp, endGap: androidx.compose.ui.unit.Dp = 0.dp) {
     if (url == null) return
-    var failed by remember(url) { mutableStateOf(false) }
+    var failed by remember(url) { mutableStateOf(LogoAspects.isFailed(url)) }
     if (failed) return
     AsyncImage(
         model = url,
         contentDescription = null,
         contentScale = ContentScale.Fit,
         alignment = Alignment.CenterStart,
-        onError = { failed = true },
+        onError = { LogoAspects.noteFailed(url); failed = true },
         modifier = Modifier
             .height(height)
             .widthIn(max = maxWidth)
@@ -1019,19 +1022,66 @@ internal fun GameLogo(url: String?, height: androidx.compose.ui.unit.Dp, maxWidt
  */
 internal object LogoAspects {
     private val known = java.util.concurrent.ConcurrentHashMap<String, Float>()
+    // (Update 475, D248: the shapes are also kept on disk — cache/logo_aspects.txt, a hashed address and the shape per line,
+    // never the address itself. Known only for the session, the FIRST time a game's logo showed after a start its slot was
+    // the full logo width — "Pokemon Stadium 2" at x 204 — and every later time the logo's own width — x 63: the same game's
+    // title in two places (navclip k474r, KONKR). A cache, not a setting: deleting it only costs that first-time slot again.)
+    @Volatile private var disk: Map<String, Float>? = null
+    // (Update 503: logos that couldn't be read this session — bounded; a new start tries them again.)
+    private val failed: MutableSet<String> = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap())
+    fun noteFailed(url: String) { if (failed.size < 2000) failed += url }
+    fun isFailed(url: String): Boolean = url in failed
+    private val writer = java.util.concurrent.Executors.newSingleThreadExecutor { r -> Thread(r, "logo-aspects").apply { isDaemon = true } }
+    private const val FILE = "logo_aspects.txt"
+    private const val MAX_LINES = 4000
 
-    fun note(url: String, drawable: android.graphics.drawable.Drawable) {
+    fun note(url: String, drawable: android.graphics.drawable.Drawable, context: android.content.Context? = null) {
         val w = drawable.intrinsicWidth
         val h = drawable.intrinsicHeight
-        if (w > 0 && h > 0) known[url] = w.toFloat() / h
+        if (w <= 0 || h <= 0) return
+        val a = w.toFloat() / h
+        val old = known.put(url, a)
+        val ctx = context?.applicationContext ?: return
+        if (old != null && kotlin.math.abs(old - a) < 0.01f) return
+        val key = keyOf(url)
+        if (disk?.get(key)?.let { kotlin.math.abs(it - a) < 0.01f } == true) return
+        writer.execute {
+            runCatching {
+                val f = java.io.File(ctx.cacheDir, FILE)
+                if (f.exists() && f.length() > MAX_LINES * 24L) f.writeText(encode(decode(f.readText()).entries.toList().takeLast(MAX_LINES / 2).associate { it.key to it.value }))
+                f.appendText(line(key, a))
+            }
+        }
     }
 
     fun of(context: android.content.Context, url: String): Float? {
         known[url]?.let { return it }
+        val d = disk ?: runCatching { decode(java.io.File(context.cacheDir, FILE).takeIf { it.exists() }?.readText() ?: "") }
+            .getOrDefault(emptyMap()).also { disk = it }
+        d[keyOf(url)]?.let { a -> known[url] = a; return a }
         val bmp = runCatching {
             coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key("$url|style|${styleArtPx(context)}"))?.bitmap
         }.getOrNull() ?: return null
         return if (bmp.width > 0 && bmp.height > 0) (bmp.width.toFloat() / bmp.height).also { known[url] = it } else null
+    }
+
+    /** A short hash of the logo's address: the file never holds an address (they can carry an account's sign-in). */
+    internal fun keyOf(url: String): String =
+        java.security.MessageDigest.getInstance("SHA-1").digest(url.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
+
+    internal fun line(key: String, aspect: Float) = "$key\t${"%.4f".format(java.util.Locale.ROOT, aspect)}\n"
+
+    internal fun encode(m: Map<String, Float>) = m.entries.joinToString("") { line(it.key, it.value) }
+
+    /** The file's lines (later lines win); anything malformed is skipped. */
+    internal fun decode(text: String): Map<String, Float> {
+        val out = LinkedHashMap<String, Float>()
+        text.lineSequence().forEach { l ->
+            val p = l.split('\t')
+            val a = p.getOrNull(1)?.toFloatOrNull()
+            if (p.size == 2 && p[0].length == 16 && a != null && a > 0f && a < 50f) { out.remove(p[0]); out[p[0]] = a }
+        }
+        return out
     }
 }
 
@@ -1048,9 +1098,13 @@ internal fun LogoAndName(
     logoMaxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
     centered: Boolean = false,
-    name: @Composable (Modifier) -> Unit
+    nameContent: @Composable (Modifier) -> Unit
 ) {
-    var failed by remember(logoUrl) { mutableStateOf(false) }
+    // (Update 503: the name's and the logo's rectangles per frame for the title-jump check — only with the QA geometry trace on.)
+    val name: @Composable (Modifier) -> Unit = { m -> nameContent(m.qaGeom("name")) }
+    // (Update 503: a logo that failed once this session is left out from the first frame on later visits — the name used
+    // to start one logo-slot to the right and jump left when the error came back, on every visit.)
+    var failed by remember(logoUrl) { mutableStateOf(logoUrl != null && LogoAspects.isFailed(logoUrl)) }
     if (logoUrl == null || failed) {
         name(modifier)
         return
@@ -1081,9 +1135,9 @@ internal fun LogoAndName(
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 alignment = if (centered) Alignment.Center else Alignment.CenterStart,
-                onSuccess = { s -> LogoAspects.note(logoUrl, s.result.drawable) },
-                onError = { failed = true },
-                modifier = Modifier.width(slotWidth).height(logoHeight)
+                onSuccess = { s -> LogoAspects.note(logoUrl, s.result.drawable, context) },
+                onError = { LogoAspects.noteFailed(logoUrl); failed = true },
+                modifier = Modifier.width(slotWidth).height(logoHeight).qaGeom("logo")
             )
         }
     }
@@ -1519,3 +1573,6 @@ internal fun rollEdge(r: Float, width: Float, baseReady: Boolean): Float =
 
 /** The wide art's small drift into place (share of the card's width): none while there is no cover behind it to fill the gap it leaves. */
 internal fun rollDrift(r: Float, baseReady: Boolean): Float = if (!baseReady) 0f else 0.05f * (1f - r.coerceIn(0f, 1f))
+
+/** Update 501: lines a coverless card's name may use before it is shortened (focused, the whole name shows). */
+internal const val NO_ART_NAME_LINES = 3

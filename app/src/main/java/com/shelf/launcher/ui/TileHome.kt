@@ -31,6 +31,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -104,6 +107,13 @@ private fun tileFraction(size: CardSize): Float = when (size) {
 /** Tile home size (Appearance › Game row › Tile size), 1 = the Card size default. Name, round buttons and pills follow it. */
 internal val LocalTileScale = androidx.compose.runtime.staticCompositionLocalOf { 1f }
 
+/**
+ * Update 480 (D257, owner: "about 45 % empty at the bottom is excessive"): extra tile height when the tiles sit in the middle
+ * with nothing under them (no round buttons) — the row takes some of that room (still ≥ ~4 across, never over two thirds of
+ * the screen) and [TileInfoStrip] the rest. 1 = as before.
+ */
+internal val LocalTileRoom = androidx.compose.runtime.staticCompositionLocalOf { 1f }
+
 /** Geometry of the row, shared by the tiles, the name above them and the touch handling. */
 internal class TileRowMetrics(
     val tile: Dp,
@@ -124,15 +134,17 @@ internal fun tileRowMetrics(size: CardSize): TileRowMetrics {
     // (Update 317as, Toni: "with the coloured frame the frame seems cut off": the frame and its glow reach ~12 dp out from
     // the tile, a little more with the lift — 22 dp in now, so all of it shows.)
     val start = 22.dp
-    val byHeight = screen.height * tileFraction(size) * scale
-    val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) }
+    val byHeight = screen.height * tileFraction(size) * scale * LocalTileRoom.current
+    // (Update 488, K1: Layout options › Game spacing scales the gap; 100 % is the standard one.)
+    val gapK = com.shelf.launcher.data.Features.tilesSpacing.state.value / 100f
+    val spacingFor = { t: Dp -> maxOf(10.dp, t * 0.075f) * gapK }
     // At the default size at least ~4 tiles fit across; bigger sizes may show fewer (never under ~1.6),
     // and never taller than about two thirds of the screen.
     val across = (4.2f / scale).coerceIn(1.6f, 4.2f)
     val maxByWidth = minOf((screen.width - start * 2 - spacingFor(byHeight) * 3) / across, screen.height * 0.62f)
     // Layout options › Games across the screen: exactly that many tiles across (capped at two thirds of the height).
     val n = com.shelf.launcher.data.Features.rowGamesFor(com.shelf.launcher.data.HomeLayout.TILES)
-    val tile = if (n > 0) minOf((screen.width - start * 2) / (n + 0.075f * (n - 1)), screen.height * 0.62f)
+    val tile = if (n > 0) minOf((screen.width - start * 2) / (n + 0.075f * gapK * (n - 1)), screen.height * 0.62f)
         else minOf(byHeight, maxByWidth)
     val spacing = spacingFor(tile)
     val visible = floor(((screen.width - start * 2 + spacing) / (tile + spacing)).toDouble()).toInt().coerceAtLeast(1)
@@ -1149,3 +1161,48 @@ internal fun tileCenterAnchor(vFocus: Int, rowW: Float, tile: Float, start: Floa
 /** Update 369: whether the row jumps to [target] instead of gliding: a long way ([visible] + 1 tiles), or the row was resized. */
 internal fun tileScrollSnaps(target: Float, current: Float, stride: Float, visible: Int, resized: Boolean): Boolean =
     resized || abs(target - current) > stride * (visible + 1)
+
+/**
+ * Update 480 (D257): the focused game's facts under the tiles — console, time played, last played, achievements — as the
+ * tile home's own rounded pills, lined up with the name above (it follows the focused tile). Shown in the room the round
+ * buttons would take when there are none. Not focusable: the controller path is unchanged.
+ */
+@Composable
+internal fun TileInfoStrip(
+    game: com.shelf.launcher.data.Game,
+    console: String,
+    playtimeMs: Long?,
+    lastPlayed: Long?,
+    achievements: Pair<Int, Int>?,
+    anchor: TileNameAnchor,
+    modifier: Modifier = Modifier
+) {
+    val scale = LocalTileScale.current
+    val screenW = with(androidx.compose.ui.platform.LocalDensity.current) { screenSizeDp().width.toPx() }
+    val pills = listOfNotNull(
+        console.takeIf { it.isNotBlank() }?.let { androidx.compose.material.icons.Icons.Filled.SportsEsports to it },
+        // (Same rule as the windows: a game with a last-played date but no time recorded reads "Under a minute".)
+        androidx.compose.material.icons.Icons.Filled.Schedule to stylePlaytime(playtimeMs, played = (lastPlayed ?: 0L) > 0L).let { if (it == "Never played") "Not played yet" else it },
+        lastPlayed?.takeIf { it > 0L }?.let { androidx.compose.material.icons.Icons.Filled.History to lastPlayedLabel(it) },
+        achievements?.let { (e, t) -> Icons.Filled.EmojiEvents to "$e / $t" }
+    )
+    androidx.compose.runtime.key(game.stableKey) {
+        Row(
+            modifier.fillMaxWidth().onTileNameLine(anchor, screenW),
+            horizontalArrangement = Arrangement.spacedBy(8.dp * scale), verticalAlignment = Alignment.CenterVertically
+        ) {
+            for ((icon, text) in pills) {
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.34f))
+                        .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(50))
+                        .padding(horizontal = 12.dp * scale, vertical = 6.dp * scale),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(icon, null, tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(15.dp * scale))
+                    Spacer(Modifier.width(6.dp * scale))
+                    StableFullText(text, color = Color.White, fontSize = 13.sp * scale, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1)
+                }
+            }
+        }
+    }
+}

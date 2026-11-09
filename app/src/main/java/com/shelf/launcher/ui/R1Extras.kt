@@ -351,3 +351,46 @@ internal fun stepMediaVolume(context: Context, dir: Int): Int = runCatching {
     am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, step, 0)
     Math.round(step * 100f / max)
 }.getOrDefault(mediaVolumePercent(context))
+
+
+/**
+ * Update 490 (R0, owner-approved): the saved R1 order stays as it is. A tile id the saved order doesn't have yet (a new
+ * tile, or one this layout builds and the order never saw) goes after every saved tile, so it lands in More on its page;
+ * nothing saved moves and the hidden set is not touched (the caller filters by it). With no saved order (a fresh install,
+ * never arranged) the tiles keep the order they're built in.
+ * (Update 325 put a new tile right after the tile it's built beside — that pushed the owner's own tiles along.)
+ */
+internal fun r1Order(saved: List<String>, built: List<String>): List<String> {
+    // (Update 491, R0 on the Thor: with no saved order the tiles new since 490 still go last, so every older tile keeps the
+    // exact place it had — nothing is written, a fresh install shows the old tiles as before and the new ones after them.)
+    if (saved.isEmpty()) return built.filter { it !in R1_APPENDED } + built.filter { it in R1_APPENDED }
+    val have = built.toSet()
+    val kept = saved.distinct().filter { it in have }
+    val keptSet = kept.toSet()
+    return kept + built.filter { it !in keptSet }
+}
+
+/**
+ * Update 490 (R2, owner-approved): the Game spacing tile. The five layouts with a spacing of their own, each with the very
+ * pref and range its Settings slider writes (Voltcap row 50–300 %, the others 50–250 %); every other layout: none (no tile).
+ * Game size and the carousel's spacing stay separate controls.
+ */
+/** Update 491 (R0): tiles added after the owner's arrangement existed — always after the older tiles, in More. */
+internal val R1_APPENDED = listOf("layoutopts", "spacing")
+
+internal object R1Spacing {
+    fun prefFor(l: com.shelf.launcher.data.HomeLayout): com.shelf.launcher.data.Features.IntPref? = when (l) {
+        com.shelf.launcher.data.HomeLayout.CLASSIC -> com.shelf.launcher.data.Features.rowSpacing
+        com.shelf.launcher.data.HomeLayout.TILES -> com.shelf.launcher.data.Features.tilesSpacing
+        com.shelf.launcher.data.HomeLayout.SHELF -> com.shelf.launcher.data.Features.shelfSpacing
+        com.shelf.launcher.data.HomeLayout.COVERDETAILS -> com.shelf.launcher.data.Features.cdSpacing
+        com.shelf.launcher.data.HomeLayout.STACKS -> com.shelf.launcher.data.Features.stacksSpacing
+        else -> null
+    }
+    fun maxFor(l: com.shelf.launcher.data.HomeLayout): Int = if (l == com.shelf.launcher.data.HomeLayout.CLASSIC) 300 else 250
+    const val MIN = 50
+    /** Tap: the next step (a value between steps goes to the next one up), round to the first. */
+    val STEPS = listOf(80, 100, 120, 150)
+    fun next(now: Int): Int = STEPS.firstOrNull { it > now + 2 } ?: STEPS.first()
+    fun label(v: Int): String = when { v < 93 -> "Tight"; v > 135 -> "Wide"; v > 107 -> "Roomy"; else -> "Normal" }
+}

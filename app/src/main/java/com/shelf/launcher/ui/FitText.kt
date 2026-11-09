@@ -22,6 +22,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.semantics
 
 /**
  * Text that shrinks (from [maxSize] down to [minSize]) until it fits the room it's given in at most
@@ -119,7 +120,9 @@ private fun FullTextMarquee(
         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
         // (RP Classic QA: a slide never stops, so a home screen with long names redrew forever. It rests with the home
         // screen — 30 s without input, HomeIdle.calm — and starts again with the first press.)
-        modifier = if (calmHere()) modifier else modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp)
+        // (Update 477: marked as sliding for the QA gate — QaClip.Slides — whether it moves now or rests.)
+        modifier = (if (calmHere()) modifier else modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 1200, repeatDelayMillis = 1500, velocity = 28.dp))
+            .semantics { this[QaClip.Slides] = true }
     )
 }
 
@@ -210,11 +213,18 @@ internal fun StableFullText(
     maxLines: Int = 1,
     fontWeight: FontWeight? = null,
     lineHeight: TextUnit = TextUnit.Unspecified,
-    letterSpacing: TextUnit = TextUnit.Unspecified
+    letterSpacing: TextUnit = TextUnit.Unspecified,
+    // (Update 478, D271: the window scenes' own type — a mono / pixel face, italic, an outline or glow — so their names could
+    // move from a plain Text cut at maxLines to this one without changing how they look.)
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null,
+    textAlign: TextAlign? = null,
+    style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
+    /** Update 478: keep the height of [maxLines] lines whatever the text needs (home rows); a window's own text: false. */
+    reserve: Boolean = true
 ) {
     BoxWithConstraints(modifier) {
         val measurer = rememberTextMeasurer(cacheSize = 8)
-        val base = androidx.compose.material3.LocalTextStyle.current
+        val base = if (fontFamily != null) style.copy(fontFamily = fontFamily) else style
         val w = constraints.maxWidth
         val h = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
         val top = fontSize.value
@@ -241,10 +251,23 @@ internal fun StableFullText(
         }
         FullText(
             text, color = color, fontSize = fit.first.sp, maxLines = fit.second, fontWeight = fontWeight,
-            lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false
+            lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false,
+            fontFamily = fontFamily, textAlign = textAlign, style = style, reserve = reserve
         )
     }
 }
+
+/**
+ * Update 478 (D271): a window's name or line — [StableFullText] without the reserved height, so a short name takes one line
+ * and the window's other parts keep their room (the Blades guide's Back was pushed under its edge by a reserved 2nd line).
+ */
+@Composable
+internal fun WinFullText(
+    text: String, color: Color, fontSize: TextUnit, modifier: Modifier = Modifier, maxLines: Int = 1, fontWeight: FontWeight? = null,
+    lineHeight: TextUnit = TextUnit.Unspecified, letterSpacing: TextUnit = TextUnit.Unspecified,
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, textAlign: TextAlign? = null,
+    style: TextStyle = androidx.compose.material3.LocalTextStyle.current
+) = StableFullText(text, color, fontSize, modifier, maxLines, fontWeight, lineHeight, letterSpacing, fontFamily, textAlign, style, reserve = false)
 
 /**
  * Update 471 (owner review, Box Details page: "(Parmentat / ion)"): a wrapping text whose size steps down until its longest

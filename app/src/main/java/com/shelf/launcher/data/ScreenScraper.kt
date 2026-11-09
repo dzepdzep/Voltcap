@@ -41,15 +41,39 @@ data class ScreenScraperCredentials(
     val password: String?
 )
 
+/**
+ * Update 516 (owner: "a regular user doesn't have a developer ID — it should only ask for their user and password"): every
+ * ScreenScraper request needs a developer ID / password per APP, so Voltcap ships its own (build time, from the gitignored
+ * screenscraper.properties — never in git, the patch or the docs). With it, the dialog asks only for the person's account.
+ * Builds without it (a fork, a local test build) keep the developer fields.
+ */
+object ScreenScraperDevKey {
+    /** The developer ID / password built into this APK, or null. */
+    val builtIn: Pair<String, String>? get() = of(com.shelf.launcher.BuildConfig.SS_DEV_ID, com.shelf.launcher.BuildConfig.SS_DEV_PASSWORD)
+
+    /** The software name sent with every request (ScreenScraper's "softname"; the name the key was requested for). */
+    val softName: String get() = com.shelf.launcher.BuildConfig.SS_SOFT_NAME.trim().ifEmpty { "ShelfLauncher" }
+
+    internal fun of(id: String?, password: String?): Pair<String, String>? {
+        val i = id?.trim().orEmpty(); val p = password?.trim().orEmpty()
+        return if (i.isEmpty() || p.isEmpty()) null else i to p
+    }
+
+    /** A saved developer key wins (someone who entered their own keeps it); a blank one means the built-in key. */
+    internal fun resolve(savedId: String?, savedPassword: String?, builtIn: Pair<String, String>?): Pair<String, String>? =
+        of(savedId, savedPassword) ?: builtIn
+}
+
 class ScreenScraperStore(context: Context) {
     private val app = context.applicationContext
     private val prefs: SharedPreferences = SecureStore.open(app, ENCRYPTED, "ScreenScraper", listOf(FALLBACK)).prefs
 
     fun load(): ScreenScraperCredentials? {
-        val devId = prefs.getString(KEY_DEV_ID, null) ?: return null
-        val devPassword = prefs.getString(KEY_DEV_PASSWORD, null) ?: return null
+        // (Connected = something was saved. Update 516: a blank developer key there means the one built into the app.)
+        val savedId = prefs.getString(KEY_DEV_ID, null) ?: return null
+        val key = ScreenScraperDevKey.resolve(savedId, prefs.getString(KEY_DEV_PASSWORD, null), ScreenScraperDevKey.builtIn) ?: return null
         return ScreenScraperCredentials(
-            devId, devPassword,
+            key.first, key.second,
             prefs.getString(KEY_USER, null),
             prefs.getString(KEY_PASSWORD, null)
         )
@@ -159,7 +183,7 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     private fun baseParams(c: ScreenScraperCredentials): MutableMap<String, String> = mutableMapOf(
         "devid" to c.devId,
         "devpassword" to c.devPassword,
-        "softname" to SOFT_NAME,
+        "softname" to ScreenScraperDevKey.softName,
         "output" to "json"
     ).apply {
         if (!c.username.isNullOrBlank() && !c.password.isNullOrBlank()) {
@@ -633,7 +657,13 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         return when (code) {
             400 -> "ScreenScraper rejected the request: $detail"
             401 -> "ScreenScraper is busy and closed to non-members right now — try again later."
-            403 -> "Developer ID or password not accepted by ScreenScraper."
+            // (Update 516: ScreenScraper answers 403 for a wrong developer key AND for a wrong account login — its own text tells
+            // which, so it is shown; with Voltcap's built-in key it is almost always the person's username / password.)
+            403 -> when {
+                detail.contains("veloppeur", true) || detail.contains("developer", true) -> "ScreenScraper didn't accept this app's developer key ($detail)."
+                ScreenScraperDevKey.builtIn != null -> "ScreenScraper didn't accept that username or password${if (detail.isNotEmpty()) " ($detail)" else ""}."
+                else -> "Developer ID or password not accepted by ScreenScraper${if (detail.isNotEmpty()) " ($detail)" else ""}."
+            }
             404 -> "ScreenScraper didn't recognise that account."
             423 -> "ScreenScraper's API is temporarily closed — try again later."
             426 -> "ScreenScraper has blocked this app's developer ID."
@@ -643,7 +673,6 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     }
 
     companion object {
-        private const val SOFT_NAME = "ShelfLauncher"
         private const val MIN_GAP_MS = 1200L
         private const val MAX_HASH_BYTES = 64L * 1024 * 1024
         /** Update 338: set on a record found by the game's name ([searchByName]). */

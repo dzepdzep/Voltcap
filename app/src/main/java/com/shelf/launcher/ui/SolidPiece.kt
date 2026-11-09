@@ -758,7 +758,13 @@ internal fun Modifier.solidPiece(
                     (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat() * abs(cSide)).coerceAtLeast(1.5f) else 0f
                 val span = depthPx * abs(sn)
                 val nLeaf = if (edgeLeaf == null || span < 0.5f || mirror) 0 else if (far) ceil(span / reach).toInt().coerceIn(1, FAR_COPIES) else ceil(span / reach).toInt().coerceIn(1, if (moving) MOVING_COPIES else 24)
-                edgeL.alpha = if (edgeLeaf != null) {
+                // (Update 492, owner — Save Vault cards on the RP Classic "missing side faces": a see-through piece's slices
+                // were each faint enough that all of them stacked made its plastic, but out on the side only the slices nearer
+                // the face reach a point, so the side faded to nothing toward its far edge and, turned far, was gone. Its
+                // slices are now drawn solid into one layer, laid down at the plastic's own strength — one even sheet, its
+                // exact outline (as Inspect's clear walls). The Game Boy clear paks keep their tuned walls.)
+                val sheet = clear != null && spec.gb == null
+                edgeL.alpha = if (sheet) 1f else if (edgeLeaf != null) {
                     if (clear == null || nLeaf <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / nLeaf)).toFloat()
                 } else if (clear == null || n <= 0) 1f else (1.0 - Math.pow(1.0 - clear.coerceIn(0.05f, 0.95f), 1.0 / copies)).toFloat()
                 // (Update 325, Toni: "a floating layer over the Game Boy cartridges on top and a bit on the left": the copies
@@ -837,8 +843,9 @@ internal fun Modifier.solidPiece(
                         alpha = if (spec.clear != null) spec.clear.coerceIn(0.2f, 0.8f) * ((0.15f - abs(c)) / 0.12f).coerceIn(0f, 1f) else 1f,
                         colorFilter = SolidLight.of((0.42f + 0.22f * abs(sn)) * shadeK))
                 }
-                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf) }
-                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf)
+                // (Update 492: recorded first and drawn in its place among the copies — drawSideCopies(atZ).)
+                var seamZ = Float.NaN
+                var seamDraw: (androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit)? = null
                 // (Update 469: the seam between the halves, 5.8 mm from the front — one darker copy of the side there.)
                 if (gbs != null && zpm != null && side != null && artPos != null && artSize != null && !mirror && !far && abs(sn) > 0.3f) {
                     val padN = (SIDE_SPREAD * artSize.width / (side.width - 2 * SIDE_SPREAD).coerceAtLeast(1).toFloat()).roundToInt()
@@ -850,9 +857,16 @@ internal fun Modifier.solidPiece(
                     }
                     val zs = depthPx / 2f - SlabSide.FRONT_HALF * zpm
                     val dk = depthK(zs)
-                    val drawSeam: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
-                    if (cut != null) clipPath(cut) { drawSeam() } else drawSeam()
+                    seamZ = zs
+                    seamDraw = { scale(dk, dk, pivot = nodeC) { translate(zs * sn, 0f) { drawLayer(seamLeaf) } } }
                 }
+                if (sheet) drawContext.canvas.saveLayer(
+                    androidx.compose.ui.geometry.Rect(-nodeC.x * 2f, -nodeC.y * 2f, nodeC.x * 4f, nodeC.y * 4f),
+                    androidx.compose.ui.graphics.Paint().apply { alpha = clear!!.coerceIn(0.2f, 0.8f) }
+                )
+                if (cut != null) clipPath(cut) { drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf, seamZ, seamDraw) }
+                else drawSideCopies(edgeLeaf, nLeaf, n, fill, c, sn, depthPx, nodeC, { z -> depthK(z) }, smear, edge, m, step, buf, seamZ, seamDraw)
+                if (sheet) drawContext.canvas.restore()
                 val faceX = if (c >= 0f) depthPx / 2f * sn else -depthPx / 2f * sn
                 // (Update 209: none of a see-through piece's sides behind its face — they showed through it.)
                 if (clear != null) {
@@ -1073,11 +1087,20 @@ internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
     edgeLeaf: androidx.compose.ui.graphics.layer.GraphicsLayer?, nLeaf: Int, n: Int, fill: Int, c: Float, sn: Float, depthPx: Float,
     nodeC: androidx.compose.ui.geometry.Offset, depthK: (Float) -> Float,
-    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize
+    smear: androidx.compose.ui.graphics.layer.GraphicsLayer, edge: androidx.compose.ui.graphics.layer.GraphicsLayer, m: Int, step: Float, buf: IntSize,
+    /**
+     * Update 492: something drawn at depth [atZ] in its place among the copies (far to near) — the GB pak's seam. It was drawn
+     * after all of them, so its darkened copy of the whole outline lay over the nearer copies: a black side on the home
+     * screen's wobble, a dark band down the back half in Inspect.
+     */
+    atZ: Float = Float.NaN, onZ: (androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit)? = null
 ) {
+    var zDone = onZ == null || atZ.isNaN()
+    fun passed(z: Float) = if (c >= 0f) z > atZ else z < atZ
     if (edgeLeaf != null) for (k in 0 until nLeaf) {
         val f = k.toFloat() / nLeaf
         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+        if (!zDone && passed(z)) { zDone = true; onZ!!.invoke(this) }
         val dk = depthK(z)
         scale(dk, dk, pivot = nodeC) { translate(z * sn, 0f) { drawLayer(edgeLeaf) } }
     }
@@ -1091,6 +1114,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
     if (n > 0 && edgeLeaf == null) for (k in 0..n) {
         val f = k.toFloat() / n
         val z = if (c >= 0f) -depthPx / 2f + depthPx * f else depthPx / 2f - depthPx * f
+        if (!zDone && passed(z)) { zDone = true; onZ!!.invoke(this) }
         // (The nearest slice alone: nothing past it to fill.)
         val dk = depthK(z)
         scale(dk, dk, pivot = nodeC) {
@@ -1098,6 +1122,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSideCopies(
             else translate(z * sn, 0f) { drawLayer(edge) }
         }
     }
+    if (!zDone) onZ!!.invoke(this)
 }
 
 /**

@@ -23,6 +23,8 @@ fun IgdbDialog(
     com.shelf.launcher.Breadcrumbs.mark("IgdbDialog")
     var clientId by remember { mutableStateOf("") }
     var clientSecret by remember { mutableStateOf("") }
+    // Update 516: with Voltcap's own IGDB access built in, turning it on needs nothing typed.
+    val builtInKey = remember { com.shelf.launcher.data.IgdbBuiltInKey.builtIn != null }
 
     ShelfDialog(
         icon = Icons.Filled.Info,
@@ -35,8 +37,8 @@ fun IgdbDialog(
                 Chip("Disconnect", accent = false, onClick = onDisconnect)
             } else {
                 Chip(
-                    "Connect",
-                    enabled = clientId.isNotBlank() && clientSecret.isNotBlank(),
+                    if (builtInKey) "Turn on" else "Connect",
+                    enabled = builtInKey || (clientId.isNotBlank() && clientSecret.isNotBlank()),
                     onClick = { onConnect(clientId, clientSecret) }
                 )
             }
@@ -44,6 +46,12 @@ fun IgdbDialog(
     ) {
         if (connected) {
             ConnectedCard("Press A on any game to see its score, summary and how long it takes to beat.")
+        } else if (builtInKey) {
+            ShelfCard {
+                SectionLabel("Ready to use")
+                MutedNote("Voltcap has its own IGDB access — nothing to sign up for. Press Turn on to use IGDB for summaries, " +
+                    "critic scores and how-long-to-beat times.")
+            }
         } else {
             ShelfCard {
                 SectionLabel("Setup")

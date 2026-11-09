@@ -126,7 +126,10 @@ internal fun SaveExplorerDialog(
     remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
     // (Update 285: PS2 saves show their own icon in Icons only — never on the cards.)
     // (Update 325: and with the "PS2 browser style" switch back, in the card styles too.)
-    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS || com.shelf.launcher.data.Ps2BrowserStyle.on.value
+    // (Update 488, K3, owner: "if I choose Memory Card, SD Card, Floppy … it should show that physical object": the PS2 browser
+    // switch now does what its note says — a PS2 game's save shows its own PS2 save icon; every other save keeps the chosen
+    // physical card with its cover, in the grid and up close alike. Logos instead of covers only with the Icons look.)
+    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS
     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
     remember { com.shelf.launcher.data.CloudSync.load(context) }
@@ -136,13 +139,19 @@ internal fun SaveExplorerDialog(
     val connected = cloud.settings.connected
     // Only games with real save evidence (save files, memory-card / SAVEDATA saves, saves Drive moved):
     // looking at a game never makes a capsule. Read again each time the browser opens.
-    LaunchedEffect(games, lastPlayed, connected) { if (connected) com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed) }
+    // (Update 496, QA only: `--ez voltcap_test_vault_dry true` — the vault shows the saves it last listed and nothing more: no
+    // look for saves, no list rewritten, no sync, no cover lookups. For appearance screenshots; off without the hooks file.)
+    val dry = TestHooks.vaultDry
+    LaunchedEffect(games, lastPlayed, connected) {
+        if (dry) com.shelf.launcher.data.SaveCapsules.showCached(context, games)
+        else if (connected) com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
+    }
     // (Update 241, #76: a sync that wasn't started from here (the watcher, another screen) finishing while the vault is
     // open — the list is read again, so saves that just arrived show without closing it.)
     val fullSync by com.shelf.launcher.data.CloudSync.lastFullSync.collectAsState()
     val openedAtSerial = remember { fullSync.serial }
     LaunchedEffect(fullSync.serial) {
-        if (connected && fullSync.serial > openedAtSerial) {
+        if (!dry && connected && fullSync.serial > openedAtSerial) {
             com.shelf.launcher.data.DriveOnlySaves.invalidate()
             com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
         }
@@ -152,7 +161,7 @@ internal fun SaveExplorerDialog(
     val scanning by com.shelf.launcher.data.SaveCapsules.loading.collectAsState()
     val syncScope = androidx.compose.runtime.rememberCoroutineScope()
     val syncNow: () -> Unit = {
-        if (cloud.settings.connected && !cloud.running) {
+        if (!dry && cloud.settings.connected && !cloud.running) {
             syncScope.launch {
                 runCatching { com.shelf.launcher.data.CloudSync.syncInBackground(context, savesOnly = true)?.await() }
                 // Update 151: Drive's folders listed again too (saves from folders this device doesn't sync).
@@ -165,7 +174,7 @@ internal fun SaveExplorerDialog(
     var connecting by remember { mutableStateOf(false) }
     val driveConnect = rememberDriveConnect { connectProblem = it; connecting = false }
     val connectDrive: () -> Unit = {
-        if (!connecting) {
+        if (!dry && !connecting) {
             connecting = true
             connectProblem = null
             driveConnect {
@@ -374,26 +383,36 @@ internal fun SaveExplorerDialog(
         // Update 151: the vault is always dark, so its buttons and notes keep light text with a light theme too (they
         // were dark on dark, hard to read).
         val baseColors = ShelfTheme.colors
-        val vaultColors = remember(baseColors) {
-            if (baseColors.textPrimary.luminance() < 0.5f) baseColors.copy(textPrimary = Color.White, textMuted = Color.White.copy(alpha = 0.62f)) else baseColors
-        }
-        androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides vaultColors) {
+        // (Update 496, Layout-aware windows phase 3: with "Windows follow the home layout" on, the vault's FRAME follows the
+        // layout — its corner and rim. Update 499: beyond the frame — with a dark colour family (Arctic, Cinema, a dark
+        // Channel grid palette) the vault's panels, buttons and writing take that layout's own dark panels and resolved
+        // accent ([vaultFamilyColors]); the save cards and their artwork are drawn as before. Off (the default): unchanged.)
+        val winStyle = WindowLook.current()
+        val family = if (winStyle.colored) rememberWindowTokens(winStyle) else null
+        val vaultColors = remember(baseColors, family) { vaultFamilyColors(baseColors, family) }
+        androidx.compose.runtime.CompositionLocalProvider(com.shelf.launcher.ui.theme.LocalShelfColors provides vaultColors, LocalVaultFamily provides (family != null && !family.light)) {
+        val vaultShape = RoundedCornerShape(WindowLook.corner(winStyle, 20.dp, compact, false))
+        // (Update 497: the Channel rim in the layout's real tile-edge + accent colours, not a fixed blue.)
+        val vaultRim = windowRimColor(winStyle)
         Box(
             Modifier
                 .fillMaxWidth(0.94f)
                 .fillMaxHeight(0.92f)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(vaultShape)
+                .windowRim(winStyle, vaultShape, vaultRim)
                 .onGloballyPositioned { hostOffset = it.positionInRoot() }
         ) {
             // The background (Save Vault settings): the theme's (a glow and drifting specks of light),
             // plain, the picked game's art blurred, or floating save icons.
-            val accentBg = ShelfTheme.accent.copy(alpha = 0.26f).compositeOverDark()
+            // (Update 499: a dark layout family lights the top of the vault in its own raised panel tone, not the accent glow.)
+            val accentBg = if (family != null && !family.light) androidx.compose.ui.graphics.lerp(family.colors.surfaceRaised, family.colors.accent, 0.18f)
+                else ShelfTheme.accent.copy(alpha = 0.26f).compositeOverDark()
             SaveVaultBackground(
                 phase, icons = remember(entries) { entries.take(24).mapNotNull { iconFor(it.first) } },
                 artUrl = entries.getOrNull(loc(selected))?.let { iconFor(it.first) },
                 modifier = Modifier.matchParentSize()
             ) {
-                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(accentBg, Color(0xFF05060B)))))
+                Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(accentBg, vaultFloor(family)))))
                 MemoryCardSky(phase, ShelfTheme.accent, Modifier.matchParentSize())
             }
             Column(
@@ -566,9 +585,8 @@ internal fun SaveExplorerDialog(
                                 // (Update 343, Toni: "the PS2 save icon: either all memory cards or all logos, no mix — toggle between those
                                 // two": "PS2 browser style" on draws EVERY save as the PS2 browser does (a PS2 game its own 3D save icon,
                                 // any other game its logo turning in its place); off, every save gets the vault's own look.)
-                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value) {
-                                    if (com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsuleByKey[game.stableKey]) else emptyList()
-                                } else null
+                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform))
+                                    ps2RefsOf(capsuleByKey[game.stableKey]) else null
                             )
                           }
                         }
@@ -586,7 +604,11 @@ internal fun SaveExplorerDialog(
             ) {
                 val d = detail
                 if (d != null) SaveDetail(
-                    game = d.first, st = d.second, icon = iconFor(d.first), phase = phase,
+                    game = d.first, st = d.second, icon = if (ps2Style) logoFor(d.first) else iconFor(d.first), phase = phase,
+                    // (Update 487, K3: the same object as the grid's slot.)
+                    ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(d.first.platform))
+                        ps2RefsOf(capsuleByKey[d.first.stableKey]) else null,
+                    logo = if (ps2Style) logoFor(d.first) else null,
                     capsule = capsuleByKey[d.first.stableKey],
                     hidden = d.first.stableKey in capsuleOptions.hidden,
                     onHide = { h -> com.shelf.launcher.data.SaveCapsules.setHidden(context, d.first.stableKey, h); close() },
@@ -952,7 +974,10 @@ private fun SaveDetail(
     /** Reports where the icon sits in this window (root px), for the flight to land on. */
     onIconSpot: (androidx.compose.ui.geometry.Rect) -> Unit,
     onOpenSave: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    /** (Update 487, K3: with the PS2 browser style, what the grid's slot draws — the PS2 saves / the logo.) */
+    ps2: List<Ps2SaveRef>? = null,
+    logo: String? = null
 ) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(80); runCatching { focus.requestFocus() } }
@@ -1026,12 +1051,16 @@ private fun SaveDetail(
                         Modifier
                             .fillMaxSize()
                             .graphicsLayer { translationY = -6.dp.toPx() * kotlin.math.sin(phase()) },
-                        look = look
+                        look = look, state = st.state, ps2 = ps2, logo = logo
                     )
                 }
             }
             Spacer(Modifier.width(if (compact) 14.dp else 24.dp))
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            // (Update 488b, popup gate R26: the buttons sat at the end of the scrolling column — focusing "Save options" on open
+            // scrolled the title's first lines out of the window on the Thor (k3s: "Compatible)" of "Pokemon Silver Version (GB
+            // Compatible)"). The facts scroll in the room the buttons leave; the buttons stay whole under them.)
+            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 Text(gameDisplayName(game.name), color = Color.White, fontSize = if (compact) 18.sp else 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 18.sp else 22.sp), maxFontSize = if (compact) 18.sp else 22.sp), fontWeight = FontWeight.Bold, maxLines = 3)
                 Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                 Spacer(Modifier.height(12.dp))
@@ -1042,8 +1071,9 @@ private fun SaveDetail(
                 DetailRow("Last move", when (st.lastDirection) {
                     SyncDirection.UPLOAD -> "This device → Google Drive"
                     SyncDirection.DOWNLOAD -> "Google Drive → this device"
-                    SyncDirection.NONE -> "Checked, nothing to move"
-                })
+                    SyncDirection.NONE -> "Nothing moved yet"
+                } + (if (st.lastTransferAt > 0L) " (${syncAgo(st.lastTransferAt)})" else "")) // (Update 493, D292: the move's own time when recorded)
+                com.shelf.launcher.data.syncLine(st)?.takeIf { it.at > 0L }?.let { DetailRow("Last sync", "${it.label} (${syncAgo(it.at)})") }
                 if (st.fileCount > 0) DetailRow("Files", "${st.fileCount}")
                 DetailRow("Status", when (st.state) {
                     SyncState.SYNCED -> "Safe on Google Drive"
@@ -1069,6 +1099,7 @@ private fun SaveDetail(
                         items(saves.size) { i -> CapsuleSaveRow(saves[i]) }
                     }
                 }
+            }
                 Spacer(Modifier.height(if (compact) 12.dp else 18.dp))
                 // (Update 274, Toni: "buttons a bit down … centred".)
                 ChipFlow(center = true) {
@@ -1094,15 +1125,50 @@ private fun SaveDetail(
  * on it turns [angle] degrees about its upright axis (the back: the same cover darkened, with the
  * memory-card mark, never mirrored); off, it stays upright and [angle] only sweeps a light across it.
  */
+/** Update 487 (K3): what a save is drawn as — in the grid, in flight and up close alike (pure; Batch487Test). */
+internal enum class SaveObjectKind { PS2_BROWSER, CARD_3D, DRAWN, CAPSULE, ICON }
+
+internal fun saveObjectKind(ps2Browser: Boolean, style: Features.SaveVaultStyle, has3dCard: Boolean): SaveObjectKind = when {
+    ps2Browser -> SaveObjectKind.PS2_BROWSER
+    style == Features.SaveVaultStyle.CARD_3D -> if (has3dCard) SaveObjectKind.CARD_3D else SaveObjectKind.DRAWN
+    style == Features.SaveVaultStyle.MEMORY_CARD || style == Features.SaveVaultStyle.SD_CARD || style == Features.SaveVaultStyle.FLOPPY -> SaveObjectKind.DRAWN
+    style == Features.SaveVaultStyle.CAPSULE -> SaveObjectKind.CAPSULE
+    else -> SaveObjectKind.ICON
+}
+
 @Composable
 private fun SaveIconCard(
     game: Game, icon: String?, angle: () -> Float, modifier: Modifier = Modifier,
     /** (Update 236, #42/#43: the save's colours — its rim and back, the 3D card's shell / badge; null: the original.) */
-    look: SaveLook? = null
+    look: SaveLook? = null,
+    /** (Update 487: its sync state, for the drawn cards' badge.) */
+    state: SyncState = SyncState.PENDING,
+    /** (Update 487, K3: the PS2 browser style's slot — its PS2 saves, or for any other game its logo.) */
+    ps2: List<Ps2SaveRef>? = null,
+    logo: String? = null
 ) {
     val turnOn = Features.saveTurn.state.value
+    // Update 487 (K3, owner: "a physical save-card look shows a plain cover in the grid, a memory card once opened"): the
+    // save up close (and in flight) is the same object the grid draws — saveObjectKind, one rule for both. The PS2 browser
+    // style draws every save as the PS2 browser does in the grid (the icon / logo), so it does up close too; the drawn
+    // cards (memory card, SD card, floppy, capsule) are drawn up close as well (they showed the plain cover there).
+    val vaultStyle = Features.saveVaultStyle.state.value
+    val kind = saveObjectKind(com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform), vaultStyle, Models3D.saveCardIdFor(look) != null)
+    if (kind == SaveObjectKind.PS2_BROWSER && ps2 != null) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            Ps2SaveTile(ps2, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, game = game, logo = logo)
+        }
+        return
+    }
+    if (kind == SaveObjectKind.DRAWN || kind == SaveObjectKind.CAPSULE) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            if (kind == SaveObjectKind.CAPSULE) CapsuleSaveCard(icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, look)
+            else StyledSaveCard(vaultStyle, icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, platform = game.platform, look = look)
+        }
+        return
+    }
     // Update 141: with the 3D card style, the whole 3D card turns (it used to be its picture turning on its own).
-    val card = if (Features.saveVaultStyle.state.value == Features.SaveVaultStyle.CARD_3D) Models3D.saveCardIdFor(look) else null
+    val card = if (kind == SaveObjectKind.CARD_3D) Models3D.saveCardIdFor(look) else null
     if (card != null) {
         if (turnOn) SwayingModel(card, icon, gameDisplayName(game.name), game.platform, angle, modifier, shell = look?.shell, badge = look?.trim)
         else Model3DArt(card, icon, 0f, modifier, name = gameDisplayName(game.name), alwaysName = true, platform = game.platform, shellOverride = look?.shell, badgeOverride = look?.trim)
@@ -1412,7 +1478,10 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
     val context = LocalContext.current
     val fmt = remember { android.text.format.DateFormat.getMediumDateFormat(context) }
     val time = remember { android.text.format.DateFormat.getTimeFormat(context) }
-    val last = maxOf(st.lastSuccessAt, capsule?.lastSaved ?: st.updatedAt)
+    // (Update 493, D292: the time and words come from what was recorded — a check that moved nothing no longer reads
+    // Fetched-from-Drive.)
+    val line = com.shelf.launcher.data.syncLine(st)
+    val last = line?.at?.takeIf { it > 0L } ?: (capsule?.lastSaved ?: st.updatedAt)
     val synced = st.lastSuccessAt > 0 || st.state != SyncState.PENDING
     // Update 152: saves that are only on Google Drive (synced from another handheld) said "on this device".
     val elsewhere = capsule?.saves?.takeIf { it.isNotEmpty() }?.takeIf { list ->
@@ -1422,7 +1491,8 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.07f))
+            // (Update 499: with a dark layout family the info bar is that layout's own panel.)
+            .background(if (LocalVaultFamily.current) ShelfTheme.colors.surface.copy(alpha = 0.86f) else Color.White.copy(alpha = 0.07f))
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1452,11 +1522,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
                 maxLines = 1, overflow = TextOverflow.Ellipsis
             )
             Text(
-                if (!synced) "Last saved" else when (st.lastDirection) {
-                    SyncDirection.UPLOAD -> "Saved to Drive"
-                    SyncDirection.DOWNLOAD -> "Fetched from Drive"
-                    SyncDirection.NONE -> "Checked"
-                } + if (st.fileCount > 0) " · ${st.fileCount} file${if (st.fileCount == 1) "" else "s"}" else "",
+                line?.label ?: "Last saved",
                 color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
@@ -1528,3 +1594,21 @@ internal fun BrowseSavesButton(onClick: () -> Unit, modifier: Modifier = Modifie
         }
     }
 }
+
+
+/**
+ * Update 499: the Save Vault's own colours. It is always a dark scene (update 151: light writing whatever the theme). With a
+ * dark layout colour family its panels / buttons / writing are that family's ([ChannelWindowTokens] — Arctic slate, Cinema
+ * black, a dark Channel palette, already contrast-checked); a light family (Channel Pale…) keeps the vault's dark panels.
+ */
+internal fun vaultFamilyColors(base: com.shelf.launcher.ui.theme.ShelfColors, family: ChannelWindowTokens?): com.shelf.launcher.ui.theme.ShelfColors {
+    if (family != null && !family.light) return family.colors
+    return if (base.textPrimary.luminance() < 0.5f) base.copy(textPrimary = Color.White, textMuted = Color.White.copy(alpha = 0.62f)) else base
+}
+
+/** Update 499: the bottom of the vault's background gradient — the family's own darkest panel, else the vault's near-black. */
+internal fun vaultFloor(family: ChannelWindowTokens?): Color =
+    if (family != null && !family.light) androidx.compose.ui.graphics.lerp(family.colors.background, Color.Black, 0.35f) else Color(0xFF05060B)
+
+/** Update 499: the vault is drawn in a dark layout family's colours ([vaultFamilyColors]). */
+internal val LocalVaultFamily = androidx.compose.runtime.staticCompositionLocalOf { false }

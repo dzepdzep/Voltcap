@@ -42,7 +42,6 @@ shots*/
 /qa_runs/
 
 # Update 421: local QA captures, owner reference pictures and backups never go to GitHub (the commit tool adds everything).
-/.shots/
 /SUMMARY.md.*.bak
 /reference-*
 /qa_reference_update403/*.jpg
@@ -58,56 +57,16 @@ tools/themes/refresh-review/sheet-*
 # v0.6.67: the staging placeholders are real files now (update 472); this one stays an empty leftover.
 /app/src/test/java/com/shelf/launcher/ui/GbPak458Test.kt
 /qa_pull/
+/.shots/
 # Update 474: v0.6.68 staging (next/0.6.68/staging.patch) — new files that exist only in the PC working tree while the staging
-# QA build is made; main never commits them. Remove these lines when the patch is applied to main.
-/app/src/main/java/com/shelf/launcher/ui/QaArt.kt
-/app/src/main/java/com/shelf/launcher/ui/QaFixture.kt
-/app/src/test/java/com/shelf/launcher/ui/QaFixture474Test.kt
-/app/src/main/java/com/shelf/launcher/ui/WholeRows.kt
-/app/src/main/java/com/shelf/launcher/ui/WindowLook.kt
-/app/src/test/java/com/shelf/launcher/ui/RevealFacts475Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Readability476Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Airy477Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Input477Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch478Test.kt
-/app/src/test/java/com/shelf/launcher/data/GameNative478Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch480Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch482Test.kt
-/app/src/test/java/com/shelf/launcher/data/FpsWindow483Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch485Test.kt
-/app/src/main/java/com/shelf/launcher/ui/MotionLevel.kt
 
 # A stray file from a shell command on the PC (update 485) — never committed
 /bject FullName, Length
-/app/src/test/java/com/shelf/launcher/ui/Batch487Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch488Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch489Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch490Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch491Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch492Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch493Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch494Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch495Test.kt
-/app/src/main/java/com/shelf/launcher/ui/QaOverlayFixture.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch496Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch497Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch498Test.kt
 /staging_local/
-/app/src/test/java/com/shelf/launcher/ui/Batch499Test.kt
-# Update 500: the isolated QA app (staging only) — its source set, PC switch and staging-only files / tests.
-/app/src/qa/
 /qa_variant.properties
-/app/src/main/java/com/shelf/launcher/data/QaVariant.kt
+# Leftover local QA stub (not part of the app).
 /app/src/main/java/com/shelf/launcher/ui/QaTouch.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch500Test.kt
 /tools/qa/device/touch500.sh
-/app/src/test/java/com/shelf/launcher/ui/Batch501Test.kt
-# Update 502: QA memory-card sheet (staging only).
-/app/src/main/java/com/shelf/launcher/ui/QaCardSheet.kt
-# Update 503: staging-only badge panel / late-art fixture / tests.
-/app/src/main/java/com/shelf/launcher/ui/BadgeWarm.kt
-/app/src/main/java/com/shelf/launcher/ui/QaArtFixture.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch503Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch504Test.kt
-/app/src/test/java/com/shelf/launcher/ui/Batch505Test.kt
-/app/src/main/java/com/shelf/launcher/ui/SceneOwnColors.kt
+# Update 516: Voltcap's own ScreenScraper / IGDB developer keys (read at build time; never in git).
+screenscraper.properties
+igdb.properties

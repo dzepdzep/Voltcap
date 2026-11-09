@@ -101,19 +101,38 @@ fun ShelfLauncherTheme(
     // stays yours — your Custom accent when you picked one, else the theme's — and it is never recoloured by the art.)
     val keepAccent = artDriven && appTheme.recolorable && com.shelf.launcher.data.Features.artKeepAccent.state.value
     val manualAccent: Int? = if (keepAccent) look.accent else null
-    val customBackground = if (custom && !music) look.background else null
+    // (Update 480, C2: the home layout's own colours — a palette or yours — over the theme's; a layout without its own
+    // inherits the theme's look. Not for themes that can't be recoloured, nor while music colours the theme.)
+    val layoutOwn = if (appTheme.recolorable && !music) com.shelf.launcher.data.Features.layoutColorsFor(appearance.homeLayout.name)
+        else com.shelf.launcher.data.Features.LayoutColors()
+    val customBackground = layoutOwn.bg ?: if (custom && !music) look.background else null
     val sat = if (custom) look.saturation / 100f else 1f
     val bri = if (custom) look.brightness / 100f else 1f
     val background = (customBackground?.let { Color(it) } ?: base.background).tuned(sat, bri)
     // Surfaces are derived from a custom background, so popups still stand out from it.
-    val surface = (if (customBackground != null) lerp(background, Color.White, 0.07f) else base.surface.tuned(sat, bri))
-    val surfaceRaised = (if (customBackground != null) lerp(background, Color.White, 0.12f) else base.surfaceRaised.tuned(sat, bri))
-    val chosenAccent = ((if (custom && !music) look.accent else manualAccent)?.let { Color(it) }
+    // (Update 480, C2: on a light background the panels step darker, not lighter — white on white didn't stand out.)
+    val lift = if (customBackground != null && background.luminance() > 0.5f) Color.Black else Color.White
+    val surface = (if (customBackground != null) lerp(background, lift, 0.07f) else base.surface.tuned(sat, bri))
+    val surfaceRaised = (if (customBackground != null) lerp(background, lift, 0.12f) else base.surfaceRaised.tuned(sat, bri))
+    val chosenAccent = ((layoutOwn.acc ?: (if (custom && !music) look.accent else manualAccent))?.let { Color(it) }
         ?: (if (keepAccent) appTheme.colors.accent else base.accent)).tuned(sat, bri)
     // (Update 240, #23: an accent from the art reaches 3:1 on the background and the raised panels, and white or black
     // writing on it 4.5:1 — only its lightness moves, the hue stays the art's. Your own accent (Custom, or kept with
     // "Keep my accent") is used exactly as you picked it.)
-    val adjustAccent = artDriven && manualAccent == null && !(custom && !music)
+    // (Update 480, C2 readability guard: a layout's own accent is kept readable too — 3:1 on the background, only its
+    // lightness moves.)
+    val adjustAccent = (artDriven && manualAccent == null && !(custom && !music) && layoutOwn.acc == null) || layoutOwn.acc != null
+    // (Update 490, display only: where these colours come from, in the order worked out above — read by Settings, never
+    // fed back into the colours.)
+    val origin = describeColorOrigin(
+        recolorable = appTheme.recolorable, musicTheme = music, useAlbum = useAlbum, albumNow = album != null,
+        gamePaletteNow = gamePalette != null, layoutBg = layoutOwn.bg != null, layoutAcc = layoutOwn.acc != null,
+        customBg = custom && !music && look.background != null, customAcc = custom && !music && look.accent != null,
+        keepAccent = keepAccent, keptAccentPicked = look.accent != null,
+        greyArtAccent = artDriven && saturationOf(base0.accent) < 0.15f,
+        layoutAsks = com.shelf.launcher.data.Features.layoutColorsFor(appearance.homeLayout.name).let { it.bg != null || it.acc != null }
+    )
+    androidx.compose.runtime.SideEffect { if (ColorOrigin.now != origin) ColorOrigin.now = origin }
     val fixedAccent = remember(chosenAccent, background, surfaceRaised, adjustAccent) {
         if (adjustAccent) legibleArtAccent(chosenAccent, background, surfaceRaised) else chosenAccent
     }
@@ -129,8 +148,19 @@ fun ShelfLauncherTheme(
     val surfaceA by animateColorAsState(surface, fade, label = "surface")
     val raisedA by animateColorAsState(surfaceRaised, fade, label = "raised")
     val secondaryA by animateColorAsState(secondaryTuned, fade, label = "secondary")
-    val textA by animateColorAsState(base.textPrimary, fade, label = "text")
-    val mutedA by animateColorAsState(base.textMuted, fade, label = "muted")
+    // (Update 480, C2 readability guard: on a background of your own — a light palette, a pale custom colour — the
+    // theme's writing moves to dark or light when it wouldn't reach 4.5:1 (muted 3:1). It used to stay the theme's light
+    // text on a light background.)
+    val guardedText = remember(base.textPrimary, background, customBackground) {
+        if (customBackground == null || contrastRatio(base.textPrimary, background) >= 4.5f) base.textPrimary
+        else if (background.luminance() > 0.4f) Color(0xFF15171B) else Color.White
+    }
+    val guardedMuted = remember(base.textMuted, background, customBackground) {
+        if (customBackground == null || contrastRatio(base.textMuted, background) >= 3f) base.textMuted
+        else if (background.luminance() > 0.4f) Color(0xFF4A505A) else Color(0xFFB8BEC8)
+    }
+    val textA by animateColorAsState(guardedText, fade, label = "text")
+    val mutedA by animateColorAsState(guardedMuted, fade, label = "muted")
 
     val colors = base.copy(
         background = backgroundA,
@@ -147,13 +177,14 @@ fun ShelfLauncherTheme(
     // draw light with dark writing instead of the dark defaults. (A light custom background keeps the dark scheme:
     // its writing stays the theme's light text.)
     // (The theme's own background decides, so a light game cover or album palette on a dark theme can't flip it.)
-    val lightTheme = appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum
+    val lightTheme = (appTheme.colors.background.luminance() > 0.5f && !useGame && !useAlbum && customBackground == null) ||
+        (customBackground != null && background.luminance() > 0.5f) // (Update 480, C2: a light background of your own is a light scheme)
     // (Update 231, #59: Material's scheme is built from the colours being glided TO, once per change, instead of a new
     // scheme every frame of the glide — that re-composed the whole home screen ~70 times per D-pad step while the
     // colours followed the game. Voltcap's own colours (LocalShelfColors) still glide; Material's controls switch.)
-    val targetText = base.textPrimary
-    val targetMuted = base.textMuted
-    val scheme = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
+    val targetText = guardedText
+    val targetMuted = guardedMuted
+    val schemeNow = remember(lightTheme, background, surface, surfaceRaised, fixedAccent, secondaryTuned, targetText, targetMuted) {
         if (lightTheme) androidx.compose.material3.lightColorScheme(
             background = background,
             surface = surface,
@@ -181,6 +212,20 @@ fun ShelfLauncherTheme(
         )
     }
 
+    // Update 493 (D137, measured on the KONKR): Material's colour scheme is a *static* CompositionLocal, and a ColorScheme
+    // is a new object whenever a colour in it changes — so with the colours following the game's art, every game moved to
+    // made everything under the theme re-run without skipping: each 3D case in Case stacks ~once per move (33 a move, the
+    // carousel's ~31 visible games). Voltcap's own colours (ShelfTheme, gliding as before) carry the art's accent; Material's
+    // scheme only gives defaults to its own controls (switches, sliders, fields — given ShelfTheme colours where they show
+    // the accent), none of them on the home screen. So while the colours follow the art, the scheme is handed on once they
+    // have been still SCHEME_SETTLE_MS; any other change (theme, music, custom colours) is handed on at once, as before.
+    val followArt = useGame && artDriven
+    var heldScheme by remember { mutableStateOf(schemeNow) }
+    LaunchedEffect(schemeNow, followArt) {
+        if (followArt) delay(SCHEME_SETTLE_MS)
+        heldScheme = schemeNow
+    }
+    val scheme = if (followArt) heldScheme else schemeNow
     val density = LocalDensity.current
     // "32-bit everywhere": the pixel font's glyphs are wide, so all text is a step smaller (names used to be cut
     // off or wrap onto two lines).
@@ -222,6 +267,9 @@ fun ShelfLauncherTheme(
  * for a moment; the palette's own wait is shortened by the same amount, so the colours still arrive ~450 ms after you stop.)
  */
 private const val ART_SETTLE_MS = 300L
+
+/** Update 493 (D137): how long the art's colours stay still before Material's colour scheme takes them (see ShelfLauncherTheme). */
+internal const val SCHEME_SETTLE_MS = 900L
 
 /**
  * A lively accent from a cover image: its average colour, pushed to a bright,
@@ -271,4 +319,61 @@ internal fun Color.tuned(saturation: Float, brightness: Float): Color {
     hsv[1] = (hsv[1] * saturation).coerceIn(0f, 1f)
     hsv[2] = (hsv[2] * brightness).coerceIn(0f, 1f)
     return Color(android.graphics.Color.HSVToColor((alpha * 255).toInt(), hsv))
+}
+
+
+/**
+ * Update 490 (owner request, display only): where the colours on screen come from — Theme, Custom, Game, Music or Layout
+ * override — for the background and the accent separately, plus why a theme or layout can't be recoloured. Worked out by
+ * [describeColorOrigin] in [ShelfLauncherTheme]'s own order; it only describes, nothing reads it to pick a colour.
+ */
+data class ColorOrigin(val background: String, val accent: String, val note: String? = null) {
+    /** One short line: "Background: Game · Accent: Layout override". */
+    val line: String get() = if (background == accent) "Colours from: $background" else "Background: $background · Accent: $accent"
+
+    companion object {
+        const val THEME = "Theme"
+        const val CUSTOM = "Custom"
+        const val GAME = "Game"
+        const val MUSIC = "Music"
+        const val LAYOUT = "Layout override"
+        /** The last colours drawn (set by ShelfLauncherTheme). */
+        var now by mutableStateOf<ColorOrigin?>(null)
+    }
+}
+
+/** Update 490: [ShelfLauncherTheme]'s precedence as words — keep in step with it (Batch490Test checks the cases). */
+internal fun describeColorOrigin(
+    recolorable: Boolean, musicTheme: Boolean, useAlbum: Boolean, albumNow: Boolean, gamePaletteNow: Boolean,
+    layoutBg: Boolean, layoutAcc: Boolean, customBg: Boolean, customAcc: Boolean,
+    keepAccent: Boolean, keptAccentPicked: Boolean, greyArtAccent: Boolean, layoutAsks: Boolean
+): ColorOrigin {
+    // base0: the album when it wins and something plays, else the game's palette, else (music themes) the album, else the theme.
+    val base = when {
+        useAlbum -> if (albumNow) ColorOrigin.MUSIC else ColorOrigin.THEME
+        gamePaletteNow -> ColorOrigin.GAME
+        musicTheme && albumNow -> ColorOrigin.MUSIC
+        else -> ColorOrigin.THEME
+    }
+    val artDriven = base != ColorOrigin.THEME
+    val bg = when {
+        layoutBg -> ColorOrigin.LAYOUT
+        customBg -> ColorOrigin.CUSTOM
+        else -> base
+    }
+    val acc = when {
+        layoutAcc -> ColorOrigin.LAYOUT
+        customAcc -> ColorOrigin.CUSTOM
+        keepAccent && keptAccentPicked -> ColorOrigin.CUSTOM
+        keepAccent -> ColorOrigin.THEME
+        artDriven && greyArtAccent -> ColorOrigin.THEME
+        else -> base
+    }
+    val note = when {
+        !recolorable && layoutAsks -> "This theme can't be recoloured: it keeps its own colours, so this layout's colours wait until another theme."
+        !recolorable -> "This theme can't be recoloured: it keeps its own colours."
+        musicTheme && layoutAsks -> "A music theme: the album's colours win over this layout's own colours."
+        else -> null
+    }
+    return ColorOrigin(bg, acc, note)
 }

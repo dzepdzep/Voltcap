@@ -39,6 +39,7 @@ object QuickResume {
      * with a crash). New launches always had their screen; only this path didn't.
      */
     fun resume(context: Context, pkg: String, displayId: Int? = null): Boolean = runCatching {
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("resume", pkg)) return false
         val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         // No CLEAR_TASK / CLEAR_TOP: those would end the running game.

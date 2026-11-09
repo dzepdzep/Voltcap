@@ -175,11 +175,20 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean, 
     val stale = if (own && res != null) made?.takeIf {
         SpineCache.sameOwnSpine(it.first, SpineCache.key(res, landscape, title, com.shelf.launcher.data.Packs.version.intValue))
     }?.second else null
+    // (Update 488, K4 QA: a spine shown without its name while its titled one is made — what a "flicker" would be.)
+    if (QaTrace.on && res != null && now == null && made?.first != key) androidx.compose.runtime.SideEffect {
+        QaTrace.event("spine wait", "${key.substringAfterLast('|').take(24)} stale=${stale != null} low=${SpineCache.peekLow(key) != null} untitled=${SpineCache.peekUntitled(res, landscape) != null}")
+    }
+    // (Update 488, K4 measured on the Thor: Case flow SNES, 80 games out and back — the full-size cache holds ~68, so 27 spines
+    // coming back were made again and each showed first WITHOUT its name for 1–4 frames: the "flicker returning to games".
+    // A small named copy of every spine made is kept (hundreds fit), shown for those frames instead of the nameless one.)
+    val low = if (res != null && now == null && got == null && stale == null) SpineCache.peekLow(key) else null
     return when {
         res == null -> SpineCache.Titled(true, null)
         now != null -> SpineCache.Titled(true, now)
         got != null -> SpineCache.Titled(true, got.second)
         stale != null -> SpineCache.Titled(false, stale)
+        low != null -> SpineCache.Titled(false, low)
         // (Update 348: while it's being made, the console's spine without the name — not a dark strip flashing in.
         // Update 369: the own Steam / Android spine too — OwnSpine drew a dark strip while it was made.)
         else -> SpineCache.Titled(false, SpineCache.peekUntitled(res, landscape))
@@ -190,6 +199,20 @@ internal fun rememberTitledSpine(res: Int?, title: String?, landscape: Boolean, 
  * Update 134: the console spines, decoded and flattened once each (and the games' titled ones, kept while there's room),
  * made on a background thread. Pictures stay the same until your spine pack changes (its version is in every key).
  */
+/** Update 487 (K4): the longest side a console spine picture is kept at (px). */
+internal const val SPINE_MAX_PX = 960
+
+/** Update 488 (K4): the long side of the small named copy kept of every titled spine ([SpineCache.peekLow]). */
+internal const val SPINE_LOW_PX = 320
+
+/** Update 487 (K4): the size a [w] × [h] spine picture is scaled to (its longest side at most [SPINE_MAX_PX]); null: as it is. */
+internal fun spineFitSize(w: Int, h: Int, max: Int = SPINE_MAX_PX): Pair<Int, Int>? {
+    val long = maxOf(w, h)
+    if (long <= max || w <= 0 || h <= 0) return null
+    val k = max.toFloat() / long
+    return (w * k).toInt().coerceAtLeast(1) to (h * k).toInt().coerceAtLeast(1)
+}
+
 internal object SpineCache {
     class Ready(val key: String, val image: ImageBitmap, val ink: Color)
     /** A titled spine: [done] once it has been tried ([bitmap] null then: there's no picture for it). */
@@ -223,6 +246,16 @@ internal object SpineCache {
     fun peekReady(key: String): Ready? = readyMap.get(key)
     fun peekTitled(key: String): android.graphics.Bitmap? = titledMap.get(key)
 
+    /** Update 488 (K4): small named copies of the titled spines (long side SPINE_LOW_PX, ~16 MB: a few hundred). */
+    private val lowMap = object : android.util.LruCache<String, android.graphics.Bitmap>(16 * 1024 * 1024) {
+        override fun sizeOf(key: String, value: android.graphics.Bitmap): Int = value.allocationByteCount
+    }
+    fun peekLow(key: String): android.graphics.Bitmap? = lowMap.get(key)
+    private fun keepLow(key: String, b: android.graphics.Bitmap) {
+        val fit = spineFitSize(b.width, b.height, SPINE_LOW_PX) ?: return
+        runCatching { lowMap.put(key, android.graphics.Bitmap.createScaledBitmap(b, fit.first, fit.second, true)) }
+    }
+
     /** The console's picture laid on its own average colour, upright as it comes (decoded once). */
     @Synchronized
     private fun flatOf(context: android.content.Context, res: Int): android.graphics.Bitmap? {
@@ -232,7 +265,13 @@ internal object SpineCache {
             if (res >= 0) android.graphics.BitmapFactory.decodeResource(context.resources, res)
             else PackSpines.load(res).asAndroidBitmap().takeIf { it.width > 1 }
         }.getOrNull() ?: return null
-        val out = runCatching { flatOnAverage(src) }.getOrNull() ?: return null
+        // Update 487 (K4, owner: "generated / custom spines flicker while scrolling"): the pack's pictures were kept at full
+        // size, so the titled cache (24–48 MB) held only a handful — a shelf of generated spines made them again and again,
+        // each shown first without its name. Now no longer than SPINE_MAX_PX (a whole screen's height and more).
+        val fit = spineFitSize(src.width, src.height)
+        val small = if (fit == null) src else runCatching { android.graphics.Bitmap.createScaledBitmap(src, fit.first, fit.second, true) }.getOrDefault(src)
+        QaTrace.event("spine src", "${src.width}x${src.height} -> ${small.width}x${small.height}")
+        val out = runCatching { flatOnAverage(small) }.getOrNull() ?: return null
         flat.put(k, out)
         return out
     }
@@ -258,6 +297,7 @@ internal object SpineCache {
         if (untitled.get(uk) == null) runCatching { flatOf(context, res)?.let { untitled.put(uk, orientSpine(it, landscape)) } }
         val out = runCatching { orientSpine(OwnSpines.compose(context, res, title, accent), landscape) }.getOrNull() ?: return null
         titledMap.put(key, out)
+        keepLow(key, out)
         return out
     }
 
@@ -271,6 +311,8 @@ internal object SpineCache {
         val named = if (tpl != null && !title.isNullOrBlank()) runCatching { spineWithTitle(f, tpl, title) }.getOrDefault(f) else f
         val out = orientSpine(named, landscape)
         titledMap.put(key, out)
+        keepLow(key, out)
+        QaTrace.event("spine made", "${out.width}x${out.height} cache=${titledMap.size() / 1024}/${titledMap.maxSize() / 1024}KB")
         return out
     }
 }
@@ -851,7 +893,7 @@ internal fun ScanCase(
     val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
     val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
     val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
-        raw != null && raw > hi * UNFOLDED_SCAN
+        raw != null && looksUnfolded(raw, hi)
     val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
     val shownKey = shown.toString()
     val own = (if (unfolded) CoverAspects.rawOf(shownKey) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }

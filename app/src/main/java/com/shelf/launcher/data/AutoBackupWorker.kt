@@ -23,6 +23,8 @@ class AutoBackupWorker(context: Context, params: WorkerParameters) : CoroutineWo
     override suspend fun doWork(): Result {
         val app = applicationContext
         Features.init(app)
+        // Update 497 (D295): a QA session uploads no backup and leaves auto_backup_at alone (seen moving on the KONKR, k490o).
+        if (CloudSync.qaPaused(app)) return Result.success()
         val every = Features.autoBackup.value
         if (every == Every.OFF) return Result.success()
         CloudSync.load(app)

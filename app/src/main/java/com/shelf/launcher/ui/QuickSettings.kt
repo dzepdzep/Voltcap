@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Memory
@@ -240,6 +241,7 @@ fun QuickSettingsCard(
     val liveHome = androidx.compose.runtime.rememberUpdatedState(home)
     val undoable: (String, () -> Unit) -> Unit = remember { { label, run -> r1Undoable(label, { liveHome.value?.appearance }, undoScope, run) } }
     var showLayoutList by remember { mutableStateOf(false) }
+    var showSpacing by remember { mutableStateOf(false) }
     val lightsTileFocus = remember { FocusRequester() }
 
     // Which tiles show and in what order (Edit: pick a tile, move it, hide / show it). Kept per device.
@@ -495,6 +497,17 @@ fun QuickSettingsCard(
                             else emptyList()))
                     }) {
                     if (F.gameWindow.value) PopupStyle.set(lname, styles[(styles.indexOf(PopupStyle.current(lname)) + 1).mod(styles.size)])
+                })
+            }
+            // Update 490 (R1, owner-approved): Layout options of the layout in use — Settings › Home › Layout options, opened at
+            // that layout's own options (its "<layout> options" group where it has one). No setting of its own: nothing doubled.
+            add(R1Tile("layoutopts", Icons.Filled.Tune, "Layout\noptions", false) { home.openSettingsAt("Home", layoutOptionsTarget(a.homeLayout)) })
+            // Update 490 (R2, owner-approved): Game spacing of the layout in use — the same pref as its Settings slider
+            // (R1Spacing). Tap: the next step; hold: the slider. Only built where the layout has a spacing (r1TileFit).
+            R1Spacing.prefFor(a.homeLayout)?.let { sp ->
+                val v = sp.state.value
+                add(R1Tile("spacing", Icons.Filled.SpaceBar, "Spacing\n" + R1Spacing.label(v), false, longAction = { showSpacing = true }) {
+                    sp.value = R1Spacing.next(v).coerceIn(R1Spacing.MIN, R1Spacing.maxFor(a.homeLayout))
                 })
             }
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
@@ -1102,16 +1115,9 @@ fun QuickSettingsCard(
     }
     // (Update 325, Toni: "I can't find the R1 tile for the outline": a tile new since you last arranged them went to the
     // very end, behind the arrow. It now comes in right after the tile it's built beside — Outline after Badges.)
-    val ordered = run {
-        val out = order.mapNotNull { byId[it] }.toMutableList()
-        allTiles.forEachIndexed { i, t ->
-            if (t.id in order) return@forEachIndexed
-            val before = allTiles.getOrNull(i - 1)?.id
-            val at = out.indexOfFirst { it.id == before }
-            if (at >= 0) out.add(at + 1, t) else out.add(t)
-        }
-        out
-    }
+    // (Update 490, R0 — owner-approved: a tile the saved order doesn't have goes after all the saved ones, into More; the
+    // saved tiles never move and hidden ones stay hidden. r1Order.)
+    val ordered = r1Order(order, allTiles.map { it.id }).mapNotNull { byId[it] }
     // An L1 shortcut for a tile: press it once now that the panel is up (the tiles may still be loading, so wait a moment).
     // A request the panel never showed (no access on this layout…) must not fire at the next R1 open.
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { R1Shortcut.pending = null } }
@@ -1420,6 +1426,7 @@ fun QuickSettingsCard(
         R1ChoicePopup(title, choices.map { c -> R1Choice(c.label, c.on) { undoable(title.substringBefore(" ·")) { c.run() } } }, onDismiss = { choiceSheet = null })
     }
     if (showLayoutList && home != null) LayoutListPopup(home, onDismiss = { showLayoutList = false }, undoable = undoable)
+    if (showSpacing && home != null) GameSpacingPopup(home, onDismiss = { showSpacing = false })
     if (showBatteryWatch) BatteryWatchPopup(onDismiss = { showBatteryWatch = false })
     if (showSaver) BatterySaverPopup(onDismiss = { showSaver = false })
     if (showBattery) BatteryChargePopup(onDismiss = { showBattery = false; refresh++ })
@@ -1852,9 +1859,19 @@ private fun LayoutListPopup(home: R1Home, onDismiss: () -> Unit, undoable: (Stri
         note = "Move over a layout to see it, press one to choose it, then Apply. Each layout keeps its own options (hold the tile for its settings page).",
         active = a.homeLayout,
         onApply = { l -> undoable("Layout") { home.setAppearance(a.copy(homeLayout = l)) } },
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        // (Update 490, R1: "Options for <layout>…" — that layout's own options in Settings; the tap and the list stay.)
+        optionsLabel = "Options for ${a.homeLayout.label}…",
+        onOptions = { home.openSettingsAt("Home", layoutOptionsTarget(a.homeLayout)) }
     )
 }
+
+/**
+ * Update 490 (R1): where "Layout options" opens for layout [l] — the search entry of that layout's own options group
+ * ("<layout> options", the style homes) or, for the layouts whose options fill the page, the Layout options page itself.
+ */
+internal fun layoutOptionsTarget(l: com.shelf.launcher.data.HomeLayout): String =
+    (l.label + " options").takeIf { t -> SettingsIndex.all.any { it.label == t } } ?: "Layout options"
 
 /** Hold on the Size tile: Small / Medium / Large and a % slider, for the layout in use (update 104 / 105). */
 @Composable
@@ -1881,6 +1898,29 @@ private fun GameSizePopup(home: R1Home, onDismiss: () -> Unit) {
             }
             Spacer(Modifier.height(12.dp))
             GameSizeSlider(a) { home.setAppearance(it) }
+            Spacer(Modifier.height(10.dp))
+            Chip("Done", onClick = onDismiss)
+        }
+    }
+}
+
+/** Update 490 (R2): hold on the Game spacing tile — the layout's own spacing slider, the same pref and range as in Settings. */
+@Composable
+private fun GameSpacingPopup(home: R1Home, onDismiss: () -> Unit) {
+    val l = home.appearance.homeLayout
+    val sp = R1Spacing.prefFor(l) ?: run { onDismiss(); return }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        ImmersiveDialogWindow()
+        ShelfCard {
+            SectionLabel("Game spacing · " + l.label)
+            MutedNote("The room between the games of this layout (100 % = as it was). The same as Settings › Home › Layout options › Game spacing; game size stays its own.")
+            Spacer(Modifier.height(10.dp))
+            val first = remember { FocusRequester() }
+            LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
+            Box(Modifier.focusRequester(first)) {
+                PercentSlider("Game spacing", sp.state.value, { sp.value = it.coerceIn(R1Spacing.MIN, R1Spacing.maxFor(l)) },
+                    min = R1Spacing.MIN, max = R1Spacing.maxFor(l), valueText = { "$it%" })
+            }
             Spacer(Modifier.height(10.dp))
             Chip("Done", onClick = onDismiss)
         }

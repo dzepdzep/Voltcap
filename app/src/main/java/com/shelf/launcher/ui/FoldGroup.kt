@@ -57,7 +57,8 @@ internal fun FoldGroup(
     val open = (foldOpen[key] ?: startOpen) || SettingsJump.pending != null
     val parents = LocalFoldKeys.current
     val shape = uiRounded(14.dp)
-    Column(jumpAnchor(title).fillMaxWidth().padding(vertical = 4.dp)) {
+    // (Update 490: a search result that is the group itself opens it — it used to fold again once the jump was over.)
+    Column(jumpAnchor(title, onHit = { foldOpen[key] = true }).fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             Modifier
                 .fillMaxWidth()

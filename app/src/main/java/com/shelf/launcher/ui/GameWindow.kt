@@ -177,7 +177,10 @@ internal fun bigLogo(g: Game, state: LauncherUiState): String? {
 internal fun flightVeil(lift: Float): Float = lift.coerceIn(0f, 1f)
 
 /** Update 422: scenes that move in from a screen edge themselves (GameWindow doesn't grow them out of the game's card). */
-internal val SELF_MOVING_SCENES = setOf(WinScene.CROSS_OPTIONS, WinScene.SIDE_DRAWER, WinScene.DOCK_FLYOUT)
+internal val SELF_MOVING_SCENES = setOf(WinScene.CROSS_OPTIONS, WinScene.SIDE_DRAWER, WinScene.DOCK_FLYOUT, WinScene.DISC_PANEL)
+
+/** Update 507: how much the home's own case is hidden while its case flies (all of it until it has landed back). Pure. */
+internal fun caseHomeHidden(grow: Float): Float = if (grow > 0.001f) 1f else 0f
 
 internal val PICKUP_CARD_LAYOUTS =setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
 
@@ -323,7 +326,10 @@ private class WinLook(
      * Update 330: the layout's own colours ARE its look (Pocket classic's paper, the memory-card screen's grey): "The
      * game's colours" / "Theme colours" then only colour its accent (the lit button, the picture's frame), never the panel.
      */
-    val keepsPalette: Boolean = false
+    val keepsPalette: Boolean = false,
+    /** Update 476 (D262): the panel has a header band drawn at a fixed share of its height (Storage's blue strip): a full
+     *  page — taller than the window — takes the plain [paper] instead, or its header sits half on the band. */
+    val bandedPanel: Boolean = false
 )
 
 private fun solid(c: Color): Brush = Brush.verticalGradient(listOf(c, c))
@@ -344,7 +350,7 @@ private fun WinLook.tinted(tint: Color): WinLook {
             mediaFrame = if (mediaFrame != null) a else null, mediaFrameW = mediaFrameW,
             ink = ink, muted = muted, accent = a, btnFill = btnFill, btnInk = btnInk, btnOnFill = solid(a), btnOnInk = onA,
             btnBorder = btnBorder, back = back, details = details, play = play, mono = mono, caps = caps, paper = paper,
-            stripes = stripes, keepsPalette = true
+            stripes = stripes, keepsPalette = true, bandedPanel = bandedPanel
         )
     }
     val deep = mix(tint, Color.Black, 0.55f)
@@ -611,7 +617,7 @@ private fun lookFor(layout: HomeLayout, resumed: Boolean): WinLook {
             btnFill = solid(Color.White), btnInk = Color(0xFF1E2A3A), btnOnFill = solid(Color(0xFFFF5A4E)), btnOnInk = Color.White,
             btnBorder = Color(0xFF4C6A8E),
             back = "Back", details = "Summary", play = playWord,
-            paper = Color(0xFFF7F9FC), keepsPalette = true
+            paper = Color(0xFFF7F9FC), keepsPalette = true, bandedPanel = true
         )
         // Update 330: File select — the block opened out: chunky blue with a thick light bevel, yellow for the lit button.
         HomeLayout.FILESELECT -> WinLook(
@@ -1111,7 +1117,10 @@ internal fun GameWindow(
     // off: the card vanished at once and the piece popped in at its final place. The flight now follows only the system's
     // animation setting and Lite; "Just appear" only skips the showcase turn.
     val fullInspect = sysAnims && (!lite || Features.motionOnLite.state.value)
-    val inspectTurn = fullInspect && MotionPrefs.info() != Features.InfoAnim.NONE
+    // Update 507: a layout's own window (its scene, its flight, its showcase turn) follows Home › Animations › Popup windows
+    // (Follow layout / Instant); the plain window without a scene keeps following the game's info, as before.
+    val layoutMotion = if (scene != null || piece != null) MotionPrefs.popup() else MotionPrefs.info() != Features.InfoAnim.NONE
+    val inspectTurn = fullInspect && layoutMotion
     // The grow: 0 = drawn over the game it came from, 1 = in its place. Starts once the window's place is known.
     // (Update 162: kept out here, so closing can fade the window out while the piece flies back.)
     val grow = remember { Animatable(0f) }
@@ -1120,7 +1129,13 @@ internal fun GameWindow(
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
-    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE
+    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup()
+    // Update 507 (owner, P1: "the selected physical case should naturally come forward and return to its original position"):
+    // Game shelf and Case stacks fly the case itself out of the home into the window's room and back (SceneFlyingCase); the
+    // window is not scaled out of the card, its card slides out beside the case. (Update 508: declared here — the close path
+    // times its return too.)
+    val caseFlight = scene == WinScene.INDEX_CARD && piece == null && (layout == HomeLayout.SHELF || layout == HomeLayout.STACKS) &&
+        origin != null && origin.top != Float.MAX_VALUE && (layoutMotion || cardFlight)
     val close: () -> Unit = {
         // v0.6.66 popup audit (GT78, Case stacks, A B A B at 250 ms): the A while it flew back asked for it to open again
         // (D108), but the B after it fell on the closing window and was lost, so it opened again and stayed open — the next
@@ -1128,11 +1143,11 @@ internal fun GameWindow(
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win close again=${closingFlag[0]}")
         if (closingFlag[0]) GamePopup.reopenRequested = false
         closingFlag[0] = true
-        if (piece == null && (scene != null || cardFlight) && (cardFlight || MotionPrefs.info() != Features.InfoAnim.NONE) && grow.value > 0.05f) {
+        if (piece == null && (scene != null || cardFlight) && (cardFlight || layoutMotion) && grow.value > 0.05f) {
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, tween(sceneCloseMs(scene), easing = FastOutSlowInEasing))
+                    grow.animateTo(0f, tween(caseFlightMs(sceneCloseMs(scene), caseFlight, open = false), easing = FastOutSlowInEasing))
                     closeNow()
                 }
             }
@@ -1191,6 +1206,11 @@ internal fun GameWindow(
                 return@onPreviewKeyEvent true
             }
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) HomeKeyGuard.aDown = false
+            // Update 487 (D265): L2 / R2 turn the open window's story (Twin hinge window) when it has pages.
+            if (WinStory.pager != null && !closingFlag[0]) {
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) { if (WinStory.key(e.key)) return@onPreviewKeyEvent true }
+                else if (e.key == androidx.compose.ui.input.key.Key.ButtonL2 || e.key == androidx.compose.ui.input.key.Key.ButtonR2) return@onPreviewKeyEvent true
+            }
             false
         }) {
         val playFocus = remember { FocusRequester() }
@@ -1274,21 +1294,49 @@ internal fun GameWindow(
         var target by remember { mutableStateOf<Rect?>(null) }
         // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)
         // still grows out of the case that was picked and goes back into its slot, whatever Info is set to: [cardFlight].
-        val anim = MotionPrefs.info() != Features.InfoAnim.NONE || cardFlight
+        // Update 507: the layout's own popup motion (Follow layout / Instant), no longer the game's info setting.
+        val anim = layoutMotion || cardFlight
         // (Update 330: Orbit deck's disc leaves the orbit and comes forward on its own, the window opening round it — the
         // scene draws that flight (WinScenes.kt OdFlyingDisc); the window itself isn't scaled out of the disc. Its disc
         // on the orbit fades as the flying one takes over, and back as it lands.)
         val discFlight = scene == WinScene.ORBIT_TERMINAL && piece == null && origin != null && origin.top != Float.MAX_VALUE && anim
-        if (discFlight || cardFlight) {
+        if (scene == WinScene.TWIN_HINGE) {
+            // Update 507: the Twin layouts' other screen dims with the window (TwinSecondScreen), and back as it closes.
+            LaunchedEffect(Unit) { androidx.compose.runtime.snapshotFlow { grow.value }.collect { TwinScreens.popupReveal.floatValue = it.coerceIn(0f, 1f) } }
+            DisposableEffect(Unit) { onDispose { TwinScreens.popupReveal.floatValue = 0f } }
+        }
+        if (discFlight || cardFlight || caseFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
-                androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = it.coerceIn(0f, 1f) }
+                // (Update 507: the flying case IS the home's case — its copy at home is gone from the first frame and back only once
+                // the case has landed; a cross-fade showed two cases on the way.)
+                androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = if (caseFlight) caseHomeHidden(it) else it.coerceIn(0f, 1f) }
             }
             DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
         }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else sceneOpenMs(scene), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing else FastOutSlowInEasing))
+            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else caseFlightMs(sceneOpenMs(scene), caseFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
+                else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing))
+        }
+        // Update 506 (motion polish, device finding: Cross menu's second movement after closing; Case Flow still fading with
+        // Motion = Off): the dialog's own platform window dimmed what's behind it and faded in / out on the system's clock,
+        // outside Voltcap's motion level and after the scene had already gone. The dim is now drawn here (the same amount, see
+        // winSysDim) with the window's own reveal, and the system's window fade is off whenever the window animates itself or
+        // motion is Off — one movement, closing ends when the scene does, and Off is immediate.
+        val dlgView = LocalView.current
+        var sysDim by remember { mutableStateOf(0f) }
+        // (Update 507: Popup windows › Instant also means no system fade — the layout's own window opens and closes at once.)
+        val ownMotion = anim || MotionLevel.scaleFactor == 0f || ((scene != null || piece != null) && !MotionPrefs.popup())
+        DisposableEffect(dlgView, ownMotion) {
+            val win = (dlgView.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
+            if (win != null) runCatching {
+                sysDim = winSysDim(win.attributes.flags, win.attributes.dimAmount)
+                win.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                if (ownMotion) win.setWindowAnimations(0)
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "win sysdim=$sysDim ownMotion=$ownMotion")
+            }
+            onDispose { }
         }
         // Update 162: the piece's place beside the window's parts (window px), known after the first layout; it comes
         // out once that's known, and the right stick turns it.
@@ -1308,6 +1356,12 @@ internal fun GameWindow(
             }
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalWinStatus provides winStatus) {
+        // (Update 506: the platform dim, now the window's own — it comes and goes with the reveal; read while drawing. Disc station's
+        // window opens beside the player, which stays in view: its own veil is the whole dim there.)
+        if (sysDim > 0f && scene != WinScene.DISC_PANEL && !(scene == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS)) Box(Modifier.fillMaxSize().drawBehind {
+            val k = grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f)
+            drawRect(Color.Black.copy(alpha = sysDim * k))
+        })
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
             LaunchedEffect(Unit) { if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
@@ -1359,8 +1413,12 @@ internal fun GameWindow(
                 // Update 403: with a flying piece the veil (and the window) fade in WITH the flight (lift), not on their own clock:
                 // `grow` starts at the first layout, the flight only after the piece's slot is known and its cover is in memory
                 // (up to 450 ms), so the screen dimmed for ~8 frames before anything moved.
-                .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
-                .background(scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else sceneVeil(it) } ?: look.veil)
+                // (Update 507: with the case flying back the window's content isn't faded — the case stays solid all the way to
+                // its place; only the veil follows the reveal. The card beside it has its own staged fade.)
+                .graphicsLayer { alpha = if (caseFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
+                .then((scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else if (it == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS) coverDetailsVeil else sceneVeilFor(it) /* (505: Shop / Bubbles in your wall's colours) */ } ?: look.veil).let { veil ->
+                    if (caseFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
+                })
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
         ) {
@@ -1387,7 +1445,7 @@ internal fun GameWindow(
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            if (discFlight || scene in SELF_MOVING_SCENES) {
+                            if (discFlight || caseFlight || scene in SELF_MOVING_SCENES) {
                                 // (Its scene flies the disc and opens the rest round it. Update 422: the screen-edge scenes —
                                 // Cross options, Side drawer, Dock flyout — slide in from their own edge, not out of the card.)
                             } else if (from == null || !anim) {
@@ -1421,7 +1479,7 @@ internal fun GameWindow(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight) origin else null)) {
+                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value } }
                     }
                     else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
@@ -1456,6 +1514,14 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
     else -> 320
 }
 
+/**
+ * Update 508 (owner, GT78: "the case arrives in about 0.1 s"): the case flying out of Game shelf / Case stacks gets a journey
+ * you can follow — 470 ms out (on a curve that starts moving at once: the GT78 spends its first ~100 ms building the
+ * window, and an ease-in start then looked like the case standing still), 380 ms back (the card beside it is ready well inside that; Play stays guarded by
+ * [PLAY_GUARD_MS] as before, and B closes at once from any point). Other windows keep their own times. Pure.
+ */
+internal fun caseFlightMs(base: Int, caseFlight: Boolean, open: Boolean): Int = if (!caseFlight) base else if (open) 470 else 380
+
 internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.FILE_CARD -> 340
     WinScene.ORBIT_TERMINAL -> 480
@@ -1465,6 +1531,10 @@ internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.MAG_PAGE, WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 300
     else -> 260
 }
+
+/** Update 506: how much the dialog's platform window dimmed behind it (0 when it didn't) — drawn by the window itself now. */
+internal fun winSysDim(flags: Int, dimAmount: Float): Float =
+    if (flags and android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND != 0) dimAmount.coerceIn(0f, 1f) else 0f
 
 /** Update 162: the window's parts are beside the inspected piece — no second disc / cartridge drawn among them. */
 private val LocalWinInspect = androidx.compose.runtime.staticCompositionLocalOf { false }
@@ -1760,13 +1830,14 @@ private fun TvControls(
         }
         val status = LocalWinStatus.current
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras).forEach { (l, f, isPlay) ->
+            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
+            ButtonRow(tvItems.map { it.first }) { tvItems.forEach { (l, f, isPlay) ->
                 WinButton(
                     look, if (look.caps) l.uppercase() else l,
                     Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
                     wideButton = false, stretch = true, compact = true, onClick = f
                 )
-            }
+            } }
             // (Update 213: Performance as a round button in the TV's small strip.)
             if (page == WinPage.MAIN && status?.perf != null) Box(Modifier.focusRequester(status.perfFocus)) {
                 WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 32.dp, status.onPerf)
@@ -1859,7 +1930,7 @@ private fun WindowBody(
         fun btnMod(l: String, isPlay: Boolean): Modifier =
             if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
-            all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) }
+            ButtonRow(all.map { it.first }) { all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) } }
             // (Update 119: the game's options, achievements and save sync under them.)
             if (!details) WinIcons(look, extras)
             WinStatusLine(look)
@@ -1875,13 +1946,13 @@ private fun WindowBody(
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 // [share]: the buttons share the width (a narrow column).
-                items.forEach { (l, f, isPlay) ->
+                ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
                     WinButton(
                         look, if (look.caps) l.uppercase() else l,
                         Modifier.weight(1f).then(btnMod(l, isPlay)),
                         wideButton = false, stretch = true, onClick = f
                     )
-                }
+                } }
             } else {
                 // (Update 291, Toni: "the icon isn't reachable": the Inspect icon was the fifth round icon, and on the Cube
                 // layout's window (Mario Party, Animal Crossing) it ran past the window's right edge — the estimate above is
@@ -1890,9 +1961,9 @@ private fun WindowBody(
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
                     itemVerticalAlignment = Alignment.CenterVertically
                 ) {
-                    items.forEach { (l, f, isPlay) ->
+                    ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
                         WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = false, stretch = false, onClick = f)
-                    }
+                    } }
                     if (!details && !iconsBelow) WinIcons(look, extras, 44.dp)
                 }
             }
@@ -2241,7 +2312,10 @@ internal val MORE_SCENES = setOf(
     WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
     WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
     WinScene.TILE_CARD, WinScene.POCKET_LCD, WinScene.DISC_PANEL, WinScene.CORE_PANEL, WinScene.CUBE_FACE, WinScene.RECORD_SLEEVE,
-    WinScene.CASE_MEDIA, WinScene.FILE_CARD
+    WinScene.CASE_MEDIA, WinScene.FILE_CARD, WinScene.STUDIO_PANEL,
+    // (Update 477, D266: Airy's eight round keys took two rows on the KONKR and the chips' second line — Played, ★ — was not
+    // drawn. Play, Details, Back, Inspect and More in one row; the rest opens in the panel's well with More.)
+    WinScene.AIRY_PANEL
 )
 
 /** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
@@ -2266,9 +2340,9 @@ private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, ma
             Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically
         ) {
-            ctx.buttons.forEach { a ->
+            ButtonRow(ctx.buttons.map { it.label }) { ctx.buttons.forEach { a ->
                 WinButton(look, if (look.caps) a.label.uppercase() else a.label, if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier, wideButton = false, compact = compact, onClick = a.onClick)
-            }
+            } }
         }
     }
 }
@@ -2283,7 +2357,7 @@ private fun ExpandedWinPage(
     // (The window's own panel; a look whose parts float on the veil takes its details paper — the Wii window's white — and
     // only a look with neither gets a dark glass.)
     val own = look.panel != null || look.paper != null
-    val panel = look.panel ?: look.paper?.let { solid(it) } ?: solid(Color(0xF2121519))
+    val panel = (if (look.bandedPanel) look.paper?.let { solid(it) } else null) ?: look.panel ?: look.paper?.let { solid(it) } ?: solid(Color(0xF2121519))
     val ink = if (own) look.ink else Color.White
     val muted = if (own) look.muted else Color.White.copy(alpha = 0.7f)
     val compact = maxH < 420.dp
@@ -2349,7 +2423,9 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
     val shape = RoundedCornerShape(50)
     val warn = Color(0xFFFFB74D)
     Row(
-        Modifier.clip(shape)
+        // (Update 478: 24 dp at least — a touch target — whatever the line height of its text: WinFullText's tighter line
+        // made the chip 45 px on the Odin, under the gate's 24 dp.)
+        Modifier.heightIn(min = 24.dp).clip(shape)
             .background(if (focused) look.btnOnFill else solid(if (urgent) warn.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.22f)))
             .then(if (urgent && !focused) Modifier.border(1.dp, warn.copy(alpha = 0.7f), shape) else Modifier)
             .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
@@ -2359,7 +2435,8 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
         val ink = if (focused) look.btnOnInk else if (urgent) warn else Color.White.copy(alpha = 0.82f)
         androidx.compose.material3.Icon(icon, null, tint = ink, modifier = Modifier.size(13.dp))
         Spacer(Modifier.width(5.dp))
-        androidx.compose.material3.Text(
+        // (Update 478, D271: a long status — "Saves: up to date · 14 min ago" on a narrow key — slides instead of being cut.)
+        WinFullText(
             text, color = ink, fontSize = 11.sp, fontWeight = if (urgent) FontWeight.Bold else FontWeight.Medium, maxLines = 2,
             fontFamily = if (look.mono) FontFamily.Monospace else null
         )
@@ -2394,7 +2471,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
         perfRows(s, st.hasFan, st.onPerfAdvanced).forEachIndexed { i, row ->
             WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = { row.onClick?.invoke() }) { on ->
                 Column(Modifier.weight(1f)) {
-                    val c = when { on -> look.btnOnInk; row.destructive -> Color(0xFFFF8A80); else -> look.btnInk }
+                    val c = when { on -> look.btnOnInk; row.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk); else -> look.btnInk }
                     androidx.compose.material3.Text(
                         if (look.caps) row.label.uppercase() else row.label, color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                         maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
@@ -2450,7 +2527,7 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                 Column(Modifier.weight(1f)) {
                     val ink = when {
                         on -> look.btnOnInk
-                        opt.destructive -> Color(0xFFFF8A80)
+                        opt.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk)
                         else -> look.btnInk
                     }
                     androidx.compose.material3.Text(
@@ -2604,13 +2681,12 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
 
 @Composable
 private fun WinText(look: WinLook, text: String, color: Color, size: Int, weight: FontWeight, shadow: Boolean = false) {
-    androidx.compose.material3.Text(
-        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight,
-        // (Update 285, Toni: everything to be seen — "Pokemon Sil…", "4 h …": up to two lines, smaller until it fits.)
-        maxLines = 2,
-        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (size * 0.55f).coerceAtLeast(9f).sp, maxFontSize = size.sp),
+    // (Update 285, Toni: everything to be seen — up to two lines, smaller until it fits. Update 478, D271: then it slides —
+    // a very long name stopped at two lines, cut, in the TV / Layout Studio windows.)
+    WinFullText(
+        if (look.caps) text.uppercase() else text, color = color, fontSize = size.sp, fontWeight = weight, maxLines = 2,
         fontFamily = if (look.mono) FontFamily.Monospace else null,
-        style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.ui.text.TextStyle.Default
+        style = if (shadow) nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW) else androidx.compose.material3.LocalTextStyle.current
     )
 }
 
@@ -2656,15 +2732,53 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
                 fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                 style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
             )
-        } else androidx.compose.material3.Text(
-            label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp,
-            fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = if (look.mono) FontFamily.Monospace else null,
-            // (Update 129: a little smaller rather than cut, where the button can't grow — e.g. buttons sharing a row.)
-            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(
-                minFontSize = 9.sp, maxFontSize = if (compact) 12.sp else if (look.btn == Btn.LCD) 13.sp else 15.sp, stepSize = 0.5.sp
+        } else androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
+            // (Update 476, D259: in a row where one word had to shrink — "Full details" on the TV's Details page — its
+            // neighbours kept the full size: three sizes in one row. Each button measures the size its word fits at (the
+            // real text layout, 0.5 sp steps down to 9 sp — what auto-size did); the row's buttons share the smallest
+            // (LocalButtonRowSize); alone, a button keeps its own. 476a read the size back from auto-size's layout, which
+            // reports the asked size, not the one drawn: the TV still showed three sizes on hardware.)
+            val base = if (compact) 12f else if (look.btn == Btn.LCD) 13f else 15f
+            val family = if (look.mono) FontFamily.Monospace else null
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val textStyle = androidx.compose.material3.LocalTextStyle.current
+            val maxW = constraints.maxWidth
+            val own = remember(label, maxW, base, family, textStyle) {
+                buttonFitSize(base) { sz ->
+                    maxW == androidx.compose.ui.unit.Constraints.Infinity || measurer.measure(label,
+                        textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = sz.sp, fontWeight = FontWeight.SemiBold, fontFamily = family)),
+                        maxLines = 1, softWrap = false).size.width <= maxW
+                }
+            }
+            val row = LocalButtonRowSize.current
+            LaunchedEffect(row, own) { if (row != null) row.floatValue = sharedButtonSize(row.floatValue, own) }
+            val size = row?.let { minOf(own, it.floatValue) } ?: own
+            androidx.compose.material3.Text(
+                label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = size.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = family   // qa-ok: TRUNCATE-CLIP (sized to fit its button: buttonFitSize)
             )
-        )
+        }
     }
+}
+
+/** Update 476 (D259): the font size (sp) the buttons of one row share — set by [ButtonRow], lowered by any button that shrank. */
+internal val LocalButtonRowSize = androidx.compose.runtime.compositionLocalOf<androidx.compose.runtime.MutableFloatState?> { null }
+
+/** Update 476 (D259): the largest size from [base] sp down to 9 sp, in 0.5 sp steps, at which [fits]; 9 when none does. */
+internal fun buttonFitSize(base: Float, fits: (Float) -> Boolean): Float {
+    var s = base
+    while (s > 9f && !fits(s)) s -= 0.5f
+    return s.coerceAtLeast(9f)
+}
+
+/** The row's shared size after a button laid its word out at [used] sp (only ever goes down; NaN / unset sizes ignored). */
+internal fun sharedButtonSize(current: Float, used: Float): Float = if (used.isNaN() || used <= 0f) current else minOf(current, used)
+
+/** Update 476 (D259): [content]'s buttons share one font size; [key] (the labels) starts it afresh when the words change. */
+@Composable
+private fun ButtonRow(key: Any, content: @Composable () -> Unit) {
+    val size = remember(key) { androidx.compose.runtime.mutableFloatStateOf(99f) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalButtonRowSize provides size) { content() }
 }
 
 /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
@@ -2676,13 +2790,30 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
     val meta = state.metadata[g.stableKey]
     val titles = LocalTitleOptions.current
-    Row(modifier.background(paper).padding(16.dp)) {
-        Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
+    // (Update 476, D253: on a narrow page — Cross's column beside its options, the half-width cards of Stacks / Box / Pocket —
+    // the full-height cover took all but 61 dp and the text broke mid-word over 114 lines. The text keeps at least
+    // DETAILS_MIN_TEXT; the cover shrinks first (top-aligned, its shape kept), and when even a small cover doesn't fit beside
+    // the text it goes above it. Nothing is hidden: every fact and the whole story stay on the page.)
+    BoxWithConstraints(modifier.background(paper).padding(16.dp)) {
+    val fit = detailsCoverFit(maxWidth.value, maxHeight.value)
+    val stackedCoverH = minOf(maxHeight * 0.45f, 160.dp)
+    val coverBox: @Composable (Modifier) -> Unit = { m ->
+        Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
             // (Update 202: the cover's file's flat strips trimmed — rememberCoverRequest; Crop fills the place.)
             if (cover != null) AsyncImage(rememberCoverRequest(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
-        Spacer(Modifier.width(14.dp))
+    }
+    val stacked = fit == null
+    Row(Modifier.fillMaxSize()) {
+        if (fit != null) {
+            coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
+            Spacer(Modifier.width(DETAILS_GAP.dp))
+        }
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+            if (stacked) {
+                coverBox(Modifier.height(stackedCoverH).aspectRatio(0.72f))
+                Spacer(Modifier.height(10.dp))
+            }
             // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
             // scrolls, so the name and the facts wrap in full.)
             // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
@@ -2709,5 +2840,25 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             }
             androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
         }
+    }
+    }
+}
+
+internal const val DETAILS_MIN_TEXT = 200f   // dp the details text column keeps, at least (≈ 28 characters of 13 sp)
+internal const val DETAILS_GAP = 14f
+internal const val DETAILS_MIN_COVER = 64f
+
+/**
+ * Update 476 (D253): the cover's width (dp) on the details page of [w] x [h] dp (inside its padding): full height (0.72 : 1)
+ * when the text still keeps [DETAILS_MIN_TEXT]; narrower (top-aligned) when not; null = no room beside the text even for a
+ * [DETAILS_MIN_COVER] cover — the cover goes above the text.
+ */
+internal fun detailsCoverFit(w: Float, h: Float): Float? {
+    val full = h * 0.72f
+    val room = w - DETAILS_GAP - DETAILS_MIN_TEXT
+    return when {
+        room >= full -> full
+        room >= DETAILS_MIN_COVER -> room
+        else -> null
     }
 }

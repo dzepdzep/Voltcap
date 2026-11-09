@@ -445,7 +445,7 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
                     TermNav.Dir.ROOT -> TermNav.root[i].let { e -> isDir = e.dir; termFit(e.name.padEnd(13) + (if (e.dir) "<DIR>" else "     ") + "  " + e.note, cols) }
                     TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems[i])?.let { st ->
                         isDir = true
-                        val n = c.state.games.count { it.platform == st.platform }
+                        val n = st.platform?.let { c.state.countIn(it) } ?: 0
                         val head = termFileName(st.label).padEnd(9) + "<DIR>  "
                         head + termFit(st.label.uppercase(), (cols - head.length - 6).coerceAtLeast(4)) + "$n".padStart(6)
                     } ?: ""
@@ -533,7 +533,7 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
             }
             TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems.getOrNull(TermNav.sysSel) ?: -1)?.let { st ->
                 Text(st.label.uppercase(), style = style.copy(fontSize = style.fontSize * 1.15f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                val games = c.state.games.filter { it.platform == st.platform }
+                val games = st.platform?.let { c.state.gamesIn(it) }.orEmpty()
                 Text("${games.size} FILE(S)", style = small.copy(color = tc.dim), maxLines = 1)
                 Spacer(Modifier.height(6.dp))
                 // (Update 346: its games played last, else its first ones, so the preview isn't an empty box.)
@@ -564,7 +564,13 @@ private fun TermPrompt(c: StyleCtx, tc: TermColors, style: TextStyle, clock: and
     }
     val shown = cmd.take((cmd.length * typed.value).toInt())
     val blink = (clock.floatValue * 2f).toInt() % 2 == 0 || reduced
-    Text(termPath(c) + "> " + shown + (if (blink) "█" else " "), style = style, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
+    // (Update 478, D268: the block is always laid out and only its colour blinks — "█" comes from a fallback font with a
+    // taller line than " ", so the command line grew and shrank with every blink and the preview above moved 6 px (Odin).)
+    val text = androidx.compose.ui.text.buildAnnotatedString {
+        append(termPath(c) + "> " + shown)
+        pushStyle(androidx.compose.ui.text.SpanStyle(color = if (blink) androidx.compose.ui.graphics.Color.Unspecified else androidx.compose.ui.graphics.Color.Transparent)); append("█"); pop()
+    }
+    Text(text, style = style, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
 }
 
 /** The tube: scanlines, a soft vignette, (full) the glass's curve shading and a faint sheen. */

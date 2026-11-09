@@ -77,14 +77,27 @@ internal fun Case3D(
     // (Update 317, Toni: with the Covers look an N64 box's front was its cover cut to the box — its title and foot lost. A
     // cover that would lose more than 8 % to the box's shape gives way to the game's own box-front scan, when it has one,
     // as the Cases look shows it.)
-    val coverCut = !realFront && spec != null && (cover as? String)?.let { CoverAspects.rawOf(it) }
+    // (Update 485, KONKR — Pokémon Silver in Case Flow: the cover's shape was only known once a flat card had shown it
+    // (CoverAspects), so Case Flow / Case stacks cut a portrait SteamGridDB cover you picked to the square Game Boy Color box —
+    // its top and its "SILVER VERSION" foot lost — while Inspect showed the box scan. The cover's own decoded shape decides
+    // now; while it is read, a game that has a box-front scan shows no print rather than the cut cover for a moment.)
+    val coverUrl = cover as? String
+    val coverKnown = coverUrl?.let { CoverAspects.rawOf(it) }
+    val scanFront = if (faces && spec != null && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) remember(scans, g.platform) { BoxTexture.front(scans, g.platform) } else null
+    val probeCover = faces && !realFront && spec != null && coverKnown == null && coverUrl != null && scanFront != null
+    val coverProbe = if (probeCover) rememberSoftBitmap(coverUrl, 480, trim = true) else null
+    val coverAspect = coverKnown ?: coverProbe?.let { it.width.toFloat() / it.height.coerceAtLeast(1) }
+    // (Noted once, so the next time — and the decoding ahead, case3dModels — knows it without reading the cover again.)
+    androidx.compose.runtime.LaunchedEffect(coverProbe) { val b = coverProbe ?: return@LaunchedEffect; if (coverUrl != null) CoverAspects.note(coverUrl, b.width.toFloat(), b.height.toFloat()) }
+    val coverCut = !realFront && spec != null && coverAspect
         ?.let { a -> a > 0f && kotlin.math.abs(a / spec.aspect - 1f) > 0.08f } == true
     val ownFront = if (faces && ((realFront && Features.originalCases.state.value) || coverCut) && !LookStyles.caseForAll() && !androidOwnCase(g.platform)) {
         remember(scans, g.platform) { BoxTexture.front(scans, g.platform) }
     } else null
+    val frontPending = probeCover && coverProbe == null
     // (Update 202: flat strips that are part of the cover's / front scan's file trimmed off, TrimMargins.kt — the
     // carousel's warmSoft for 3D cases asks the same way.)
-    val front0 = rememberSoftBitmap(if (faces) ownFront ?: cover else null, 480, trim = true)
+    val front0 = rememberSoftBitmap(if (faces && !frontPending) ownFront ?: cover else null, 480, trim = true)
     // (Update 240, #27/#58: a "Box" scan that is really the whole unfolded box — back | spine | front side by side, far wider
     // than the real case's front (CaseCatalog) — has its front cut out of it (BoxTexture), not its middle cut to the case's
     // shape: that showed the spine and the back's edge as the front. The case's shape stays the catalog's whatever the scan.)
@@ -93,7 +106,7 @@ internal fun Case3D(
     // now — its front on the front, its back on the back (wrapBack, below).)
     val unfoldedSrc = ((ownFront ?: cover) as? String)?.takeIf { s ->
         spec != null && spec.shell != CaseShell.JEWEL && BoxTexture.parse(s) == null && front0 != null &&
-            front0.width.toFloat() / front0.height.coerceAtLeast(1) > spec.aspect * UNFOLDED_SCAN
+            looksUnfolded(front0.width.toFloat() / front0.height.coerceAtLeast(1), spec.aspect)
     }
     val unfoldedFront = unfoldedSrc?.let { BoxTexture.model(it, BoxPart.FRONT, g.platform) }
     val frontCut = rememberSoftBitmap(unfoldedFront, 480, trim = true)
@@ -129,6 +142,7 @@ internal fun Case3D(
         (!scansKnown && !forAll && !matching && g.sourceType == com.shelf.launcher.data.SourceType.ROM)
     // (Update 166: Voltcap's own Steam / Android case always — its spine and its front band, see below.)
     val ownCase = MediaCovers.own(g.platform).takeIf { !forAll }
+    // (Update 489, K4: the same rule as case3dSpineRes, which the cases ahead are made from — keep the two together.)
     val tpl = if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(g.platform)) else null
     // (Made once per game, away from the screen's thread: SpineCache.)
     // (Update 305: a Steam / Android spine takes its accent from the game's cover — the same one the shelves use.)
@@ -1456,7 +1470,10 @@ private object CaseDraw {
             shaderMatrix.postTranslate(0f, floorY)
             fadeDown.setLocalMatrix(shaderMatrix)
             fade.shader = fadeDown
-            c.drawRect(cx - w * 2f, floorY - d, cx + w * 2f, reflBottom, fade)
+            // (Update 478, E5: the mask runs past the layer on every side — the layer's bounds round out to whole pixels, and
+            // its last partly-covered row kept the mirror image at full strength: a bright line where the reflection ends
+            // (Odin, Case flow). Past the fade's end the gradient is clear, so those rows are emptied too.)
+            c.drawRect(cx - w * 2f - 2f, floorY - d - 2f, cx + w * 2f + 2f, reflBottom + 4f, fade)
             fade.shader = null
             c.restoreToCount(l)
         }
@@ -1581,3 +1598,16 @@ private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.
     }.getOrDefault(src)
 }
 
+
+
+/**
+ * Update 489 (K4): the console spine [Case3D] writes a game's name on (its `tpl`) — null when it uses none. The cases just
+ * ahead of the scroll have their named spines made from it in advance ([WarmCaseNeighbours]), so a case sliding in shows its
+ * name from its first frame. Same rule as Case3D's `tpl`.
+ */
+internal fun case3dSpineRes(platform: String): Int? {
+    val forAll = LookStyles.spineForAll()
+    val matching = Features.spinesOwn.state.value
+    val ownCase = MediaCovers.own(platform).takeIf { !forAll }
+    return if (Features.coverTemplates.state.value || forAll || matching || ownCase != null) CustomSpines.of(LookStyles.spinePlatform(platform))?.res else null
+}

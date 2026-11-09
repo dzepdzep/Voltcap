@@ -48,6 +48,8 @@ object GameLauncher {
         newInstance: Boolean = false
     ): AppLaunchResult {
         val name = label ?: packageName
+        // (Update 489c, D287: the last step before Android starts anything — a QA build refuses here as well.)
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("launcher.app", packageName)) return AppLaunchResult.Failed("QA build: launching is blocked.")
         val pm = context.packageManager
         val enabled = try {
             pm.getApplicationInfo(packageName, 0).enabled
@@ -92,6 +94,7 @@ object GameLauncher {
         extras: List<LaunchExtra> = emptyList()
     ): LaunchOutcome {
         val options = ScreenPlacement.optionsFor(displayId)
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("launcher.game", game.stableKey)) return LaunchOutcome.Error("QA build: launching is blocked.")
         return when (game.sourceType) {
             SourceType.APP -> launchApp(context, game, options)
             SourceType.ROM -> launchRom(context, game, config, romRoot, options, extras)

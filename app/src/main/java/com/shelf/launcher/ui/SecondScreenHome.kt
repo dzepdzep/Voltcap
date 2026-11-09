@@ -450,19 +450,26 @@ fun SecondScreenHome(
                 // Update 195: ‹ › fixed at the screen's left and right edges, half-way down, to step through the pages
                 // (swiping still works); reachable with the controller too.
                 if (visiblePages.size > 1 || gameOpen) for (dir in intArrayOf(-1, 1)) {
+                    // (Update 487, E7 tiny controls: the same 30 × 64 dp tab, in a 48 × 80 dp touch box at the edge — the tab
+                    // alone measured 28 dp wide on the Thor.)
                     Box(
-                        Modifier.align(if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd).padding(horizontal = 2.dp)
-                            .size(width = 30.dp, height = 64.dp)
-                            .padTarget(if (dir < 0) "sc-edge-prev" else "sc-edge-next") { latestStep(dir) }
-                            .clip(RoundedCornerShape(15.dp)).background(Color.Black.copy(alpha = 0.42f))
-                            .clickable { latestStep(dir) },
-                        contentAlignment = Alignment.Center
+                        Modifier.align(if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd)
+                            .size(width = 48.dp, height = 80.dp)
+                            .clickable(interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) { latestStep(dir) },
+                        contentAlignment = if (dir < 0) Alignment.CenterStart else Alignment.CenterEnd
                     ) {
-                        Icon(
-                            if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
-                            else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(24.dp)
-                        )
+                        Box(
+                            Modifier.padding(horizontal = 2.dp).size(width = 30.dp, height = 64.dp)
+                                .padTarget(if (dir < 0) "sc-edge-prev" else "sc-edge-next") { latestStep(dir) }
+                                .clip(RoundedCornerShape(15.dp)).background(Color.Black.copy(alpha = 0.42f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (dir < 0) androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowLeft
+                                else androidx.compose.material.icons.Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                if (dir < 0) "Previous page" else "Next page", tint = Color.White, modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
                 Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {

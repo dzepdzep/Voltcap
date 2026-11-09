@@ -244,12 +244,35 @@ object RomScanner {
      * Every ROM folder at once. A game found through two folders (one inside
      * the other) counts once. Folders that can't be read are reported.
      */
+    /**
+     * Update 478 (D1): one GameNative frontend export — `<Game title>.steam` whose whole content is the Steam AppID as a
+     * decimal number (GameNative's FrontendSyncManager: `file.writeText(appId.toString())`). A PC / Steam game (platform
+     * "Steam", key "steam:<id>" — the same game a manual or folder import of that AppID gives, so a rescan never doubles
+     * it) started through GameNative's own LAUNCH_GAME intent like the others. Null for anything that isn't a plain
+     * positive AppID (empty, text, a huge or binary file).
+     */
+    internal fun gameNativeExport(file: File): Game? {
+        if (!file.isFile || file.length() !in 1..64) return null
+        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
+        val id = parseSteamExport(text) ?: return null
+        val title = file.nameWithoutExtension.trim().ifBlank { "Steam game $id" }
+        return Game(name = title, platform = "Steam", hue = (("steam$id").hashCode() and 0x7fffffff) % 360,
+            sourceType = SourceType.STEAM, steamAppId = id)
+    }
+
+    /** The AppID of a `.steam` export's text: digits only (a BOM / whitespace / newline round it allowed), 1..Int.MAX. */
+    internal fun parseSteamExport(text: String): Int? {
+        val t = text.removePrefix("\uFEFF").trim()
+        if (t.isEmpty() || t.length > 10 || !t.all { it in '0'..'9' }) return null
+        return t.toLongOrNull()?.takeIf { it in 1..Int.MAX_VALUE }?.toInt()
+    }
+
     fun scanAll(rootPaths: List<String>, deep: Boolean): ScanResult {
         val results = rootPaths.map { scan(it, deep) }
         // Update 177: one file reached two ways (/sdcard and /storage/emulated/0, "ROMs/psx" and "ROMs/PSX" — Android's
         // shared storage and SD cards don't tell capitals apart — or one ROM folder inside another) counts once.
         fun same(path: String?): String = path?.let { p -> (runCatching { File(p).canonicalPath }.getOrNull() ?: p).lowercase() } ?: ""
-        val games = results.flatMap { it.games }.distinctBy { same(it.romPath) }.sortedBy { it.name }
+        val games = results.flatMap { it.games }.distinctBy { if (it.romPath == null) it.stableKey else same(it.romPath) }.sortedBy { it.name }
         // The same game (console + name) in two folders: both stay listed, but it's reported.
         val twice = games.groupBy { it.platform to it.name.lowercase() }.values.filter { it.size > 1 }.flatMap { list ->
             list.drop(1).map { Duplicate(list[0].name, list[0].platform, list[0].romPath.orEmpty(), it.romPath.orEmpty(), sameFolder = false) }
@@ -369,6 +392,7 @@ object RomScanner {
         val knownFiles = mutableListOf<File>()
         val m3uFiles = mutableListOf<File>()
         val skipped = mutableSetOf<String>()
+        val steamFiles = mutableListOf<File>()
         // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
         // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
         val folderGames = mutableListOf<File>()
@@ -385,6 +409,9 @@ object RomScanner {
                 when {
                     isTrashedOrHiddenName(file.name) -> {}
                     ext == "m3u" -> m3uFiles += file
+                    // (Update 478, D1: GameNative's frontend export — "<Game>.steam" holding the Steam AppID — is a PC /
+                    // Steam game handed to GameNative, whatever folder it sits in; one that isn't a valid AppID is skipped.)
+                    ext == "steam" -> steamFiles += file
                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
                     // used to count as one of its games.)
                     ext in notGames -> {}
@@ -398,6 +425,7 @@ object RomScanner {
             }
 
         val games = mutableListOf<Game>()
+        steamFiles.forEach { f -> gameNativeExport(f)?.let { games += it } }
         folderGames.forEach { dir ->
             val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
             games += Game(

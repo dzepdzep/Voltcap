@@ -109,10 +109,12 @@ internal fun Modifier.voltSurface(
     }
     val top = lerpColor(base, Color.White, 0.05f).copy(alpha = base.alpha * alpha)
     val bottom = lerpColor(base, Color.Black, 0.18f).copy(alpha = base.alpha * alpha)
+    // (Update 496: inside a Channel grid window the glass edge is drawn in its writing colour — a white hairline on a white card vanished.)
+    val hairline = if (LocalWindowStyle.current == WindowLook.Style.CHANNEL) winTint(0.09f) else VoltUi.hairline
     return this
         .clip(shape)
         .background(Brush.verticalGradient(listOf(top, bottom)))
-        .border(1.dp, VoltUi.hairline, shape)
+        .border(1.dp, hairline, shape)
         .drawWithContent {
             drawContent()
             // The sheen: a short bright line along the top, fading to the sides.
@@ -489,6 +491,8 @@ internal fun VoltSwitch(checked: Boolean, modifier: Modifier = Modifier) {
     val thumbOn = onAccentColor()
     val fill = voltFill()
     val sw: Shape = if (VoltUi.pixel) androidx.compose.foundation.shape.RoundedCornerShape(2.dp) else CircleShape
+    val offTrack = winTint(0.10f * (1f - t))
+    val offEdge = winTint(0.18f)
     Box(
         modifier
             .size(width = 42.dp, height = 24.dp)
@@ -501,9 +505,10 @@ internal fun VoltSwitch(checked: Boolean, modifier: Modifier = Modifier) {
                 )
             }
             .clip(sw)
-            .background(Color.White.copy(alpha = 0.10f * (1f - t)))
+            // (Update 496: winTint — the off track and edge in the window's writing colour inside a Channel grid window.)
+            .background(offTrack)
             .background(fill, alpha = t)
-            .border(1.dp, if (checked) accent else Color.White.copy(alpha = 0.18f), sw)
+            .border(1.dp, if (checked) accent else offEdge, sw)
     ) {
         Box(
             Modifier

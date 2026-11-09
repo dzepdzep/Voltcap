@@ -387,7 +387,7 @@ private fun StyleCubeClassic(c: StyleCtx, modifier: Modifier = Modifier) {
             val st = stops[k.mod(stops.size)]
             val p = st.platform
             val logo = if (!nameOnly && p != null && st.special == null && !com.shelf.launcher.data.isCollectionKey(p)) {
-                if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.baked(context, p) }.getOrNull()
+                if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.oneColour(context, p) }.getOrNull() // (480 A5: drawn white — the plain icon keeps the lettering)
                 logos[p]
             } else null
             CubeFaceArt(st.label, logo, painters[st.icon])

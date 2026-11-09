@@ -316,6 +316,8 @@ private fun MagTurnPage(modifier: Modifier, origin: TransformOrigin, angle: Floa
         transformOrigin = origin
         rotationY = angle
         cameraDistance = 9f * density.density
+        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+        flatTextFor3d()
     }) {
         content()
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
@@ -512,8 +514,9 @@ private fun MagAchievements(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean
                 Box(Modifier.fillMaxHeight().fillMaxWidth((e.toFloat() / t).coerceIn(0f, 1f)).background(st.accent))
             }
         }
-        if (list.isNotEmpty()) Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(if (compact) 4 else 5).forEach { a ->
+        val strip = (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(if (compact) 4 else 5)
+        if (list.isNotEmpty()) Row(Modifier.padding(top = 4.dp).badgeSet(strip.mapNotNull { com.shelf.launcher.data.RaBadges.url(it.badgeName) }), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            strip.forEach { a ->
                 val url = com.shelf.launcher.data.RaBadges.url(a.badgeName)
                 // (Update 346: badges no smaller than 24 dp; fewer of them on a small page instead.)
                 Box(Modifier.size(24.dp).border(1.dp, st.ink)) {

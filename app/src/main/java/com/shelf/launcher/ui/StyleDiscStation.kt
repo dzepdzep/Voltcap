@@ -458,7 +458,7 @@ private fun DiscInfo(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier)
 }
 
 /** What kind of disc the game came on (cartridge games: what they'd be pressed on here, a CD). */
-private fun discKind(platform: String): String = when (platform) {
+internal fun discKind(platform: String): String = when (platform) {
     "PS2", "Xbox", "Wii", "PS3" -> if (platform == "PS3") "Blu-ray" else "DVD-ROM"
     "PS4", "PS5", "WiiU", "XboxOne", "XboxSeries", "Switch" -> if (platform == "Switch") "Game card" else "Blu-ray"
     "GameCube" -> "Mini disc"

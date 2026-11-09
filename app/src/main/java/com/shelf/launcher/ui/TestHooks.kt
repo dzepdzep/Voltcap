@@ -16,6 +16,10 @@ internal object TestHooks {
     val game = mutableStateOf<String?>(null)
     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
     val settings = mutableStateOf<String?>(null)
+    /** Update 490 (search QA): `--es voltcap_test_settings Home --es voltcap_test_settings_search spacing` — typed into Settings' own search box. */
+    val settingsSearch = mutableStateOf<String?>(null)
+    /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
+    val screensaver = mutableStateOf(false)
     /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
     val bg = mutableStateOf<String?>(null)
     /**
@@ -24,6 +28,10 @@ internal object TestHooks {
      */
     val look = mutableStateOf<String?>(null)
     @Volatile var previewOnly = false
+    /** Update 495 (D293): set while a hook writes settings on purpose (snapshot restore, voltcap_test_pref). */
+    @Volatile var allowWrites = false
+    /** Update 496: `--ez voltcap_test_vault_dry true` — the Save Vault shows what it last listed and searches / writes / syncs nothing. */
+    @Volatile var vaultDry = false
 
     /** Update 469: the game a test asks for — its name or ROM file name holding [q], compared on letters and digits only. */
     fun matchGame(games: List<com.shelf.launcher.data.Game>, q: String): com.shelf.launcher.data.Game? {
@@ -49,9 +57,21 @@ internal object TestHooks {
         }
     }
 
-    fun enabled(context: android.content.Context): Boolean = enabledCache ?: runCatching {
-        java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists()
+    fun enabled(context: android.content.Context): Boolean = if (com.shelf.launcher.data.QaVariant.isolated(context)) true else enabledCache ?: runCatching {
+        // (Update 512, release hygiene: never in a release build. The test hooks belong to the isolated QA app (always on
+        // there) and to a debuggable build of your own; a non-debuggable install — every published Voltcap — ignores the
+        // hooks file, so no left-behind file can switch on test intents, QA logging, the launch block or the sync pause.)
+        hooksAllowedIn(context.applicationContext.applicationInfo.flags) &&
+        // (Update 489b, D287: a hooks file left behind for more than a day is ignored — it only counts for a QA session.)
+        java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").let { it.exists() && hooksFresh(it.lastModified(), System.currentTimeMillis()) }
     }.getOrDefault(false).also { enabledCache = it }
+
+    /** Update 512: outside the isolated QA app, the hooks file counts only in a debuggable build (FLAG_DEBUGGABLE). */
+    internal fun hooksAllowedIn(appFlags: Int): Boolean = (appFlags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+    /** Update 489b (D287): the test hooks count for a day after their file was written (QA scripts touch it). */
+    const val QA_HOOKS_TTL_MS = 24L * 60 * 60 * 1000
+    fun hooksFresh(modified: Long, now: Long): Boolean = modified > 0 && now - modified in 0..QA_HOOKS_TTL_MS
     /**
      * Update 329: `--es voltcap_test_tilewalk all` (or a comma list of tile ids) — every R1 tile shown here pressed and
      * checked on both screens (TileCheck), this session only. [lastTiles]: the tiles the R1 panel showed last.
@@ -70,6 +90,11 @@ internal object TestHooks {
     val sceneCover = mutableStateOf<Boolean?>(null)
     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
     val noVideo = mutableStateOf(false)
+    /** Update 480 (B4): `--ei voltcap_test_motionprobe <ms>` — a tween of that length run in the home's composition; its real
+     *  duration is logged (VoltcapQA motionprobe), so the motion level's scale can be measured. */
+    val motionProbe = mutableStateOf(0)
+    /** Update 481 (A5): `--es voltcap_test_catname "name"|off` — every console / collection label replaced this session (QA). */
+    val catName = mutableStateOf<String?>(null)
     /** Update 456: `--ez voltcap_test_panelhold true|false` — the background held under the drawer / Settings (on by default; session only, for A/B runs). */
     val panelHold = mutableStateOf(true)
     /** Update 457: `--ez voltcap_test_settingsflat true|false` — the Settings window without its unseen drop-shadow (on by default; session, A/B). */
@@ -115,14 +140,32 @@ internal object TestHooks {
     @Volatile var noLaunch = false
     /** Logs who asked for a launch (QA builds with the hooks); true when it must not happen ([noLaunch]). */
     fun interceptLaunch(where: String, key: String): Boolean {
+        // (Update 500: the isolated QA app never starts a game — no file or switch can allow it.)
+        if (com.shelf.launcher.data.QaVariant.isolatedNow) {
+            android.util.Log.e("VoltcapQA", "LAUNCH blocked (isolated QA app) $where $key")
+            return true
+        }
         // (Update 467: also while <external files>/qa_nolaunch exists — a sweep's block survives Voltcap restarting mid-run,
         // which the intent's in-memory switch did not: the first tap on Play after a restart would have started the game.)
         if (!noLaunch && QaTrace.on && QaClip.noLaunchFile()) noLaunch = true
-        if (!noLaunch && !QaTrace.on) return false
+        // Without the test hooks (every normal install) nothing here: games start as always.
+        if (!QaTrace.on) return false
+        val block = launchBlocked()
         val who = Throwable().stackTrace.drop(1).take(14).joinToString(" < ") { "${it.fileName}:${it.lineNumber}" }
-        android.util.Log.e("VoltcapQA", "LAUNCH ${if (noLaunch) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
-        return noLaunch
+        android.util.Log.e("VoltcapQA", "LAUNCH ${if (block) "blocked" else "asked"} $where $key popup=${GamePopup.game?.stableKey} by $who")
+        return block
     }
+
+    /**
+     * Update 489b (D287, a game started during a QA tap: a finished sweep had switched the block off and removed its file).
+     * With the test hooks on, launching is now blocked by default — whatever a script switched off or deleted — and only
+     * <external files>/qa_allow_launch (written for a run the owner approved) lets a game start. The test hooks are QA-only:
+     * a hooks file older than [QA_HOOKS_TTL_MS] no longer counts, so a forgotten one can't stop games for good.
+     */
+    fun launchBlocked(): Boolean = com.shelf.launcher.data.QaVariant.isolatedNow || !QaClip.allowLaunchFile()
+
+    /** The launch state for a QA script's check (`qa_launch_check` → `qa_launch_state`, QaClip.watch). */
+    fun launchState(): String = if (com.shelf.launcher.data.QaVariant.isolatedNow) "blocked" else if (!QaTrace.on) "off" else if (launchBlocked()) "blocked" else "ALLOWED"
     /** Update 330 (phase 4): the round shortcuts for this session only (`--es voltcap_test_shortcuts TOP_LEFT`, or off). */
     val shortcuts = mutableStateOf<String?>(null)
     /** Pass 5: `--es voltcap_test_theme LOBBY` — that theme (saved; the old one is logged "theme old=…" to put back). */
@@ -136,6 +179,12 @@ internal object TestHooks {
      * library shell (this time only, nothing saved), held at that angle: for checking the cartridge bottoms.
      */
     val inspect = mutableStateOf<String?>(null)
+    /**
+     * Update 500: `--ez voltcap_test_fixture_roms true` — ONLY in the isolated QA app (com.shelf.launcher.qa): its library is the
+     * folder <its own external files>/roms (empty stand-in ROM files a QA script puts there; nothing of the owner's). The
+     * ordinary Voltcap ignores it, hooks file or not.
+     */
+    val fixtureRoms = mutableStateOf<String?>(null)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Update 461 (D137 A/B): `--es voltcap_test_warm off|noprepare|on` — the case layouts' decoding ahead (WarmCaseNeighbours). */
@@ -165,6 +214,8 @@ internal object TestHooks {
      * for before / after pictures of the sides; `off` ends it. This session only, nothing saved.
      */
     val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
+    /** Update 493: `--es voltcap_test_battery "40|true"` — the status bar shows that level / charging state (this session only); `off` ends it. */
+    val battery = mutableStateOf<BatteryInfo?>(null)
 
     /** Update 431: the test tuner profile for [spec] (Result.success(null) = "off"), or null when it doesn't parse. */
     internal fun tuneProfile(spec: String): Result<com.shelf.launcher.device.tune.TuneProfile?>? {
@@ -219,6 +270,8 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
+            fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
@@ -239,6 +292,11 @@ internal object TestHooks {
         // <external files>/qa_clip/<tag>.json (QaClip; tools/qa/tools/geomcheck.py --clip). Optional `--ei voltcap_test_clip_ms`.
         intent?.getStringExtra("voltcap_test_clip")?.let { if (enabled(context)) QaClip.request(context, it, (intent.getIntExtra("voltcap_test_clip_ms", 700)).toLong()) }
         intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
+        intent?.getStringExtra("voltcap_test_badgewarm")?.let { v -> if (enabled(context)) BadgeWarm.enabled = v != "off" }
+        // Update 503: `--es voltcap_test_artfix "delay=800"|off` — late-arriving fixture art + achievements, QA app only (QaArtFixture.kt).
+        intent?.getStringExtra("voltcap_test_artfix")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) QaArtFixture.parse(v).let { d -> QaArtFixture.delayMs = d ?: 0L; QaArtFixture.spec.value = d }
+        }
         // Update 462: `--ez voltcap_test_photoshells true` — the photo-made shells' templates into <external files>/photoshells
         // (update 463: every supported shell looked at first, and the coverage into photoshells/inventory.tsv; send it again once
         // the photos are analysed).
@@ -255,6 +313,7 @@ internal object TestHooks {
         val pr = intent?.getStringExtra("voltcap_test_pref")
         val th = intent?.getStringExtra("voltcap_test_theme")
         val pm = intent?.getStringExtra("voltcap_test_perf")
+        intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
         // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
         // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
@@ -271,6 +330,25 @@ internal object TestHooks {
         // QA pass 3: `--ez voltcap_test_walk true|false` — the controller walk log (QaWalk.kt).
         // QA pass 3: `--es voltcap_test_explore "SELECT"` — the controller explorer (QaExplore.kt), with the hooks.
         intent?.getStringExtra("voltcap_test_explore")?.let { QaExplore.start(it) }
+        // Update 488 (K3): `--es voltcap_test_ps2browser on|off` — the Save Vault's PS2 browser style for this session only
+        // (not saved: the owner's own switch stays as it is).
+        if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
+        if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        // Update 499 (D295, owner option C for unattended QA): `--es voltcap_test_cloudhold show|off` — `show` writes the three
+        // Drive switches (Sync game saves, Sync favourites and playtime, Automatic backup) and whether Drive is connected to
+        // <files>/voltcap_test_cloudhold.json (kept if it exists: the first note is the owner's original); `off` turns those
+        // three off so the release build put back afterwards starts no sync. Nothing is synced here (qaPaused), nothing is
+        // disconnected, nothing switched on: turning them on again starts a sync, so that stays the owner's step.
+        intent?.getStringExtra("voltcap_test_cloudhold")?.let { m -> if (enabled(context)) cloudHold(context.applicationContext, m) }
+        // (Update 496: read before the early return, so a search can be typed into Settings already open — sent with
+        // voltcap_test_settings it reached the window that was about to close and reopen, and was lost.)
+        intent?.getStringExtra("voltcap_test_settings_search")?.let { if (enabled(context)) settingsSearch.value = it.replace('_', ' ') }
+        // Update 501: `--es voltcap_test_cards "0,40,90"|spin|off` — Save Vault 3D cards with no save (QaCardSheet.kt).
+        intent?.getStringExtra("voltcap_test_cards")?.let { v -> if (enabled(context)) QaCards.spec.value = v.takeIf { it != "off" } }
+        intent?.getStringExtra("voltcap_test_raoverlay")?.let { v -> if (enabled(context)) QaOverlayFixture.spec.value = QaOverlayFixture.parse(v) }
+        intent?.getStringExtra("voltcap_test_ps2browser")?.let { v -> if (enabled(context)) {
+            com.shelf.launcher.data.Ps2BrowserStyle.load(context); com.shelf.launcher.data.Ps2BrowserStyle.on.value = v == "on"
+        } }
         if (intent?.hasExtra("voltcap_test_walk") == true) QaWalk.set(intent.getBooleanExtra("voltcap_test_walk", false))
         // QA update 370: `--ez voltcap_test_geom true|false` — the geometry trace (QaGeom.kt), only while asked for.
         if (intent?.hasExtra("voltcap_test_geom") == true) QaGeom.set(intent.getBooleanExtra("voltcap_test_geom", false))
@@ -279,7 +357,7 @@ internal object TestHooks {
         if (intent?.hasExtra("voltcap_test_churn") == true) QaTrace.watchChurn(intent.getBooleanExtra("voltcap_test_churn", false))
         // QA self-test: `--es voltcap_test_fault "counter,flash:20"` (QaFault.kt) — this session only, nothing saved.
         intent?.getStringExtra("voltcap_test_fault")?.let { f ->
-            if (runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) QaFault.set(f)
+            if (enabled(context)) QaFault.set(f)
         }
         // Update 281: `--es voltcap_test_labelaudit <systemeid|all>` — every game's saved real-media list (ScreenScraper's
         // "support-texture" = Disc label, "support-2D" = Disc / cartridge): which it has, and those pictures downloaded
@@ -291,6 +369,20 @@ internal object TestHooks {
         if (intent?.hasExtra("voltcap_test_nolaunch") == true && enabled(context)) {
             noLaunch = intent.getBooleanExtra("voltcap_test_nolaunch", false)
             android.util.Log.e("VoltcapQA", "nolaunch=$noLaunch")
+        }
+        // Update 514: `--es voltcap_test_navshown on|off` — this process's windows ask for the navigation bar to be shown, as
+        // the owner's Voltcap does on a Retroid whose own hide_nav_bar hides it (GestureHint.systemOwnsNav needs the root service,
+        // which the QA app never uses). Only the Compose state changes: nothing saved, no device setting written.
+        // Update 514: `--ez voltcap_test_packsask true` — the first-start "Download extra art?" question again, for this session
+        // (only the in-memory "asked" flag; an answer is the QA app's own, as on a first start).
+        if (intent?.getBooleanExtra("voltcap_test_packsask", false) == true && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            com.shelf.launcher.data.Packs.asked.value = false
+        }
+        intent?.getStringExtra("voltcap_test_navshown")?.let { v ->
+            if (enabled(context)) {
+                com.shelf.launcher.data.GestureHint.immersiveState.value = v != "on" && com.shelf.launcher.data.GestureHint.immersive(context)
+                android.util.Log.e("VoltcapQA", "navshown=$v")
+            }
         }
         intent?.getStringExtra("voltcap_test_pickerlook")?.let { v ->
             if (enabled(context)) pickerLook.value = com.shelf.launcher.data.Features.PickerLook.values().firstOrNull { it.name == v }
@@ -318,6 +410,10 @@ internal object TestHooks {
             panelHold.value = intent.getBooleanExtra("voltcap_test_panelhold", true)
             android.util.Log.e("VoltcapQA", "panelhold=${panelHold.value}")
         }
+        intent?.getStringExtra("voltcap_test_catname")?.let { v -> if (enabled(context)) { previewOnly = true; catName.value = v.takeIf { it != "off" } } }
+        if (intent?.hasExtra("voltcap_test_motionprobe") == true && enabled(context)) {
+            motionProbe.value = intent.getIntExtra("voltcap_test_motionprobe", 0)
+        }
         if (intent?.hasExtra("voltcap_test_novideo") == true && enabled(context)) {
             noVideo.value = intent.getBooleanExtra("voltcap_test_novideo", false)
             android.util.Log.e("VoltcapQA", "novideo=${noVideo.value}")
@@ -337,12 +433,12 @@ internal object TestHooks {
         }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1
-        if (su >= 0 && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
+        if (su >= 0 && enabled(context)) {
             SetupJump.step = su
             VoltHub.replay = true
         }
         // Update 423: `--ez voltcap_test_demo true|false` — the made-up stand-in library for preview pictures (DemoLibrary.kt).
-        if (intent?.hasExtra("voltcap_test_demo") == true && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false))
+        if (intent?.hasExtra("voltcap_test_demo") == true && enabled(context))
         {
             val on = intent.getBooleanExtra("voltcap_test_demo", false)
             DemoLibrary.on.value = on
@@ -350,8 +446,19 @@ internal object TestHooks {
             if (on) DemoArt.prepare(app) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (DemoLibrary.on.value) DemoLibrary.artDir.value = dir } }
             else { DemoLibrary.artDir.value = null; DemoArt.clear(app) }
         }
+        // Update 474: `--es voltcap_test_fixture "names=long,art=wide,meta=none"` | off — QA test content, display only (QaFixture.kt).
+        if (intent?.hasExtra("voltcap_test_fixture") == true && enabled(context))
+        {
+            val sp = QaFixture.parse(intent.getStringExtra("voltcap_test_fixture") ?: "off")
+            val app = context.applicationContext
+            QaFixture.artDir.value = null
+            if (sp == null) QaFixture.clear(app)
+            QaFixture.spec.value = sp
+            if (sp != null) QaFixture.prepare(app, sp.art) { dir -> android.os.Handler(android.os.Looper.getMainLooper()).post { if (QaFixture.spec.value == sp) QaFixture.artDir.value = dir } }
+            android.util.Log.e("VoltcapTest", "fixture ${sp?.text ?: "off"}")
+        }
         val tw = intent?.getStringExtra("voltcap_test_tilewalk_all")?.let { "ALL:$it" } ?: intent?.getStringExtra("voltcap_test_tilewalk")
-        if (tw != null && runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)) {
+        if (tw != null && enabled(context)) {
             // (A walk only ever previews: nothing it changes is saved.)
             previewOnly = true
             tileWalk.value = tw
@@ -360,10 +467,11 @@ internal object TestHooks {
         // (as its own button does; nothing saved), so QA can check the way back on every layout.
         intent?.getStringExtra("voltcap_test_twindash")?.let { v -> if (enabled(context)) TwinScreens.dashboard = v == "on" }
         if (want == null && g == null && st == null && lk == null && cat == null && !pv && inst == null && mc == null && !so && !wi && rs == null && ins == null && !pf && sh == null && pr == null && snap == null && la == null && po == null && aw == null && tf == null && tp == null && th == null && pm == null && !pvEnd) return
-        val on = runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_test_hooks").exists() }.getOrDefault(false)
+        val on = enabled(context)
         if (!on) return
         if (pv) previewOnly = true
-        if (pvEnd) { previewOnly = false; previewEnded.intValue = previewEnded.intValue + 1 }
+        // (Update 495, D293: the settings held in memory during the preview go back to the saved ones.)
+        if (pvEnd) { previewOnly = false; com.shelf.launcher.data.Features.reload(context); previewEnded.intValue = previewEnded.intValue + 1 }
         if (so) sort.value = true
         if (wi) window.value = true
         if (rs != null) { previewOnly = true; shortcuts.value = rs }
@@ -394,10 +502,13 @@ internal object TestHooks {
                     java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_appearance.json").writeText(o.toString())
                     android.util.Log.e("VoltcapTest", "appearance saved: home_layout=${o.optString("home_layout")}")
                 }
+                // Update 491: the R1 panel's own prefs too (saved order, hidden tiles, use counts — a tile tap counts a use).
+                runCatching { qaSavePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
-                com.shelf.launcher.data.Features.restore(j.keys().asSequence().associateWith { j.getString(it) })
+                allowWrites = true
+                try { com.shelf.launcher.data.Features.restore(j.keys().asSequence().associateWith { j.getString(it) }) } finally { allowWrites = false }
                 val cf = java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_categories.txt")
                 if (cf.exists()) {
                     val l = cf.readText().split('\n')
@@ -431,6 +542,7 @@ internal object TestHooks {
                     e.commit()
                     android.util.Log.e("VoltcapTest", "appearance restored: home_layout=${o.optString("home_layout")}")
                 }
+                runCatching { qaRestorePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
@@ -441,7 +553,8 @@ internal object TestHooks {
         if (pr != null && '=' in pr) {
             val k = pr.substringBefore('='); val v = pr.substringAfter('=')
             android.util.Log.e("VoltcapTest", "pref $k was ${com.shelf.launcher.data.Features.snapshot()[k]} -> $v")
-            com.shelf.launcher.data.Features.restore(mapOf(k to v))
+            allowWrites = true
+            try { com.shelf.launcher.data.Features.restore(mapOf(k to v)) } finally { allowWrites = false }
         }
         if (po != null) {
             pose.value = if (po == "off") null else po.substringBefore('|').toFloatOrNull()?.let { it to po.endsWith("|old") }
@@ -571,3 +684,58 @@ internal object LabelAudit {
         android.util.Log.e("VoltcapTest", "labelaudit scans: done")
     }
 }
+
+/** Update 491 (QA snapshot): one SharedPreferences file, every value with its type, to a JSON file in external files. */
+internal fun qaSavePrefs(context: android.content.Context, prefs: String, file: String) {
+    val o = org.json.JSONObject()
+    context.getSharedPreferences(prefs, android.content.Context.MODE_PRIVATE).all.forEach { (k, v) ->
+        when (v) {
+            is Boolean -> o.put(k, "b:$v"); is Int -> o.put(k, "i:$v"); is Long -> o.put(k, "l:$v")
+            is Float -> o.put(k, "f:$v"); is String -> o.put(k, "s:$v")
+            is Set<*> -> o.put(k, "z:" + org.json.JSONArray(v.map { it.toString() }.sorted()).toString())
+        }
+    }
+    java.io.File(context.getExternalFilesDir(null), file).writeText(o.toString())
+}
+
+/** Update 491: back exactly as saved — keys added since are removed. */
+internal fun qaRestorePrefs(context: android.content.Context, prefs: String, file: String) {
+    val f = java.io.File(context.getExternalFilesDir(null), file)
+    if (!f.exists()) return
+    val o = org.json.JSONObject(f.readText())
+    val sp = context.getSharedPreferences(prefs, android.content.Context.MODE_PRIVATE)
+    val e = sp.edit()
+    sp.all.keys.filter { !o.has(it) }.forEach { e.remove(it) }
+    o.keys().forEach { k ->
+        val v = o.getString(k); val x = v.substring(2)
+        when (v.take(2)) {
+            "b:" -> e.putBoolean(k, x.toBoolean()); "i:" -> e.putInt(k, x.toInt()); "l:" -> e.putLong(k, x.toLong())
+            "f:" -> e.putFloat(k, x.toFloat()); "s:" -> e.putString(k, x)
+            "z:" -> { val a = org.json.JSONArray(x); e.putStringSet(k, (0 until a.length()).map { a.getString(it) }.toSet()) }
+        }
+    }
+    e.commit()
+}
+
+/** Update 499: see `voltcap_test_cloudhold` in [TestHooks]. */
+internal fun cloudHold(context: android.content.Context, mode: String) {
+    val cs = com.shelf.launcher.data.CloudSync
+    val F = com.shelf.launcher.data.Features
+    cs.load(context)
+    fun now() = cs.state.value.settings.let { s ->
+        org.json.JSONObject().put("connected", s.connected).put("syncSaves", s.syncSaves).put("syncLauncherData", s.syncLauncherData)
+            .put("autoBackup", F.autoBackup.value.name)
+    }
+    val f = java.io.File(context.getExternalFilesDir(null), "voltcap_test_cloudhold.json")
+    if (!f.exists()) f.writeText(now().toString())
+    if (mode == "off") {
+        TestHooks.allowWrites = true
+        try {
+            cs.updateSettings(context) { it.copy(syncSaves = false, syncLauncherData = false) }
+            F.autoBackup.value = com.shelf.launcher.data.AutoBackupWorker.Every.OFF
+            runCatching { com.shelf.launcher.data.AutoBackupWorker.schedule(context) }
+        } finally { TestHooks.allowWrites = false }
+    }
+    android.util.Log.e("VoltcapQA", "cloudhold $mode original=${f.readText()} now=${now()}")
+}
+

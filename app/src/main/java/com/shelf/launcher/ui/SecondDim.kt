@@ -76,7 +76,7 @@ internal object SecondDim {
     }
 
     private fun wakeAndSchedule() {
-        if (dimmed) undim()
+        if (dimmed) undim() else backlight(false)
         main.removeCallbacks(check)
         val a = afterMs()
         if (a > 0 && layer != null) main.postDelayed(check, a)
@@ -130,7 +130,13 @@ internal object SecondDim {
         val w = window ?: return
         runCatching {
             val lp = w.attributes
-            val want = if (low && Features.secondDimBacklight.value) 0.12f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            // (D3, update 485: its own brightness when one is set — Settings › Screens — dimming never brightens it.)
+            val own = Features.secondBrightness.value
+            val want = when {
+                low && Features.secondDimBacklight.value -> if (own > 0) minOf(0.12f, own / 100f) else 0.12f
+                own > 0 -> own / 100f
+                else -> WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
             if (lp.screenBrightness != want) { lp.screenBrightness = want; w.attributes = lp }
         }
     }

@@ -871,7 +871,7 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
                 }
             }
             if (ps2On) Text(
-                "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\".",
+                "PS2 saves show their own save icon from the memory card; a save without a readable one shows a generic card marked \"No save icon\". Every other save keeps the look picked above.",
                 color = label, fontSize = 11.sp
             )
         }

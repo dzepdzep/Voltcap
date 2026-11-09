@@ -99,20 +99,55 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (Win
 @Composable
 internal fun SceneKey(
     a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
-    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false
+    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false,
+    /** The caller already draws the primary key (Play) its own way; else Play gets the lit colour as a tint (update 487). */
+    primaryStyled: Boolean = false
 ) {
+    // Update 487 (E7 popup hierarchy, owner-approved): Play is the clear first action in every window. A window that drew
+    // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
+    // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
+    val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
+    // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
+    // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
+    // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
     SceneControl(a, Modifier) { on ->
         Row(
-            Modifier.heightIn(min = height).clip(shape).background(if (on) onFill else fill)
-                .border(if (on) 2.dp else 1.dp, if (on) onEdge else edge, shape).padding(horizontal = pad),
+            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else k.fill)
+                .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(a.icon, null, tint = if (on) onInk else ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
+            Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
             Spacer(Modifier.width(5.dp))
-            Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) onInk else if (a.urgent) Color(0xFFFF8A3D) else ink,
+            Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) k.onInk else if (a.urgent) Color(0xFFFF8A3D) else k.ink,
                 fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2)
         }
     }
+}
+
+/** [SceneKey] for the windows that already draw Play their own way (a filled Play key). */
+@Composable
+internal fun SceneKeyStyled(
+    a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
+    font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false
+) = SceneKey(a, fill, onFill, ink, onInk, edge, onEdge, shape, font, size, pad, height, upper, primaryStyled = true)
+
+internal class SceneKeyColors(val fill: Color, val onFill: Color, val ink: Color, val onInk: Color, val edge: Color, val onEdge: Color, val firmEdge: Boolean)
+
+/** Update 487: the colours a scene key is drawn in (pure; SceneKey487Test). */
+internal fun sceneKeyColors(
+    primary: Boolean, primaryStyled: Boolean, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color
+): SceneKeyColors {
+    // A lit word must read on the lit colour (only judged where that colour is solid; a see-through one depends on the scene).
+    val onInkR = if (onFill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(onFill, onInk) else onInk
+    val inkR = if (fill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(fill, ink) else ink
+    // The ring of a lit key must show against the key itself (Twin: the accent ring on the accent key vanished).
+    val ringR = if (onFill.alpha >= 0.9f && onEdge.alpha >= 0.5f && com.shelf.launcher.ui.theme.contrastRatio(onEdge, onFill) < 1.4f) onInkR else onEdge
+    if (!primary || primaryStyled) return SceneKeyColors(fill, onFill, inkR, onInkR, edge, ringR, false)
+    // Play in a window that draws all keys alike: tinted with the lit colour, its edge in that colour.
+    val tintFill = if (fill.alpha >= 0.9f) androidx.compose.ui.graphics.lerp(fill, onFill.copy(alpha = 1f), 0.28f)
+        else onFill.copy(alpha = (fill.alpha + 0.24f).coerceAtMost(0.5f))
+    val tintInk = if (tintFill.alpha >= 0.9f) com.shelf.launcher.ui.theme.textOn(tintFill, ink) else ink
+    return SceneKeyColors(tintFill, onFill, tintInk, onInkR, onFill.copy(alpha = 1f), ringR, true)
 }
 
 /**
@@ -124,14 +159,16 @@ internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit()
 /** The first page's facts, label over value in two columns, or the other page's body. */
 @Composable
 internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true,
-    omit: Set<String> = emptySet(), inline: Boolean = false) {
+    omit: Set<String> = emptySet(), inline: Boolean = false,
+    /** Update 508: a larger type for a window that has room to spare on a small screen (Tile home on the GT78); 1 = as before. */
+    scale: Float = 1f) {
     if (ctx.page == WinPage.MAIN) {
         // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
         val sc = rememberScrollState()
         // (Update 467, popup gate: with large text the keys can leave the facts a sliver that shows the tops of one row
         // — "CONSOLE YEAR" cut in half on the KONKR at 1.3×. Under one whole row's room the box gives its space away
         // instead; the facts stay on the Details page.)
-        val minRow = with(androidx.compose.ui.platform.LocalDensity.current) { (9.sp.toDp() + 14.sp.toDp() + 8.dp).roundToPx() }
+        val minRow = with(androidx.compose.ui.platform.LocalDensity.current) { (9.sp.toDp() * scale + 14.sp.toDp() * scale + 8.dp).roundToPx() }
         // (Update 471, owner review of the 470 PDF: with More open the facts box showed "MADE BY" / "GENRE" and their values
         // were scrolled away under the keys — the actions fitted, the information didn't. [omit] leaves out facts the window
         // already shows (Cover details' header line has the console and year); [inline] puts label and value on one line.
@@ -142,7 +179,10 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         var tight by androidx.compose.runtime.remember(ctx.g.stableKey, ctx.tools.size, ctx.chips.size) { androidx.compose.runtime.mutableStateOf(false) }
         val asLines = inline || tight
         androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
-        Column(Modifier.weight(1f, fill = false).layout { m, c ->
+        // (Update 476, D260: a story cut by the room faded out mid-sentence with nothing saying there was more. While the box
+        // can scroll further, a small cue at its bottom edge says where the whole story is.)
+        Box(Modifier.weight(1f, fill = false)) {
+        Column(Modifier.layout { m, c ->
             if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
         }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
             val facts = shownFacts(ctx, omit)
@@ -151,26 +191,34 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                 Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Top) {
                     // (Its own line height — the theme's tall one made every row half as tall again as its value: 470's KONKR
                     // run showed three facts of four.)
-                    Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font,
+                    Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp * scale, lineHeight = 11.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font,
                         softWrap = false, modifier = Modifier.width(78.dp).padding(top = 3.dp))
-                    Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
+                    Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
                 }
             } else facts.chunked(2).forEach { pair ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     pair.forEach { (l, v) ->
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                            Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font, softWrap = false)
-                            Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = font)
+                            Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font, softWrap = false)
+                            Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font)
                         }
                     }
                     if (pair.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
             }
-            ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp, lineHeight = 14.sp, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
+            ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp * scale, lineHeight = 14.sp * scale, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
+        }
+        if (ctx.summary != null && viewH > 0 && sc.canScrollForward) FullText(STORY_CUE, color = label, fontSize = 9.sp,
+            fontWeight = FontWeight.Bold, fontFamily = font,
+            modifier = Modifier.align(Alignment.BottomEnd).background(sceneCueBack(value)).padding(horizontal = 4.dp))
         }
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 }
+
+/** Update 476: the cue's backing — the window's ground behind light ink (dark windows), a pale one behind dark ink. */
+internal fun sceneCueBack(ink: Color): Color =
+    if (ink.red * 0.3f + ink.green * 0.59f + ink.blue * 0.11f > 0.5f) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.7f)
 
 internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f - (1f - c) * (1f - c) * (1f - c) }
 
@@ -178,7 +226,10 @@ internal fun sceneEase(k: Float): Float { val c = k.coerceIn(0f, 1f); return 1f 
 
 @Composable
 internal fun RecordSleeve(ctx: WinSceneCtx) {
-    val paper = Color(0xFFEDE4D3); val ink = Color(0xFF2B231B); val red = Color(0xFFB8402E)
+    val paper = Color(0xFFEDE4D3); val ink = Color(0xFF2B231B)
+    // (Update 505: the sleeve's print — SIDE A, the track numbers, Play and the key you're on — in the Crate home's accent (the
+    // theme's, the game's or this layout's own colours, as its turntable and rings), made readable on the paper; was a fixed red.)
+    val red = sceneLit(com.shelf.launcher.data.HomeLayout.CRATE, com.shelf.launcher.ui.theme.ShelfTheme.accent, paper)
     val side = minOf(ctx.maxW, ctx.maxH, 460.dp)
     Box(Modifier.size(side).graphicsLayer {
         // The sleeve slides out of the crate sideways, the way a record is pulled from its neighbours.
@@ -221,7 +272,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             KeyRow(sceneKeys(ctx)) { a ->
-                SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) Color.White else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp)
+                SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp)
             }
         }
     }
@@ -229,91 +280,90 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
 
 // ───────────────────────────── Card binder: the card flips to its back ─────────────────────────────
 
+// (Update 507: CardBack replaced — WinSceneFamilies.kt.)
+
+// ───────────────────────────── Disc station: a disc player's front panel ─────────────────────────────
+
+/**
+ * Update 506 (owner review of the 505 visual report, P0): the deck's panel opens beside the player instead of a dark slab over
+ * it — the player and its turning disc stay in view on the left (the dim is light there, sceneVeil), the panel slides out of
+ * the deck's right edge where the home's info panel stands, joined to it by the tray, and goes back in the same way on B.
+ * Its words are the deck's: the disc kind the home shows (never "CARTRIDGE" on a disc player), DISC 1 · TRACK 01.
+ * [discStationDeckRightDp] mirrors the home's own sizing (StyleDiscStation.DiscStation).
+ */
 @Composable
-internal fun CardBack(ctx: WinSceneCtx) {
-    val h = minOf(ctx.maxH, 520.dp)
-    // (Update 424: on a short screen the card is a little wider than a card, so its keys take fewer lines and its art keeps room.)
-    val w = minOf(ctx.maxW, h * (if (h < 420.dp) 1.3f else 0.74f)).coerceAtLeast(minOf(ctx.maxW, 280.dp))
-    // (Update 425: the card's own frame — Layout options › Frame colour (console / game's art, gold once mastered), as the card in
-    // the binder wears it — not always gold foil.)
-    val pal = rememberCardPalette(ctx.cover, if (ctx.total > 0) ctx.earned to ctx.total else null, ctx.g)
-    val foil = pal.frame
-    val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
-    Box(Modifier.width(w).height(h).graphicsLayer {
-        // A card turned over in the binder: a half turn about its upright axis (closing turns it back).
-        val e = sceneEase(ctx.reveal())
-        rotationY = (1f - e) * 90f
-        cameraDistance = 14f * density
-        alpha = if (ctx.reveal() < 0.02f) 0f else 1f
-        shape = RoundedCornerShape(14.dp); clip = true
-        shadowElevation = 16.dp.toPx() * e
-    }.background(foil).padding(7.dp).clip(RoundedCornerShape(10.dp)).background(face)) {
-        Column(Modifier.fillMaxSize().padding(10.dp)) {
+internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
+    // (Update 504, popup identity: the deck in Disc Station's own look — the home's smoked glass panels and the accent its
+    // Play pill and focus rings use (the owner's layout / theme accent) — instead of a silver deck with a fixed teal display.)
+    val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
+    val metal = Brush.verticalGradient(listOf(Color(0xFF1E2535), Color(0xFF141A2A), Color(0xFF0C111C)))
+    val lcdBg = Color(0xFF070B12)
+    val lcd = androidx.compose.runtime.remember(accent) { com.shelf.launcher.ui.theme.legibleArtAccent(accent, lcdBg, lcdBg) }
+    val labels = discPanelLabels(ctx.g.platform)
+    // (Beside an inspected piece the room is the window's part only: the panel fills it, as before.)
+    val geo = if (ctx.inspecting) 0f to minOf(ctx.maxW.value, 640f) else discPanelGeometry(ctx.maxW.value, ctx.maxH.value)
+    val left = geo.first.dp; val w = geo.second.dp
+    val gap = 12.dp
+    val rim = androidx.compose.ui.graphics.lerp(Color.White.copy(alpha = 0.10f), accent, 0.35f)
+    Box(Modifier.width(ctx.maxW).height(ctx.maxH)) {
+        // The tray: the panel's link to the deck, out of the deck's edge first and back in last.
+        Box(Modifier.align(Alignment.CenterStart).padding(start = (left - gap).coerceAtLeast(0.dp)).width(gap + 10.dp).height(14.dp).graphicsLayer {
+            val e = sceneEase((ctx.reveal() / 0.45f).coerceIn(0f, 1f))
+            scaleX = e; transformOrigin = TransformOrigin(0f, 0.5f); alpha = e
+        }.clip(RoundedCornerShape(3.dp)).background(Brush.verticalGradient(listOf(Color(0xFF2A3346), Color(0xFF0B0F18))))
+            .border(1.dp, rim, RoundedCornerShape(3.dp)))
+        Column(Modifier.align(Alignment.CenterStart).padding(start = left).width(w).heightIn(max = ctx.maxH).graphicsLayer {
+            // Out of the deck's edge: the panel slides right from behind the tray as the tray reaches it; back in on close.
+            val e = sceneEase(((ctx.reveal() - 0.15f) / 0.85f).coerceIn(0f, 1f))
+            translationX = (1f - e) * -48.dp.toPx()
+            alpha = e
+            shape = RoundedCornerShape(8.dp); clip = true
+            shadowElevation = 14.dp.toPx() * e
+        }.background(metal).border(1.dp, rim, RoundedCornerShape(8.dp)).padding(12.dp)) {
+            // The tray slot line and the disc-kind plate.
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 2, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-                if (ctx.total > 0) Text("${ctx.earned}/${ctx.total}", color = Color(0xFFB0302A), fontSize = 13.sp, fontWeight = FontWeight.Black)
+                Text("NOW LOADED", color = lcd.copy(alpha = 0.8f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Spacer(Modifier.width(10.dp))
+                Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF05080D)))
+                Spacer(Modifier.width(10.dp))
+                Text(labels.first, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
             }
-            // The art window, the shape of the card's picture box; the art whole inside it.
-            // (Update 424, compact 1280×720 on the Thor: the art window at the card's full width pushed the keys off the card's foot.
-            // It now takes the room the keys leave, its own shape kept.)
-            Box(Modifier.align(Alignment.CenterHorizontally).weight(1f, fill = false).aspectRatio(1.55f).padding(vertical = 6.dp).border(3.dp, foil, RoundedCornerShape(4.dp)).background(Color(0xFF26221C))) {
-                (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize().padding(3.dp), contentScale = ContentScale.Crop) }
+            Spacer(Modifier.height(10.dp))
+            // The LCD: the title on the display, the facts as its readouts.
+            Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
+                .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)).padding(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                    Spacer(Modifier.weight(1f))
+                    Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                }
+                StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Spacer(Modifier.height(4.dp))
+                SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace)
             }
-            Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.3f)))
-            SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink)
-            Spacer(Modifier.weight(0.01f))
-            Spacer(Modifier.height(6.dp))
-            KeyRow(sceneKeys(ctx)) { a ->
-                SceneKey(a, if (a.primary) Color(0xFF2A2620) else Color.White, Color(0xFF2A2620), if (a.primary) pal.star else ink, pal.star,
-                    ink.copy(alpha = 0.35f), ink, RoundedCornerShape(50), size = 11.sp)
+            Spacer(Modifier.height(10.dp))
+            // The transport keys.
+            KeyRow(sceneKeys(ctx), 8.dp) { a ->
+                SceneKey(a, Color(0xFF263044), Color(0xFF121826), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
+                    font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
             }
         }
     }
 }
 
-// ───────────────────────────── Disc station: a disc player's front panel ─────────────────────────────
-
-@Composable
-internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
-    val w = minOf(ctx.maxW, 640.dp)
-    val metal = Brush.verticalGradient(listOf(Color(0xFFD9DCE0), Color(0xFFB4B8BE), Color(0xFFC7CBD0)))
-    val lcdBg = Color(0xFF0F2A2A); val lcd = Color(0xFF7BF2D6)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
-        // The tray comes out of the deck: up from below, the panel already in place.
-        val e = sceneEase(ctx.reveal())
-        translationY = (1f - e) * size.height * 0.25f
-        alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
-        shape = RoundedCornerShape(8.dp); clip = true
-        shadowElevation = 14.dp.toPx() * e
-    }.background(metal).border(1.dp, Color.Black.copy(alpha = 0.35f), RoundedCornerShape(8.dp)).padding(12.dp)) {
-        // The tray slot line and the brand plate.
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF2A2D31)))
-            Spacer(Modifier.width(10.dp))
-            // (Update 425: what the game really comes on — a cartridge game's window doesn't call itself a compact disc.)
-            Text(discPanelLabels(ctx.g.platform).first, color = Color(0xFF3A3E44), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-        }
-        Spacer(Modifier.height(10.dp))
-        // The LCD: the title on the display, the facts as its readouts.
-        Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
-            .border(2.dp, Color(0xFF1B1E22), RoundedCornerShape(6.dp)).padding(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(discPanelLabels(ctx.g.platform).second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-                Spacer(Modifier.weight(1f))
-                Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
-            }
-            StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 2, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            Spacer(Modifier.height(4.dp))
-            SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace)
-        }
-        Spacer(Modifier.height(10.dp))
-        // The transport keys.
-        KeyRow(sceneKeys(ctx), 8.dp) { a ->
-            SceneKey(a, Color(0xFF2E3237), Color(0xFF15181B), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
-                font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
-        }
-    }
+/**
+ * Pure (Update 506): where Disc station's panel stands in the window's room ([maxW] x [maxH] dp, the screen less 22 / 14 dp
+ * margins) — (left, width) in dp. It starts just right of the home's deck (StyleDiscStation: the deck is min(52 % of the
+ * width, the height less its margins) wide, 14 dp in, 8 dp on short screens); never narrower than 300 dp (it then overlaps the
+ * deck's edge rather than squeeze its keys).
+ */
+internal fun discPanelGeometry(maxW: Float, maxH: Float): Pair<Float, Float> {
+    val screenW = maxW + 44f; val screenH = maxH + 28f
+    val pad = if (screenH < 330f) 8f else 14f
+    val deckRight = pad + minOf(screenW * 0.52f, screenH - pad * 2) - 22f
+    val minW = minOf(300f, maxW)
+    val left = (deckRight + 12f).coerceIn(0f, maxW - minW)
+    return left to (maxW - left).coerceAtMost(620f)
 }
 
 // ───────────────────────────── Green Core: a glowing system console ─────────────────────────────
@@ -357,38 +407,7 @@ private val CutCornerShapeCompat = androidx.compose.foundation.shape.CutCornerSh
 
 // ───────────────────────────── Cube menu: the info on a cube face turning toward you ─────────────────────────────
 
-@Composable
-internal fun CubeFace(ctx: WinSceneCtx) {
-    val side = minOf(ctx.maxW, ctx.maxH, 470.dp)
-    // (Update 425: the cube's own glass colour — Layout options › Cube colour (Features.cubeTint), the theme's accent for "Theme
-    // accent" — not a fixed purple; its keys lit in the same colour.)
-    val tintPick = com.shelf.launcher.data.Features.cubeTint.state.value
-    val tint = if (tintPick == com.shelf.launcher.data.Features.CubeTint.THEME) ctx.accent else Color(tintPick.argb)
-    val a = androidx.compose.ui.graphics.lerp(tint, Color.White, 0.25f)
-    Box(Modifier.size(side).graphicsLayer {
-        // The cube turns a quarter: the face swings in on its left edge (and back out the same way).
-        val e = sceneEase(ctx.reveal())
-        rotationY = (1f - e) * -90f
-        transformOrigin = TransformOrigin(0f, 0.5f)
-        cameraDistance = 10f * density
-        alpha = if (ctx.reveal() < 0.02f) 0f else 1f
-        shape = RoundedCornerShape(10.dp); clip = true
-    }.background(Brush.linearGradient(listOf(androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.35f), androidx.compose.ui.graphics.lerp(tint, Color.Black, 0.72f))))
-        .border(3.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(10.dp))) {
-        // The face's bevel and the art faint behind the text.
-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.22f) }
-        Column(Modifier.fillMaxSize().padding(16.dp)) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Black)
-            Text(ctx.console, color = a, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.6f), Color.White) }
-            KeyRow(sceneKeys(ctx)) { k ->
-                SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
-                    Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
-            }
-        }
-    }
-}
+// (Update 507: CubeFace replaced — WinSceneFamilies.kt.)
 
 // ───────────────────────────── Pocket layouts: a handheld's small LCD ─────────────────────────────
 
@@ -471,7 +490,10 @@ internal fun IndexCard(ctx: WinSceneCtx) {
 internal fun GalleryPlacard(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 720.dp)
     val h = minOf(ctx.maxH, 520.dp)
-    val wall = Color(0xFFEDEBE6); val ink = Color(0xFF22201C)
+    // (Update 505: the Art library's own dark, themed gallery — the wall its glass panels are, the frames darker, the key you're on
+    // in the theme's accent — instead of a fixed pale museum wall. The mat and the white placard stay: the work is shown whole.)
+    val wall = themeDark(Color(0xFF141B27), 0.6f); val ink = Color(0xFF22201C)
+    val lit = sceneLit(com.shelf.launcher.data.HomeLayout.ARTLIB, com.shelf.launcher.ui.theme.ShelfTheme.accent, wall)
     Column(Modifier.width(w).height(h).graphicsLayer {
         // The picture grows out of its place in the library, the wall fading in round it.
         val e = sceneEase(ctx.reveal())
@@ -481,7 +503,7 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         shape = RoundedCornerShape(4.dp); clip = true
     }.background(wall).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         // The work itself, whole, in a dark frame with a mat — never stretched.
-        Box(Modifier.weight(1f).fillMaxWidth().background(Color(0xFF2B2722)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 if (art != null) AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
@@ -498,7 +520,8 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(8.dp))
         KeyRow(sceneKeys(ctx)) { a ->
-            SceneKey(a, if (a.primary) ink else Color.White, Color(0xFF8C6D3F), if (a.primary) Color.White else ink, Color.White, ink.copy(alpha = 0.3f), Color(0xFF8C6D3F), RoundedCornerShape(2.dp))
+            SceneKey(a, if (a.primary) lit else Color.White, lit, if (a.primary) com.shelf.launcher.ui.theme.textOn(lit, Color.White) else ink, com.shelf.launcher.ui.theme.textOn(lit, Color.White),
+                Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(2.dp))
         }
     }
 }

@@ -770,7 +770,18 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             val shown = symbol ?: stop?.logo
             var failed by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
             val logo = shown?.takeIf { !failed }
-            if (logo != null) {
+            // (Update 480, A5: the logo in one colour is the plain icon — the colour logo tinted was a blob / bar: GBA, Sega CD.)
+            val oneColourIcon = if (symbols && symbol == null) stop?.platform?.let { p ->
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                remember(p) { PlatformLogos.plain(ctx, p) }
+            } else null
+            if (oneColourIcon != null) {
+                androidx.compose.foundation.Image(
+                    oneColourIcon, c.categoryLabel, contentScale = ContentScale.Fit,
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(ink),
+                    modifier = Modifier.fillMaxSize().padding(ring * 0.17f)
+                )
+            } else if (logo != null) {
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val request = remember(logo) {
                     coil.request.ImageRequest.Builder(context).data(logo)

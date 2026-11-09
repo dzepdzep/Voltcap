@@ -212,7 +212,7 @@ private fun EditionCard(e: Edition, raw: String, platform: String, cover: Any?, 
             overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         Text(
             e.status.label + " · " + e.regions.sorted().joinToString("/") + (if (picked) " · Picked by itself" else ""),
-            color = if (e.status == EditionStatus.PENDING) Color(0xFFE8A33D) else ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 2, textAlign = TextAlign.Center
+            color = if (e.status == EditionStatus.PENDING) ShelfTheme.warning else ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 2, textAlign = TextAlign.Center
         )
         if (m != null) Text(
             ShellMaterials.hexOf(m.base) + (if (m.back != 0) " / " + ShellMaterials.hexOf(m.back) else "") + " (approx.)",

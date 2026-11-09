@@ -265,7 +265,12 @@ private fun rememberSystemDiscOverlayAt(path: String): Pair<Boolean, ImageBitmap
  */
 @Composable
 internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifier) {
-    val (looked, overlay) = rememberSystemDiscOverlay(console)
+    // Update 507 (owner, approved request: custom CDs across every platform): the same disc, its dark band in the console's own
+    // colour (a lit edge, fading down) and — where the console's authentic logo is in colour and reads on the dark band — that
+    // logo in full colour instead of the white one. Monochrome brands keep the white logo; nothing is recoloured.
+    val branded = rememberBrandedDiscOverlay(console)
+    val looked = branded.first
+    val overlay = branded.second?.overlay
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val side = minOf(maxWidth, maxHeight)
         Box(Modifier.size(side)) {
@@ -289,6 +294,11 @@ internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifie
                 drawCircle(Color(0x9924262D), r * 0.19f, c)
             }
             if (overlay != null) Image(overlay, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize())
+            branded.second?.let { b ->
+                val logo = b.logo
+                if (logo != null) Image(logo, contentDescription = ConsoleNames.display(console), contentScale = ContentScale.Fit,
+                    modifier = Modifier.offset(x = side * b.logoBox.left, y = side * b.logoBox.top).size(side * b.logoBox.width, side * b.logoBox.height))
+            }
             // A soft shine across it.
             Canvas(Modifier.fillMaxSize()) {
                 val r = size.minDimension / 2
@@ -301,4 +311,197 @@ internal fun SystemDisc(console: String, art: Any?, modifier: Modifier = Modifie
             }
         }
     }
+}
+
+
+// ───────────── Update 507: the custom CD's band in its console's colours ─────────────
+
+/** The console's disc overlay with its dark band tinted, and the colour logo to draw on that band (null: the white one stays). */
+/**
+ * Pure (update 508): the console whose brand colour a regional / colour model's band takes — Mega Drive the Genesis's, Super
+ * Famicom the SNES's… (badges keep their own colours: only the CD's band asks this).
+ */
+internal fun discAccentKey(console: String): String = when (console) {
+    "MegaDrive" -> "Genesis"; "SFC" -> "SNES"; "Famicom" -> "NES"; "TG16" -> "PCEngine"; "TGCD" -> "PCEngineCD"
+    "NeoGeoPocketColor" -> "NeoGeoPocket"; "WonderSwanColor" -> "WonderSwan"
+    else -> console
+}
+
+internal class BrandedDisc(val overlay: ImageBitmap, val logo: ImageBitmap?, val logoBox: Rect)
+
+private val brandedCache = java.util.concurrent.ConcurrentHashMap<String, BrandedDisc>()
+
+@Composable
+private fun rememberBrandedDiscOverlay(console: String): Pair<Boolean, BrandedDisc?> {
+    val path = com.shelf.launcher.data.SystemLogos.discAsset(console) ?: return true to null
+    return androidx.compose.runtime.key(path, console) { rememberBrandedDiscOverlayAt(path, console) }
+}
+
+@Composable
+private fun rememberBrandedDiscOverlayAt(path: String, console: String): Pair<Boolean, BrandedDisc?> {
+    val context = LocalContext.current
+    val accent = consoleColor(discAccentKey(console))
+    val cacheKey = "$path|$console"
+    val got by produceState(brandedCache[cacheKey]?.let { true to it } ?: (false to null), cacheKey) {
+        if (value.first) return@produceState
+        value = true to kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val src = context.assets.open(path).use { android.graphics.BitmapFactory.decodeStream(it) } ?: return@runCatching null
+                val bmp = src.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                val logoBmp = decodeColourLogo(context, console)
+                val sample = logoBmp?.let { logoPixels(it) }
+                val colourLogo = sample != null && discLogoGoesInColour(sample)
+                val band = paintDiscBand(bmp, accent.toArgbInt(), eraseLogo = colourLogo)
+                val box = if (band == null) Rect(0f, 0f, 0f, 0f) else discLogoBox(band.first, band.second, bmp.height)
+                // (Update 508: a colour logo with dark parts — Nintendo's grey-and-black GB, SNES's purple, Sega's navy — gets a
+                // fine light outline baked round it once, so its dark parts read on the dark band.)
+                val shown = if (colourLogo && band != null) (if (discLogoNeedsHalo(sample!!)) withLogoHalo(logoBmp!!) else logoBmp!!) else null
+                BrandedDisc(bmp.asImageBitmap(), shown?.asImageBitmap(), box)
+            }.getOrNull()
+        }?.also { brandedCache[cacheKey] = it }
+    }
+    return got
+}
+
+private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
+
+/** The console's colour logo (ES-DE's system-logo-color set, shipped with the app) as a bitmap, or null. */
+private suspend fun decodeColourLogo(context: android.content.Context, console: String): android.graphics.Bitmap? {
+    val file = com.shelf.launcher.data.SystemLogos.model(context, console) ?: return null
+    val req = coil.request.ImageRequest.Builder(context).data(file).decoderFactory(coil.decode.SvgDecoder.Factory())
+        .size(640, 320).allowHardware(false).build()
+    val drawable = (coil.Coil.imageLoader(context).execute(req) as? coil.request.SuccessResult)?.drawable ?: return null
+    val w = drawable.intrinsicWidth.takeIf { it > 0 } ?: 640
+    val h = drawable.intrinsicHeight.takeIf { it > 0 } ?: 320
+    val s = minOf(640f / w, 320f / h, 4f)
+    val bmp = android.graphics.Bitmap.createBitmap((w * s).toInt().coerceAtLeast(1), (h * s).toInt().coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(bmp)
+    drawable.setBounds(0, 0, bmp.width, bmp.height)
+    drawable.draw(c)
+    return bmp
+}
+
+/** A sample of the logo's opaque pixels (ARGB). */
+private fun logoPixels(b: android.graphics.Bitmap): IntArray {
+    val out = ArrayList<Int>()
+    val step = maxOf(1, minOf(b.width, b.height) / 64)
+    var y = 0
+    while (y < b.height) { var x = 0; while (x < b.width) { val p = b.getPixel(x, y); if ((p ushr 24) > 160) out.add(p); x += step }; y += step }
+    return out.toIntArray()
+}
+
+/**
+ * Pure: whether a console's authentic logo goes on the dark band in its colours. Update 508 (owner: "audit every platform —
+ * don't rely only on the 25 % threshold"): the 507 rule also asked for bright colours and almost no black, and so put the
+ * white print on most of Nintendo's and Sega's real colour logos (GB, GBC, GBA, SNES, Master System, Game Gear…). Now a logo
+ * goes on in colour when it IS in colour — a few per cent of clearly coloured pixels — and its dark parts are kept readable by
+ * a light outline instead ([discLogoNeedsHalo]). A logo with no colour in it (white, grey, black: DS, PSP, PS3, Sega CD, MSX)
+ * keeps the overlay's own white print: nothing is coloured that isn't coloured in the original.
+ */
+internal fun discLogoGoesInColour(pixels: IntArray): Boolean {
+    if (pixels.size < 20) return false
+    var coloured = 0
+    for (p in pixels) {
+        val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
+        val mx = maxOf(r, g, b); val mn = minOf(r, g, b)
+        // (A tinted gold like the Sega CD's counts: its chroma is under the 507 rule's 70 but it is the logo's own colour, and
+        // the disc's print of it is a blank white bar.)
+        if (mx > 60 && (mx - mn) > 40) coloured++
+    }
+    return coloured.toFloat() / pixels.size >= DISC_LOGO_COLOUR_SHARE
+}
+
+internal const val DISC_LOGO_COLOUR_SHARE = 0.03f
+
+/** Pure (update 508): whether a colour logo has parts that would sink into the dark band (black / navy lettering, a dark mean). */
+internal fun discLogoNeedsHalo(pixels: IntArray): Boolean {
+    if (pixels.isEmpty()) return false
+    var dark = 0; var lumSum = 0.0
+    for (p in pixels) {
+        val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
+        val l = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        if (l < 45.0) dark++
+        lumSum += l
+    }
+    return dark.toFloat() / pixels.size > 0.02f || lumSum / pixels.size < 110.0
+}
+
+/** Pure (update 508): the outline's width for a logo [h] px tall — 5 % of it, never under 2 px. */
+internal fun discHaloRadius(h: Int): Int = maxOf(2, (h * 0.05f).toInt())
+
+/** The logo with a soft white outline round it (its own shape stamped white in two rings of 16 offsets, then the logo on top). Once per console, cached. */
+private fun withLogoHalo(logo: android.graphics.Bitmap): android.graphics.Bitmap {
+    val r = discHaloRadius(logo.height)
+    val out = android.graphics.Bitmap.createBitmap(logo.width + 2 * r, logo.height + 2 * r, android.graphics.Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    val white = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
+        colorFilter = android.graphics.PorterDuffColorFilter(android.graphics.Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN)
+        alpha = 235
+    }
+    // (Two rings — the full width and half of it — so thin strokes leave no gaps in the outline.)
+    for (ring in listOf(r.toFloat(), r * 0.5f)) for (i in 0 until 16) {
+        val a = i * Math.PI / 8
+        c.drawBitmap(logo, r + (ring * kotlin.math.cos(a)).toFloat(), r + (ring * kotlin.math.sin(a)).toFloat(), white)
+    }
+    c.drawBitmap(logo, r.toFloat(), r.toFloat(), null)
+    return out
+}
+
+/**
+ * Pure: the band's colour at [frac] (0 = its top edge, 1 = its foot) for a console colour [accent]: a dark tint that is
+ * strongest just under the edge and fades to the disc's near-black — the print stays a dark band, only coloured.
+ */
+internal fun discBandTint(accent: Int, frac: Float): Int {
+    val k = (0.34f - 0.26f * frac.coerceIn(0f, 1f))
+    val r = (((accent shr 16) and 0xFF) * k).toInt(); val g = (((accent shr 8) and 0xFF) * k).toInt(); val b = ((accent and 0xFF) * k).toInt()
+    return (0xFF shl 24) or (r.coerceIn(0, 255) shl 16) or (g.coerceIn(0, 255) shl 8) or b.coerceIn(0, 255)
+}
+
+/**
+ * Tints the overlay's dark band (the solid part across the disc's foot) in place: its near-black pixels take [discBandTint],
+ * a thin edge along its top in the console's colour, the white print kept (its soft edges blended) — or, with [eraseLogo],
+ * covered by the band so the colour logo can stand there. Returns the band's (top, bottom) rows at the middle, or null.
+ */
+private fun paintDiscBand(bmp: android.graphics.Bitmap, accent: Int, eraseLogo: Boolean): Pair<Int, Int>? {
+    val w = bmp.width; val h = bmp.height; val cx = w / 2
+    // From the disc's foot upward: the solid run at the middle is the band (the hub's rings above it are separate).
+    var bottom = -1
+    for (y in h - 1 downTo h / 2) if ((bmp.getPixel(cx, y) ushr 24) > 200) { bottom = y; break }
+    if (bottom < 0) return null
+    var top = bottom
+    while (top - 1 > h / 2 && (bmp.getPixel(cx, top - 1) ushr 24) > 200) top--
+    if (bottom - top < h / 20) return null
+    val bandH = (bottom - top).coerceAtLeast(1)
+    val edge = maxOf(2, bandH / 22)
+    val row = IntArray(w)
+    for (y in top..bottom) {
+        bmp.getPixels(row, 0, w, 0, y, w, 1)
+        val frac = (y - top).toFloat() / bandH
+        val tint = discBandTint(accent, frac)
+        val lit = y - top < edge
+        for (x in 0 until w) {
+            val p = row[x]; val a = p ushr 24
+            if (a < 40) continue
+            // Only the band itself: the part of this row that is solid all the way from its edge (not the rim / hub lines above).
+            val r = (p shr 16) and 0xFF; val g = (p shr 8) and 0xFF; val b = p and 0xFF
+            val lum = (0.2126f * r + 0.7152f * g + 0.0722f * b) / 255f
+            val base = if (lit) (accent or (0xFF shl 24)) else tint
+            val keep = if (eraseLogo || lit) 0f else lum
+            val br = (((base shr 16) and 0xFF) * (1 - keep) + r * keep).toInt()
+            val bg = (((base shr 8) and 0xFF) * (1 - keep) + g * keep).toInt()
+            val bb = ((base and 0xFF) * (1 - keep) + b * keep).toInt()
+            row[x] = (a shl 24) or (br shl 16) or (bg shl 8) or bb
+        }
+        bmp.setPixels(row, 0, w, 0, y, w, 1)
+    }
+    return top to bottom
+}
+
+/** Pure: where the colour logo stands on the band (fractions of the disc's side): centred, inside the band's narrower foot. */
+internal fun discLogoBox(top: Int, bottom: Int, side: Int): Rect {
+    val t = top.toFloat() / side; val b = bottom.toFloat() / side
+    val h = (b - t) * 0.5f
+    val w = 0.5f
+    val cy = t + (b - t) * 0.47f
+    return Rect(0.5f - w / 2f, cy - h / 2f, 0.5f + w / 2f, cy + h / 2f)
 }

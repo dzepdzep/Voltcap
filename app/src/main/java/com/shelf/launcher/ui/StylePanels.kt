@@ -447,6 +447,8 @@ private fun PanelChannel(c: StyleCtx, p: PanelPalette, ch: Int, on: Boolean, row
                                     d > 4.5f -> (1f - (d - 4.5f)).coerceIn(0f, 1f)
                                     else -> 1f
                                 }
+                                // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                                flatTextFor3d()
                             }
                             .pointerInput(i) {
                                 detectTapGestures {
@@ -553,7 +555,8 @@ private fun PanelCaption(c: StyleCtx, p: PanelPalette, ch: Int, focus: Int, comp
             }
         }
         PanelNav.SYSTEMS -> c.stops.getOrNull(PanelNav.systems.getOrNull(focus) ?: -1)?.let { st ->
-            val count = remember(c.state.games, st.platform) { c.state.games.count { it.platform == st.platform } }
+            val counts = categoryCounts(c)
+            val count = st.platform?.let { counts[it] } ?: 0
             Column {
                 Text(st.label, color = p.ink, fontSize = if (compact) 16.sp else 20.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
                 Text(if (count == 1) "1 game" else "$count games", color = p.sub, fontSize = 13.sp)

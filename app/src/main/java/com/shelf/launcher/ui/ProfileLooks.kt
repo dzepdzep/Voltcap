@@ -117,8 +117,13 @@ internal fun pickerStyle(look: PickerLook): PickerStyle = when (look) {
 internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, modifier: Modifier = Modifier) {
     val moving = animate && look != PickerLook.OLED && look != PickerLook.CONSOLE
     val t = remember { mutableFloatStateOf(0f) }
-    if (moving) LaunchedEffect(look) {
-        val start = withFrameNanos { it }
+    // Update 513 (Thor: "Who's playing?" left waiting drew 120 frames a second, ~73 % CPU): the light drifts a few pixels a
+    // second, so after ~10 s without input (HomeIdle.settled, as the home's own idle effects since 510 / 511 — Save power when
+    // idle) it holds where it is and nothing redraws; the first press carries it on from that same moment (no jump).
+    if (moving && !HomeIdle.settled) LaunchedEffect(look) {
+        val from = t.floatValue
+        val first = withFrameNanos { it }
+        val start = first - (from * 1e9f).toLong()
         while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
     }
     when (look) {
@@ -198,8 +203,12 @@ private fun Modifier.midnightFloor(): Modifier = this.drawBehind {
 @Composable
 private fun MidnightSparks(modifier: Modifier) {
     val t = remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        val start = withFrameNanos { it }
+    // (Update 513: settles with the home's idle settle like PickerBackdrop's light — measured on the RP Nova, 120 frames a
+    // second / ~67 % CPU for as long as "Who's playing?" waited — and carries on from the same moment on the next press.)
+    if (!HomeIdle.settled) LaunchedEffect(Unit) {
+        val from = t.floatValue
+        val first = withFrameNanos { it }
+        val start = first - (from * 1e9f).toLong()
         while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
     }
     val seeds = remember { List(46) { i -> floatArrayOf(((i * 7919) % 1000) / 1000f, ((i * 104729) % 1000) / 1000f, 0.4f + ((i * 31) % 10) / 16f, ((i * 53) % 100) / 100f) } }

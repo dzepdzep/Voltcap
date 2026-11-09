@@ -117,6 +117,8 @@ data class SyncConflict(
 enum class ConflictChoice { USE_DRIVE, KEEP_LOCAL, NEWEST }
 
 /** How a sync went. [ok] is false when Drive couldn't be checked fully. */
+internal const val QA_PAUSED = "QA session - sync paused"
+
 data class SyncOutcome(
     val ok: Boolean,
     val summary: String,
@@ -244,6 +246,17 @@ object CloudSync {
             runCatching { CloudSyncWorker.schedule(context) }
         }
     }
+
+    /**
+     * Update 496: a QA session (the test-hooks file is there, TestHooks.enabled) runs no Drive sync of any kind — launch,
+     * periodic, after-game, scoped, watcher. Found on the Thor: a QA install / restart ran the owner's sync. Nothing else
+     * changes; without the hooks file every sync runs as before.
+     */
+    fun qaPaused(context: Context): Boolean =
+        // (Update 500: the isolated QA app never syncs, hooks file or not.)
+        (QaVariant.isolated(context) || runCatching { com.shelf.launcher.ui.TestHooks.enabled(context.applicationContext) }.getOrDefault(false)).also {
+            if (it) android.util.Log.e("VoltcapQA", "sync paused (QA session)")
+        }
 
     fun isActive(context: Context): Boolean {
         load(context)
@@ -771,6 +784,7 @@ object CloudSync {
      * Keeps the per-game [SyncStatusStore] entry up to date.
      */
     internal suspend fun syncScoped(context: Context, game: ScopedGame, uploadOnly: Boolean): SyncOutcome {
+        if (qaPaused(context)) return SyncOutcome(true, QA_PAUSED)
         if (uploadOnly) return syncScopedLocked(context, game, true)
         // Right after a game (or before the next one), the emulator may still sit in the background with the
         // old save loaded — it would write its own back over Drive's. Then: send ours up, replace nothing.
@@ -848,7 +862,8 @@ object CloudSync {
                             outcome.uploaded > 0 -> SyncDirection.UPLOAD
                             else -> old.lastDirection
                         },
-                        fileCount = if (moved > 0) moved else old.fileCount
+                        fileCount = if (moved > 0) moved else old.fileCount,
+                        lastTransferAt = if (moved > 0) now else old.lastTransferAt // (Update 493, D292)
                     )
                 }
             }
@@ -870,7 +885,7 @@ object CloudSync {
      * before you even pick the game. Stops when a game starts.
      */
     fun startWatching(context: Context) {
-        if (!isActive(context) || watchJob?.isActive == true) return
+        if (!isActive(context) || watchJob?.isActive == true || qaPaused(context)) return
         val app = context.applicationContext
         watchJob = scope.launch {
             val prefs = prefs(app)
@@ -931,6 +946,7 @@ object CloudSync {
 
     /** Runs one full sync. */
     suspend fun sync(context: Context, savesOnly: Boolean = false, skipSaves: Boolean = false): SyncOutcome = mutex.withLock {
+        if (qaPaused(context)) return@withLock SyncOutcome(true, QA_PAUSED)
         // While a game is open its emulator owns the save files: never download/overwrite them.
         val skipSaves = skipSaves || PlaySession.isOpen(context)
         // The last emulator may still hold its saves in memory: send ours up, but don't replace any yet.

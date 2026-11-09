@@ -28,6 +28,10 @@ internal object QaClip {
     /** Update 467: a box that shows its rows a page at a time (SnapRows) — its rows are out of view by design, like a scroll's. */
     val Paged = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaPaged") { a, b -> a == true || b == true }
 
+    /** Update 477: a text sliding sideways to show all of itself (FullText's marquee) — cut at rest by design, reachable as
+     *  it slides (rule 11), like a scrolled one; geomcheck read it as cut (Airy's long name, k477i). */
+    val Slides = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaSlides") { a, b -> a == true || b == true }
+
     /**
      * Update 467: a dump asked for by a file, not an intent — an `am start` reaches the activity and closes the popups that
      * live inside the home screen (Classic, Row reveal, Shared), so the dump would show the home. popclip.sh writes the tag
@@ -35,6 +39,9 @@ internal object QaClip {
      */
     @Volatile private var nlFile: java.io.File? = null
     fun noLaunchFile(): Boolean = nlFile?.exists() == true
+    @Volatile private var allowFile: java.io.File? = null
+    /** Update 489b (D287): launching allowed during QA only while <external files>/qa_allow_launch exists. */
+    fun allowLaunchFile(): Boolean = allowFile?.exists() == true
 
     @Volatile private var watching = false
     fun watch(context: android.content.Context) {
@@ -45,6 +52,10 @@ internal object QaClip {
         // (The same for More: `echo on > qa_winmore_req` — voltcap_test_winmore without an intent.)
         val more = java.io.File(app.getExternalFilesDir(null), "qa_winmore_req")
         nlFile = java.io.File(app.getExternalFilesDir(null), "qa_nolaunch")
+        allowFile = java.io.File(app.getExternalFilesDir(null), "qa_allow_launch")
+        // (Update 489b, D287: a QA script asks whether a tap on Play would start a game — answered in qa_launch_state.)
+        val launchCheck = java.io.File(app.getExternalFilesDir(null), "qa_launch_check")
+        val launchState = java.io.File(app.getExternalFilesDir(null), "qa_launch_state")
         val poll = object : Runnable {
             override fun run() {
                 runCatching {
@@ -52,6 +63,10 @@ internal object QaClip {
                         val tag = req.readText().trim().ifEmpty { "clip" }
                         req.delete()
                         request(app, tag, 0)
+                    }
+                    if (launchCheck.exists()) {
+                        launchCheck.delete()
+                        launchState.writeText(TestHooks.launchState() + "\n")
                     }
                     if (more.exists()) {
                         TestHooks.winMore.value = more.readText().trim() != "off"
@@ -87,6 +102,7 @@ internal object QaClip {
     }
 
     private fun scrolls(n: SemanticsNode): Boolean {
+        if (n.config.getOrNull(Slides) == true) return true
         var p = n.parent
         while (p != null) {
             val c = p.config
@@ -144,9 +160,64 @@ internal object QaClip {
                 sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
                 sb.append("\"focused\":${c.getOrNull(SemanticsProperties.Focused) == true || r.ring},\"scroll\":${scrolls(n)},\"tilt\":${tilted(n)},\"paged\":${paged(n)},\"id\":${n.id}}")
             }
+            sb.append("],")
+            // (Update 474: every text as laid out — unmerged, so the words inside a button count too — with what its own
+            // TextLayoutResult says: lines, did it need more height / width than it was given (cut inside its own box, or
+            // stopped by maxLines), an ellipsis at its end. geomcheck's "text" check reads this; boxes alone missed D244.)
+            sb.append("\"texts\":[")
+            var firstT = true
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                val c = n.config
+                val words = c.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } ?: continue
+                if (words.isBlank()) continue
+                val tl = runCatching {
+                    c.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.let { act ->
+                        val l = ArrayList<androidx.compose.ui.text.TextLayoutResult>(); if (act(l)) l.firstOrNull() else null
+                    }
+                }.getOrNull()
+                val pos = n.positionInWindow; val sz = n.size; val b = n.boundsInWindow
+                if (!firstT) sb.append(','); firstT = false
+                sb.append("{\"text\":\"${esc(words.take(80))}\",\"len\":${words.length},")
+                sb.append("\"full\":[${pos.x.toInt()},${pos.y.toInt()},${sz.width},${sz.height}],")
+                sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],")
+                if (tl != null) {
+                    val lines = tl.lineCount
+                    val ell = lines > 0 && runCatching { tl.isLineEllipsized(lines - 1) }.getOrDefault(false)
+                    sb.append("\"lines\":$lines,\"maxLines\":${tl.layoutInput.maxLines.let { if (it == Int.MAX_VALUE) -1 else it }},")
+                    sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
+                    sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
+                }
+                // (Update 477, D266: a text a full FlowRow / Column dropped is measured but never placed — its box is the last
+                // one it had, so 'full' and 'shown' look fine while nothing is drawn (Airy's chips with More open, k477e).)
+                sb.append("\"placed\":${placed(n)},")
+                sb.append("\"scroll\":${scrolls(n)},\"giveway\":${givesWay(n)},\"id\":${n.id}}")
+            }
             sb.append("]}")
         }
-        sb.append("]}")
+        sb.append("],")
+        // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)
+        val vmFocus = runCatching { TestHooks.viewState?.invoke()?.optString("focus") }.getOrNull()?.takeIf { it.isNotEmpty() }
+        sb.append("\"focusedGame\":${vmFocus?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
+        sb.append("\"originKey\":${GameOrigin.key?.takeIf { it != GameOrigin.FOCUSED }?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
+        sb.append("\"origin\":${GameOrigin.rect?.let { "[${it.left.toInt()},${it.top.toInt()},${it.width.toInt()},${it.height.toInt()}]" } ?: "null"},")
+        sb.append("\"popupGame\":${GamePopup.game?.let { "\"" + esc(it.stableKey.takeLast(120)) + "\"" } ?: "null"},")
+        sb.append("\"popupName\":${GamePopup.game?.let { "\"" + esc(it.name.take(120)) + "\"" } ?: "null"},")
+        sb.append("\"images\":${QaArt.json()}}")
         return sb.toString()
+    }
+
+    /** Update 477: the node and every layout above it placed (drawn) in the last layout pass. */
+    private fun placed(n: SemanticsNode): Boolean {
+        var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
+        while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }
+        return true
+    }
+
+    /** Update 474: inside a part marked as giving way by design (it may shrink to nothing when the room is short). */
+    val GivesWay = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaGivesWay") { a, b -> a == true || b == true }
+    private fun givesWay(n: SemanticsNode): Boolean {
+        var p: SemanticsNode? = n
+        while (p != null) { if (p.config.getOrNull(GivesWay) == true) return true; p = p.parent }
+        return false
     }
 }

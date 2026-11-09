@@ -59,6 +59,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -659,6 +664,48 @@ internal const val FLING_FRICTION = 1.9f
 internal class InspectMotion {
     /** 0 = in its place on the home screen, 1 = out in front. */
     val lift = mutableFloatStateOf(0f)
+    /**
+     * Update 498 (Batch C, Inspect): two-finger pinch zoom (1..[INSPECT_ZOOM_MAX]) and pan, read only while drawing.
+     * One finger still turns it; Y / a long press puts zoom and pan back with the pose. Faded out with [lift] on the way back.
+     */
+    val zoom = mutableFloatStateOf(1f)
+    val panX = mutableFloatStateOf(0f)
+    val panY = mutableFloatStateOf(0f)
+    fun pinch(dz: Float, dx: Float, dy: Float, w: Float, h: Float) {
+        if (closing || !started) return
+        val (z, x, y) = inspectPinchStep(zoom.floatValue, panX.floatValue, panY.floatValue, dz, dx, dy, w, h)
+        zoom.floatValue = z; panX.floatValue = x; panY.floatValue = y
+    }
+    fun resetZoom() { zoom.floatValue = 1f; panX.floatValue = 0f; panY.floatValue = 0f }
+
+    /*
+     * Update 504 (owner: "pause the automatic motion while I handle it, then let it settle back"): fingers on the piece now
+     * (counted in the pinch handler's Initial pass, which sees every touch first). The first finger down pauses everything
+     * that moves by itself — the showcase turn, the sway (folded into the pose, no jump), a fling, a return under way, the
+     * slow turn of what came out of the case ([idlePaused]) — so the piece follows the gesture alone. Only when the last
+     * finger lifts does [release] start the wait (Stay turned for, 3 s by default); then zoom, pan and pose ease back
+     * together in [INSPECT_IDLE_RETURN_MS] and the idle motion carries on from where it stopped. Any new touch cancels the
+     * wait / the return at once.
+     */
+    var fingers = 0
+    val idlePaused = androidx.compose.runtime.mutableStateOf(false)
+    /** Update 504: the turn of what came out of the case, 0..1, advanced only while not [idlePaused] (no restart, no jump). */
+    val contentPhase = mutableFloatStateOf(0f)
+    /** Update 504: when two fingers last moved it — a tap that ends a pinch never opens / turns / closes anything. */
+    var lastPinchAt = 0L
+    fun pinchedJustNow(): Boolean = android.os.SystemClock.uptimeMillis() - lastPinchAt < 450L
+    fun touchDown() {
+        fingers = maxOf(fingers, 1)
+        if (closing || !started) return
+        spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel(); stopSway()
+        idlePaused.value = true
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect pause fingers=$fingers")
+    }
+    fun touchUp(scope: CoroutineScope) {
+        fingers = 0
+        // (A fling still turning it is the last interaction: it calls release when it stops.)
+        if (spinJob?.isActive != true && easeJob?.isActive != true) release(scope)
+    }
     /** The showcase turn, degrees (positive: the front turns right, so its left side — a case's spine — shows). */
     val turn = mutableFloatStateOf(0f)
     /** Your own turn on top (drag / right stick). */
@@ -685,6 +732,8 @@ internal class InspectMotion {
 
     /** Update 274: starts the sway, fading in, unless it's swaying already, closing, or a case is open. */
     fun startSway(scope: CoroutineScope) {
+        // (Update 504: every way back to rest — the settle-back, Y, a tap's turn once round — ends here: idle motion resumes.)
+        if (fingers == 0) idlePaused.value = false
         if (closing || !started || frozen) return
         if (!handsOff && !Features.inspectSway.state.value) return
         if (swayJob?.isActive == true) return
@@ -762,22 +811,30 @@ internal class InspectMotion {
      * Update 189: let go: it turns back to face you (the short way). (Update 238, #116: after the hold you picked, slowly
      * — or not at all with "Turned pieces turn back by themselves" off; turning it again stops the return at once.)
      */
-    fun releaseContent(scope: CoroutineScope) {
+    fun releaseContent(scope: CoroutineScope, touch: Boolean = true) {
         contentEase?.cancel()
-        if (!Features.inspectAutoReturn.state.value) return
+        // (Update 505, found with the printed test disc: a drag on the disc / cartridge out of its case paused nothing — its own
+        // slow turn went on under your finger and through the wait. Same rule as [release]: never while a finger is down, then
+        // the wait, then 360 ms back after a touch (the stick keeps "Turning back"), then its idle turn carries on.)
+        if (touch && fingers > 0) return
         val hold = Features.inspectHold.state.value.ms
-        val dur = Features.inspectReturnSpeed.state.value.ms
+        val back = Features.inspectAutoReturn.state.value
+        val dur = if (touch) INSPECT_IDLE_RETURN_MS else Features.inspectReturnSpeed.state.value.ms
         contentEase = scope.launch {
             delay(hold)
-            val now = contentTurn.floatValue
-            val to = (now / 360f).roundToInt() * 360f
-            val p0 = contentPitch.floatValue
-            animate(0f, 1f, animationSpec = tween(dur, easing = RETURN_EASE)) { k, _ ->
-                contentTurn.floatValue = now + (to - now) * k
-                contentPitch.floatValue = p0 * (1f - k)
+            if (back) {
+                val now = contentTurn.floatValue
+                val to = (now / 360f).roundToInt() * 360f
+                val p0 = contentPitch.floatValue
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect content settle hold=$hold dur=$dur touch=$touch turn=$now->$to")
+                animate(0f, 1f, animationSpec = tween(dur, easing = if (touch) FastOutSlowInEasing else RETURN_EASE)) { k, _ ->
+                    contentTurn.floatValue = now + (to - now) * k
+                    contentPitch.floatValue = p0 * (1f - k)
+                }
+                contentTurn.floatValue = 0f
+                contentPitch.floatValue = 0f
             }
-            contentTurn.floatValue = 0f
-            contentPitch.floatValue = 0f
+            if (fingers == 0) idlePaused.value = false
         }
     }
 
@@ -824,7 +881,10 @@ internal class InspectMotion {
      * whatever the return settings say.
      */
     fun resetPose(scope: CoroutineScope) {
-        if (closing || !started || handsOff) return
+        if (closing || !started) return
+        resetZoom() // (Update 498: zoom and pan back too — also with Wobble on, which only blocks the turn)
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect reset zoom=${zoom.floatValue} pan=${panX.floatValue},${panY.floatValue}")
+        if (handsOff) return
         spinJob?.cancel(); easeJob?.cancel(); contentEase?.cancel(); stopSway()
         easeJob = scope.launch {
             val total = turn.floatValue + manual.floatValue
@@ -871,6 +931,7 @@ internal class InspectMotion {
                 if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
                 if (lid.floatValue > 0f) animate(lid.floatValue, 0f, animationSpec = tween(620, easing = FastOutSlowInEasing)) { v, _ -> lid.floatValue = v }
             }
+            caseStepDone() // (Update 504)
         }
     }
     /**
@@ -892,6 +953,7 @@ internal class InspectMotion {
             if (abs(front - total) > 0.5f) animate(total, front, animationSpec = tween(380, easing = FastOutSlowInEasing)) { v, _ -> turn.floatValue = v }
             turn.floatValue = 0f
             animate(lid.floatValue, 1f, animationSpec = tween(760, easing = CubicBezierEasing(0.35f, 0f, 0.2f, 1f))) { v, _ -> lid.floatValue = v }
+            caseStepDone() // (Update 504)
         }
     }
 
@@ -910,6 +972,7 @@ internal class InspectMotion {
             turn.floatValue = 0f
             if (lid.floatValue < 1f) animate(lid.floatValue, 1f, animationSpec = tween(500, easing = FastOutSlowInEasing)) { v, _ -> lid.floatValue = v }
             animate(out.floatValue, 1f, animationSpec = tween(700, easing = CubicBezierEasing(0.3f, 0f, 0.15f, 1f))) { v, _ -> out.floatValue = v }
+            caseStepDone() // (Update 504)
         }
     }
 
@@ -920,7 +983,18 @@ internal class InspectMotion {
         contentEase?.cancel(); contentPitch.floatValue = 0f
         caseJob = scope.launch {
             if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
+            caseStepDone() // (Update 504)
         }
+    }
+
+    /**
+     * Update 504: a tap / stick click that opens the case, takes out or puts back what's in it is an interaction that ends
+     * here: it cancelled the pending settle-back (easeJob), so the idle motion of what came out (its slow turn) carries on
+     * from where it stopped instead of staying paused until the next touch. Never while a finger is still down.
+     */
+    private fun caseStepDone() {
+        if (fingers == 0) idlePaused.value = false
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect resume (case step)")
     }
 
     fun closeCase(scope: CoroutineScope) {
@@ -1050,25 +1124,37 @@ internal class InspectMotion {
      * slowly and gently, upright as well; with "Turned pieces turn back by themselves" off it stays as you left it. A
      * drag, the stick, a tap or Y stops the return at once — nudge / nudgePitch / spinOnce / resetPose cancel it.)
      */
-    fun release(scope: CoroutineScope) {
+    fun release(scope: CoroutineScope, touch: Boolean = true) {
         if (closing) return
         easeJob?.cancel()
+        // (Update 504: never while a finger is still on it — the wait starts when the last one lifts.)
+        if (touch && fingers > 0) return
         val hold = Features.inspectHold.state.value.ms
-        // (Update 274: left where you let go, it still sways again after the hold.)
-        if (!Features.inspectAutoReturn.state.value) { easeJob = scope.launch { delay(hold); startSway(scope) }; return }
-        val dur = Features.inspectReturnSpeed.state.value.ms
+        val turnBack = Features.inspectAutoReturn.state.value
+        // (Update 504: after a touch, zoom, pan and pose come back together quickly (300–400 ms, owner); the stick keeps the
+        // "Turning back" speed. With "turn back by themselves" off the pose stays where you left it — zoom and pan still
+        // come back, so the piece is never left enlarged off its place.)
+        val dur = if (touch) INSPECT_IDLE_RETURN_MS else Features.inspectReturnSpeed.state.value.ms
         easeJob = scope.launch {
             delay(hold)
             val total = turn.floatValue + manual.floatValue
             val front = if (limited) 0f else (total / 360f).roundToInt() * 360f
             val m0 = manual.floatValue
-            val mTo = front - turn.floatValue
+            val mTo = if (turnBack) front - turn.floatValue else m0
             val p0 = pitch.floatValue
-            animate(0f, 1f, animationSpec = tween(dur, easing = RETURN_EASE)) { v, _ ->
-                manual.floatValue = m0 + (mTo - m0) * v
-                pitch.floatValue = p0 * (1f - v)
+            val z0 = zoom.floatValue; val x0 = panX.floatValue; val y0 = panY.floatValue
+            if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect settle hold=$hold dur=$dur touch=$touch zoom=$z0 yaw=$m0->$mTo pitch=$p0")
+            if (m0 != mTo || p0 != 0f && turnBack || z0 != 1f || x0 != 0f || y0 != 0f) {
+                animate(0f, 1f, animationSpec = tween(dur, easing = if (touch) FastOutSlowInEasing else RETURN_EASE)) { v, _ ->
+                    manual.floatValue = m0 + (mTo - m0) * v
+                    if (turnBack) pitch.floatValue = p0 * (1f - v)
+                    zoom.floatValue = z0 + (1f - z0) * v; panX.floatValue = x0 * (1f - v); panY.floatValue = y0 * (1f - v)
+                }
             }
-            pitch.floatValue = 0f
+            if (turnBack) pitch.floatValue = 0f
+            resetZoom()
+            if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect resume")
+            idlePaused.value = false // (the slow turn of what came out carries on where it stopped)
             startSway(scope) // (Update 274: still again, it goes back to its sway.)
         }
     }
@@ -1222,6 +1308,8 @@ internal fun InspectStick(motion: InspectMotion) {
             // (Update 198: with the disc / cartridge out of its case, the stick turns that — it used to flip the case
             // aside behind it.)
             val content = motion.out.floatValue > 0.5f
+            // (Update 505: turning what came out with the stick pauses its own slow turn too; releaseContent resumes it.)
+            if (content) motion.idlePaused.value = true
             while (held() && !motion.closing) {
                 val now = withFrameNanos { it }
                 if (last > 0L) {
@@ -1236,7 +1324,7 @@ internal fun InspectStick(motion: InspectMotion) {
                 }
                 last = now
             }
-            if (content) motion.releaseContent(this) else motion.release(this)
+            if (content) motion.releaseContent(this, touch = false) else motion.release(this, touch = false)
         }
     }
 }
@@ -1309,6 +1397,43 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                 Modifier
                     .offset { IntOffset((left - win[0]).roundToInt(), (top - win[1]).roundToInt()) }
                     .size(with(density) { w.toDp() }, with(density) { h.toDp() })
+                    // (Update 498, Batch C: pinch zoom / pan — draw-time only, scaled in with the lift so the flight back
+                    // starts from where it is without a jump.)
+                    .graphicsLayer {
+                        val k = motion.lift.floatValue
+                        val z = 1f + (motion.zoom.floatValue - 1f) * k
+                        if (z != 1f || motion.panX.floatValue != 0f || motion.panY.floatValue != 0f) {
+                            scaleX = z; scaleY = z
+                            translationX = motion.panX.floatValue * k; translationY = motion.panY.floatValue * k
+                        }
+                    }
+                    // Two fingers: pinch / pan, taken in the Initial pass so the one-finger turn and the tap below see
+                    // those touches as consumed (their gestures stop); a single finger is never touched here.
+                    .pointerInput(piece.kind) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            motion.touchDown() // (Update 504: hands on — the automatic motion pauses)
+                            var pinched = false
+                            while (true) {
+                                val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                                val down = ev.changes.count { it.pressed }
+                                motion.fingers = down
+                                if (down == 0) break
+                                if (down >= 2) {
+                                    pinched = true
+                                    motion.lastPinchAt = android.os.SystemClock.uptimeMillis()
+                                    val dz = ev.calculateZoom()
+                                    val dp = ev.calculatePan()
+                                    motion.pinch(dz, dp.x * motion.zoom.floatValue, dp.y * motion.zoom.floatValue, size.width.toFloat(), size.height.toFloat()) // (local deltas are scaled by the zoom layer above)
+                                    ev.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                            }
+                            motion.touchUp(scope) // (Update 504: last finger up — the wait for the settle-back starts)
+                            // (Update 500: QA evidence for the touch check — only with the test hooks / in the QA app.)
+                            if (pinched && QaTrace.on) android.util.Log.e("VoltcapQA", "inspect pinch zoom=${"%.2f".format(motion.zoom.floatValue)} " +
+                                "pan=${motion.panX.floatValue.roundToInt()},${motion.panY.floatValue.roundToInt()} size=${size.width}x${size.height} opened=${motion.out.floatValue > 0f}")
+                        }
+                    }
                     .graphicsLayer {
                         val k = motion.lift.floatValue
                         alpha = motion.fade.floatValue
@@ -1351,8 +1476,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                     // Update 189: a tap on a case opens it (and closes it again).
                     .pointerInput(piece.kind, piece.content, itemPlace, bookPlace) {
                         // (Update 238, #117: a long press puts it back as it first stood — facing you, upright.)
-                        detectTapGestures(onLongPress = { motion.resetPose(scope) }, onTap = { at ->
-                            inspectTap(piece, motion, scope, itemPlace, bookPlace, at, size.width.toFloat(), size.height.toFloat())
+                        detectTapGestures(onLongPress = { if (!motion.pinchedJustNow()) motion.resetPose(scope) }, onTap = { at ->
+                            if (!motion.pinchedJustNow()) inspectTap(piece, motion, scope, itemPlace, bookPlace, at, size.width.toFloat(), size.height.toFloat())
                         })
                     }
                     // A horizontal drag turns it yourself; let go and it eases back.
@@ -1372,7 +1497,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                             onDragEnd = {
                                 if (moved < 28.dp.toPx() && android.os.SystemClock.uptimeMillis() - downTime < 400L) {
                                     motion.release(scope)
-                                    inspectTap(piece, motion, scope, itemPlace, bookPlace, downAt, size.width.toFloat(), size.height.toFloat())
+                                    if (!motion.pinchedJustNow()) inspectTap(piece, motion, scope, itemPlace, bookPlace, downAt, size.width.toFloat(), size.height.toFloat())
                                 } else {
                                     val v = tracker.calculateVelocity()
                                     motion.fling(scope, v.x * 0.42f * motion.yawSign(), v.y * 0.42f)
@@ -1504,10 +1629,20 @@ private fun InspectContent(
     val s0 = (startW / cw).coerceIn(0.1f, 1f)
     val outNow by remember(motion) { androidx.compose.runtime.derivedStateOf { motion.out.floatValue > 0.001f } }
     // (Its slow turn only while it's out.)
-    val spin = if (outNow) {
-        val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "contentSpin")
-        t.animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(tween(12_000, easing = androidx.compose.animation.core.LinearEasing)), label = "contentT")
-    } else null
+    // (Update 504: a clock that stands still while you handle it and carries on from the same place — the infinite
+    // transition it was kept running under your fingers. Runs only while the piece is out.)
+    if (outNow) LaunchedEffect(motion) {
+        var last = -1L
+        while (true) {
+            val now = withFrameNanos { it }
+            if (last > 0L && !motion.idlePaused.value) {
+                val dt = ((now - last) / 1_000_000f).coerceAtMost(50f)
+                motion.contentPhase.floatValue = (motion.contentPhase.floatValue + dt / 12_000f) % 1f
+            }
+            last = now
+        }
+    }
+    val spin: androidx.compose.runtime.State<Float>? = if (outNow) motion.contentPhase else null
     // A gentle tilt to and fro (a disc shows its edge and, turned by hand, its data side), plus your own turn.
     val yawOf: () -> Float = { (if (disc) 22f else 16f) * sin(2f * PI.toFloat() * (spin?.value ?: 0f) * 2f) + motion.contentTurn.floatValue }
     Box(
@@ -1529,6 +1664,19 @@ private fun InspectContent(
             // (Update 200: only while it's out. Unseen in the case it stood over the case's right half and took the taps
             // meant for the case — a finger on the case didn't open it.)
             .then(if (!outNow) Modifier else Modifier
+                .pointerInput(Unit) {
+                    // (Update 505: hands on what came out — its slow turn and the settle-back pause, as on the case (504); the
+                    // wait starts when the last finger lifts. Initial pass: before the tap / drag below, which stay as they were.)
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        motion.touchDown()
+                        do {
+                            val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            motion.fingers = ev.changes.count { it.pressed }
+                        } while (ev.changes.any { it.pressed })
+                        motion.touchUp(scope)
+                    }
+                }
                 .pointerInput(Unit) {
                     // (Update 200: a tap lays it back in the open case; a tap on the case then shuts it.)
                     detectTapGestures(onTap = { if (motion.out.floatValue > 0.5f) motion.putBack(scope) })
@@ -1962,9 +2110,16 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                         cv.saveLayer(androidx.compose.ui.geometry.Rect(-w, -h, 2f * w, 2f * h), androidx.compose.ui.graphics.Paint().apply { alpha = SlabSide.CLEAR_SIDE_ALPHA })
                     }
                     val layer = if (clear) ring else edge
+                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
+                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
+                    // (Update 492, owner's Inspect video: drawn in its place among the slices, far to near — drawn after all of
+                    // them, its darkened copy of the whole outline lay over the nearer slices: a dark band down the side.)
+                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
+                    var seamDone = false
                     for (k in 0..n) {
                         val f = k.toFloat() / n
                         val z = if (c >= 0f) -depth / 2f + depth * f else depth / 2f - depth * f
+                        if (!seamDone && (if (c >= 0f) z > seamZ else z < seamZ)) { seamDone = true; at(seamZ) { drawLayer(seam) } }
                         // (Rounded edges: the slices within 0.5 mm of a face drawn a little smaller — a 0.5 mm radius.)
                         val d = (depth / 2f - abs(z)) / zpm
                         val r = SlabSide.EDGE_R
@@ -1972,10 +2127,7 @@ private fun InspectSlab(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
                         atIn(z, inset) { drawLayer(layer) }
                         if (ss.grips && z >= seamZ) atIn(z, inset) { drawLayer(grips) }
                     }
-                    // The seam where the two halves meet (5.8 mm from the front: the side photos) — its own darker copy
-                    // (a layer's light is read when the frame is drawn, so the wall's own can't be changed for one slice).
-                    seam.record { drawLayer(layer); drawRect(Color.Black, alpha = 0.6f, blendMode = BlendMode.SrcAtop) }
-                    at(seamZ) { drawLayer(seam) }
+                    if (!seamDone) at(seamZ) { drawLayer(seam) }
                     if (clear) drawContext.canvas.restore()
                 }
                 // (Update 275: the bottom face round the openings — a drawn shell's own.)
@@ -2253,3 +2405,20 @@ private fun DiscDataSide(format: DiscFormat, yawOf: () -> Float, modifier: Modif
  * (Update 200: InspectModel and its helpers — the 3D shape library's pre-rendered pictures, every 20° round, crossfaded —
  * are gone with the MODEL kind: they turned like a slide show. The drawn pieces turn smoothly as SLABs.)
  */
+
+
+/** Update 498: the most a piece is zoomed in Inspect. */
+internal const val INSPECT_ZOOM_MAX = 3f
+/** Update 504: how long zoom, pan and pose take to settle back after a touch (owner: 300–400 ms, eased). */
+internal const val INSPECT_IDLE_RETURN_MS = 360
+
+/**
+ * Update 498: one pinch step — zoom kept in 1..[INSPECT_ZOOM_MAX], the pan kept so the zoomed piece still covers its own place
+ * (at zoom 1 there is nothing to pan: it snaps back to the middle).
+ */
+internal fun inspectPinchStep(zoom: Float, panX: Float, panY: Float, dz: Float, dx: Float, dy: Float, w: Float, h: Float): Triple<Float, Float, Float> {
+    val z = (zoom * (if (dz.isFinite() && dz > 0f) dz else 1f)).coerceIn(1f, INSPECT_ZOOM_MAX)
+    val mx = (z - 1f) * w / 2f
+    val my = (z - 1f) * h / 2f
+    return Triple(z, (panX + dx).coerceIn(-mx, mx), (panY + dy).coerceIn(-my, my))
+}

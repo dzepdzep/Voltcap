@@ -20,7 +20,9 @@ class PanelHold456Test {
         assertTrue(s.contains("HomeIdle.rest || panelHold), //"))
         assertTrue(s.contains("LocalScenePanelHold provides panelHold"))
         // Every home clip pauses (keeps its place) rather than being removed.
-        assertEquals(2, Regex("HomeIdle.rest \\|\\| panelHold \\|\\| \\(com.shelf.launcher.data.Features.clipIdlePause").findAll(s).count())
+        // (Update 478, B2: the backdrop clip also pauses under an opaque full-screen page — clipCovered.)
+        assertEquals(2, Regex("HomeIdle.rest \\|\\| panelHold( \\|\\| clipCovered)? \\|\\| \\(com.shelf.launcher.data.Features.clipIdlePause").findAll(s).count())
+        assertTrue(s.contains("val clipCovered = categoryScreenOpen || guideForGame != null || manualFor != null || artViewer != null || viewingShots != null"))
     }
 
     @Test fun showcaseMonitorClipPausedNotDropped() {

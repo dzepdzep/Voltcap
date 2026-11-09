@@ -264,6 +264,11 @@ object HomeWidgets {
  * first), but under the game popup, the category screen, the screensaver… (0 while one of those is up, set by the home
  * screen; the order they're drawn in decides then).
  */
+/** Update 487 (K2): the screensaver's layer on the home screen — above every home piece (they use 4–9). */
+internal const val SCREENSAVER_Z = 20f
+/** Update 487 (K2): the classic details window's layer — above the home's pieces (≤ 6.5), under Edit Home's tools (9). */
+internal const val DETAILS_Z = 8f
+
 internal object PartsLayer {
     var z by androidx.compose.runtime.mutableFloatStateOf(6f)
 }

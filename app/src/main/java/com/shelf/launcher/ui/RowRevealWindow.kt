@@ -484,27 +484,29 @@ internal fun RowMotionWindow(
                     .width(with(d) { minOf(if (opens) textW else minOf(textW, W * 0.62f), with(d) { 760.dp.toPx() }).toDp() })
                     .height(with(d) { infoH.toDp() })
             ) {
+                // (Update 475, D245: the facts and the achievements come first — they are short and exist nowhere else in this
+                // window; the story takes only the room they leave (the whole story is one press away, Details) and gives way
+                // entirely on a short screen. Before, the story claimed its 3–5 lines first and the facts / achievements under it
+                // were laid out with no height at all: KONKR 17 combinations, Odin 5, k471a / k474a.)
                 val summary = meta?.summary?.takeIf { it.isNotBlank() }
-                if (summary != null) Text(
-                    summary, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 1.4.em,
-                    maxLines = if (infoH > with(d) { 170.dp.toPx() }) 5 else 3, overflow = TextOverflow.Ellipsis
+                if (summary != null) StoryLines(
+                    summary, Color.White.copy(alpha = 0.9f), 13.sp, (13 * 1.4f).sp, if (infoH > with(d) { 170.dp.toPx() }) 5 else 3,
+                    Modifier.weight(1f, fill = false)
                 )
-                val facts = listOfNotNull(
-                    meta?.developer?.let { "Developer" to it }, meta?.genres?.firstOrNull()?.let { "Genre" to it },
-                    meta?.releaseYear?.let { "Released" to it.toString() }
-                )
-                if (facts.isNotEmpty()) Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                val facts = revealFacts(meta?.developer, meta?.genres?.firstOrNull(), meta?.releaseYear, earned, total)
+                if (facts.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(
+                    Modifier.padding(top = if (summary != null) 10.dp else 0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     facts.forEach { (h, v) ->
                         Column {
                             Text(h.uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em, maxLines = 1)
-                            Text(v, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(v, color = Color.White, fontSize = 13.sp, maxLines = 1)
                         }
                     }
                 }
-                if (total > 0) {
-                    Spacer(Modifier.height(12.dp))
-                    Text("Achievements  $earned / $total", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Box(Modifier.padding(top = 5.dp).width(220.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.16f))) {
+                if (total > 0 && infoH > with(d) { 150.dp.toPx() }) {
+                    Box(Modifier.padding(top = 8.dp).width(220.dp).height(5.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.16f))) {
                         Box(Modifier.fillMaxWidthFraction(earned.toFloat() / total).height(5.dp).background(accent))
                     }
                 }
@@ -649,3 +651,12 @@ internal fun Modifier.rowRevealFade(): Modifier =
 internal object ActiveWinMotion {
     var value by androidx.compose.runtime.mutableStateOf(Features.WinMotion.NONE)
 }
+
+/**
+ * Update 475 (D245): the facts the row-style window shows under the story — developer, genre, year and the achievements
+ * count as a fact like the others (it stays in view on every screen; the progress bar is drawn only when there is room).
+ */
+internal fun revealFacts(developer: String?, genre: String?, year: Int?, earned: Int, total: Int): List<Pair<String, String>> = listOfNotNull(
+    developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
+    year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
+)

@@ -415,7 +415,9 @@ internal object Carousel {
      * Update 182: with only a few games the carousel spreads them out (set by GameCarousel from how many there are), so
      * the sides aren't a small huddle in the middle with empty stage round it.
      */
-    @Volatile var spread = 1f
+    // (Update 489, K1: a state, so a change — Case stacks' Game spacing through hostGap — moves the games at once; a plain
+    // field was only read again when something else rebuilt the carousel.)
+    var spread by androidx.compose.runtime.mutableFloatStateOf(1f)
 
     /**
      * Update 187: how fast the carousel is moving now (games a second; read while placing, every moving frame), for Box
@@ -715,6 +717,8 @@ internal fun GameCarousel(
     onNeedPhysical: (Game) -> Unit,
     modifier: Modifier = Modifier,
     showName: Boolean = false,
+    /** Update 489 (K1): the hosting layout's own Game spacing (Case stacks shown as a carousel), times the carousel's Spacing. 1 = as before. */
+    hostGap: Float = 1f,
     /** Update 135: Endless (R1) on — the games go round, so both sides are always filled (even on the first game). */
     loop: Boolean = false,
     /** The view model's D-pad step count and direction, for the endless place ([rememberLoopFocus]). */
@@ -920,6 +924,7 @@ internal fun GameCarousel(
     val kNow: () -> Float = remember { { val v = swap.k.value; if (swap.kPending) 0f else v } }
     // Which games are near enough to draw changes only once per game passed (not every frame).
     val posFloor by remember { androidx.compose.runtime.derivedStateOf { kotlin.math.floor(curPos()).toInt() } }
+    if (QaTrace.on) { QaTrace.count("CarTop"); QaProbe("CarPTop", 0); QaLocals("Car") }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     // Update 134: Turned row has the name above the games.
     val nameAbove = view == CarouselView.TURNED
@@ -953,7 +958,7 @@ internal fun GameCarousel(
         // Update 182: few games, spread out (the packed views most, their boxes are slim).
         val packed = view == CarouselView.BOX_FLOW || view == CarouselView.SPINE_WALL
         val spreadNow = if (!Features.carouselSpread.state.value) 1f else if (packed) (16f / games.size.coerceAtLeast(2)).coerceIn(1f, 2.2f) else (8f / games.size.coerceAtLeast(2)).coerceIn(1f, 1.5f)
-        androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow }
+        androidx.compose.runtime.SideEffect { Carousel.spread = spreadNow * hostGap }
         val bigH = bigW / 0.72f
         // Update 147: the dark stage (on with the 3D case views): the background fades to black towards the floor the
         // games stand on, a faint gloss line along it, and stays dark below (drawn past the bottom of the carousel).
@@ -966,9 +971,13 @@ internal fun GameCarousel(
             val stageGame = games.getOrNull(focus)
             val stageCover = if (Features.carouselStageGameColor.state.value) stageGame?.let { overrides[it.stableKey]?.cover ?: art[it.stableKey]?.gridUrl } else null
             val stagePalette = rememberArtPalette(stageCover, stageCover != null)
-            val stageTarget = (if (stageCover != null) stagePalette?.accent else null) ?: com.shelf.launcher.ui.theme.ShelfTheme.accent
-            val accent by androidx.compose.animation.animateColorAsState(stageTarget, tween(700), label = "stageTint")
-            val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
+            // (Update 493, D137: the stage's tint is read where it's drawn, not while composing. Read here, its 700 ms glide —
+            // and, with no palette, the theme accent's own 600 ms glide — re-ran this whole carousel box (its loop over ~30
+            // places) on every frame of the glide: ~20–27 runs per move on the KONKR. Same colours, same timing.)
+            val stageLive = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
+            val palAcc = if (stageCover != null) stagePalette?.accent else null
+            val stageA = remember { androidx.compose.animation.Animatable(androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { palAcc ?: stageLive.value.accent }) }
+            LaunchedEffect(palAcc) { stageA.animateTo(palAcc ?: stageLive.value.accent, tween(700)) }
             val bigHpx = with(androidx.compose.ui.platform.LocalDensity.current) { bigH.toPx() }
             // (Update 215: across the whole screen — it stopped at the carousel's own edges, a little in from the screen's,
             // so a dark box stood on the background with the games running on past it at both sides.)
@@ -977,6 +986,9 @@ internal fun GameCarousel(
             androidx.compose.foundation.Canvas(Modifier.matchParentSize().zIndex(-1000f).onGloballyPositioned { lc ->
                 val o = lc.positionInWindow(); stageAt[0] = o.x; stageAt[1] = o.y
             }) {
+                // (Update 493: no palette and not gliding to one — the theme's accent as it glides, as before.)
+                val accent = if (palAcc == null && !stageA.isRunning) stageLive.value.accent else stageA.value
+                val deep = androidx.compose.ui.graphics.lerp(accent, Color.Black, 0.86f)
                 val floorY = size.height * floorK
                 val below = size.height * 1.5f
                 val cx = size.width / 2f
@@ -1087,7 +1099,9 @@ internal fun GameCarousel(
         val reflectOn = Features.carouselReflect.state.value
         // (Update 231, #59: the accent is no longer a reason for a new ctx — while the colours glide to the focused game's
         // it changed every frame and rebuilt every game in the carousel; only the focused frame reads it now, via accentOf.)
-        val accentNow = rememberUpdatedState(ShelfTheme.accent)
+        // (Update 493, D137: read when drawn — the theme accent read here re-ran this box on every frame of the theme's
+        // colour glide while the colours follow the art.)
+        val accentLive = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
         // (v0.6.66, D137 QA: which key rebuilt the ctx — and with it every game in the row — counted as CtxK_<key>.)
         if (QaTrace.on) {
             val prevK = remember { arrayOfNulls<Any?>(24) }
@@ -1107,7 +1121,7 @@ internal fun GameCarousel(
             CarouselCtx(
                 view, side, bigW, bigH, if (recede) -maxWidth / 2 + recedeLeft else null, unitState, recede, cases3d, modelLook,
                 spines, spinesAside, spinesRight, recede, reflectOn, dens, cardArtType, art, overrides,
-                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, { accentNow.value }, pulseOn
+                physicalMedia, screenshots, mixed, realRef, hidden, look.focusBorder, { accentLive.value.accent }, pulseOn
             )
         }
         ctx.caseRefMm = caseRefMm
@@ -1152,6 +1166,7 @@ internal fun GameCarousel(
         // allocated at once as the inspect view opened). Overlapping cases no longer show through each other while dimmed.
         // (Wider and taller than the carousel, round the same middle: the games run on past its sides and their reflections
         // under it, and a faded group is cut to its own bounds.)
+        if (QaTrace.on) { QaTrace.count("CarBwc"); QaProbe("CarPBwc", 0) }
         Box(
             Modifier.layout { m, cons ->
                 val bw = if (cons.hasBoundedWidth) cons.maxWidth else cons.minWidth
@@ -1196,6 +1211,7 @@ internal fun GameCarousel(
                             else ({ i - curPos() })
                         }
                         val fadeOf: () -> Float = if (old) remember { { 1f - kNow() } } else if (showOld) kNow else CarouselSwap.FULL
+                        if (QaTrace.on) { QaTrace.count("CarLoop"); QaProbe("CarPItem", 0) }
                         vcTrace("VC:CarouselItem") { CarouselItem(
                             ctx, g, real, i, atFocus = i == focusIdx, on = !old && i == vFocus, interactive = !old,
                             relOf = relOf, fadeOf = fadeOf, onTap = tap, modifier = Modifier.align(Alignment.Center)
@@ -1442,6 +1458,9 @@ private fun CarouselItem(
         val names = arrayOf("ctx", "game", "real", "i", "atFocus", "on", "relOf", "fadeOf", "onTap", "mod")
         QaTrace.count("CarRun")
         for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] != now[k]) QaTrace.count("CarP_" + names[k])
+        // (Update 492, D137: an input equal to the last but a new object — Compose's strong skipping compares those by
+        // identity, so it re-runs the game although nothing changed. Counted as CarSame_<input>.)
+        for (k in now.indices) if (prev[k] != null && prev[k] !== now[k] && prev[k] == now[k]) QaTrace.count("CarSame_" + names[k])
         for (k in now.indices) prev[k] = now[k]
     }
     val relNow = rememberUpdatedState(relOf)
@@ -1950,4 +1969,30 @@ private fun CarouselArt(
 /** v0.6.66 (D137): a 3D carousel is gliding — the animated background scene holds its frame meanwhile (ThemeScene). */
 internal object BackdropHold {
     val gliding = androidx.compose.runtime.mutableStateOf(false)
+}
+
+/** Update 493 (D137, QA only): a child with one unchanged stable input. It runs again only when its parent's re-run
+ *  cannot skip children at all (forced: e.g. a changed CompositionLocal above), so its count tells a forced subtree from
+ *  per-game causes. Counted as its [name] in the "recomp" line. */
+@Composable
+internal fun QaProbe(name: String, @Suppress("UNUSED_PARAMETER") n: Int) { QaTrace.count(name) }
+
+/** Update 493 (D137, QA only): which CompositionLocal values differ from this place's last run (a changed static local, or
+ *  one that is not equal to itself across runs, makes every composable under it re-run: no skipping). Counted as
+ *  LocChg; the first few changed entries are logged as `locchg <where> <entry>` events. */
+private val qaLocPrev = HashMap<String, Map<*, *>>()
+private var qaLocLogged = 0
+@Composable
+@androidx.compose.runtime.NonSkippableComposable
+internal fun QaLocals(where: String) {
+    val now = androidx.compose.runtime.currentComposer.currentCompositionLocalMap as? Map<*, *> ?: return
+    val prev = qaLocPrev.put(where, now) ?: return
+    if (prev === now) { QaTrace.count("LocSame_$where"); return }
+    var n = 0
+    for ((k, v) in now) if (prev[k] != v) {
+        n++
+        if (qaLocLogged < 40) { qaLocLogged++; QaTrace.event("locchg", "$where ${v.toString().take(90).replace(' ', '_')}") }
+    }
+    for (k in prev.keys) if (k !in now) n++
+    QaTrace.count(if (n > 0) "LocChg_$where" else "LocEq_$where")
 }

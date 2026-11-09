@@ -81,7 +81,8 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
     ) {
         Column(Modifier.fillMaxSize()) {
             // The art: the game's backdrop with a slow drift in, fading into the page.
-            Box(Modifier.fillMaxWidth().height(h * (if (ctx.page == WinPage.MAIN) 0.42f else 0.34f)).clipToBounds()) {
+            // (Update 507, owner review of 506: the title no longer sits on the picture — it has its own line under it, see below.)
+            Box(Modifier.fillMaxWidth().height(h * (if (ctx.page != WinPage.MAIN) 0.26f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Update 469: the window-wide backdrop at the screen's size — rememberBackdropRequest — not the 360–720 px card decode.)
                 if (art != null) AsyncImage(
@@ -91,14 +92,25 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                 )
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.55f to Color(0xFF181818).copy(alpha = 0.35f), 1f to Color(0xFF181818))))
                 Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF181818).copy(alpha = 0.7f), 0.5f to Color.Transparent)))
-                Column(Modifier.align(Alignment.BottomStart).padding(start = 28.dp, bottom = 10.dp, end = 28.dp).graphicsLayer {
-                    val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx(); alpha = k
-                }) {
-                    LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 44.dp else 66.dp).fillMaxWidth(0.55f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 24.sp else 32.sp, fontWeight = FontWeight.Black, maxLines = 2) }
-                }
             }
-            Row(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
+            // The title line: on the page's own dark, never over the art (a busy or bright picture can't swallow it); a lit edge
+            // in Cinema's colour (its red, or your colours) marks the premiere. Rises in with the window.
+            Row(
+                Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 2.dp).graphicsLayer {
+                    val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 18.dp.toPx(); alpha = k
+                },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(Modifier.width(4.dp).height(if (compact) 34.dp else 50.dp).clip(RoundedCornerShape(2.dp)).background(accent))
+                Spacer(Modifier.width(12.dp))
+                LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 40.dp else 56.dp).fillMaxWidth(0.7f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Black, maxLines = 2) }
+            }
+            // Update 487 (E7 Cinema actions, owner-approved): the round keys run under both columns (the page's whole width)
+            // instead of under the facts only — there, 5 of the 8 fitted and Manual / Inspect / Back wrapped below the window.
+            Column(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
+            Row(Modifier.weight(1f).fillMaxWidth()) {
                 Column(Modifier.weight(1.25f).fillMaxHeight()) {
+                    // (Update 506's premiere bar over the facts moved to the title line's lit edge, update 507.)
                     // The line of facts, the "mastered" green like a match score.
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (ctx.total > 0 && ctx.earned >= ctx.total) { Text("MASTERED", color = Color(0xFF46D369), fontSize = 13.sp, fontWeight = FontWeight.Black); Spacer(Modifier.width(10.dp)) }
@@ -107,43 +119,18 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(10.dp))
                     if (ctx.page == WinPage.MAIN) {
                         val play = ctx.buttons.filter { it.primary }
-                        val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
-                        val back = ctx.buttons.filter { it.back }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             play.forEach { a ->
                                 SceneControl(a, Modifier) { on ->
                                     Row(
                                         Modifier.clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = if (on) 1f else 0.9f))
-                                            .then(if (on) Modifier.border(2.dp, accent, RoundedCornerShape(6.dp)) else Modifier)
+                                            .then(if (on) Modifier.border(3.dp, accent, RoundedCornerShape(6.dp)) else Modifier)
                                             .padding(horizontal = 22.dp, vertical = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(a.icon, null, tint = Color.Black, modifier = Modifier.size(22.dp))
                                         Spacer(Modifier.width(8.dp))
                                         Text(a.label, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(10.dp))
-                        // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate").
-                        // One line of keys that scrolls sideways: the key you move to is brought into view, so every action is
-                        // reachable however many a game has; each key is as wide as its name, which stays whole on one line.
-                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            (rest + back).forEach { a ->
-                                SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Box(
-                                            Modifier.size(if (compact) 38.dp else 44.dp).clip(CircleShape)
-                                                .background(if (on) Color.White else Color(0xFF2A2A2A))
-                                                .border(2.dp, if (a.urgent) accent else if (on) Color.White else Color.White.copy(alpha = 0.45f), CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) { Icon(a.icon, null, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
-                                        Spacer(Modifier.height(3.dp))
-                                        // (v0.6.66 popup polish: 10 sp at 72 % was hard to read on the GT78's small screen.)
-                                        Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.86f), fontSize = if (compact) 12.sp else 11.sp,
-                                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, softWrap = false,
-                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     }
                                 }
                             }
@@ -167,7 +154,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                     Column(Modifier.weight(1f).fillMaxHeight()) {
                         val s = rememberScrollState()
                         // (Update 428, D107: reachable with the D-pad — it only scrolled by touch.)
-                        Column(Modifier.weight(1f).sceneReadable(s, ctx.accent).sceneFadeEdges(s).verticalScroll(s)) {
+                        // (Update 478: a focus stop only when there is something to read — with no story / maker / kinds it
+                        // was an empty control 18 px wide (T3 meta=none, Odin), under the gate's 24 dp.)
+                        val readable = !ctx.summary.isNullOrBlank() || ctx.developer != null || ctx.genres != null
+                        Column(Modifier.weight(1f).fillMaxWidth().then(if (readable) Modifier.sceneReadable(s, ctx.accent) else Modifier).sceneFadeEdges(s).verticalScroll(s)) {
                             ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, lineHeight = 19.sp) }
                             Spacer(Modifier.height(8.dp))
                             Text(listOfNotNull(ctx.developer?.let { "Developer: $it" }, ctx.genres?.let { "Genres: $it" }).joinToString("\n"),
@@ -183,6 +173,35 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         }
                     }
                 }
+            }
+            if (ctx.page == WinPage.MAIN) {
+                val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
+                val back = ctx.buttons.filter { it.back }
+                Spacer(Modifier.height(8.dp))
+                // The other actions as round keys with their names under them (as a streaming app's "My list", "Rate");
+                // each key is as wide as its name, which stays whole on one line.
+                // (Update 478, R26: they wrap to a second line instead of scrolling sideways — a key half under the
+                // window's edge measured 18 px wide on the Odin (T3 o477T3A), and actions never sit in a scrolling row.)
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    (rest + back).forEach { a ->
+                        SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    Modifier.size(if (compact) 38.dp else 44.dp).clip(CircleShape)
+                                        .background(if (on) Color.White else Color(0xFF2A2A2A))
+                                        .border(2.dp, if (a.urgent) accent else if (on) Color.White else Color.White.copy(alpha = 0.45f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) { Icon(a.icon, null, tint = if (on) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
+                                Spacer(Modifier.height(3.dp))
+                                // (v0.6.66 popup polish: 10 sp at 72 % was hard to read on the GT78's small screen.)
+                                Text(a.label, color = Color.White.copy(alpha = if (on) 1f else 0.86f), fontSize = if (compact) 12.sp else 11.sp,
+                                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, softWrap = false,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
+                        }
+                    }
+                }
+            }
             }
         }
     }
@@ -243,11 +262,12 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                     // The actions as a media-centre list.
                     val s = rememberScrollState()
                     val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
-                    @Composable fun actionRow(a: WinAction, m: Modifier) {
+                    @Composable fun actionRow(a: WinAction, m: Modifier, fixed: Boolean = false) {
                             SceneControl(a, m) { on ->
                                 Row(
-                                    Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
+                                    // ([fixed]: the row's height is set by its slot (D284) — the band fills it, the word centred.)
+                                    Modifier.fillMaxWidth().then(if (fixed) Modifier.fillMaxHeight() else Modifier).clip(RoundedCornerShape(8.dp))
+                                        .background(if (on) accent else Color.Transparent).padding(horizontal = 12.dp, vertical = if (fixed) 0.dp else if (dense) 3.dp else if (compact || tight || h < 500.dp) 6.dp else 9.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(a.icon, null, tint = if (on) Color.Black else if (a.urgent) accent else Color.White.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
@@ -267,8 +287,14 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else Column(Modifier.weight(0.9f).fillMaxHeight().sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth()) }
+                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.9f).fillMaxHeight()) {
+                        // (Update 488, D284: the rows share the drawer's room — on the Thor (1080p) Back was cut 57 px at the bottom of
+                        // the scrolling list. Each row its design height when there is room, down to a 26 dp row; scrolling below that.)
+                        val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
+                        val rowH = fitRowHeight(maxHeight, acts.size, 2.dp, lineH + (if (dense) 6.dp else if (compact || tight || h < 500.dp) 12.dp else 18.dp), maxOf(26.dp, lineH + 6.dp))
+                        Column(Modifier.fillMaxSize().then(if (rowH == null) Modifier.sceneFadeEdges(s).verticalScroll(s) else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            acts.forEach { a -> actionRow(a, Modifier.fillMaxWidth().then(if (rowH != null) Modifier.height(rowH) else Modifier), fixed = rowH != null) }
+                        }
                     }
                     if (!compact && !tight) {
                         Spacer(Modifier.width(18.dp))

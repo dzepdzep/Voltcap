@@ -593,16 +593,26 @@ internal object CartUndersides {
         hole(ds, g.main, g, v, plastic, opacity, contents = true)
     }
 
+    /** Update 492: how squarely (facing 0…1) an opening must face you before what's inside it shows in full. */
+    internal const val SLOT_SEEN = 0.2f
+
     private fun hole(ds: DrawScope, h: Hole, g: Geo, v: View, plastic: Int, opacity: Float, contents: Boolean) {
         val t = v.t
         // The openings it shows through, on screen.
         clip.reset()
         var any = false
-        if (v.bottomShows) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x0, 0f, h.z1)); any = true }
-        if (h.back && h.backH > 0f && v.facing(0f, 0f, 1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, t, h.x1, 0f, t, h.x1, h.backH, t, h.x0, h.backH, t)); any = true }
-        if (h.front && v.facing(0f, 0f, -1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, 0f, h.x1, 0f, 0f, h.x1, h.y1, 0f, h.x0, h.y1, 0f)); any = true }
-        if (h.left && v.facing(-1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x0, 0f, h.z1, h.x0, h.y1, h.z1, h.x0, h.y1, h.z0)); any = true }
-        if (h.right && v.facing(1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x1, h.y1, h.z1, h.x1, h.y1, h.z0)); any = true }
+        // (Update 492, owner's Inspect video: green / yellow lines along the lower edges as the cartridge turned. With an
+        // opening turned almost edge-on its outline is a sliver one or two pixels high, and the board and gold contacts
+        // drawn inside it filled the sliver end to end: a bright line along the edge. Seen that flat, the slot's near lip
+        // hides what's inside. [see] is how squarely the openings face you; the contents fade in with it, so a sliver
+        // shows the slot's dark plastic walls. Seen from below or behind, they're drawn as before.)
+        var see = 0f
+        fun opening(f: Float) { see = maxOf(see, ((f - 0.01f) / (SLOT_SEEN - 0.01f)).coerceIn(0f, 1f)) }
+        if (v.bottomShows) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x0, 0f, h.z1)); any = true; opening(v.facing(0f, -1f, 0f)) }
+        if (h.back && h.backH > 0f && v.facing(0f, 0f, 1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, t, h.x1, 0f, t, h.x1, h.backH, t, h.x0, h.backH, t)); any = true; opening(v.facing(0f, 0f, 1f)) }
+        if (h.front && v.facing(0f, 0f, -1f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, 0f, h.x1, 0f, 0f, h.x1, h.y1, 0f, h.x0, h.y1, 0f)); any = true; opening(v.facing(0f, 0f, -1f)) }
+        if (h.left && v.facing(-1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x0, 0f, h.z0, h.x0, 0f, h.z1, h.x0, h.y1, h.z1, h.x0, h.y1, h.z0)); any = true; opening(v.facing(-1f, 0f, 0f)) }
+        if (h.right && v.facing(1f, 0f, 0f) > 0.01f) { addQuad(clip, v, pts(h.x1, 0f, h.z0, h.x1, 0f, h.z1, h.x1, h.y1, h.z1, h.x1, h.y1, h.z0)); any = true; opening(v.facing(1f, 0f, 0f)) }
         if (!any) return
         val inner = maxOf(opacity, 0.9f)
         ds.clipPath(clip) {
@@ -619,18 +629,18 @@ internal object CartUndersides {
             // Its back wall — up from the cut-out where it opens to the back face, all of it where it doesn't.
             val by0 = if (h.back) h.backH else 0f
             if (by0 < h.y1) wall(0f, 0f, -1f, pts(h.x0, by0, h.z1, h.x1, by0, h.z1, h.x1, h.y1, h.z1, h.x0, h.y1, h.z1))
-            if (!contents) return@clipPath
+            if (!contents || see <= 0f) return@clipPath
             // The boards, far to near, then their fingers, then the plates and ribs, far to near.
-            for (s in sorted(g.boards, v)) solid(this, s, v, plastic, inner)
+            for (s in sorted(g.boards, v)) solid(this, s, v, plastic, inner * see)
             val gold = g.fingerArgb
             for (f in g.fingers) {
                 val nz = if (f.back) 1f else -1f
                 if (v.facing(0f, 0f, nz) <= 0.01f) continue
                 val z = f.z + nz * 0.02f
                 quad(path, v, pts(f.x0, f.y0, z, f.x1, f.y0, z, f.x1, f.y1, z, f.x0, f.y1, z))
-                drawPath(path, shade(gold, 0.55f + 0.5f * v.light(0f, 0f, nz), 1f))
+                drawPath(path, shade(gold, 0.55f + 0.5f * v.light(0f, 0f, nz), see))
             }
-            for (s in sorted(g.after, v)) solid(this, s, v, plastic, inner)
+            for (s in sorted(g.after, v)) solid(this, s, v, plastic, inner * see)
         }
     }
 

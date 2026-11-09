@@ -55,6 +55,6 @@ class Layouts330Test {
         assertEquals(WinScene.ORBIT_TERMINAL, winSceneFor(HomeLayout.ORBIT))
         assertEquals(WinScene.AIRY_PANEL, winSceneFor(HomeLayout.AIRY))
         assertEquals(WinScene.NIGHT_STATUS, winSceneFor(HomeLayout.NIGHT))
-        assertEquals(null, winSceneFor(HomeLayout.CUSTOM)) // (Update 422: Grid got its own; Layout Studio keeps the standard window)
+        assertEquals(WinScene.STUDIO_PANEL, winSceneFor(HomeLayout.CUSTOM)) // (Update 506: Layout Studio has its own window now; 422 kept the standard one)
     }
 }

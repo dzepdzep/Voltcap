@@ -17,11 +17,27 @@ object Features {
     private var prefs: android.content.SharedPreferences? = null
     private val all = mutableListOf<Pref<*>>()
 
+    /**
+     * Update 495 (D293): while this says true, a setting's new value is kept in memory only (not written). Set by the QA
+     * hooks for preview sessions: a layout previewed with "Layout standard" on wrote that layout's look switches
+     * (carousel_wide, model_finish…) into the owner's saved settings. Always false in normal use (no hooks file).
+     */
+    @Volatile var holdWrites: () -> Boolean = { false }
+    /** Update 495 (D293): told of every changed setting (key, old, new, held) — the QA log; null in normal use. */
+    @Volatile var onChange: ((String, Any?, Any?, Boolean) -> Unit)? = null
+
     abstract class Pref<T>(val key: String, val default: T) {
         val state: MutableState<T> = mutableStateOf(default)
         var value: T
             get() = state.value
-            set(v) { state.value = v; prefs?.edit()?.let { write(it, v); it.apply() } }
+            set(v) {
+                val old = state.value
+                state.value = v
+                // (Update 495, D293: while a QA preview runs — TestHooks — a change stays in memory, never in the saved settings.)
+                val held = holdWrites()
+                if (!held) prefs?.edit()?.let { write(it, v); it.apply() }
+                if (old != v) onChange?.invoke(key, old, v, held)
+            }
         /** The value as a Flow (for services and views outside Compose). */
         fun asFlow(): kotlinx.coroutines.flow.Flow<T> = androidx.compose.runtime.snapshotFlow { state.value }
         abstract fun read(p: android.content.SharedPreferences): T
@@ -120,6 +136,8 @@ object Features {
         // Update 447: "Who's playing?" look — only when none is saved yet (never overwrites a choice); saved at once, so a
         // new install keeps Aurora glass after its later updates and an existing one keeps Midnight blue.
         if (!p.contains("picker_look")) pickerLook.value = firstPickerLook(FirstRun.isDone(context.applicationContext))
+        // Update 479 (B3): an install that already had the status bar keeps the full one; a new one follows the layout.
+        if (!p.contains("status_mode")) statusMode.value = if (FirstRun.isDone(context.applicationContext)) StatusMode.ALWAYS else StatusMode.FOLLOW
         // "Category tiles show" moved here from the appearance settings (update 81). The console photo was the old
         // default; it now starts on the games' own art (still pickable).
         if (!p.contains("category_art")) {
@@ -281,6 +299,17 @@ object Features {
     enum class PageAnim(val label: String) { SLIDE("Slide"), FADE("Fade"), NONE("Just change") }
     // (Update 393: text / panels / rows appear in place by default — no rise, fade or slide-in. A value already saved is kept.)
     val infoAnim = EnumPref("anim_info", InfoAnim.NONE, InfoAnim.values())
+    /**
+     * Update 507 (owner, review of batch 506): the layouts' own popup windows open and close with their layout's own motion,
+     * independently of [infoAnim] ("Just appear" no longer silences every popup). Instant: they open and close at once.
+     * Motion level Off and Android's "Remove animations" always win (MotionLevel.scaleFactor 0). A new key with no migration:
+     * every saved value (anim_info included) stays exactly as it was.
+     */
+    enum class PopupAnim(val label: String) { LAYOUT("Follow layout"), INSTANT("Instant") }
+    val popupAnim = EnumPref("anim_popup", PopupAnim.LAYOUT, PopupAnim.values())
+    /** Update 480 (B4): how much motion every transition has (MotionLevel.kt). Normal = as designed, so nothing changes until picked. */
+    enum class Motion(val label: String) { OFF("Off"), SUBTLE("Subtle"), NORMAL("Normal"), EXPRESSIVE("Expressive") }
+    val motion = EnumPref("motion_level", Motion.NORMAL, Motion.values())
     val pageAnim = EnumPref("anim_page", PageAnim.NONE, PageAnim.values())
     val focusPop = IntPref("focus_pop", 100, 0..400)
     val motionFocusedOnly = BoolPref("motion_focused_only", false)
@@ -448,6 +477,11 @@ object Features {
     /** Square / cut pixel corners on panels, chips and dialogs (the type is [uiFont] now). */
     val pixelUi = BoolPref("pixel_ui", false)
     /**
+     * Update 493 (Layout-aware windows, phase 1): Settings and Achievements take a window frame matching the home layout
+     * where one exists (Channel grid, Cross menu); every other layout and window as before. Off by default.
+     */
+    val windowsFollowLayout = BoolPref("windows_follow_layout", false)
+    /**
      * The interface font (Appearance › Interface style › Font). Normal: the 32-bit font only where it fits — the
      * headings, with the 32-bit console style. 32-bit everywhere: every text in it, game names, categories and
      * the status bar included, a size smaller so names don't get cut or wrap.
@@ -562,6 +596,54 @@ object Features {
                 sceneShift = o.optInt("sft", 0).coerceIn(-15, 30)
             )
         }
+    }
+
+    /**
+     * Update 480 (C2, master request: per-layout colours with global inheritance). A layout's own colours over the theme's:
+     * a named palette or your accent / background. A layout without an entry inherits the theme's look (ThemeLook) as
+     * before. Only Voltcap's own colours (background, panels, text, accent) — never covers, labels or a layout's own art.
+     */
+    enum class Palette(val label: String, val bg: Long?, val accent: Long?) {
+        THEME("Same as the theme", null, null),
+        PLAIN_LIGHT("Plain light", 0xFFF3F4F6, 0xFF3563D9),
+        OLED_BLACK("OLED black", 0xFF000000, 0xFF4C8DFF),
+        LIGHT_BLUE("Light blue", 0xFFE2ECF8, 0xFF2A64B8),
+        LIGHT_YELLOW("Light yellow", 0xFFFAF3D6, 0xFF9A6A00),
+        LIGHT_PINK("Light pink", 0xFFFAE5EE, 0xFFB83C72),
+        MINT("Mint", 0xFFDFF4EA, 0xFF1C7F5B),
+        LAVENDER("Lavender", 0xFFECE6F9, 0xFF6345BD),
+        PEACH("Peach", 0xFFFCE8DA, 0xFFB9552A),
+        CUSTOM("Your colours", null, null)
+    }
+    data class LayoutColors(val palette: Palette = Palette.THEME, val accent: Int? = null, val background: Int? = null) {
+        /** The background / accent this layout asks for (null = the theme's). */
+        val bg: Int? get() = if (palette == Palette.CUSTOM) background else palette.bg?.toInt()
+        val acc: Int? get() = if (palette == Palette.CUSTOM) accent else palette.accent?.toInt()
+    }
+    val layoutColors = StringPref("layout_colors", "")
+    private var layoutColorsKey: String? = null
+    private var layoutColorsCache: Map<String, LayoutColors> = emptyMap()
+    /** [layout]'s own colours (a HomeLayout name); THEME when it has none. Reads Compose state. */
+    fun layoutColorsFor(layout: String): LayoutColors {
+        val raw = layoutColors.state.value
+        if (raw != layoutColorsKey) {
+            layoutColorsCache = runCatching {
+                val o = org.json.JSONObject(raw)
+                o.keys().asSequence().associateWith { k ->
+                    val j = o.getJSONObject(k)
+                    LayoutColors(Palette.values().firstOrNull { it.name == j.optString("p") } ?: Palette.THEME,
+                        if (j.has("acc")) j.optInt("acc") else null, if (j.has("bg")) j.optInt("bg") else null)
+                }
+            }.getOrDefault(emptyMap())
+            layoutColorsKey = raw
+        }
+        return layoutColorsCache[layout] ?: LayoutColors()
+    }
+    fun setLayoutColors(layout: String, c: LayoutColors) {
+        val o = runCatching { org.json.JSONObject(layoutColors.value) }.getOrDefault(org.json.JSONObject())
+        if (c.palette == Palette.THEME) o.remove(layout)
+        else o.put(layout, org.json.JSONObject().apply { put("p", c.palette.name); c.accent?.let { put("acc", it) }; c.background?.let { put("bg", it) } })
+        layoutColors.value = o.toString()
     }
 
     /** Every theme's own look, as JSON {"THEME_NAME": {...}}. Themes not in it use [themeLookDefault]. */
@@ -997,6 +1079,9 @@ object Features {
     val secondDimLevel = IntPref("second_dim_level2", 45, 10..90)
     /** Update 188: its backlight turned down too while dimmed. */
     val secondDimBacklight = BoolPref("second_dim_backlight", true)
+    /** D3 (update 485): the second screen's own brightness, % (0 = the same as the main screen). Android lets an app set
+     *  it only for its own window, so it holds while Voltcap's second-screen window is up (SecondDim.backlight). */
+    val secondBrightness = IntPref("second_brightness", 0, 0..100)
 
     // ---- Save Vault ----
     /** The save grid wraps round: scrolling past the end starts again at the beginning. */
@@ -1223,7 +1308,8 @@ object Features {
     val inspectAutoReturn = BoolPref("inspect_auto_return", true)
     enum class InspectHold(val label: String, val ms: Long) { S1("1 s", 1_000), S2("2 s", 2_000), S3("3 s", 3_000), S5("5 s", 5_000), S10("10 s", 10_000) }
     /** Update 238 (#116): how long it stays at its angle before turning back. */
-    val inspectHold = EnumPref("inspect_hold", InspectHold.S2, InspectHold.values())
+    // (Update 504, owner: settle back about 3 s after you let go — the default for anyone who hasn't picked a time.)
+    val inspectHold = EnumPref("inspect_hold", InspectHold.S3, InspectHold.values())
     enum class InspectReturnSpeed(val label: String, val ms: Int) { SLOW("Slow", 2_500), NORMAL("Normal", 1_200), QUICK("Quick", 600) }
     /** Update 238 (#116): how long its turn back takes. */
     val inspectReturnSpeed = EnumPref("inspect_return_speed", InspectReturnSpeed.NORMAL, InspectReturnSpeed.values())
@@ -1450,6 +1536,16 @@ object Features {
     fun firstPickerLook(existingInstall: Boolean): PickerLook = if (existingInstall) PickerLook.MIDNIGHT else PickerLook.AURORA
     /** Update 333: the status bar dressed for the layout it's on (StatusLooks.kt); off: the plain shade everywhere. */
     val statusMatchesLayout = BoolPref("status_matches_layout", true)
+    /** Update 480 (D257): Tile home — the focused game's facts under the tiles when no round buttons are there (Layout options). */
+    val tileInfoStrip = BoolPref("tile_info_strip", true)
+    /**
+     * Update 479 (B3, master request): how much status bar there is while it's on (Appearance › Status bar; "Hidden" is the
+     * old switch turned off). Follow layout: each layout's choice (HomeLayout.statusFollowsMinimal); Always: the full bar;
+     * Minimal: the clock and the battery only. A new install starts on Follow layout; an existing one keeps its full bar
+     * (set once at start, never over a choice).
+     */
+    enum class StatusMode(val label: String) { FOLLOW("Follow layout"), ALWAYS("Always"), MINIMAL("Minimal") }
+    val statusMode = EnumPref("status_mode", StatusMode.FOLLOW, StatusMode.values())
     val dashStatus = BoolPref("dash_status", true)
     /** Dashboard: panel look, opacity (%), and cut (angled) corners instead of round ones. */
     val dashPanel = EnumPref("dash_panel", PanelLook.LIGHT, PanelLook.values())
@@ -1543,6 +1639,14 @@ object Features {
     /** Update 114: every game's box scans (its spine) looked up in the background (Settings › Metadata › Saved on this device). */
     val spineScrape = BoolPref("spine_scrape", false)
     val shelfStand = EnumPref("shelf_stand", ShelfStand.SPINES, ShelfStand.values())
+    /** Update 488 (K1): Tile home — room between the tiles, % of the standard (100 = as before). */
+    val tilesSpacing = IntPref("tiles_spacing", 100, 50..250)
+    /** Update 488 (K1): Case stacks — room between the stacked spines, % (100 = as before). */
+    val stacksSpacing = IntPref("stacks_spacing", 100, 50..250)
+    /** Update 488 (K1): the Voltcap row — room between the games, % of the standard gap (100 = as before). */
+    val rowSpacing = IntPref("row_spacing", 100, 50..300)
+    /** Update 487 (K1): Game shelf — room between the games, % of the standard gap (100 = as before). */
+    val shelfSpacing = IntPref("shelf_spacing", 100, 50..250)
     enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }
     val shelfLook = EnumPref("shelf_look", ShelfLook.DARK, ShelfLook.values())
     /** Game shelf: the whole screen behind the shelves is the bookcase (back panel, side uprights, top crown). */
@@ -1921,6 +2025,8 @@ object Features {
     val cfCurve = IntPref("cf_curve", 45, 0..100)
     /** Room between the cases, in % of the standard. */
     val cfSpacing = IntPref("cf_spacing", 100, 60..160)
+    /** Update 487 (K1): Cover details — room between the spines on its shelf, % (100 = packed as before). */
+    val cdSpacing = IntPref("cd_spacing", 100, 50..250)
     /** The cases' size, in % of the standard. */
     val cfSize = IntPref("cf_size", 100, 70..120)
     /** How far the cases either side turn, degrees. */

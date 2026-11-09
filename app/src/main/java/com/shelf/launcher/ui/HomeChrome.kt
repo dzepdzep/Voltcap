@@ -158,8 +158,11 @@ internal fun StatusBar(
     look0: StatusLook = PlainStatusLook,
     /** QA pass 3 (D34): the layout to dress it for — the look is then made HERE, in the bar's own scope (made by the
      *  caller, its accent was read in the home screen's scope and the colour glide re-composed the whole screen). */
-    lookLayout: com.shelf.launcher.data.HomeLayout? = null
+    lookLayout: com.shelf.launcher.data.HomeLayout? = null,
+    /** Update 479 (B3): the small bar — the clock and the battery only (Settings › Status bar › Minimal, or the layout's choice). */
+    minimal: Boolean = false
 ) {
+    if (QaTrace.on) androidx.compose.runtime.SideEffect { QaTrace.count("StatusBar") } // (Update 496, QA only: charging-light check)
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
     val look = animatedLook(if (lookLayout != null) statusLookFor(lookLayout, paleBehind) else look0)
     val ink = look.ink
@@ -232,12 +235,12 @@ internal fun StatusBar(
                 Sep()
             }
             // Controllers and other devices.
-            if (accessories.isNotEmpty()) {
+            if (accessories.isNotEmpty() && !minimal) {
                 Group { AccessoryChips(accessories, maxChips, ink) { showDevices = true } }
                 Sep()
             }
             // Search, the trophy from the last game, notifications.
-            Group {
+            if (!minimal) Group {
                 Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
                 if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
                 if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
@@ -249,26 +252,22 @@ internal fun StatusBar(
                     )
                 }
             }
-            Sep()
+            if (!minimal) Sep()
             // Wi-Fi and the battery.
             Group {
-                Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
+                if (!minimal) Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
                     if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
-                    else Icon(
-                        if (battery.charging) Icons.Filled.BatteryChargingFull else batteryIconFor(battery.percent, false), null,
-                        tint = if (!battery.charging && battery.percent < 15) LowBatteryColor else ink,
-                        modifier = Modifier.size(look.iconSize)
-                    )
+                    else PlainBattery(battery.percent, battery.charging, ink, look.iconSize)
                     if (bar.showPercent && !(compact && voltGauge)) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
                 }
             }
-            Sep()
+            if (!minimal) Sep()
             // You: RetroAchievements points (wide screens) and your picture. Falls back to the profile's initial, so the
             // bar never looks empty.
             val avatarUrl = profilePictureUrl(RaBadges.mediaUrl(raProfile?.UserPic))
-            Group {
+            if (!minimal) Group {
                 if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
                     Text(
                         "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
@@ -354,7 +353,7 @@ internal fun StatusBar(
         )
         // With the player there it takes (nearly) all the spare room; the readouts get the rest.
         Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
-            if (progress.isNotEmpty() && !(nowPlaying != null && widthDp < 600)) {
+            if (progress.isNotEmpty() && !minimal && !(nowPlaying != null && widthDp < 600)) {
                 Text(
                     modifier = Modifier.tapOnly(onProgressClick),
                     text = 
@@ -375,6 +374,91 @@ internal fun StatusBar(
 }
 
 internal val LowBatteryColor = Color(0xFFFF6B6B)
+
+/**
+ * Update 493: the plain status-bar battery. Not charging: as before. Charging: the bars for the real level with a soft
+ * light rising through the battery's own shape, once every ~1.8 s (drawn only — the bar isn't recomposed for it; same
+ * icon size, so nothing beside it moves). With animations off, Voltcap resting or behind a panel: the same, held still
+ * (update 495).
+ */
+@Composable
+internal fun PlainBattery(percent: Int, charging: Boolean, ink: Color, iconSize: androidx.compose.ui.unit.Dp) {
+    // (Update 495: charging but not moving — animations off, resting, behind a panel — the same bars with the light held
+    // still in the middle, so the level stays readable and it still says "charging"; it was the full-battery charging icon.)
+    val moving = charging && rememberIsActive() && rememberAnimationsEnabled() && !calmHere()
+    // (Update 496, QA only: Batt = how often this re-composes, BattDraw = how often the light is drawn — with the hooks on.)
+    if (QaTrace.on) androidx.compose.runtime.SideEffect { QaTrace.count("Batt") }
+    if (!charging) Icon(
+        batteryIconFor(percent, false), null,
+        tint = if (percent < 15) LowBatteryColor else ink,
+        modifier = Modifier.size(iconSize)
+    ) else {
+        val phase = remember { androidx.compose.runtime.mutableFloatStateOf(CHARGE_STILL_PHASE) }
+        // Update 511: 10 s without input (HomeIdle.settled) — the light runs on to its still place and stops there (the same
+        // still picture as when resting), instead of redrawing the bar ~30 times a second while nobody looks; the next input
+        // starts it again from that place (no jump).
+        val settle = HomeIdle.settled
+        val rested = remember { booleanArrayOf(false, false) } // [0] settled here, [1] has run before
+        val at = remember { floatArrayOf(CHARGE_STILL_PHASE) } // where the light stands (the state is read only while drawing)
+        LaunchedEffect(moving, settle) {
+            if (!moving) at[0] = CHARGE_STILL_PHASE
+            if (!moving) { phase.floatValue = CHARGE_STILL_PHASE; return@LaunchedEffect }
+            if (settle && rested[0]) return@LaunchedEffect
+            // (Back from a settle or a rest: on from where the light stands. The very first run: from the bottom, as before.)
+            val from = if (rested[0] || rested[1]) at[0] else 0f
+            rested[0] = false; rested[1] = true
+            val start = androidx.compose.runtime.withFrameMillis { it } - (from * CHARGE_SWEEP_MS).toLong()
+            var last = from
+            while (true) {
+                // ~30 updates a second is plenty for a soft gradient this small.
+                kotlinx.coroutines.delay(33)
+                val stop = androidx.compose.runtime.withFrameMillis { t ->
+                    val p = ((t - start) % CHARGE_SWEEP_MS) / CHARGE_SWEEP_MS.toFloat()
+                    val reached = settle && chargePhasePassed(last, p, CHARGE_STILL_PHASE)
+                    phase.floatValue = if (reached) CHARGE_STILL_PHASE else p
+                    at[0] = if (reached) CHARGE_STILL_PHASE else p
+                    last = p
+                    reached
+                }
+                if (stop) { rested[0] = true; break }
+            }
+        }
+        val live = com.shelf.launcher.ui.theme.LocalShelfColorsLive.current
+        Icon(
+            chargingLevelIcon(percent), null, tint = ink,
+            modifier = Modifier.size(iconSize)
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    if (QaTrace.on) QaTrace.count("BattDraw")
+                    // A band rising from the bottom of the battery to its top, painted onto the icon's own pixels only.
+                    val p = phase.floatValue
+                    val band = size.height * 0.45f
+                    val y = size.height + band - p * (size.height + band * 2f)
+                    val glow = androidx.compose.ui.graphics.lerp(ink, live.value.accent, 0.75f)
+                    drawRect(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to Color.Transparent, 0.5f to glow.copy(alpha = 0.9f), 1f to Color.Transparent,
+                            startY = y - band, endY = y + band
+                        ),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop
+                    )
+                }
+        )
+    }
+}
+
+/** Update 493: the bars for [percent] while charging (never the low-battery alert — it's filling up). */
+internal fun chargingLevelIcon(percent: Int): androidx.compose.ui.graphics.vector.ImageVector =
+    if (percent < 15) Icons.Filled.Battery1Bar else batteryIconFor(percent, false)
+
+internal const val CHARGE_SWEEP_MS = 1800L
+/** Update 495: where the light rests while the animation is off (0 bottom … 1 top). */
+internal const val CHARGE_STILL_PHASE = 0.55f
+
+/** Update 511: whether the light moving from [prev] to [now] (0..1, wrapping at 1) went past [mark]. */
+internal fun chargePhasePassed(prev: Float, now: Float, mark: Float): Boolean =
+    if (now >= prev) mark in prev..now else (mark >= prev || mark <= now)
 
 /** Level 0..100 and whether it's charging; [charging] is true while plugged in and not yet full. */
 internal data class BatteryInfo(val percent: Int = 100, val charging: Boolean = false)
@@ -431,7 +515,9 @@ internal fun rememberBatteryInfo(): BatteryInfo {
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
 
-    return info
+    // (Update 493, QA builds only: `voltcap_test_battery "pct|charging"` shows that state for this session — nothing on the
+    // device changes.)
+    return TestHooks.battery.value ?: info
 }
 
 @Composable

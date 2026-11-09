@@ -49,7 +49,7 @@ internal fun MissableIcon(markedMissed: Boolean = false, modifier: Modifier = Mo
     } else {
         Icon(
             Icons.Filled.Warning, "Missable",
-            tint = MissableAmber, modifier = modifier.size(15.dp)
+            tint = ShelfTheme.warning, modifier = modifier.size(15.dp)
         )
     }
 }
@@ -58,7 +58,7 @@ internal fun MissableIcon(markedMissed: Boolean = false, modifier: Modifier = Mo
 @Composable
 internal fun MissableLegend() {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.Warning, null, tint = MissableAmber, modifier = Modifier.size(13.dp))
+        Icon(Icons.Filled.Warning, null, tint = ShelfTheme.warning, modifier = Modifier.size(13.dp))
         Text(" Missable  ·  ", color = ShelfTheme.textMuted, fontSize = 12.sp)
         Icon(Icons.Filled.Block, null, tint = ShelfTheme.textMuted, modifier = Modifier.size(13.dp))
         Text(" Marked as missed", color = ShelfTheme.textMuted, fontSize = 12.sp)
@@ -77,7 +77,7 @@ internal fun RaMatchWarning(info: RaMatchInfo, onFixLink: () -> Unit, selected: 
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
-            Icon(Icons.Filled.Warning, null, tint = MissableAmber, modifier = Modifier.padding(top = 2.dp).size(14.dp))
+            Icon(Icons.Filled.Warning, null, tint = ShelfTheme.warning, modifier = Modifier.padding(top = 2.dp).size(14.dp))
             Spacer(Modifier.width(6.dp))
             Text(
                 "Linked by title, not by the game file — achievements may belong to a different version (e.g. Gold vs Silver).",
@@ -133,7 +133,8 @@ fun AchievementDetailDialog(
         title = achievement.title ?: "Unknown achievement",
         subtitle = achievement.points?.let { "$it points" },
         onDismiss = onDismiss,
-        maxContentHeightFraction = 0.75f
+        maxContentHeightFraction = 0.75f,
+        layoutAware = true // (Update 497, 1C: the detail / comments window follows the home layout like the list)
     ) {
         ShelfCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -149,7 +150,7 @@ fun AchievementDetailDialog(
                             .alpha(if (achievement.isUnlocked) 1f else 0.4f)
                     )
                 } else {
-                    Box(Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.08f)))
+                    Box(Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(winTint(0.08f)))
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
@@ -222,7 +223,7 @@ fun AchievementDetailDialog(
                             .fillMaxWidth()
                             .padding(vertical = 3.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color.White.copy(alpha = 0.06f))
+                            .background(winTint(0.06f))
                             .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
                         Text(
@@ -291,7 +292,7 @@ internal fun AchievementInlineDetail(
             .fillMaxWidth()
             .padding(start = 50.dp, end = 4.dp, bottom = 8.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(Color.White.copy(alpha = 0.05f))
+            .background(winTint(0.05f))
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         // Facts on one or two short lines.

@@ -847,6 +847,22 @@ internal class StyleActions(
 )
 
 /** One stop of the category cycle (as L2 / R2 go through them). */
+/** A5 (update 482): game counts per category key as each category shows them ([com.shelf.launcher.LauncherUiState.countIn]). */
+@Composable
+internal fun categoryCounts(c: StyleCtx): Map<String, Int> {
+    val s = c.state
+    return remember(s.games, s.libraryApps, s.collections, s.gameAppPackages, s.appearance.hideDuplicates, s.favorites, c.stops) {
+        c.stops.mapNotNull { it.platform }.distinct().associateWith { s.countIn(it) }
+    }
+}
+
+/** A5 (update 483): how many games "All games" opens ([com.shelf.launcher.LauncherUiState.libraryGames]). */
+@Composable
+internal fun libraryCount(c: StyleCtx): Int {
+    val s = c.state
+    return remember(s.games, s.libraryApps, s.gameAppPackages, s.appearance.hideDuplicates, s.favorites) { s.libraryGames().size }
+}
+
 internal class StyleStop(val special: SpecialFilter?, val platform: String?, val label: String, val logo: String?) {
     /** The icon for a stop without a console logo. */
     val icon: ImageVector get() = when (special) {
@@ -1410,6 +1426,9 @@ internal val LocalStyleTopInset = androidx.compose.runtime.compositionLocalOf { 
 
 /** Cinema and Arctic hub: the art / rail run to the top of the screen, the status bar floats over them (no reserved band). */
 internal fun HomeLayout.drawsUnderStatusBar(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
+
+/** Update 479 (B1): homes whose art runs to every edge of the screen (no 12 dp side / 8 dp bottom gutter around them). */
+internal fun HomeLayout.fullBleed(): Boolean = drawsUnderStatusBar()
 
 /**
  * What a style home draws across the WHOLE screen, behind the status bar and the games (the home screen puts it

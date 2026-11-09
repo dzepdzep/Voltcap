@@ -15,7 +15,7 @@ object HomeLauncher {
     private fun alias(context: Context) = ComponentName(context, "com.shelf.launcher.HomeAlias")
 
     fun isOffered(context: Context): Boolean =
-        context.packageManager.getComponentEnabledSetting(alias(context)) ==
+        !QaVariant.isolated(context) && context.packageManager.getComponentEnabledSetting(alias(context)) ==
             PackageManager.COMPONENT_ENABLED_STATE_ENABLED
 
     /** Whether Shelf is the current default home app. */
@@ -27,6 +27,8 @@ object HomeLauncher {
 
     /** Offers Shelf as a home app (or stops) and opens Android's home-app picker. */
     fun setOffered(context: Context, offered: Boolean) {
+        // (Update 500: the isolated QA app has no home entry — it is never offered as the home app.)
+        if (QaVariant.isolated(context)) return
         context.packageManager.setComponentEnabledSetting(
             alias(context),
             if (offered) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,

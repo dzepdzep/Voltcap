@@ -115,7 +115,7 @@ fun SteamImportDialog(
     ) {
         ShelfCard {
             MutedNote(
-                "Choose a folder holding .url or .desktop shortcuts, a Steam library's steamapps folder " +
+                "Choose a folder holding GameNative .steam exports, .url or .desktop shortcuts, a Steam library's steamapps folder " +
                     "(appmanifest files), a userdata config folder (shortcuts.vdf), or exported shortcut files. " +
                     "Subfolders are searched up to 3 levels deep."
             )

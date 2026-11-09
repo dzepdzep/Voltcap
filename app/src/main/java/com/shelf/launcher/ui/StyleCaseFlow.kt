@@ -252,9 +252,11 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
                 }
             }
         }
+        // (Update 514: the old title is gone before the new one fades in — they overlapped for 160 ms and showed as one ghosted
+        // title on the Nova; Disc Station's name does the same.)
         if (showTitle && g0 != null) {
             Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(titleH).graphicsLayer { alpha = 1f - expand }, contentAlignment = Alignment.TopCenter) {
-                AnimatedContent(targetState = g0, label = "cfTitle", transitionSpec = { unlessCategoryChange { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) } }) { g ->
+                AnimatedContent(targetState = g0, label = "cfTitle", transitionSpec = { unlessCategoryChange { fadeIn(tween(200, delayMillis = 120)) togetherWith fadeOut(tween(120)) } }) { g ->
                     CaseFlowTitle(c, g)
                 }
             }

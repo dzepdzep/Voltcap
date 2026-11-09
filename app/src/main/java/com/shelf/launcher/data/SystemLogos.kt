@@ -37,7 +37,7 @@ object SystemLogos {
         "MasterSystem" to listOf("mastersystem"), "GameGear" to listOf("gamegear"), "SegaCD" to listOf("segacd", "megacd"),
         "32X" to listOf("sega32x"), "Saturn" to listOf("saturn"), "Dreamcast" to listOf("dreamcast"),
         "PCEngine" to listOf("pcengine", "tg16"), "PCEngineCD" to listOf("pcenginecd", "tg-cd"), "NeoGeo" to listOf("neogeo"),
-        "NeoGeoCD" to listOf("neogeocd"), "NeoGeoPocket" to listOf("ngpc", "ngp"), "WonderSwan" to listOf("wonderswancolor", "wonderswan"),
+        "NeoGeoCD" to listOf("neogeocd"), "NeoGeoPocket" to listOf("ngp", "ngpc"), "WonderSwan" to listOf("wonderswan", "wonderswancolor"),
         "Atari2600" to listOf("atari2600"), "Atari7800" to listOf("atari7800"), "Lynx" to listOf("atarilynx"),
         "Jaguar" to listOf("atarijaguar"), "3DO" to listOf("3do"), "ColecoVision" to listOf("colecovision"),
         "Intellivision" to listOf("intellivision"), "Vectrex" to listOf("vectrex"), "PokemonMini" to listOf("pokemini"),
@@ -45,8 +45,24 @@ object SystemLogos {
         // Update 91: the platform key is "PICO8" (the line above never matched), and the other platforms Voltcap knows.
         "PICO8" to listOf("pico8"), "Arcade" to listOf("arcade", "mame"), "Naomi" to listOf("naomi"), "Atomiswave" to listOf("atomiswave"),
         "DOS" to listOf("dos"), "ScummVM" to listOf("scummvm"), "MSX" to listOf("msx", "msx1"), "Amiga" to listOf("amiga"),
-        "Android" to listOf("android", "androidapps"), "Steam" to listOf("steam")
+        "Android" to listOf("android", "androidapps"), "Steam" to listOf("steam"),
+        // Update 508 (owner, custom CDs: "keep regional variants mapped to the correct platform"): the regional and colour
+        // models Voltcap keeps as their own keys had no entry and fell back to no logo / the generic print; each now finds its
+        // own logo first (the Pocket and the WonderSwan above now ask for their own model before the Color one, too).
+        "MegaDrive" to listOf("megadrive"), "TG16" to listOf("tg16"), "TGCD" to listOf("tg-cd"),
+        "NeoGeoPocketColor" to listOf("ngpc"), "WonderSwanColor" to listOf("wonderswancolor")
+        // (No logo shipped for FDS, SG1000, Atari5200, XboxOne, XboxSeries or Switch2: they keep the generic CD — see
+        // POPUP_BATCH_508.md's coverage table — rather than another console's logo.)
+        // (Update 509, final CD QA: the shipped "sfc" and "famicom" logos and discs are the Nintendo Classic Mini's — they
+        // print "ニンテンドークラシックミニ" above the name — not the Super Famicom's / Famicom's own. SFC and Famicom keep the
+        // generic CD as before 508 (no other console's logo either); the NES / SNES entries never reach them.)
     )
+
+    /** Update 509: shipped assets that are another product's branding (Nintendo Classic Mini) — never used for a console. */
+    internal val NOT_AUTHENTIC: Set<String> = setOf("sfc", "famicom")
+
+    /** Update 508: the console keys with a logo entry (tests and the coverage table). */
+    internal val mappedKeys: Set<String> get() = ESDE.keys
 
     /** Logos shipped with the app (assets/system_logos, ES-DE's colour set, update 90): no download needed. */
     private val BUNDLED = setOf("3do","amiga","android","androidapps","arcade","atari2600","atari7800","atarijaguar","atarilynx","atomiswave","c64","colecovision","dos","dreamcast","famicom","gamegear","gb","gba","gbc","gc","genesis","intellivision","mame","mastersystem","megacd","megadrive","msx","msx1","n3ds","n64","naomi","nds","neogeo","neogeocd","nes","ngp","ngpc","pcengine","pcenginecd","pico8","pokemini","ps2","ps3","ps4","psp","psvita","psx","saturn","scummvm","sega32x","segacd","sfc","snes","steam","switch","tg-cd","tg16","vectrex","virtualboy","wii","wiiu","wonderswan","wonderswancolor","xbox","xbox360")

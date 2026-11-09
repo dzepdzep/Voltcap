@@ -696,7 +696,7 @@ private fun HubSystems(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifier
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.baked(context, p) }.getOrNull()
+                        if (!logos.containsKey(p)) logos[p] = runCatching { PlatformLogos.oneColour(context, p) }.getOrNull() // (480 A5: drawn white — the plain icon keeps the lettering)
                         val logo = logos[p]
                         if (logo != null) Image(logo, st.label, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxWidth().weight(1f))
                         else Icon(Icons.Filled.SportsEsports, null, tint = Color.White, modifier = Modifier.size(34.dp).weight(1f))

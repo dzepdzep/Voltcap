@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.offset
@@ -120,6 +121,8 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
             cameraDistance = 14f * density
             alpha = (e * 1.6f).coerceIn(0f, 1f)
+            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+            flatTextFor3d()
         }
     ) {
         // The blade itself: a curved leading edge, its colour, a gloss and a lit rim.
@@ -159,7 +162,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
         }
         Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
-            Text(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 2)
+            // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
+            // edge on the Odin with a long name, T3 o478D.)
+            WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1)
             Text(
                 ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""),
                 color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1
@@ -273,7 +278,12 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 760.dp)
     val h = minOf(ctx.maxH, 500.dp)
     val compact = h < 380.dp
-    val blue = Color(0xFF39A9FF)
+    // (Update 505: in the wallpaper you picked — its dark as the page's ground, its colour for the ring of the key you're on (the
+    // LiveArea blue on the game's-art wallpaper; your accent when this layout has its own colours) — was always the Sky wall's.)
+    val wallNow = com.shelf.launcher.data.Features.bvWall.state.value
+    val ground = sceneDark(bubbleWallInk(wallNow), 0.03f)
+    val blue = sceneLit(com.shelf.launcher.data.HomeLayout.BUBBLES, bubbleWallLit(wallNow), ground)
+    val blueInk = legibleOn(blue, Color.White) // (on the white panels)
     Box(
         Modifier.size(w, h).graphicsLayer {
             // (Update 347: it opens as the bubble swelling into the page — a round window growing from its bubble's
@@ -293,15 +303,17 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                 cameraDistance = 14f * density
                 alpha = (k * 2.5f).coerceIn(0f, 1f)
             }
+            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+            flatTextFor3d()
         }.drawWithContent {
             if (!ctx.closing()) { drawContent(); return@drawWithContent }
             val pk = (1f - ctx.reveal()).coerceIn(0f, 1f)
             val o = peelShape(pk).createOutline(size, layoutDirection, this)
             if (o is androidx.compose.ui.graphics.Outline.Generic) clipPath(o.path) { this@drawWithContent.drawContent() } else drawContent()
             drawPeelFlap(pk)
-        }.clip(RoundedCornerShape(10.dp)).background(Color(0xFF0D1520))
+        }.clip(RoundedCornerShape(10.dp)).background(ground)
     ) {
-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
         Row(Modifier.fillMaxSize().padding(18.dp)) {
             Column(Modifier.weight(0.5f).fillMaxHeight()) {
@@ -312,8 +324,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     }
                     Spacer(Modifier.width(10.dp))
                     Column {
-                        Text(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3,
-                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = if (compact) 17.sp else 21.sp))
+                        WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3)
                         Text(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
                     }
                 }
@@ -345,7 +356,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             // either, the panel is narrower. Nothing is made up to fill it.)
             val rich = listOfNotNull(ctx.year, ctx.developer, ctx.genres, ctx.summary?.takeIf { it.isNotBlank() }).size >= 2
             val liveArt = ctx.wide ?: ctx.backdrop ?: ctx.cover
-            if (ctx.page == WinPage.MAIN && !rich && liveArt != null) Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(Color(0xFF0D1520))) {
+            if (ctx.page == WinPage.MAIN && !rich && liveArt != null) Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(ground)) {
                 AsyncImage(rememberStyleArtRequest(liveArt), ctx.name, Modifier.fillMaxSize(), contentScale = if (liveArt == ctx.cover) ContentScale.Fit else ContentScale.Crop)
                 Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.White.copy(alpha = 0.92f)).padding(horizontal = 12.dp, vertical = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -359,7 +370,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     ctx.last?.let { Text("Last played  $it", color = Color(0xFF5B6B7C), fontSize = 11.sp) }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 11.sp, maxLines = 2,
+                            Text(a.label, color = if (on) blueInk else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 11.sp, maxLines = 2,
                                 textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                         }
                     }
@@ -369,7 +380,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     // (Update 424: the LiveArea's info panel stood mostly empty white beside the bubble's keys: the game's picture
                     // heads it, as on the console's page, and its description follows the facts.)
                     (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { art ->
-                        Box(Modifier.fillMaxWidth().height(if (compact) 96.dp else 140.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF0D1520))) {
+                        Box(Modifier.fillMaxWidth().height(if (compact) 96.dp else 140.dp).clip(RoundedCornerShape(6.dp)).background(ground)) {
                             AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = if (art == ctx.cover) ContentScale.Fit else ContentScale.Crop)
                         }
                         Spacer(Modifier.height(10.dp))
@@ -393,7 +404,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     ctx.summary?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color(0xFF34404D), fontSize = 12.sp, lineHeight = 16.sp); Spacer(Modifier.height(6.dp)) }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text(a.label, color = if (on) blue else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 12.sp, maxLines = 2,
+                            Text(a.label, color = if (on) blueInk else if (a.urgent) Color(0xFFB0630A) else Color(0xFF5B6B7C), fontSize = 12.sp, maxLines = 2,
                                 textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                         }
                     }
@@ -446,7 +457,10 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
     ) {
         Canvas(Modifier.fillMaxSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
         Row(Modifier.fillMaxSize().padding(u * 6)) {
-            Column(if (land) Modifier.fillMaxHeight().fillMaxWidth(0.46f) else Modifier.fillMaxHeight()) {
+            // (Update 513, Retroid Pocket Classic 1240 x 1080 / Nova 4:3: the portrait picture, sized by the window's height, took
+            // most of the width and the commands broke inside words — "OPTION / S", "ACHIEV / EMENTS". It keeps its shape but
+            // never takes more than 45 % of the window now; on 16:9 it never reached that.)
+            Column(if (land) Modifier.fillMaxHeight().fillMaxWidth(0.46f) else Modifier.fillMaxHeight().widthIn(max = w * 0.45f)) {
                 val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
                 Box(pic.border(1.dp, c0).background(c2)) {
                     if (bmp != null) androidx.compose.foundation.Image(bmp, ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
@@ -460,7 +474,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(u * 6))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Text(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
+                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
                 Spacer(Modifier.height(u))
                 Box(Modifier.fillMaxWidth().height(u).background(c0))
                 Spacer(Modifier.height(u * 3))
@@ -473,8 +487,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Canvas(Modifier.size(u * 7)) { if (on) pixelIcon(PX_CURSOR, Offset.Zero, u.toPx(), c3) }
                                     Spacer(Modifier.width(u * 2))
-                                    Text(a.label.uppercase(), color = if (on) c3 else if (a.urgent) c1 else c0, fontFamily = font,
-                                        fontSize = fs(if (a.primary) 6f else 5f), maxLines = 2)
+                                    WholeWordsText(a.label.uppercase(), color = if (on) c3 else if (a.urgent) c1 else c0, fontFamily = font,
+                                        fontSize = fs(if (a.primary) 6f else 5f), modifier = Modifier.weight(1f))
                                 }
                             }
                         }
@@ -524,27 +538,36 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
             cameraDistance = 12f * density
             translationX = -(1f - e) * size.width * 0.06f
             alpha = (k * 1.6f).coerceIn(0f, 1f)
+            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+            flatTextFor3d()
         }.clip(RoundedCornerShape(6.dp)).background(p.panel).border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
     ) {
         Column(Modifier.fillMaxSize()) {
             // The art strip with the name.
             Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
-                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
-                    Text(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                    WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                     Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                 }
                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
             }
             Row(Modifier.fillMaxSize().padding(14.dp)) {
-                Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
+                // (Update 488, D284: the rows share the column's height — on the Thor (1080p) Back was cut 15 px at the bottom of the
+                // scrolling list. Each row as tall as the design's when there is room, shorter (down to 26 dp) when not; the list
+                // only scrolls when even that doesn't fit.)
+                androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.45f).fillMaxHeight()) {
+                val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
+                val primaryH = if (short) 38.dp else 44.dp
+                val nPrimary = rows.count { it.primary }
+                val restH = fitRowHeight(maxHeight - primaryH * nPrimary - 2.dp * nPrimary, (rows.size - nPrimary).coerceAtLeast(1), 2.dp, if (short) 30.dp else 36.dp, 26.dp)
+                Column(Modifier.fillMaxSize().then(if (restH == null) fadeScroll() else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
                             Row(
                                 // (Update 467, popup gate: Back's last 3 dp were cut on the KONKR — short rows a little shorter.)
-                                Modifier.fillMaxWidth().height(if (a.primary) (if (short) 38.dp else 44.dp) else if (short) 30.dp else 36.dp)
+                                Modifier.fillMaxWidth().height(if (a.primary) primaryH else restH ?: if (short) 30.dp else 36.dp)
                                     .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -556,10 +579,15 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                         }
                     }
                 }
+                }
                 Spacer(Modifier.width(14.dp))
-                Box(Modifier.weight(0.55f).fillMaxHeight()) {
+                androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.55f).fillMaxHeight()) {
+                    // (Update 513, Retroid Pocket Classic: the cover, sized by the height, left the facts ~55 dp — "Neve / r /
+                    // playe". It keeps its shape but takes at most 60 % of this side; on 16:9 screens it never reached that.)
+                    // (Sized here, not with aspectRatio under a width cap: that overflowed its slot and drew over the facts.)
+                    val coverW = minOf(maxHeight * 0.72f, maxWidth * 0.6f)
                     if (ctx.page == WinPage.MAIN) Row(Modifier.fillMaxSize()) {
-                        Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).background(Color.Black.copy(alpha = 0.1f))) {
+                        Box(Modifier.width(coverW).height(coverW / 0.72f).background(Color.Black.copy(alpha = 0.1f))) {
                             if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         }
                         Spacer(Modifier.width(12.dp))
@@ -568,7 +596,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                             fun fact(label: String, value: String?) {
                                 if (value.isNullOrBlank()) return
                                 Text(label, color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-                                Text(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 3)
+                                WholeWordsText(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.height(6.dp))
                             }
                             if (ctx.total > 0) {
@@ -626,6 +654,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             rotationZ = -2f + (1f - e) * -9f
             translationY = (1f - e) * size.height * 0.12f
             alpha = (k * 1.8f).coerceIn(0f, 1f)
+            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+            flatTextFor3d()
         }
     ) {
         // The paper with its torn edge.
@@ -651,10 +681,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
-                Text(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
-                    fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal, maxLines = 3,
-                    // (Update 424, rule 11: the headline wraps — "POKEMON SILVER VERSION (GB CO…" at 1280×720 — and shrinks a step when long.)
-                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = if (compact) 14.sp else 18.sp, maxFontSize = if (compact) 20.sp else 26.sp))
+                // (Update 424, rule 11: the headline wraps and shrinks a step when long; update 478, D271: then slides — it was cut.)
+                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
+                    maxLines = 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
+                        fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal))
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                 if (ctx.page == WinPage.MAIN) {
@@ -732,7 +762,12 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
  */
 @Composable
 internal fun RentalTag(ctx: WinSceneCtx) {
-    val yellow = Color(0xFFFFE14A); val ink = Color(0xFF1C1C1C); val neon = Color(0xFFFF4FD8)
+    val yellow = Color(0xFFFFE14A); val ink = Color(0xFF1C1C1C)
+    // (Update 505: the key you're on lit in the shop's own neon — the wall you picked (purple / teal / blue), or your accent when
+    // this layout has its own colours — instead of always the purple wall's pink. The tag stays the shop's yellow paper.)
+    val neon = sceneLit(com.shelf.launcher.data.HomeLayout.SHOP, shopColors(com.shelf.launcher.data.Features.rsWall.state.value).neon, ink)
+    val onNeon = com.shelf.launcher.ui.theme.textOn(neon, ink)
+    val stamp = legibleOn(neon, yellow)
     val w = minOf(ctx.maxW, 460.dp)
     val h = minOf(ctx.maxH, 520.dp)
     // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
@@ -770,7 +805,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
         }
         Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = if (short) 26.dp else 34.dp, bottom = tearDp)) {
             if (!short) Text("GAME RENTALS", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
+            WinFullText(ctx.name.uppercase(), color = ink, fontSize = if (short) 18.sp else 22.sp, lineHeight = if (short) 20.sp else 24.sp, fontWeight = FontWeight.Black,
                 maxLines = if (short) 2 else 3)
             Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(3.dp).background(ink))
@@ -804,12 +839,12 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                                 // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
                                 val tight = !a.primary && w < 340.dp
                                 if (!tight) {
-                                    Icon(a.icon, null, tint = if (on) ink else yellow, modifier = Modifier.size(if (a.primary) 16.dp else 12.dp))
+                                    Icon(a.icon, null, tint = if (on) onNeon else yellow, modifier = Modifier.size(if (a.primary) 16.dp else 12.dp))
                                     Spacer(Modifier.width(if (a.primary) 8.dp else 4.dp))
                                 }
                                 // (Update 346: the window's look already says "RENT & PLAY" — it read "RENT & RENT & PLAY".)
                                 val label = rentalKeyLabel(a.label, a.primary)
-                                Text(label, color = if (on) ink else if (a.urgent) Color(0xFFFF8A3D) else yellow,
+                                Text(label, color = if (on) onNeon else if (a.urgent) Color(0xFFFF8A3D) else yellow,
                                     fontSize = if (a.primary) 15.sp else if (tight) 9.sp else 10.sp, fontWeight = FontWeight.Black, maxLines = 2)
                             }
                         }
@@ -826,7 +861,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                     }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text(a.label.uppercase(), color = if (on) neon else ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                            Text(a.label.uppercase(), color = if (on) stamp else ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                         }
                     }
                 }
@@ -835,7 +870,7 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(4.dp))
                 ctx.buttons.forEach { a ->
                     SceneControl(a, Modifier) { on ->
-                        Text("▸ " + a.label.uppercase(), color = if (on) Color(0xFFC0161A) else ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                        Text("▸ " + a.label.uppercase(), color = if (on) stamp else ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
                     }
                 }
             }
@@ -901,7 +936,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
-                Text(ctx.name.uppercase(), style = style.copy(color = tc.accent), maxLines = 3)
+                WinFullText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, lineHeight = style.lineHeight, maxLines = 3, style = style)
                 @Composable
                 fun line(l: String, v: String?) { if (!v.isNullOrBlank()) Text(l.padEnd(9) + v.uppercase(), style = style, maxLines = 2) }
                 line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)

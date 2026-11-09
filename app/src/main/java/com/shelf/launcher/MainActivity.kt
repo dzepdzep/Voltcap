@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
+import com.shelf.launcher.ui.setKeyRootContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -103,6 +103,8 @@ class MainActivity : ComponentActivity() {
         // First, before anything that could fail: record crashes and break
         // crash loops (see CrashGuard).
         CrashGuard.install(this)
+        // Update 500: settle "isolated QA app or not" before any launch path can run (data/QaVariant.kt).
+        com.shelf.launcher.data.QaVariant.isolated(this)
         // Credential stores (Keystore-backed, slow right after a reboot) open in the background now.
         com.shelf.launcher.data.StartupPrewarm.start(this)
         // Update 188: the saved list of games read now, alongside everything else (RomLibraryPrefetch).
@@ -193,7 +195,8 @@ class MainActivity : ComponentActivity() {
         // Watches real frame times so Automatic quality can step down on devices that can't keep up.
         com.shelf.launcher.device.FrameWatch.start(this)
         com.shelf.launcher.ui.CustomPieceTones.attach(this) // (QA pass 3, D25: pack-cartridge tones kept across starts)
-        setContent {
+        // (Update 477, D252: the content's root leaves touch mode before Android can eat the first D-pad press after a touch.)
+        setKeyRootContent {
             // "Hide navigation bar" switched: the window follows at once.
             val immersive = com.shelf.launcher.data.GestureHint.immersiveState.value
             // Update 449: and when the handheld's own hide_nav_bar changes (Retroid: the window asks only while it's off).
@@ -267,6 +270,7 @@ class MainActivity : ComponentActivity() {
         val focusedCover by remember(vm) {
             vm.uiState.map { s ->
                 val shown = s.forDisplay().let { if (com.shelf.launcher.ui.DemoLibrary.on.value) com.shelf.launcher.ui.DemoLibrary.dress(it) else it }
+                    .let { if (com.shelf.launcher.ui.QaFixture.spec.value != null) com.shelf.launcher.ui.QaFixture.dress(it) else it }
                 shown.visibleGames.getOrNull(shown.focusedIndex)?.let {
                     shown.artOverrides[it.stableKey]?.cover ?: shown.art[it.stableKey]?.gridUrl
                 }
@@ -286,6 +290,11 @@ class MainActivity : ComponentActivity() {
     // button legend can follow the handheld's own setting (SystemButtonLayout).
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         com.shelf.launcher.ui.QaGeom.key(event.keyCode, event.action == android.view.KeyEvent.ACTION_DOWN)
+        // (Update 477, D252 triage, QA only: does a key reach the activity, and in which input mode — after a touch the first
+        // D-pad press seemed lost. With the touch-mode changes logged below, the trace says which layer took it.)
+        if (com.shelf.launcher.ui.QaTrace.on && event.action == android.view.KeyEvent.ACTION_DOWN)
+            com.shelf.launcher.ui.QaTrace.event("key", "${android.view.KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_")} " +
+                "touchMode=${window?.decorView?.isInTouchMode} focus=${currentFocus?.javaClass?.simpleName}")
         if (event.action == android.view.KeyEvent.ACTION_DOWN) com.shelf.launcher.ui.KeyInput.lastWasKey = true // (Update 233, #120)
         // Update 467 (popup gate): after a touch, the first A / B / X / Y did nothing — Android leaves touch mode only for
         // the D-pad and typing keys, so a face button reached a home screen with nothing focused (the popup sweep: "first A
@@ -306,7 +315,10 @@ class MainActivity : ComponentActivity() {
             }) com.shelf.launcher.data.AnimatedArt.onMove()
         runCatching { com.shelf.launcher.data.SystemButtonLayout.observe(this, event) }
         com.shelf.launcher.ui.QaWalk.afterKey(event) // (QA: the controller walk, test hooks + voltcap_test_walk only)
-        return super.dispatchKeyEvent(event)
+        val handled = super.dispatchKeyEvent(event)
+        if (com.shelf.launcher.ui.QaTrace.on && event.action == android.view.KeyEvent.ACTION_DOWN)
+            com.shelf.launcher.ui.QaTrace.event("keydone", "${android.view.KeyEvent.keyCodeToString(event.keyCode).removePrefix("KEYCODE_")} handled=$handled")
+        return handled
     }
 
     // Any touch or stick movement also wakes the home screen's animations (see HomeIdle).
@@ -346,6 +358,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        com.shelf.launcher.ui.MotionLevel.refresh(this) // (Update 480, B4: Android's animation scale may have changed)
         // Update 188: back in Voltcap (a game ended): its second screen lights up again.
         com.shelf.launcher.ui.SecondDim.poke()
         // Update 125: Sleep mode starts listening as soon as the system rights are there (they can come a moment after start-up).

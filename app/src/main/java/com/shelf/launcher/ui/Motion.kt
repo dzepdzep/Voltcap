@@ -71,6 +71,13 @@ internal object MotionPrefs {
         F.layoutAnims.value = m.entries.joinToString(";") { "${it.key}=${it.value}" }
     }
 
+    /**
+     * Update 507: a layout's own popup window (GameWindow scenes, the case / card flights, the showcase turn) animates with
+     * its layout's motion unless the owner picked Instant. Motion Off / reduced motion still finish everything at once
+     * through [MotionLevel]. Banner, Classic and Row windows keep following [info].
+     */
+    fun popup(): Boolean = F.popupAnim.value == com.shelf.launcher.data.Features.PopupAnim.LAYOUT
+
     fun info(l: com.shelf.launcher.data.HomeLayout = layout): com.shelf.launcher.data.Features.InfoAnim =
         override(l, "info")?.let { v -> com.shelf.launcher.data.Features.InfoAnim.values().firstOrNull { it.name == v } }
             ?: if (!F.animRiseIn.value) com.shelf.launcher.data.Features.InfoAnim.NONE else F.infoAnim.value
@@ -160,6 +167,10 @@ internal fun <T : Any> HeldLayers(
             }
             LaunchedEffect(l.ready) {
                 if (!l.ready) return@LaunchedEffect
+                // Update 499 (stale art while moving fast): a picture that finished loading after you had already moved on
+                // (a newer one is still coming above it) is dropped instead of fading in — A → B → C showed B's art for a
+                // moment before C's. The picture on screen (the bottom layer) stays until the newest is ready.
+                if (heldOutdated(layers.indexOf(l), layers.size)) { layers.remove(l); return@LaunchedEffect }
                 // Off (Home › Animations): the next picture replaces the last one at once (still never a black gap).
                 if (com.shelf.launcher.data.Features.animHeldPictures.value && !l.quick && !CategorySlide.justChanged()) l.alpha.animateTo(1f, androidx.compose.animation.core.tween(fadeMs))
                 else l.alpha.snapTo(1f)
@@ -175,6 +186,9 @@ internal fun <T : Any> HeldLayers(
         }
     }
 }
+
+/** Update 499: a loaded layer at [index] of [size] is outdated — neither the picture on screen (0) nor the newest. */
+internal fun heldOutdated(index: Int, size: Int): Boolean = index in 1 until size - 1
 
 /** One picture through [HeldLayers]. */
 /**
@@ -334,7 +348,8 @@ internal fun FadeInImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     alignment: Alignment = Alignment.Center,
-    fadeMs: Int = 220
+    fadeMs: Int = 220,
+    onError: (() -> Unit)? = null
 ) {
     val a = remember(model) { Animatable(0f) }
     var loaded by remember(model) { mutableStateOf(false) }
@@ -350,6 +365,7 @@ internal fun FadeInImage(
     AsyncImage(
         model, contentDescription, contentScale = contentScale, alignment = alignment,
         onSuccess = { loaded = true },
+        onError = { onError?.invoke() },
         modifier = modifier.graphicsLayer {
             alpha = a.value
             if (rise) translationY = (1f - a.value) * 14f * density

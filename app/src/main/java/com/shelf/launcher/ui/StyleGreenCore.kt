@@ -442,7 +442,7 @@ private fun GcMenu(c: StyleCtx, systemCount: Int, compact: Boolean, reduced: Boo
         Column(Modifier.align(Alignment.TopStart).padding(start = 4.dp, top = 2.dp)) {
             Text("GREEN CORE", color = Color(0xFFDDF7E1), fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp, maxLines = 1, softWrap = false)
             Text(
-                "${c.state.games.size} TITLES ONLINE · ${systemCount} SYSTEMS", color = accent.copy(alpha = 0.7f), fontSize = 9.sp,
+                "${libraryCount(c)} TITLES ONLINE · ${systemCount} SYSTEMS", color = accent.copy(alpha = 0.7f), fontSize = 9.sp,
                 fontFamily = FontFamily.Monospace, letterSpacing = 1.5.sp, maxLines = 1, softWrap = false
             )
         }
@@ -902,7 +902,7 @@ private fun GcInfoStrip(c: StyleCtx, g: Game, compact: Boolean, accent: Color, m
 private fun GcSystems(c: StyleCtx, systems: List<Int>, compact: Boolean, reduced: Boolean) {
     val accent = greenCoreAccent()
     val titles = LocalTitleOptions.current
-    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
+    val counts = categoryCounts(c)
     val n = systems.size
     val cur = GreenCoreNav.system.coerceIn(0, (n - 1).coerceAtLeast(0))
     val pos = remember { Animatable(cur.toFloat()) }

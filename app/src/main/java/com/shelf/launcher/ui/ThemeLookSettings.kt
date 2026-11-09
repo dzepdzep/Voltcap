@@ -232,3 +232,70 @@ private fun shiftLabel(v: Int): String = when {
     v <= 15 -> "Lower"
     else -> "Much lower"
 }
+
+/**
+ * Update 480 (C2): Settings › Home › Layout options › Colours for this layout — a named palette (Original = the theme's,
+ * Plain light, OLED black, light blue / yellow / pink, mint, lavender, peach) or your own accent and background for the
+ * layout in use, over the theme's colours; "Same as the theme" goes back to inheriting. Writing stays readable on any
+ * background (the theme's readability guard). Covers, labels and the layouts' own art are never recoloured.
+ */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+internal fun LayoutColorsGroup(layout: com.shelf.launcher.data.HomeLayout) {
+    val now = Features.layoutColorsFor(layout.name)
+    fun set(c: Features.LayoutColors) = Features.setLayoutColors(layout.name, c)
+    FoldGroup("Colours for this layout", summary = now.palette.label, key = "lo_layout_colors") {
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+            Features.Palette.values().filter { it != Features.Palette.CUSTOM }.forEach { p ->
+                val swatch = p.bg?.toInt() ?: ShelfTheme.colors.background.toArgb()
+                SwatchDot(swatch, if (p == Features.Palette.THEME) "Theme" else p.label, now.palette == p) { set(Features.LayoutColors(p)) }
+            }
+            val accNow = ShelfTheme.accent.toArgb(); val bgNow = ShelfTheme.colors.background.toArgb()
+            SwatchDot(now.background ?: bgNow, "Yours", now.palette == Features.Palette.CUSTOM) {
+                set(Features.LayoutColors(Features.Palette.CUSTOM, now.acc ?: accNow, now.bg ?: bgNow))
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        // (Update 490, display only: what is drawn now, and why this layout's colours may not show.)
+        ColorOriginLine()
+        MutedNote(
+            when (now.palette) {
+                Features.Palette.THEME -> "This layout uses the theme's colours (Theme › Theme look)."
+                Features.Palette.CUSTOM -> "Your accent and background for this layout only. Writing switches to dark or light by itself so it stays readable."
+                else -> "${now.palette.label} for this layout only; the other layouts keep the theme's. Covers and labels keep their own colours."
+            }
+        )
+        if (now.palette == Features.Palette.CUSTOM) {
+            val acc = now.accent ?: ShelfTheme.accent.toArgb()
+            val bg = now.background ?: ShelfTheme.colors.background.toArgb()
+            Spacer(Modifier.height(8.dp))
+            Text("Accent", color = ShelfTheme.textMuted, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            HueSlider(acc) { picked -> set(now.copy(accent = withHueOf(picked, acc, minSat = 0f, minVal = 0f))) }
+            Spacer(Modifier.height(8.dp))
+            ColorFineTune("Accent", acc) { set(now.copy(accent = it)) }
+            Spacer(Modifier.height(10.dp))
+            Text("Background", color = ShelfTheme.textMuted, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            HueSlider(bg) { picked -> set(now.copy(background = withHueOf(picked, bg, minSat = 0f, minVal = 0f))) }
+            Spacer(Modifier.height(8.dp))
+            ColorFineTune("Background", bg) { set(now.copy(background = it)) }
+        }
+        if (now.palette != Features.Palette.THEME) {
+            Spacer(Modifier.height(6.dp))
+            Chip("Reset: same as the theme", accent = false) { set(Features.LayoutColors()) }
+        }
+    }
+}
+
+
+/**
+ * Update 490 (owner request, display only): where the colours on screen come from now — Theme, Custom, Game, Music or
+ * Layout override — as ShelfLauncherTheme worked them out (ColorOrigin.now), and why a theme or layout can't be recoloured.
+ * Nothing here changes a colour or a saved setting.
+ */
+@androidx.compose.runtime.Composable
+internal fun ColorOriginLine() {
+    val o = com.shelf.launcher.ui.theme.ColorOrigin.now ?: return
+    MutedNote(if (o.note != null) "${o.line}. ${o.note}" else o.line)
+}

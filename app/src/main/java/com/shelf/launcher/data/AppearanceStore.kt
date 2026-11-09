@@ -1801,6 +1801,21 @@ val AppearanceSettings.statusOn: Boolean
         // Update 202: Pocket Quest has its own top bar too (brand, consoles, search, settings, battery and clock).
         homeLayout != HomeLayout.POCKET
 
+/**
+ * Update 479 (B3): the status bar drawn small (clock and battery only): Minimal, or Follow layout on a layout whose art runs
+ * to the edges (Cinema, Arctic — the bar floats over the picture). Layouts with a bar of their own already hide Voltcap's
+ * (statusOn); everything else keeps the full bar.
+ */
+val AppearanceSettings.statusMinimal: Boolean
+    get() = when (Features.statusMode.state.value) {
+        Features.StatusMode.MINIMAL -> true
+        Features.StatusMode.ALWAYS -> false
+        Features.StatusMode.FOLLOW -> homeLayout.statusFollowsMinimal()
+    }
+
+/** Update 479 (B3): the layouts whose own look asks for the small bar under Follow layout. */
+fun HomeLayout.statusFollowsMinimal(): Boolean = this == HomeLayout.CINEMA || this == HomeLayout.ARCTIC
+
 /** Update 132: Spotlight's Home menu draws its own top row (and its own button hints), so the status bar steps aside. */
 val AppearanceSettings.spotOwnTop: Boolean
     get() = homeLayout == HomeLayout.SPOT && Features.spotLook.state.value == Features.SpotLook.HOME_MENU && !Features.spotStatusBar.state.value

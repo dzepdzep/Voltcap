@@ -23,6 +23,8 @@ class CloudSyncWorker(context: Context, params: WorkerParameters) : CoroutineWor
     override suspend fun doWork(): Result {
         val app = applicationContext
         if (!CloudSync.isActive(app)) return Result.success()
+        // (Update 496: a QA session — the hooks file is there — runs no sync; the next periodic run syncs as usual.)
+        if (com.shelf.launcher.ui.TestHooks.enabled(app)) return Result.success()
         val outcome = CloudSync.sync(app, skipSaves = gameIsRunning(app))
         // Done, or Google genuinely wants the sign-in confirmed (retrying can't help until the
         // player does that): success. Offline, timeouts and other hiccups: Android retries later

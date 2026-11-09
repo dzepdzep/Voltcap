@@ -58,14 +58,17 @@ internal fun HomeLogoPart(name: String, logo: String?) {
     // files have an empty margin, wider on one side than the other, so a logo in the middle of its part still stood off
     // centre and smaller. Cut to what's drawn in it first — TrimToOpaque.)
     val ctx = androidx.compose.ui.platform.LocalContext.current
+    // (Update 503: a logo that can't be read — a missing file, a dead address — left the part empty for good; now the
+    // game's name takes its place, at once on later visits (LogoAspects remembers the failure for the session).)
+    val failed = androidx.compose.runtime.remember(logo) { androidx.compose.runtime.mutableStateOf(logo != null && LogoAspects.isFailed(logo)) }
     val model = androidx.compose.runtime.remember(logo) {
         logo?.let { coil.request.ImageRequest.Builder(ctx).data(it).allowHardware(false).transformations(TrimToOpaque).build() }
     }
     Box(Modifier.fillMaxWidth().height(LOGO_PART_H), contentAlignment = Alignment.Center) {
-        if (model != null) {
+        if (model != null && !failed.value) {
             FadeInImage(
                 model, name, contentScale = ContentScale.Fit, alignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(), onError = { LogoAspects.noteFailed(logo!!); failed.value = true }
             )
         } else {
             FullText(
@@ -209,7 +212,8 @@ internal fun HomeAchievementsPart(
             val show = next.ifEmpty { list.filter { it.isUnlocked }.sortedBy { it.unlockPercent ?: 100f }.take(6) }
             if (show.isNotEmpty()) {
                 androidx.compose.foundation.layout.Spacer(Modifier.padding(top = 4.dp))
-                androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                // (Update 503: the strip shows as one panel, BadgeWarm.kt.)
+                androidx.compose.foundation.layout.Row(Modifier.badgeSet(show.mapNotNull { com.shelf.launcher.data.RaBadges.url(it.badgeName) }), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
                     show.forEach { a ->
                         val url = com.shelf.launcher.data.RaBadges.url(a.badgeName)
                         Box(Modifier.padding(0.dp).clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.35f))) {

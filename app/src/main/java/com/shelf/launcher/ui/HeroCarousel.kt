@@ -418,6 +418,7 @@ private fun CoverWheel(
             Features.HeroSideCovers.FOCUSED -> order.filter { it == (if (looping) loopFocus else focused) }
             Features.HeroSideCovers.NONE -> emptyList()
         }
+        val nameFontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
         for (v in shownOrder) key(if (looping) "${games[v.mod(games.size)].stableKey}#${Math.floorDiv(v, games.size)}" else games[v].stableKey) {
             // [v]: the place on the (endless) column; [i]: the game's own index.
             val i = if (looping) v.mod(games.size) else v
@@ -439,8 +440,12 @@ private fun CoverWheel(
             // and the column's edge, so it wraps onto two lines / slides instead of running off the screen (small
             // screens like the Retroid Pocket Classic cut the start off). No room at all: no name.
             val nameRoom = if (mirrored) maxWidth - (x + w / 2 + 12.dp) - 8.dp else x - w / 2 - 12.dp - 8.dp
+            // (Update 505, rule 11: the names beside the wheel ended in "…" after two lines ("Super Mario World 2 Yoshi'…", "The
+            // Legend …" on the GT78 / Thor). A third line where the rows leave room for it — the step between rows is far more than
+            // three lines at this size — so a long name is whole; the one you're on still slides when even that isn't enough.)
+            val nameLines = heroWheelNameLines(spacing.value, (10 + 3 * sel) * 1.2f * nameFontScale)
             if (nameRoom >= 36.dp) ScrollingName(
-                gameDisplayName(g.name), scrolling = sel > 0.5f,
+                gameDisplayName(g.name), scrolling = sel > 0.5f, lines = nameLines,
                 color = Color.White.copy(alpha = alpha * (if (sel > 0.5f) 1f else 0.72f)),
                 fontSize = (10 + 3 * sel).sp, fontWeight = if (sel > 0.5f) FontWeight.Bold else FontWeight.Medium,
                 textAlign = if (mirrored) TextAlign.Start else TextAlign.End,
@@ -516,6 +521,15 @@ private fun CoverWheel(
     }
 }
 
+/** Update 476 (D254): the plate behind the hero's info text over a picture — darkest under the text's side, never opaque. */
+internal fun heroTextPlate(textOnLeft: Boolean): Brush {
+    val lo = Color.Black.copy(alpha = HERO_PLATE_MIN)
+    val hi = Color.Black.copy(alpha = HERO_PLATE_MAX)
+    return if (textOnLeft) Brush.horizontalGradient(0f to hi, 1f to lo) else Brush.horizontalGradient(0f to lo, 1f to hi)
+}
+internal const val HERO_PLATE_MIN = 0.28f
+internal const val HERO_PLATE_MAX = 0.62f
+
 @Composable
 private fun InfoRegion(
     info: HeroInfo,
@@ -543,7 +557,12 @@ private fun InfoRegion(
     val layered = Features.detailLayerCover.state.value && cover != null ||
         Features.detailLayerScreenshots.state.value && info.screenshots.isNotEmpty() ||
         Features.detailLayerVideo.state.value && videoUrl != null
-    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp), horizontalAlignment = hEnd) {
+    // (Update 476, D254: the info text sat straight on the hero picture — a screenshot with its own HUD / title text, the
+    // cover's small print — and was hard to read on the KONKR. A soft dark plate behind the text column (layered pane or
+    // the screen's own hero picture) keeps every picture as chosen and the text readable; nothing moves.)
+    Column(Modifier.fillMaxWidth().padding(if (layered) 14.dp else 0.dp)
+        .background(heroTextPlate(right), RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalAlignment = hEnd) {
         // The page: only this part changes when ◀ ▶ are pressed.
         AnimatedContent(
             targetState = p,
@@ -745,7 +764,7 @@ private fun AchievementsPage(info: HeroInfo, onOpen: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = if (LocalInfoOnLeft.current) Alignment.CenterStart else Alignment.CenterEnd) {
         val fits = ((maxWidth.value + 6f) / 44f).toInt().coerceIn(1, 12)
         val strip = (unlocked + locked).take(fits)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.badgeSet(strip.mapNotNull { RaBadges.url(it.badgeName) }), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             strip.forEach { a ->
                 val new = a.id in info.newIds
                 Box(
@@ -951,3 +970,7 @@ internal fun HeroCarouselSettings() {
     Spacer(Modifier.height(8.dp))
     OverlayPartsChoice(com.shelf.launcher.data.HomeLayout.HERO)
 }
+
+/** Update 505: how many lines a name beside the Hero wheel may take — 3 when the step between rows [stepDp] holds three lines
+ *  of [lineDp] (and a little air), else 2 (pure; Batch505Test). */
+internal fun heroWheelNameLines(stepDp: Float, lineDp: Float): Int = if (stepDp >= lineDp * 3f + 6f) 3 else 2

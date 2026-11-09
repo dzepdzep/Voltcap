@@ -164,6 +164,10 @@ object SteamShortcutImport {
                     )
                 }
             }
+            // (Update 478, D1: GameNative's frontend export — the file's whole content is the AppID.)
+            lower.endsWith(".steam") -> if (n.size in 1..64) readText(n, 64)?.let { t ->
+                RomScanner.parseSteamExport(t)?.let { found += Found(base, it, "${n.name} (GameNative export)", P_URL) }
+            }
             lower.endsWith(".url") -> readText(n, MAX_TEXT_BYTES)?.let { t ->
                 val line = t.lineSequence().map { it.trim() }.firstOrNull { it.startsWith("URL=", true) } ?: return
                 addRunId(line, base, "${n.name} (Steam shortcut)", P_URL, found, nonSteam)

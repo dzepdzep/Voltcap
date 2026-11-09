@@ -23,6 +23,10 @@ internal object QaTrace {
     fun init(activity: android.app.Activity) {
         on = TestHooks.enabled(activity)
         if (!on) return
+        // (Update 495, D293: settings changed during a QA preview stay in memory; every change is logged as
+        // `setting <key> <old>-><new> held|SAVED`, so a run can check nothing was saved by accident.)
+        com.shelf.launcher.data.Features.holdWrites = { TestHooks.previewOnly && !TestHooks.allowWrites }
+        com.shelf.launcher.data.Features.onChange = { k, o, n, held -> event("setting", "$k $o->$n ${if (held) "held" else "SAVED"}") }
         dir = runCatching { activity.getExternalFilesDir(null) }.getOrNull()
         QaClip.watch(activity)
         val hz = runCatching {

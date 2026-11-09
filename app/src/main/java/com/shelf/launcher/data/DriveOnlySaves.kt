@@ -58,7 +58,8 @@ internal object DriveOnlySaves {
         val cached = memory ?: readCache(app)?.also { memory = it }
         val age = if (cached != null) now - cached.first else -1L
         val list = if (cached != null && !stale && age >= 0L && age < MAX_AGE_MS) cached.second
-        else if (!allowFetch) cached?.second.orEmpty()
+        // Update 497 (D295): a QA session lists only the copy on disk — no Drive request.
+        else if (!allowFetch || CloudSync.qaPaused(app)) cached?.second.orEmpty()
         else fetch(app)?.also { fresh -> memory = now to fresh; stale = false; runCatching { writeCache(app, now, fresh) } }
             ?: cached?.second.orEmpty()
         return list.filter { it.folder.lowercase() !in mine }
@@ -141,7 +142,7 @@ internal object DriveOnlySaves {
         val name = (e.md5 ?: e.id).replace(Regex("[^A-Za-z0-9]"), "")
         val cache = File(File(app.cacheDir, "remote_saves"), "$name.bin")
         if (cache.length() > 0) return@runCatching cache.readBytes()
-        if (!allowNetwork) return@runCatching null // (Update 241, #76)
+        if (!allowNetwork || CloudSync.qaPaused(app)) return@runCatching null // (Update 241, #76; 497 D295: none in QA)
         if (!CloudSync.state.value.settings.connected) return@runCatching null
         val bytes = DriveClient(app).downloadBytes(e.id, maxBytes)
         if (bytes.isEmpty() || bytes.size > maxBytes) return@runCatching null

@@ -182,12 +182,15 @@ private fun LiveTabs(c: StyleCtx, ink: Color, compact: Boolean) {
     ) { i ->
             val (d, label) = tabs[i]
             val on = StyleNav.on(StyleNav.Zone.TOP, i)
-            Text(
+            // (Update 481, A5: a category word longer than the row — the kept-whole lit one — shrinks to the readable minimum,
+            // then slides, instead of running off the right edge: StableFullText, one line, nothing reserved.)
+            StableFullText(
                 // (Update 136: as written — no all-lower-case labels.)
                 label,
                 color = if (d == 0 || on) ink else ink.copy(alpha = 0.38f),
-                fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1, softWrap = false,
-                textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null,
+                fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1,
+                style = androidx.compose.material3.LocalTextStyle.current.copy(textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null),
+                reserve = false,
                 modifier = Modifier
                     .padding(end = if (compact) 16.dp else 26.dp)
                     .pointerInput(d) { detectTapGestures { if (d != 0) move(d) } }

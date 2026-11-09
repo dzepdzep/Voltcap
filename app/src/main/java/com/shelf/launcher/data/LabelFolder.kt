@@ -30,7 +30,11 @@ object LabelFolder {
     fun norm(name: String): String = NON.replace(TAGS.replace(name.substringBeforeLast('.').let { if ('/' in it) it.substringAfterLast('/') else it }, "").lowercase(), "")
 
     /** The folders looked in. */
-    fun roots(): List<java.io.File> = listOf(java.io.File(android.os.Environment.getExternalStorageDirectory(), "Voltcap/Labels"))
+    // (Update 505: the isolated QA app reads only a Labels folder inside its own files — never the shared Voltcap/Labels the
+    // owner's Voltcap uses — so a QA script can give a fixture game a printed test label without touching the owner's folder.)
+    fun roots(): List<java.io.File> = if (QaVariant.isolatedNow)
+        listOf(java.io.File(android.os.Environment.getExternalStorageDirectory(), "Android/data/com.shelf.launcher" + QaVariant.SUFFIX + "/files/Labels"))
+        else listOf(java.io.File(android.os.Environment.getExternalStorageDirectory(), "Voltcap/Labels"))
 
     /** Builds the name → file table from [dirs] (two folder levels; pure apart from reading the folders — unit-tested). */
     fun scan(dirs: List<java.io.File>): Map<String, String> {

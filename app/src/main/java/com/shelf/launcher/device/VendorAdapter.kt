@@ -102,7 +102,8 @@ class AynAdapter : VendorAdapter {
     private object AynSticks : LightsBackend {
         private const val TAG = "AynAdapter"
         private val binder: android.os.IBinder? by lazy {
-            runCatching {
+            // (Update 500: the isolated QA app never touches the stick lights.)
+            if (com.shelf.launcher.data.QaVariant.isolatedNow) null else runCatching {
                 val sm = Class.forName("android.os.ServiceManager")
                 sm.getDeclaredMethod("getService", String::class.java).invoke(null, "PServerBinder") as? android.os.IBinder
             }.getOrNull()

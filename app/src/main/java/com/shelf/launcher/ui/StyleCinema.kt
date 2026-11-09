@@ -145,10 +145,17 @@ internal fun CinemaBackdrop(modifier: Modifier) {
     Box(modifier.background(Brush.radialGradient(listOf(Color(0xFF17171B), Color(0xFF0B0B0D), Color(0xFF060607)))))
 }
 
-/** The colour for what's lit: the cinema's red, or your theme's. */
+/**
+ * The colour for what's lit: the cinema's red, or your theme's.
+ * (Update 506, owner review of the 505 visual report: with Cinema's own colours set (Theme › colours per layout) its window kept
+ * the red — your accent wins now, home and window alike, as on every other layout; without them, as before.)
+ */
 @Composable
 internal fun cinemaAccent(): Color =
-    if (Features.cnAccent.state.value == Features.CnAccent.CINEMA) Color(0xFFE50914) else ShelfTheme.accent
+    if (cinemaKeepsRed(Features.cnAccent.state.value, Features.layoutColorsFor(com.shelf.launcher.data.HomeLayout.CINEMA.name).acc != null)) Color(0xFFE50914) else ShelfTheme.accent
+
+/** Pure (Update 506): [cinemaAccent] keeps the cinema's red only when it is picked and the layout has no colours of its own. */
+internal fun cinemaKeepsRed(pick: Features.CnAccent, layoutAsks: Boolean): Boolean = pick == Features.CnAccent.CINEMA && !layoutAsks
 
 @Composable
 internal fun StyleCinema(c: StyleCtx, modifier: Modifier = Modifier) {

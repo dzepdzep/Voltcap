@@ -166,7 +166,11 @@ internal fun ProfileSelectScreen(
         }
     }
 
-    Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
+    // Update 514 (owner, RP Classic: "Who's playing?" left the bottom of the screen uncovered, every time): a Dialog's window is
+    // laid out inside the bars Android counts as shown, and on a Retroid whose own hide_nav_bar hides the bar Voltcap's windows
+    // leave it shown (GestureHint.systemOwnsNav) — so the window stopped 48 px above the bottom (frame [0,0][1240,1032]) and the
+    // home showed through there. Edge to edge like the game windows (decorFitsSystemWindows = false): the whole display.
+    Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false)) {
         ImmersiveDialogWindow()
         val accentNow = profiles.getOrNull(cursor)?.let { style.accent(it.hue) } ?: style.accent(210f)
         BoxWithConstraints(
@@ -175,6 +179,9 @@ internal fun ProfileSelectScreen(
                 .focusRequester(focus)
                 .focusable()
                 .onPreviewKeyEvent { e ->
+                    // (Update 513: this window's keys never reach the activity, so they count as input here — the backdrop's
+                    // settled drift comes back on the first press, as the home's effects do.)
+                    if (e.type == KeyEventType.KeyDown) HomeIdle.poke()
                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     val per = planPerRow[0]
                     when (e.key) {
@@ -581,6 +588,8 @@ internal fun Modifier.rolloutItem(): Modifier = this.composed {
             val k = 0.9f + 0.1f * e
             scaleX = k; scaleY = k
             cameraDistance = 14f * this.density
+            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+            flatTextFor3d()
         }
 }
 
@@ -600,6 +609,8 @@ internal fun Modifier.rolloutLayer(): Modifier = this.composed {
         val k = 0.96f + 0.04f * e
         scaleX = k; scaleY = k
         cameraDistance = 14f * density
+        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+        flatTextFor3d()
     }
 }
 
@@ -637,7 +648,8 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
     }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } }
-    Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    // (Update 514: the PIN pad over "Who's playing?" covers the whole display too — see ProfileSelectScreen.)
+    Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         ImmersiveDialogWindow()
         Box(
             Modifier.fillMaxSize().background(Color(0xFA030812))

@@ -65,6 +65,13 @@ internal class RaOverlayView(
      *  id, so after opening the pinned one's comments the same achievement's list row needed two taps). */
     private val openComments = mutableSetOf<String>()
 
+    /**
+     * Update 496 (QA only, QaOverlayFixture): made-up content drawn by the real overlay inside Voltcap — no game, no
+     * RetroAchievements request, no pin saved. Null in normal use.
+     */
+    internal var fixture: OverlayFixture? = null
+    /** Update 496: the pinned row's comments box (it gives up room last when the open panel doesn't fit). */
+
     private val accent get() = LightsTheme.accent or 0xFF000000.toInt()
     private val gold = 0xFFFFC94D.toInt()
 
@@ -86,19 +93,53 @@ internal class RaOverlayView(
         setTextColor(color)
         setTextSize(TypedValue.COMPLEX_UNIT_SP, sp)
         if (bold) setTypeface(typeface, Typeface.BOLD)
-        maxWidth = px(260f)
+        // (Update 495, rule 11: a little wider. The summary stays a compact HUD over the game, so its longer parts keep a line
+        // limit; the whole text is one tap away in the opened panel, where nothing is shortened.)
+        maxWidth = px(SUMMARY_MAX_W_DP)
         maxLines = lines
-        ellipsize = TextUtils.TruncateAt.END
+        ellipsize = TextUtils.TruncateAt.END // qa-ok: TRUNCATE (HUD over the game; the whole text is in the opened panel)
         visibility = View.GONE
     }
-    private val sumName = summaryLine(11f, Color.WHITE, 2, bold = true)
+    private val sumName = summaryLine(11f, Color.WHITE, 3, bold = true) // (Update 495: 3 lines — whole titles)
     private val sumDesc = summaryLine(10f, 0xCCFFFFFF.toInt(), 3)
     private val sumTotals = summaryLine(11f, 0xFFFFC94D.toInt(), 1, bold = true)
     private val sumLast = summaryLine(10f, 0xFF5BD68A.toInt(), 1)
-    private val sumMissables = summaryLine(10f, 0xFFFFB547.toInt(), 2)
-    private val sumNext = summaryLine(11f, Color.WHITE, 2, bold = true)
+    private val sumMissables = summaryLine(10f, 0xFFFFB547.toInt(), 3)
+    private val sumNext = summaryLine(11f, Color.WHITE, 3, bold = true)
     private val sumWhy = summaryLine(10f, 0x99FFFFFF.toInt(), 1)
-    private val panel = LinearLayout(context).apply {
+    /**
+     * Update 496: the open panel never runs past the screen. With the pinned row's comments open (up to [PINNED_COMMENTS_MAX]
+     * of the screen) on top of the header, the tabs and the list (half the screen), it did — the tabs were cut and the list
+     * fell off the bottom (QA fixture, Thor). The list gives up the room it needs (it scrolls), down to [LIST_MIN_DP].
+     */
+    private val panel = object : LinearLayout(context) {
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val lp = scroll.layoutParams
+            val maxH = (resources.displayMetrics.heightPixels * PANEL_MAX_H).toInt()
+            if (lp == null) { super.onMeasure(widthMeasureSpec, heightMeasureSpec); return }
+            val want = (resources.displayMetrics.heightPixels * 0.5f).toInt()
+            lp.height = want
+            val pinWant = (resources.displayMetrics.heightPixels * PINNED_FRAME_MAX).toInt()
+            pinnedFrame.maxPx = pinWant
+            val free = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+            // (Measured first without a height limit: the whole content's height, then the list trimmed to fit, then the
+            // pinned section; both keep scrolling, so nothing is lost. Update 497, D294 at text ×1.6: only the pinned row's
+            // comments could give way before — its name and description, the header and the tabs did not, so the tabs and
+            // the list were still pushed past the screen. Now the WHOLE pinned section ([pinnedFrame]: name, description,
+            // comments) scrolls in one box and gives way, and as a last step the list goes below its usual minimum: the
+            // header, ✕ and the tabs always stay on screen.)
+            super.onMeasure(widthMeasureSpec, free)
+            val pinH = if (pinnedFrame.visibility == View.VISIBLE) pinnedFrame.measuredHeight else 0
+            val fixed = measuredHeight - pinH - want
+            val (listH, pinMax) = overlayPanelFit(maxH, fixed, pinH, want, px(LIST_MIN_DP), px(PINNED_MIN_DP), px(LIST_FLOOR_DP))
+            if (listH != want || pinMax != pinH) {
+                lp.height = listH
+                if (pinH > 0) pinnedFrame.maxPx = pinMax
+                super.onMeasure(widthMeasureSpec, free)
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }.apply {
         orientation = LinearLayout.VERTICAL
         visibility = View.GONE
         val pad = px(10f)
@@ -106,13 +147,17 @@ internal class RaOverlayView(
     }
     private val header = TextView(context).apply {
         setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f); setTypeface(typeface, Typeface.BOLD)
-        maxLines = 1; ellipsize = TextUtils.TruncateAt.END
+        // (Update 495, rule 11: the game's whole name, on two lines when long — it was cut to one with "…".)
     }
     private val headerBar = CapsuleBar(context)
     private val headerStats = TextView(context).apply { setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f) }
     private val tabs = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
     /** The pinned achievement (the one you're working on), on top of the open panel. */
-    private val pinnedBox = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
+    private val pinnedBox = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    /** Update 497 (D294): the whole pinned section in one scrolling box that gives way at large text (see [panel]). */
+    private val pinnedFrame = MaxHeightScroll(context, Int.MAX_VALUE / 4).apply {
+        isVerticalScrollBarEnabled = true; visibility = View.GONE; addView(pinnedBox)
+    }
     private val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
     private val scroll = ScrollView(context).apply { addView(list); isVerticalScrollBarEnabled = true }
 
@@ -132,6 +177,9 @@ internal class RaOverlayView(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             addView(header, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            // (Update 501, GT78 at text ×1.6: the ▲ ▼ list switch sat at the end of the tab row and covered its last tab.
+            // It lives up here beside ✕ now, and the tabs have the row's whole width.)
+            addView(modeArrows)
             addView(TextView(context).apply {
                 text = "✕"; setTextColor(Color.WHITE); setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                 setPadding(px(10f), 0, px(4f), 0)
@@ -143,7 +191,7 @@ internal class RaOverlayView(
         panel.addView(top, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT))
         panel.addView(headerBar, LinearLayout.LayoutParams(px(320f), px(8f)).apply { topMargin = px(6f) })
         panel.addView(headerStats, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(4f) })
-        panel.addView(pinnedBox, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
+        panel.addView(pinnedFrame, LinearLayout.LayoutParams(px(320f), LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = px(8f) })
         // (Update 224: the tabs on the left, the ▲ ▼ list switch at the right of the same row.)
         val tabRow = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -152,7 +200,6 @@ internal class RaOverlayView(
                 isHorizontalScrollBarEnabled = false
                 addView(tabs)
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(modeArrows)
         }
         listOf("▲" to -1, "▼" to 1).forEach { (label, step) ->
             modeArrows.addView(TextView(context).apply {
@@ -370,13 +417,13 @@ internal class RaOverlayView(
         pinnedBox.removeAllViews()
         val pin = pinnedOf(st)
         if (pin != null) {
-            pinnedBox.visibility = View.VISIBLE
+            pinnedFrame.visibility = View.VISIBLE
             pinnedBox.addView(TextView(context).apply {
                 text = "📌 PINNED — WORKING ON"
                 setTextColor(if (c.raThemed) accent else gold); setTextSize(TypedValue.COMPLEX_UNIT_SP, 9f); setTypeface(typeface, Typeface.BOLD)
             })
             pinnedBox.addView(row(pin, unlocked = pin.id in st.unlockedIds, c, pinnedRow = true))
-        } else pinnedBox.visibility = View.GONE
+        } else pinnedFrame.visibility = View.GONE
         tabs.removeAllViews()
         val missables = st.left.filter { it.missable }
         // Update 224 (#83): the lists made from the same data — Recommended: missables still to get first, then the most
@@ -449,11 +496,12 @@ internal class RaOverlayView(
                 (item.percent?.let { "  · %.0f%%".format(it) } ?: "")
             setTextColor(if (item.missable && !unlocked) 0xFFFFB74D.toInt() else Color.WHITE)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f); setTypeface(typeface, Typeface.BOLD)
-            maxLines = 2; ellipsize = TextUtils.TruncateAt.END
+            // (Update 495, rule 11: the panel's rows show the whole title and description — they were cut to 2 / 3 lines;
+            // the list scrolls, so they have the room.)
         })
         item.description?.let {
             texts.addView(TextView(context).apply {
-                text = it; setTextColor(0xCCFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f); maxLines = 3
+                text = it; setTextColor(0xCCFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
             })
         }
         if (unlocked) item.earned?.let { e ->
@@ -465,19 +513,28 @@ internal class RaOverlayView(
         // Pin / unpin while playing: the one you're working on stays on top (and in the small summary).
         val gid = state?.gameId
         if (!unlocked && gid != null) {
-            val pinned = com.shelf.launcher.data.RaPin.isPinned(gid, item.id)
+            val pinned = fixture?.let { it.pinnedId == item.id } ?: com.shelf.launcher.data.RaPin.isPinned(gid, item.id)
             line.addView(TextView(context).apply {
                 text = if (pinned) "📌" else "📍"
                 alpha = if (pinned) 1f else 0.55f
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                 setPadding(px(10f), px(4f), px(4f), px(4f))
                 contentDescription = if (pinned) "Unpin" else "Pin"
-                setOnClickListener { com.shelf.launcher.data.RaPin.toggle(gid, item.id); rebuild(); state?.let { s -> cfg?.let { c2 -> bind(s, c2) } } }
+                setOnClickListener {
+                    if (fixture != null) return@setOnClickListener // (QA fixture: nothing is pinned for real)
+                    com.shelf.launcher.data.RaPin.toggle(gid, item.id); rebuild(); state?.let { s -> cfg?.let { c2 -> bind(s, c2) } }
+                }
             })
         }
         box.addView(line)
         val comments = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        // (Update 493: the pinned row sits above the scrolling list, outside it — its opened comments ran on past the
+        // screen's edge with no way to scroll to the rest. They scroll in a box of their own now, at most ~40 % of the
+        // screen; list rows are inside the list's scroll already.)
+        // (Update 493: the pinned row sits above the scrolling list, outside it. Update 497: its comments scroll with the
+        // rest of the pinned section in [pinnedFrame] — one scroll, no box inside a box.)
         box.addView(comments)
+        if (pinnedRow && fixture?.openPinned == true) { openComments += openKey; loadComments(item.id, comments) }
         box.setOnClickListener {
             if (openKey in openComments) { openComments -= openKey; comments.removeAllViews() }
             else { openComments += openKey; loadComments(item.id, comments) }
@@ -489,6 +546,7 @@ internal class RaOverlayView(
 
     /** The pinned achievement of this game, when pinned and shown (Overlay settings). */
     private fun pinnedOf(st: RaOverlayData.State): RaOverlayData.Item? {
+        fixture?.let { f -> return f.pinnedId?.let { id -> st.all.firstOrNull { it.id == id } } }
         if (!com.shelf.launcher.data.Features.raShowPinned.value) return null
         val gid = st.gameId ?: return null
         val id = com.shelf.launcher.data.RaPin.pinnedFor(gid) ?: return null
@@ -504,9 +562,10 @@ internal class RaOverlayView(
     private fun loadComments(id: Int, into: LinearLayout) {
         into.removeAllViews()
         val loading = TextView(context).apply {
-            text = "Loading comments…"; setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            text = "Loading comments…"; setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
         }
         into.addView(loading)
+        fixture?.let { f -> into.removeAllViews(); f.comments.forEach { (who, text) -> addComment(into, who, text) }; return }
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
@@ -526,19 +585,38 @@ internal class RaOverlayView(
                         is com.shelf.launcher.data.ra.RaResult.Error -> result.error.message
                         else -> "No comments yet."
                     }
-                    setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    setTextColor(0x99FFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
                 })
             }
-            list.take(12).forEach { c ->
-                into.addView(TextView(context).apply {
-                    text = "${c.User ?: "?"}: ${c.CommentText?.trim()}"
-                    setTextColor(0xDDFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-                    setPadding(px(6f), px(3f), 0, px(3f))
-                })
+            // (Update 492, owner: the pinned achievement's comments were much smaller than the same comments opened from the
+            // Achievements list — 10 sp, name and text run together. They now read as there: the name and date in 11 sp, the
+            // comment in 12 sp on its own lines, newest first, cleaned the same way. Only the opened panel; the pinned
+            // summary over the game keeps its size.)
+            list.sortedByDescending { it.Submitted ?: "" }.take(12).forEach { c ->
+                addComment(into, (c.User ?: "Someone") + (c.Submitted?.take(10)?.let { "  ·  $it" } ?: ""), cleanComment(c.CommentText.orEmpty()))
             }
         }
     }
+
+    /** One comment: the name and date, then the text on its own lines (shared by the real list and the QA fixture). */
+    private fun addComment(into: LinearLayout, who: String, body: String) {
+        into.addView(TextView(context).apply {
+            text = who
+            setTextColor(if (cfg?.raThemed == true) accent else gold); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_NAME_SP)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(px(6f), px(5f), 0, 0)
+        })
+        into.addView(TextView(context).apply {
+            text = body
+            setTextColor(0xEEFFFFFF.toInt()); setTextSize(TypedValue.COMPLEX_UNIT_SP, COMMENT_TEXT_SP)
+            setLineSpacing(0f, COMMENT_LINE_MULT) // (Update 493: the list's 16 sp lines for 12 sp text)
+            setPadding(px(6f), px(1f), 0, px(4f))
+        })
+    }
 }
+
+/** Update 496 (QA only): what [RaOverlayView.fixture] shows instead of the real pin and comments. */
+internal data class OverlayFixture(val pinnedId: Int?, val comments: List<Pair<String, String>>, val openPinned: Boolean)
 
 private fun blend(a: Int, b: Int, t: Float): Int {
     fun ch(s: Int) = ((((a shr s) and 0xFF) * (1 - t)) + (((b shr s) and 0xFF) * t)).toInt() and 0xFF
@@ -572,5 +650,46 @@ internal class CapsuleBar(context: Context) : View(context) {
             tip.alpha = 200
             canvas.drawCircle(fw - h / 2, h / 2, h * 0.32f, tip)
         }
+    }
+}
+
+/** Update 492: the opened panel's comments at the Achievements list's sizes (AchievementDetailDialog: 11 / 12 sp). */
+internal const val COMMENT_NAME_SP = 11f
+internal const val COMMENT_TEXT_SP = 12f
+/** Update 495: the in-game summary's width (dp); 260 before. */
+internal const val SUMMARY_MAX_W_DP = 280f
+/** Update 493: the list's line height (12 sp text on 16 sp lines, AchievementDetailDialog). */
+internal const val COMMENT_LINE_MULT = 16f / 12f
+/** Update 493: the pinned row's opened comments scroll within this share of the screen's height. */
+internal const val PINNED_COMMENTS_MAX = 0.3f // (Update 496: 0.4 left the list no room on a 16:9 screen)
+/** Update 496: the open panel's height at most (of the screen), and the list's least. */
+internal const val PANEL_MAX_H = 0.94f
+internal const val LIST_MIN_DP = 96f
+internal const val PINNED_MIN_DP = 72f
+/** Update 497 (D294): the pinned section's usual height (name, description and up to ~30 % of comments). */
+internal const val PINNED_FRAME_MAX = 0.4f
+/** Update 497 (D294): the list's last-resort minimum, so the tabs stay on screen at text ×1.6 on a short screen. */
+internal const val LIST_FLOOR_DP = 56f
+
+/** A ScrollView that grows with its content up to [maxPx], then scrolls. */
+/**
+ * Update 497 (D294): how the open panel shares the screen. [fixed]: the header, bar, stats, tabs and margins (never
+ * shrunk); [pin]: the pinned section's height (0 = none); [list]: the list's usual height. Returns the list's height and
+ * the pinned section's cap: the list gives way first (to [listMin]), then the pinned section (to [pinMin]), then the
+ * list again (to [listFloor]) — so header, ✕ and tabs stay inside [maxH] whatever the text size.
+ */
+internal fun overlayPanelFit(maxH: Int, fixed: Int, pin: Int, list: Int, listMin: Int, pinMin: Int, listFloor: Int): Pair<Int, Int> {
+    val avail = maxH - fixed
+    if (pin + list <= avail) return list to pin
+    var l = maxOf(minOf(list, listMin), avail - pin)
+    if (pin + l <= avail) return l to pin
+    val p = if (pin == 0) 0 else maxOf(minOf(pin, pinMin), avail - l)
+    if (p + l > avail) l = maxOf(minOf(l, listFloor), avail - p)
+    return l to p
+}
+
+internal class MaxHeightScroll(context: Context, var maxPx: Int) : ScrollView(context) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxPx, MeasureSpec.AT_MOST))
     }
 }

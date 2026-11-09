@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,17 +80,23 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
     val topShape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)
     val bottomShape = RoundedCornerShape(bottomStart = 14.dp, bottomEnd = 14.dp)
     // (The window is as tall as its content needs, up to the screen: few facts leave no empty middle.)
+    // Update 507 (owner review of 506: "improve hinge-inspired motion"): a clamshell opening — the hinge comes first, then the
+    // top screen swings up on its lower edge and the touch screen swings down on its upper edge, both from the hinge; closing
+    // folds them shut onto it. (Was one 40° tilt of the whole window.)
+    val unfold = { sceneEase(twinUnfold(ctx.reveal())) }
     Column(Modifier.width(w).heightIn(max = h).graphicsLayer {
-        // The two halves fold open from the hinge.
-        val e = sceneEase(ctx.reveal())
-        rotationX = (1f - e) * 40f
-        cameraDistance = 12f * density
-        alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
-        if (desk) { shadowElevation = 12.dp.toPx() * e; shape = RoundedCornerShape(14.dp) }
+        alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
+        if (desk) { shadowElevation = 12.dp.toPx() * unfold(); shape = RoundedCornerShape(14.dp) }
     }) {
         // ── Top screen: the picture and the game's name strip.
         Row(
-            Modifier.fillMaxWidth().height(topH).clip(topShape)
+            Modifier.fillMaxWidth().height(topH).graphicsLayer {
+                rotationX = (1f - unfold()) * -88f
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                cameraDistance = 12f * density
+                // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                flatTextFor3d()
+            }.clip(topShape)
                 .then(if (desk) Modifier.deskPaper().border(1.dp, edge, topShape) else Modifier.background(Color(0xFF101318)))
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -114,13 +122,20 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
             }
         }
         // ── The hinge.
-        Box(Modifier.fillMaxWidth().height(10.dp).background(
+        Box(Modifier.fillMaxWidth().height(10.dp).graphicsLayer {
+            scaleX = 0.3f + 0.7f * sceneEase((ctx.reveal() / 0.3f).coerceIn(0f, 1f))
+        }.background(
             if (desk) Brush.verticalGradient(listOf(Color(0xFFB9C2CC), Color(0xFFE9EDF1), Color(0xFFB9C2CC)))
             else Brush.verticalGradient(listOf(Color(0xFF2A2F37), Color(0xFF555C67), Color(0xFF2A2F37)))
         ))
         // ── Touch screen: facts (what's left), then the keys (reserved first).
         Column(
-            Modifier.fillMaxWidth().heightIn(min = 150.dp).clip(bottomShape)
+            Modifier.fillMaxWidth().heightIn(min = 150.dp).graphicsLayer {
+                rotationX = (1f - unfold()) * 88f
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                cameraDistance = 12f * density
+                flatTextFor3d()
+            }.clip(bottomShape)
                 .then(if (desk) Modifier.background(Color(0xFFFBFCFD)).border(1.dp, edge, bottomShape) else Modifier.background(Color(0xFF1A1E25)))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween
@@ -139,6 +154,12 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
     }
 }
 
+/** Update 507: how far the two halves have unfolded for the window's reveal [k] (the hinge leads by 0.15). Pure. */
+internal fun twinUnfold(k: Float): Float = ((k - 0.15f) / 0.85f).coerceIn(0f, 1f)
+
+/** Update 507: the top screen's picture well at the picture's own shape, kept between a tall cover and a wide banner. Pure. */
+internal fun twinPictureRatio(w: Float, h: Float): Float = (w / h).coerceIn(0.56f, 2.4f)
+
 /** v0.6.66 (D142): Twin desk's window over the desk's own pale paper, not a black slab. */
 internal val twinDeskVeil: Brush = Brush.verticalGradient(listOf(Color(0xFFEEF1F4).copy(alpha = 0.6f), Color(0xFFDCE2E8).copy(alpha = 0.84f)))
 
@@ -148,15 +169,18 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
     val art = ctx.wide ?: ctx.backdrop
     val url = art ?: ctx.cover
     val shape = RoundedCornerShape(if (desk) 8.dp else 10.dp)
+    // Update 507 (owner review: "preserve cover proportions"): the well takes the picture's own shape once it is known (a
+    // portrait cover stood in a 16:9 well, its blurred copy cut at both sides behind it); until then the usual guess.
+    var ratio by androidx.compose.runtime.remember(url) { androidx.compose.runtime.mutableStateOf(if (art != null || url == null) 16f / 9f else 3f / 4f) }
     Box(
-        modifier.aspectRatio(if (art != null || url == null) 16f / 9f else 3f / 4f, matchHeightConstraintsFirst = true)
+        modifier.aspectRatio(ratio, matchHeightConstraintsFirst = true)
             .clip(shape).then(if (desk) Modifier.background(Color.White).border(1.dp, DeskEdge, shape).padding(5.dp) else Modifier.background(Color(0xFF0B0E12))),
         contentAlignment = Alignment.Center
     ) {
         if (url != null) {
             val inner = RoundedCornerShape(if (desk) 4.dp else 8.dp)
-            AsyncImage(rememberStyleArtRequest(url), null, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Crop, alpha = 0.3f)
-            AsyncImage(if (art != null) rememberBackdropRequest(url) else rememberStyleArtRequest(url), ctx.name, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Fit)
+            AsyncImage(if (art != null) rememberBackdropRequest(url) else rememberStyleArtRequest(url), ctx.name, Modifier.fillMaxSize().clip(inner), contentScale = ContentScale.Fit,
+                onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f) ratio = twinPictureRatio(sz.width, sz.height) })
         } else {
             Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
                 Text(ctx.console, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
@@ -166,26 +190,39 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
     }
 }
 
-/** The facts as label-over-value cells (3 a row when the window is wide enough) and the summary — whole rows / lines only. */
+/**
+ * The facts as label-over-value cells (3 a row when the window is wide enough) and the summary. Update 487 (D265,
+ * owner-approved): the facts stay put; only the story turns, in pages of whole lines with a "1 / 2" count, by L2 / R2 or a
+ * tap on it — never by itself (the whole box used to page every 2.8 s: facts gone, a half line on top, a near-empty last page).
+ */
 @Composable
 private fun HingeFacts(ctx: WinSceneCtx, label: Color, value: Color) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val cols = if (maxWidth >= 430.dp) 3 else 2
         val facts = remember(ctx.g, ctx.played, ctx.last, ctx.earned, ctx.total) { sceneFacts(ctx) }
         val summary = ctx.summary
-        SnapRows(Modifier.fillMaxWidth(), textLine = if (summary != null) 14.dp else 0.dp, textTop = 2.dp) {
-            facts.chunked(cols).forEach { row ->
-                Row(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-                    row.forEach { (l, v) ->
-                        Column(Modifier.weight(1f).padding(end = 8.dp)) {
-                            Text(l.uppercase(), color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, softWrap = false)
-                            Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.fillMaxWidth()) {
+            WholeRows(Modifier.fillMaxWidth()) {
+                facts.chunked(cols).forEach { row ->
+                    Row(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                        row.forEach { (l, v) ->
+                            Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text(l.uppercase(), color = label, fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, softWrap = false)
+                                Text(v, color = value, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
+                        repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                     }
-                    repeat(cols - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
-            if (summary != null) Text(summary, color = value.copy(alpha = 0.8f), fontSize = 11.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 2.dp))
+            if (summary != null) {
+                val pager = remember(ctx.g.stableKey) { StoryPager() }
+                PagedStory(
+                    summary, value.copy(alpha = 0.8f), 11.sp, 14.sp, maxLines = 40,
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp), pager = pager, auto = false,
+                    countColor = label, tapToTurn = true, windowKeys = true
+                )
+            }
         }
     }
 }

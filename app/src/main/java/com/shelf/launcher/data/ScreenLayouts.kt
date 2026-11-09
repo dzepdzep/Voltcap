@@ -311,6 +311,7 @@ object ScreenPlacement {
 
     /** Starts an installed app on [displayId]. False if Android refused. */
     fun startApp(context: Context, packageName: String, displayId: Int): Boolean {
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("screens.app", packageName)) return false
         val intent = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return runCatching { context.startActivity(intent, optionsFor(displayId)); true }.getOrDefault(false)

@@ -36,7 +36,7 @@ class Visual426Test {
     }
 
     @Test fun sceneWindowsNeverEndInAnEllipsis() {
-        for (f in listOf("WinScenes.kt", "WinScenesConsole.kt", "WinScenesArcade.kt", "WinScenesMore.kt", "WinScenesHomes2.kt", "WinScenesStyled.kt", "WinScenesWii.kt"))
+        for (f in listOf("WinScenes.kt", "WinScenesConsole.kt", "WinScenesArcade.kt", "WinScenesMore.kt", "WinScenesHomes2.kt", "WinScenesStyled.kt", "WinScenesWii.kt", "WinSceneFamilies.kt"))
             assertTrue("$f uses TextOverflow.Ellipsis", !src(f).contains("TextOverflow.Ellipsis"))
     }
 }

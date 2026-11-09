@@ -26,6 +26,8 @@ fun ScreenScraperDialog(
     var devPassword by remember { mutableStateOf("") }
     var user by remember { mutableStateOf(username ?: "") }
     var password by remember { mutableStateOf("") }
+    // Update 516: with Voltcap's own developer key built in, only the person's account is asked for.
+    val builtInKey = remember { com.shelf.launcher.data.ScreenScraperDevKey.builtIn != null }
 
     ShelfDialog(
         icon = Icons.Filled.Image,
@@ -40,7 +42,7 @@ fun ScreenScraperDialog(
             } else {
                 Chip(
                     "Connect",
-                    enabled = devId.isNotBlank() && devPassword.isNotBlank(),
+                    enabled = if (builtInKey) user.isNotBlank() && password.isNotBlank() else devId.isNotBlank() && devPassword.isNotBlank(),
                     onClick = { onConnect(devId, devPassword, user, password) }
                 )
             }
@@ -54,7 +56,7 @@ fun ScreenScraperDialog(
                     "It only covers ROMs — apps keep SteamGridDB or their own icon."
             )
         } else {
-            ShelfCard {
+            if (!builtInKey) ShelfCard {
                 SectionLabel("Developer key (once per app)")
                 MutedNote(
                     "ScreenScraper gives each app its own developer ID and password. Request one for " +
@@ -67,11 +69,12 @@ fun ScreenScraperDialog(
                 Spacer(Modifier.height(8.dp))
                 ShelfTextField(devPassword, { devPassword = it }, "Developer password", password = true)
             }
-            Spacer(Modifier.height(12.dp))
+            if (!builtInKey) Spacer(Modifier.height(12.dp))
             ShelfCard {
-                SectionLabel("Your ScreenScraper account (optional)")
+                SectionLabel(if (builtInKey) "Your ScreenScraper account" else "Your ScreenScraper account (optional)")
                 MutedNote(
-                    "Your normal, free screenscraper.fr login. Without it scraping still works, but with a " +
+                    if (builtInKey) "Your normal, free screenscraper.fr login (create one there if you don't have it yet)."
+                    else "Your normal, free screenscraper.fr login. Without it scraping still works, but with a " +
                         "much smaller daily limit and slower responses when the site is busy."
                 )
                 Spacer(Modifier.height(10.dp))

@@ -442,6 +442,7 @@ private fun heroSystemApps(context: android.content.Context): List<Triple<String
 }
 
 private fun heroLaunch(context: android.content.Context, intent: android.content.Intent?) {
+    if (TestHooks.interceptLaunch("hero", intent?.`package` ?: intent?.component?.packageName ?: "?")) return
     val ok = intent != null && runCatching {
         context.startActivity(android.content.Intent(intent).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
     }.isSuccess

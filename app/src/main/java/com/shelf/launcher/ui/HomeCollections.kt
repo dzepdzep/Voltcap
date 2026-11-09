@@ -139,7 +139,14 @@ internal fun RollingStory(
  */
 @Composable
 internal fun LogoOrName(logo: String?, name: String, modifier: Modifier, text: @Composable () -> Unit) {
-    var square by androidx.compose.runtime.remember(logo) { androidx.compose.runtime.mutableStateOf(false) }
+    // (Update 503, Thor + late-art fixture, Arctic: a game whose logo can't be read — or is square, shown as its name — had a
+    // blank title for as long as the read took, then its name, on EVERY visit: the title "jumped in" each time. What a logo
+    // turned out to be (failed / its shape) is remembered for the session (LogoAspects), so later visits show the name at once;
+    // a logo that is in memory draws in the first frame as before.)
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var square by androidx.compose.runtime.remember(logo) {
+        androidx.compose.runtime.mutableStateOf(logo != null && (LogoAspects.isFailed(logo) || (LogoAspects.of(ctx, logo)?.let { it < 1.4f } == true)))
+    }
     // (Update 363: one slot of a fixed size whichever it is — a logo, the name, or nothing yet while the logo loads — so the
     // facts and buttons under it never move when a game with a logo follows one without, or its picture arrives.)
     Box(modifier, contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
@@ -148,10 +155,11 @@ internal fun LogoOrName(logo: String?, name: String, modifier: Modifier, text: @
             rememberStyleArtRequest(logo, trim = true), name, contentScale = androidx.compose.ui.layout.ContentScale.Fit,
             alignment = androidx.compose.ui.Alignment.CenterStart, modifier = Modifier.fillMaxSize(),
             onSuccess = { st ->
+                LogoAspects.note(logo, st.result.drawable, ctx)
                 val sz = st.painter.intrinsicSize
                 if (sz.width > 0f && sz.height > 0f && sz.width / sz.height < 1.4f) square = true
             },
-            onError = { square = true }
+            onError = { LogoAspects.noteFailed(logo); square = true }
         )
     }
 }

@@ -41,7 +41,7 @@ import com.shelf.launcher.data.Features
 /*
  * Update 408: the Channel grid's own window, restored (update 104's Wii Channel Preview; 113 had replaced it by the shared
  * GameWindow). A large rounded preview of the channel on a clean white (or, in the dark variant, charcoal) surface with
- * a restrained blue focus outline, two big bottom keys, "Wii Menu" (back to the channel tile) and "Start", and a compact
+ * a restrained blue focus outline, two big bottom keys, "Channels" (back to the channel tile; update 507) and "Start", and a compact
  * row of small keys for Details, Inspect, options and achievements. The banner is shown whole (Fit), never cropped.
  * Details / options / achievements / performance pages are GameWindow's own, drawn inside the preview area.
  */
@@ -71,12 +71,27 @@ internal fun wiiPaletteNow(): WiiPalette {
 
 private val WiiBlue = Color(0xFF3AA6E8)
 
+/**
+ * Update 506 (owner review of the 505 visual report): the preview's blue rim and lit keys stayed blue with Channel grid's own
+ * colours set (the tiles' ring followed them). The rim is the shared scene rule's lit colour now (sceneLit: the Wii blue unless
+ * this layout has its own colours, readable on the window's surface) — the window's shape and palette stay the Wii's.
+ */
+private val LocalWiiRim = androidx.compose.runtime.staticCompositionLocalOf { WiiBlue }
+
+@Composable
+internal fun WiiChannelPreview(ctx: WinSceneCtx) {
+    // (Without colours of its own the Wii blue exactly as before.)
+    val rim = if (com.shelf.launcher.data.Features.layoutColorsFor(com.shelf.launcher.data.HomeLayout.CHAN.name).acc == null) WiiBlue
+        else sceneLit(com.shelf.launcher.data.HomeLayout.CHAN, WiiBlue, wiiPaletteNow().surface)
+    androidx.compose.runtime.CompositionLocalProvider(LocalWiiRim provides rim) { WiiChannelPreviewBody(ctx) }
+}
+
 /** Update 426: which game's Wii window has its More page open (null: the preview). */
 internal object WiiMore { var key by androidx.compose.runtime.mutableStateOf<String?>(null) }
 
 @Composable
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-internal fun WiiChannelPreview(ctx: WinSceneCtx) {
+private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
     val pal = wiiPaletteNow()
     // Update 411: the real Wii Channel Preview is a compact, nearly 4:3 white card, not a full-screen dashboard.
     val w = minOf(ctx.maxW, 440.dp)
@@ -87,7 +102,7 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
     val back = ctx.buttons.firstOrNull { it.back }
     val small = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools
     val I = androidx.compose.material.icons.Icons.Filled
-    // Update 426: the secondary actions' page (More); B / Wii Menu come back to the preview first.
+    // Update 426: the secondary actions' page (More); B / Channels come back to the preview first.
     // (Kept outside the scene: a page opened from More — Details, Options… — replaces the scene, and B from it comes back
     // to the More page on the key that opened it. A window opening afresh starts on the preview.)
     androidx.compose.runtime.remember { if (ctx.reveal() < 0.5f) WiiMore.key = null; 0 }
@@ -117,7 +132,7 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
         // The big preview: the channel's banner whole, in a rounded well with a blue rim.
         Box(
             Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(pal.well)
-                .border(2.dp, WiiBlue.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+                .border(2.dp, LocalWiiRim.current.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
         ) {
             if (ctx.page == WinPage.MAIN && more) {
                 WiiMorePage(small, pal, compact, Modifier.fillMaxSize())
@@ -154,9 +169,10 @@ internal fun WiiChannelPreview(ctx: WinSceneCtx) {
                 }
                 Spacer(Modifier.height(if (compact) 4.dp else 6.dp))
             }
-            // Two prominent keys along the bottom: Wii Menu (back to the tile) and Start.
+            // Two prominent keys along the bottom: Channels (back to the tile) and Start.
+            // (Update 507: the key named the console maker's own menu; "Channels" says where B goes.)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Wii Menu", pal, Modifier.weight(1f), compact)
+                if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Channels", pal, Modifier.weight(1f), compact)
                 if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact)
             }
         } else {
@@ -189,12 +205,12 @@ private fun WiiMidKey(a: WinAction, pal: WiiPalette, modifier: Modifier, compact
     SceneControl(a, modifier) { on ->
         val s = RoundedCornerShape(if (tall) 16.dp else 50.dp)
         val body: @Composable () -> Unit = {
-            Icon(a.icon, null, tint = if (on) WiiBlue else pal.ink, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
+            Icon(a.icon, null, tint = if (on) LocalWiiRim.current else pal.ink, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
             Text(a.label, color = pal.ink, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
         val m = Modifier.fillMaxWidth().clip(s)
             .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
-            .border(if (on) 3.dp else 1.5.dp, if (on) WiiBlue else if (a.urgent) WiiBlue.copy(alpha = 0.7f) else pal.edge, s)
+            .border(if (on) 3.dp else 1.5.dp, if (on) LocalWiiRim.current else if (a.urgent) LocalWiiRim.current.copy(alpha = 0.7f) else pal.edge, s)
             .padding(horizontal = 12.dp, vertical = if (tall) (if (compact) 6.dp else 10.dp) else (if (compact) 4.dp else 6.dp))
         if (tall) Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) { body() }
         else Row(m, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) { body() }
@@ -208,7 +224,7 @@ private fun WiiBigKey(a: WinAction, label: String, pal: WiiPalette, modifier: Mo
         Box(
             Modifier.fillMaxWidth().clip(s)
                 .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
-                .border(if (on) 3.dp else 1.5.dp, if (on) WiiBlue else pal.edge, s)
+                .border(if (on) 3.dp else 1.5.dp, if (on) LocalWiiRim.current else pal.edge, s)
                 .padding(vertical = if (compact) 6.dp else 9.dp),
             contentAlignment = Alignment.Center
         ) {

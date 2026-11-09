@@ -37,6 +37,12 @@ object FrameWatch {
         val t = HandlerThread("voltcap-frames").also { it.start() }
         thread = t
         com.shelf.launcher.ui.QaTrace.init(activity)
+        // (Update 477, D252 triage, QA only: every change of Android's touch mode, with what holds the focus then.)
+        if (com.shelf.launcher.ui.QaTrace.on) runCatching {
+            activity.window.decorView.viewTreeObserver.addOnTouchModeChangeListener { inTouch ->
+                com.shelf.launcher.ui.QaTrace.event("touchmode", "$inTouch focus=${activity.currentFocus?.javaClass?.simpleName}")
+            }
+        }
         ignoreUntil = SystemClock.uptimeMillis() + GRACE_MS
         val l = Window.OnFrameMetricsAvailableListener { _, metrics, _ -> onFrame(metrics) }
         listener = l

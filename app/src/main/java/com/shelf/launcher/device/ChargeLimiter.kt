@@ -193,7 +193,8 @@ object ChargeLimiter {
 
     /** Call once (any time): listens to battery changes for as long as Voltcap's process lives. */
     fun start(context: Context) {
-        if (registered) return
+        // (Update 500: the isolated QA app never touches charging — the owner's Voltcap keeps that job.)
+        if (registered || com.shelf.launcher.data.QaVariant.isolated(context)) return
         registered = true
         val app = context.applicationContext
         Thread { runCatching { check(app, null) } }.start()

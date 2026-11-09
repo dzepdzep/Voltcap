@@ -402,6 +402,29 @@ internal fun layoutStandardLook(a: AppearanceSettings): AppearanceSettings {
     return out
 }
 
+/**
+ * Update 496 (D293 follow-up): when the home screen should bring a layout's standard look — only when the layout really
+ * changed (or Layout standard was just switched on). Not when the home screen first appears or is rebuilt (dual-screen
+ * switch, theme change) on the layout it already had, and not when a QA preview ends and your own layout comes back
+ * ([restored]): those re-applied the standard look over a look you had adjusted since, and saved it. One per process.
+ */
+internal object LayoutLookGate {
+    @Volatile private var layout: com.shelf.launcher.data.HomeLayout? = null
+    @Volatile private var on: Boolean? = null
+
+    fun due(now: com.shelf.launcher.data.HomeLayout, lookOn: Boolean): Boolean {
+        val first = layout == null
+        val changed = !first && (now != layout || (lookOn && on == false))
+        layout = now; on = lookOn
+        return lookOn && changed
+    }
+
+    /** The saved layout came back (a preview ended): it counts as the one already in place. */
+    fun restored(now: com.shelf.launcher.data.HomeLayout) { layout = now }
+
+    internal fun resetForTest() { layout = null; on = null }
+}
+
 /** Update 280: the layout's standard look, if Layout standard is on and [a] isn't in it yet (a layout was switched); else null. */
 internal fun layoutStandardIfDue(a: AppearanceSettings): AppearanceSettings? {
     if (!Features.lookFromLayout.value) return null

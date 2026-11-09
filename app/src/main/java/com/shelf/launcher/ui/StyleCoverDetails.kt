@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.imageLoader
+import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
@@ -101,6 +102,9 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
 }
 
 private const val SHELF_GAP_DP = 0.5f
+
+/** Update 487 (K1): the gap between Cover details' spines for its Game spacing [pct] (100 = the packed 0.5 dp). */
+internal fun coverShelfGapDp(pct: Int): Float = (SHELF_GAP_DP + 4f * (pct - 100) / 100f).coerceAtLeast(0f)
 private const val SHELF_MAX_SIDE = 46
 
 @Composable
@@ -217,49 +221,64 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
 private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val meta = c.state.metadata[g.stableKey]
-    Column(modifier, verticalArrangement = Arrangement.Center) {
-        StableFullText(
-            titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else 36.sp, fontWeight = FontWeight.Bold,
-            maxLines = 2, modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            titles.console(g.platform), color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.sp, lineHeight = 18.sp
-        )
-        Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-        // Label / value pairs, each only when there is a value.
-        val facts = buildList {
-            meta?.releaseYear?.let { add("Released" to it.toString()) }
-            meta?.developer?.takeIf { it.isNotBlank() }?.let { add("Developer" to it) }
-            meta?.publisher?.takeIf { it.isNotBlank() && it != meta.developer }?.let { add("Publisher" to it) }
-            meta?.genres?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { add("Genre" to it.take(3).joinToString(", ")) }
-            c.playtime(g)?.let { add("Played" to stylePlaytime(it, true)) }
-            c.progress(g)?.let { (e, t) -> add("Achievements" to "$e / $t") }
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for ((label, value) in facts) Column(Modifier.widthIn(max = 260.dp)) {
-                Text(label.uppercase(), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
-                Text(value, color = Color.White.copy(alpha = 0.92f), fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp)
+    val story = meta?.summary?.takeIf { it.isNotBlank() }
+    BoxWithConstraints(modifier) {
+        // Update 487 (D281, Thor 1080p): a two-line title and facts wrapped to two rows used the whole column and the story
+        // (lines = 0) was dropped. When the column is short and there is a story, the facts go on one line under the console
+        // (achievements beside the console) and the title is a little smaller, so the story keeps ≥ 3 whole lines.
+        val tight = !compact && story != null && maxHeight < coverDetailsTightBelow
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+            StableFullText(
+                titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else if (tight) 30.sp else 36.sp, fontWeight = FontWeight.Bold,
+                maxLines = 2, modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(4.dp))
+            val ach = c.progress(g)
+            Text(
+                if (tight && ach != null) titles.console(g.platform) + " · " + ach.first + " / " + ach.second + " achievements" else titles.console(g.platform),
+                color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp, lineHeight = 18.sp
+            )
+            Spacer(Modifier.height(if (compact) 8.dp else if (tight) 8.dp else 14.dp))
+            // Label / value pairs, each only when there is a value.
+            val facts = buildList {
+                meta?.releaseYear?.let { add("Released" to it.toString()) }
+                meta?.developer?.takeIf { it.isNotBlank() }?.let { add("Developer" to it) }
+                if (!tight) meta?.publisher?.takeIf { it.isNotBlank() && it != meta.developer }?.let { add("Publisher" to it) }
+                meta?.genres?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { add("Genre" to it.take(if (tight) 2 else 3).joinToString(", ")) }
+                if (!tight) c.playtime(g)?.let { add("Played" to stylePlaytime(it, true)) }
+                if (!tight) ach?.let { (e, t) -> add("Achievements" to "$e / $t") }
             }
-        }
-        val story = meta?.summary?.takeIf { it.isNotBlank() }
-        if (story != null) {
-            Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
-            // (Update 432: only as tall as the room left — a fixed 104 dp pushed the column past the stage on 1080p screens.)
-            val want = if (compact) 54.dp else 104.dp
-            val line = if (compact) 17.dp else 20.dp
-            Box(Modifier.weight(1f, fill = false)) {
-                BoxWithConstraints {
-                    // Whole lines only (Odin: a half line showed at the bottom edge).
-                    val lines = (minOf(want, maxHeight) / line).toInt()
-                    val room = line * lines
-                    if (lines >= 1) RollingStory(story, Color.White.copy(alpha = 0.8f), if (compact) 12.sp else 14.sp, if (compact) 17.sp else 20.sp, room)
+            if (tight) {
+                if (facts.isNotEmpty()) Text(
+                    facts.joinToString("  ·  ") { it.second }, color = Color.White.copy(alpha = 0.92f), fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium, lineHeight = 19.sp, maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis   // qa-ok: TRUNCATE (all facts on Details)
+                )
+            } else FlowRow(horizontalArrangement = Arrangement.spacedBy(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((label, value) in facts) Column(Modifier.widthIn(max = 260.dp)) {
+                    Text(label.uppercase(), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                    Text(value, color = Color.White.copy(alpha = 0.92f), fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Medium, lineHeight = 19.sp)
+                }
+            }
+            if (story != null) {
+                Spacer(Modifier.height(if (compact || tight) 8.dp else 14.dp))
+                // (Update 432: only as tall as the room left. Update 487 (D263, owner-approved): whole-line pages with a page
+                // count instead of the endless roll — never a half line, nothing moving while you read.)
+                val small = compact || tight
+                Box(Modifier.weight(1f, fill = false)) {
+                    PagedStory(
+                        story, Color.White.copy(alpha = 0.8f), if (small) 13.sp else 14.sp, if (small) 18.sp else 20.sp,
+                        maxLines = if (compact) 3 else 5, modifier = Modifier.fillMaxWidth(), auto = true
+                    )
                 }
             }
         }
     }
 }
+
+/** Update 487: below this column height (with a story) Cover details puts its facts on one line (D281). */
+internal val coverDetailsTightBelow = 270.dp
 
 /** What one spine on the shelf needs: its place's game, width and height in px. */
 private class ShelfSpine(val w: Float, val h: Float)
@@ -286,7 +305,8 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
     BoxWithConstraints(modifier.clipToBounds().onGloballyPositioned { CoverFlight.shelf = it.boundsInWindow() }) {
         val wPx = with(density) { maxWidth.toPx() }
         val spineHmax = with(density) { (shelfH * 0.80f).toPx() }
-        val gap = with(density) { SHELF_GAP_DP.dp.toPx() }
+        // (Update 487, K1: Layout options › Game spacing — 100 % is the packed shelf; each 10 % adds 0.4 dp.)
+        val gap = with(density) { coverShelfGapDp(Features.cdSpacing.state.value).dp.toPx() }
         val minW = with(density) { 12.dp.toPx() }
         val maxW = with(density) { 56.dp.toPx() }
         // A spine's size from its console: the real width / height of the case it came in.
@@ -393,6 +413,9 @@ internal fun CoverDetailsSettings() {
             "story beside it, and a shelf of upright spines along the bottom that glides as one row. ◀ ▶ move along the shelf, A or a tap opens the game, " +
             "swipe the shelf to move. The box faces you or stands turned like the others (Game look › The one you're on)."
     )
+    Spacer(Modifier.height(8.dp))
+    // Update 487 (K1): this layout's own room between the spines (100 % = packed, as before).
+    PercentSlider("Game spacing", Features.cdSpacing.state.value, { Features.cdSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
 }
 
 /**

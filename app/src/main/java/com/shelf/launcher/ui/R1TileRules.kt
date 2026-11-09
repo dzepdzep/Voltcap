@@ -91,6 +91,10 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
     return when (id) {
         // Layout, Sort, Edit home: every layout (the sort also orders Timeline's same-date / undated games).
         "layout", "sort", "edithome" -> R1Fit.Show
+        // Update 490 (R1 plan, owner-approved): Layout options — every layout has its options page. Game spacing — only the
+        // five layouts with a spacing of their own (R1Spacing); elsewhere no tile at all, never a dead one.
+        "layoutopts" -> R1Fit.Show
+        "spacing" -> on(R1Spacing.prefFor(l) != null)
         // Update 245: the game popup's style — only while A opens a game window at all (Settings › Home › Layout options ›
         // Game window); off, A starts the game, so the tile is greyed and says where to switch it back on.
         "popupstyle" -> if (com.shelf.launcher.data.Features.gameWindow.value) R1Fit.Show
@@ -296,7 +300,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
 internal val R1_RULED_TILES: Set<String> = setOf(
     "wifi", "dnd", "music", "saves", "navbar", "fps", "battery", "batterywatch", "saver", "mixer", "settings",
     "bt", "lights", "dual", "rescan", "scrape", "theme", "colors", "romm", "whoplays", "profile",
-    "layout", "sort", "edithome", "popupstyle", "musicspot", "roundshort", "corners",
+    "layout", "layoutopts", "spacing", "sort", "edithome", "popupstyle", "musicspot", "roundshort", "corners",
     "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "artdrop",
     "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
     "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"

@@ -233,6 +233,7 @@ fun SecondScreenHost(
                                         while (true) {
                                             awaitPointerEvent(PointerEventPass.Initial)
                                             SecondIdle.poke()
+                                            HomeIdle.touchedElsewhere() // (Update 511: brings settled effects back at once)
                                             com.shelf.launcher.data.BatterySaver.poke() // (Update 187: a touch here wakes a resting Voltcap)
                                             currentActivity()
                                         }

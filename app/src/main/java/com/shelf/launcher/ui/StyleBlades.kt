@@ -675,9 +675,10 @@ private fun BladeBadges(c: StyleCtx, g: Game) {
     if (list.isEmpty()) return
     val grey = remember { ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) }
     Spacer(Modifier.height(6.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        // The earned ones first (newest feeling of progress), then what's left.
-        val shown = (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(8)
+    // The earned ones first (newest feeling of progress), then what's left.
+    val shown = (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(8)
+    // (Update 503: the strip shows as one panel, BadgeWarm.kt.)
+    Row(Modifier.badgeSet(shown.mapNotNull { com.shelf.launcher.data.RaBadges.url(it.badgeName) }), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         shown.forEach { a ->
             val url = com.shelf.launcher.data.RaBadges.url(a.badgeName)
             Box(Modifier.size(26.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))) {
@@ -692,7 +693,7 @@ private fun BladeBadges(c: StyleCtx, g: Game) {
 
 @Composable
 private fun BladeSystems(c: StyleCtx, p: BladePalette, compact: Boolean, systems: List<Int>) {
-    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
+    val counts = categoryCounts(c)
     val row = BladesNav.sysRow.coerceIn(0, (systems.size - 1).coerceAtLeast(0))
     Column(Modifier.fillMaxSize()) {
         BladeTitle("Systems", "${systems.size} in your library", p, compact)
@@ -912,7 +913,7 @@ private fun BladeGamerCard(c: StyleCtx, p: BladePalette) {
             FullText(prof?.User ?: c.state.raUsername ?: "Player", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = ink)
             FullText(
                 listOfNotNull(prof?.TotalPoints?.let { "$it points" }, stats.mastered.takeIf { it > 0 }?.let { "$it mastered" }, stylePlaytime(total.takeIf { it > 0 }, true).takeIf { total > 0 }?.let { "$it played" })
-                    .joinToString("  ·  ").ifEmpty { "${c.state.games.size} games" },
+                    .joinToString("  ·  ").ifEmpty { "${libraryCount(c)} games" },
                 color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 1, style = ink
             )
         }

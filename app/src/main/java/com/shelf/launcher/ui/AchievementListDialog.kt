@@ -174,6 +174,7 @@ fun AchievementListDialog(
         subtitle = game.name,
         onDismiss = onDismiss,
         maxContentHeightFraction = 0.7f,
+        layoutAware = true, // (Update 493: Layout-aware windows, phase 1)
         footer = {
             if (onOpenHub != null) Chip("All games", accent = false) { onOpenHub() }
             Chip("Close", onClick = onDismiss)
@@ -238,7 +239,7 @@ fun AchievementListDialog(
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(Color.White.copy(alpha = 0.12f))
+                            .background(inkTint(0.12f))
                     ) {
                         Box(
                             Modifier
@@ -450,7 +451,7 @@ private fun AchievementRow(
                 Modifier
                     .size(38.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(inkTint(0.08f))
             )
         }
         Spacer(Modifier.width(12.dp))
@@ -511,7 +512,7 @@ private fun AchievementArea(content: @Composable () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
-            .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(com.shelf.launcher.ui.theme.Ds.rLarge))
+            .background(inkTint(0.03f), RoundedCornerShape(com.shelf.launcher.ui.theme.Ds.rLarge))
             .achievementBackdrop(style, if (style.animatedBackdrop) phase else 0f)
             .padding(start = 10.dp, end = 10.dp, top = room, bottom = 14.dp)
     ) { content() }

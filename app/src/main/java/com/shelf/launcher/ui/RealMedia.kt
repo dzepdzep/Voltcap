@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.ensureActive
 import androidx.compose.foundation.Image
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
@@ -304,17 +305,32 @@ internal object FlatArt {
         return true
     }
 
-    /** Every pixel of a 7 × 7 grid within a few levels of the first (a picture of anything has some variation). */
+    /**
+     * Every pixel of a 32 × 32 filtered copy within a few levels of the middle one (a picture of anything has some variation).
+     * Update 514: it was 7 × 7 single pixels of the picture itself — a cover of one colour with thin lines or small writing (a
+     * plain sleeve with its logo; the QA fixture's numbered cards) fell between them, counted as a stand-in, and its 3D case
+     * showed a blank front (Retroid Nova, 16:9 art). The filtered copy averages every part of the picture in; a real one-colour
+     * stand-in is still one colour.
+     */
     fun flat(b: android.graphics.Bitmap): Boolean = runCatching {
         if (b.width < 8 || b.height < 8) return false
         val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
-        val first = soft.getPixel(soft.width / 2, soft.height / 2)
-        for (i in 0..6) for (j in 0..6) {
-            val px = soft.getPixel((soft.width - 1) * i / 6, (soft.height - 1) * j / 6)
-            for (sh in intArrayOf(0, 8, 16, 24)) if (kotlin.math.abs(((px shr sh) and 255) - ((first shr sh) and 255)) > 6) return false
-        }
-        true
+        val small = android.graphics.Bitmap.createScaledBitmap(soft, FLAT_GRID, FLAT_GRID, true)
+        val px = IntArray(FLAT_GRID * FLAT_GRID)
+        small.getPixels(px, 0, FLAT_GRID, 0, 0, FLAT_GRID, FLAT_GRID)
+        if (small !== soft) small.recycle()
+        flatPixels(px)
     }.getOrDefault(false)
+
+    private const val FLAT_GRID = 32
+
+    /** (Update 514, pure for the unit test:) every pixel within 6 levels of the middle one, alpha included. */
+    internal fun flatPixels(px: IntArray): Boolean {
+        if (px.isEmpty()) return false
+        val first = px[px.size / 2]
+        for (p in px) for (sh in intArrayOf(0, 8, 16, 24)) if (kotlin.math.abs(((p shr sh) and 255) - ((first shr sh) and 255)) > 6) return false
+        return true
+    }
 }
 
 /** Update 208: [this] without the pictures found to be flat-colour stand-ins ([FlatArt]); the same list when there are none. */
@@ -414,7 +430,9 @@ internal fun case3dModels(g: com.shelf.launcher.data.Game, cover: String?, scans
     val f = com.shelf.launcher.data.Features
     val scans = scans0.withoutFlat()
     // (Update 235, #24: not with a cover you picked for the game — its cover is the case front, see UserCovers.)
-    val front = (if (realFront && UserCovers.of(g.stableKey) == null && f.originalCases.state.value && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
+    // (Update 485: as Case3D — a cover whose shape is over 8 % off the case's gives way to the box-front scan.)
+    val coverOff = CoverAspects.rawOf(cover)?.let { a -> val c = case3dAspect(g, false); a > 0f && c > 0f && kotlin.math.abs(a / c - 1f) > 0.08f } == true
+    val front = (if (((realFront && UserCovers.of(g.stableKey) == null && f.originalCases.state.value) || coverOff) && !LookStyles.caseForAll() && !androidOwnCase(g.platform))
         BoxTexture.front(scans, g.platform) else null) ?: cover
     val spine = if (LookStyles.spineForAll()) null
         else scans?.firstOrNull { it.first == "Spine" }?.second ?: if (f.originalCases.state.value) BoxTexture.spine(scans, g.platform) else null
@@ -449,6 +467,27 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
     // at most [WARM_REACH_MAX] cases ahead in the direction you move and one behind, fronts and spines only (a back shows
     // only once a case is turned), and the pictures it decoded for cases that are now far away are let go — WarmWindow.)
     val window = androidx.compose.runtime.remember { WarmWindow() }
+    // (Update 489, K4: the named spines of the cases ahead — nearest first, through the same bounded cache (SpineCache,
+    // ~118 kept). 489b: in their own effect, before and apart from the pictures: a held D-pad moves faster than the case
+    // pictures decode, so behind them the spines were never reached (Thor: 11 of 80 still shown nameless).)
+    val spineWindow = androidx.compose.runtime.remember { WarmWindow() }
+    androidx.compose.runtime.LaunchedEffect(focus, games) {
+        if (games.isEmpty() || TestHooks.warmMode == "off" || TestHooks.warmMode == "nospines") return@LaunchedEffect
+        val idx = spineWindow.indices(focus, SPINE_AHEAD, games.size, loop)
+            .sortedBy { i -> val d = kotlin.math.abs(i - focus); if (loop) minOf(d, games.size - d) else d }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            for (g in idx.map { games[it] }.distinct()) {
+                ensureActive()
+                val res = case3dSpineRes(g.platform) ?: continue
+                if (OwnSpines.isOwn(res)) continue
+                val title = gameDisplayName(g.name)
+                val key = SpineCache.key(res, false, title, com.shelf.launcher.data.Packs.version.intValue)
+                if (SpineCache.peekTitled(key) != null) continue
+                SpineCache.titled(context, res, title, false, key)
+                QaTrace.event("spine ahead", title.take(24))
+            }
+        }
+    }
     androidx.compose.runtime.LaunchedEffect(focus, games, realFront) {
         if (games.isEmpty() || TestHooks.warmMode == "off") return@LaunchedEffect
         kotlinx.coroutines.delay(40)
@@ -468,6 +507,9 @@ internal fun WarmCaseNeighbours(c: StyleCtx, focus: Int, reach: Int, loop: Boole
 
 /** Update 461 (D137): the largest number of cases decoded ahead of the one in focus. */
 internal const val WARM_REACH_MAX = 6
+
+/** Update 489b (K4): how many named spines ahead of the scroll [WarmCaseNeighbours] makes (cheap; same bounded cache). */
+internal const val SPINE_AHEAD = 8
 
 /**
  * Update 461 (D137): which cases [WarmCaseNeighbours] decodes and which of its pictures it lets go (pure apart from its own
@@ -773,7 +815,17 @@ internal fun CaseArt(
     // cover whose shape wasn't known yet stayed whole until some other view had measured it. Both are measured now — a
     // small decode, only while the shape isn't known.)
     val cover = rememberWrapFront(cover0, LookStyles.casePlatform(platform), decode = true)
-    val caseScan = if (forAll || UserCovers.isPicked(cover0)) null else rememberWrapFront(scan, LookStyles.casePlatform(platform), decode = true)
+    // (Update 485, KONKR — Pokémon Silver in Case stacks: a cover you picked whose shape is far off the case's (a portrait
+    // SteamGridDB grid on the square Game Boy Color box) was cut to it — its top and its "SILVER VERSION" foot lost. As in
+    // Case3D (update 317's rule: over 8 % off), the game's box scan is the front then; a picked cover of the box's shape
+    // stays the front as before.)
+    // (Callers hand no scan with a picked cover — typedArtFor, update 235 — so the game's own box-front scan is looked up here.)
+    val pickedOff = UserCovers.isPicked(cover0) && (cover0 as? String)?.let { CoverAspects.rawOf(it) }
+        ?.let { a -> realCaseMm(casePlatform)?.let { (w, h) -> a > 0f && w > 0f && h > 0f && kotlin.math.abs(a / (w / h) - 1f) > 0.08f } } == true
+    val ownScan = if (pickedOff && scan == null && game != null && !forAll && !androidOwnCase(platform))
+        remember(game.stableKey, physical) { BoxTexture.front(physical ?: HomeScans.of(game.stableKey), platform) } else null
+    val scanUse = scan ?: ownScan
+    val caseScan = if (forAll || (UserCovers.isPicked(cover0) && (!pickedOff || scanUse == null))) null else rememberWrapFront(scanUse, LookStyles.casePlatform(platform), decode = true)
     val caseSpine = if (forAll) null else spine
     val mm = if (real != null) realCaseMm(casePlatform) else null
     // Update 141: in another console's case, only its shape — no branding — and the game's own console's logo.
@@ -872,7 +924,7 @@ internal fun rememberWrapFront(cover: Any?, platform: String?, decode: Boolean =
     val bmp = if (decode && known == null) rememberSoftBitmap(s, 160) else null
     if (known == null && bmp != null) androidx.compose.runtime.SideEffect { CoverAspects.note(s, bmp.width.toFloat(), bmp.height.toFloat()) }
     val raw = known ?: bmp?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: return cover
-    return if (raw > real * UNFOLDED_SCAN) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
+    return if (looksUnfolded(raw, real)) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
 }
 
 /** The case alone (as set: flat official case, 3D box, box turned to its spine, disc in its case). */

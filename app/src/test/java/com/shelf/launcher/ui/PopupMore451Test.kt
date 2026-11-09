@@ -12,7 +12,9 @@ class PopupMore451Test {
             assertTrue("$s gets More", s in MORE_SCENES)
         // Their own compact designs / menu lists stay as they are.
         for (s in listOf(WinScene.WII_PREVIEW, WinScene.CINEMA_PREMIERE, WinScene.ARCTIC_DRAWER, WinScene.BUBBLE_CARD, WinScene.CARD_BACK,
-            WinScene.MEMCARD_INFO, WinScene.AIRY_PANEL, WinScene.CROSS_OPTIONS, WinScene.ARCADE_MENU, WinScene.TERM_RUN))
+            WinScene.MEMCARD_INFO, WinScene.CROSS_OPTIONS, WinScene.ARCADE_MENU, WinScene.TERM_RUN))
+        // (Update 477, D266, owner: Airy's round keys took two rows on the KONKR and hid facts — Airy now has More, its
+        // secondary keys open in the panel's well: Airy477Test.)
             assertFalse("$s keeps its own window", s in MORE_SCENES)
     }
 

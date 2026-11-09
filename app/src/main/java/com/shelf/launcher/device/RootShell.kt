@@ -38,7 +38,8 @@ object RootShell {
     @Volatile private var cached: IBinder? = null
     @Volatile private var lastLookup = 0L
 
-    private fun lookup(): IBinder? = runCatching {
+    private fun lookup(): IBinder? = if (com.shelf.launcher.data.QaVariant.isolatedNow) null else runCatching {
+        // (Update 500: the isolated QA app never runs root commands — clocks, fans, charging stay the owner's Voltcap's.)
         val sm = Class.forName("android.os.ServiceManager")
         sm.getDeclaredMethod("getService", String::class.java).invoke(null, "PServerBinder") as? IBinder
     }.getOrNull()

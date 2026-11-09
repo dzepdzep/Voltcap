@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.shelf.launcher.ui
 
 import com.shelf.launcher.data.categoryBarHere
@@ -6,6 +8,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -169,6 +172,28 @@ private val CATEGORIES = listOf(
     SettingsCategory("Updates & downloads", "Voltcap's version, checking GitHub for a new one and installing it, and the extra art packs (cartridges, spines, discs, 3D models).", Icons.Filled.SystemUpdate),
 )
 
+/**
+ * Update 490 (owner-approved S1, read-only grouping): headers over the sidebar in the order it already has — each group is
+ * a run of neighbouring categories, nothing moved, renamed or reset. A group starts at the category named here.
+ * (Music & sound sits with Achievements and Controls, not under System.)
+ */
+internal val SETTINGS_GROUPS: List<Pair<String, String>> = listOf(
+    "Look" to "Home",                     // Home, Game look, Theme, Screensaver, Categories
+    "Play & sound" to "Achievements",     // Achievements, Music & sound, Controls
+    "Library & launching" to "Library",   // Library, Accounts, Emulators, Screens, Metadata
+    "While you play" to "Performance",    // Performance, Overlay
+    "System & data" to "Sync"             // Sync, Permissions, Device, Diagnostics, Backup, Updates & downloads
+)
+
+/** Update 490: the group header a category sits under ([SETTINGS_GROUPS]); null before the first group starts. */
+internal fun settingsGroupOf(label: String, order: List<String> = SETTINGS_CATEGORY_NAMES): String? {
+    val i = order.indexOf(label).takeIf { it >= 0 } ?: return null
+    return SETTINGS_GROUPS.filter { (_, first) -> order.indexOf(first).let { it in 0..i } }.maxByOrNull { order.indexOf(it.second) }?.first
+}
+
+/** Update 490: the group whose first category this is, for its header in the sidebar. */
+private fun settingsGroupStartingAt(label: String): String? = SETTINGS_GROUPS.firstOrNull { it.second == label }?.first
+
 /** QA (RP Classic pass): the category names, for the explorer to open each one directly (QaExplore "SETTINGS"). */
 internal val SETTINGS_CATEGORY_NAMES: List<String> get() = CATEGORIES.map { it.label }
 
@@ -291,6 +316,10 @@ fun SettingsDialog(
     }
     // Settings search (the box in the header): while it has text, the results replace the page.
     var searchQuery by remember { mutableStateOf("") }
+    // (Update 490, QA builds only: a query typed into this same box by the test hook — the search itself is unchanged.)
+    androidx.compose.runtime.LaunchedEffect(TestHooks.settingsSearch.value) {
+        TestHooks.settingsSearch.value?.let { searchQuery = it; TestHooks.settingsSearch.value = null }
+    }
     // (Update 148: a search jump that finds nothing on the page gives up after a moment, so the groups close again.)
     LaunchedEffect(SettingsJump.pending) {
         if (SettingsJump.pending != null) { kotlinx.coroutines.delay(2_000); SettingsJump.pending = null }
@@ -353,6 +382,7 @@ fun SettingsDialog(
             contentAlignment = Alignment.Center
         ) {
         val compact = maxWidth < 640.dp || maxHeight < 440.dp
+        val winStyle = WindowLook.current()
         Box(
             Modifier
                 // (Update 261: a D-pad press before the page's entry has the focus goes to that entry, not the list's top.)
@@ -364,9 +394,9 @@ fun SettingsDialog(
                 }
                 .fillMaxWidth(if (compact) 0.98f else 0.94f)
                 .fillMaxHeight(if (compact) 0.96f else 0.94f)
-                .voltSurface(uiRounded(if (compact) 16.dp else 24.dp), base = ShelfTheme.colors.surface)
-                .border(1.dp, Color.White.copy(alpha = 0.08f), uiRounded(if (compact) 16.dp else 24.dp))
-        ) {
+                // (Update 493: the frame follows the home layout when that's switched on — WindowLook; as before otherwise.)
+                .windowFrame(winStyle, uiRounded(WindowLook.corner(winStyle, if (compact) 16.dp else 24.dp, compact, com.shelf.launcher.data.Features.pixelUi.value)))
+        ) { WindowColors(winStyle) {
             Column(Modifier.fillMaxSize()) {
                 // Header: icon badge + title + subtitle, close button at the end.
                 // (Update 144: one slim bar — the description on one line, everything centred — so the settings themselves
@@ -435,15 +465,28 @@ fun SettingsDialog(
                                 .padding(16.dp)
                         ) {
                             CATEGORIES.forEach { entry ->
-                                Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
+                                // (Update 490, S1: a group's header above its first category — text only, never focused. When that
+                                // category gets the focus its header is brought into view with it, so ▲ back to the top shows "Look".)
+                                val groupTitle = settingsGroupStartingAt(entry.label)
+                                val groupView = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+                                val groupScope = androidx.compose.runtime.rememberCoroutineScope()
+                                Column(Modifier.then(if (groupTitle != null) Modifier.bringIntoViewRequester(groupView) else Modifier)) {
+                                groupTitle?.let { g -> SettingsGroupHeader(g, first = entry == CATEGORIES.first()) }
+                                Box(
+                                    (if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier)
+                                        .then(if (groupTitle != null) Modifier.onFocusChanged { f ->
+                                            if (f.hasFocus) groupScope.launch { kotlinx.coroutines.delay(120); runCatching { groupView.bringIntoView() } }
+                                        } else Modifier)
+                                ) {
                                     NavItem(entry, selected = entry == category) { category = entry }
+                                }
                                 }
                                 Spacer(Modifier.height(4.dp))
                             }
                         }
 
                         if (VoltUi.on) VoltageLine(Modifier.fillMaxHeight(), vertical = true)
-                        else Box(Modifier.fillMaxHeight().width(1.dp).background(Color.White.copy(alpha = 0.08f)))
+                        else Box(Modifier.fillMaxHeight().width(1.dp).background(inkTint(0.08f)))
                     }
 
                     // Content pane.
@@ -455,17 +498,27 @@ fun SettingsDialog(
                         if (compact) {
                             // (Update 294: whole chips only, "+N ›" for the rest; the page you're on, or the chip with the
                             // D-pad's focus, always whole — WholeChipRow.)
+                            // (Update 490, S1: the group of the page you're on, in front of the chips — compact screens have no sidebar.)
+                            // (The chip with the D-pad's focus decides, so ◀ ▶ along the chips show the group they reach.)
+                            var chipFocus by remember(category) { mutableStateOf(-1) }
+                            Row(Modifier.fillMaxWidth().padding(start = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            settingsGroupOf((CATEGORIES.getOrNull(chipFocus) ?: category).label)?.let { g ->
+                                Text(g, color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.width(84.dp))
+                            }
                             WholeChipRow(
                                 CATEGORIES.size, CATEGORIES.indexOf(category),
-                                Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), spacing = 6.dp,
+                                Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp), spacing = 6.dp,
                                 hintColor = ShelfTheme.textMuted
                             ) { ci ->
                                     val entry = CATEGORIES[ci]
-                                    Box(if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier) {
+                                    Box((if (entry == category) Modifier.focusRequester(openFocus).then(openFocusMod) else Modifier)
+                                        .onFocusChanged { f -> if (f.hasFocus) chipFocus = ci else if (chipFocus == ci) chipFocus = -1 }) {
                                         // Update 202: the compact chips get the update dot as a "•" after the name.
                                         val dot = entry.label == "Updates & downloads" && com.shelf.launcher.data.AppUpdates.hasNews()
                                         Chip(entry.label + (if (dot) " •" else ""), accent = entry == category) { category = entry }
                                     }
+                            }
                             }
                             ThinDivider()
                         }
@@ -613,6 +666,9 @@ fun SettingsDialog(
                                     SecondScreenExtras(appearance, onAppearanceChange, hasSecondScreen)
                                     // Update 188.
                                     if (hasSecondScreen) {
+                                        // D3 (update 485): its own brightness, apart from the main screen's.
+                                        Spacer(Modifier.height(12.dp))
+                                        ShelfCard { SecondBrightnessChoice() }
                                         Spacer(Modifier.height(12.dp))
                                         FoldGroup("Dim the second screen", summary = "When nobody uses it, also during a game", key = "second_dim") { ShelfCard { SecondDimSettings() } }
                                     }
@@ -701,7 +757,7 @@ fun SettingsDialog(
                     }
                 }
             }
-        }
+        } }
         }
     }
 }
@@ -819,6 +875,21 @@ private fun HomeContent(
         }
     }
     CollapsibleSection("Animations") {
+            // Update 480 (B4): one level for every transition — popups, Settings, R1, categories, drawer, profile picker, Details,
+            // More / Less, dialogs (MotionLevel.kt). Each keeps its own design; only how much time it takes changes.
+            ShelfCard {
+                val F = com.shelf.launcher.data.Features
+                RowChoice("Motion", com.shelf.launcher.data.Features.Motion.values(), F.motion.state.value, { it.label }) { F.motion.value = it }
+                MutedNote(
+                    when (F.motion.state.value) {
+                        com.shelf.launcher.data.Features.Motion.OFF -> "Windows, menus and pages appear at once. Long names still slide so you can read them; the layouts' own scenes keep moving."
+                        com.shelf.launcher.data.Features.Motion.SUBTLE -> "The same animations, quicker and calmer."
+                        com.shelf.launcher.data.Features.Motion.NORMAL -> "Every animation as designed."
+                        com.shelf.launcher.data.Features.Motion.EXPRESSIVE -> "The same animations with more time to play out."
+                    } + " Android's \"Remove animations\" always turns them off."
+                )
+            }
+            Spacer(Modifier.height(8.dp))
             // Update 137: moving between games, first and in one place (the wide place's change used to just appear).
             ShelfCard {
                 SectionLabel("Moving between games")
@@ -949,6 +1020,14 @@ private fun HomeContent(
                     MutedNote("When you move to another game: its name, info and panels rise softly into place, fade in, or just appear.")
                     Spacer(Modifier.height(6.dp))
                     RiseInPreview(cur)
+                } }
+            }
+            // Update 507: the layouts' own popup windows, apart from the game's info above.
+            item { m ->
+                Box(m) { ShelfCard {
+                    val F = com.shelf.launcher.data.Features
+                    RowChoice("Popup windows", com.shelf.launcher.data.Features.PopupAnim.values(), F.popupAnim.state.value, { it.label }) { F.popupAnim.value = it }
+                    MutedNote("A layout's own game window: it opens and closes with its layout's own motion (the case comes forward, the disc slides out…), or instantly. Motion Off and Android's Remove animations always make it instant.")
                 } }
             }
             item { m ->
@@ -1152,6 +1231,8 @@ private fun ThemeContent(
         FoldGroup("Themes", summary = currentTheme.label, key = "theme_browser", startOpen = true) {
             ShelfCard {
                 ColorsFollowRow(currentTheme)
+                // (Update 490, display only: where the colours on screen come from now.)
+                ColorOriginLine()
                 Spacer(Modifier.height(10.dp))
                 ThemeSwatches(currentTheme, onSelectTheme)
             }
@@ -2986,6 +3067,15 @@ private fun <T> ToggleChips(
     }
 }
 
+/** Update 490 (S1): a sidebar group header — small muted text, not focusable, so the D-pad still steps category to category. */
+@Composable
+private fun SettingsGroupHeader(title: String, first: Boolean) {
+    Text(
+        title.uppercase(), color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
+        modifier = Modifier.padding(start = 14.dp, top = if (first) 0.dp else 10.dp, bottom = 4.dp)
+    )
+}
+
 @Composable
 private fun NavItem(entry: SettingsCategory, selected: Boolean, onClick: () -> Unit) {
     com.shelf.launcher.Breadcrumbs.mark("NavItem")
@@ -3314,7 +3404,7 @@ private fun ScenePickerTile(label: String, selected: Boolean, theme: AppTheme?, 
                 .background(ShelfTheme.colors.surfaceRaised)
                 .border(
                     width = if (selected) 2.dp else 1.dp,
-                    color = if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.15f),
+                    color = if (selected) ShelfTheme.accent else winTint(0.15f),
                     shape = shape
                 ),
             contentAlignment = Alignment.Center
@@ -3558,6 +3648,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
         SectionLabel(appearance.homeLayout.label)
         MutedNote("The options of the layout in use. Another layout: Home › Layout & presets. Each layout keeps its own card size and spacing.")
         Spacer(Modifier.height(8.dp))
+        // Update 480 (C2): this layout's own colours over the theme's.
+        LayoutColorsGroup(appearance.homeLayout)
         // Update 358 (Toni): Tile home's Switch style, on by default (TileSwitch.kt); off is Tile home as before.
         if (tileLayout) {
             val F = com.shelf.launcher.data.Features
@@ -3569,6 +3661,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                     Icons.Filled.SportsEsports, "Switch style",
                     "Tile home dressed like a console home menu. Off: Tile home's own look as before. Your round buttons keep their size.",
                     F.tileSwitch.state.value, { F.tileSwitch.value = it }
+                )
+                // Update 480 (D257).
+                SwitchRow(
+                    Icons.Filled.Info, "Game facts under the tiles",
+                    "With the tiles in the middle and no round buttons under them: the console, time played, last played and achievements of the game you're on, and slightly bigger tiles.",
+                    F.tileInfoStrip.state.value, { F.tileInfoStrip.value = it }
                 )
                 if (F.tileSwitch.state.value) {
                     SwitchRow(
@@ -3744,6 +3842,12 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             GameSizeSlider(appearance, onChange)
             Spacer(Modifier.height(8.dp))
         }
+        // Update 488 (K1): Tile home's own room between the tiles (100 % = as before).
+        if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) {
+            PercentSlider("Game spacing", com.shelf.launcher.data.Features.tilesSpacing.state.value,
+                { com.shelf.launcher.data.Features.tilesSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
+            Spacer(Modifier.height(8.dp))
+        }
         // The style homes (Dashboard, Live tiles, Side menu, Cross menu, Spotlight, Icon bar): each its own options (StyleHomeSettings.kt).
         if (appearance.homeLayout.styleHome) FoldGroup(
             "${appearance.homeLayout.label} options", summary = styleHomeSummary(appearance.homeLayout),
@@ -3850,6 +3954,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             RowChoice("Game you're on", com.shelf.launcher.data.FocusPosition.values(), appearance.focusPosition, { it.label }) {
                 onChange(appearance.copy(focusPosition = it))
             }
+            // Update 488 (K1): the Voltcap row's own room between the games (100 % = as before).
+            if (appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC) PercentSlider(
+                "Game spacing", com.shelf.launcher.data.Features.rowSpacing.state.value,
+                { com.shelf.launcher.data.Features.rowSpacing.value = it.coerceIn(50, 300) }, min = 50, max = 300, valueText = { "$it%" }
+            )
             // "Wide for the first game only" makes sense only with the game you're on at the left end.
             val leftEnd = appearance.focusPosition == com.shelf.launcher.data.FocusPosition.LEFT
             RowChoice(
@@ -4254,15 +4363,28 @@ private fun HomeExtrasCard(appearance: AppearanceSettings, onChange: (Appearance
                 modifier = m
             )
         }
+        // Update 479 (B3): one choice — Follow layout / Always / Minimal / Hidden ("Hidden" is the old switch turned off).
         item { m ->
-            SwitchRow(
-                icon = Icons.Filled.Palette,
-                title = "Status bar",
-                subtitle = "Clock, battery, Wi-Fi, search and your profile along the top.",
-                checked = appearance.showStatusBar,
-                onChange = { onChange(appearance.copy(showStatusBar = it)) },
-                modifier = m
-            )
+            Box(m) { ShelfCard {
+                val F = com.shelf.launcher.data.Features
+                val modes = arrayOf("Follow layout", "Always", "Minimal", "Hidden")
+                val now = if (!appearance.showStatusBar) "Hidden" else F.statusMode.state.value.label
+                RowChoice("Status bar", modes, now, { it }) { pick ->
+                    if (pick == "Hidden") onChange(appearance.copy(showStatusBar = false))
+                    else {
+                        F.statusMode.value = com.shelf.launcher.data.Features.StatusMode.values().first { it.label == pick }
+                        if (!appearance.showStatusBar) onChange(appearance.copy(showStatusBar = true))
+                    }
+                }
+                MutedNote(
+                    when (now) {
+                        "Follow layout" -> "Each layout decides: the full bar (clock, battery, Wi-Fi, search, your profile) on most, just the clock and battery over Cinema's and Arctic's pictures, and none where a layout has its own bar."
+                        "Always" -> "The full bar on every layout that doesn't draw its own: clock, battery, Wi-Fi, search and your profile."
+                        "Minimal" -> "Just the clock and the battery, everywhere."
+                        else -> "No status bar. The layouts' own clocks and bars stay."
+                    }
+                )
+            } }
         }
         // Update 333: the status bar dressed for each layout (StatusLooks.kt); off: the plain shade everywhere.
         item { m ->
@@ -5082,10 +5204,10 @@ private fun ColorDot(argb: Int?, selected: Boolean, onClick: () -> Unit) {
         Modifier
             .size(34.dp)
             .clip(CircleShape)
-            .background(argb?.let { Color(it) } ?: Color.White.copy(alpha = 0.08f))
+            .background(argb?.let { Color(it) } ?: winTint(0.08f))
             .border(
                 if (selected) 3.dp else 1.dp,
-                if (selected) ShelfTheme.colors.textPrimary else Color.White.copy(alpha = 0.2f),
+                if (selected) ShelfTheme.colors.textPrimary else winTint(0.2f),
                 CircleShape
             )
             .shelfClickable(CircleShape) { onClick() },
@@ -5316,7 +5438,7 @@ private fun ProgressRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null)
                     .fillMaxWidth()
                     .height(5.dp)
                     .clip(uiRounded(3.dp))
-                    .background(Color.White.copy(alpha = 0.12f))
+                    .background(winTint(0.12f))
             ) {
                 Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(ShelfTheme.accent))
             }

@@ -25,6 +25,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -67,8 +68,8 @@ internal fun PocketPopup(ctx: WinSceneCtx) = when (LocalSceneLayout.current) {
 
 @Composable
 internal fun ShelfFamilyPopup(ctx: WinSceneCtx) = when (LocalSceneLayout.current) {
-    HomeLayout.SHELF -> ShelfPanel(ctx)
-    HomeLayout.STACKS -> StackPanel(ctx)
+    HomeLayout.SHELF -> GameShelfWindow(ctx)
+    HomeLayout.STACKS -> CaseStackWindow(ctx)
     HomeLayout.CONSOLES -> ConsoleModule(ctx)
     HomeLayout.COVERDETAILS -> CoverDetailPanel(ctx)
     else -> IndexCard(ctx)
@@ -104,25 +105,31 @@ private fun ColumnScope.FactsAndKeys(ctx: WinSceneCtx, label: Color, value: Colo
 
 @Composable
 private fun PocketClassicMenu(ctx: WinSceneCtx) {
-    val blue = Color(0xFF4A78CF); val paper = Color(0xFFFCFCFD); val ink = Color(0xFF2B2D33); val rule = Color(0xFFC9D3E6)
+    val paper = Color(0xFFFCFCFD); val ink = Color(0xFF2B2D33)
+    // (Update 505: the title bar, frame and the key you're on in Pocket classic's own accent (Layout options › Accent, or the
+    // theme's; your accent when this layout has its own colours) — as the home's top bar, clock hand and today's date — was a
+    // fixed blue; the rule a pale tint of it.)
+    val own = pocketAccent(runCatching { PocketAccent.valueOf(com.shelf.launcher.data.Features.classicAccent.state.value) }.getOrDefault(PocketAccent.BLUE))
+    val blue = sceneLit(HomeLayout.POCKET_CLASSIC, own, paper)
+    val rule = androidx.compose.ui.graphics.lerp(blue, paper, 0.72f)
     val font = pocketFont()
     val w = minOf(ctx.maxW, 500.dp)
     Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, squash = true)
         .clip(RoundedCornerShape(4.dp)).background(paper).border(2.dp, rule, RoundedCornerShape(4.dp))) {
         // The title bar of the handheld's own menu.
         Row(Modifier.fillMaxWidth().background(blue).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(ctx.console.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
-            ctx.year?.let { Text(it, color = Color.White, fontSize = 13.sp, fontFamily = font) }
+            Text(ctx.console.uppercase(), color = onColour(blue), fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
+            ctx.year?.let { Text(it, color = onColour(blue), fontSize = 13.sp, fontFamily = font) }
         }
         Column(Modifier.padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                ArtWell(ctx.cover, Modifier.size(64.dp), blue, Color(0xFFE6ECF7), RoundedCornerShape(2.dp))
+                ArtWell(ctx.cover, Modifier.size(64.dp), blue, androidx.compose.ui.graphics.lerp(blue, paper, 0.88f), RoundedCornerShape(2.dp))
                 Spacer(Modifier.width(10.dp))
                 StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 3, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             }
             Box(Modifier.padding(vertical = 7.dp).fillMaxWidth().height(2.dp).background(rule))
             FactsAndKeys(ctx, blue, ink, font) { a ->
-                SceneKey(a, paper, blue, ink, Color.White, rule, blue, RoundedCornerShape(2.dp), font = font, size = 13.sp, pad = 8.dp, height = 28.dp)
+                SceneKey(a, paper, blue, ink, onColour(blue), rule, blue, RoundedCornerShape(2.dp), font = font, size = 13.sp, pad = 8.dp, height = 28.dp)
             }
         }
     }
@@ -205,51 +212,11 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
 
 // ───────────────────────────── Game shelf ─────────────────────────────
 
-@Composable
-private fun ShelfPanel(ctx: WinSceneCtx) {
-    val a = ctx.accent; val cream = Color(0xFFF1E6D3); val label = Color(0xFFC9A57A); val wood = Color(0xFF2A2018)
-    val w = minOf(ctx.maxW, 640.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx).clip(RoundedCornerShape(6.dp))
-        .background(Brush.verticalGradient(listOf(Color(0xFF2E241B), Color(0xFF1B1510))))) {
-        // The shelf's lip along the top.
-        Box(Modifier.fillMaxWidth().height(6.dp).background(Brush.verticalGradient(listOf(Color(0xFF6B5039), Color(0xFF3E2E21)))))
-        Row(Modifier.padding(14.dp)) {
-            // The case brought forward off the shelf: its spine edge and its front.
-            Row(Modifier.width(minOf(w * 0.3f, 170.dp)).aspectRatio(0.7f)) {
-                Box(Modifier.fillMaxHeight().width(8.dp).background(Brush.horizontalGradient(listOf(Color(0xFF0E0B08), Color(0xFF2A2119)))))
-                ArtWell(ctx.cover, Modifier.weight(1f).fillMaxHeight(), Color(0xFF0E0B08), wood, RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp), crop = true)
-            }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                StableFullText(ctx.name, color = cream, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
-                Text(ctx.console, color = a, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
-                FactsAndKeys(ctx, label, cream, null) { k ->
-                    SceneKey(k, Color(0xFF3A2D21), a, cream, onColour(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
-                }
-            }
-        }
-    }
-}
+// (Update 507: ShelfPanel replaced — WinSceneFamilies.kt.)
 
 // ───────────────────────────── Case stacks ─────────────────────────────
 
-@Composable
-private fun StackPanel(ctx: WinSceneCtx) {
-    // (The 3D case flies out of its stack beside this panel — GameWindow's inspect piece; the panel never shows a second one.)
-    val a = ctx.accent; val ink = Color(0xFFEDEAF3); val muted = Color(0xFFA9A2B8)
-    val w = minOf(ctx.maxW, 520.dp)
-    val shape = RoundedCornerShape(18.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.12f).clip(shape)
-        .background(Brush.verticalGradient(listOf(Color(0xFF2C2438), Color(0xFF1A1522)))).border(1.dp, Color.White.copy(alpha = 0.08f), shape).padding(16.dp)) {
-        StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
-        Text(ctx.console, color = a, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        FactsAndKeys(ctx, muted, ink, null) { k ->
-            SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, onColour(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
-        }
-    }
-}
+// (Update 507: StackPanel replaced — WinSceneFamilies.kt.)
 
 // ───────────────────────────── Console stack ─────────────────────────────
 
@@ -273,14 +240,19 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(10.dp))
         Row {
-            // The game sitting in the bay.
-            ArtWell(ctx.cover, Modifier.width(minOf(w * 0.25f, 130.dp)).aspectRatio(0.75f), Color(0xFF121317), Color(0xFF16171B), RoundedCornerShape(4.dp))
+            // The game sitting in the bay — (update 507) its own case as the home draws it, not an empty well when it has no cover.
+            val aspect = sceneCaseAspect(ctx.g.platform)
+            val cw = minOf(w * 0.25f, 130.dp)
+            SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold)
                 Text(ctx.console.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(6.dp))
-                FactsAndKeys(ctx, muted, ink, null) { k ->
+                // (Update 507: the console is on the module's label already — not twice.)
+                SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console"))
+                Spacer(Modifier.height(8.dp))
+                KeyRow(sceneKeys(ctx), 6.dp) { k ->
                     SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
                 }
             }
@@ -298,7 +270,10 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
             // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
-            .background(Color(0xFF0E0F13)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp)).padding(16.dp)) {
+            .background(Color(0xFF0E0F13)).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+            // (Update 507: a lit edge toward the case it belongs to.)
+            .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.2f))), size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)) }
+            .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
             // (Update 469, D215: the panel was 86 % opaque — the home screen's own title and facts, right under it, showed through
             // as a second faded title behind the keys (worst with More open at 1.3×). It hides what it covers now.)
             // (Update 469, display size larger — KONKR at 280 dpi: with More open the keys ran past the panel's foot. A weighted name
@@ -335,9 +310,20 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
     }
 }
 
+/**
+ * Update 507 (owner review: Cover details' window "has no artwork although the home is all about the cover"): the big case the
+ * home shows on the left stays in full view — the dim is light there and deep only under the panel on the right.
+ */
+internal val coverDetailsVeil: Brush = Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.12f), 0.45f to Color.Black.copy(alpha = 0.2f), 0.55f to Color.Black.copy(alpha = 0.62f), 1f to Color.Black.copy(alpha = 0.78f))
+
 /** Update 425: the Disc station window's labels for what the game really comes on. */
 internal fun discPanelLabels(platform: String): Pair<String, String> =
-    if (mediaKind(platform) == "disc") "COMPACT DISC  DIGITAL" to "TRACK 01" else "CARTRIDGE" to "SLOT A"
+    // (Update 506, owner review of the 505 visual report: Disc station's window said "CARTRIDGE / SLOT A" on a disc player whose
+    // home says "On CD" — the deck plays everything as a disc. Its own terms now: the disc kind the home shows, read as a disc.)
+    discKindPlate(discKind(platform)) to "DISC 1 · TRACK 01"
+
+/** Update 506: the home's disc kind as the deck's plate ("On CD", a cartridge game pressed on CD here: COMPACT DISC). */
+internal fun discKindPlate(kind: String): String = if (kind == "On CD") "COMPACT DISC" else kind.uppercase()
 
 /** Update 471: Cover details' header line already shows these. */
 internal val COVER_DETAIL_OMIT = setOf("Console", "Year")

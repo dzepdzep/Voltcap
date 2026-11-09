@@ -48,7 +48,10 @@ internal fun LayoutPickerDialog(
     onDismiss: () -> Unit,
     followLabel: String? = null,
     followsDefault: Boolean = false,
-    onFollow: () -> Unit = {}
+    onFollow: () -> Unit = {},
+    /** Update 490 (R1): an extra button, e.g. "Options for <layout>…" from the R1 Layout tile's hold. */
+    optionsLabel: String? = null,
+    onOptions: () -> Unit = {}
 ) {
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
@@ -66,8 +69,10 @@ internal fun LayoutPickerDialog(
             val applyReq = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { current.requestFocus() } }
             val listH = (LocalConfiguration.current.screenHeightDp - 250).coerceIn(120, 330).dp
-            Row(verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
+            // (Update 491, R26 on the Thor: the picture + blurb were taller than the screen and pushed Apply / Options / Cancel
+            // off the bottom. Both columns now share the list's height; the left one scrolls its text, the actions stay whole.)
+            Row(Modifier.heightIn(max = listH), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                     LayoutPreview(shown)
                     Spacer(Modifier.height(8.dp))
                     Text(shown.label, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
@@ -110,6 +115,7 @@ internal fun LayoutPickerDialog(
                 if (followLabel != null) {
                     Chip(followLabel, accent = false, enabled = !followsDefault) { onFollow(); onDismiss() }
                 }
+                if (optionsLabel != null) Chip(optionsLabel, accent = false) { onDismiss(); onOptions() }
                 Chip("Cancel", accent = false, onClick = onDismiss)
             }
         } } }

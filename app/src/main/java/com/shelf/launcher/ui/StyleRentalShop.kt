@@ -399,6 +399,8 @@ internal fun StyleRentalShop(c: StyleCtx, modifier: Modifier = Modifier) {
                                         // The far ends of the wall go dimmer.
                                         val d = abs((cc - cam.value) * colW) / (wPx / 2f)
                                         alpha = (1.25f - d * 0.5f).coerceIn(0.35f, 1f)
+                                        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                                        flatTextFor3d()
                                     }
                                     .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else { select(i); rsSound(KitSound.MOVE, UiSound.MOVE) } } }
                             ) {
@@ -453,7 +455,7 @@ private fun ShopTalker(c: StyleCtx, g: Game, modifier: Modifier) {
 @Composable
 private fun ShopMap(c: StyleCtx, sc: ShopColors, systems: List<Int>, modifier: Modifier) {
     val sel = ShopNav.mapSel
-    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
+    val counts = categoryCounts(c)
     Box(modifier.background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth(0.86f).clip(RoundedCornerShape(4.dp)).background(Color(0xFFF7F3E6)).border(3.dp, Color(0xFF1C1C1C), RoundedCornerShape(4.dp)).padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

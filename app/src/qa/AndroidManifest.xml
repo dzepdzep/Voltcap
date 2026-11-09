@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Update 500 (D295): ONLY the isolated QA app "Voltcap QA" (package com.shelf.launcher.qa; build type "qa", or the debug
+     build while qa_variant.properties says debugIsQa=true). Its own private data; nothing here can reach the owner's
+     Voltcap, saves, Drive or the device's settings. Removed: all-files access (no ROM / save folders), the home-screen
+     entry, the update / boot receivers, the notification listener and the system-settings permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" tools:node="remove" />
+    <application android:allowBackup="false" tools:replace="android:allowBackup">
+        <!-- Update 509: the QA app only — the shell may profile it (simpleperf / Perfetto CPU samples) to measure the popup's
+             first frame. Not debuggable, not in the owner's Voltcap. -->
+        <profileable android:shell="true" tools:targetApi="29" />
+        <activity-alias android:name=".HomeAlias" tools:node="remove" />
+        <receiver android:name=".data.UpdatedReceiver" tools:node="remove" />
+        <receiver android:name=".device.ChargeLimitBootReceiver" tools:node="remove" />
+        <service android:name=".data.ShelfNotificationListener" tools:node="remove" />
+    </application>
+</manifest>

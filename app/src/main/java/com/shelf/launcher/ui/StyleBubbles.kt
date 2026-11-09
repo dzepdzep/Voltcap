@@ -332,6 +332,11 @@ private fun bubbleWall(w: Features.BvWall): BubbleWall = when (w) {
     Features.BvWall.GAME -> BubbleWall(Color(0x66000000), Color(0x33000000), Color(0x88000000), Color(0xFFFFFFFF), Color(0xFF101010))
 }
 
+/** Update 505: the wallpaper's dark (its window's ground) and its lit colour, for the Bubbles window (WinScenesConsole.BubbleCard).
+ *  The game's-art wallpaper has no colour of its own: the LiveArea's blue. */
+internal fun bubbleWallInk(w: Features.BvWall): Color = bubbleWall(w).ink
+internal fun bubbleWallLit(w: Features.BvWall): Color = if (w == Features.BvWall.GAME) Color(0xFF39A9FF) else bubbleWall(w).mid
+
 /** Update 344: the wallpaper: a soft gradient, ribbons of light and slow bokeh (the game's art: just a soft shade over it). */
 @Composable
 internal fun BubblesBackdrop(modifier: Modifier) {
@@ -612,7 +617,7 @@ private fun BubbleFolders(c: StyleCtx, cols: Int, systems: List<Int>) {
     val page = focus / per
     val density = LocalDensity.current
     val context = LocalContext.current
-    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
+    val counts = categoryCounts(c)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val fullW = with(density) { maxWidth.toPx() }
         val wPx = fullW * 0.94f
@@ -726,6 +731,8 @@ private fun LiveAreaPage(c: StyleCtx, g: Game, open: Float, active: Boolean) {
                 cameraDistance = 14f * density.density
                 translationX = slide.value * size.width * 0.35f
                 alpha = (open * 1.6f).coerceIn(0f, 1f) * (1f - abs(slide.value) * 0.6f)
+                // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                flatTextFor3d()
             }
         ) {
             Box(Modifier.fillMaxSize().clip(peelShape(k))) { LiveAreaBody(c, g, compactPage) }
@@ -853,8 +860,9 @@ private fun LiveInfoPanel(c: StyleCtx, g: Game, compact: Boolean) {
             val list = c.state.raAchievementDetails[g.stableKey].orEmpty()
             if (list.isNotEmpty() && !compact) {
                 Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(7).forEach { a ->
+                val strip = (list.filter { it.isUnlocked } + list.filter { !it.isUnlocked }).take(7)
+                Row(Modifier.badgeSet(strip.mapNotNull { com.shelf.launcher.data.RaBadges.url(it.badgeName) }), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    strip.forEach { a ->
                         val url = com.shelf.launcher.data.RaBadges.url(a.badgeName)
                         Box(Modifier.size(24.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFFDCE3EA))) {
                             if (url != null) AsyncImage(url, a.title, Modifier.fillMaxSize().graphicsLayer { alpha = if (a.isUnlocked) 1f else 0.35f }, contentScale = ContentScale.Crop)

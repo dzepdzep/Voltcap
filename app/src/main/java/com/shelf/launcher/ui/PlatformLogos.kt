@@ -121,6 +121,26 @@ object PlatformLogos {
     fun plain(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
         key(platform)?.let { asset(context, "platform_icons_mono/$it.png") }
 
+    /** Update 480 (A5): [platform]'s logo for drawing in ONE colour (tinted): the plain icon (lettering kept), else the baked logo. */
+    fun oneColour(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
+        plain(context, platform) ?: baked(context, platform)
+
+    /** Update 480 (A5): ES-DE's logo for [platform] when it is a different, narrower picture than the redrawn one (GBA's two lines). */
+    fun stacked(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? {
+        if (key(platform) == null) return null
+        val alt = com.shelf.launcher.data.SystemLogos.bundled(platform)?.let { bakedForUrl(context, it) } ?: return null
+        val main = baked(context, platform) ?: return null
+        val ra = main.width.toFloat() / main.height; val rb = alt.width.toFloat() / alt.height
+        return alt.takeIf { ra > 5f && rb < ra / 2f }
+    }
+
+    /** The area (px²) a picture covers when fitted into w × h. */
+    fun fitArea(img: androidx.compose.ui.graphics.ImageBitmap, w: Int, h: Int): Float {
+        if (img.width <= 0 || img.height <= 0 || w <= 0 || h <= 0) return 0f
+        val k = minOf(w.toFloat() / img.width, h.toFloat() / img.height)
+        return img.width * k * img.height * k
+    }
+
     private fun asset(context: android.content.Context, path: String): androidx.compose.ui.graphics.ImageBitmap? {
         bakedCache[path]?.let { return it }
         if (path in bakedMissing) return null
@@ -169,15 +189,20 @@ internal fun PlatformLogo(
     var failed by remember(url) { mutableStateOf(false) }
     // Update 166: the baked logo, there on the first frame (see PlatformLogos.baked).
     val baked = remember(platform) { PlatformLogos.baked(context, platform) }
+    // Update 480 (A5, owner: GBA / Sega CD shown as black lines): a colour logo tinted one colour turns into its outline —
+    // Game Boy Advance a blob, Sega CD's plate a solid bar. One colour (a tint, or a black logo in white) draws the plain
+    // icon instead (PlatformLogos.plain: the same shape with the lettering kept).
+    val oneColour = tint ?: (if (blackToWhite && PlatformLogos.mono(platform)) Color.White else null)
+    val plainIcon = remember(platform, oneColour != null) { if (oneColour != null) PlatformLogos.plain(context, platform) else null }
+    // (… and a very wide wordmark in a squarish slot — GBA's is 8.5 : 1 — gets ES-DE's stacked logo when that fills it far better.)
+    val stacked = remember(platform, oneColour != null) { if (oneColour == null) PlatformLogos.stacked(context, platform) else null }
     Box(modifier, contentAlignment = Alignment.Center) {
-        if (baked != null) {
+        val pic = plainIcon ?: baked
+        if (pic != null) {
+            val painter = remember(pic, stacked) { FittedLogoPainter(pic, stacked) }
             androidx.compose.foundation.Image(
-                baked, name, contentScale = ContentScale.Fit,
-                colorFilter = when {
-                    tint != null -> ColorFilter.tint(tint)
-                    blackToWhite && PlatformLogos.mono(platform) -> ColorFilter.tint(Color.White)
-                    else -> null
-                },
+                painter, name, contentScale = ContentScale.FillBounds,
+                colorFilter = oneColour?.let { ColorFilter.tint(it) },
                 modifier = Modifier.matchParentSize()
             )
         } else if (url != null && !failed) {
@@ -198,5 +223,30 @@ internal fun PlatformLogo(
                 maxLines = 2, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = textSize * 0.5f, maxFontSize = textSize)
             )
         }
+    }
+}
+
+/**
+ * Update 480 (A5): draws [main] fitted and centred in whatever room it gets; when [alt] (a stacked version of a very wide
+ * wordmark) would cover over 2.2 × the area there, [alt] instead — decided at draw time, so nothing pops in.
+ */
+private class FittedLogoPainter(
+    private val main: androidx.compose.ui.graphics.ImageBitmap,
+    private val alt: androidx.compose.ui.graphics.ImageBitmap?
+) : androidx.compose.ui.graphics.painter.Painter() {
+    private var filter: ColorFilter? = null
+    override val intrinsicSize: androidx.compose.ui.geometry.Size get() = androidx.compose.ui.geometry.Size.Unspecified
+    override fun applyColorFilter(colorFilter: ColorFilter?): Boolean { filter = colorFilter; return true }
+    override fun androidx.compose.ui.graphics.drawscope.DrawScope.onDraw() {
+        val w = size.width.toInt(); val h = size.height.toInt()
+        if (w <= 0 || h <= 0) return
+        val img = if (alt != null && PlatformLogos.fitArea(alt, w, h) > 2.2f * PlatformLogos.fitArea(main, w, h)) alt else main
+        val k = minOf(size.width / img.width, size.height / img.height)
+        val dw = (img.width * k).toInt().coerceAtLeast(1); val dh = (img.height * k).toInt().coerceAtLeast(1)
+        drawImage(
+            img, dstOffset = androidx.compose.ui.unit.IntOffset(((w - dw) / 2), ((h - dh) / 2)),
+            dstSize = androidx.compose.ui.unit.IntSize(dw, dh), colorFilter = filter,
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
+        )
     }
 }

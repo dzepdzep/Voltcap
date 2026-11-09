@@ -153,7 +153,8 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
     val accent = ShelfTheme.accent
     val second = lerpColor(accent, ShelfTheme.colors.secondary, 0.6f)
     val pixel = VoltUi.pixel
-    val pulse = if (charging) rememberFocusPulse(animate = true) else 1f
+    // (Update 493: the pulse read while drawing — read here it re-ran the gauge every frame of the pulse.)
+    val pulseS = rememberFocusPulseState(animate = charging)
     Canvas(Modifier.size(width = 26.dp, height = 13.dp)) {
         val nub = 2.5.dp.toPx()
         val w = size.width - nub
@@ -181,7 +182,7 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
             drawPath(Path().apply {
                 moveTo(x0 + bw * 0.62f, y0); lineTo(x0 + bw * 0.05f, y0 + bh * 0.58f); lineTo(x0 + bw * 0.46f, y0 + bh * 0.58f)
                 lineTo(x0 + bw * 0.34f, y0 + bh); lineTo(x0 + bw * 0.95f, y0 + bh * 0.38f); lineTo(x0 + bw * 0.54f, y0 + bh * 0.38f); close()
-            }, outline.copy(alpha = 0.6f + 0.4f * pulse))
+            }, outline.copy(alpha = 0.6f + 0.4f * pulseS.value))
         }
     }
 }

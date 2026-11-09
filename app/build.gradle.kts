@@ -20,6 +20,24 @@ val keystoreProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+// Update 516: Voltcap's own ScreenScraper developer key (every ScreenScraper request needs one per app; users then only
+// give their own login). From a gitignored screenscraper.properties in the project root — never in git or the patch:
+//   devId=…
+//   devPassword=…
+//   softName=…   (optional: the software name the key was requested for)
+// Without the file the fields are empty and the ScreenScraper dialog asks for a developer key as before.
+val screenScraperProps = Properties().apply {
+    val f = rootProject.file("screenscraper.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+// (Update 516: Voltcap's own IGDB / Twitch app the same way — igdb.properties: clientId=… clientSecret=…)
+val igdbProps = Properties().apply {
+    val f = rootProject.file("igdb.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun buildConfigString(v: String?): String =
+    "\"" + (v ?: "").trim().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
 // Update 310: compile-only CI check when the proprietary Discord binary is not in GitHub.
 // The stub is NEVER included in ordinary local or release builds and CI must not publish it.
 val voltcapCiWithoutDiscord = System.getenv("GITHUB_ACTIONS") == "true" &&
@@ -27,6 +45,15 @@ val voltcapCiWithoutDiscord = System.getenv("GITHUB_ACTIONS") == "true" &&
 if (voltcapCiWithoutDiscord && gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }) {
     error("CI-only Discord stub must never be used for release builds.")
 }
+
+// Update 500 (D295): the isolated QA app "Voltcap QA" (package com.shelf.launcher.qa, own data, no sync / launch / home /
+// all-files access: data/QaVariant.kt + src/qa). Build type "qa" (assembleQa). Claude's PC tools can only run assembleDebug,
+// so a root qa_variant.properties (gitignored, never in project_copy) with debugIsQa=true turns the DEBUG build into the
+// same QA app (R8 like release, not debuggable). Without that file, or with debugIsQa=false, debug is unchanged.
+val debugIsQa = rootProject.file("qa_variant.properties").let { f ->
+    f.isFile && Properties().apply { f.inputStream().use { load(it) } }.getProperty("debugIsQa")?.trim() == "true"
+}
+if (debugIsQa) logger.warn("Voltcap: qa_variant.properties debugIsQa=true - the debug build is the isolated QA app (com.shelf.launcher.qa).")
 
 android {
     // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
@@ -39,8 +66,15 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 74
-        versionName = "0.6.67"
+        versionCode = 75
+        versionName = "0.6.68"
+
+        // (Update 516: see screenScraperProps above.)
+        buildConfigField("String", "SS_DEV_ID", buildConfigString(screenScraperProps.getProperty("devId")))
+        buildConfigField("String", "SS_DEV_PASSWORD", buildConfigString(screenScraperProps.getProperty("devPassword")))
+        buildConfigField("String", "SS_SOFT_NAME", buildConfigString(screenScraperProps.getProperty("softName")))
+        buildConfigField("String", "IGDB_CLIENT_ID", buildConfigString(igdbProps.getProperty("clientId")))
+        buildConfigField("String", "IGDB_CLIENT_SECRET", buildConfigString(igdbProps.getProperty("clientSecret")))
 
         // Handheld CPUs only — also keeps Discord's native library small.
         ndk {
@@ -104,6 +138,29 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += "release"
         }
+        // Update 500: the isolated QA app (see debugIsQa above). Other package id = its own data; same key, R8 as release.
+        create("qa") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+        }
+        if (debugIsQa) getByName("debug") {
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "src/main/keepRules/rules.keep"
+            )
+        }
+    }
+    // (Update 500: the debug-as-QA build uses the QA app's manifest / name / icon.)
+    if (debugIsQa) sourceSets.getByName("debug") {
+        manifest.srcFile("src/qa/AndroidManifest.xml")
+        res.srcDir("src/qa/res")
     }
 
     compileOptions {
@@ -113,6 +170,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

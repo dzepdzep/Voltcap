@@ -18,8 +18,43 @@ data class GameSyncStatus(
     /** Files moved by the last successful transfer. */
     val fileCount: Int = 0,
     val message: String? = null,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    /**
+     * Update 493 (D292): when files last actually moved (0 = not recorded: entries from before 493, or never). A check that
+     * moves nothing updates [lastSuccessAt] only, so the two tell "checked" from "uploaded / downloaded".
+     */
+    val lastTransferAt: Long = 0L
 )
+
+/** Update 493 (D292): what Save Vault says about a game's last sync — from the recorded events only, nothing guessed. */
+data class SyncLine(val at: Long, val label: String)
+
+fun syncLine(st: GameSyncStatus): SyncLine? {
+    fun files() = if (st.fileCount > 0) " · ${st.fileCount} file${if (st.fileCount == 1) "" else "s"}" else ""
+    return when (st.state) {
+        SyncState.OFFLINE -> SyncLine(st.updatedAt, "Offline · sync skipped")
+        SyncState.ERROR -> SyncLine(st.updatedAt, "Sync failed")
+        SyncState.NEEDS_SIGN_IN -> SyncLine(st.updatedAt, "Sign-in needed")
+        SyncState.CONFLICT -> SyncLine(st.updatedAt, "Conflict found")
+        SyncState.UPLOADING -> SyncLine(st.updatedAt, "Uploading")
+        SyncState.DOWNLOADING -> SyncLine(st.updatedAt, "Downloading")
+        SyncState.SYNCED, SyncState.PENDING -> when {
+            st.lastSuccessAt <= 0L -> null
+            // The last successful sync itself moved files: say which way.
+            st.lastTransferAt > 0L && st.lastTransferAt == st.lastSuccessAt -> SyncLine(st.lastSuccessAt, when (st.lastDirection) {
+                SyncDirection.UPLOAD -> "Uploaded to Drive" + files()
+                SyncDirection.DOWNLOAD -> "Downloaded from Drive" + files()
+                SyncDirection.NONE -> "Synced with Drive"
+            })
+            // Recorded: files moved earlier, the last check found nothing new.
+            st.lastTransferAt > 0L -> SyncLine(st.lastSuccessAt, "Checked · no changes")
+            // Never moved anything, as far as recorded.
+            st.lastDirection == SyncDirection.NONE -> SyncLine(st.lastSuccessAt, "Checked · no changes")
+            // Older entry: a transfer happened once, but whether the last check moved anything wasn't recorded.
+            else -> SyncLine(st.lastSuccessAt, "Last checked")
+        }
+    }
+}
 
 /**
  * Per-game sync status (Game.stableKey → [GameSyncStatus]) in the "sync_status" prefs — plain, non-secret,

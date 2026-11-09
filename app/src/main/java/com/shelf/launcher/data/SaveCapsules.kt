@@ -168,6 +168,16 @@ object SaveCapsules {
      * save icons, once per run. The list kept on disk shows first; a quick local look then registers the memory cards'
      * icons (Ps2Icons). It never replaces a fuller list the Save Vault has already shown.
      */
+    /**
+     * Update 496 (QA only, the vault's dry view): the saves last listed, read from the kept list — nothing searched,
+     * nothing written.
+     */
+    suspend fun showCached(context: Context, games: List<Game>) {
+        if (_all.value.isNotEmpty()) return
+        val cached = withContext(Dispatchers.IO) { runCatching { readCache(context.applicationContext, games) }.getOrNull() }
+        if (!cached.isNullOrEmpty() && _all.value.isEmpty()) _all.value = cached
+    }
+
     suspend fun refreshLocal(context: Context, games: List<Game>, lastPlayed: Map<String, Long>) {
         if (localDone || games.isEmpty()) return
         localDone = true

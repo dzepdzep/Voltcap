@@ -5,6 +5,7 @@ import com.shelf.launcher.data.categoryBarFor
 import com.shelf.launcher.data.categoryBarHere
 import kotlinx.coroutines.flow.flowOn
 import com.shelf.launcher.data.statusOn
+import com.shelf.launcher.data.statusMinimal
 import com.shelf.launcher.data.legendOn
 import com.shelf.launcher.data.shownIn
 import com.shelf.launcher.data.cardArtFor
@@ -370,7 +371,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 423: the QA stand-in library for preview pictures, display only — DemoLibrary.kt.)
     val demoOn = DemoLibrary.on.value
     val demoArt = DemoLibrary.artDir.value
-    val state = remember(uiState, demoOn, demoArt) { uiState.forDisplay().let { if (demoOn) DemoLibrary.dress(it) else it } }
+    val fx = QaFixture.spec.value; val fxArt = QaFixture.artDir.value
+    val state = remember(uiState, demoOn, demoArt, fx, fxArt) { uiState.forDisplay().let { if (demoOn) DemoLibrary.dress(it) else it }.let { if (fx != null) QaFixture.dress(it) else it } }
     // Update 409 (D105): the popup motion of the layout on screen (its own style, else the global default) for the row fades.
     // Update 422: Settings › Library › ES-DE artwork works through the view model.
     androidx.compose.runtime.SideEffect {
@@ -466,6 +468,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // 0.6.17: the Metacritic chip on the wide / row cards reads the details from here (GameCard).
     SideEffect { if (MetacriticCards.metadata !== state.metadata) MetacriticCards.metadata = state.metadata }
     val focusedGame = visibleGames.getOrNull(state.focusedIndex)
+    // (Update 503: the badges of the game you're on and its neighbours read into memory ahead of the move, BadgeWarm.kt.)
+    BadgeWarmEffect(visibleGames, state.focusedIndex, state.raAchievementDetails)
     // (QA: what the home screen shows from this frame on, for the frame checks — test builds with the hook file only.)
     SideEffect { if (QaTrace.on) QaTrace.focus("${state.focusedIndex} ${state.platformFilter}|${state.specialFilter} ${focusedGame?.stableKey}") }
     // Update 181: only the game you're on moves (Settings › Artwork › Only the game you're on moves; on by default).
@@ -1071,6 +1075,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         android.util.Log.e("VoltcapTest", "game '$q' -> ${g?.name ?: "NO MATCH"}")
         if (g == null) { TestHooks.game.value = null; return@LaunchedEffect }
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
+        // (Update 478, QA: the run's game is on the Games blade — Blades keeps the blade it was on, and a run after one that
+        // ended on Systems / Media pressed A there (D250 class, T3 Blades "did not open").)
+        BladesNav.blade = BladesNav.GAMES; BladesNav.gamesFromSystems = false
         viewModel.setSearchQuery("")
         viewModel.setPlatformFilter(g.platform)
         kotlinx.coroutines.delay(400)
@@ -1078,6 +1085,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) viewModel.setFocus(i)
         TestHooks.game.value = null
     }
+    // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)
+    TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
+    // (Update 503: the fixture library's late-arriving art + achievements, QA app only — QaArtFixture.kt.)
+    QaArtFixture.spec.value?.let { d -> LaunchedEffect(d, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaArtFixture() } }
     // (0.6.15: the Sort window for a test run.)
     if (TestHooks.sort.value) LaunchedEffect(Unit) { closeAllDialogs(); showSortDialog = true; TestHooks.sort.value = false }
     // (Update 330, phase 4: the game window of the game you're on, for the window review — as A opens it, but never the game.)
@@ -1188,6 +1199,18 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         viewModel.previewAppearance(state.appearance.copy(sceneFromCover = on))
         TestHooks.sceneCover.value = null
     }
+    // (Update 480, B4: QA — how long a tween of N ms really takes under the motion level; logged, nothing shown.)
+    val probeMs = TestHooks.motionProbe.value
+    LaunchedEffect(probeMs) {
+        if (probeMs <= 0) return@LaunchedEffect
+        val t0 = System.nanoTime()
+        androidx.compose.animation.core.Animatable(0f).animateTo(1f, androidx.compose.animation.core.tween(probeMs, easing = androidx.compose.animation.core.LinearEasing))
+        android.util.Log.e("VoltcapQA", "motionprobe tween=$probeMs real=${(System.nanoTime() - t0) / 1_000_000} level=${com.shelf.launcher.data.Features.motion.value} scale=${MotionLevel.scaleFactor}")
+        TestHooks.motionProbe.value = 0
+    }
+    // (Update 488, K2 QA: the screensaver asked for by a test — the idle timer's own path.)
+    val testSaver = TestHooks.screensaver.value
+    LaunchedEffect(testSaver) { if (testSaver) { screensaverOn = true; TestHooks.screensaver.value = false } }
     // (Update 261: a Settings page asked for by a test walk.)
     val testSettings = TestHooks.settings.value
     LaunchedEffect(testSettings) {
@@ -1195,7 +1218,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         closeAllDialogs(); categoryScreenOpen = false; showDetails = false
         kotlinx.coroutines.delay(200)
         // (Update 426: `--es voltcap_test_settings Save_Vault` opens the Save Vault, for its visual QA.)
-        if (cat == "Save_Vault") showSaveExplorer = true
+        if (cat == "Save_Vault" || cat == "Save Vault") showSaveExplorer = true
         else { menuStartCategory = cat; showMenu = true }
         // (Cleared last: clearing it first restarted this effect and cancelled it in its delay.)
         TestHooks.settings.value = null
@@ -1203,7 +1226,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // (Update 280: Game look › Layout standard — a layout switched to brings its own standard look.)
     val lookFromLayoutOn = com.shelf.launcher.data.Features.lookFromLayout.state.value
     LaunchedEffect(state.appearance.homeLayout, lookFromLayoutOn) {
-        if (!lookFromLayoutOn) return@LaunchedEffect
+        // (Update 496, D293: only for a real layout switch — see LayoutLookGate.)
+        if (!LayoutLookGate.due(viewModel.uiState.value.appearance.homeLayout, lookFromLayoutOn)) return@LaunchedEffect
         layoutStandardIfDue(viewModel.uiState.value.appearance)?.let { t ->
             if (TestHooks.previewOnly) viewModel.previewAppearance(t) else viewModel.setAppearance(t)
         }
@@ -1235,8 +1259,18 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             } else viewModel.setTheme(t)
         }
     }
+    // (Update 496, QA only: the achievements overlay with made-up content, no game — QaOverlayFixture.kt.)
+    QaOverlayFixtureHost()
+    // (Update 501, QA only: Save Vault 3D cards with no save — QaCardSheet.kt.)
+    QaCardSheetHost()
     val previewEnds = TestHooks.previewEnded.intValue
-    LaunchedEffect(previewEnds) { if (previewEnds > 0) { android.util.Log.e("VoltcapQA", "preview ended"); viewModel.reloadAppearance() } }
+    LaunchedEffect(previewEnds) {
+        if (previewEnds > 0) {
+            android.util.Log.e("VoltcapQA", "preview ended"); viewModel.reloadAppearance()
+            // (Update 496, D293: your layout coming back is not a layout switch — its standard look is not applied again.)
+            LayoutLookGate.restored(viewModel.uiState.value.appearance.homeLayout)
+        }
+    }
     val testPerf = TestHooks.perf.value
     LaunchedEffect(testPerf) {
         val name = testPerf ?: return@LaunchedEffect
@@ -1428,7 +1462,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     // Worked out off the main thread, and only while the category screen is open
     // (or once, so it is ready the first time it opens). Each category's list
     // comes from the state's memoized visibleGames.
-    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty() || categoryTilesStale(categoryTiles, state.games.size)
+    // (A5, update 483: the "All games" tile counts the library — compared with the same count.)
+    val libraryTotal = remember(state.games, state.libraryApps, state.gameAppPackages, state.appearance.hideDuplicates, state.favorites) { state.libraryGames().size }
+    val tilesWanted = categoryScreenOpen || categoryTiles.isEmpty() || categoryTilesStale(categoryTiles, libraryTotal)
     val tilesBuiltOpen = remember { BooleanArray(1) }
     LaunchedEffect(
         tilesWanted, state.games, state.categoryOrder, state.availablePlatforms, state.art, state.artOverrides,
@@ -2807,6 +2843,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             paleBehind = paleBehind,
             // (Update 333: dressed for the layout — StatusLooks.)
             lookLayout = state.appearance.homeLayout, // (QA pass 3, D34: the look is made inside StatusBar)
+            minimal = state.appearance.statusMinimal, // (Update 479, B3)
             modifier = modifier,
             menuSlot = menuSlot,
             onMenuSlot = { r -> if (barMenuRect != r) barMenuRect = r },
@@ -3368,7 +3405,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 !(tileLayout && TileSwitch.plain)
         }
         // (Update 321: also paused in the long idle rest, HomeIdle.rest.)
-        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
+        // (Update 478, B2: also paused — where it is, nothing restarts — while an opaque full-screen page lies over the whole
+        // home: the category screen, a guide / manual, the art and screenshot viewers. It kept decoding unseen. Panels that
+        // leave the home showing round them (Settings, drawer, popups) are not "covered"; the drawer / Settings hold is 456's.)
+        val clipCovered = categoryScreenOpen || guideForGame != null || manualFor != null || artViewer != null || viewingShots != null
+        VideoCrossfade(backdropClip, state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || clipCovered || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm))
         // Update 358: Tile home › Switch style › Plain background, over the art (TileSwitch.kt).
         if (tileLayout && TileSwitch.plain && !screensaverOn) TileSwitchBackground()
 
@@ -3408,7 +3449,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     allowsFullscreenGameplayVideo(backgroundStyle, pickedBackground = focusOverride?.hero != null) &&
                         !screensaverOn && !com.shelf.launcher.data.Features.detailLayerVideo.state.value
                 },
-                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
+                // (Update 480, B2: the hero carousel's clip too pauses under an opaque full-screen page.)
+                state.appearance.videoSound, Modifier.fillMaxSize(), paused = com.shelf.launcher.data.BatterySaver.low || HomeIdle.rest || panelHold || clipCovered || (com.shelf.launcher.data.Features.clipIdlePause.state.value && HomeIdle.calm)
             )
         }
         // The status bar's real height (taller with the music player in it), so what sits under it
@@ -4063,9 +4105,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 statusInset = if (state.appearance.homeLayout.drawsUnderStatusBar()) (if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree) else 0.dp,
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxSize()
                     .padding(
-                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree, bottom = if (legendShown) 28.dp else 8.dp,
+                        top = if (state.appearance.homeLayout.drawsUnderStatusBar()) 0.dp else if (state.appearance.statusOn) maxOf(46.dp, statusBarDp + 4.dp) else styleTopFree,
+                        // (Update 479, B1: the full-bleed homes — Cinema, Arctic — run to all four edges; they keep their own
+                        // gutters for words and rows. Only the legend's strip stays reserved.)
+                        bottom = if (legendShown) 28.dp else if (state.appearance.homeLayout.fullBleed()) 0.dp else 8.dp,
                         // The Side menu's panel runs against the left edge.
-                        start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE) 0.dp else 12.dp, end = 12.dp
+                        start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE || state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp,
+                        end = if (state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp
                     )
             )
         } else if (tvLayout) {
@@ -4175,8 +4221,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
-            val buttonsUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
+            val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
                 state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && !shortcutsFloating && tileShortcuts.isNotEmpty()
+            // Update 480 (D257): in the middle with no round buttons under the tiles, the room under them was left empty (~45 %
+            // of the screen): the tiles grow a little (LocalTileRoom) and the focused game's facts sit under them, centred
+            // with the tiles as one group (as the buttons are).
+            val tileInfoUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && !buttonsUnder0 && visibleGames.isNotEmpty() &&
+                com.shelf.launcher.data.Features.tileInfoStrip.state.value
+            val buttonsUnder = buttonsUnder0 || tileInfoUnder
             Column(
                 Modifier
                     .align(
@@ -4274,6 +4326,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
                             val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
                             TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
+                    androidx.compose.runtime.CompositionLocalProvider(LocalTileRoom provides (if (tileInfoUnder) 1.14f else 1f)) {
                     TileHomeRow(
                         lastPlayedAt = state.lastPlayedAt,
                         onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
@@ -4301,6 +4354,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // Update 156: going round at the end is one step (TileHome.kt).
                         loopTick = state.loopTick, loopStep = state.loopStep
                     )
+                    }
+                    }
+                    if (tileInfoUnder) {
+                        val g = visibleGames.getOrNull(state.focusedIndex.coerceIn(0, visibleGames.lastIndex))
+                        if (g != null) {
+                            val p = state.raProgress[g.stableKey]
+                            val total = p?.NumPossibleAchievements ?: 0
+                            Spacer(Modifier.height(18.dp * LocalTileScale.current))
+                            TileInfoStrip(
+                                g, LocalTitleOptions.current.console(g.platform), state.playtime[g.stableKey], state.lastPlayedAt[g.stableKey],
+                                if (total > 0) (p?.NumAchieved ?: 0) to total else null, tileNameAnchor
+                            )
+                        }
                     }
                 }
                 if (tileCategoryBelow && showCats) {
@@ -4578,6 +4644,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         SideEffect { HomeEditState.artLook = artLookHere }
         // Update 125: the floating parts over the games — but under anything that opens over the home screen.
         val homeCovered = showDetails || showControlsHelp || categoryScreenOpen || screensaverOn || stickLetter != null
+        // (Update 487, K2: the screensaver and the classic details window no longer rely on this — they sit above every home
+        // piece (SCREENSAVER_Z / DETAILS_Z); PartsLayer is one value for the whole app, and two Voltcap homes can be open.)
         SideEffect { PartsLayer.z = if (homeCovered) 0f else 6f }
         // The description part needs the game's details (update 104), once you rest on a game.
         val wantsDesc = HomeWidgets.DESC in overlayParts
@@ -4779,7 +4847,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             enter = if (popupZoom) fadeIn(tween(140)) + scaleIn(androidx.compose.animation.core.spring(dampingRatio = 0.72f, stiffness = 420f), initialScale = 0.3f, transformOrigin = zoomOrigin)
             else fadeIn(tween(160)) + scaleIn(tween(160), initialScale = 0.96f),
             exit = if (popupZoom) fadeOut(tween(140)) + androidx.compose.animation.scaleOut(tween(160), targetScale = 0.4f, transformOrigin = zoomOrigin)
-            else fadeOut(tween(120))
+            else fadeOut(tween(120)),
+            // (Update 487, K2: the classic details window — the Voltcap row's popup — above the home's pieces too.)
+            modifier = Modifier.zIndex(DETAILS_Z)
         ) {
             val game = focusedGame
             if (game != null) DetailsWindow(game, fillScreen = false)
@@ -4976,7 +5046,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         AnimatedVisibility(
             visible = screensaverOn,
             enter = fadeIn(tween(1200)),
-            exit = fadeOut(tween(250))
+            exit = fadeOut(tween(250)),
+            // Update 487 (K2): over every piece of the home screen. The home's own pieces carry layers 4–6.5 (the corner
+            // shortcuts, the dock, the folder preview, Edit Home's moved parts); at layer 0 the screensaver went under them —
+            // "Continue playing" and a pinned PXPlay over the screensaver (owner, Voltcap row with Edit Home changes).
+            modifier = Modifier.zIndex(SCREENSAVER_Z)
         ) {
             val slides = remember(state.games, state.art, state.artOverrides) {
                 state.games.mapNotNull { game ->
@@ -5488,7 +5562,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         LaunchedEffect(capsules) {
             // (0.6.18: not for saves without a game name — there is nothing to look up.)
             val away = capsules.filter { !it.onDevice && it.named }.map { it.game }
-            if (away.isNotEmpty()) viewModel.loadVaultArt(away)
+            if (away.isNotEmpty() && !TestHooks.vaultDry) viewModel.loadVaultArt(away)
         }
         SaveExplorerDialog(
             games = state.games,

@@ -168,7 +168,10 @@ internal fun GameDock(
         val glideDiscRoom by animateDpAsState(discRoom, dockMotion(), label = "dockDiscRoom")
         // Small, even gap between every card (about 1/27 of a cover's width —
         // tight, but never touching).
-        val spacing = maxOf(DockSpacing * 0.36f, coverWidth / 27.5f)
+        // (Update 488, K1: Layout options › Game spacing scales the gap between the cards; 100 % is the standard one. The row's
+        // left edge and the name above / under it keep the standard gap, so they stay lined up — dockTextStart.)
+        val baseSpacing = maxOf(DockSpacing * 0.36f, coverWidth / 27.5f)
+        val spacing = baseSpacing * (com.shelf.launcher.data.Features.rowSpacing.state.value / 100f)
         val stride = coverWidth + spacing
 
         // Where the game you're on sits: at the left end, or in the middle.
@@ -179,7 +182,7 @@ internal fun GameDock(
         val framed = look.focusBorder || look.focusEffect != com.shelf.launcher.data.FocusEffect.NONE
         val focusX = if (!pinnedFirst && (carousel || look.focusPosition == com.shelf.launcher.data.FocusPosition.CENTER)) {
             (screenWidth - bannerWidth) / 2
-        } else if (framed) maxOf(spacing, 6.dp) else 0.dp
+        } else if (framed) maxOf(baseSpacing, 6.dp) else 0.dp
         // Enough covers to fill the screen on both sides of the focus, plus two
         // spare so cards enter and leave the window while fully off-screen.
         val bigCoverWidth = coverWidth * grow

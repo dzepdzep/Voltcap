@@ -25,11 +25,24 @@ import kotlinx.coroutines.delay
 object HomeIdle {
     const val IDLE_MS = 30_000L
     const val DEEP_MS = 3 * 60_000L
+    /** Update 510: after this long without input a resting idle motion (Game shelf's bob) settles and stops drawing. */
+    const val SETTLE_MS = 10_000L
 
     /** Switched by the setting; when off the home screen never counts as idle. */
     @Volatile var enabled = true
 
     var idle by mutableStateOf(false)
+        private set
+    /**
+     * Update 510 (owner: "Game Shelf idle CPU — ~35 % at rest on the GT78"): [SETTLE_MS] without input — a decorative resting
+     * motion that would otherwise redraw the screen forever (Game shelf's bob and turn) eases to its rest pose and stops.
+     * Read only by such motions; the first press clears it (every kind of input, see [poke]). Off with the setting.
+     * Update 511: also the decorative effects that ran until the 30 s step — the focus pulse ([rememberFocusPulseState]),
+     * the shimmer / glow clock ([EffectClockDriver]) and the charging light (PlainBattery): they ease to their rest and stop
+     * redrawing. Never read by anything the screen is for (music, video, the background scene, the screensaver, a marquee
+     * that shows a whole name).
+     */
+    var settled by mutableStateOf(false)
         private set
     var deep by mutableStateOf(false)
         private set
@@ -52,6 +65,12 @@ object HomeIdle {
     val calm: Boolean get() = idle || com.shelf.launcher.data.BatterySaver.low
 
     @Volatile private var lastInput = SystemClock.elapsedRealtime()
+    /**
+     * Update 511: the last input of any kind — this screen's ([poke]) or a touch on the second screen ([touchedElsewhere]).
+     * Only [settled] counts from it: a touch on the Thor's lower screen brings the decorative effects back at once without
+     * changing what the 30 s idle step means for this screen.
+     */
+    @Volatile private var lastAnyInput = SystemClock.elapsedRealtime()
     /** When the last input came (elapsedRealtime). */
     val lastInputAt: Long get() = lastInput
     /** Idle focus mode (hero carousel): the UI is faded out until the next input. */
@@ -76,11 +95,22 @@ object HomeIdle {
     /** Any input. Cheap: only writes state when the home screen was idle. */
     fun poke() {
         lastInput = SystemClock.elapsedRealtime()
+        lastAnyInput = lastInput
         if (testHold) { if (focusHide) focusHide = false; return }
         if (focusHide) focusHide = false
+        if (settled) { settled = false; wake.trySend(Unit) } // (510: the watch starts the next 10 s from this press, not later)
         if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235: wakes with the idle flag, not the deep one)
         if (deep) deep = false
         if (rest) rest = false
+    }
+
+    /**
+     * Update 511: a touch on the second screen (SecondScreen's touch watcher). Wakes only what [settled] holds — the
+     * decorative effects — and, like [poke], only writes state when they had settled.
+     */
+    fun touchedElsewhere() {
+        lastAnyInput = SystemClock.elapsedRealtime()
+        if (settled) { settled = false; wake.trySend(Unit) }
     }
 
     /** Keeps [idle] / [deep] up to date; runs while the home screen is on screen (one wake-up per step). */
@@ -89,26 +119,38 @@ object HomeIdle {
             if (!enabled) {
                 if (idle) { idle = false; com.shelf.launcher.data.AnimatedArt.setSleeping(false) } // (Update 235)
                 if (deep) deep = false
+                if (settled) settled = false
                 delay(IDLE_MS)
                 continue
             }
             val since = SystemClock.elapsedRealtime() - lastInput
+            val sinceAny = SystemClock.elapsedRealtime() - lastAnyInput // (Update 511: the settle counts every screen's input)
             // Update 152: animated covers stop too without input (they kept a CPU core busy). (Update 235: at the 30 s
             // idle, like the background clip, instead of the 3-minute deep idle; each holds the frame it was on.)
+            if (settles(sinceAny, true) && !settled) settled = true
             if (since >= IDLE_MS && !idle) { idle = true; com.shelf.launcher.data.AnimatedArt.setSleeping(true) }
             if (since >= DEEP_MS && !deep) deep = true
             // (Update 321) The long rest, when it's set.
             val r = restMs()
             if (r > 0 && since >= r && !rest) rest = true
             val next = when {
+                sinceAny < SETTLE_MS -> SETTLE_MS - sinceAny
                 since < IDLE_MS -> IDLE_MS - since
                 since < DEEP_MS -> DEEP_MS - since
                 r > 0 && since < r -> r - since
                 else -> 10_000L
             }
-            delay(next.coerceIn(500L, 30_000L))
+            // (Update 510: a press while settled wakes this early, so the next settle is 10 s after it — one wake-up per
+            // settle, nothing per frame or per key.)
+            kotlinx.coroutines.withTimeoutOrNull(next.coerceIn(500L, 30_000L)) { wake.receive() }
         }
     }
+
+    /** Update 510: [poke] wakes [watch] when it clears [settled] (conflated: at most one waiting). */
+    private val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
+
+    /** Pure (update 510): whether a resting idle motion should have settled after [sinceInputMs] without input. */
+    internal fun settles(sinceInputMs: Long, enabled: Boolean): Boolean = enabled && sinceInputMs >= SETTLE_MS
 }
 
 /**
@@ -201,10 +243,12 @@ internal fun EffectClockDriver(hold: Boolean = false) {
     // (Update 456: [hold] — the app drawer or Settings is open over the home screen: the home's focus pulse, shimmer and
     // bolts keep their frame like the background does, then go on from there. Nothing inside those panels uses this clock.)
     val active = rememberIsActive() && rememberAnimationsEnabled() && !hold
-    val on = active && !HomeIdle.calm
+    // (Update 511: and from HomeIdle.settled — 10 s without input — instead of only the 30 s step: the clocks hold their value,
+    // so every shine / glow keeps its frame and goes on from there with the next press.)
+    val on = active && !HomeIdle.calm && !HomeIdle.settled
     // Update 144: the shimmer's clock (see EffectClock.shimmer). (Update 235: stops at HomeIdle.calm, the same signal
     // as the background clip; the value is left as it was, so every shining card keeps a still frame.)
-    val shimmerOn = active && !HomeIdle.calm
+    val shimmerOn = active && !HomeIdle.calm && !HomeIdle.settled
     LaunchedEffect(shimmerOn) {
         if (!shimmerOn) return@LaunchedEffect
         val base = EffectClock.shimmer.floatValue
@@ -244,15 +288,50 @@ internal fun rememberFocusPulseState(animate: Boolean): androidx.compose.runtime
     val calm = calmHere()
     val keep = calm && !HomeIdle.calm
     val on = animate && rememberIsActive() && rememberAnimationsEnabled() && !calm
-    LaunchedEffect(on) {
+    // Update 511: 10 s without input (HomeIdle.settled, "Save power when idle") — the glow eases to its steady 0.75 and stops
+    // updating; the next input breathes on from that brightness (no dip to the dim end first).
+    val settle = HomeIdle.settled
+    val rested = remember { booleanArrayOf(false) }
+    LaunchedEffect(on, settle) {
         if (!on) { if (!keep) pulse = 0.75f; return@LaunchedEffect }
-        val start = SystemClock.uptimeMillis()
+        if (settle) {
+            val from = pulse
+            val t0 = SystemClock.uptimeMillis()
+            while (true) {
+                val k = ((SystemClock.uptimeMillis() - t0) / FOCUS_PULSE_SETTLE_MS.toFloat()).coerceIn(0f, 1f)
+                pulse = from + (FOCUS_PULSE_REST - from) * (k * k * (3f - 2f * k))
+                if (k >= 1f) break
+                delay(50)
+            }
+            rested[0] = true
+            return@LaunchedEffect
+        }
+        val resume = rested[0]
+        rested[0] = false
+        val start = SystemClock.uptimeMillis() - (if (resume) focusPulsePhaseMs(pulse) else 0L)
         while (true) {
-            val ph = ((SystemClock.uptimeMillis() - start) % 2200L) / 1100f
-            val tri = if (ph <= 1f) ph else 2f - ph
-            pulse = 0.35f + 0.65f * (tri * tri * (3f - 2f * tri))
+            pulse = focusPulseAt(SystemClock.uptimeMillis() - start)
             delay(50)
         }
     }
     return pulseState
+}
+
+/** Update 511: the pulse's rest (the steady glow) and how long it takes to ease there once [HomeIdle.settled]. */
+internal const val FOCUS_PULSE_REST = 0.75f
+internal const val FOCUS_PULSE_SETTLE_MS = 700L
+
+/** The focus pulse [ms] into its 2.2 s breath: 0.35 … 1 … 0.35, eased (pure; unchanged curve). */
+internal fun focusPulseAt(ms: Long): Float {
+    val ph = (((ms % 2200L) + 2200L) % 2200L) / 1100f
+    val tri = if (ph <= 1f) ph else 2f - ph
+    return 0.35f + 0.65f * (tri * tri * (3f - 2f * tri))
+}
+
+/** Update 511: where on the rising half of the breath the pulse has the value [v] (ms), so a resume starts from there. */
+internal fun focusPulsePhaseMs(v: Float): Long {
+    val target = v.coerceIn(0.35f, 1f)
+    var lo = 0L; var hi = 1100L
+    while (hi - lo > 1) { val mid = (lo + hi) / 2; if (focusPulseAt(mid) < target) lo = mid else hi = mid }
+    return hi
 }

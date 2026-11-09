@@ -392,6 +392,19 @@ data class LauncherUiState(
     }
 
     /** Whether an installed app counts as an Android game. */
+    /** A5 (update 482): the games the category [platform] opens (Android games, collections, apps in the library, hidden
+     *  duplicates — the list L2 / R2 shows), for the counts layouts print beside a category. A raw count of `game.platform`
+     *  read 0 for "Android games" and counted apps that aren't in the library. Uses the shared visible-games memo. */
+    fun gamesIn(platform: String): List<Game> =
+        runCatching { copy(platformFilter = platform, specialFilter = null, searchQuery = "").visibleGames }.getOrDefault(emptyList())
+
+    fun countIn(platform: String): Int = gamesIn(platform).size
+
+    /** A5 (update 483): the library as "All games" opens it (apps only when in the library, hidden duplicates out) — the
+     *  total layouts and the category screen print, not `games.size` (every installed app counted: 45 for 5 games). */
+    fun libraryGames(): List<Game> =
+        runCatching { copy(platformFilter = null, specialFilter = null, searchQuery = "").visibleGames }.getOrDefault(emptyList())
+
     /** Update 450: an ordinary app put in Continue playing by hand (not a game; see [com.shelf.launcher.data.ContinueApps]). */
     fun isContinueApp(game: Game): Boolean =
         game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.continueApps } == true && !isAndroidGame(game)

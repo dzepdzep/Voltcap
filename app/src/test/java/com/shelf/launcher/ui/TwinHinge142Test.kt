@@ -58,7 +58,8 @@ class TwinHinge142Test {
     @Test fun hingeReservesTheKeysAndSnapsTheFacts() {
         val s = src("WinSceneTwin.kt")
         assertTrue("facts take what the keys leave", s.contains("Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {") && s.contains("KeyRow(sceneKeys(ctx))"))
-        assertTrue("whole rows", s.contains("SnapRows(Modifier.fillMaxWidth()"))
+        // (Update 487, D265: whole rows of facts that stay, the story in whole-line pages.)
+        assertTrue("whole rows", s.contains("WholeRows(Modifier.fillMaxWidth())") && s.contains("PagedStory("))
         assertTrue("touch half keeps its room", s.contains("coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))"))
         assertTrue("old hinge removed", !src("WinScenesMore.kt").contains("internal fun TwinHinge("))
         assertTrue("Twin desk's own pale veil", src("GameWindow.kt").contains("layout == HomeLayout.TWIN_DESK) twinDeskVeil"))

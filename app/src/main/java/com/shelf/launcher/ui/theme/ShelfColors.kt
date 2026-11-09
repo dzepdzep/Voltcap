@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
 /** The palette every screen reads from. Swapping themes swaps this object,
  * so nothing in the UI hardcodes a colour. */
@@ -1100,4 +1101,20 @@ object ShelfTheme {
 
     val textMuted: Color
         @Composable @ReadOnlyComposable get() = colors.textMuted
+
+    /** C1 (update 482): status tones for text and small icons on the theme's surfaces — a deeper tone on a light surface
+     *  (Plain light, Mint, your own light background…), the bright one on a dark surface, so both stay readable. */
+    val danger: Color
+        @Composable @ReadOnlyComposable get() = statusTone(colors.surface, light = Color(0xFFB3261E), dark = Color(0xFFFF8A80))
+
+    val warning: Color
+        @Composable @ReadOnlyComposable get() = statusTone(colors.surface, light = Color(0xFF8A5A00), dark = Color(0xFFE8A33D))
 }
+
+/** C1 (update 483): a destructive label on a layout's own window look, picked from the look's writing colour — dark
+ *  writing means a light window, so the deep red; light writing, the bright red (it was always the bright one). */
+fun dangerOn(ink: Color): Color = if (ink.luminance() < 0.4f) Color(0xFFB3261E) else Color(0xFFFF8A80)
+
+/** C1: [light] on a light surface (luminance > 0.45), else [dark]. */
+internal fun statusTone(surface: Color, light: Color, dark: Color): Color =
+    if (surface.luminance() > 0.45f) light else dark

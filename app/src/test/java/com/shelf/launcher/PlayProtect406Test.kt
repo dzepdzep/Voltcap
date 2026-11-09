@@ -30,7 +30,10 @@ class PlayProtect406Test {
     @Test fun compatBuildTypeSharesTheReleaseIdentity() {
         val block = gradle.substringAfter("create(\"compat\")").substringBefore("}")
         assertTrue("compat starts from release (same signing config)", block.contains("initWith(getByName(\"release\"))"))
-        assertFalse("no applicationIdSuffix: same package id", gradle.contains("applicationIdSuffix"))
+        assertFalse("no applicationIdSuffix: same package id", block.contains("applicationIdSuffix"))
+        // (Update 500: the only other package id is the isolated QA app's ".qa" — never the release or compat build.)
+        assertTrue(Regex("applicationIdSuffix = \"([^\"]*)\"").findAll(gradle).all { it.groupValues[1] == ".qa" })
+        assertFalse(gradle.substringAfter("release {").substringBefore("}").contains("applicationIdSuffix"))
         assertFalse("the old notify build type is gone", gradle.contains("create(\"notify\")"))
     }
 

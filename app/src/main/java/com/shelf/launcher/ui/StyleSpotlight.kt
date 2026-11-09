@@ -500,7 +500,7 @@ private fun SpotRecent(c: StyleCtx, g: Game, compact: Boolean) {
         SpotInfoCard("Last played", c.lastPlayed(g)?.let { lastPlayedLabel(it) } ?: "Not yet", compact)
         return
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(Modifier.badgeSet(recent.mapNotNull { com.shelf.launcher.data.RaBadges.url(it.badgeName) }), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         recent.forEach { a ->
             Row(
                 Modifier.widthIn(max = 230.dp).clip(uiRounded(8.dp)).background(themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)).padding(8.dp), // (update 151: themed)

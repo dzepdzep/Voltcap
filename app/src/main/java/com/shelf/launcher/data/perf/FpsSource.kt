@@ -81,16 +81,28 @@ class SurfaceFlingerFpsSource(private val context: Context) : FpsSource {
             // Column 2 is the actual present time; 0 and Long.MAX_VALUE mean "not presented".
             cols.getOrNull(1)?.toLongOrNull()?.takeIf { it > 0L && it != Long.MAX_VALUE }
         }
-        if (times.size < 3) return null
-        // SurfaceFlinger stamps use the monotonic clock, same as nanoTime. Stale data = not rendering.
-        if (System.nanoTime() - times.max() > 2_000_000_000L) return null
-        val span = times.max() - times.min()
-        if (span <= 0L) return null
-        val frameNs = span.toDouble() / (times.size - 1)
-        return FpsReading((1_000_000_000.0 / frameNs).toFloat(), (frameNs / 1_000_000.0).toFloat())
+        return fpsFrom(times, System.nanoTime())
     }
 
     companion object {
+        /**
+         * D4 (update 483): FPS from SurfaceFlinger present times. The buffer holds the last 128 frames — over 4 s at 30 fps —
+         * so its average lagged behind a change (a 30 → 60 fps step read ~37 fps a second later). Only the frames of the
+         * last second count when there are at least 3 of them; otherwise the whole buffer, as before. Stale (> 2 s) = null.
+         */
+        fun fpsFrom(presentNs: List<Long>, nowNs: Long, windowNs: Long = 1_000_000_000L): FpsReading? {
+            if (presentNs.size < 3) return null
+            val last = presentNs.max()
+            // SurfaceFlinger stamps use the monotonic clock, same as nanoTime. Stale data = not rendering.
+            if (nowNs - last > 2_000_000_000L) return null
+            val recent = presentNs.filter { it >= last - windowNs }
+            val times = if (recent.size >= 3) recent else presentNs
+            val span = times.max() - times.min()
+            if (span <= 0L) return null
+            val frameNs = span.toDouble() / (times.size - 1)
+            return FpsReading((1_000_000_000.0 / frameNs).toFloat(), (frameNs / 1_000_000.0).toFloat())
+        }
+
         const val ADB_COMMAND = "adb shell pm grant com.shelf.launcher android.permission.DUMP"
         fun hasDump(context: Context) =
             context.checkSelfPermission("android.permission.DUMP") == PackageManager.PERMISSION_GRANTED

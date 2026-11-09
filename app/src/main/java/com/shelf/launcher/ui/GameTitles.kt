@@ -26,6 +26,9 @@ data class TitleOptions(
     val lookAlike: Map<String, String> = emptyMap()
 ) {
     fun console(platform: String): String = when {
+        // (Update 481, A5 QA only: `--es voltcap_test_catname "…"` — every console / collection label this session, to test
+        // long category names in every layout; nothing saved.)
+        com.shelf.launcher.ui.TestHooks.catName.value != null -> com.shelf.launcher.ui.TestHooks.catName.value!!
         // Collections, franchises and play statuses (category label).
         com.shelf.launcher.data.isCollectionKey(platform) -> com.shelf.launcher.data.collectionLabel(platform)
         // (Update 325, Toni: "always the official names": no more short keys, whatever the old switch says.)

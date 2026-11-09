@@ -177,6 +177,11 @@ internal fun StyleHomeSettings(layout: HomeLayout) {
         HomeLayout.ARTLIB -> ArtLibrarySettings()
         else -> Unit
     }
+    // Update 488 (K1): Case stacks' own room between the spines (100 % = as before).
+    if (layout == HomeLayout.STACKS) {
+        Spacer(Modifier.height(8.dp))
+        PercentSlider("Game spacing", Features.stacksSpacing.state.value, { Features.stacksSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
+    }
     // Update 104: every layout can show the game's info parts (Spotlight and Icon bar have it in their own options).
     if (layout != HomeLayout.SPOT && layout != HomeLayout.BAR) {
         Spacer(Modifier.height(10.dp))
@@ -447,6 +452,8 @@ private fun ShelfSettings() {
     MutedNote("The category as a bookcase: every game shows its spine, the one you're on is pulled out to show its front. ◀ ▶ along the shelf, ▲ ▼ to the shelf above / below. The more games, the more shelves (up to three on screen, then it scrolls).")
     Spacer(Modifier.height(10.dp))
     StyleChoice("The games stand", Features.ShelfStand.values(), Features.shelfStand.state.value, { it.label }) { Features.shelfStand.value = it }
+    // Update 487 (K1): this layout's own room between the games (100 % = as before).
+    PercentSlider("Game spacing", Features.shelfSpacing.state.value, { Features.shelfSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
     MutedNote(
         when (Features.shelfStand.state.value) {
             Features.ShelfStand.SPINES -> "Spines out, like books in a bookcase: the most games per shelf."

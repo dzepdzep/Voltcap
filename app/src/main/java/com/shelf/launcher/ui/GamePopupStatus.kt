@@ -237,7 +237,7 @@ private fun PerfQuickRow(row: PerfRow, modifier: Modifier) {
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Text(
-            row.label, color = if (row.destructive) Color(0xFFFF8A80) else ShelfTheme.colors.textPrimary, fontSize = 14.sp,
+            row.label, color = if (row.destructive) ShelfTheme.danger else ShelfTheme.colors.textPrimary, fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
         )
         Text(row.value, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)

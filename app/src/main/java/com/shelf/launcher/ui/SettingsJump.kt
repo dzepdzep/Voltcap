@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -22,6 +23,9 @@ import com.shelf.launcher.ui.theme.ShelfTheme
  * Update 148: Settings search (and R1 › hold a tile) goes straight to the setting itself: its page and group open, then
  * the page scrolls to it and it lights up for a moment. It used to stop at the top of the page, a long scroll away.
  */
+/** Update 490: how long a search jump waits for the page's groups to fold / open before it scrolls (their animations ~300 ms). */
+internal const val JUMP_SETTLE_MS = 420L
+
 internal object SettingsJump {
     /** The setting's name to scroll to (a search result's label); cleared once it's in view. */
     var pending by mutableStateOf<String?>(null)
@@ -70,7 +74,7 @@ internal object SettingsJump {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun jumpAnchor(label: String): Modifier {
+internal fun jumpAnchor(label: String, onHit: (() -> Unit)? = null): Modifier {
     val pending = SettingsJump.pending
     androidx.compose.runtime.DisposableEffect(label) {
         SettingsJump.seen(label)
@@ -91,27 +95,36 @@ internal fun jumpAnchor(label: String): Modifier {
     val accent = ShelfTheme.accent
     val folds = LocalFoldKeys.current
     val flashScope = androidx.compose.runtime.rememberCoroutineScope()
+    val focusReq = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(hit) {
         if (hit) {
-            // Its groups stay open once the jump is over.
+            // Its groups stay open once the jump is over (and a group that is itself the result opens too).
             folds.forEach { openFold(it) }
-            // (Let the page and its group open first.)
-            kotlinx.coroutines.delay(380)
-            runCatching { req.bringIntoView() }
-            // (Update 187 (fix): the light fades in its own coroutine — clearing the jump ends this effect, which used to
-            // stop the fade at its start and leave the setting lit up for good.)
-            flashScope.launch {
-                flash.snapTo(1f)
-                flash.animateTo(0f, tween(1800))
-            }
+            onHit?.invoke()
+            // (Update 490, search follow-up — owner, KONKR: "Battery watcher opened the page without locating the group".
+            // The page was scrolled while every group stood open for the search, then clearing the jump folded the other
+            // groups and the page closed up under it, so the result ended somewhere else. Now the jump is claimed first,
+            // the other groups fold, and the scroll and the D-pad focus come after the page has settled — in this scope,
+            // because claiming the jump ends this effect.)
             if (SettingsJump.pending.equals(label, ignoreCase = true) || SettingsJump.fallback.equals(label, ignoreCase = true)) {
                 SettingsJump.pending = null
                 SettingsJump.fallback = null
+            }
+            flashScope.launch {
+                kotlinx.coroutines.delay(JUMP_SETTLE_MS)
+                runCatching { req.bringIntoView() }
+                // The controller lands on the result itself (its first control), not on the search box.
+                runCatching { focusReq.requestFocus() }
+                kotlinx.coroutines.delay(JUMP_SETTLE_MS)
+                runCatching { req.bringIntoView() }
+                flash.snapTo(1f)
+                flash.animateTo(0f, tween(1800))
             }
         }
     }
     return Modifier
         .bringIntoViewRequester(req)
+        .focusRequester(focusReq)
         .drawBehind {
             val a = flash.value
             if (a > 0f) drawRoundRect(accent.copy(alpha = 0.28f * a), cornerRadius = CornerRadius(12.dp.toPx()))

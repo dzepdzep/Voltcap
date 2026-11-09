@@ -41,7 +41,8 @@ internal object WhoPlaying { var asked = false }
  */
 @Composable
 internal fun WhoIsPlayingScreen(names: List<String?>, active: Int, onPick: (Int) -> Unit, onSkip: () -> Unit) {
-    Dialog(onDismissRequest = onSkip, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
+    Dialog(onDismissRequest = onSkip, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false)) {
+        // (Update 514: the whole display on a Retroid too — see ProfileSelectScreen.)
         ImmersiveDialogWindow()
         Box(Modifier.fillMaxSize().background(Color(0xF2080A0E)), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {

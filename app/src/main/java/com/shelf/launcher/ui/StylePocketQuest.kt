@@ -1003,7 +1003,8 @@ private fun PqSelector(pal: PqPalette, liftPx: Float, modifier: Modifier) {
 
 @Composable
 private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
-    val counts = remember(c.state.games) { c.state.games.groupingBy { it.platform }.eachCount() }
+    val counts = categoryCounts(c)
+    val libTotal = libraryCount(c)
     val stops = c.stops
     val live by rememberUpdatedState(c)
     Column(Modifier.fillMaxSize().pqPanel(pal, cut = 16.dp, edge = 2.dp).padding(horizontal = 14.dp, vertical = if (compact) 8.dp else 12.dp)) {
@@ -1035,7 +1036,7 @@ private fun PqSystems(c: StyleCtx, pal: PqPalette, compact: Boolean) {
                         val st = stops[i]
                         val count = when {
                             i == c.stop -> c.games.size
-                            st.special == null && st.platform == null -> c.state.games.size
+                            st.special == null && st.platform == null -> libTotal
                             st.special == null && st.platform != null && !com.shelf.launcher.data.isCollectionKey(st.platform) -> counts[st.platform]
                             else -> null
                         }

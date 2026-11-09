@@ -386,7 +386,8 @@ fun FirstRunDialog(
                     "IGDB",
                     "Summaries, critic scores and how long each game takes to beat.",
                     status.detailsConnected, onIgdb,
-                    how = "dev.twitch.tv/console › Register Your Application (any name, OAuth redirect http://localhost, " +
+                    how = if (com.shelf.launcher.data.IgdbBuiltInKey.builtIn != null) "Built into Voltcap — just press Turn on." // (Update 516)
+                    else "dev.twitch.tv/console › Register Your Application (any name, OAuth redirect http://localhost, " +
                         "category Application Integration) › copy the Client ID, make a Client Secret › paste both here."
                 )
                 Spacer(Modifier.height(12.dp))

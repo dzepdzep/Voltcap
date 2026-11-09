@@ -440,6 +440,8 @@ internal fun BladesLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
                         // (A shadow only under the blade coming forward — the GPU's cost was every blade's.)
                         shadowElevation = if (a < 1f) (14f * (1f - a)).dp.toPx() else 0f
                         shape = RoundedCornerShape(14.dp); clip = true
+                        // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                        flatTextFor3d()
                     }
                     .zIndex(if (on) 30f else 20f - abs(i - selected))
                     .background(Brush.linearGradient(listOf(lookHue(tile, 0.34f, 0.45f), lookHue(tile, 0.14f, 0.5f)), Offset.Zero, Offset(900f, 900f)))

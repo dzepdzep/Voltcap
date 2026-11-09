@@ -124,6 +124,8 @@ private const val STACKS_CASE_YAW = 24f
 
 @Composable
 internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkRoot") } // (Update 492, D137: rebuilds per move)
+    if (QaTrace.on) { QaProbe("StkPRoot", 0); QaLocals("Root") } // (Update 493, D137 probe)
     val g0 = c.game
     // (Update 461, D137: no decoding ahead here — measured on the KONKR (A/B, same build, cold start, 2 x 3 runs each) it held
     // 25-35 MB more for no smoother scrolling and no fewer bare cases: Case stacks shows one 3D case, the stacks are spines.)
@@ -167,6 +169,7 @@ internal fun StyleCaseStacks(c: StyleCtx, modifier: Modifier = Modifier) {
 @Composable
 private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxSize()) {
+        if (QaTrace.on) { QaTrace.count("StkBwc"); QaProbe("StkPBwc", 0); QaLocals("Stk") } // (Update 493, D137 probe)
         val compact = maxHeight < 380.dp
         // Update 325 (Toni: "two different sizes show when editing Home"): a part hidden on the home screen still shows in
         // Edit Home (faint, to bring it back) — but it took its room there too, so the games stood smaller and lower than on
@@ -211,7 +214,9 @@ private fun StacksBody(c: StyleCtx, g: Game, barOn: Boolean, toolsOn: Boolean, m
                 onSelect = c.actions.select, onOpen = c.actions.open, cardArtType = c.type,
                 physicalMedia = c.state.physicalMedia, screenshots = c.state.screenshots, onNeedPhysical = c.actions.needPhysical,
                 loop = loopRowOn(c), loopTick = c.state.loopTick, loopStep = c.state.loopStep,
-                modifier = stage
+                modifier = stage,
+                // (Update 489, K1 on the Thor: shown as a carousel (R1 › Carousel) the stacks' Game spacing did nothing.)
+                hostGap = Features.stacksSpacing.state.value / 100f
             ) } else vcTrace("VC:StacksStage") { StacksStage(c, stage) }
             if (barRoom) Box(
                 Modifier.fillMaxWidth().height(barH).editablePart(LayoutParts.id(HomeLayout.STACKS, "bar"), "Bottom panel")
@@ -288,6 +293,7 @@ private class StacksGeo(
 /** The stage: the room's floor, the two stacks and the case in the middle; swipe to move along. */
 @Composable
 private fun StacksStage(c: StyleCtx, modifier: Modifier) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkStage") } // (Update 492, D137: rebuilds per move)
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
     val latestFocus by rememberUpdatedState(c.focus)
@@ -374,7 +380,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
         val spineW = caseH * STACKS_SPINE
         val gapSide = (caseW * 0.12f).coerceIn(12.dp, 40.dp)
         val x0 = caseW / 2 + gapSide + spineW * STACKS_SPINE_K / 2
-        val pitch = spineW * STACKS_SPINE_K + 1.5.dp
+        // (Update 488, K1: Layout options › Game spacing — 100 % is the standard pitch; more opens a gap between the spines.)
+        val pitch = spineW * STACKS_SPINE_K * stacksPitchK(com.shelf.launcher.data.Features.stacksSpacing.state.value) + 1.5.dp
         val avail = (w / 2 - x0 - 4.dp).coerceAtLeast(0.dp)
         val depthK = if (depth) STACKS_DEPTH_K else 0f
         // How many spines fit in each stack before the screen's edge.
@@ -382,7 +389,8 @@ private fun StacksStage(c: StyleCtx, modifier: Modifier) {
         val nSide = if (depthK > 0f) {
             ((exp(depthK * (avail / pitch)) - 1f) / depthK).coerceIn(0f, 1000f).toInt() + 2
         } else (avail / pitch).coerceIn(0f, 1000f).toInt() + 2
-        val geo = remember(w, h, caseW, caseH, depthK, density, mirror) {
+        // (Update 488b, K1 on the Thor: the spacing slider changed nothing until the screen was rebuilt — the pitch wasn't a key.)
+        val geo = remember(w, h, caseW, caseH, depthK, density, mirror, pitch, nSide) {
             with(density) {
                 StacksGeo(
                     caseW, caseH, spineW, caseW.toPx(), caseH.toPx(), spineW.toPx(),
@@ -468,6 +476,7 @@ private fun StacksItem(
     // [centre] whether it is the place you're on.
     game: Int = i, centre: Boolean = i == c.focus
 ) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkItem") } // (Update 492, D137: rebuilds per move)
     val g = c.games[game]
     val onTap by rememberUpdatedState(tap)
     Box(
@@ -515,7 +524,10 @@ private fun StacksItem(
                 }
                 .then(if (spineTaps) Modifier.pointerInput(game) { detectTapGestures { onTap(game) } } else Modifier)
         ) {
-            GameSpine(g, c.state.physicalMedia[g.stableKey], Modifier.fillMaxSize())
+            // (Update 503: lit like the Game shelf's spines — Settings › Game shelf › Spine depth, the same draw (SpineDepth.kt):
+            // bevelled edges, the case's rounded back, a per-game tone so a packed stack doesn't look stamped. Off = as before.
+            // Drawn once into the spine's own layer; the stack's movement only moves that layer.)
+            GameSpine(g, c.state.physicalMedia[g.stableKey], Modifier.fillMaxSize().spineDepth(g.stableKey.hashCode()))
         }
         // The front face: shown only while it is in (or coming into / leaving) the middle (edge-on its alpha is 0 below).
         // (Update 230, #20: made a step or two ahead ([front]); it takes taps and reports itself only once [near].)
@@ -556,6 +568,7 @@ private fun StacksItem(
  */
 @Composable
 internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modifier) {
+    androidx.compose.runtime.SideEffect { if (QaTrace.on) QaTrace.count("StkFront") } // (Update 492, D137: rebuilds per move)
     val k = g.stableKey
     val on = k == c.game?.stableKey
     val accent = ShelfTheme.accent
@@ -576,7 +589,10 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
             StacksProgress(c, g, on)
         }
     } else if (caseLook && !spines && caseMarker(g.platform) != null) {
-        val scan = typedArtFor(CardArtType.CASE, c.state.physicalMedia[k], c.state.screenshots[k], g.platform)
+        // (Update 485, KONKR: the game's own scans also when the library hasn't handed them in yet — HomeScans, as Case3D
+        // reads them — so a picked cover far off the box's shape can give way to the box scan, CaseArt.)
+        val scans = c.state.physicalMedia[k] ?: HomeScans.of(k)
+        val scan = typedArtFor(CardArtType.CASE, scans, c.state.screenshots[k], g.platform)
         Box(modifier.gameOrigin(k, on).rolloutItem()) {
             MediaFocus(on) {
                 CaseArt(
@@ -584,7 +600,7 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                     g.platform, coverOrAppIcon(g, c.cover(g)), scan, Modifier.fillMaxSize().awardShine(k, focused), title = gameDisplayName(g.name),
                     caseModifier = if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(2.dp)) else Modifier,
                     // (Update 240, #27/#58: the game and its scans, so a box whose template lies on its back (N64 / SNES) stands as its real 3D case when turned to its spine.)
-                    spine = BoxTexture.realSpine(c.state.physicalMedia[k], g.platform), game = g, physical = c.state.physicalMedia[k]
+                    spine = BoxTexture.realSpine(scans, g.platform), game = g, physical = scans
                 )
             }
             // (Update 202: the case's printed band shows the console already.)
@@ -722,3 +738,7 @@ internal fun CaseStacksSettings() {
         PickedFacingChoice(note = false)
     }
 }
+
+
+/** Update 488 (K1): Case stacks' spine pitch factor for its Game spacing [pct] (100 = the standard pitch, 1.0). */
+internal fun stacksPitchK(pct: Int): Float = (1f + (pct - 100) / 200f).coerceAtLeast(0.75f)

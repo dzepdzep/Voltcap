@@ -183,8 +183,12 @@ private fun PocketRibbonTop(c: StyleCtx, modifier: Modifier, framed: Boolean) {
                 val meta = listOfNotNull(titles.console(g.platform), year?.toString(),
                     c.lastPlayed(g)?.let { "Played " + lastPlayedLabel(it).let { l -> if (l == "Today" || l == "Yesterday") l.lowercase() else l } }).joinToString("  ·  ")
                 val capTop = top + 4f + (fh - 8f) * (1f - RIBBON_CAPTION)
-                PocketText(this, titles.display(g.name), 28f, capTop, 200f, 15f, 9f, RInk, font, TextAlign.Center)
-                PocketText(this, meta, 28f, capTop + 15f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
+                // (Update 478, D270: with the two screens apart the lower screen's ribbon already names the game — the upper
+                // screen keeps the piece and the quiet line only. On one screen (framed) both parts show together: the name stays.)
+                if (framed) {
+                    PocketText(this, titles.display(g.name), 28f, capTop, 200f, 15f, 9f, RInk, font, TextAlign.Center)
+                    PocketText(this, meta, 28f, capTop + 15f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
+                } else if (meta.isNotEmpty()) PocketText(this, meta, 28f, capTop + 8f, 200f, 11f, 6.5f, RMuted, font, TextAlign.Center)
             }
             // Small captions under the picture: the category, and where you are in it.
             // (Update 315: off for this layout — Categories tile / Settings — no caption.)

@@ -56,6 +56,7 @@ object LastPlayedSync {
     fun sync(context: Context, games: List<Game>, store: RecentlyPlayedStore, afterGame: Boolean = false): Int {
         if (!Features.syncLastPlayed.value || !CloudSync.isActive(context) || DriveAuth.needsSignIn(context)) return 0
         if (GameMode.active || !due(afterGame)) return 0
+        if (CloudSync.qaPaused(context)) return 0 // Update 497 (D295): no Drive round in a QA session
         running = true
         try {
             lastRoundAt = System.currentTimeMillis()

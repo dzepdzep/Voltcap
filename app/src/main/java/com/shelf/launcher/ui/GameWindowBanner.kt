@@ -724,7 +724,7 @@ internal fun BannerGameWindow(
                                     itemsIndexed(rows, key = { i, r -> "p$i${r.label}" }) { _, r ->
                                         BannerCard(look, onClick = r.onClick) {
                                             Text(
-                                                r.label, color = if (r.destructive) Color(0xFFFF8A80) else look.ink, fontSize = 14.sp,
+                                                r.label, color = if (r.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
                                                 fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
                                             )
                                             Text(r.value, color = look.muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -735,7 +735,7 @@ internal fun BannerGameWindow(
                                     itemsIndexed(options, key = { i, _ -> "o$i" }) { i, opt ->
                                         BannerCard(look, if (i == 0) firstMod else Modifier, onClick = opt.onClick) {
                                             Text(
-                                                opt.label, color = if (opt.destructive) Color(0xFFFF8A80) else look.ink, fontSize = 14.sp,
+                                                opt.label, color = if (opt.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
                                                 fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
                                             )
                                             opt.sub?.let { Text(it, color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }

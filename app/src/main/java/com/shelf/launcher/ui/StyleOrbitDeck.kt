@@ -271,6 +271,8 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                             alpha = (if (smallRing) 1f else edge) *
                                 // (Its window's disc takes over as it flies out — and hands back as it lands.)
                                 (if (on && MediaInspect.key == g.stableKey) 1f - MediaInspect.amount.floatValue else 1f)
+                            // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
+                            flatTextFor3d()
                         }
                         .zIndex(zNow)
                         .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }
