@@ -109,3 +109,5 @@ tools/themes/refresh-review/sheet-*
 /app/src/main/java/com/shelf/launcher/ui/QaArtFixture.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch503Test.kt
 /app/src/test/java/com/shelf/launcher/ui/Batch504Test.kt
+/app/src/test/java/com/shelf/launcher/ui/Batch505Test.kt
+/app/src/main/java/com/shelf/launcher/ui/SceneOwnColors.kt

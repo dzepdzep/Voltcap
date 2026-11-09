@@ -1,3 +1,67 @@
+# Update 505 (9 Nov 2026) — checkpoint 29: batch 505 — the last eight popups in their home's colours, Case Flow's staged opening, whole spine names and Hero side names, the disc's own spin pauses under a finger
+
+All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa505-qa; manifest read before each of the 3 installs: QA id, no
+HOME). Owner's v0.6.67 untouched: Thor pid 32226 (the owner's app had restarted at 23:54 the night before, hours before this session; still
+0.6.67), GT78 pid 26828; AYN service **0 calls** from the QA app (Thor + GT78); no game launched (0 LAUNCH lines); no Drive sync; the Drive
+switches were not looked at. Synthetic data only, in the QA app's own folder: long-title fixture ROMs (Zelda ALttP, Yoshi's Island,
+Castlevania double pack), a printed test-disc label (QA Labels folder, below). QA-app prefs changed for screenshots (layout_colors, motion_level)
+were put back. Scratch files removed from both devices' Download. KONKR not connected.
+Staging patch sha256 **950c426b4b3da70f21a144ba8a71f76d287646290208ef501830e73c4a799036** (173 files, applies on 589fdd4), staging_local only
+(0.6.68/staging.patch + backups/staging_505_950c426b.patch, read back); 498–504 backups kept. PC tree back to the RC code.
+
+**Implemented (staging)**
+1. **Popup colours (batch 505, owner-approved).** One shared rule, SceneOwnColors.kt (`sceneLit`): a home that draws in the effective theme
+   colours (Spotlight, Library, Art library, Crate, Cross menu "Theme") → its popup reads the same resolved ShelfTheme colours (theme / game art /
+   music / per-layout precedence, Theme.kt); a home with its own colour choice (Rental Shop wall, Bubbles wallpaper, Pocket classic accent,
+   Cross menu Dusk/Ocean/Ember) → that choice, unless you set this layout's own colours, then your accent; every lit colour made readable on
+   what it sits on (legibleArtAccent 3:1, textOn 4.5:1). Rental Shop: the lit key in the chosen wall's neon (was always the purple wall's pink),
+   dim behind in the wall's dark. Bubbles card: ground and ring from the chosen wallpaper. Spotlight: keys on the home's dark themed cards,
+   lit in the accent (was fixed warm yellow). Library: the home's themed panels and accent, gold when every achievement is earned (was a fixed
+   blue store page / green Play). Art library: the home's dark themed gallery wall, accent keys (was a pale museum wall). Crate: the sleeve's
+   print (SIDE A, track numbers, Play) in the home accent on the paper (was fixed red). Pocket classic: title bar / frame / lit key in its own
+   Accent setting (was fixed blue). Cross menu: options column in the home's wash, lit row in the wash's light colour (was black / white);
+   the home's backdrop and the column share `crossWash`. Disc Station and Circuit (504) unchanged.
+2. **Animations.** Case Flow: the media picture slides out from the case's side and the pills rise after it (draw-time reads of the window's
+   reveal; nothing extra with motion off). File select ("FileCardBack", layout FILESELECT): already opens by turning over from the selected
+   file block in GameWindow (`scene == WinScene.FILE_CARD` flip) — the 504 audit's "no entrance" was a false positive (it only looked for
+   reveal reads inside the scene); verified on the Thor.
+3. **Rule-11 clipping.** Template spines (Case Stacks / Game shelf `SpineName`): measured in a bare TextStyle but drawn in the screen's
+   style (letter spacing), so the last word wrapped onto a hidden line — now measured and drawn in one style (`spineNameStyle`). Hero wheel
+   side names: a third line where the row step leaves room (`heroWheelNameLines`), instead of "…" after two.
+4. **Inspect, found with the printed test disc:** a drag on the disc / cartridge out of its case paused nothing (its own drag handler bypassed
+   504's pause) — its slow spin ran under the finger and through the wait. Now the content has the same Initial-pass hands-on handler,
+   `releaseContent(touch)` waits for the last finger, 360 ms back, then resumes; the stick pauses it too.
+5. **QA: printed test disc.** The QA app reads labels only from its own `<files>/Labels` (never the shared Voltcap/Labels); the owner's
+   app is unchanged (LabelFolder.roots).
+
+**Device evidence (Thor unless noted)**
+- Popups before (qa504) / after (qa505): q505_popups_before_after.png (Spot, Library, Art library, Crate, Cross take the theme accent; Shop and
+  Pocket classic keep their own wall / accent by design). Custom per-layout colours (Shop green, Pocket classic magenta, Cross green, Crate
+  magenta): q505_popups_custom_colour.png — every popup follows, text readable.
+- GT78 960×640: Shop, Cross, Pocket classic, Library popups whole, every key on screen; Hero side names whole on three lines; spines whole
+  (q505_gt78_sheet.png).
+- Clipping: q505_clipping_before_after.png — "…A Link To The" → "…A Link To The Past", "Yoshi's" → "Yoshi's Island"; Hero "Yoshi'…" → whole.
+- Printed disc: spinning (frame diff ≈2.0–2.5 / 50 ms) → drag → **0.00 for the whole 3 s hold** → 360 ms back → spin resumes at the same rate
+  from the same angle (q505_printed_disc_strip.png; log `inspect pause` → `content settle hold=3000 dur=360`).
+- Case Flow open / close (q505_caseflow_open_close.png) and File select turn-over (q505_fileselect_open_close.png); focus back on the same
+  game after B ("win closed reopen=false", same file highlighted).
+- **Finding, not fixed:** with Motion = Off (QA app), the Case Flow window still cross-fades ~200 ms — part of that path runs outside the shared
+  motion clock (MotionLevel is on the root recomposer). Pre-existing (505 only reads the window's own reveal); root cause open.
+- Not verified: two-finger pinch / pan (owner), Android "Remove animations" (device setting not changed), dual screen, KONKR.
+
+**Popup coverage matrix (53 layouts)** — dedicated scenes: 37 layouts; shared families with per-layout variants: INDEX_CARD (Game shelf, Case
+Stacks, Consoles, Cover details), POCKET_LCD (Pocket Quest, Pocket ribbon, Pocket classic), TWIN_HINGE (Twin desk / icons / showcase),
+HERO_BANNER (Hero, Hero tiles), TILE_CARD (Tiles, Grid); intentional exceptions: TV (its own on-the-TV window), Custom / Layout Studio
+(standard window in your look). Fixed-colour scenes left: none of the eight; every scene opens with its own or the shared grow / flip motion.
+Own / Banner / Classic / Row stay independent; the selected mode is never changed.
+
+**Checks:** testDebugUnitTest pass (Batch505Test 9/9, Batch504Test 4/4, all suites), assembleDebug (QA) ×2 + assembleRelease pass, patch
+apply-check on 589fdd4, PC patch sha read back.
+**Files (staging only):** ui/SceneOwnColors.kt (new), WinScenesConsole, WinScenesHomes2, WinScenesMore, WinScenesStyled, WinScenes, GameWindow,
+StyleBubbles, StyleCrossMenu, HeroCarousel, ShelfHome, MediaInspectView, data/LabelFolder; test Batch505Test (new).
+**Process note:** `sync_sources` robocopies project_copy over the root including OLDER files — it put back older SUMMARY / COWORK_HANDOFF /
+CURRENT_TASK / .gitignore; restored from the committed versions, and the current docs are now also in project_copy.
+
 # Update 504 (8 Nov 2026) — checkpoint 28: Inspect pauses while you handle a piece and settles back 3 s after you let go; Disc Station and Circuit popups in their layout's colours; popup coverage matrix; master backlog
 
 All device work in the isolated **Voltcap QA** (com.shelf.launcher.qa, 0.6.68-qa504-qa; manifest read before each install: QA id, no HOME).
