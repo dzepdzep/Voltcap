@@ -775,7 +775,8 @@ private fun LiveAreaBody(c: StyleCtx, g: Game, compact: Boolean) {
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         StableFullText(titles.display(g.name), color = Color.White, fontSize = if (compact) 18.sp else 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = if (compact) 20.sp else 27.sp) // (Update 470: shrinks, then a third line, before it slides)
-                        Text(if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform), color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 1)
+                        // (Batch 522, popup sweep: "Super Nintendo" - the one line cut the rest. Whole: smaller, then sliding.)
+                        WinFullText(if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform), color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 1)
                     }
                 }
                 Spacer(Modifier.weight(1f))
@@ -804,7 +805,8 @@ private fun LiveAreaBody(c: StyleCtx, g: Game, compact: Boolean) {
                     LiveRound(Icons.Filled.Settings, "Options", l == 3, compact) { bubblesLiveAct(c, 3) }
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(
+                // (Batch 522, sweep at font ×1.3: the hint line was cut at the window's edge - whole: smaller, then sliding.)
+                WinFullText(
                     when (l) { 1 -> "Achievements"; 2 -> "Details"; 3 -> "Options"; else -> "◀ ▶ other games   ▼ more   B back" },
                     color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, maxLines = 1
                 )
