@@ -16,6 +16,10 @@ for LK in $LOOKS; do for BA in before after; do
   screencap -p $O/${N}_grid.png
   # the last row holds the games that aren't here: to the end, then open one
   for i in 1 2 3 4 5 6 7 8 9 10; do input keyevent KEYCODE_DPAD_RIGHT; sleep 0.25; done; sleep 1; screencap -p $O/${N}_grid_end.png
+  # the other consoles' saves (the games that aren't here: GameCube, GBA, GBC, PS2, SNES) further down
+  for i in 1 2; do input keyevent KEYCODE_DPAD_DOWN; sleep 0.5; done; sleep 1; screencap -p $O/${N}_down1.png
+  for i in 1 2; do input keyevent KEYCODE_DPAD_DOWN; sleep 0.5; done; sleep 1; screencap -p $O/${N}_down2.png
+  for i in 1 2 3; do input keyevent KEYCODE_DPAD_DOWN; sleep 0.5; done; sleep 1; screencap -p $O/${N}_down3.png
   input keyevent KEYCODE_DPAD_CENTER; sleep 2.5; screencap -p $O/${N}_open.png
   input keyevent KEYCODE_BUTTON_B; sleep 1.5; input keyevent KEYCODE_BUTTON_B; sleep 1.5
   echo "$N" >> $L
