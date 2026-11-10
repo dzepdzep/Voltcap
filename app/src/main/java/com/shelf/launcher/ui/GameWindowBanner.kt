@@ -977,8 +977,9 @@ private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> 
 @Composable
 private fun BannerStat(look: BannerLook, label: String, value: String, modifier: Modifier, lines: Int = 1) {
     Column(modifier) {
-        Text(label, color = look.muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(value, color = look.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = lines, overflow = TextOverflow.Ellipsis)
+        // (Batch 522, popup sweep BANNER on the RP Classic: "LAST PLAY…" / "Never pla…" (rule 11) - whole: smaller, then sliding.)
+        WinFullText(label, color = look.muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp, maxLines = 1)
+        WinFullText(value, color = look.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = lines)
     }
 }
 

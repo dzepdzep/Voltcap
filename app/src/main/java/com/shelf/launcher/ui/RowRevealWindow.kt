@@ -454,17 +454,19 @@ internal fun RowMotionWindow(
                     }
                     .widthIn(max = with(d) { (if (panel) W - 2 * pad - 2 * panelPad else textW).toDp() })
             ) {
-                Text(
+                // (Batch 522, popup sweep ROW_OPENS / ROW_REVEAL: the name and the line under it ended in "…" (rule 11) - whole now:
+                // smaller, then sliding.)
+                WinFullText(
                     titles.display(g.name), color = Color.White, fontSize = if (narrow) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 1.1.em, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
+                    maxLines = 2, lineHeight = 1.1.em, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
                 )
-                Text(
+                WinFullText(
                     listOfNotNull(
                         titles.console(g.platform).takeIf { g.sourceType != com.shelf.launcher.data.SourceType.APP },
                         stylePlaytime(playMs, resumed),
                         lastAt?.let { "Last played " + android.text.format.DateUtils.getRelativeTimeSpanString(it, System.currentTimeMillis(), android.text.format.DateUtils.DAY_IN_MILLIS) }
                     ).joinToString("  ·  "),
-                    color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp, maxLines = 1,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
