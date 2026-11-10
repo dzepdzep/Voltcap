@@ -92,7 +92,7 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Layout, Sort, Edit home: every layout (the sort also orders Timeline's same-date / undated games).
         "layout", "sort", "edithome" -> R1Fit.Show
         // Update 490 (R1 plan, owner-approved): Layout options — every layout has its options page. Game spacing — only the
-        // five layouts with a spacing of their own (R1Spacing); elsewhere no tile at all, never a dead one.
+        // layouts with a percentage spacing of their own (R1Spacing; batch 520: ten); elsewhere no tile at all, never a dead one.
         "layoutopts" -> R1Fit.Show
         "spacing" -> on(R1Spacing.prefFor(l) != null)
         // Update 245: the game popup's style — only while A opens a game window at all (Settings › Home › Layout options ›

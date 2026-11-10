@@ -1645,6 +1645,8 @@ object Features {
     val stacksSpacing = IntPref("stacks_spacing", 100, 50..250)
     /** Update 488 (K1): the Voltcap row — room between the games, % of the standard gap (100 = as before). */
     val rowSpacing = IntPref("row_spacing", 100, 50..300)
+    /** Batch 520 (K1): the Game grid (main screen) — room between the cards, % of the standard gaps (100 = as before). */
+    val gridSpacing = IntPref("grid_spacing", 100, 50..250)
     /** Update 487 (K1): Game shelf — room between the games, % of the standard gap (100 = as before). */
     val shelfSpacing = IntPref("shelf_spacing", 100, 50..250)
     enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }

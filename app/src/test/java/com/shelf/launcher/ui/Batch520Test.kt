@@ -105,4 +105,28 @@ class Batch520Test {
         assertTrue(src("ui/StyleFileSelect.kt").contains("Features.fsSpacing.value = it.coerceIn(60, 150) }, min = 60, max = 150"))
         assertFalse(src("ui/QuickSettings.kt").contains("R1Spacing.MIN, R1Spacing.maxFor"))
     }
+
+    @Test fun serverTroubleIsNotReportedAsNotFound() {
+        val f: (String?) -> String? = { com.shelf.launcher.data.screenScraperFailureNote(it) }
+        assertEquals(null, f(null))
+        assertEquals(null, f(com.shelf.launcher.data.OUTCOME_FOUND))
+        assertEquals(null, f(com.shelf.launcher.data.OUTCOME_UNKNOWN))
+        assertTrue(f(com.shelf.launcher.data.OUTCOME_OFFLINE)!!.contains("didn't answer"))
+        assertTrue(f("ScreenScraper answered 504")!!.contains("in time"))
+        assertTrue(f("ScreenScraper answered 430")!!.contains("limit"))
+        assertTrue(f("ScreenScraper answered 403")!!.contains("username and password"))
+        assertTrue(f("ScreenScraper answered 503")!!.contains("busy"))
+        assertTrue(f("ScreenScraper answered 500")!!.contains("(500)"))
+        assertTrue(src("LauncherViewModel.kt").contains("source == MetadataSource.SCREENSCRAPER && com.shelf.launcher.data.screenScraperFailureNote(screenScraperRepository.lookupOutcome[key]) != null ->"))
+    }
+
+    @Test fun gameGridSpacingDefaultsToTodaysGaps() {
+        assertEquals(100, com.shelf.launcher.data.Features.gridSpacing.default)
+        assertEquals(50, R1Spacing.minFor(com.shelf.launcher.data.HomeLayout.GRID)); assertEquals(250, R1Spacing.maxFor(com.shelf.launcher.data.HomeLayout.GRID))
+        val g = src("ui/GridHome.kt")
+        assertTrue(g.contains("val spacingK = if (secondScreen || spines) 1f else com.shelf.launcher.data.Features.gridSpacing.state.value / 100f"))
+        assertTrue(g.contains("val gap = if (spines) 4.dp else if (secondScreen) 10.dp else 14.dp * spacingK"))
+        assertTrue(g.contains("verticalArrangement = Arrangement.spacedBy(if (secondScreen) 10.dp else 12.dp * spacingK)"))
+        assertTrue(src("ui/SettingsDialog.kt").contains("com.shelf.launcher.data.Features.gridSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250"))
+    }
 }

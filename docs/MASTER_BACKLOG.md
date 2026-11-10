@@ -66,10 +66,17 @@ Statuses:
 |---|---|
 | KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW: not connected) |
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | OPEN, render-bound (494); no change without a new measurement plan |
-| ScreenScraper per-game scrape progress for 40 s+ answers (the account check is fixed) | PARTIAL — game look-ups show the existing loading state; the app waits 75 s through the service (519); no device run with a slow answer yet |
-| Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
-| K1 game spacing in the remaining compatible layouts | PARTIAL — R1 Spacing tile + slider now also on Case flow, Cardboard box, Storage boxes, File select (520: their own pref and range; unit tests; device: build installed, the tile sits in the collapsed R1 row and was not reached safely — D-pad walks there pass over the Wi-Fi / Bluetooth / DND toggles). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
+| ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
+| Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 RP Classic: 2 recordings (`flash513.sh` COVERDETAILS, 690 + 784 frames): 1 one-frame event, during the fast 5-step burst — the NEW case's first frame (its no-art generated cover drawn at another texture size, then redrawn), not the leaving case's flight; 0 in the second run. Both look like first-frame texture / bounds, not motion maths. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
+| K1 game spacing in the remaining compatible layouts | PARTIAL — 520: **Game grid** has its own Game spacing (Layout options + R1, 50–250 %, 100 % = the old 14 / 12 dp; main screen only; RP Classic: 100 / 50 / 180 % screenshots, D-pad, controller pass PASS). R1 Spacing tile + slider also on Case flow, Cardboard box, Storage boxes, File select (their own pref and range; unit tests; controller pass on those layouts PASS; the R1 tile itself reached only by unit test). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
 | B5 long rows / D137 render cost | PARTIAL — see Case Stacks above |
+
+## 3a. Checked and not a defect (520)
+
+| Item | Finding |
+|---|---|
+| D-pad in the R1 panel toggling Wi-Fi / Bluetooth / DND | **No.** A tile acts only on A / Enter / tap (`R1Tile` click; edit mode moves tiles with the D-pad only while one is picked). RP Classic: 22 D-pad moves over every tile row — wifi_on, bluetooth_on, zen_mode, brightness unchanged. The risk is a test that presses A blindly; QA scripts must not. The brightness bar does change with ◀ ▶ by design (only when Android allows it). |
+| Game grid: Down with fewer games than a row | Pre-existing (same at 100 %): Down moves by a row's width and wraps, so with 3 games it lands on a game that depends on the column count. Only with less than one row of games; spacing only changes the count in Auto. Low; left for an owner decision |
 
 ## 3b. Upgrade to v0.6.69 (owner's handhelds)
 
@@ -77,7 +84,9 @@ Statuses:
 |---|---|
 | Part A read-only checks, RP Classic | DONE (520): 0.6.67 / 74 = the published APK (1586accc…), signer 88ce4b67… = 0.6.69's, normal APK → target `Voltcap-0.6.69.apk`. Old QA hooks file in the real app (harmless on 0.6.69; owner decides). Drive switches not readable read-only. Details + mixed-version Drive risk: docs/UPGRADE_069_CHECKLIST.md |
 | Part A on KONKR / Thor / Odin 3 | BLOCKED-HW (not connected) |
-| P1–P7, B1–B6 | BLOCKED-OWNER (each step its own approval) |
+| P1 inventory, RP Classic | DONE (520, owner-approved): read-only; results in docs/UPGRADE_069_CHECKLIST.md |
+| Drive with mixed versions | Reviewed (520): no data loss possible; a 0.6.67 device can't load pictures a 0.6.69 device scraped / cleaned until it is updated |
+| P2–P7, B1–B6 | BLOCKED-OWNER (each step its own approval); next: **P2** on the RP Classic |
 
 ## 4. Cosmetic refinements worth doing
 

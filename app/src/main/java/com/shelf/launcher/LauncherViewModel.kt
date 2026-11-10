@@ -1458,6 +1458,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     if (merged?.metacritic != null) " Metacritic via RAWG." else ""
                 source == MetadataSource.SCREENSCRAPER && game.sourceType != SourceType.ROM ->
                     "ScreenScraper only knows ROMs — try IGDB for this one."
+                // (Batch 520: a server problem — timeout, limit, busy — says so instead of "found nothing, try another name".)
+                source == MetadataSource.SCREENSCRAPER && com.shelf.launcher.data.screenScraperFailureNote(screenScraperRepository.lookupOutcome[key]) != null ->
+                    com.shelf.launcher.data.screenScraperFailureNote(screenScraperRepository.lookupOutcome[key])!!
                 else -> "${source.label} found nothing for \"$name\". Try another name or the other source."
             }
             // Screenshots follow the new match.

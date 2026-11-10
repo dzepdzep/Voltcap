@@ -1,3 +1,16 @@
+# Update 520e (10 Nov 2026) — Game grid spacing, ScreenScraper failure notes, R1 D-pad safety, Cover details recordings, upgrade P1 (local, next/0.6.70)
+
+- **K1 Game grid** (`data/Features.kt` `grid_spacing`, `ui/GridHome.kt`, `ui/SettingsDialog.kt`, `ui/R1Extras.kt`):
+  - New Game spacing setting: Layout options › Game spacing and the R1 tile, 50–250 %.
+  - At 100 % the gaps stay 14 / 12 dp as before. Only the main screen changes; the second screen and the Spines look keep their gaps.
+  - With "Auto" games per row, more room fits fewer cards.
+  - RP Classic: tested at 100 / 50 / 180 %, with D-pad moves and a controller pass on GRID, CASEFLOW, BOX, STORAGE, FILESELECT and SHELF — 30 of 30 PASS.
+- **ScreenScraper failure notes** (`data/ScreenScraper.kt` `screenScraperFailureNote`, `LauncherViewModel.kt`): before, a timeout, busy service, quota limit or refused login read "found nothing — try another name". The game's note now says which of these happened.
+- **R1 D-pad safety:** moving the D-pad never toggles a tile; only A, Enter or a tap does. On the device, 22 moves over all tiles left Wi-Fi, Bluetooth, DND and brightness unchanged.
+- **Cover details:** two RP Classic recordings (690 + 784 frames) caught one one-frame event. It was the new case's first frame during a fast burst, not the leaving case's flight. Not changed; the cause and the test still needed are in MASTER_BACKLOG.
+- **Upgrade:** P1 (owner-approved, read-only) inventory and the mixed-version Drive review are in `docs/UPGRADE_069_CHECKLIST.md`.
+- **Tests:** unit tests (Batch520Test, Batch491Test) pass; `static_checks --strict` passes.
+
 # Update 520c (10 Nov 2026) — R1 Game spacing on four more layouts, v0.6.69 upgrade Part A (RP Classic), hardware test cases (local, next/0.6.70)
 
 - **K1** (`ui/R1Extras.kt`, `ui/QuickSettings.kt`): the R1 Spacing tile (tap = next step, hold = slider) now also appears on Case flow, Cardboard box, Storage boxes and File select. Each uses that layout's own existing Spacing pref and range (60–160 / 70–150 / 60–150 / 60–150 %), so nothing new is stored and saved values are kept. `Batch491Test` was updated (nine layouts) and `Batch520Test` checks the ranges.

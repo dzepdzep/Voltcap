@@ -87,3 +87,41 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
 - P7 (launch-time sync off) covers the first start.
 
 **Readiness:** A1–A4 done. Nothing blocks P1. P1 is read-only (`ls` / `du`), but like every P / B step it waits for its own approval.
+
+## P1 results — RP Classic, 10 Nov 2026 (approved by the owner; read-only `du` / `find -type f | wc -l` / `ls`, nothing copied or changed)
+
+| Folder | Size | Files | P2 copies it? |
+|---|---|---|---|
+| `RetroArch/saves` | 1.0 MB | 15 | yes |
+| `RetroArch/states` | 26 KB | 1 | yes |
+| `Ppsspp/PSP/SAVEDATA` (= `PPSSPP/…`, same folder: shared storage ignores case) | 806 KB | 13 | yes, once |
+| `Android/data/xyz.aethersx2.android/files/memcards` (AetherSX2, PS2) | 17 MB | 2 cards | yes (readable) |
+| `Android/data/org.dolphinemu.dolphinemu/files/Wii` | 59 KB | 2 | yes |
+| `Android/data/org.dolphinemu.dolphinemu/files/GC` | 14 KB | 0 files | nothing to copy |
+| `Android/data/com.retroarch*/files` | 143 KB / 119 KB | 3 / 1 (config only) | optional |
+| `Android/data/org.ppsspp.ppssppgold` | 7 KB | 0 | — |
+| `/sdcard/Voltcap` | 11 MB | 74 | yes (whole folder) |
+| ├ `Art` | 8.3 MB | 29 | (in the above) |
+| ├ `Data` | 967 KB | 7 | |
+| ├ `Settings` | 636 KB | 1 | |
+| ├ `Voltcap settings sync` | 128 KB | 1 | |
+| ├ `Sync conflicts` | 107 KB | 3 | |
+| ├ `Sync backups` | 75 KB | 2 | |
+| ├ `Layouts` | 7.5 KB | 1 | |
+| └ `Guides`, `Settings snapshots`, `Music`, `Sounds`, `Crash reports` | empty or a few KB | 0 | |
+| `Android/data/com.shelf.launcher/files` | 52 MB | 9 (charge log + old QA files) | not needed (bookkeeping) |
+
+- Not present: DuckStation, NetherSX2 / ARMSX2, Azahar / Citra, Eden / Yuzu, Cemu folders.
+- The real Voltcap was not restarted (pid 31950 before and after); only its own `charge_log.csv` changed, written by the running app.
+- **Note:** `/sdcard/Voltcap/Art` (29 files, 12 Oct) shows the visible Voltcap folder was in use once. P5 (turning it on) is therefore less needed here: much of the art already has a shared copy, but only as of 12 Oct.
+
+## Drive with handhelds on different versions — what can and can't go wrong (code review of 0.6.67 tag and 0.6.69)
+
+| Direction | What travels | Result |
+|---|---|---|
+| 0.6.67 → Drive → 0.6.69 | Settings sync and cover sync carry addresses **with** the developer key / account inside | 0.6.69 cleans them on the way in (`CloudSync` cover sync, `Backup` import: `SsMedia.cleanText`); the key is added again only when downloading. **No problem.** |
+| 0.6.69 → Drive → 0.6.67 | Cleaned addresses (no key) and, for art scraped after the update, signed `vsig` addresses | 0.6.67 uses an address exactly as stored, so ScreenScraper refuses a picture it hasn't saved yet. **Effect:** that game shows its placeholder / another source's art on the 0.6.67 device until it's updated. Saved pictures, metadata text, play time, saves and settings values are unaffected. Nothing is overwritten back: 0.6.67 doesn't rewrite addresses. |
+| Game saves (Sync) | Save files | Not affected: save files hold no ScreenScraper addresses, and the 517–519 changes did not touch save sync. |
+| Metadata (descriptions, ratings, years) | Plain text | Not affected. |
+
+**Conclusion:** no data loss and no corruption is possible from the mix. The only effect is missing pictures on a 0.6.67 device, gone once it's updated. Updating all handhelds in one session avoids it entirely.

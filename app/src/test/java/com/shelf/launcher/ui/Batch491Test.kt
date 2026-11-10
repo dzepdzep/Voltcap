@@ -86,7 +86,7 @@ class Batch491Test {
             HomeLayout.SHELF to Features.shelfSpacing, HomeLayout.COVERDETAILS to Features.cdSpacing, HomeLayout.STACKS to Features.stacksSpacing,
             // (Batch 520, K1: the layouts whose own Spacing is already a percentage — the same pref, their own range.)
             HomeLayout.CASEFLOW to Features.cfSpacing, HomeLayout.BOX to Features.boxSpacing, HomeLayout.STORAGE to Features.stSpacing,
-            HomeLayout.FILESELECT to Features.fsSpacing)
+            HomeLayout.FILESELECT to Features.fsSpacing, HomeLayout.GRID to Features.gridSpacing)
         for (l in HomeLayout.values()) {
             val p = R1Spacing.prefFor(l)
             if (l in five) assertTrue("$l", p === five[l]) else assertNull("$l", p)

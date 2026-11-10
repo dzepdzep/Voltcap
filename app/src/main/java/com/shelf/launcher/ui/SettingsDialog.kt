@@ -3994,6 +3994,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                 RowChoice(if (layout == com.shelf.launcher.data.HomeLayout.GRID) "Games per row" else "Games across the screen", choices, now, { if (it == 0) "Auto" else it.toString() }) {
                     com.shelf.launcher.data.Features.setRowGames(layout, it)
                 }
+                // (Batch 520, K1: the Game grid's room between the cards, 100 % = as before.)
+                if (layout == com.shelf.launcher.data.HomeLayout.GRID) PercentSlider(
+                    "Game spacing", com.shelf.launcher.data.Features.gridSpacing.state.value,
+                    { com.shelf.launcher.data.Features.gridSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" }
+                )
                 MutedNote(
                     if (now == 0) "Auto: as many as fit at the card size above."
                     else "$now games across: the card size follows from it" + (if (layout == com.shelf.launcher.data.HomeLayout.CLASSIC) " (the wide game you're on counts as one)." else ".")
