@@ -162,12 +162,25 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         AlbumArtBlur.sync(appearance.secondMusicBlurArt, appearance.secondMusicBlur)
     }
     val liteContext = androidx.compose.ui.platform.LocalContext.current
+    // (Batch 523, GT78 crash - ClassCastException "Boolean cannot be cast to ComposableLambda" in this screen's composition,
+    // reproduced 6 of 6 by switching Performance between Automatic and Full: the `remember` sat inside the Automatic branch
+    // only, so the remembered slots after it shifted by one when the mode changed. Remembered unconditionally now.)
+    val lowEndDevice = remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) }
+    // (Batch 523: the same for Automatic scene quality - remembered whatever the setting, not inside its branch.)
+    val autoScene = remember {
+        when {
+            com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) -> com.shelf.launcher.data.SceneQuality.LOW
+            com.shelf.launcher.device.MemoryBudget.small(liteContext) -> com.shelf.launcher.data.SceneQuality.BALANCED
+            // Strong handhelds (Odin 2, Thor…): 60 fps, like the rest of the UI. (Update 126: on 60 Hz screens
+            // too — they got 30 before; FrameWatch still steps it down to 30 if the device drops frames.)
+            else -> com.shelf.launcher.data.SceneQuality.SMOOTH
+        }
+    }
     val liteEffects = when (appearance.performanceMode) {
         com.shelf.launcher.data.PerformanceMode.LITE -> true
         com.shelf.launcher.data.PerformanceMode.FULL -> false
         // Automatic also turns lite on when the frames watched this session stay slow (FrameWatch).
-        com.shelf.launcher.data.PerformanceMode.AUTO -> remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) } ||
-            com.shelf.launcher.device.FrameWatch.steps.intValue >= 2
+        com.shelf.launcher.data.PerformanceMode.AUTO -> lowEndDevice || com.shelf.launcher.device.FrameWatch.steps.intValue >= 2
     }
     // Update 125: where the names go in this layout (its options), else Game names.
     com.shelf.launcher.data.Features.namesByLayout.state.value
@@ -181,15 +194,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         LocalAnimateOnLite provides appearance.animateOnLite,
         LocalSceneQuality provides when (appearance.sceneQuality) {
             // Automatic: Low on slower handhelds, Balanced on small-memory ones, Full elsewhere.
-            com.shelf.launcher.data.SceneQuality.AUTO -> remember {
-                when {
-                    com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) -> com.shelf.launcher.data.SceneQuality.LOW
-                    com.shelf.launcher.device.MemoryBudget.small(liteContext) -> com.shelf.launcher.data.SceneQuality.BALANCED
-                    // Strong handhelds (Odin 2, Thor…): 60 fps, like the rest of the UI. (Update 126: on 60 Hz screens
-                    // too — they got 30 before; FrameWatch still steps it down to 30 if the device drops frames.)
-                    else -> com.shelf.launcher.data.SceneQuality.SMOOTH
-                }
-            }.let { q ->
+            com.shelf.launcher.data.SceneQuality.AUTO -> autoScene.let { q ->
                 // Still missing frames on this device: one step lower per FrameWatch step (Automatic only).
                 val down = com.shelf.launcher.device.FrameWatch.steps.intValue
                 com.shelf.launcher.data.SceneQuality.values()[(q.ordinal + down).coerceAtMost(com.shelf.launcher.data.SceneQuality.LOWEST.ordinal)]
