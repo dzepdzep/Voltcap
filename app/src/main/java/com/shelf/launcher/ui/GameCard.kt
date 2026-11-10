@@ -435,12 +435,15 @@ fun GameCard(
             // Update 373: a wide capsule look with only a portrait cover: the whole cover, never stretched or cut, centred over a soft
             // blurred copy of itself (the corners and sides of the landscape card stay filled).
             val portraitInWide = cardArtType == CardArtType.CAPSULE && coverUrl != null && url == coverUrl && wideUrl == null && heroUrl == null
+            // (Batch 523, motion pass: the soft copy decoded tiny instead of a 24 dp RenderEffect blur - that blur was redrawn on
+            // every frame of a scroll, per card, the KONKR's GPU cost while the row moved. Looks the same at rest.)
             if (portraitInWide) AsyncImage(
-                model = rememberCardArtRequest(url, kindOf(url), still = true),
+                model = rememberSoftArt(url),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 alpha = 0.55f,
-                modifier = Modifier.matchParentSize().blur(24.dp)
+                filterQuality = androidx.compose.ui.graphics.FilterQuality.High,
+                modifier = Modifier.matchParentSize().graphicsLayer { scaleX = 1.12f; scaleY = 1.12f }
             )
             AsyncImage(
                 model = rememberCardArtRequest(url, kindOf(url), still = !focused && com.shelf.launcher.data.Features.animatedFocusOnly.state.value && com.shelf.launcher.data.AnimatedArt.looksAnimated(url)),

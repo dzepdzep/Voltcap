@@ -58,6 +58,16 @@ internal object SmartFill {
     fun cropBias(art: Float, room: Float): Float = if (art < room) -0.4f else 0f
 }
 
+/**
+ * Batch 523: a picture's soft copy — decoded tiny (28 px) and scaled up, which blurs it for free on every Android version.
+ * Used instead of Modifier.blur behind cards that move: a RenderEffect blur is redrawn on every frame of a scroll (KONKR).
+ */
+@Composable
+internal fun rememberSoftArt(url: Any): ImageRequest {
+    val context = LocalContext.current
+    return remember(url, context) { ImageRequest.Builder(context).data(url).size(28, 28).memoryCacheKey("$url|soft28").allowHardware(true).build() }
+}
+
 @Composable
 internal fun SmartArt(
     url: String?, contentDescription: String?, modifier: Modifier,
@@ -85,10 +95,7 @@ internal fun SmartArt(
             AsyncImage(req, contentDescription, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                 alignment = BiasAlignment(0f, SmartFill.cropBias(a, room)), onSuccess = onSuccess)
         } else {
-            val context = LocalContext.current
-            val soft = remember(url, context) {
-                ImageRequest.Builder(context).data(url).size(28, 28).memoryCacheKey("$url|soft28").allowHardware(true).build()
-            }
+            val soft = rememberSoftArt(url)
             Box(Modifier.fillMaxSize().background(well))
             AsyncImage(soft, null, Modifier.fillMaxSize().graphicsLayer { scaleX = 1.12f; scaleY = 1.12f },
                 contentScale = ContentScale.Crop, filterQuality = FilterQuality.High)
