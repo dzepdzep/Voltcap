@@ -124,7 +124,8 @@ internal fun BoxScope.ConsoleBadge(
         // Batch 522 (owner): one look per setting, never mixed - Text, Symbol or Logo (Features.BadgeStyle); a console the
         // look has no artwork for shows its short name in the same pill.
         val style = styleOverride ?: Features.consoleBadgeStyle.state.value
-        val cap = maxWidth * 0.78f
+        // (Batch 522: a big tile lets the pill run a little wider, so a long wordmark - Game Boy Advance - shows whole there.)
+        val cap = maxWidth * (if (maxWidth < 150.dp) 0.78f else 0.85f)
         // The badge set's art for [art] (symbol .webp or wordmark .svg) in a pill as wide as it needs (Update 125 / 129 / 136).
         val setArt: @Composable (Pair<String, Float>) -> Unit = { art ->
             val symbol = art.first.endsWith(".webp")

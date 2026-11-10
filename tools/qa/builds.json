@@ -418,6 +418,17 @@
    "patch_sha256": null,
    "tree_hash": null,
    "note": "batch 522b: 522a + PS4 / PS5 badge colours, GameNative launch = GameNative's own shortcut intent (game_source STEAM + CLEAR_TOP), DroidDeck .droiddeck files validated + Steam category + shortcut/file dedupe, clearer missing-app messages"
+  },
+  {
+   "id": "qa-0.6.69-522e",
+   "apk_sha256": "fe20191cdd997b6a49bc55b0e1c7435f5a4f1beeeb920d35e5dc2f99c4b5440f",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c82af51a8cec9d4518ead8fb47dace698f29fb86",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522e: three badge looks, Tile home buttons' room kept, GameNative stores, popup names / facts whole (Storage, Bubbles, Camera, Orbit, Blades, Banner, Row styles), Green Core InkGlyph keys, Edit Home QA hook"
   }
  ]
 }

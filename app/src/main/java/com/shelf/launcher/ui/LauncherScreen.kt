@@ -2739,14 +2739,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
     // Edit Home finished with the round shortcuts moved: they float where they were put from now on.
+    // (Batch 522, tile522b: where the buttons were when Edit Home opened - the drop check below is for a drop, not for a
+    // place you made earlier: resetting the row moved the tiles closer to the buttons and "dropped near the tiles" sent the
+    // untouched buttons back under them.)
+    val shortcutsAtEditOpen = remember { arrayOfNulls<Pair<Float, Float>>(1) }
     LaunchedEffect(HomeEditState.active) {
-        if (HomeEditState.active) return@LaunchedEffect
+        if (HomeEditState.active) { shortcutsAtEditOpen[0] = HomeWidgets.position(HomeWidgets.SHORTCUTS); return@LaunchedEffect }
         val a = state.appearance
         val moved = HomeWidgets.position(HomeWidgets.SHORTCUTS) != null
+        val droppedNow = HomeWidgets.position(HomeWidgets.SHORTCUTS) != shortcutsAtEditOpen[0]
         val atTiles = tileLayout && a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW
         // (QA pass 4, D39: on the Tile home, buttons dropped on or just under the tiles go back to "by the tiles" — a
         // place saved there floated at that fixed spot, and once the tiles moved (Middle) they covered them.)
-        if (moved && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
+        if (moved && droppedNow && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
             val r = PartRects.at[HomeWidgets.SHORTCUTS]
             if (r != null && r.top < TileRowSpan.bottom + 120f && r.bottom > TileRowSpan.top) HomeWidgets.reset(HomeWidgets.SHORTCUTS)
         }
@@ -4318,8 +4323,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // At the top it sits right under the edge like the classic row (the status bar moves to the bottom).
                         // (Batch 521, Flip 2: with Switch-style profiles top-left, Top put the categories / first tile under them -
                         // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
+                        // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
-                            (if (TileSwitch.profiles && !screensaverOn && !HomeEditState.active && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
+                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }

@@ -26,12 +26,13 @@ class Batch522Test {
     }
 
     @Test fun wideWordmarksAreCompactOnSmallTilesWholeOnBigOnes() {
-        // a 96 dp tile: badge 12.48 dp, pill at most 74.9 dp; a 200 dp tile: 20 dp, 156 dp
+        // a 96 dp tile: badge 12.48 dp, pill at most 74.9 dp (78 %); a 200 dp tile: 20 dp, 170 dp (85 %)
         assertFalse(BadgeLogos.fitsWordmark(11.19f, 12.48f, 74.9f))  // GBA
         assertFalse(BadgeLogos.fitsWordmark(8.56f, 12.48f, 74.9f))   // Genesis
         assertTrue(BadgeLogos.fitsWordmark(4.61f, 12.48f, 74.9f))    // PS4
-        assertTrue(BadgeLogos.fitsWordmark(8.56f, 20f, 156f))        // Genesis on a big tile
-        assertTrue(BadgeLogos.fitsWordmark(10.58f, 20f, 156f))       // Lynx on a big tile
+        assertTrue(BadgeLogos.fitsWordmark(8.56f, 20f, 170f))        // Genesis on a big tile
+        assertTrue(BadgeLogos.fitsWordmark(10.58f, 20f, 170f))       // Lynx on a big tile
+        assertTrue(BadgeLogos.fitsWordmark(11.19f, 20f, 170f))       // GBA on a big tile
     }
 
     @Test fun eachKeyItsOwnShortName() {

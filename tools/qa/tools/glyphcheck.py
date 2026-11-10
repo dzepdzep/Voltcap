@@ -118,6 +118,10 @@ def check(img, box, is_ink_box, text=''):
     l = walk(ix0, my, -1, 0, arrow); r = walk(ix1, my, 1, 0, arrow); t = walk(mx, iy0, 0, -1, arrow); b = walk(mx, iy1, 0, 1, arrow)
     if None in (l, r, t, b):
         return {'verdict': 'NO-SHAPE', 'fill': fill, 'ink': [ix0, iy0, ix1, iy1]}
+    # (Batch 522: ink touching the "shape" on a side is not a glyph in its key - it is part of something else drawn over it,
+    # e.g. a popup's Play button over the home's ▲ ▼ in the same window (Cube, Shared style).)
+    if min(l, r, t, b) < 2:
+        return {'verdict': 'NO-SHAPE', 'why': 'ink touches the shape edge (not a glyph in its own key)', 'fill': fill, 'ink': [ix0, iy0, ix1, iy1]}
     sx0, sx1, sy0, sy1 = ix0 - l, ix1 + r, iy0 - t, iy1 + b
     scx, scy = (sx0 + sx1) / 2.0, (sy0 + sy1) / 2.0
     sw, sh = sx1 - sx0, sy1 - sy0

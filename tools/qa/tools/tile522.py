@@ -5,6 +5,23 @@ any move over 2 px FAILs. Also checks every placed text / control is inside the 
 usage: python3 tile522.py RUN_DIR   (exit 1 on FAIL)"""
 import json, os, sys
 
+def bar_y(png):
+    """The round buttons' row: the screen row crossing the most separate icon-orange runs (13 buttons = 13+ runs; a focus
+    frame or a chip is one long run). None when no row crosses 8+ runs. (The buttons have no labels in the dump.)"""
+    from PIL import Image
+    im = Image.open(png).convert('RGB'); W, H = im.size; px = im.load()
+    best, by = 0, None
+    for y in range(80, H, 2):
+        runs, inside = 0, False
+        for x in range(0, W):
+            r, g, b = px[x, y]
+            o = r > 170 and 90 < g < 200 and b < 120
+            if o and not inside: runs += 1
+            inside = o
+        if runs > best: best, by = runs, y
+    return by if best >= 8 else None
+
+
 def boxes(path):
     d = json.load(open(path))
     sw, sh = d.get('screen', [0, 0])
@@ -37,6 +54,15 @@ def main():
                 v = 'PASS' if abs(dy) <= 2 and abs(dx) <= 2 else 'FAIL'
                 fails += v == 'FAIL'
                 print('%s  %-6s %-40s %-18s dx=%d dy=%d' % (v, d, a + ' -> ' + b, k, dx, dy))
+        # the round buttons stay where they were put while the row is moved / reset / the layout is reset
+        for a, b in [('buttons_moved', 'both_moved'), ('buttons_moved', 'saved_row_reset'), ('buttons_moved', 'saved_layout_reset')]:
+            pa, pb = os.path.join(run, '%s_%s.png' % (d, a)), os.path.join(run, '%s_%s.png' % (d, b))
+            if not (os.path.exists(pa) and os.path.exists(pb)):
+                continue
+            ya, yb = bar_y(pa), bar_y(pb)
+            v = 'PASS' if ya is not None and yb is not None and abs(ya - yb) <= 4 else 'FAIL'
+            fails += v == 'FAIL'
+            print('%s  %-6s %-40s %-18s y=%s -> %s' % (v, d, a + ' -> ' + b, 'round buttons', ya, yb))
         for f in sorted(os.listdir(run)):
             if f.startswith(d) and f.endswith('.json'):
                 _, off = boxes(os.path.join(run, f))
