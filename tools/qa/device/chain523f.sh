@@ -5,6 +5,7 @@
 D=/data/local/tmp; S=/sdcard/pc/chain523f.txt; echo "start $(date +%T) real=$(pidof com.shelf.launcher)" > $S
 ALL="CLASSIC TILES HERO GRID TV DASH LIVE SIDE CROSS SPOT BAR SHELF HUB RESUME CHAN CIRCUIT LIBRARY STACKS TIMELINE ARCADE CONSOLES DISCS HERO_TILES TWIN_DESK TWIN_ICONS TWIN_SHOWCASE CRATE CARDS CUSTOM POCKET_CLASSIC POCKET_RIBBON GREENCORE POCKET CUBE MEMCARD CASEFLOW BOX STORAGE FILESELECT ORBIT AIRY NIGHT BLADES BUBBLES CAMERA PANELS MAGAZINE SHOP TERMINAL CINEMA ARCTIC COVERDETAILS ARTLIB"
 STY="OWN BANNER ROW_OPENS ROW_REVEAL SHARED CLASSIC"
+sh $D/smart523.sh s523after "real portrait square wide" "WWE SmackDown" > /dev/null 2>&1; echo "smart done $(date +%T)" >> $S
 sh $D/smart523.sh s523asmw "real" "Super Mario World" "TILES HERO CHAN SPOT ARTLIB CASEFLOW LIBRARY CINEMA DASH RESUME" > /dev/null 2>&1; echo "smart smw done $(date +%T)" >> $S
 sh $D/endless523b.sh e523f > /dev/null 2>&1; echo "endless done $(date +%T)" >> $S
 sh $D/motion523.sh m523f > /dev/null 2>&1; echo "motion done $(date +%T)" >> $S
