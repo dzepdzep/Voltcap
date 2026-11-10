@@ -133,19 +133,19 @@ const devices = { models: [{ model: 'Retroid_Pocket_Classic', serial: 'MC94516AQ
     'cat /sdcard/Android/data/com.shelf.launcher/files/x', 'settings put global wifi_on 0', 'settings put system screen_brightness 10', 'svc wifi disable',
     'cmd bluetooth_manager disable', 'reboot', 'setprop persist.x 1', 'pm uninstall com.shelf.launcher.qa', 'pm install /data/local/tmp/a.apk',
     'rm -rf /sdcard/RetroArch/saves', 'rm -rf /sdcard/', 'cp x /sdcard/Download/y', 'echo x > /sdcard/Voltcap/a', 'appops set com.shelf.launcher RUN_IN_BACKGROUND deny',
-    'cmd notification set_dnd on', 'wm size 640x480', 'pm disable-user com.shelf.launcher', 'ls; am force-stop com.shelf.launcher'];
+    'cmd notification set_dnd on', 'wm size 640x480', 'P=com.shelf.launcher; F=/sdcard/Android/data/$P/files', 'PKG="com.shelf.launcher"', 'pm disable-user com.shelf.launcher', 'ls; am force-stop com.shelf.launcher'];
   for (const c of refused) ok(g.shellProblems(c).length > 0, 'refused: ' + c);
   const allowed = ['am force-stop com.shelf.launcher.qa', 'am start -n com.shelf.launcher.qa/com.shelf.launcher.MainActivity --es voltcap_test_layout GRID',
     'dumpsys package com.shelf.launcher', 'pidof com.shelf.launcher', 'getprop ro.product.model', 'ls /sdcard/Android/data/com.shelf.launcher.qa/files',
     'rm -rf /sdcard/Android/data/com.shelf.launcher.qa/files/out', 'rm -rf /data/local/tmp/vqa/out', 'sha256sum /sdcard/RetroArch/saves/a.srm',
-    'settings get system screen_brightness', 'dumpsys meminfo com.shelf.launcher.qa', 'input keyevent 20', 'sh /data/local/tmp/vqa/vqa.sh seq "R R"'];
+    'settings get system screen_brightness', 'P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files', 'dumpsys meminfo com.shelf.launcher.qa', 'input keyevent 20', 'sh /data/local/tmp/vqa/vqa.sh seq "R R"'];
   for (const c of allowed) ok(g.shellProblems(c).length === 0, 'allowed: ' + c + ' -> ' + g.shellProblems(c));
   ok(g.scriptProblems('# am force-stop com.shelf.launcher (comment)\nam force-stop com.shelf.launcher.qa\n').length === 0, 'script comments ignored');
   ok(g.scriptProblems('P=x\nam force-stop com.shelf.launcher\n')[0].startsWith('line 2'), 'script line numbers reported');
   // ---------- the shipped tools ----------
   const vqa = fs.readFileSync(path.join(__dirname, '..', '..', 'qa', 'device', 'vqa.sh'), 'utf8');
   ok(g.scriptProblems(vqa).length === 0 && /^PKG=com\.shelf\.launcher\.qa$/m.test(vqa), 'vqa.sh passes the guard and targets the QA app');
-  for (const f of ['hwgate520.sh', 'mem520.sh', 'ctl516.sh', 'xcase516.sh', 'flash513.sh']) {
+  for (const f of ['hwgate520.sh', 'mem520.sh', 'ctl516.sh', 'xcase516.sh', 'flash513.sh', 'popclip.sh', 'navclip.sh', 'qaguard.sh', 'evidence.sh', 'gate521.sh', 'tile521.sh', 'glyph521.sh']) {
     const p = path.join(__dirname, '..', '..', 'qa', 'device', f);
     if (fs.existsSync(p)) ok(g.scriptProblems(fs.readFileSync(p, 'utf8')).length === 0, f + ' passes the guard');
   }

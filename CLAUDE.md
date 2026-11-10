@@ -43,7 +43,8 @@ Package `com.shelf.launcher` (project folder `ShelfLauncher`). User-facing name:
 
 ## Standing Thor QA authorization (owner-granted, 28 Oct 2026; current and future tasks until revoked)
 The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHORIZATION for VoltCap development and QA on it. Claude does NOT need separate user permission for ordinary Thor testing.
-- **Allowed:** bounded ADB inspection and QA; installing an updated APK over the existing VoltCap; controller and touch testing; screenshots and short recordings; temporary layout / preference changes if the original values are restored.
+- **Allowed:** bounded ADB inspection and QA **in the isolated QA app** (`com.shelf.launcher.qa`, debug-key signed, its own data); controller and touch testing; screenshots and short recordings; temporary layout / preference changes in the QA app, restored afterwards.
+- **Never (Batch 521, supersedes the older "install over the existing VoltCap" permission):** installing, updating, downgrading, clearing, uninstalling or launching the owner's real Voltcap (`com.shelf.launcher`), changing system settings (Wi-Fi, Bluetooth, DND, brightness, refresh rate, font size, display size), or pointing a QA script at the real app. Production installs happen only with the owner's explicit approval of that step, and only of a published release file pinned in `tools/adb_mcp/production_pins.json` (`install_production`). The PC tools enforce this (`tools/adb_mcp/guard.js`; the debug build is the QA app by default and `verifyQaIsolation` deletes any production-identity APK).
 - **Limits:** max 15 minutes physical QA per task. Never clear app data or uninstall VoltCap. No changes to charging limits. Preserve games, saves, profiles and artwork. Restore volume, DND and display settings. Stop all test processes and recorders. Respect required tool / system permissions.
 - **Device authorization (owner, 1 Nov 2026, replaces earlier device rules):** standing permission to use ALL devices physically
   connected to the owner's PC via **USB** and visible through ADB, for VoltCap development and QA — no per-device permission needed.
@@ -51,7 +52,8 @@ The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHOR
   **Wireless / network ADB connections are NOT covered** (e.g. `adb-…._adb-tls-connect._tcp` or `ip:port` serials).
   GT78 (BW0306N230000845) may be identified with read-only ADB commands; if it is USB-connected it is covered, but identify its device type
   and compatibility before installing or changing anything. Preserve application data, games, saves, profiles, settings, charge limits
-  and other personal configurations. No factory reset, no uninstalling apps, no unrelated system changes.
+  and other personal configurations. No factory reset, no uninstalling apps, no unrelated system changes. All installs go to the
+  isolated QA app only (see "Never" above).
 - **Supersedes:** older `SUMMARY.md` / `COWORK_HANDOFF.md` notes that require separate Thor permission (e.g. update 369 rule, update 379 "no device use without your permission") are HISTORICAL and no longer apply. Their entries stay unedited.
 ## Prompt workflow rule
 Large master prompts have been truncated. Work in shorter, complete stages. Read `COWORK_HANDOFF.md` and continue unfinished tasks. Never assume missing prompt sections are done. Avoid repeating successful QA. Task prompts are short; the next task is in `CURRENT_TASK.md`, unfinished priorities in `COWORK_HANDOFF.md`.

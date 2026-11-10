@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -396,6 +396,28 @@
    "patch_sha256": "6eee477db088270eac39cccdc03539c00695c55e5e66cb13c929107731f3b556",
    "tree_hash": "",
    "note": "update 489d: D287 launch guards at every launch path (vm.launchNow / vm.app / GameLauncher / QuickResume / ScreenLayouts / hero dock) + K4 spines in their own effect (SPINE_AHEAD 8, nearest first)"
+  },
+  {
+   "id": "qa-0.6.69-522a",
+   "apk_sha256": "31622f123e5c863346998ff66f3c1ac03410493d7892da523f9763d9de3af9a0",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3ca47e3",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522: badge audit fixes (own logos for MegaDrive/TG16/TGCD/Famicom/NGPC, short-name text without ellipsis, family colours, one-colour block logos -> name, 3DO out of the badge set), badge gallery + scale test hooks, InkGlyph QaClip glyph boxes"
+  },
+  {
+   "id": "qa-0.6.69-522b",
+   "apk_sha256": "6453cce4d8860d07d2c7267c6a618065ef3621e651411e21380288dad698bb6a",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3ca47e3",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522b: 522a + PS4 / PS5 badge colours, GameNative launch = GameNative's own shortcut intent (game_source STEAM + CLEAR_TOP), DroidDeck .droiddeck files validated + Steam category + shortcut/file dedupe, clearer missing-app messages"
   }
  ]
 }

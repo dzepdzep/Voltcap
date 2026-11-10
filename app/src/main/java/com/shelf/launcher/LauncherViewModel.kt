@@ -5476,9 +5476,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // the hand-added entry wins; two exports of one AppID (two folders) count once.)
         val handSteam = currentSteamGames.mapTo(HashSet()) { it.stableKey }
         val scannedSteam = HashSet<String>()
-        val romGames = currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }
+        val pinned = com.shelf.launcher.data.PinnedShortcuts.games(getApplication())
+        // (Batch 522: one DroidDeck game added both ways - its home-screen shortcut AND an exported .droiddeck file - is one
+        // game: DroidDeck's own shortcut wins, the file is left out. Matched on the title within DroidDeck only.)
+        val romGames = com.shelf.launcher.data.GameClients.withoutPinnedDroidDeckTwins(
+            currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }, pinned)
         val merged = (applyOverrides(romGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
-            applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
+            applyOverrides(pinned))
             .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
         _uiState.update { current ->
             val updated = current.copy(games = merged, lastPlayedAt = lastPlayed)
@@ -5718,7 +5722,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** The emulator (or GameNative) behind a game, for emulator rules. */
     private fun emulatorPackageFor(game: Game): String? = when (game.sourceType) {
-        SourceType.ROM -> if (game.platform == "DroidDeck") com.shelf.launcher.data.GameClients.DROIDDECK
+        // (Batch 522: DroidDeck's launch files and every pinned shortcut name their own app - DroidDeck's games sit in the
+        // Steam category now, so the platform no longer says it; the shortcut key does.)
+        SourceType.ROM -> if (game.romPath?.endsWith(".droiddeck", ignoreCase = true) == true) com.shelf.launcher.data.GameClients.DROIDDECK
+            else if (com.shelf.launcher.data.PinnedShortcuts.isShortcut(game)) com.shelf.launcher.data.PinnedShortcuts.packageOf(game)
             else gameEmulatorOverride(game) ?: _uiState.value.emulatorConfigs[game.platform]?.packageName
         SourceType.STEAM -> _uiState.value.gameNativeConfig.packageName
         SourceType.APP -> null
@@ -6061,9 +6068,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             ).joinToString(" ").ifEmpty { null }
             is LaunchOutcome.NotConfigured ->
                 "No emulator set up for ${com.shelf.launcher.data.ConsoleNames.label(game.platform)} yet — pick one (Start › Emulator changes it later)."
-            is LaunchOutcome.EmulatorNotFound ->
-                "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
-                    "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} (Start › Emulator), or try a different game path format there."
+            // (Batch 522: GameNative / DroidDeck aren't "the emulator set for Steam" - say which app is missing.)
+            is LaunchOutcome.EmulatorNotFound -> when {
+                game.sourceType == SourceType.STEAM ->
+                    "GameNative (${outcome.packageName}) isn't installed or didn't accept the launch. Install GameNative, or check its package under Settings › Steam games."
+                outcome.packageName == com.shelf.launcher.data.GameClients.DROIDDECK ->
+                    "DroidDeck isn't installed or didn't accept the launch. Install DroidDeck (0.3.1 or newer) and export the game again."
+                else ->
+                    "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
+                        "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} (Start › Emulator), or try a different game path format there."
+            }
             is LaunchOutcome.Error ->
                 "Couldn't launch ${game.name}: ${outcome.message}"
         }

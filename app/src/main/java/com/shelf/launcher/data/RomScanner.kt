@@ -54,7 +54,6 @@ object RomScanner {
         "lnx" to "Lynx", "j64" to "Jaguar", "a78" to "Atari7800",
         "vpk" to "PSVita", "p8" to "PICO8", "min" to "PokemonMini",
         "col" to "ColecoVision", "int" to "Intellivision", "vec" to "Vectrex",
-        "droiddeck" to "DroidDeck",
     )
 
     /**
@@ -260,6 +259,20 @@ object RomScanner {
             sourceType = SourceType.STEAM, steamAppId = id)
     }
 
+    /**
+     * Batch 522: one DroidDeck launch file - `<Game title>.droiddeck` holding DroidDeck's game id (digits, or the same
+     * `droiddeck://game/<id>` DroidDeck uses; GameClients.droidDeckId). A Steam game (platform "Steam", like DroidDeck's
+     * pinned shortcuts) whose key stays the file's path - the file itself is what Play hands back to DroidDeck. Null for a
+     * file that is empty, too big or not a DroidDeck id (it used to be listed as a game that could only fail to start).
+     */
+    internal fun droidDeckExport(file: File): Game? {
+        if (!file.isFile || file.length() !in 1..128) return null
+        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
+        GameClients.droidDeckId(text.removePrefix("\uFEFF")) ?: return null
+        val title = prettifyName(file.nameWithoutExtension).ifBlank { file.nameWithoutExtension.trim() }
+        return Game(name = title, platform = "Steam", hue = hueFor(file.name), sourceType = SourceType.ROM, romPath = file.absolutePath)
+    }
+
     /** The AppID of a `.steam` export's text: digits only (a BOM / whitespace / newline round it allowed), 1..Int.MAX. */
     internal fun parseSteamExport(text: String): Int? {
         val t = text.removePrefix("\uFEFF").trim()
@@ -393,6 +406,7 @@ object RomScanner {
         val m3uFiles = mutableListOf<File>()
         val skipped = mutableSetOf<String>()
         val steamFiles = mutableListOf<File>()
+        val droidDeckFiles = mutableListOf<File>()
         // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
         // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
         val folderGames = mutableListOf<File>()
@@ -412,6 +426,10 @@ object RomScanner {
                     // (Update 478, D1: GameNative's frontend export — "<Game>.steam" holding the Steam AppID — is a PC /
                     // Steam game handed to GameNative, whatever folder it sits in; one that isn't a valid AppID is skipped.)
                     ext == "steam" -> steamFiles += file
+                    // (Batch 522: DroidDeck's exported launch file - "<Game>.droiddeck" holding its game id - is a Steam game
+                    // started through DroidDeck, whatever folder it sits in, like DroidDeck's own home-screen shortcuts
+                    // (PinnedShortcuts: Steam category). A file without a valid id is not listed.)
+                    ext == "droiddeck" -> droidDeckFiles += file
                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
                     // used to count as one of its games.)
                     ext in notGames -> {}
@@ -426,6 +444,7 @@ object RomScanner {
 
         val games = mutableListOf<Game>()
         steamFiles.forEach { f -> gameNativeExport(f)?.let { games += it } }
+        droidDeckFiles.forEach { f -> droidDeckExport(f)?.let { games += it } }
         folderGames.forEach { dir ->
             val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
             games += Game(

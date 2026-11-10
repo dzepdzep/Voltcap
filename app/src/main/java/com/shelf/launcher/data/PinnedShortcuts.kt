@@ -52,6 +52,9 @@ object PinnedShortcuts {
 
     fun isShortcut(game: Game): Boolean = game.romPath?.startsWith(PREFIX) == true
 
+    /** Batch 522: the app a shortcut game belongs to ("com.droiddeck.launcher"), or null. */
+    fun packageOf(game: Game): String? = parse(game.romPath.orEmpty())?.first
+
     private fun parse(key: String): Pair<String, String>? {
         if (!key.startsWith(PREFIX)) return null
         val rest = key.removePrefix(PREFIX)

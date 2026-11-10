@@ -1205,7 +1205,7 @@ internal fun InkGlyph(text: String, color: Color, textSize: androidx.compose.ui.
     val bounds = remember(paint, text) { inkBounds(paint, text) }
     val w = with(density) { (bounds.width() + 2).toDp() }
     val h = with(density) { (bounds.height() + 2).coerceAtLeast(2).toDp() }
-    androidx.compose.foundation.Canvas(modifier.size(w, h).semantics { contentDescription = text }) {
+    androidx.compose.foundation.Canvas(modifier.size(w, h).semantics { contentDescription = text; this[QaClip.Glyph] = text }) {
         paint.color = color.toArgbInt()
         drawContext.canvas.nativeCanvas.drawText(text, size.width / 2f - (bounds.left + bounds.right) / 2f,
             size.height / 2f - (bounds.top + bounds.bottom) / 2f, paint)

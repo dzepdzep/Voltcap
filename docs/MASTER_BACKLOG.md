@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **10 Nov 2026 (batch 520)** against main `a1f762c` (v0.6.69, versionCode 76), the batch 505–519 evidence
+Last reconciled **10 Nov 2026 (batch 522; base reconciliation batch 520)** against main `a1f762c` (v0.6.69, versionCode 76), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -35,6 +35,9 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Console badge / logo audit: 69 consoles, 0 broken references; wrong regional branding (Famicom→NES, Mega Drive→Genesis, TG16 / TGCD→PC Engine, NGPC→NGP badges + folder logos), "FAMICOM DISK SY…" cut, one-colour white blocks (3DO, DOS, Genesis, Mega Drive, MSX, Pokémon mini, Sega CD, Vectrex), 3DO white rectangle, grey pills (PS4 / PS5 / Xbox 360 / One / Series / Switch 2 / regional keys) | FIXED (522), RP Classic QA-app gallery before / after (15 pages × badges / assets + GRID / TILES / CLASSIC), docs/BATCH_522.md |
+| Controller glyph centring in popups / hint bars (InkGlyph, 521) | 522: popclip `glyphs` category + glyphcheck.py; OWN × 53 layouts on RP Classic: 43 glyph measurements on 13 layouts, 0 off centre; scaled + 5 other styles running (docs/BATCH_522.md §6) |
+| GameNative launch intent = GameNative's own shortcut (`app.gamenative.LAUNCH_GAME`, int `app_id`, `game_source=STEAM`, CLEAR_TOP); DroidDeck `.droiddeck` files validated, Steam category, shortcut / file dedupe; missing-app messages | 522, checked against GameNative's source; unit tests (GameClients522Test, GameNative478Test). Real launch NOT TESTED (neither app on a connected handheld) |
 | Tile home placement on the RP Flip 2: Edit Home row move + hand-placed buttons fought R1's Row place (Middle gap, Top off-screen, Bottom on the buttons); Top hid the "All" chip under the profile pictures | FIXED (521), Flip 2 + Classic QA app Top / Middle / Bottom PASS, `Batch521Test` |
 | QA install protection (process risk 5b) | FIXED (521), see 5b |
 | Button letters (A B X Y, L2, START …) not centred in their circles (owner) | FIXED (521), `InkGlyph`; Flip 2 before / after |
@@ -117,7 +120,13 @@ Statuses:
 | Thor dual-screen lifecycle (D2), app handoff, remaining second-screen interactions, A4 Ribbon two-screen | BLOCKED-HW / OWNER (needs an app opened on the top screen) |
 | In-game overlays (HUD, notifications, perf stats, music), D4 FPS / AutoTDP / thermal | BLOCKED-OWNER (approved game session) |
 | Real RetroAchievements account path | BLOCKED-OWNER |
-| GameNative real launch (D1) | BLOCKED-OWNER (GameNative not signed in) |
+| GameNative real launch (D1) | BLOCKED-OWNER (GameNative not signed in; Odin 3 not connected in 522) — then: intent accepted vs game started, return to Voltcap |
+| DroidDeck real launch (shortcut + `.droiddeck` file) | BLOCKED-HW (DroidDeck not on the RP Classic / GT78); confirm the `.droiddeck` / `droiddeck://game/<id>` contract with `dumpsys package com.droiddeck.launcher` |
+| GameNative `.epic` / `.gog` / `.amazon` / `.pcgame` exports | OPEN — not imported (store field + category design; owner decision). GOG ids can be exported as 0 |
+| Tile home: moving / resetting a flow part (round shortcuts) re-flows the row and chips by 18 px and shows / hides the info line (`FlowSlot` keeps the space only while editing) | OPEN — owner decision A (keep the moved part's space, a gap) / B (re-flow, today); affects every layout with flow parts. 522 tile522 evidence |
+| Badge look decisions: one look per mode, very wide wordmarks, PS5 / Xbox One / Series / Switch 2 artwork, Genesis vs Mega Drive name, RA icons | OWNER decision / BLOCKED-REF (docs/BATCH_522.md §1) |
+| MCP install guard active in the desktop tool | BLOCKED-OWNER — restart the Claude desktop app (the tool still serves the pre-521 server.js) |
+| GT78 QA app is release-key signed (0.6.68-qa516a) | owner decision before the debug-key QA build can go on the GT78 |
 | B2 background clip measurement | BLOCKED-HW (no clip library on the connected devices) |
 | E1 cartridges: GBA side / top, SFC + PAL rears, Famicom / NES rears, Mega Drive, double labels; E2 case calipers / box sides | BLOCKED-REF — 9 photos listed in tools/qa/E1E2_REFS_487.md |
 | GBC PCB refinement for MBC1 / MBC5 layouts | BLOCKED-REF — approximate layouts stay; MBC3 + RTC (Pokémon G / S / C) is reference-based and protected |

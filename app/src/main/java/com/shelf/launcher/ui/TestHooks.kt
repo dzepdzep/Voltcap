@@ -14,6 +14,10 @@ internal object TestHooks {
     val layout = mutableStateOf<String?>(null)
     /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
     val dock = mutableStateOf<String?>(null)
+    /** Batch 521b: `--es voltcap_test_badgegallery N|aN|off` — the console badge audit page N (aN: its assets view), QaBadgeGallery.kt. */
+    val badgeGallery = mutableStateOf<String?>(null)
+    /** Batch 521b: `--es voltcap_test_scale font=F,density=D|off` — (font scale, density factor) for Voltcap's own drawing only. */
+    val scale = mutableStateOf<Pair<Float, Float>?>(null)
     /** A game to start from (part of its name): its console's category, the game focused — `--es voltcap_test_game …`. */
     val game = mutableStateOf<String?>(null)
     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
@@ -281,6 +285,11 @@ internal object TestHooks {
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }
         val want = intent?.getStringExtra("voltcap_test_layout")
+        intent?.getStringExtra("voltcap_test_scale")?.let { v -> if (enabled(context)) scale.value = if (v == "off") null else {
+            val m = v.split(',').mapNotNull { kv -> kv.split('=').takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim().toFloatOrNull() } }.toMap()
+            ((m["font"] ?: 1f).coerceIn(0.7f, 2f)) to ((m["density"] ?: 1f).coerceIn(0.6f, 1.6f))
+        } }
+        intent?.getStringExtra("voltcap_test_badgegallery")?.let { v -> if (enabled(context)) badgeGallery.value = v.takeIf { it != "off" } }
         intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")

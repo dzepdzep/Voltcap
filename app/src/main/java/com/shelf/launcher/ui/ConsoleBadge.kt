@@ -38,8 +38,11 @@ import com.shelf.launcher.ui.theme.ShelfTheme
 
 /** The console's colour for its badge (its usual brand colour; a neutral grey for the rest). */
 internal fun consoleColor(platform: String): Color = when (platform) {
-    "NES", "FDS" -> Color(0xFFC4161C)
-    "SNES" -> Color(0xFF514689)
+    // (Batch 521b, badge audit: the regional / colour / later models of a family take that family's colour - they fell to the
+    // neutral grey: Famicom, Super Famicom, Mega Drive, TurboGrafx, Neo Geo Pocket Color, WonderSwan Color, Xbox 360 / One / Series,
+    // Switch 2.)
+    "NES", "FDS", "Famicom" -> Color(0xFFC4161C)
+    "SNES", "SFC" -> Color(0xFF514689)
     "N64" -> Color(0xFF1E5AA8)
     "GB" -> Color(0xFF5D5F8E)
     "GBC" -> Color(0xFF6B2D8F)
@@ -48,27 +51,30 @@ internal fun consoleColor(platform: String): Color = when (platform) {
     "3DS" -> Color(0xFFCE181E)
     "GameCube" -> Color(0xFF5B4FA8)
     "Wii", "WiiU" -> Color(0xFF009AC7)
-    "Switch" -> Color(0xFFE60012)
+    "Switch", "Switch2" -> Color(0xFFE60012)
     "VirtualBoy" -> Color(0xFFB0101C)
     "PS1" -> Color(0xFF3D4A9E)
     "PS2" -> Color(0xFF1D3C8F)
     "PS3" -> Color(0xFF2B2B2E)
+    // (Batch 522 badge audit: PS4 / PS5 drew the grey "no colour" pill - PlayStation blue and the PS5's lighter blue.)
+    "PS4" -> Color(0xFF003791)
+    "PS5" -> Color(0xFF0070D1)
     "PSP" -> Color(0xFF2B2B2E)
     "PSVita" -> Color(0xFF1E50A2)
-    "Genesis", "SegaCD", "MasterSystem" -> Color(0xFF0060A8)
+    "Genesis", "MegaDrive", "SegaCD", "MasterSystem", "SG1000" -> Color(0xFF0060A8)
     "32X" -> Color(0xFFC8102E)
     "GameGear" -> Color(0xFF2B2B2E)
     "Saturn" -> Color(0xFF3F3F8F)
     "Dreamcast" -> Color(0xFFE8641C)
-    "PCEngine", "PCEngineCD" -> Color(0xFFD9002B)
+    "PCEngine", "PCEngineCD", "TG16", "TGCD" -> Color(0xFFD9002B)
     "NeoGeo", "NeoGeoCD" -> Color(0xFFB08A00)
-    "NeoGeoPocket" -> Color(0xFF2C2C8C)
-    "WonderSwan" -> Color(0xFF0072BC)
+    "NeoGeoPocket", "NeoGeoPocketColor" -> Color(0xFF2C2C8C)
+    "WonderSwan", "WonderSwanColor" -> Color(0xFF0072BC)
     "Arcade", "Naomi", "Atomiswave" -> Color(0xFF9A6B00)
-    "Atari2600", "Atari7800" -> Color(0xFF9A4F1A)
+    "Atari2600", "Atari5200", "Atari7800" -> Color(0xFF9A4F1A)
     "Lynx" -> Color(0xFFE06A00)
     "Jaguar" -> Color(0xFFB0101C)
-    "Xbox" -> Color(0xFF107C10)
+    "Xbox", "Xbox360", "XboxOne", "XboxSeries" -> Color(0xFF107C10)
     "App", "Apps", "Android" -> Color(0xFF1F8A4C)
     else -> Color(0xFF44484F)
 }
@@ -89,9 +95,11 @@ internal fun badgeCornerOr(auto: Alignment): Alignment = when (Features.consoleB
 internal fun BoxScope.ConsoleBadge(
     platform: String, cornerAuto: Alignment = Alignment.TopStart, packageName: String? = null,
     /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
-    onCase: Boolean = false
+    onCase: Boolean = false,
+    /** Batch 521b (QA badge gallery): Logo badges on / off for this badge only; null = the setting. */
+    logosOverride: Boolean? = null
 ) {
-    if (!Features.consoleBadges.state.value || LocalArtMirror.current) return
+    if ((logosOverride == null && !Features.consoleBadges.state.value) || LocalArtMirror.current) return
     // (Update 317ao: the corner picked in Game look › Console badges › Where, else the layout's own.)
     val corner = badgeCornerOr(cornerAuto)
     // Update 202: not on a case that prints its console's band (the Portal showed "NINTENDO GAMECUBE" twice on every
@@ -115,7 +123,7 @@ internal fun BoxScope.ConsoleBadge(
         val pill = Modifier.align(corner).padding(h * 0.3f).height(h).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
         // Update 125: Console badges › Logos — the console's own logo (Dan Patrick's white set) on its colour, the pill
         // as wide as the logo needs.
-        val badgeLogo = if (!android && Features.consoleBadgeLogos.state.value) BadgeLogos.of(platform) else null
+        val badgeLogo = if (!android && (logosOverride ?: Features.consoleBadgeLogos.state.value)) BadgeLogos.of(platform) else null
         if (badgeLogo != null) {
             // (Update 129: a symbol alone gets a short pill, about as wide as it is.)
             val symbol = badgeLogo.first.endsWith(".webp")
@@ -136,7 +144,8 @@ internal fun BoxScope.ConsoleBadge(
             }
             return@BoxWithConstraints
         }
-        val logo = SystemLogos.bundled(platform)
+        // (Batch 521b: not a logo that turns into a white block in one colour - its name instead, SystemLogos.SILHOUETTE_UNREADABLE.)
+        val logo = SystemLogos.bundled(platform)?.takeUnless { SystemLogos.silhouetteUnreadable(platform) }
         if (logo != null && !android) Box(
             pill.width(h * 3.4f).padding(horizontal = h * 0.35f, vertical = h * 0.18f),
             contentAlignment = Alignment.Center
@@ -157,11 +166,13 @@ internal fun BoxScope.ConsoleBadge(
                 )
                 androidx.compose.foundation.layout.Spacer(Modifier.width(h * 0.18f))
             }
+            // (Batch 521b, badge audit: the console's SHORT name — "SWITCH 2", "PS5", "XBOX SERIES" — whole, never cut with "…"
+            // (rule 11): the full names ("NINTENDO SWITCH 2") didn't fit a small tile's pill. A long one steps its size down.)
             Text(
-                (if (android) androidWord else LocalTitleOptions.current.console(platform)).uppercase(),
-                color = Color.White, fontSize = (h.value * 0.5f).sp, lineHeight = (h.value * 0.6f).sp,
+                (if (android) androidWord else com.shelf.launcher.data.ConsoleNames.short(platform)).uppercase(),
+                color = Color.White, lineHeight = (h.value * 0.6f).sp,
                 fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (h.value * 0.36f).sp, maxFontSize = (h.value * 0.5f).sp)
             )
         }
     }
@@ -219,12 +230,15 @@ internal object BadgeLogos {
         "Dreamcast" to 5.82f, "PCEngine" to 1.99f, "PCEngineCD" to 2.51f, "NeoGeo" to 5.71f, "NeoGeoCD" to 7.65f,
         "NeoGeoPocket" to 4.49f, "WonderSwan" to 7.79f, "Atari2600" to 4.61f, "Atari7800" to 7.64f, "Jaguar" to 2.82f,
         "Lynx" to 10.58f, "Xbox" to 4.08f, "Xbox360" to 4.83f, "Vectrex" to 3.84f, "Intellivision" to 6.78f,
-        "ColecoVision" to 3.39f, "PICO8" to 3.89f, "Android" to 6.56f, "3DO" to 3.28f, "Arcade" to 4.82f, "Naomi" to 2.63f,
+        "ColecoVision" to 3.39f, "PICO8" to 3.89f, "Android" to 6.56f, "Arcade" to 4.82f, "Naomi" to 2.63f,
         "Atomiswave" to 4.31f
     )
+    // (Batch 521b, badge audit: a regional / colour model never wears another console's lettering - Mega Drive showed
+    // "GENESIS", TurboGrafx-16 / -CD "PC Engine", Famicom "NES", Neo Geo Pocket Color "Neo Geo Pocket". Those now take their
+    // own ES-DE logo, or their name, like the other badges. Kept: one console under two keys (Pico8, MAME / FBNeo = Arcade) and
+    // the emblems both regions print (the Super Famicom's four buttons, the WonderSwan's mark).)
     private val ALIAS = mapOf(
-        "Pico8" to "PICO8", "MegaDrive" to "Genesis", "TG16" to "PCEngine", "TGCD" to "PCEngineCD", "Famicom" to "NES",
-        "SFC" to "SNES", "MAME" to "Arcade", "FBNeo" to "Arcade", "NeoGeoPocketColor" to "NeoGeoPocket", "WonderSwanColor" to "WonderSwan"
+        "Pico8" to "PICO8", "SFC" to "SNES", "MAME" to "Arcade", "FBNeo" to "Arcade", "WonderSwanColor" to "WonderSwan"
     )
 
     /**
@@ -234,10 +248,15 @@ internal object BadgeLogos {
     private val ICON = mapOf(
         "PS1" to 1.28f, "PS2" to 1.28f, "PS3" to 1.28f, "PS4" to 1.3f, "PSVita" to 1.28f, "Xbox" to 1.31f, "Xbox360" to 1.0f,
         "GameCube" to 0.88f, "Switch" to 1.0f, "N64" to 1.0f, "Dreamcast" to 1.13f, "Saturn" to 1.59f, "SNES" to 1.41f,
-        "NeoGeo" to 1.03f, "NeoGeoCD" to 1.5f, "3DO" to 0.6f, "Atari2600" to 1.24f, "Atari7800" to 1.24f, "Lynx" to 1.24f,
+        "NeoGeo" to 1.03f, "NeoGeoCD" to 1.5f, "Atari2600" to 1.24f, "Atari7800" to 1.24f, "Lynx" to 1.24f,
         "GameGear" to 2.08f, "WonderSwan" to 1.17f, "Atomiswave" to 1.17f
     )
 
+    /** Batch 521b: the badge set's key for [platform] (its own, or the console it borrows from). */
+    fun keyFor(platform: String): String = ALIAS[platform] ?: platform
+
+    // (Batch 521b: 3DO left out of both maps - its symbol and wordmark in the set are dark shapes on a white square, not the white
+    // set's, so the white badge drew a white rectangle. It shows its name, like the consoles the set doesn't have.)
     /** [platform]'s logo address and its width ÷ height, or null when the set has none (the normal badge shows). */
     fun of(platform: String): Pair<String, Float>? {
         val key = ALIAS[platform] ?: platform

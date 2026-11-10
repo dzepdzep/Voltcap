@@ -287,7 +287,15 @@ class MainActivity : ComponentActivity() {
             appearance = appearance,
             dynamicArtUrl = focusedCover
         ) {
-            LauncherScreen(vm)
+            // (Batch 521b, test hooks only: `--es voltcap_test_scale font=1.3,density=0.9` - Voltcap drawn at another text size /
+            // display scale WITHOUT touching the system's settings; popups take it too (their windows inherit it).)
+            val scale = com.shelf.launcher.ui.TestHooks.scale.value
+            if (scale == null) LauncherScreen(vm) else {
+                val base = androidx.compose.ui.platform.LocalDensity.current
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * scale.second, base.fontScale * scale.first)
+                ) { LauncherScreen(vm) }
+            }
         }
     }
 

@@ -4851,6 +4851,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 LegendBar()
             }
         }
+        // (Batch 521b: the QA console badge audit gallery over everything - test hooks only.)
+        TestHooks.badgeGallery.value?.let { g ->
+            // (Its own full-screen window: over Who's playing and any first-time hint, which are windows too.)
+            androidx.compose.ui.window.Dialog({ TestHooks.badgeGallery.value = null },
+                androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+                Box(Modifier.fillMaxSize()) { QaBadgeGalleryPage(g.removePrefix("a").toIntOrNull() ?: 0, assetsView = g.startsWith("a")) }
+            }
+        }
         // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
         if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active) {
             Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)) {

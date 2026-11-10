@@ -69,6 +69,17 @@ object SystemLogos {
     /** ES-DE-style system discs shipped with the app (assets/system_discs, 512 px overlays: rim, hub, logos, band). */
     private val DISCS = setOf("3do","atari2600","atari7800","atarijaguar","atarilynx","c64","colecovision","dreamcast","famicom","gamegear","gb","gba","gbc","gc","genesis","intellivision","mastersystem","megacd","megadrive","n3ds","n64","nds","neogeo","neogeocd","nes","ngp","ngpc","pcengine","pcenginecd","pico8","pokemini","ps2","ps3","ps4","psp","psvita","psx","saturn","sega32x","segacd","sfc","snes","switch","tg-cd","tg16","vectrex","virtualboy","wii","wiiu","wonderswan","wonderswancolor","xbox","xbox360")
 
+    /**
+     * Batch 521b (badge audit, RP Classic gallery): ES-DE logos drawn on a filled plate or as solid shapes - drawn in ONE colour
+     * (a white badge, a tinted folder) they become a solid block with no lettering left (3DO and MSX a white rectangle, Genesis /
+     * Mega Drive / Sega CD / Pokémon mini / Vectrex / DOS a blob). Measured: opaque share of the logo's box 0.68 - 1.0 with the
+     * lettering cut out of the plate. Those places show the console's name instead.
+     */
+    internal val SILHOUETTE_UNREADABLE: Set<String> = setOf("3do", "dos", "genesis", "megadrive", "msx", "msx1", "pokemini", "segacd", "vectrex")
+
+    /** Batch 521b: [platform]'s bundled ES-DE logo can't be drawn in one colour (see [SILHOUETTE_UNREADABLE]). */
+    fun silhouetteUnreadable(platform: String): Boolean = ESDE[platform]?.firstOrNull { it in BUNDLED } in SILHOUETTE_UNREADABLE
+
     /** The bundled colour logo for [platform] (an asset address Coil can load with its SVG decoder), or null. */
     fun bundled(platform: String): String? =
         ESDE[platform]?.firstOrNull { it in BUNDLED }?.let { "file:///android_asset/system_logos/$it.svg" }

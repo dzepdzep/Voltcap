@@ -3,7 +3,8 @@
 # tap on Play would start a game (qa_launch_check -> qa_launch_state, answered within ~1 s). Only "blocked" passes; an
 # old build that can't answer, Voltcap not running or "ALLOWED" all fail - the caller skips the tap. Never removes the block:
 # only the final device clean-up (with the release build back) does.
-QG_F=/sdcard/Android/data/com.shelf.launcher/files
+# (Batch 521b: the isolated QA app only - the owner's Voltcap is never a QA target.)
+QG_F=/sdcard/Android/data/com.shelf.launcher.qa/files
 qa_guard() {
   touch $QG_F/qa_nolaunch $QG_F/voltcap_test_hooks; rm -f $QG_F/qa_allow_launch $QG_F/qa_launch_state
   echo 1 > $QG_F/qa_launch_check

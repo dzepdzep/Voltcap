@@ -4,13 +4,14 @@
 # controller). After each settled step: a screenshot and QaClip's
 # geometry dump (a tag written to <files>/qa_clip_req — an intent would close the popups that live in the home screen). The caller saves / restores the owner's settings (voltcap_test_snapshot) around it.
 # Preview only, launches blocked. Evaluate with tools/qa/tools/popclip.py. Progress in $OUT/log.txt, DONE at the end.
-P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; STYLES=$3; GAME=$4
+# (Batch 521b: the isolated QA app only; its activity keeps the original class name.)
+P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; STYLES=$3; GAME=$4
 OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 # (Update 474: the run manifest — build, device, configuration, start / end — that tools/qa/tools/evidence.py requires
 # before any combination of this run can PASS.)
 . "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
-A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
+A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
 k() { input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 # Is a popup (a Play / Continue action) up? — a probe dump, so B is never pressed once too often (B on the home opens the

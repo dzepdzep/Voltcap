@@ -206,6 +206,7 @@ const SHELL_BLOCKS = [
   [/\b(reboot|setprop)\b|\bwm\s+(size|density)\s+(\d|reset)/, 'reboots or changes system properties / screen size'],
   [/\brm\s+(-\w+\s+)*[^;|&]*(\s|=|^)(\/|\/sdcard\/?|\/storage\/emulated\/0\/?|\/data\/?)(\s|;|$)/, 'deletes a whole storage root'],
   [/(?:\b(?:rm|mv|cp|tee|touch|mkdir|sed\s+-i)\b|>)[^;|&]*\/(RetroArch|PPSSPP|dolphin-emu|AetherSX2|NetherSX2|DCIM|Pictures|Download|Documents|Voltcap(?![\w.-]))\b/i, 'writes to your saves / personal folders'],
+  [/(^|[\s;(])[A-Za-z_][A-Za-z0-9_]*=["']?com\.shelf\.launcher(?![\w.])/, 'points a script variable at the real Voltcap (use com.shelf.launcher.qa)'],
   [/\b(appops\s+set|cmd\s+appops\s+set|pm\s+grant)\b[^;|&]*com\.shelf\.launcher(?![\w.])/, 'changes the real Voltcap\'s permissions'],
 ];
 /** Every non-comment line of a script that would be refused if typed into the shell tool (push of .sh files). */

@@ -24,11 +24,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import qalib
 import geomcheck
 import readcheck
+import glyphcheck
 
 STEPS = ("home", "main", "more", "page", "closed")
 NOSHOTS = "--steps-without-shots" in sys.argv
 ROW = ("ROW_OPENS", "ROW_REVEAL", "SHARED")
-CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability")
+CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability", "glyphs")
 ACT = geomcheck.PLAY_RE  # the window's Play / Continue in every layout's own word
 
 
@@ -185,6 +186,24 @@ def grade(run, n):
     if out["readability"][0] == qalib.PASS and "WARN" in out["readability"][1]:
         out["readability"] = (qalib.PASS, "WARN: " + out["readability"][1].replace("WARN: ", ""))
     out["visual"] = fold(vis)
+    # (Batch 521b: every controller glyph on the window's steps - InkGlyph's ink box, or a laid-out button label - measured on the
+    # screenshot against the circle / pill round it (glyphcheck.py). No glyph on screen is a pass with a note, not evidence.)
+    # (Batch 522: the home step too - the layout's own hint legend shows controller glyphs there.)
+    gl, seen = [], 0
+    for s in ("home", "main", "more", "page"):
+        if d[s] is None or not os.path.exists(png[s]):
+            continue
+        try:
+            from PIL import Image
+            img = Image.open(png[s]).convert("RGB")
+        except Exception:
+            continue
+        for text, box, ink in glyphcheck.candidates(d[s]):
+            r = glyphcheck.check(img, box, ink, text)
+            seen += 1
+            if r["verdict"] == "FAIL":
+                gl.append(f"{s} '{text}' off centre dx={r['dx']} dy={r['dy']} px ({r['dxPct']}% / {r['dyPct']}%)")
+    out["glyphs"] = (qalib.FAIL, "; ".join(gl)[:400]) if gl else (qalib.PASS, f"{seen} glyph(s) centred" if seen else "no controller glyphs on these steps")
     foc = [geomcheck._label(x) for w in d["main"].get("windows") or [] for x in w.get("nodes") or [] if x.get("focused")]
     # (The home screen's game can stay focused under a popup drawn in the same window; the popup's own focus is what counts.)
     act = [x for x in foc if ACT.match(x)]
@@ -276,7 +295,7 @@ def main():
         rows.append((n, overall, g))
         results.append(qalib.Result(n, overall, "; ".join(f"{k}={v[0]}" for k, v in g.items() if v[0] != qalib.PASS) or "all categories PASS"))
     if "--md" in sys.argv:
-        cats = ("open", "geometry", "visual", "focus", "buttons", "settle")
+        cats = ("open", "geometry", "visual", "focus", "buttons", "settle", "glyphs")
         with open(sys.argv[sys.argv.index("--md") + 1], "w", encoding="utf-8") as fh:
             fh.write("| layout_style | overall | " + " | ".join(cats) + " |\n|" + "---|" * (len(cats) + 2) + "\n")
             for n, ov, g in rows:
