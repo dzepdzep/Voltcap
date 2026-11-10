@@ -211,8 +211,13 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                 // The game: its cover and facts, or the page.
                 Column(Modifier.weight(0.54f).fillMaxHeight()) {
                     if (ctx.page == WinPage.MAIN) {
-                        Row(Modifier.fillMaxWidth().weight(1f)) {
-                            Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))
+                        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                        // (Batch 522, popup sweep on the RP Classic: a tall, narrow column - the cover took its height's 0.72 as width,
+                        // the whole column, and the facts beside it were laid out 0 px wide ("Played" not shown). The cover now
+                        // leaves the facts at least 45 % of the column; it keeps its shape, a little shorter there.)
+                        val coverW = minOf(maxHeight * 0.72f, maxWidth * 0.55f)
+                        Row(Modifier.fillMaxSize()) {
+                            Box(Modifier.size(coverW, coverW / 0.72f).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))
                                 .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(3.dp))) {
                                 if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             }
@@ -240,6 +245,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 fact("Kind", ctx.genres)
                             }
                             }
+                        }
                         }
                         if (ctx.total > 0) {
                             Spacer(Modifier.height(8.dp))
@@ -325,7 +331,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     Spacer(Modifier.width(10.dp))
                     Column {
                         WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 17.sp else 21.sp, fontWeight = FontWeight.Bold, maxLines = 3)
-                        Text(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
+                        // (Batch 522, popup sweep: "Super Nintendo" - cut by the one line. Whole: smaller, then sliding.)
+                        WinFullText(ctx.console, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, maxLines = 1)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -468,7 +475,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                 }
                 if (land) Spacer(Modifier.weight(1f))
                 Spacer(Modifier.height(u * 2))
-                Text(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
+                // (Batch 522, popup sweep: two lines of the pixel font cut "SYSTEM" off. Whole: smaller, then sliding.)
+                WinFullText(ctx.console.uppercase() + (ctx.year?.let { "  $it" } ?: ""), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
                 // (Update 346: the time on its own line — beside the achievements it was cut to "TROPHIES 0/…".)
                 Text("TIME " + ctx.played.uppercase(), color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
             }

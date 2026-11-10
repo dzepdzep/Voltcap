@@ -32,6 +32,8 @@ object ConsoleNames {
         "3DS" to "Nintendo 3DS",
         "VirtualBoy" to "Virtual Boy",
         "Genesis" to "Sega Mega Drive / Genesis",
+        // (Batch 522: the stores GameNative runs besides Steam - their games' categories.)
+        "Epic" to "Epic Games Store", "GOG" to "GOG", "Amazon" to "Amazon Games", "PC" to "PC games",
         "MasterSystem" to "Sega Master System",
         "SegaCD" to "Sega CD",
         "Saturn" to "Sega Saturn",
@@ -90,8 +92,9 @@ object ConsoleNames {
      * names people use, for Settings › Home › Name & logo › Short console names. Consoles not listed use their key, which
      * already is their usual short name (PS2, GBA, N64, SNES…).
      */
+    // (Batch 522: each key its own region's name - "Genesis" was "Mega Drive", while its Logo badge says GENESIS.)
     private val shortNames = mapOf(
-        "GameCube" to "GameCube", "MegaDrive" to "Mega Drive", "Genesis" to "Mega Drive", "MasterSystem" to "Master System",
+        "GameCube" to "GameCube", "MegaDrive" to "Mega Drive", "Genesis" to "Genesis", "MasterSystem" to "Master System",
         "GameGear" to "Game Gear", "SegaCD" to "Sega CD", "VirtualBoy" to "Virtual Boy", "NeoGeoPocket" to "NGP",
         "NeoGeoPocketColor" to "NGPC", "PCEngine" to "PC Engine", "PCEngineCD" to "PCE CD", "WonderSwan" to "WS",
         "WonderSwanColor" to "WSC", "Atari2600" to "2600", "Atari5200" to "5200", "Atari7800" to "7800", "XboxOne" to "Xbox One",

@@ -47,3 +47,31 @@ class GameClients522Test {
         assertEquals(listOf(file), GameClients.withoutPinnedDroidDeckTwins(listOf(file), emptyList()))
     }
 }
+
+/** Batch 522: GameNative's other stores' exports (.epic / .gog / .amazon / .pcgame) - checked against its FrontendSyncManager. */
+class GameNativeStores522Test {
+    @Test fun eachStoreItsOwnSourceKeyAndCategory() {
+        val root = kotlin.io.path.createTempDirectory("gn522").toFile()
+        try {
+            File(root, "PC").mkdirs()
+            File(root, "PC/Alan Wake.epic").writeText("17")
+            File(root, "PC/Witcher.gog").writeText("1207664643")
+            File(root, "PC/Broken.gog").writeText("0")                  // GameNative writes 0 for a non-numeric GOG id
+            File(root, "PC/Quake.amazon").writeText("42")
+            File(root, "PC/My Game.pcgame").writeText("9001")
+            File(root, "PC/Portal 2.steam").writeText("620")
+            File(root, "PC/Same id.epic").writeText("620")              // an Epic id equal to a Steam AppID is another game
+            val games = RomScanner.scanAll(listOf(root.absolutePath), deep = false).games.filter { it.sourceType == SourceType.STEAM }
+            val by = games.associateBy { it.name }
+            assertEquals(6, games.size)
+            assertEquals("EPIC", by["Alan Wake"]!!.gameNativeSource); assertEquals(17, by["Alan Wake"]!!.storeGameId)
+            assertEquals("Epic", by["Alan Wake"]!!.platform); assertNull(by["Alan Wake"]!!.steamAppId)
+            assertEquals("gamenative:gog:1207664643", by["Witcher"]!!.stableKey)
+            assertEquals("AMAZON", by["Quake"]!!.gameNativeSource); assertEquals("Amazon", by["Quake"]!!.platform)
+            assertEquals("CUSTOM_GAME", by["My Game"]!!.gameNativeSource); assertEquals("PC", by["My Game"]!!.platform)
+            assertEquals("steam:620", by["Portal 2"]!!.stableKey)
+            assertEquals("gamenative:epic:620", by["Same id"]!!.stableKey)
+            assertNull(by["Broken"])
+        } finally { root.deleteRecursively() }
+    }
+}

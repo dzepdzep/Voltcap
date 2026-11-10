@@ -96,10 +96,10 @@ internal fun BoxScope.ConsoleBadge(
     platform: String, cornerAuto: Alignment = Alignment.TopStart, packageName: String? = null,
     /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
     onCase: Boolean = false,
-    /** Batch 521b (QA badge gallery): Logo badges on / off for this badge only; null = the setting. */
-    logosOverride: Boolean? = null
+    /** Batch 521b / 522 (QA badge gallery): the badge look for this badge only; null = the setting. */
+    styleOverride: Features.BadgeStyle? = null
 ) {
-    if ((logosOverride == null && !Features.consoleBadges.state.value) || LocalArtMirror.current) return
+    if ((styleOverride == null && !Features.consoleBadges.state.value) || LocalArtMirror.current) return
     // (Update 317ao: the corner picked in Game look › Console badges › Where, else the layout's own.)
     val corner = badgeCornerOr(cornerAuto)
     // Update 202: not on a case that prints its console's band (the Portal showed "NINTENDO GAMECUBE" twice on every
@@ -121,32 +121,67 @@ internal fun BoxScope.ConsoleBadge(
             remember(packageName) { AppKinds.kind(context, packageName).word }
         } else ""
         val pill = Modifier.align(corner).padding(h * 0.3f).height(h).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
-        // Update 125: Console badges › Logos — the console's own logo (Dan Patrick's white set) on its colour, the pill
-        // as wide as the logo needs.
-        val badgeLogo = if (!android && (logosOverride ?: Features.consoleBadgeLogos.state.value)) BadgeLogos.of(platform) else null
-        if (badgeLogo != null) {
-            // (Update 129: a symbol alone gets a short pill, about as wide as it is.)
-            val symbol = badgeLogo.first.endsWith(".webp")
-            // Update 136: symbols a little bigger in their pill (they were barely readable on a handheld's screen).
+        // Batch 522 (owner): one look per setting, never mixed - Text, Symbol or Logo (Features.BadgeStyle); a console the
+        // look has no artwork for shows its short name in the same pill.
+        val style = styleOverride ?: Features.consoleBadgeStyle.state.value
+        val cap = maxWidth * 0.78f
+        // The badge set's art for [art] (symbol .webp or wordmark .svg) in a pill as wide as it needs (Update 125 / 129 / 136).
+        val setArt: @Composable (Pair<String, Float>) -> Unit = { art ->
+            val symbol = art.first.endsWith(".webp")
             val lh = h * (if (symbol) 1.3f else 1.15f)
-            val w = (lh * (if (symbol) 0.74f else 0.62f) * badgeLogo.second + lh * 0.7f).coerceIn(if (symbol) lh * 1.3f else lh * 2.2f, maxWidth * 0.78f)
+            val w = (lh * (if (symbol) 0.74f else 0.62f) * art.second + lh * 0.7f).coerceIn(if (symbol) lh * 1.3f else lh * 2.2f, cap)
             Box(
                 Modifier.align(corner).padding(h * 0.3f).height(lh).width(w).clip(RoundedCornerShape(50))
                     .background(bg.copy(alpha = 0.94f)).padding(horizontal = lh * 0.35f, vertical = lh * (if (symbol) 0.13f else 0.19f)),
                 contentAlignment = Alignment.Center
             ) {
                 val context = LocalContext.current
-                val req = remember(badgeLogo.first) {
-                    coil.request.ImageRequest.Builder(context).data(badgeLogo.first)
+                val req = remember(art.first) {
+                    coil.request.ImageRequest.Builder(context).data(art.first)
                         .apply { if (!symbol) decoderFactory(coil.decode.SvgDecoder.Factory()) }.size(384).build()
                 }
                 AsyncImage(req, platform, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxSize())
             }
+        }
+        val nameText: @Composable () -> Unit = {
+            androidx.compose.foundation.layout.Row(
+                pill.widthIn(max = maxWidth * 0.8f).padding(horizontal = h * 0.4f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (android) {
+                    androidx.compose.material3.Icon(
+                        androidx.compose.material.icons.Icons.Filled.Android, null, tint = Color.White,
+                        modifier = Modifier.size(h * 0.72f)
+                    )
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(h * 0.18f))
+                }
+                // (Batch 521b, badge audit: the console's SHORT name — "SWITCH 2", "PS5", "XBOX SERIES" — whole, never cut with
+                // "…" (rule 11). A long one steps its size down.)
+                Text(
+                    (if (android) androidWord else com.shelf.launcher.data.ConsoleNames.short(platform)).uppercase(),
+                    color = Color.White, lineHeight = (h.value * 0.6f).sp,
+                    fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (h.value * 0.36f).sp, maxFontSize = (h.value * 0.5f).sp)
+                )
+            }
+        }
+        if (android || style == Features.BadgeStyle.TEXT) { nameText(); return@BoxWithConstraints }
+        if (style == Features.BadgeStyle.SYMBOL) {
+            BadgeLogos.symbol(platform)?.let { setArt(it) } ?: nameText()
             return@BoxWithConstraints
         }
-        // (Batch 521b: not a logo that turns into a white block in one colour - its name instead, SystemLogos.SILHOUETTE_UNREADABLE.)
+        // LOGO: the console's own wordmark. One too wide for this tile's pill (GBA 11 : 1, Lynx, Genesis…: drawn at under
+        // 90 % of its size in the pill) shows the compact form here - its symbol, else its name - and the whole
+        // wordmark on tiles with room for it.
+        val mark = BadgeLogos.wordmark(platform)
+        if (mark != null) {
+            if (!BadgeLogos.fitsWordmark(mark.second, h.value, cap.value)) BadgeLogos.symbol(platform)?.let { setArt(it) } ?: nameText()
+            else setArt(mark)
+            return@BoxWithConstraints
+        }
+        // No wordmark in the set: the ES-DE logo in white (Batch 521b: not one that turns into a solid block in one colour).
         val logo = SystemLogos.bundled(platform)?.takeUnless { SystemLogos.silhouetteUnreadable(platform) }
-        if (logo != null && !android) Box(
+        if (logo != null) Box(
             pill.width(h * 3.4f).padding(horizontal = h * 0.35f, vertical = h * 0.18f),
             contentAlignment = Alignment.Center
         ) {
@@ -155,26 +190,7 @@ internal fun BoxScope.ConsoleBadge(
                 coil.request.ImageRequest.Builder(context).data(logo).decoderFactory(coil.decode.SvgDecoder.Factory()).size(192).build()
             }
             AsyncImage(req, platform, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxSize())
-        } else androidx.compose.foundation.layout.Row(
-            pill.widthIn(max = maxWidth * 0.8f).padding(horizontal = h * 0.4f),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (android) {
-                androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.Android, null, tint = Color.White,
-                    modifier = Modifier.size(h * 0.72f)
-                )
-                androidx.compose.foundation.layout.Spacer(Modifier.width(h * 0.18f))
-            }
-            // (Batch 521b, badge audit: the console's SHORT name — "SWITCH 2", "PS5", "XBOX SERIES" — whole, never cut with "…"
-            // (rule 11): the full names ("NINTENDO SWITCH 2") didn't fit a small tile's pill. A long one steps its size down.)
-            Text(
-                (if (android) androidWord else com.shelf.launcher.data.ConsoleNames.short(platform)).uppercase(),
-                color = Color.White, lineHeight = (h.value * 0.6f).sp,
-                fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = (h.value * 0.36f).sp, maxFontSize = (h.value * 0.5f).sp)
-            )
-        }
+        } else nameText()
     }
 }
 
@@ -258,10 +274,31 @@ internal object BadgeLogos {
     // (Batch 521b: 3DO left out of both maps - its symbol and wordmark in the set are dark shapes on a white square, not the white
     // set's, so the white badge drew a white rectangle. It shows its name, like the consoles the set doesn't have.)
     /** [platform]'s logo address and its width ÷ height, or null when the set has none (the normal badge shows). */
-    fun of(platform: String): Pair<String, Float>? {
+    fun of(platform: String): Pair<String, Float>? = symbol(platform) ?: wordmark(platform)
+
+    /** Batch 522: [platform]'s symbol (assets/badge_icons) and its width ÷ height; the emblems both models print are shared. */
+    fun symbol(platform: String): Pair<String, Float>? {
         val key = ALIAS[platform] ?: platform
-        ICON[key]?.let { return "file:///android_asset/badge_icons/$key.webp" to it }
-        val a = ASPECT[key] ?: return null
-        return "file:///android_asset/badge_logos/$key.svg" to a
+        return ICON[key]?.let { "file:///android_asset/badge_icons/$key.webp" to it }
+    }
+
+    /**
+     * Batch 522: [platform]'s own wordmark (assets/badge_logos) and its width ÷ height. Only the same console under another
+     * key borrows one (Pico8, MAME / FBNeo = Arcade): a Super Famicom never wears "SUPER NINTENDO", a WonderSwan Color never
+     * the WonderSwan's lettering - those show their ES-DE logo or name.
+     */
+    fun wordmark(platform: String): Pair<String, Float>? {
+        val key = WORDMARK_ALIAS[platform] ?: platform
+        return ASPECT[key]?.let { "file:///android_asset/badge_logos/$key.svg" to it }
+    }
+    private val WORDMARK_ALIAS = mapOf("Pico8" to "PICO8", "MAME" to "Arcade", "FBNeo" to "Arcade")
+
+    /**
+     * Batch 522: a wordmark of [aspect] (width ÷ height) is drawn at 90 % or more of its natural size inside a pill no
+     * wider than [capDp] on a badge [hDp] tall (the pill sizes of the badge above); narrower = the compact form there.
+     */
+    fun fitsWordmark(aspect: Float, hDp: Float, capDp: Float): Boolean {
+        val lh = hDp * 1.15f
+        return (capDp - lh * 0.7f) / (lh * 0.62f * aspect) >= 0.9f
     }
 }

@@ -260,6 +260,26 @@ object RomScanner {
     }
 
     /**
+     * Batch 522: GameNative's frontend exports for its other stores (its FrontendSyncManager: `<title>.epic` / `.gog` /
+     * `.amazon` / `.pcgame`, the file holding GameNative's int id for the game - EpicGame.id, GOGGame.id parsed, AmazonGame.appId,
+     * the custom game's id) → the `game_source` GameNative's LAUNCH_GAME intent takes with that id (IntentLaunchManager) and
+     * the category the game goes in. Checked against GameNative's source (master, Nov 2026); a GOG id that isn't a number is
+     * exported as 0 and skipped (no game to start).
+     */
+    internal val GAMENATIVE_STORES = mapOf("epic" to ("EPIC" to "Epic"), "gog" to ("GOG" to "GOG"), "amazon" to ("AMAZON" to "Amazon"),
+        "pcgame" to ("CUSTOM_GAME" to "PC"))
+
+    internal fun gameNativeStoreExport(file: File): Game? {
+        val (source, platform) = GAMENATIVE_STORES[file.extension.lowercase()] ?: return null
+        if (!file.isFile || file.length() !in 1..64) return null
+        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
+        val id = parseSteamExport(text) ?: return null
+        val title = file.nameWithoutExtension.trim().ifBlank { "$platform game $id" }
+        return Game(name = title, platform = platform, hue = (("$source$id").hashCode() and 0x7fffffff) % 360,
+            sourceType = SourceType.STEAM, storeGameId = id, gameNativeSource = source)
+    }
+
+    /**
      * Batch 522: one DroidDeck launch file - `<Game title>.droiddeck` holding DroidDeck's game id (digits, or the same
      * `droiddeck://game/<id>` DroidDeck uses; GameClients.droidDeckId). A Steam game (platform "Steam", like DroidDeck's
      * pinned shortcuts) whose key stays the file's path - the file itself is what Play hands back to DroidDeck. Null for a
@@ -407,6 +427,7 @@ object RomScanner {
         val skipped = mutableSetOf<String>()
         val steamFiles = mutableListOf<File>()
         val droidDeckFiles = mutableListOf<File>()
+        val storeFiles = mutableListOf<File>()
         // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
         // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
         val folderGames = mutableListOf<File>()
@@ -426,6 +447,8 @@ object RomScanner {
                     // (Update 478, D1: GameNative's frontend export — "<Game>.steam" holding the Steam AppID — is a PC /
                     // Steam game handed to GameNative, whatever folder it sits in; one that isn't a valid AppID is skipped.)
                     ext == "steam" -> steamFiles += file
+                    // (Batch 522: GameNative's other stores' exports - same format, its own id per store.)
+                    ext in GAMENATIVE_STORES -> storeFiles += file
                     // (Batch 522: DroidDeck's exported launch file - "<Game>.droiddeck" holding its game id - is a Steam game
                     // started through DroidDeck, whatever folder it sits in, like DroidDeck's own home-screen shortcuts
                     // (PinnedShortcuts: Steam category). A file without a valid id is not listed.)
@@ -445,6 +468,7 @@ object RomScanner {
         val games = mutableListOf<Game>()
         steamFiles.forEach { f -> gameNativeExport(f)?.let { games += it } }
         droidDeckFiles.forEach { f -> droidDeckExport(f)?.let { games += it } }
+        storeFiles.forEach { f -> gameNativeStoreExport(f)?.let { games += it } }
         folderGames.forEach { dir ->
             val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
             games += Game(

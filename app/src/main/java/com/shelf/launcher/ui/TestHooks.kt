@@ -290,6 +290,23 @@ internal object TestHooks {
             ((m["font"] ?: 1f).coerceIn(0.7f, 2f)) to ((m["density"] ?: 1f).coerceIn(0.6f, 1.6f))
         } }
         intent?.getStringExtra("voltcap_test_badgegallery")?.let { v -> if (enabled(context)) badgeGallery.value = v.takeIf { it != "off" } }
+        // Batch 522: `--es voltcap_test_edithome open|save|discard|reset:<part id>|resetlayout:<LAYOUT>` - Edit Home's own
+        // actions (Edit Home, Done / Save, Discard, "Reset this part", "Reset this layout"), for the Tile home independence check.
+        // QA app / hooks only; with a preview running nothing reaches the saved settings (Features.holdWrites).
+        intent?.getStringExtra("voltcap_test_edithome")?.let { v ->
+            if (!enabled(context)) return@let
+            runCatching {
+                when {
+                    v == "open" -> HomeEditState.open()
+                    v == "save" -> HomeEditSession.save()
+                    v == "discard" -> HomeEditSession.discard()
+                    v.startsWith("reset:") -> HomeEditSession.resetSelected(v.removePrefix("reset:"))
+                    v.startsWith("resetlayout:") -> com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == v.removePrefix("resetlayout:") }
+                        ?.let { HomeEditSession.resetLayout(it) }
+                }
+            }.onFailure { android.util.Log.w("VoltcapTest", "edithome $v: ${it.message}") }
+            android.util.Log.i("VoltcapTest", "edithome $v active=${HomeEditState.active}")
+        }
         intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")

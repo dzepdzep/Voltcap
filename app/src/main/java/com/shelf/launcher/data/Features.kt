@@ -393,6 +393,15 @@ object Features {
     val consoleBadgeTheme = BoolPref("console_badge_theme", false)
     /** Update 125: badges with the console's logo from Dan Patrick's white set (the R1 Console badges tile's second step). */
     val consoleBadgeLogos = BoolPref("console_badge_logos", false)
+    /**
+     * Batch 522 (owner): three separate looks for the console badge, never mixed inside one look - TEXT the console's short
+     * name; SYMBOL the console's symbol where the badge set has one, else the short name; LOGO the console's own wordmark
+     * (badge set, else its ES-DE logo where that stays readable in white), else the short name. A wordmark too wide for a small
+     * tile's pill shows its symbol (or name) there and the whole wordmark where there's room. Replaces the old Small / Big
+     * logo switch ([consoleBadgeLogos], kept only so old presets still read): both were logo looks, so LOGO is the default.
+     */
+    enum class BadgeStyle(val label: String) { TEXT("Text"), SYMBOL("Symbol"), LOGO("Logo") }
+    val consoleBadgeStyle = EnumPref("console_badge_style", BadgeStyle.LOGO, BadgeStyle.values())
     /** Update 317ao: which corner of a game's tile the console badge takes (Auto: where each layout puts it, clear of the rest). */
     enum class BadgeCorner(val label: String) { AUTO("Auto"), TOP_LEFT("Top left"), TOP_RIGHT("Top right"), BOTTOM_LEFT("Bottom left"), BOTTOM_RIGHT("Bottom right") }
     val consoleBadgeCorner = EnumPref("console_badge_corner", BadgeCorner.AUTO, BadgeCorner.values())

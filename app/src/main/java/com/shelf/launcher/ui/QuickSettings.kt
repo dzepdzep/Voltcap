@@ -391,15 +391,16 @@ fun QuickSettingsCard(
             val F = com.shelf.launcher.data.Features
             // (Update 125: the Media tile — Covers → Cartridges & discs → Discs only — is part of the Look tile now, with
             // Cartridges only added; saved tile orders just skip the old "media" id.)
-            // Update 125: Off → Console badges → Logo badges (the console's own logo on its colour) → Off.
+            // Update 125 / Batch 522: Off → Text badges → Symbol badges → Logo badges → Off.
             val badgesOn = F.consoleBadges.state.value
-            val logoBadges = F.consoleBadgeLogos.state.value
+            val bs = F.consoleBadgeStyle.state.value
             add(R1Tile("badges", Icons.Filled.Label,
-                when { !badgesOn -> "Badges\noff"; logoBadges -> "Logo\nbadges"; else -> "Console\nbadges" }, badgesOn) {
+                if (!badgesOn) "Badges\noff" else "${bs.label}\nbadges", badgesOn) {
                 when {
-                    !F.consoleBadges.value -> { F.consoleBadges.value = true; F.consoleBadgeLogos.value = false }
-                    !F.consoleBadgeLogos.value -> F.consoleBadgeLogos.value = true
-                    else -> { F.consoleBadges.value = false; F.consoleBadgeLogos.value = false }
+                    !F.consoleBadges.value -> { F.consoleBadges.value = true; F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.TEXT }
+                    F.consoleBadgeStyle.value == com.shelf.launcher.data.Features.BadgeStyle.TEXT -> F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.SYMBOL
+                    F.consoleBadgeStyle.value == com.shelf.launcher.data.Features.BadgeStyle.SYMBOL -> F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.LOGO
+                    else -> F.consoleBadges.value = false
                 }
             })
             // (Update 325, Toni: "an R1 tile for the game you're on — with a colour outline or not": Coloured frame on / off.)

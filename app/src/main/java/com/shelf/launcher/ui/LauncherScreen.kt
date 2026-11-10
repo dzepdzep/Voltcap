@@ -4251,8 +4251,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
+            // (Batch 522, owner: "moving the round buttons shifts the game row and the category chips". Moved in Edit Home (or
+            // while editing) the buttons float, and their room under the tiles went with them: Middle re-centred the group
+            // 18 dp lower and the game facts strip took their place. Tile home keeps the room they had - exactly their size,
+            // nothing drawn there - so the row, chips and name stay where they were; Reset this part puts the bar back into
+            // the same room. Only "by the tiles" buttons (not "Anywhere", not taken off with ✕); other layouts unchanged.)
+            val tileBarReserved = state.appearance.tileShortcuts && state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW &&
+                shortcutsFloating && tileShortcuts.isNotEmpty() && !HomeWidgets.hidden(HomeWidgets.SHORTCUTS)
             val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
-                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && !shortcutsFloating && tileShortcuts.isNotEmpty()
+                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && (!shortcutsFloating || tileBarReserved) && tileShortcuts.isNotEmpty()
             // Update 480 (D257): in the middle with no round buttons under the tiles, the room under them was left empty (~45 %
             // of the screen): the tiles grow a little (LocalTileRoom) and the focused game's facts sit under them, centred
             // with the tiles as one group (as the buttons are).
@@ -4343,6 +4350,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
                 if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) {
                     HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight)
+                } else if (shortcutsAbove && tileBarReserved) {
+                    ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight) }
                 }
                 // A one-line name takes one line's room: the second line's room goes up here (above the
                 // category), so the category sits right on the name and the tiles never move.
@@ -4420,9 +4429,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         CategoriesBar()
                     }
                 }
-                if (!shortcutsAbove && shortcutsByRow && !shortcutsFloating) {
+                if (!shortcutsAbove && shortcutsByRow && (!shortcutsFloating || tileBarReserved)) {
                     Spacer(Modifier.height(if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 2.dp else 8.dp))
-                    HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight)
+                    if (!shortcutsFloating) HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight)
+                    else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
                 }
             }
         } else {

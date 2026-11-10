@@ -32,8 +32,8 @@ import coil.compose.AsyncImage
 /**
  * Batch 521b (owner: "a complete console badge and logo audit with the actual rendered assets"), QA app / test hooks only:
  * `--es voltcap_test_badgegallery N` draws page N of every console Voltcap names, grouped by maker, each with the REAL
- * composables and assets the app uses — the badge with Logo badges off ("Console badges", ES-DE logo or the name as text)
- * and on (Dan Patrick's symbol or wordmark), each on a 96 dp and a 140 dp tile, the raw wordmark, the folder logo
+ * composables and assets the app uses — the badge in its three looks (Batch 522: Text, Symbol, Logo on 96 dp tiles, Logo also
+ * on a 200 dp tile), the raw wordmark, the folder logo
  * (PlatformLogos, baked), the plain mono icon and the ES-DE system logo — on one grey so differences show. `off` closes it.
  */
 internal object QaBadgeGallery {
@@ -66,21 +66,22 @@ internal fun QaBadgeGalleryPage(page: Int, assetsView: Boolean) {
     Column(Modifier.fillMaxSize().background(Color(0xFF15171B)).padding(horizontal = 10.dp, vertical = 6.dp)) {
         Text("BADGE AUDIT  ${if (assetsView) "assets" else "badges"}  $maker  (page ${page + 1} / ${QaBadgeGallery.pages.size})", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            (if (!assetsView) listOf("console" to 86.dp, "Console badge 96" to 96.dp, "Logo badge 96" to 96.dp, "Console badge 140" to 140.dp, "Logo badge 140" to 140.dp)
+            (if (!assetsView) listOf("console" to 76.dp, "Text 96" to 96.dp, "Symbol 96" to 96.dp, "Logo 96" to 96.dp, "Logo 200" to 200.dp)
             else listOf("console" to 86.dp, "badge-set wordmark" to 120.dp, "folder logo" to 80.dp, "mono" to 50.dp, "ES-DE logo" to 80.dp)).forEach { (t, w) ->
                 Text(t, color = Color(0xFFB0B4BC), fontSize = 9.sp, modifier = Modifier.width(w))
             }
         }
         keys.forEach { p ->
             Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.width(86.dp)) {
+                Column(Modifier.width(if (assetsView) 86.dp else 76.dp)) {
                     Text(p, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                     Text(com.shelf.launcher.data.ConsoleNames.display(p), color = Color(0xFF9AA0A8), fontSize = 8.sp, maxLines = 2, lineHeight = 9.sp)
                 }
-                // The real badge on a plain tile: Logo badges off, then on, at two tile sizes (the badge sizes itself from the tile).
-                if (!assetsView) for ((w, logos) in listOf(96.dp to false, 96.dp to true, 140.dp to false, 140.dp to true)) {
+                // The real badge on a plain tile in each look (the badge sizes itself from the tile).
+                // (Batch 522: the three looks - Text, Symbol, Logo - and Logo on bigger tiles, where a wide wordmark shows whole.)
+                if (!assetsView) for ((w, st) in listOf(96.dp to com.shelf.launcher.data.Features.BadgeStyle.TEXT, 96.dp to com.shelf.launcher.data.Features.BadgeStyle.SYMBOL, 96.dp to com.shelf.launcher.data.Features.BadgeStyle.LOGO, 200.dp to com.shelf.launcher.data.Features.BadgeStyle.LOGO)) {
                     Box(Modifier.size(w, 40.dp).clip(RoundedCornerShape(6.dp)).background(grey)) {
-                        ConsoleBadge(p, cornerAuto = Alignment.TopStart, logosOverride = logos)
+                        ConsoleBadge(p, cornerAuto = Alignment.TopStart, styleOverride = st)
                     }
                 }
                 if (assetsView) {
@@ -116,9 +117,7 @@ internal fun QaBadgeGalleryPage(page: Int, assetsView: Boolean) {
     }
 }
 
-/** The badge set's wordmark for [p] (assets/badge_logos), whether or not its badge uses the symbol; null when none. */
-private fun wordmarkOf(context: android.content.Context, p: String): String? {
-    val key = BadgeLogos.keyFor(p)
-    return if (runCatching { context.assets.open("badge_logos/$key.svg").close(); true }.getOrDefault(false)) "file:///android_asset/badge_logos/$key.svg" else null
-}
+/** The badge set's own wordmark for [p] (assets/badge_logos); null when none. */
+@Suppress("UNUSED_PARAMETER")
+private fun wordmarkOf(context: android.content.Context, p: String): String? = BadgeLogos.wordmark(p)?.first // (Batch 522: its own only)
 

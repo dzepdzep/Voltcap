@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -921,6 +922,19 @@ internal class HomeShortcut(
  * the D-pad is on (null: the selection is on the tiles). Its name shows under
  * the pill; that line's space is always kept, so nothing moves.
  */
+/**
+ * Batch 522: the room [content] would take, with nothing of it drawn, touched or announced - measured, never placed (an
+ * unplaced node isn't drawn, hit-tested or in the semantics a screen reader / QaClip reads). Tile home keeps the round
+ * buttons' room under the tiles while they float elsewhere, so nothing else moves.
+ */
+@Composable
+internal fun ReservedRoom(content: @Composable () -> Unit) {
+    Box(Modifier.layout { measurable, constraints ->
+        val p = measurable.measure(constraints)
+        layout(p.width, p.height) { }
+    }.clearAndSetSemantics { }) { content() }
+}
+
 @Composable
 internal fun HomeShortcutBar(
     shortcuts: List<HomeShortcut>,

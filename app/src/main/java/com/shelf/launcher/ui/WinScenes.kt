@@ -839,7 +839,8 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                 }
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 12.dp, vertical = 3.dp)) {
-                    Text(ctx.console.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    // (Batch 522, popup sweep: "SUPER NINTENDO" - the rest of the name was cut by the one line. Whole: smaller, then sliding.)
+                    WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1)
                 }
             }
             Spacer(Modifier.width(12.dp))
@@ -1387,7 +1388,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("DISC", style = label)
                 Spacer(Modifier.width(8.dp))
-                Text(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
+                // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
+                WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
                     modifier = Modifier.weight(1f))
                 // A small LED, breathing.
                 Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }

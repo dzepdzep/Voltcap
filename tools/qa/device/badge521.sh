@@ -19,8 +19,8 @@ for d in PS5 XboxOne XboxSeries Switch2 MegaDrive TG16 Famicom SFC NeoGeoPocketC
 A --ez voltcap_test_fixture_roms true; sleep 12
 A --ez voltcap_test_preview true; sleep 1
 A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
-for LOGOS in false true; do
-  A --es voltcap_test_pref "console_badges=true"; A --es voltcap_test_pref "console_badge_logos=$LOGOS"; sleep 1
+for LOGOS in TEXT SYMBOL LOGO; do
+  A --es voltcap_test_pref "console_badges=true"; A --es voltcap_test_pref "console_badge_style=$LOGOS"; sleep 1
   for LY in GRID TILES CLASSIC; do
     A --es voltcap_test_layout $LY --es voltcap_test_category ALL; sleep 4; picker; screencap -p $O/layout_${LY}_logos$LOGOS.png; log "$LY logos=$LOGOS"
   done
