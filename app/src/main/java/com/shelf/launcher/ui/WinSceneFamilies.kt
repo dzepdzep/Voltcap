@@ -128,7 +128,9 @@ internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color
     Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
             Text(studioInitials(ctx.console), color = ink, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            Text(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 12.sp)
+            // (Batch 523, Inspect test: "Super Nintendo Entertainme" - a word wider than the plate was cut; whole words now, the size
+            // stepping down until the longest one fits.)
+            WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
         }
     }
 }

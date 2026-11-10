@@ -277,7 +277,9 @@ internal fun WinFullText(
 @Composable
 internal fun WholeWordsText(
     text: String, color: Color, fontSize: TextUnit, modifier: Modifier = Modifier, fontWeight: FontWeight? = null,
-    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, lineHeight: TextUnit = TextUnit.Unspecified
+    fontFamily: androidx.compose.ui.text.font.FontFamily? = null, lineHeight: TextUnit = TextUnit.Unspecified,
+    /** Batch 523: the lines' alignment (a centred plate); default as before. */
+    textAlign: TextAlign? = null
 ) {
     BoxWithConstraints(modifier) {
         val measurer = rememberTextMeasurer(cacheSize = 8)
@@ -293,6 +295,6 @@ internal fun WholeWordsText(
             s
         }
         val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
-        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily)
+        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign)
     }
 }

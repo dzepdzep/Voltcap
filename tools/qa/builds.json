@@ -484,6 +484,28 @@
    "patch_sha256": null,
    "tree_hash": null,
    "note": "batch 523c: 523b + Smart Fill on every popup cover / cover-as-backdrop (GameWindow, row opens, scenes); the final 523 gate build"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523d",
+   "apk_sha256": "417592936686aa128e1314baf9b1cb43d0770a89f9965639d48bb183cfa326d8",
+   "base_commit": "527bf69468401484cadd7a215b9b2c6dc6eae99e",
+   "note": "batch 523d: 523c + Endless steps / short lists, Cinema console mark, Smart App Artwork, Storage menu; installed on RP Classic (guarded install_build) for the Inspect gesture test"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523e",
+   "apk_sha256": "76b1a8c2d54674595cc10f38c6280191cf98fd3cf892e24e970a38c683c5fcd9",
+   "base_commit": "PENDING",
+   "note": "batch 523e: 523d + no-art plate console name in whole words; the final 523 gate build (chain523d)"
   }
  ]
 }
