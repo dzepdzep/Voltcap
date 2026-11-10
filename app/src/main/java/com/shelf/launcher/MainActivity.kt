@@ -477,6 +477,12 @@ private fun CrashReportScreen(report: CrashGuard.Report, onContinue: () -> Unit)
 
     // B / Back does the safe thing: carry on.
     BackHandler(onBack = onContinue)
+    // (Batch 523, QA: the crash report is a screen of its own - QA scripts see it and press B (Continue) instead of driving
+    // its Export button into the system file picker. QA app / hooks only, as every markScreen.)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        com.shelf.launcher.ui.TestHooks.markScreen(context, "CRASH")
+        onDispose { com.shelf.launcher.ui.TestHooks.markScreen(context, "HOME") }
+    }
     // D-pad users land on Continue.
     LaunchedEffect(Unit) {
         withFrameNanos { }

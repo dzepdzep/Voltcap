@@ -7,7 +7,7 @@ A() { am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_fixture_r
 # (Batch 523: keys only while a QA app window has focus - a crash dialog's buttons lead into Settings' App info.)
 k() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) ;; *com.shelf.launcher.qa*) break;; esac; sleep 0.5; done
   case "$f" in *Application*) echo "ABORT focus=$f" >> $L; am force-stop com.shelf.launcher.qa; exit 2;; *com.shelf.launcher.qa*) input keyevent $1;; *) echo "ABORT focus=$f" >> $L; am force-stop com.shelf.launcher.qa; exit 2;; esac; }
-pk() { grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { k KEYCODE_BUTTON_B; sleep 1.5; }; }
+pk() { grep -q '^CRASH' $F/voltcap_qa_screen 2>/dev/null && { k KEYCODE_BUTTON_B; sleep 2; }; grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { k KEYCODE_BUTTON_B; sleep 1.5; }; }
 shot() { A --ez voltcap_test_preview true; A --es voltcap_test_layout GRID --es voltcap_test_category PS1; sleep 4; pk; screencap -p $O/$1.png
   echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.2; cp $F/qa_clip/${TAG}_$1.json $O/ 2>/dev/null; }
 input keyevent KEYCODE_WAKEUP; A --ez voltcap_test_nolaunch true; sleep 4; pk
