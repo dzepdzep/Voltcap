@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -594,6 +594,17 @@
    "apk_sha256": "6b2a0909d4d3e702a6fd8e71afc4a01010c26179a5ac28cfeb528c5a94c4a1aa",
    "base_commit": "08962ff3b726632f4feb95c16e797cb1f6161786",
    "note": "batch 523n: Storage menu cells from the column width, lab Back hint pill; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523o",
+   "apk_sha256": "18a72c06284683692262f14b4a1c06f03185c4c766c8dfd0a5686714b99f0542",
+   "base_commit": "54bf764",
+   "note": "batch 523o: Shared details story box >= 48 dp (popup gate p523f touch FAIL x46); RP Classic"
   }
  ]
 }

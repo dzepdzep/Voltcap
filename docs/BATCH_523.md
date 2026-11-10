@@ -106,7 +106,8 @@ and the RP Classic now run the same production version, so the mixed-version con
 ### ×1.3 / density ×1.15 (p523fb)
 Stopped after 12 layouts when ×1.0 ended (the chain ran past its slot); not graded. Superseded by chain523n.
 
-### chain523n (build 523n, started 00:13 11 Nov)
-Smart App Artwork on apps without art (JoiPlay / FolderSync / Obtainium), the Save Vault looks, **×1.3 all 318**, ×1.0 Row opens /
-Row reveal / Shared. Results below when graded.
+### chain523n (build 523n, 00:13–00:24 11 Nov) → chain523o (build 523o, from 00:25)
+523n ran the Smart App Artwork part (a523n: JoiPlay / FolderSync / Obtainium) and the Save Vault looks (v523n), then was stopped
+so the gate runs on 523o with the Shared fix: chain523o = ×1.0 Row opens / Row reveal / Shared (p523or), then **×1.3 all 318**
+(p523ob). Results below when graded.
 

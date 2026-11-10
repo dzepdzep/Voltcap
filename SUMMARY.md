@@ -1,3 +1,29 @@
+# Update 523 (10–11 Nov 2026) — owner's UX batch 1–18, Save Vault art, popup design lab (local, next/0.6.70)
+
+- **Pickup / extraction / Case flow** (`ui/StyleCoverDetails.kt`, `ui/SpineDepth.kt`, `ui/ShelfHome.kt`, `ui/StyleCaseFlow.kt`):
+  Coverflow details lifts ONE case (spine → front, no cross-fade copy); Game shelf box slides, turns in place, comes forward;
+  Case flow draws each game once (no copies sliding in); case-top paths / gradients cached (GT78 burst janky 12.8 % → 0.6 %).
+- **Details in the popup's own style** (`ui/RowRevealWindow.kt`, `ui/GlanceWindow.kt`): Row opens / Row reveal / Shared show the
+  whole story and facts in the window, Less / B back to Details. 523o: Shared's story box ≥ 48 dp (gate touch FAIL × 46).
+- **Endless** (fill off: each game once), **Smart Fill**, **Inspect zoom**, **Storage box popup** (menu cells from the column width:
+  no "ACHIEVEMENT S"), **Cinema icon**.
+- **Save Vault** (`data/VaultArtIndex.kt` new, `data/CloudSync.kt` vault-art.json, `ui/SaveExplorer.kt`, `ui/SaveVaultStyles.kt`,
+  `ui/SaveInspect.kt`, `ui/Ps2Browser.kt`, `data/Features.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`): art for saves
+  whose game isn't on this handheld (web addresses recorded and synced, ~200 B a game), designed console plate instead of two
+  letters, Icons only = flat icons, new **PS2 browser** look. docs/qa523/vault_audit.md.
+- **Smart App Artwork** (`ui/AppIcons.kt`, `ui/HomeChrome.kt`): tones cached, wide / hero compositions, no 28 dp blur, neutral plate.
+- **Motion** (`ui/SmartArt.kt`, `ui/GameCard.kt`, `ui/HeroCarousel.kt`): tiny soft copies instead of RenderEffect blurs.
+  **Crash fixed:** switching Performance Automatic ↔ Full / Lite (`remember` inside a `when` in LauncherScreen).
+- **Deleted games** (`data/RomScanner.kt`, `LauncherViewModel.kt`): orphan .m3u / cue / gdi no longer keep a game; an empty
+  explicit rescan clears the list. `DeletedRoms523Test`.
+- **Popup design lab** (`ui/PopupLab.kt` new, `ui/theme/Theme.kt`, `ui/GameWindow.kt`, `ui/WinScenesMore.kt`, `ui/WinScenes.kt`,
+  `app/build.gradle.kts` debug assets, `app/src/qa/assets/qa_fonts/`): QA hook only (`voltcap_test_popuplab`), nothing on for
+  users. Recommendation in docs/qa523/popup_lab.md — awaiting the owner's pick.
+- Copy: every file above to `src_copy/` / `project_copy/` (already written there and in `app/`). Checked: unit tests (all pass),
+  QA self-tests, QA builds 523a–523o (isolated QA app; real Voltcap untouched). Popup gate ×1.0 (523f): 244 PASS / 52 FAIL
+  (Shared touch → fixed 523o; Crate = checker false positive) — re-run 523o in progress. Not tested: RP Flip 2 (not connected),
+  DroidDeck / PXPlay / Moonlight (not installed). Details: docs/BATCH_523.md.
+
 # Update 522 (10 Nov 2026) — badge looks, popup sweep 53 × 6, Tile home independence, GameNative stores (local, next/0.6.70)
 
 - **Console badges** (`ui/ConsoleBadge.kt`, `data/Features.kt` `consoleBadgeStyle`, `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`,
