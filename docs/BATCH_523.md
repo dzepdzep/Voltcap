@@ -91,5 +91,22 @@ and the RP Classic now run the same production version, so the mixed-version con
 | 18 | Motion pass | PARTIAL | (a) soft copies decoded tiny instead of RenderEffect blurs behind moving cards and the Hero cover-only backdrop; (b) Coverflow details case tops reuse their path / gradients (~200 allocations a frame removed) — GT78 burst janky 12.8 % → 0.6 %, steps median unchanged (15–16 ms CPU; cause not found); (c) **crash** switching Performance between Automatic and Full / Lite FIXED (523l) | perf514 k523g / h / i; flip523 |
 | — | Deleted games stay after a rescan | FIXED (523g) | a playlist (.m3u — Voltcap writes them) or cue / gdi sheet left behind without its discs kept listing the game; an explicit rescan that found nothing kept the old list | `DeletedRoms523Test` (3); the device test was inconclusive (files made over adb are unreadable to the app) |
 
-## 6. Popup gate (318 combinations) — build 523f
-(running on the RP Classic; results added when graded)
+## 6. Popup gate (318 combinations) — RP Classic
+
+### ×1.0, build 523f (p523f, 22:04–00:07, `popclip.py --expect-build qa-0.6.69-523f` → exit 1)
+**PASS 244 · FAIL 52 · NOT TESTED 1 · SKIP 21 (row styles in layouts without a row) · INFRA 0.** Real Voltcap pid unchanged, 0 fatal, settings restored.
+
+| FAIL | Count | Cause | Status |
+|---|---|---|---|
+| Shared style, every layout with a row | 46 | Details (new in 523f): the focusable story box under the actions was 238×38 px with a one-line story — under the 24 dp (48 px) touch minimum | **FIXED 523o** (box at least 48 dp; `Batch523oTouchTest`); re-graded in the ×1.0 row run of chain523n |
+| Crate, all five other styles | 5 | readability "overlap" on the **home** step: the three back sleeves' fallback titles (stand-in games have no covers) lie on each other — all under the front sleeve; the screenshot shows none of them | checker false positive (occluded text; the dump has no z-order) — no product change; noted in tools/qa/defects.json |
+| Twin showcase × Row opens | 1 | the home's clock cut by 6 px by its parent on the page step, under the full-screen details | 523k replaced that page for Row opens (details in the window); re-graded in chain523n |
+| NOT TESTED: Classic layout × Banner | 1 | page step had no window buttons for the pixel comparison | — |
+
+### ×1.3 / density ×1.15 (p523fb)
+Stopped after 12 layouts when ×1.0 ended (the chain ran past its slot); not graded. Superseded by chain523n.
+
+### chain523n (build 523n, started 00:13 11 Nov)
+Smart App Artwork on apps without art (JoiPlay / FolderSync / Obtainium), the Save Vault looks, **×1.3 all 318**, ×1.0 Row opens /
+Row reveal / Shared. Results below when graded.
+

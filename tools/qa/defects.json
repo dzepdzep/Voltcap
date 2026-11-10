@@ -3605,6 +3605,23 @@
    "status": "fixed (staging 496: CloudSync.qaPaused while the hooks file exists; Thor + KONKR logged 'sync paused' / 'launch sync skipped')",
    "found": "2026-11-08 update 496 (Save Vault dry view showed 'Last checked' at the install times 16:38 / 16:55, Thor)",
    "note": "Status line = check only, no transfer shown. Pre-existing in every earlier QA batch (0.6.67 code has no gate). Restoring 0.6.67 still runs its normal launch sync."
+  },
+  {
+   "id": "D296",
+   "title": "Shared style Details: focusable story box 38 px tall (touch < 24 dp) in 46 layouts",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed (523o: heightIn(min = 48.dp); Batch523oTouchTest) - device re-grade in chain523n p523nr",
+   "found": "2026-11-11 popup gate p523f (RP Classic, x1.0, build 523f)"
+  },
+  {
+   "id": "D297",
+   "title": "readcheck overlap flags Crate's back-sleeve fallback titles that are hidden under the front sleeve",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "suspect (checker false positive: the screenshot shows no overlapping text; the QaClip dump carries no z-order / occlusion)",
+   "found": "2026-11-11 popup gate p523f, CRATE x 5 styles, home step",
+   "note": "Fix belongs in readcheck (skip texts covered by a later opaque sibling) once the dump records draw order; no product change."
   }
  ]
 }
