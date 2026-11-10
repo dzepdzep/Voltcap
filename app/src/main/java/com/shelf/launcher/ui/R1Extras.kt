@@ -386,6 +386,8 @@ internal object R1Spacing {
         com.shelf.launcher.data.HomeLayout.COVERDETAILS -> com.shelf.launcher.data.Features.cdSpacing
         com.shelf.launcher.data.HomeLayout.STACKS -> com.shelf.launcher.data.Features.stacksSpacing
         com.shelf.launcher.data.HomeLayout.GRID -> com.shelf.launcher.data.Features.gridSpacing
+        com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesSpacing
+        com.shelf.launcher.data.HomeLayout.CINEMA -> com.shelf.launcher.data.Features.cnSpacing
         // Batch 520 (K1): the layouts whose own Spacing slider is already a percentage of today's room (100 % = as it was)
         // get the R1 tile and its slider too — the same pref and range as their own options, nothing new stored.
         com.shelf.launcher.data.HomeLayout.CASEFLOW -> com.shelf.launcher.data.Features.cfSpacing

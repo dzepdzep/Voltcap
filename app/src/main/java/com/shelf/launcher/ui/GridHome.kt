@@ -341,3 +341,9 @@ private fun gridSpin(): androidx.compose.runtime.State<Float>? {
     )
     return if (still) null else a
 }
+
+/**
+ * Batch 520: whether ▲ ▼ move a whole row round an Endless grid of [n] games in [cols] columns. Only with more than one row:
+ * in a single row a step of [cols] wrapped round [n] < [cols] games onto an arbitrary one (cols mod n).
+ */
+internal fun gridLoopRowMoves(n: Int, cols: Int): Boolean = n >= 2 && n > cols

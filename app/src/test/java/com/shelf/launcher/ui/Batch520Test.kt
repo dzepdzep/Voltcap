@@ -129,4 +129,23 @@ class Batch520Test {
         assertTrue(g.contains("verticalArrangement = Arrangement.spacedBy(if (secondScreen) 10.dp else 12.dp * spacingK)"))
         assertTrue(src("ui/SettingsDialog.kt").contains("com.shelf.launcher.data.Features.gridSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250"))
     }
+
+    @Test fun gridUpDownStayPutInASingleRow() {
+        assertFalse(gridLoopRowMoves(3, 4)) // 3 games, 4 across: one row
+        assertFalse(gridLoopRowMoves(4, 4)) // exactly one full row
+        assertFalse(gridLoopRowMoves(1, 4))
+        assertTrue(gridLoopRowMoves(5, 4)) // two rows: Endless moves a row as before
+        assertTrue(gridLoopRowMoves(40, 6))
+        assertTrue(src("ui/LauncherScreen.kt").contains("if (state.appearance.loopRow && gridLoopRowMoves(n, cols)) { viewModel.moveFocus(if (down) cols else -cols)"))
+    }
+
+    @Test fun heroTilesAndCinemaSpacingDefaultToTodaysGaps() {
+        assertEquals(100, com.shelf.launcher.data.Features.heroTilesSpacing.default)
+        assertEquals(100, com.shelf.launcher.data.Features.cnSpacing.default)
+        assertTrue(src("ui/StyleHeroTiles.kt").contains("val gap = (if (maxHeight < 160.dp) 8.dp else 12.dp) * (Features.heroTilesSpacing.state.value / 100f)"))
+        assertTrue(src("ui/StyleCinema.kt").contains("val gap = 8.dp * (Features.cnSpacing.state.value / 100f)"))
+        for (l in listOf(com.shelf.launcher.data.HomeLayout.HERO_TILES, com.shelf.launcher.data.HomeLayout.CINEMA)) {
+            assertEquals(50, R1Spacing.minFor(l)); assertEquals(250, R1Spacing.maxFor(l))
+        }
+    }
 }

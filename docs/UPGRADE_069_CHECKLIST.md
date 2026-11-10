@@ -125,3 +125,33 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
 | Metadata (descriptions, ratings, years) | Plain text | Not affected. |
 
 **Conclusion:** no data loss and no corruption is possible from the mix. The only effect is missing pictures on a 0.6.67 device, gone once it's updated. Updating all handhelds in one session avoids it entirely.
+
+## P2 results — RP Classic, 10 Nov 2026 (approved by the owner)
+
+- **Copy:** `adb pull` (read-only on the handheld) into a NEW folder `Claude outputs\backup_2026-11-10_P2\RPClassic_MC94516AQF091001112\saves\`. The folder didn't exist before (checked), so nothing was overwritten; nothing on the handheld was moved, deleted or changed.
+
+  | Source folder | Kept as |
+  |---|---|
+  | `RetroArch/saves` | `saves\RetroArch\saves` |
+  | `RetroArch/states` | `saves\RetroArch\states` |
+  | `Ppsspp/PSP/SAVEDATA` | `saves\Ppsspp\PSP\SAVEDATA` |
+  | `Android/data/xyz.aethersx2.android/files/memcards` | `saves\Android_data\xyz.aethersx2.android\memcards` |
+  | `Android/data/org.dolphinemu.dolphinemu/files/Wii` and `/GC` | `saves\Android_data\org.dolphinemu.dolphinemu\Wii` and `\GC` |
+
+  The directory structure is kept, including empty folders (GC/EUR, JAP, USA; Wii/import, meta…).
+
+- **Manifests:**
+  - `SHA256SUMS_device.txt`: sha256 of the 33 ORIGINAL files, read in place with `sha256sum` on the handheld.
+  - `SHA256SUMS_pc_105651.txt`: sha256 and size of every copied file, computed on the PC (`Get-FileHash`).
+
+- **Verification:**
+
+  | Check | Result |
+  |---|---|
+  | Files | 33 on the handheld = 33 copied |
+  | Bytes | 19,185,603 = 19,185,603 (per folder: 1,077,264 + 9,800 + 780,267 + 17,301,504 + 16,768) |
+  | Hashes | 33 / 33 identical |
+  | Missing, extra, mismatched | none |
+  | Permission errors | none (the AetherSX2 and Dolphin folders under `Android/data` were readable) |
+
+- **Seen while copying:** `RetroArch/saves` contains `.stfolder` / `.stversions` — **Syncthing** syncs this folder. That is a second sync path, besides Voltcap's Drive sync, that can change saves during an update. Pause it during B2–B4, or at least know it is there.

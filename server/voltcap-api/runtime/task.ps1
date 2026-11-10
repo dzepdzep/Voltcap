@@ -79,6 +79,17 @@ query { viewer { accounts(filter: {accountTag: "$acc"}) {
     L ("upstream calls=" + @($c).Count)
     @($c) | Group-Object { $_.path + " " + ([regex]'media=([^&]+)').Match($_.query).Groups[1].Value } | Sort-Object Count -Descending | ForEach-Object { L ("  " + $_.Count + "  " + $_.Name) }
   }
+  "hash-backup" {
+    # P2 check: sha256 + size of every file in the newest Claude outputs\backup_*_P2 folder (read only), into a NEW manifest next to it.
+    $root = Split-Path -Parent $api | Split-Path -Parent
+    $b = Get-ChildItem (Join-Path $root "Claude outputs") -Directory -Filter "backup_*_P2" | Sort-Object Name | Select-Object -Last 1
+    if (-not $b) { L "NO_BACKUP_FOLDER"; break }
+    $out = Join-Path $b.FullName ("SHA256SUMS_pc_" + (Get-Date -Format "HHmmss") + ".txt")
+    $files = Get-ChildItem $b.FullName -Recurse -File | Where-Object { $_.Name -notlike "SHA256SUMS*" }
+    $lines = foreach ($f in $files) { $h = (Get-FileHash -Algorithm SHA256 -LiteralPath $f.FullName).Hash.ToLower(); $rel = $f.FullName.Substring($b.FullName.Length + 1); "$h  $($f.Length)  $rel" }
+    $lines | Out-File $out -Encoding utf8
+    L ("backup=" + $b.Name + " files=" + @($files).Count + " bytes=" + (($files | Measure-Object Length -Sum).Sum) + " manifest=" + (Split-Path $out -Leaf))
+  }
   "redeploy-production" {
     # Code / vars only: the existing secrets (and the media-signing key, so handed-out addresses stay valid) are kept.
     $o = W "npx --yes wrangler@4 deploy --var PUBLIC_BASE:https://voltcap-api.voltcap-api.workers.dev"

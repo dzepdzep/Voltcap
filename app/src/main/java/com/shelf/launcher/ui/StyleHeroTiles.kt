@@ -283,7 +283,8 @@ private fun HeroTileRows(c: StyleCtx, rows: Int, lightUi: Boolean, modifier: Mod
         }
     }
     BoxWithConstraints(modifier) {
-        val gap = if (maxHeight < 160.dp) 8.dp else 12.dp
+        // (Batch 520, K1: × Game spacing, 100 % = 8 / 12 dp as before; more room fits fewer tiles across.)
+        val gap = (if (maxHeight < 160.dp) 8.dp else 12.dp) * (Features.heroTilesSpacing.state.value / 100f)
         val cellH = (maxHeight - gap * (rows - 1)) / rows
         val k = (Features.heroTilesSize.state.value / 100f) * GameSize.scale(HomeLayout.HERO_TILES)
         val side = (cellH * k.coerceIn(0.4f, 1f)).coerceAtLeast(40.dp)
@@ -458,6 +459,11 @@ internal fun HeroTilesSettings() {
     PercentSlider(
         "Tile size", Features.heroTilesSize.state.value, { Features.heroTilesSize.value = it.coerceIn(50, 100) },
         min = 50, max = 100, valueText = { "$it%" }
+    )
+    // (Batch 520, K1: the room between the tiles — separate from their size; 100 % = as before.)
+    PercentSlider(
+        "Game spacing", Features.heroTilesSpacing.state.value, { Features.heroTilesSpacing.value = it.coerceIn(50, 250) },
+        min = 50, max = 250, valueText = { "$it%" }
     )
     Spacer(Modifier.height(6.dp))
     SwitchRow(

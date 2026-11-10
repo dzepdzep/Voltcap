@@ -76,7 +76,7 @@ Statuses:
 | Item | Finding |
 |---|---|
 | D-pad in the R1 panel toggling Wi-Fi / Bluetooth / DND | **No.** A tile acts only on A / Enter / tap (`R1Tile` click; edit mode moves tiles with the D-pad only while one is picked). RP Classic: 22 D-pad moves over every tile row — wifi_on, bluetooth_on, zen_mode, brightness unchanged. The risk is a test that presses A blindly; QA scripts must not. The brightness bar does change with ◀ ▶ by design (only when Android allows it). |
-| Game grid: Down with fewer games than a row | Pre-existing (same at 100 %): Down moves by a row's width and wraps, so with 3 games it lands on a game that depends on the column count. Only with less than one row of games; spacing only changes the count in Auto. Low; left for an owner decision |
+| Game grid: Down with fewer games than a row (Endless on) | FIXED (520): ▲ ▼ moved a whole row round the few games and landed on game (cols mod n). Now with all games in one row ▲ ▼ stay on the game (as without Endless); two or more rows unchanged. `gridLoopRowMoves`, unit test; device check in the 520 QA run |
 
 ## 3b. Upgrade to v0.6.69 (owner's handhelds)
 
@@ -86,7 +86,8 @@ Statuses:
 | Part A on KONKR / Thor / Odin 3 | BLOCKED-HW (not connected) |
 | P1 inventory, RP Classic | DONE (520, owner-approved): read-only; results in docs/UPGRADE_069_CHECKLIST.md |
 | Drive with mixed versions | Reviewed (520): no data loss possible; a 0.6.67 device can't load pictures a 0.6.69 device scraped / cleaned until it is updated |
-| P2–P7, B1–B6 | BLOCKED-OWNER (each step its own approval); next: **P2** on the RP Classic |
+| P2 save copy, RP Classic | DONE (520, owner-approved): 33 files / 19,185,603 bytes, 33/33 sha256 identical, new dated folder; details in docs/UPGRADE_069_CHECKLIST.md. Found: RetroArch saves are also synced by Syncthing |
+| P3–P7, B1–B6 | BLOCKED-OWNER (each step its own approval; exact operations listed in docs/UPGRADE_069_CHECKLIST.md) |
 
 ## 4. Cosmetic refinements worth doing
 

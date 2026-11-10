@@ -895,6 +895,10 @@ internal object SettingsIndex {
         E("Tile home: Game spacing", "Home", "Layout options", null, null),
         E("Game spacing (room between the games, this layout)", "Home", "Layout options", null, null),
         E("Cover details: Game spacing", "Home", "Layout options", null, null),
+        // (Batch 520, K1)
+        E("Game grid: Game spacing", "Home", "Layout options", null, null),
+        E("Hero tiles: Game spacing", "Home", "Layout options", "style_HERO_TILES", "Hero tiles options"),
+        E("Cinema: Game spacing", "Home", "Layout options", "style_CINEMA", "Cinema options"),
         E("TV room: Pulled out, it shows", "Home", "Layout options", null, null),
         E("TV room: Games each side", "Home", "Layout options", null, null),
         E("Its style (default for all layouts)", "Home", "Layout options", "lo_window", "Game window"),

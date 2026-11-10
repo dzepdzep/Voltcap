@@ -344,7 +344,8 @@ private fun CinemaRow(
     select: (Int) -> Unit, open: () -> Unit
 ) {
     val tileW = if (poster) tileH * 0.70f else tileH * 1.78f
-    val gap = 8.dp
+    // (Batch 520, K1: × Game spacing; 100 % = 8 dp as before. The glide, the name and taps all use the same stride.)
+    val gap = 8.dp * (Features.cnSpacing.state.value / 100f)
     val stride = tileW + gap
     val col = if (here) CinemaNav.cursor.col(CinemaNav.rows).coerceIn(0, r.games.lastIndex) else (CinemaNav.cursor.cols[r.key] ?: 0).coerceIn(0, r.games.lastIndex)
     val glide by animateFloatAsState(col.toFloat(), if (rememberAnimationsEnabled()) tween(320, easing = FastOutSlowInEasing) else tween(0), label = "cnGlide")
@@ -418,6 +419,8 @@ internal fun CinemaSettings() {
     Spacer(Modifier.height(10.dp))
     StyleChoice("Billboard", Features.CnHero.values(), Features.cnHero.state.value, { it.label }) { Features.cnHero.value = it }
     StyleChoice("Tiles", Features.CnTiles.values(), Features.cnTiles.state.value, { it.label }) { Features.cnTiles.value = it }
+    // (Batch 520, K1: the room between the tiles of a row; 100 % = as before.)
+    PercentSlider("Game spacing", Features.cnSpacing.state.value, { Features.cnSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
     StyleChoice("Highlight colour", Features.CnAccent.values(), Features.cnAccent.state.value, { it.label }) { Features.cnAccent.value = it }
     Toggle(Icons.Filled.Movie, "Gameplay previews", "Rest on a game and its clip fades in over the billboard (needs Video previews on).", Features.cnPreview)
     Toggle(Icons.Filled.Movie, "Logo on the billboard", "The game's logo instead of its name, when it has one.", Features.cnLogo)

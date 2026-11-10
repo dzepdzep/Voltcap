@@ -2205,6 +2205,8 @@ object Features {
     // collections below it; A opens Cinema Premiere (WinScenesHomes.kt). ----
     enum class CnHero(val label: String) { BIG("Big billboard"), COMPACT("Compact") }
     val cnHero = EnumPref("cn_hero", CnHero.BIG, CnHero.values())
+    /** Batch 520 (K1): Cinema — room between the tiles of a row, % of the standard 8 dp (100 = as before). */
+    val cnSpacing = IntPref("cn_spacing", 100, 50..250)
     enum class CnTiles(val label: String) { WIDE("Wide art"), POSTER("Posters"), MIXED("Wide, posters for the first row") }
     val cnTiles = EnumPref("cn_tiles", CnTiles.WIDE, CnTiles.values())
     /** The gameplay clip plays in the billboard after you rest on a game (with Video previews on). */
@@ -2402,6 +2404,8 @@ object Features {
     val heroTilesRows = IntPref("hero_tiles_rows", 2, 1..2)
     /** Update 158, Hero tiles: tile size, % of a row's height (smaller: more tiles across). */
     val heroTilesSize = IntPref("hero_tiles_size", 90, 50..100)
+    /** Batch 520 (K1): Hero tiles — room between the tiles, % of the standard gap (100 = as before; tile size stays its own). */
+    val heroTilesSpacing = IntPref("hero_tiles_spacing", 100, 50..250)
     /** Update 158, Hero tiles: the app dock at the bottom in the middle. */
     val heroTilesDock = BoolPref("hero_tiles_dock", true)
     /** Update 158, Hero tiles: the dock's own apps (package names, comma separated); empty = Files, Browser, Store, System settings. */
