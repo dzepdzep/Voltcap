@@ -83,7 +83,10 @@ class Batch491Test {
 
     @Test fun r2SpacingUsesEachLayoutsOwnSliderPref() {
         val five = mapOf(HomeLayout.CLASSIC to Features.rowSpacing, HomeLayout.TILES to Features.tilesSpacing,
-            HomeLayout.SHELF to Features.shelfSpacing, HomeLayout.COVERDETAILS to Features.cdSpacing, HomeLayout.STACKS to Features.stacksSpacing)
+            HomeLayout.SHELF to Features.shelfSpacing, HomeLayout.COVERDETAILS to Features.cdSpacing, HomeLayout.STACKS to Features.stacksSpacing,
+            // (Batch 520, K1: the layouts whose own Spacing is already a percentage — the same pref, their own range.)
+            HomeLayout.CASEFLOW to Features.cfSpacing, HomeLayout.BOX to Features.boxSpacing, HomeLayout.STORAGE to Features.stSpacing,
+            HomeLayout.FILESELECT to Features.fsSpacing)
         for (l in HomeLayout.values()) {
             val p = R1Spacing.prefFor(l)
             if (l in five) assertTrue("$l", p === five[l]) else assertNull("$l", p)

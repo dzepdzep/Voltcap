@@ -91,4 +91,18 @@ class Batch520Test {
         assertTrue(src("ui/CoverCases.kt").contains("looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)"))
         assertTrue(src("ui/BoxTexture.kt").contains("if (part == BoxPart.FRONT && result is coil.request.ErrorResult && BoxTexture.cutOf(chain.request.data) == null) BoxTexture.noteFrontCutFailed(url)"))
     }
+
+    @Test fun spacingTileUsesEachLayoutsOwnRange() {
+        val ranges = mapOf(
+            com.shelf.launcher.data.HomeLayout.CASEFLOW to (60 to 160), com.shelf.launcher.data.HomeLayout.BOX to (70 to 150),
+            com.shelf.launcher.data.HomeLayout.STORAGE to (60 to 150), com.shelf.launcher.data.HomeLayout.FILESELECT to (60 to 150),
+            com.shelf.launcher.data.HomeLayout.CLASSIC to (50 to 300), com.shelf.launcher.data.HomeLayout.STACKS to (50 to 250))
+        for ((l, r) in ranges) { assertEquals("$l", r.first, R1Spacing.minFor(l)); assertEquals("$l", r.second, R1Spacing.maxFor(l)) }
+        // the layouts' own sliders keep the same ranges
+        assertTrue(src("ui/StyleCaseFlow.kt").contains("Features.cfSpacing.value = it.coerceIn(60, 160) }, min = 60, max = 160"))
+        assertTrue(src("ui/StyleCardboardBox.kt").contains("Features.boxSpacing.value = it.coerceIn(70, 150) }, min = 70, max = 150"))
+        assertTrue(src("ui/StyleStorageBoxes.kt").contains("Features.stSpacing.value = it.coerceIn(60, 150) }, min = 60, max = 150"))
+        assertTrue(src("ui/StyleFileSelect.kt").contains("Features.fsSpacing.value = it.coerceIn(60, 150) }, min = 60, max = 150"))
+        assertFalse(src("ui/QuickSettings.kt").contains("R1Spacing.MIN, R1Spacing.maxFor"))
+    }
 }

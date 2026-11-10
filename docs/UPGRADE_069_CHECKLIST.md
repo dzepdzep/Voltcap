@@ -63,3 +63,27 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
 - **Restore:** import the P3 export; put the P2 saves back only with the owner.
 - **Fix:** roll forward to a fixed release (vc ≥ 77, same key).
 - Never uninstall, clear data or downgrade.
+
+## Part A results — RP Classic (MC94516AQF091001112, USB, Android 14), 10 Nov 2026, read-only
+
+| Step | Result |
+|---|---|
+| A1 | **com.shelf.launcher 0.6.67 / versionCode 74**, normal APK (has the notification listener — not compat). Installed base.apk sha256 `1586accc…e119f` = the published `Voltcap-0.6.67.apk`. Signer `88ce4b67ae3825a0…` = the signer of both 0.6.69 APKs → an in-place update keeps all data. Not debuggable. First installed 12 Oct 2026, last updated 6 Nov 2026. **Target: `Voltcap-0.6.69.apk` (normal).** |
+| A2 | **A QA hooks file exists in the real app:** `Android/data/com.shelf.launcher/files/voltcap_test_hooks` (0 bytes, 30 Oct 12:57), plus `voltcap_test_snapshot*.json` / `_verify.txt` / `voltcap_qa_screen` from QA runs before the separate QA app existed. In 0.6.67 the file turns the test hooks on (no Drive effect). 0.6.69 release builds ignore it (hooks need a debuggable build or the QA package), so it is harmless after the update. **Owner decides** whether it is removed (not touched). |
+| A3 | Drive switches: **not readable without opening the real app's Settings** (private storage, not debuggable). Left to the owner (P7 reads them). |
+| A4 | Free storage 77 GB of 101 GB. App's shared folder 52 MB, `/sdcard/Voltcap` 11 MB. All-files access not granted (the visible Voltcap folder isn't in use). |
+
+**What the update can touch on this device** (from the 0.6.69 code, not from the private data, which can't be read without root):
+- **Settings, layouts, profiles, controller mappings, libraries, play time:** not changed by the update. The migration only rewrites ScreenScraper media addresses inside the GLOBAL / DEVICE settings files.
+- **Saved artwork:** files are renamed to the cleaned address names (`ArtFiles.renameSaved`): never deleted, never overwritten (a rename is skipped when the new name exists). If a rename fails, the picture is fetched again later; the old file stays.
+- **Metadata:** descriptions, ratings and similar are unaffected. Clip and manual addresses are cleaned the same way.
+- **Accounts:**
+  - A ScreenScraper account saved on 0.6.67 includes the developer key the owner typed, and keeps working direct with it.
+  - IGDB keys typed by hand keep working.
+  - Nothing is signed out.
+
+**Risk found (mixed versions over Drive):** after the update this device stores and uploads *cleaned* addresses (and signed service addresses for newly scraped art). A handheld still on 0.6.67 that receives them through Drive settings / cover sync can't download those pictures (0.6.67 expects the key inside the address). Its own saved pictures stay. **Recommendation:**
+- Update all the owner's handhelds in one session, or keep Drive settings / cover sync off on the 0.6.67 ones until they are updated.
+- P7 (launch-time sync off) covers the first start.
+
+**Readiness:** A1–A4 done. Nothing blocks P1. P1 is read-only (`ls` / `du`), but like every P / B step it waits for its own approval.

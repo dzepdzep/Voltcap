@@ -507,7 +507,7 @@ fun QuickSettingsCard(
             R1Spacing.prefFor(a.homeLayout)?.let { sp ->
                 val v = sp.state.value
                 add(R1Tile("spacing", Icons.Filled.SpaceBar, "Spacing\n" + R1Spacing.label(v), false, longAction = { showSpacing = true }) {
-                    sp.value = R1Spacing.next(v).coerceIn(R1Spacing.MIN, R1Spacing.maxFor(a.homeLayout))
+                    sp.value = R1Spacing.next(v).coerceIn(R1Spacing.minFor(a.homeLayout), R1Spacing.maxFor(a.homeLayout))
                 })
             }
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
@@ -1918,8 +1918,8 @@ private fun GameSpacingPopup(home: R1Home, onDismiss: () -> Unit) {
             val first = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
             Box(Modifier.focusRequester(first)) {
-                PercentSlider("Game spacing", sp.state.value, { sp.value = it.coerceIn(R1Spacing.MIN, R1Spacing.maxFor(l)) },
-                    min = R1Spacing.MIN, max = R1Spacing.maxFor(l), valueText = { "$it%" })
+                PercentSlider("Game spacing", sp.state.value, { sp.value = it.coerceIn(R1Spacing.minFor(l), R1Spacing.maxFor(l)) },
+                    min = R1Spacing.minFor(l), max = R1Spacing.maxFor(l), valueText = { "$it%" })
             }
             Spacer(Modifier.height(10.dp))
             Chip("Done", onClick = onDismiss)
