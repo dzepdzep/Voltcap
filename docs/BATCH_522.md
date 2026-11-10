@@ -147,7 +147,9 @@ Every FAIL was looked at; defects vs test limitations:
   reveal title and console line ending in "…" (28); Green Core L2 / R2 keys 7.5 px low at font ×1.3.
 - **Re-checked on 522e:** p522gc (Green Core, Library, Memory card, Spotlight at ×1.3) 4 / 4 PASS, Green Core keys dx 0 / dy 0
   (before 7.5 px); p522fix (Storage, Bubbles, Camera, Orbit, Blades ×1.0) 4 / 5 PASS — Bubbles' own window still cut → fixed
-  in 522g (StyleBubbles), re-check p522bub; p522fix2 (6 layouts × Banner / Row opens / Row reveal) 16 / 16 PASS, 2 n/a.
+  in 522g (StyleBubbles): p522bub (Bubbles × OWN / BANNER / CLASSIC) 3 / 3 PASS; p522fix2 (6 layouts × Banner / Row opens /
+  Row reveal) 16 / 16 PASS, 2 n/a. At ×1.3 p522bubs found the details page's console pill ending in "…" (SourceBadge) → fixed in
+  522h; **p522h (Bubbles, Tiles, Classic, Shelf, Storage, Orbit, Camera, Blades at font ×1.3 / density ×1.15): 8 / 8 PASS.**
 - **Test limitations, not app defects:** Twin showcase "78 %" battery text 3 px clipped under the page that covers it (not
   visible); Cube Shared ▲▼ measured against the Play button drawn over them (glyphcheck now ignores ink touching its
   shape); Library / Memory card / Spotlight glyphs of the home under a popup window (now left out).
@@ -186,3 +188,11 @@ PS5 / Xbox One / Xbox Series / Switch 2 artwork: docs/ARTWORK_522_NEW_CONSOLES.m
   that store. Unit test GameNativeStores522Test. No real launch: GameNative not on a connected handheld — NOT TESTED.
 - DroidDeck: format still unverified (closed source; ES-DE's Android docs not reachable from here) → no change to its launch;
   its own home-screen shortcuts stay the preferred entry (`LauncherApps.startShortcut`, nothing rebuilt).
+
+### Where the evidence is (for a later session)
+- PC `Claude outputs\b522\`: run archives p522own / p522scale / p522sty_1+_2 / p522gc / p522fix / p522fix2 / p522bub / p522h (.tar:
+  screenshots + QaClip dumps + manifest), t522b / t522c (Tile home), gallery folders bg3 (before), b522after (522a), b522modes,
+  b522final (522g), **badge_gallery_522.html** (open locally: full-size before / after for every console and the layouts).
+- Graded reports: docs/qa522/*.md (popclip) and t522b_before.txt / t522c.txt (tile522.py).
+- Re-grade: `python3 tools/qa/tools/popclip.py <run dir>`, `python3 tools/qa/tools/glyphcheck.py --crops out <run dir>`,
+  `python3 tools/qa/tools/tile522.py <t522 dir>`. Builds in tools/qa/builds.json (qa-0.6.69-522a … 522h).

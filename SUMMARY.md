@@ -1,3 +1,25 @@
+# Update 522 (10 Nov 2026) — badge looks, popup sweep 53 × 6, Tile home independence, GameNative stores (local, next/0.6.70)
+
+- **Console badges** (`ui/ConsoleBadge.kt`, `data/Features.kt` `consoleBadgeStyle`, `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`,
+  `data/SystemLogos.kt`, `ui/PlatformLogos.kt`, `data/ConsoleNames.kt`): three separate looks Text / Symbol / Logo (default Logo);
+  regional keys keep their own identity (no NES on Famicom, no GENESIS on Mega Drive, no SUPER NINTENDO on SFC, no PC Engine on
+  TG16); wide wordmarks compact on small tiles, whole on big ones; logos that turn into a white block show the name; family
+  colours for PS4 / PS5 / Xboxes / Switch 2 / regional keys. QA gallery hook `voltcap_test_badgegallery`. Gallery on the PC:
+  `Claude outputs\b522\badge_gallery_522.html`. PS5 / Xbox One / Series / Switch 2 artwork: docs/ARTWORK_522_NEW_CONSOLES.md.
+- **Popups** (`ui/WinScenes.kt`, `ui/WinScenesConsole.kt`, `ui/StyleBubbles.kt`, `ui/GameWindowBanner.kt`, `ui/RowRevealWindow.kt`,
+  `ui/PlayHeader.kt`, `ui/StyleGreenCore.kt`, `ui/HomeChrome.kt`): console names / facts whole instead of cut or "…" (Storage,
+  Camera, Orbit, Bubbles, Banner style, Row styles, details pill), Blades facts beside the cover, Green Core keys centred at large
+  font sizes (InkGlyph). Sweep 53 layouts × 6 styles + ×1.3 on the RP Classic; QA tools: glyphcheck.py + popclip `glyphs`.
+- **Tile home** (`ui/LauncherScreen.kt`, `ui/TileHome.kt`): the round buttons' room is kept while they float, Edit Home no longer
+  moves the row, the drop-near-tiles rule only for a drop. `voltcap_test_edithome` + tile522b.sh / tile522.py: 39 / 39 PASS.
+- **GameNative / DroidDeck** (`data/GameLauncher.kt`, `data/RomScanner.kt`, `data/Models.kt`, `data/GameClients.kt`,
+  `data/PinnedShortcuts.kt`, `LauncherViewModel.kt`): launch = GameNative's own shortcut intent (game_source + CLEAR_TOP);
+  `.epic` / `.gog` / `.amazon` / `.pcgame` imported; DroidDeck files validated, Steam category, shortcut / file twins once. Real
+  launches NOT TESTED (neither app on a connected handheld).
+- Copy: every file above to `src_copy/` (already written there and in `app/`). Checked: unit tests, static checks, QA self-tests
+  138, guard 93, QA builds 522a–522h on the RP Classic (isolated QA app; the real Voltcap 0.6.69 untouched, pid 10087 throughout).
+  Not tested: RP Flip 2, KONKR, Thor, GT78 (its old QA app is release-signed; not removed). Details: docs/BATCH_522.md.
+
 # Update 521 (10 Nov 2026) — fail-closed QA isolation, Tile home placement (RP Flip 2), P3/P4 owner steps (local, next/0.6.70)
 
 - **QA can no longer install over the real Voltcap** (`app/build.gradle.kts`, `tools/adb_mcp/guard.js`, `tools/adb_mcp/server.js`):

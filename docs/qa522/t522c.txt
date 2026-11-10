@@ -1,0 +1,40 @@
+PASS  MIDDLE base -> buttons_moved                    Super Mario World  dx=0 dy=0
+PASS  MIDDLE base -> buttons_moved                    All                dx=0 dy=0
+PASS  MIDDLE both_moved -> edit_open                  Super Mario World  dx=0 dy=0
+PASS  MIDDLE both_moved -> edit_open                  All                dx=0 dy=0
+PASS  MIDDLE both_moved -> edit_reset_buttons         Super Mario World  dx=0 dy=0
+PASS  MIDDLE both_moved -> edit_reset_buttons         All                dx=0 dy=0
+PASS  MIDDLE both_moved -> saved_buttons_reset        Super Mario World  dx=0 dy=0
+PASS  MIDDLE both_moved -> saved_buttons_reset        All                dx=0 dy=0
+PASS  MIDDLE saved_row_reset -> base                  Super Mario World  dx=0 dy=0
+PASS  MIDDLE saved_row_reset -> base                  All                dx=0 dy=0
+PASS  MIDDLE buttons_moved -> both_moved              round buttons      y=848 -> 848
+PASS  MIDDLE buttons_moved -> saved_row_reset         round buttons      y=848 -> 848
+PASS  MIDDLE buttons_moved -> saved_layout_reset      round buttons      y=848 -> 848
+PASS  TOP    base -> buttons_moved                    Super Mario World  dx=0 dy=0
+PASS  TOP    base -> buttons_moved                    All                dx=0 dy=0
+PASS  TOP    both_moved -> edit_open                  Super Mario World  dx=0 dy=0
+PASS  TOP    both_moved -> edit_open                  All                dx=0 dy=0
+PASS  TOP    both_moved -> edit_reset_buttons         Super Mario World  dx=0 dy=0
+PASS  TOP    both_moved -> edit_reset_buttons         All                dx=0 dy=0
+PASS  TOP    both_moved -> saved_buttons_reset        Super Mario World  dx=0 dy=0
+PASS  TOP    both_moved -> saved_buttons_reset        All                dx=0 dy=0
+PASS  TOP    saved_row_reset -> base                  Super Mario World  dx=0 dy=0
+PASS  TOP    saved_row_reset -> base                  All                dx=0 dy=0
+PASS  TOP    buttons_moved -> both_moved              round buttons      y=848 -> 848
+PASS  TOP    buttons_moved -> saved_row_reset         round buttons      y=848 -> 848
+PASS  TOP    buttons_moved -> saved_layout_reset      round buttons      y=848 -> 848
+PASS  BOTTOM base -> buttons_moved                    Super Mario World  dx=0 dy=0
+PASS  BOTTOM base -> buttons_moved                    All                dx=0 dy=0
+PASS  BOTTOM both_moved -> edit_open                  Super Mario World  dx=0 dy=0
+PASS  BOTTOM both_moved -> edit_open                  All                dx=0 dy=0
+PASS  BOTTOM both_moved -> edit_reset_buttons         Super Mario World  dx=0 dy=0
+PASS  BOTTOM both_moved -> edit_reset_buttons         All                dx=0 dy=0
+PASS  BOTTOM both_moved -> saved_buttons_reset        Super Mario World  dx=0 dy=0
+PASS  BOTTOM both_moved -> saved_buttons_reset        All                dx=0 dy=0
+PASS  BOTTOM saved_row_reset -> base                  Super Mario World  dx=0 dy=0
+PASS  BOTTOM saved_row_reset -> base                  All                dx=0 dy=0
+PASS  BOTTOM buttons_moved -> both_moved              round buttons      y=848 -> 848
+PASS  BOTTOM buttons_moved -> saved_row_reset         round buttons      y=848 -> 848
+PASS  BOTTOM buttons_moved -> saved_layout_reset      round buttons      y=848 -> 848
+tile522: PASS
