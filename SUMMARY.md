@@ -1,3 +1,11 @@
+# Update 520c (10 Nov 2026) — R1 Game spacing on four more layouts, v0.6.69 upgrade Part A (RP Classic), hardware test cases (local, next/0.6.70)
+
+- **K1** (`ui/R1Extras.kt`, `ui/QuickSettings.kt`): the R1 Spacing tile (tap = next step, hold = slider) now also appears on Case flow, Cardboard box, Storage boxes and File select. Each uses that layout's own existing Spacing pref and range (60–160 / 70–150 / 60–150 / 60–150 %), so nothing new is stored and saved values are kept. `Batch491Test` was updated (nine layouts) and `Batch520Test` checks the ranges.
+- **PS4 collector back:** checked on the RP Classic (`xcase516.sh` re-run on the 520 QA build). The PS4 logo is now white on the dark band; the Xbox 360, PS3, PS5 and Xbox One backs are unchanged. Stand-ins removed, library rescanned, snapshot restored, 0 launches.
+- **v0.6.69 upgrade Part A (RP Classic, read-only):** results and the mixed-version Drive risk are in `docs/UPGRADE_069_CHECKLIST.md`.
+- **Hardware test cases:** `docs/HW_TESTS_520.md` covers KONKR memory and fast scroll, Thor second screen and the Odin 3 navigation bar.
+- **Not tested on a device:** the R1 Spacing tile itself. It sits in the collapsed R1 row, and a blind D-pad walk there passes the real Wi-Fi / Bluetooth / Do not disturb toggles. Checked afterwards that Wi-Fi, Bluetooth, DND and brightness were unchanged.
+
 # Update 520 (10 Nov 2026) — flat case art fits like the 3D cases, no empty case for a picture taken for a wrap, ScreenScraper check stays readable, readable PS4 back logo (local branch next/0.6.70, not pushed)
 
 - **Flat case art** (`ui/CoverCases.kt`, `ui/ShelfHome.kt`): the plain keep / jewel case (PS3–PS5, Xbox …) and the Game shelf's plain cover used a plain centre crop, while the template cases and the 3D faces use CropUnlessMuchCut (update 402). A 16:9 picture you picked showed its middle 39 % on the shelf and whole on the 3D case. All flat views now use CropUnlessMuchCut: covers close to the window still fill it; a far-off shape is shown whole, never stretched.

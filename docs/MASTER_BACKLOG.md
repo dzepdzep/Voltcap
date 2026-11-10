@@ -38,8 +38,8 @@ Statuses:
 | Flat case art fits like the 3D faces (CropUnlessMuchCut): a 16:9 picture you picked is shown whole on the Game shelf (Plain cover), plain PS3–PS5 / Xbox cases; covers close to the window still fill | 520, RP Classic q520 (wide fixture, before / after) |
 | A picture taken for a whole wrap whose front cut fails (no folds: a 16:9 picture on a PS1 jewel case) now shows the picture, not an empty case | 520, RP Classic q520 (PS1 Crash, Voltcap's case / Real case) |
 | Unmeasured wraps / unfolded box scans load hidden until their shape is known (no flash of the whole scan or its spine before the front) | 520, code + unit tests; device: no flash seen in q520 (a one-frame flash can't be proven absent by screenshots) |
-| ScreenScraper account check: "Testing…" stays (was cleared after 3.5 s while ScreenScraper can take ~45 s), Connect disabled while checking, slow-answer note; status messages in account windows stay until replaced, elsewhere 3.5–10 s by length | 520, unit tests; device PARTIAL (see 3) |
-| Collector backs (PS4 / PS5 / Xbox …): a colour logo under 3 : 1 on the dark header bar (PS4 blue 1.8 : 1) is printed white | 520, unit test; device check in the 520 gate |
+| ScreenScraper account check: "Testing…" stays (was cleared after 3.5 s while ScreenScraper can take ~45 s), Connect disabled while checking, slow-answer note; status messages in account windows stay until replaced, elsewhere 3.5–10 s by length | 520, unit tests — **implemented, device NOT TESTED** (the QA app is signed in with the owner's account; signing it out to see the Connect state was not allowed) |
+| Collector backs: a colour logo under 3 : 1 on the dark header bar (PS4 blue 1.8 : 1) is printed white; Xbox 360 green, PS3 / PS5 / Xbox One unchanged | 520, unit test + RP Classic xcase516 re-run (PS4 back before / after; other four backs checked) |
 | v0.6.69 published; production Worker; real-provider checks; QA app on the Classic | 519 (SECURITY_519_RELEASE) |
 | KONKR (= GT78) 53-layout regression, rapid A / B 96 / 96, controller contract, idle 0.5–1.3 % CPU | 516 |
 | Xbox / PlayStation cases at 6 poses (dimensions, spines, bands, plastics, tray) | 516 |
@@ -66,10 +66,18 @@ Statuses:
 |---|---|
 | KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW: not connected) |
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | OPEN, render-bound (494); no change without a new measurement plan |
-| ScreenScraper per-game scrape progress for 40 s+ answers (the account check is fixed) | PARTIAL — game look-ups show the existing loading state; no device run with a slow answer yet |
-| Cover details leaving-case first flight frame (1 of 666 frames, Nova) | OPEN, low; cause (spine bounds written while drawing) not confirmed → not changed |
-| K1 game spacing in the remaining compatible layouts | PARTIAL — Voltcap row, Tiles, Game shelf, Cover details, Case stacks + 9 that had it; others not started |
+| ScreenScraper per-game scrape progress for 40 s+ answers (the account check is fixed) | PARTIAL — game look-ups show the existing loading state; the app waits 75 s through the service (519); no device run with a slow answer yet |
+| Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
+| K1 game spacing in the remaining compatible layouts | PARTIAL — R1 Spacing tile + slider now also on Case flow, Cardboard box, Storage boxes, File select (520: their own pref and range; unit tests; device: build installed, the tile sits in the collapsed R1 row and was not reached safely — D-pad walks there pass over the Wi-Fi / Bluetooth / DND toggles). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
 | B5 long rows / D137 render cost | PARTIAL — see Case Stacks above |
+
+## 3b. Upgrade to v0.6.69 (owner's handhelds)
+
+| Item | Status |
+|---|---|
+| Part A read-only checks, RP Classic | DONE (520): 0.6.67 / 74 = the published APK (1586accc…), signer 88ce4b67… = 0.6.69's, normal APK → target `Voltcap-0.6.69.apk`. Old QA hooks file in the real app (harmless on 0.6.69; owner decides). Drive switches not readable read-only. Details + mixed-version Drive risk: docs/UPGRADE_069_CHECKLIST.md |
+| Part A on KONKR / Thor / Odin 3 | BLOCKED-HW (not connected) |
+| P1–P7, B1–B6 | BLOCKED-OWNER (each step its own approval) |
 
 ## 4. Cosmetic refinements worth doing
 
@@ -80,6 +88,7 @@ Statuses:
 | Missing CD logo assets: FDS, SG-1000, Atari 5200, Xbox One / Series, Switch 2, PS5, CD-i | BLOCKED-REF |
 | Sega CD category logo | BLOCKED-HW (no Sega CD games in the fixture libraries) |
 | Scan stretch / crop audit across layout families | PARTIAL — the shared flat rule fixed in 520; no layout-by-layout audit (not wanted) |
+| QA app's R1 panel shows the "Not in the compatibility version" card | QA-build only (the QA app has no notification listener); not a release defect — note only |
 
 ## 5. Blocked (hardware, references, owner)
 
