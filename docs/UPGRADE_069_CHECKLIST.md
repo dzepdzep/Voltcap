@@ -155,3 +155,15 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
   | Permission errors | none (the AetherSX2 and Dolphin folders under `Android/data` were readable) |
 
 - **Seen while copying:** `RetroArch/saves` contains `.stfolder` / `.stversions` — **Syncthing** syncs this folder. That is a second sync path, besides Voltcap's Drive sync, that can change saves during an update. Pause it during B2–B4, or at least know it is there.
+
+## Prepared for approval: P3–P7 (exact operations; nothing done yet)
+
+| Step | Who does what | Changes on the handheld | Claude's part |
+|---|---|---|---|
+| **P3** | The owner opens the real Voltcap › Settings › Backup › **Export**, ticks game data + device setup + accounts, and saves to `Download`. | One new file in `/sdcard/Download` (holds account keys: keep it private) | `adb pull` of that one file into `backup_2026-11-10_P2\RPClassic_…\export\`, sha256 on both sides. Nothing else read. |
+| **P4** | The owner exports each custom layout from Layout Studio (one already sits in `/sdcard/Voltcap/Layouts`). | New `.vclayout` files in `/sdcard/Voltcap/Layouts` | `adb pull /sdcard/Voltcap/Layouts` + manifest. |
+| **P5** (optional) | The owner decides whether to turn on "use the visible Voltcap folder" (a setting change; needs All-files access). An `Art` copy from 12 Oct already exists. | A setting and a file copy | `adb pull /sdcard/Voltcap` + manifest (read-only). |
+| **P6** | The owner keeps the originals of profile pictures, picked art and clips. | none | — |
+| **P7** | The owner turns the launch-time Drive sync OFF in the real Voltcap and reads the switches back. **Also pause Syncthing** for `RetroArch/saves` (found in P2) until B4 is done. | Two switches (owner's own) | Read back nothing private; only confirm with the owner. |
+
+After P3–P7, B1–B6 follow, each with its own approval. Install the published `Voltcap-0.6.69.apk` (sha256 `1101965042cc84c0…`) only; never a development build.

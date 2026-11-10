@@ -35,6 +35,10 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Game grid ▲ ▼ with every game in one row (Endless on) stay on the game instead of jumping to (cols mod n) | 520, unit test + RP Classic q521 (100 % and 50 %: Zelda stays after ▼ and ▲) |
+| Game spacing for Hero tiles and Cinema (own options + R1; 100 % = as before) | 520, unit tests + RP Classic q521 screenshots (100 / 50 / 200 %) + controller pass |
+| Game spacing for the Game grid (own option + R1) | 520, RP Classic grid520 (100 / 50 / 180 %) |
+| Controller contract after the 520 changes: R1, L1, Select, Start, R2 / L2 open and return focus on 13 layouts | 520, RP Classic ctl516: 30 + 30 + 30 checks PASS, 0 fatal, settings restored |
 | Flat case art fits like the 3D faces (CropUnlessMuchCut): a 16:9 picture you picked is shown whole on the Game shelf (Plain cover), plain PS3–PS5 / Xbox cases; covers close to the window still fill | 520, RP Classic q520 (wide fixture, before / after) |
 | A picture taken for a whole wrap whose front cut fails (no folds: a 16:9 picture on a PS1 jewel case) now shows the picture, not an empty case | 520, RP Classic q520 (PS1 Crash, Voltcap's case / Real case) |
 | Unmeasured wraps / unfolded box scans load hidden until their shape is known (no flash of the whole scan or its spine before the front) | 520, code + unit tests; device: no flash seen in q520 (a one-frame flash can't be proven absent by screenshots) |
@@ -68,7 +72,7 @@ Statuses:
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | OPEN, render-bound (494); no change without a new measurement plan |
 | ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
 | Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 RP Classic: 2 recordings (`flash513.sh` COVERDETAILS, 690 + 784 frames): 1 one-frame event, during the fast 5-step burst — the NEW case's first frame (its no-art generated cover drawn at another texture size, then redrawn), not the leaving case's flight; 0 in the second run. Both look like first-frame texture / bounds, not motion maths. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
-| K1 game spacing in the remaining compatible layouts | PARTIAL — 520: **Game grid** has its own Game spacing (Layout options + R1, 50–250 %, 100 % = the old 14 / 12 dp; main screen only; RP Classic: 100 / 50 / 180 % screenshots, D-pad, controller pass PASS). R1 Spacing tile + slider also on Case flow, Cardboard box, Storage boxes, File select (their own pref and range; unit tests; controller pass on those layouts PASS; the R1 tile itself reached only by unit test). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
+| K1 game spacing in the remaining compatible layouts | PARTIAL — 520: **Hero tiles** and **Cinema** got Game spacing (own option + R1; 100 % = today's 8–12 / 8 dp; RP Classic 100 / 50 / 200 % screenshots + controller pass PASS). **Game grid** has its own Game spacing (Layout options + R1, 50–250 %, 100 % = the old 14 / 12 dp; main screen only; RP Classic: 100 / 50 / 180 % screenshots, D-pad, controller pass PASS). R1 Spacing tile + slider also on Case flow, Cardboard box, Storage boxes, File select (their own pref and range; unit tests; controller pass on those layouts PASS; the R1 tile itself reached only by unit test). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
 | B5 long rows / D137 render cost | PARTIAL — see Case Stacks above |
 
 ## 3a. Checked and not a defect (520)
@@ -119,3 +123,14 @@ Statuses:
 ## 6. Deferred
 New system layouts, new 3D templates, consoles without references, Studio templates, popups inside the activity window,
 a separate hero surface for Ken Burns (only with a measured net win), screensaver overlay leakage (no repro since 488).
+
+## 7. v0.6.70 release plan (520)
+
+| Class | Items |
+|---|---|
+| **Critical blockers** | (1) versionCode 77 / 0.6.70 bump and a release build passing `apk_secret_scan` (identity, signer, no secrets); (2) one regression pass of the 520 changes on the **KONKR** (the owner's most-used compact device; nothing of 520 has run there) — `ctl516.sh` on the changed layouts + `q520.sh` + `mem520.sh 3`; (3) owner OK to merge next/0.6.70 into main. Not blockers: everything else below |
+| **Important (in 0.6.70 already, verified on the RP Classic)** | flat case art fit + failed-wrap fallback, PS4 back logo, Game grid single-row ▲▼, game spacing (Grid, Hero tiles, Cinema + R1 tile on 4 more layouts), ScreenScraper check status + failure notes |
+| **Important, still open** | KONKR memory soak (`mem520.sh`), Case Stacks fast scroll on KONKR; Thor quick check of the 520 layouts |
+| **Optional** | more layouts with Game spacing; Cover details first-frame texture glitch (needs evidence); header backdrop fade; scan crop audit |
+| **Hardware / reference / owner** | Odin 3 nav bar, Thor second screen, in-game overlays, RA account, GameNative, E1/E2 photos, finger tests, look approvals |
+| **Owner approvals** | P3–P7, B1–B6 (upgrade); merge + publish of 0.6.70 |
