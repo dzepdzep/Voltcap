@@ -528,6 +528,28 @@
    "apk_sha256": "ec9ac511c8a02f8084735a6e9360d21092e4f7092821b47695766d59fcf8063e",
    "base_commit": "0c5da4207c450678dcd905af3afa0a9e9316e7e6",
    "note": "batch 523g/h: deleted games leave the list, Save Vault looks across devices (VaultArtIndex) + console plates, Smart App Artwork hero / cache / no blur, soft copies instead of moving RenderEffect blurs; installed on the GT78 via the guard"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523i",
+   "apk_sha256": "d401cd330ed5f483d88836d5f136ca8c8526f24932821ef4164539bc5b75a19c",
+   "base_commit": "e9ba4ba4ea7929896a2f365bc6d6ff3fb4e33465",
+   "note": "batch 523i: 523h + Coverflow details case-top cache (motion pass); GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523j",
+   "apk_sha256": "25dc751d074ec4c377df0737f1718090f48b2c518ffab9726bcc826b813b8765",
+   "base_commit": "6add7fb8cbd538c4228ea9e6a030c7642562b449",
+   "note": "batch 523j: 523i + console plate short key, PS2 browser emblem slab; GT78"
   }
  ]
 }
