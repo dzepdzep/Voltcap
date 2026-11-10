@@ -9,8 +9,8 @@ pk() { grep -q '^CRASH' $F/voltcap_qa_screen 2>/dev/null && { k KEYCODE_BUTTON_B
 input keyevent KEYCODE_WAKEUP; A --ez voltcap_test_nolaunch true; sleep 4; pk
 A --es voltcap_test_snapshot save; sleep 2
 # layout:style - the scenes (own style) and the row styles on the Voltcap row
-CASES="CLASSIC:OWN TILES:OWN STORAGE:OWN HERO:OWN SPOT:OWN CLASSIC:ROW_REVEAL CLASSIC:SHARED CLASSIC:BANNER"
-for V in base current_w current_wa inter_wa manrope_wa; do
+CASES=${CASES:-"CLASSIC:OWN TILES:OWN STORAGE:OWN HERO:OWN SPOT:OWN CLASSIC:ROW_REVEAL CLASSIC:SHARED CLASSIC:BANNER"}
+for V in ${VS:-base current_w current_wa inter_wa manrope_wa}; do
   case $V in
     base) SPEC=off;; current_w) SPEC="font=current,weights=on";; current_wa) SPEC="font=current,weights=on,actions=on,storage=on";;
     inter_wa) SPEC="font=inter,weights=on,actions=on,storage=on";; manrope_wa) SPEC="font=manrope,weights=on,actions=on,storage=on";;
