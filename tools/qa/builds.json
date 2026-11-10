@@ -517,6 +517,17 @@
    "apk_sha256": "35e0a6c471b0c5f4efc43ab0f0a52008ed5c3770e2b26ba24950a87029d12632",
    "base_commit": "4af336c6aa1ed909df333d80ba1d0969c7503d2a",
    "note": "batch 523f: 523e + Details in the window (Row opens / Row reveal / Shared), Case flow short Endless each game once, shelf pull-out one box, Coverflow details flight one object, Save Vault Icons only flat + PS2 browser look; the final 523 gate build (chain523f)"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523h",
+   "apk_sha256": "ec9ac511c8a02f8084735a6e9360d21092e4f7092821b47695766d59fcf8063e",
+   "base_commit": "0c5da4207c450678dcd905af3afa0a9e9316e7e6",
+   "note": "batch 523g/h: deleted games leave the list, Save Vault looks across devices (VaultArtIndex) + console plates, Smart App Artwork hero / cache / no blur, soft copies instead of moving RenderEffect blurs; installed on the GT78 via the guard"
   }
  ]
 }
