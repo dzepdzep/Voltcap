@@ -1,0 +1,13 @@
+# voltcap-mock-staging (batch 518c): fake upstream services for the STAGING Worker only. No real credentials anywhere.
+name = "voltcap-mock-staging"
+main = "mock.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+[observability]
+enabled = false
+[[durable_objects.bindings]]
+name = "REC"
+class_name = "Recorder"
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Recorder"]

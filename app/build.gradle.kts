@@ -1,4 +1,6 @@
 import java.util.Properties
+import java.util.zip.ZipFile
+import java.io.ByteArrayOutputStream
 
 plugins {
     id("com.android.application")
@@ -20,21 +22,20 @@ val keystoreProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
-// Update 516: Voltcap's own ScreenScraper developer key (every ScreenScraper request needs one per app; users then only
-// give their own login). From a gitignored screenscraper.properties in the project root — never in git or the patch:
-//   devId=…
-//   devPassword=…
-//   softName=…   (optional: the software name the key was requested for)
-// Without the file the fields are empty and the ScreenScraper dialog asks for a developer key as before.
-val screenScraperProps = Properties().apply {
-    val f = rootProject.file("screenscraper.properties")
+// Batch 517 (security): 0.6.68 compiled Voltcap's ScreenScraper developer password and Twitch client secret into the APK
+// (BuildConfig), where anyone with the APK could read them. They now stay on Voltcap's service (server/voltcap-api); the
+// app only knows its address. The gitignored screenscraper.properties / igdb.properties are no longer built in — they are
+// read only by verifyNoEmbeddedSecrets below, as the list of values that must never appear in an APK.
+//   screenscraper.properties: softName=… (not secret: the software name sent with requests) [devId / devPassword: denylist only]
+//   igdb.properties: [clientId / clientSecret: denylist only]
+//   voltcap_api.properties: base=https://… (the service's address; empty = no service, the old key fields show)
+fun props(name: String) = Properties().apply {
+    val f = rootProject.file(name)
     if (f.exists()) f.inputStream().use { load(it) }
 }
-// (Update 516: Voltcap's own IGDB / Twitch app the same way — igdb.properties: clientId=… clientSecret=…)
-val igdbProps = Properties().apply {
-    val f = rootProject.file("igdb.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}
+val screenScraperProps = props("screenscraper.properties")
+val igdbProps = props("igdb.properties")
+val voltcapApiProps = props("voltcap_api.properties")
 fun buildConfigString(v: String?): String =
     "\"" + (v ?: "").trim().replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
@@ -66,15 +67,12 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 75
-        versionName = "0.6.68"
+        versionCode = 76
+        versionName = "0.6.69"
 
-        // (Update 516: see screenScraperProps above.)
-        buildConfigField("String", "SS_DEV_ID", buildConfigString(screenScraperProps.getProperty("devId")))
-        buildConfigField("String", "SS_DEV_PASSWORD", buildConfigString(screenScraperProps.getProperty("devPassword")))
+        // (Batch 517: no credential is built in any more — see above. Only these two non-secret values.)
         buildConfigField("String", "SS_SOFT_NAME", buildConfigString(screenScraperProps.getProperty("softName")))
-        buildConfigField("String", "IGDB_CLIENT_ID", buildConfigString(igdbProps.getProperty("clientId")))
-        buildConfigField("String", "IGDB_CLIENT_SECRET", buildConfigString(igdbProps.getProperty("clientSecret")))
+        buildConfigField("String", "VOLTCAP_API_BASE", buildConfigString(voltcapApiProps.getProperty("base")))
 
         // Handheld CPUs only — also keeps Discord's native library small.
         ndk {
@@ -242,3 +240,37 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
+
+// Batch 517 (security): every APK this build makes is checked for credentials before it can be shipped. The values from the
+// local screenscraper.properties / igdb.properties (the keys 0.6.68 leaked — and any later ones kept there) and from an
+// optional secret_denylist.txt (one value per line) must not appear anywhere in the APK (dex, resources, assets), and no
+// BuildConfig credential field may exist. Fails the build otherwise. Values are never printed — only their names.
+val buildStartedAt = System.currentTimeMillis()
+val verifyNoEmbeddedSecrets by tasks.registering {
+    group = "verification"
+    description = "Fails when an APK built now contains a confidential value (batch 517)."
+    doLast {
+        val denied = linkedMapOf<String, String>()
+        screenScraperProps.getProperty("devPassword")?.trim()?.takeIf { it.length >= 4 }?.let { denied["screenscraper.devPassword"] = it }
+        screenScraperProps.getProperty("devId")?.trim()?.takeIf { it.length >= 4 }?.let { denied["screenscraper.devId"] = it }
+        igdbProps.getProperty("clientSecret")?.trim()?.takeIf { it.length >= 4 }?.let { denied["igdb.clientSecret"] = it }
+        rootProject.file("secret_denylist.txt").takeIf { it.isFile }?.readLines()?.map { it.trim() }
+            ?.filter { it.length >= 6 && !it.startsWith("#") }?.forEachIndexed { i, v -> denied["secret_denylist.txt line ${i + 1}"] = v }
+        val fieldNames = listOf("SS_DEV_PASSWORD", "SS_DEV_ID", "IGDB_CLIENT_SECRET", "IGDB_CLIENT_ID")
+        val apks = layout.buildDirectory.dir("outputs/apk").get().asFile.walkTopDown()
+            .filter { it.isFile && it.name.endsWith(".apk") && it.lastModified() >= buildStartedAt - 1000 }.toList()
+        val problems = mutableListOf<String>()
+        for (apk in apks) {
+            ZipFile(apk).use { z ->
+                val all = ByteArrayOutputStream()
+                z.entries().asSequence().filter { !it.isDirectory }.forEach { e -> z.getInputStream(e).use { it.copyTo(all) } }
+                val text = String(all.toByteArray(), Charsets.ISO_8859_1)
+                denied.forEach { (name, v) -> if (text.contains(v)) problems += "${apk.name}: contains $name" }
+                fieldNames.forEach { f -> if (text.contains(f)) problems += "${apk.name}: has a BuildConfig field named $f" }
+            }
+            logger.lifecycle("verifyNoEmbeddedSecrets: ${apk.name} checked against ${denied.size} values")
+        }
+        if (problems.isNotEmpty()) throw GradleException("Confidential values in the APK:\n" + problems.joinToString("\n"))
+    }
+}
+tasks.matching { it.name.startsWith("assemble") && it.name != "assemble" }.configureEach { finalizedBy(verifyNoEmbeddedSecrets) }

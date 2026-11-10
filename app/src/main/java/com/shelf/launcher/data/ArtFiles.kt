@@ -55,7 +55,29 @@ object ArtFiles {
             .readTimeout(30, TimeUnit.SECONDS)
             .callTimeout(120, TimeUnit.SECONDS) // (Update 182)
             .followRedirects(true)
+            // (Batch 517: ScreenScraper media get their key only here, on the way out — SsMedia; Voltcap's service its install id.)
+            .addInterceptor(SsMedia.interceptor)
+            .addInterceptor(VoltcapService.interceptor)
             .build()
+    }
+
+    /**
+     * Batch 517: the saved pictures / manuals of addresses that changed ([old] → [new], SsMedia.migrateOnce) take their new
+     * address's name, so nothing is downloaded again. A file already saved under the new name wins. Blocking.
+     */
+    fun renameSaved(changes: Map<String, String>) {
+        if (changes.isEmpty()) return
+        val c = app ?: return
+        val dirs = (roots + File(c.cacheDir, "manuals")).filter { it.isDirectory }
+        for ((old, new) in changes) {
+            val from = name(old); val to = name(new)
+            for (d in dirs) for (suffix in listOf("", ".pdf")) {
+                val f = File(d, from + suffix)
+                if (!f.isFile) continue
+                val t = File(d, to + suffix)
+                if (!t.exists() && f.renameTo(t)) { if (suffix.isEmpty()) { names.remove(from); names[to] = t } } else if (t.exists()) names.remove(from)
+            }
+        }
     }
 
     /** Sets the folders up (once per process; the image loader calls it). */

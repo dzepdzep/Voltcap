@@ -75,7 +75,7 @@ fun VideoBackdrop(
                         runCatching {
                             surface = Surface(texture)
                             player.setSurface(surface)
-                            player.setDataSource(context, Uri.parse(url))
+                            com.shelf.launcher.data.SsMedia.forPlayer(url).let { (u, h) -> player.setDataSource(context, Uri.parse(u), h) } // (Batch 517: key added only here)
                             player.isLooping = true
                             if (!withSound) player.setVolume(0f, 0f)
                             player.setOnPreparedListener { mp ->

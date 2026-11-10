@@ -93,7 +93,12 @@ object ArtStorage {
         ArtFiles.init(context)
         ArtFiles.maxBytes = maxBytes
         Thread { runCatching { ArtFiles.tidy() } }.start()
+        SsMedia.init(context); VoltcapService.init(context)
         return ImageLoader.Builder(context)
+            // (Batch 517: ScreenScraper pictures are stored without credentials; they're added only on the way out — SsMedia.)
+            .okHttpClient {
+                okhttp3.OkHttpClient.Builder().addInterceptor(SsMedia.interceptor).addInterceptor(VoltcapService.interceptor).build()
+            }
             .diskCache {
                 DiskCache.Builder()
                     .directory(cacheDir(context))

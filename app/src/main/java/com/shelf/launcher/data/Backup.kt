@@ -99,8 +99,9 @@ object Backup {
         is Int -> JSONObject().put("t", "i").put("v", value)
         is Long -> JSONObject().put("t", "l").put("v", value)
         is Float -> JSONObject().put("t", "f").put("v", value.toDouble())
-        is String -> JSONObject().put("t", "s").put("v", value)
-        is Set<*> -> JSONObject().put("t", "set").put("v", JSONArray(value.map { it.toString() }))
+        // (Batch 517: a ScreenScraper address never leaves the device with a developer key or account in it — SsMedia.)
+        is String -> JSONObject().put("t", "s").put("v", SsMedia.cleanText(value))
+        is Set<*> -> JSONObject().put("t", "set").put("v", JSONArray(value.map { SsMedia.cleanText(it.toString()) }))
         else -> null
     }
 
@@ -402,10 +403,10 @@ object Backup {
                 "i" -> edit.putInt(key, entry.getInt("v"))
                 "l" -> edit.putLong(key, entry.getLong("v"))
                 "f" -> edit.putFloat(key, entry.getDouble("v").toFloat())
-                "s" -> edit.putString(key, entry.getString("v"))
+                "s" -> edit.putString(key, SsMedia.cleanText(entry.getString("v"))) // (Batch 517: an older backup's addresses cleaned)
                 "set" -> {
                     val array = entry.getJSONArray("v")
-                    edit.putStringSet(key, (0 until array.length()).map { array.getString(it) }.toSet())
+                    edit.putStringSet(key, (0 until array.length()).map { SsMedia.cleanText(array.getString(it)) }.toSet())
                 }
             }
         }

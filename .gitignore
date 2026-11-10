@@ -70,3 +70,20 @@ tools/themes/refresh-review/sheet-*
 # Update 516: Voltcap's own ScreenScraper / IGDB developer keys (read at build time; never in git).
 screenscraper.properties
 igdb.properties
+# Batch 517: values that must never ship (read by verifyNoEmbeddedSecrets / apk_secret_scan.py) and the Worker's local secrets.
+secret_denylist.txt
+server/voltcap-api/.dev.vars
+server/voltcap-api/.wrangler/
+server/voltcap-api/node_modules/
+server/voltcap-api/runtime/runtime-result.log
+server/voltcap-api/runtime/*.out
+server/voltcap-api/runtime/*.err
+server/voltcap-api/runtime/.run-now
+server/voltcap-api/runtime/task-result.log
+server/voltcap-api/runtime/staging-urls.txt
+# The service address the APK is built with (set per build: empty, staging or production).
+voltcap_api.properties
+server/voltcap-api/runtime/.old-token
+server/voltcap-api/runtime/production-url.txt
+server/voltcap-api/runtime/ss-diag.mjs
+server/voltcap-api/mock/.wrangler/

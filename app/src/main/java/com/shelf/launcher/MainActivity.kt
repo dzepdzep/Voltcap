@@ -125,6 +125,11 @@ class MainActivity : ComponentActivity() {
                 applicationContext, com.shelf.launcher.data.ArtStorageStore(applicationContext).load().maxBytes
             )
         }
+        // Batch 517 (security): ScreenScraper addresses older versions stored with the developer key / account are cleaned
+        // once, before anything reads them (SsMedia); saved pictures keep working under their clean address.
+        com.shelf.launcher.data.VoltcapService.init(applicationContext)
+        com.shelf.launcher.data.SsMedia.init(applicationContext)
+        runCatching { com.shelf.launcher.data.ArtFiles.init(applicationContext); com.shelf.launcher.data.SsMedia.migrateOnce(applicationContext) }
         // Settings › Device › Gesture hint (hide navigation bar / force-hide): read before the window shows.
         com.shelf.launcher.data.GestureHint.init(this)
         // Update 131: which of the downloaded art packs are on this device.

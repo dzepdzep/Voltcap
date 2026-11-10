@@ -23,11 +23,21 @@ import retrofit2.http.Url
  *
  * IGDB is owned by Twitch, so auth is Twitch's client-credentials OAuth:
  * a Client ID + Client Secret exchange for a bearer token.
+ *
+ * Batch 517 (security): Twitch requires the client secret to stay confidential ("never expose it to users, even in an
+ * obscured form"; client credentials are for server-to-server use). Voltcap's own secret is no longer in the app: with
+ * "Turn on" the queries go through Voltcap's service ([VoltcapService], client ID = its marker), which holds the secret.
+ * A Client ID / Secret someone enters themselves is still used directly — now sent in the form body, not the address.
  */
 interface IgdbApi {
 
-    @POST
-    suspend fun token(@Url url: String): IgdbTokenResponse
+    @retrofit2.http.FormUrlEncoded
+    @POST("https://id.twitch.tv/oauth2/token")
+    suspend fun token(
+        @retrofit2.http.Field("client_id") clientId: String,
+        @retrofit2.http.Field("client_secret") clientSecret: String,
+        @retrofit2.http.Field("grant_type") grantType: String = "client_credentials"
+    ): IgdbTokenResponse
 
     // IGDB takes APICalypse query text as a raw POST body, not JSON or form
     // params — hence RequestBody rather than a typed request object.
@@ -103,7 +113,36 @@ data class GameMetadata(
     val publisher: String? = null
 )
 
-fun createIgdbApi(): IgdbApi = Retrofit.Builder()
+/** Batch 517: the same two queries through Voltcap's service (which adds Twitch's credentials). */
+interface IgdbServiceApi {
+    @POST("v1/igdb/games")
+    suspend fun games(@Body query: RequestBody): List<IgdbGame>
+
+    @POST("v1/igdb/game_time_to_beats")
+    suspend fun timeToBeat(@Body query: RequestBody): List<IgdbTimeToBeat>
+}
+
+/** Routes a query by its client ID: Voltcap's service marker → the service, anything else → IGDB directly. */
+private class RoutingIgdbApi(private val direct: IgdbApi, private val service: IgdbServiceApi?) : IgdbApi {
+    private fun svc(): IgdbServiceApi = service ?: throw java.io.IOException("Voltcap's service isn't available in this build.")
+    override suspend fun token(clientId: String, clientSecret: String, grantType: String) = direct.token(clientId, clientSecret, grantType)
+    override suspend fun games(clientId: String, bearer: String, query: RequestBody) =
+        if (clientId == VoltcapService.SERVICE_ID) svc().games(query) else direct.games(clientId, bearer, query)
+    override suspend fun timeToBeat(clientId: String, bearer: String, query: RequestBody) =
+        if (clientId == VoltcapService.SERVICE_ID) svc().timeToBeat(query) else direct.timeToBeat(clientId, bearer, query)
+}
+
+fun createIgdbApi(): IgdbApi = RoutingIgdbApi(
+    createDirectIgdbApi(),
+    VoltcapService.retrofitBase?.let { base ->
+        Retrofit.Builder().baseUrl(base)
+            .client(okhttp3.OkHttpClient.Builder().callTimeout(60, java.util.concurrent.TimeUnit.SECONDS).addInterceptor(VoltcapService.interceptor).build())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build().create(IgdbServiceApi::class.java)
+    }
+)
+
+private fun createDirectIgdbApi(): IgdbApi = Retrofit.Builder()
     // Every call uses an absolute @Url/@POST, so this base is only a
     // placeholder Retrofit requires at build time.
     .baseUrl("https://api.igdb.com/")
@@ -124,15 +163,14 @@ class IgdbRepository(private val api: IgdbApi) {
     private val textPlain = "text/plain".toMediaType()
 
     private suspend fun bearerToken(clientId: String, clientSecret: String): String? {
+        // (Batch 517: Voltcap's service holds its own token; nothing to fetch here.)
+        if (clientId == VoltcapService.SERVICE_ID) return "service"
         val now = System.currentTimeMillis()
         val owner = "$clientId\u0000$clientSecret"
         cachedToken?.let { if (now < tokenExpiresAtMillis && tokenFor == owner) return it }
 
         return try {
-            val enc = { v: String -> java.net.URLEncoder.encode(v, "UTF-8") }
-            val url = "https://id.twitch.tv/oauth2/token" +
-                "?client_id=${enc(clientId)}&client_secret=${enc(clientSecret)}&grant_type=client_credentials"
-            val response = api.token(url)
+            val response = api.token(clientId, clientSecret)
             val token = response.access_token ?: return null
             cachedToken = token
             tokenFor = owner
@@ -145,7 +183,8 @@ class IgdbRepository(private val api: IgdbApi) {
     }
 
     suspend fun testConnection(clientId: String, clientSecret: String): Boolean =
-        bearerToken(clientId, clientSecret) != null
+        if (clientId == VoltcapService.SERVICE_ID) runCatching { api.games(clientId, "", "fields id; limit 1;".toRequestBody(textPlain)); true }.getOrDefault(false)
+        else bearerToken(clientId, clientSecret) != null
 
     suspend fun fetchMetadata(
         clientId: String,

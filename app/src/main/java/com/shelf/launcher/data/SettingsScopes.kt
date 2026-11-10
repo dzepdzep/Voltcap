@@ -95,7 +95,9 @@ object SettingsScopes {
         "qs_tiles",
         // Update 144: this device's own sync id and the other devices' play (copied, two handhelds shared one id), the
         // RomM downloads Android is running here, and which radios sleep mode switched off here.
-        "other_devices", "romm_downloads", "sleep_radios_state"
+        "other_devices", "romm_downloads", "sleep_radios_state",
+        // Batch 517: this installation's random ID for Voltcap's service (VoltcapService) — never travels.
+        "voltcap_service"
     )
 
     private val AUTH_PATTERN = Regex("(_encrypted$|credential|secret|token|password|oauth|api_?key|_auth$)", RegexOption.IGNORE_CASE)

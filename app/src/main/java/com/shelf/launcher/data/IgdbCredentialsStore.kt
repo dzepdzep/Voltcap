@@ -6,12 +6,14 @@ import android.content.SharedPreferences
 data class IgdbCredentials(val clientId: String, val clientSecret: String)
 
 /**
- * Update 516 (owner): IGDB access needs a Twitch developer app — not something a regular user has. Voltcap ships its own
- * (build time, from the gitignored igdb.properties; never in git, the patch or the docs). Turning IGDB on then needs no key;
- * builds without it keep the Client ID / Secret fields. A key someone saved themselves still wins.
+ * Update 516 (owner): IGDB access needs a Twitch developer app — not something a regular user has, so "Turn on" needs no
+ * key. Batch 517 (security): 0.6.68 built Voltcap's Twitch secret into the APK; now "Turn on" uses Voltcap's service
+ * ([VoltcapService]), which keeps it. Builds without the service keep the Client ID / Secret fields. A key someone saved
+ * themselves still wins (and is still used directly).
  */
 object IgdbBuiltInKey {
-    val builtIn: IgdbCredentials? get() = of(com.shelf.launcher.BuildConfig.IGDB_CLIENT_ID, com.shelf.launcher.BuildConfig.IGDB_CLIENT_SECRET)
+    /** Voltcap's service as the "key" (a marker, never a real key), or null when this build has no service. */
+    val builtIn: IgdbCredentials? get() = if (VoltcapService.configured) IgdbCredentials(VoltcapService.SERVICE_ID, VoltcapService.SERVICE_ID) else null
 
     internal fun of(id: String?, secret: String?): IgdbCredentials? {
         val i = id?.trim().orEmpty(); val s = secret?.trim().orEmpty()

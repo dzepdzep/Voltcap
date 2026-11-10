@@ -1,0 +1,91 @@
+# voltcap-api (batch 517 proof of concept) — NOT deployed. No secret belongs in this file.
+# Secrets, set once per environment with `wrangler secret put <NAME>` (never committed):
+#   TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, SS_DEV_ID, SS_DEV_PASSWORD, SS_SOFT_NAME,
+#   MEDIA_SIGNING_KEY (random, 32+ characters: `openssl rand -base64 32`; changing it invalidates handed-out media addresses)
+name = "voltcap-api"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+# request.signal: a client that disconnects cancels the upstream media download.
+compatibility_flags = ["enable_request_signal"]
+workers_dev = true
+
+[vars]
+# Kill switch: "" | "all" | "igdb" | "ss" | "ss-media" (comma separated). Changing it is one `wrangler deploy`.
+KILL = ""
+# "1": ScreenScraper media addresses are rewritten to /v1/ss/media (only if media downloads need the developer password).
+SS_PROXY_MEDIA = "0"
+PUBLIC_BASE = "https://voltcap-api.example.workers.dev"
+# Media addresses from before the hotfix carry no signature; "1" serves them under the tighter MEDIA_UNSIGNED_RL limit
+# while 0.6.68 data is migrated. Set "0" later (one deploy) so only addresses this service signed work.
+ALLOW_UNSIGNED_MEDIA = "1"
+# MOCK_UPSTREAM is for runtime tests only (wrangler dev --var); it is ignored unless it points at localhost.
+
+# Fair-use limits for media downloads (approximate, per Cloudflare location), keyed by install id and by address.
+[[ratelimits]]
+name = "MEDIA_RL"
+namespace_id = "5171"
+  [ratelimits.simple]
+  limit = 600
+  period = 60
+
+[[ratelimits]]
+name = "MEDIA_UNSIGNED_RL"
+namespace_id = "5172"
+  [ratelimits.simple]
+  limit = 120
+  period = 60
+
+# No request logging: Workers Logs / traces off, no tail consumers, no Logpush.
+[observability]
+enabled = false
+
+# One gate object per service (Free plan: SQLite-backed Durable Objects only).
+[[durable_objects.bindings]]
+name = "IGDB_GATE"
+class_name = "IgdbGate"
+
+[[durable_objects.bindings]]
+name = "SS_GATE"
+class_name = "SsGate"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["IgdbGate", "SsGate"]
+
+# ---- Staging (batch 518): a separate Worker "voltcap-api-staging" for a test deploy with FAKE secrets only. ----
+# Deploy only after approval:  npx wrangler@4 deploy --env staging   (then set its fake secrets with --env staging)
+# MOCK_UPSTREAM (--var at deploy) may point at the deployed fake services voltcap-mock-staging (server/voltcap-api/mock):
+# honoured only with STAGE = "staging", only for that workers.dev host, only over https. Production has neither.
+[env.staging]
+name = "voltcap-api-staging"
+workers_dev = true
+[env.staging.vars]
+STAGE = "staging"
+KILL = ""
+SS_PROXY_MEDIA = "0"
+PUBLIC_BASE = "https://voltcap-api-staging.example.workers.dev"
+ALLOW_UNSIGNED_MEDIA = "1"
+[env.staging.observability]
+enabled = false
+# The fake upstream services, reached through a service binding (a Worker can't fetch another workers.dev Worker directly).
+[[env.staging.services]]
+binding = "MOCK"
+service = "voltcap-mock-staging"
+[[env.staging.durable_objects.bindings]]
+name = "IGDB_GATE"
+class_name = "IgdbGate"
+[[env.staging.durable_objects.bindings]]
+name = "SS_GATE"
+class_name = "SsGate"
+[[env.staging.ratelimits]]
+name = "MEDIA_RL"
+namespace_id = "5181"
+  [env.staging.ratelimits.simple]
+  limit = 600
+  period = 60
+[[env.staging.ratelimits]]
+name = "MEDIA_UNSIGNED_RL"
+namespace_id = "5182"
+  [env.staging.ratelimits.simple]
+  limit = 120
+  period = 60

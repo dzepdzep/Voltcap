@@ -1809,7 +1809,8 @@ object CloudSync {
             favorites = fav.map(p).toSet(),
             playtime = play.mapKeys { p(it.key) },
             recent = recent.mapKeys { p(it.key) },
-            artOverrides = art.filterValues { !isLocalOnly(it) }.entries.associate { p(it.key) to canonical(it.value) },
+            // (Batch 517: a cover picked from ScreenScraper goes to Drive without the developer key / account — SsMedia.)
+            artOverrides = art.filterValues { !isLocalOnly(it) }.entries.associate { p(it.key) to SsMedia.cleanText(canonical(it.value)) },
             gameOverrides = ids.entries.associate { p(it.key) to canonical(it.value) },
             devices = runCatching {
                 mapOf(OtherDevices.deviceId(context) to canonical(JSONObject(OtherDevices.ownEntry(context, p, gameInfo))))
@@ -1831,7 +1832,7 @@ object CloudSync {
         val artPrefs = context.getSharedPreferences("art_overrides", Context.MODE_PRIVATE)
         val localOnly = objectMap(artPrefs.getString("overrides_json", null)).filterValues { isLocalOnly(it) }
         val art = JSONObject()
-        data.artOverrides.forEach { (k, v) -> art.put(l(k), JSONObject(v)) }
+        data.artOverrides.forEach { (k, v) -> art.put(l(k), JSONObject(SsMedia.cleanText(v))) } // (Batch 517: another device's older addresses)
         localOnly.forEach { (k, v) -> art.put(k, v) }
         artPrefs.edit().putString("overrides_json", art.toString()).commit()
 

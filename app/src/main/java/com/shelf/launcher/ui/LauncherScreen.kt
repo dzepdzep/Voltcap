@@ -1058,6 +1058,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         TestHooks.pick.value = null
     }
+    // Batch 517 (security review, QA app only): QaSs517 — where ScreenScraper's addresses keep credentials (counts only).
+    val testSs517 = TestHooks.ss517.value
+    LaunchedEffect(testSs517, state.games.size) {
+        val q = testSs517 ?: return@LaunchedEffect
+        if (state.games.isEmpty()) return@LaunchedEffect
+        TestHooks.ss517.value = null
+        // Its own scope: the library reloading (games.size) must not cancel a run half way.
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main + kotlinx.coroutines.SupervisorJob()).launch {
+            QaSs517.run(dumpContext.applicationContext, viewModel, { viewModel.uiState.value.games }, { viewModel.uiState.value.art }, q)
+        }
+    }
     // (Update 301, testing only: a game's Artwork & details — TestHooks.artwork.)
     val testArtwork = TestHooks.artwork.value
     LaunchedEffect(testArtwork, state.games.size) {

@@ -1,0 +1,11 @@
+
+// (Batch 518, DEV ONLY — never committed) Runs server/voltcap-api/runtime/task.ps1 after :app:compileDebugKotlin while
+// server/voltcap-api/runtime/.run-now exists (its first line names the action). Fake credentials only.
+if (rootProject.file("server/voltcap-api/runtime/.run-now").isFile) {
+    val workerTask by tasks.registering(Exec::class) {
+        commandLine("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+            rootProject.file("server/voltcap-api/runtime/task.ps1").absolutePath)
+        isIgnoreExitValue = true
+    }
+    tasks.matching { it.name == "compileDebugKotlin" }.configureEach { finalizedBy(workerTask) }
+}

@@ -12,7 +12,8 @@ import java.util.concurrent.TimeUnit
 object ClipStore {
     private var dir: File? = null
     private val client by lazy {
-        okhttp3.OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
+        okhttp3.OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor(SsMedia.interceptor).addInterceptor(VoltcapService.interceptor).build() // (Batch 517)
     }
 
     fun init(context: Context) {

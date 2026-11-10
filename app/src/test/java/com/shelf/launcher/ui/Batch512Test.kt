@@ -16,11 +16,12 @@ class Batch512Test {
     private fun gradle(): String = listOf(File("build.gradle.kts"), File("app/build.gradle.kts"), File("../project_copy/app/build.gradle.kts"))
         .first { it.exists() }.readText()
 
-    @Test fun releaseIdentityIs0668Code75() {
+    // (Batch 517: the security hotfix 0.6.69 / 76 — higher than the published 0.6.68 / 75 so it updates over it.)
+    @Test fun releaseIdentityIs0669Code76() {
         val g = gradle()
         // (QA builds may rename themselves with a suffix; the code is the release's.)
-        assertTrue(Regex("versionCode = 75\\b").containsMatchIn(g))
-        assertTrue(g.contains("versionName = \"0.6.68"))
+        assertTrue(Regex("versionCode = 76\\b").containsMatchIn(g))
+        assertTrue(g.contains("versionName = \"0.6.69"))
         assertTrue(g.contains("namespace = \"com.shelf.launcher\""))
     }
 

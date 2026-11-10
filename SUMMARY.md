@@ -1,3 +1,15 @@
+# Update 519 (10 Nov 2026) — v0.6.69: ScreenScraper and IGDB through Voltcap's own service, cleaner media addresses
+
+0.6.69 (76). Details for the owner are in the project's private notes.
+
+- The APK carries no developer keys. `BuildConfig.VOLTCAP_API_BASE` (from the gitignored `voltcap_api.properties`) points at Voltcap's service, https://voltcap-api.voltcap-api.workers.dev. `verifyNoEmbeddedSecrets` (Gradle) and `tools/release/apk_secret_scan.py` check every APK.
+- ScreenScraper needs only a username and password, and IGDB is one "Turn on" button, both through the service. Keys someone enters by hand still go direct; the Twitch secret is sent in the token request's body.
+- ScreenScraper media addresses are stored, exported and synced without account or key parameters; they are added only on download (SsMedia). A one-time migration cleans older data and renames saved pictures.
+- The service app waits up to 75 s for ScreenScraper, which sometimes needs about 45 s to answer.
+- `server/voltcap-api`: Cloudflare Worker with Durable Object gates and per-install / per-address limits, signed media addresses, Range pass-through, redirects only to ScreenScraper, client cancel, kill switch and no logging. 20 unit tests; `runtime/check.mjs` (mock upstreams) and `runtime/prod-check.mjs` (real providers) pass.
+- Checked: app unit tests, `static_checks.py --strict`, QA self-tests (134), the isolated QA app on the RP Classic against the real providers (login, wrong password, metadata, cover, scan, manual, clip, IGDB, exports, migration).
+- Files: data/SsMedia.kt (new), data/VoltcapService.kt (new), ui/QaSs517.kt (new, QA app only), data/ScreenScraper.kt, IgdbApi.kt, IgdbCredentialsStore.kt, ManualLinks.kt, ArtFiles.kt, ArtStorage.kt, ClipStore.kt, Backup.kt, CloudSync.kt, SettingsScopes.kt, MainActivity.kt, ui/LauncherScreen.kt, TestHooks.kt, VideoPreview.kt, PlatformIntro.kt; app/build.gradle.kts; tests SsMedia517Test, Batch512Test; server/; tools/release/apk_secret_scan.py; .gitignore.
+
 # Update 514 (9 Nov 2026) — checkpoint 38 (feature freeze, focused visual stabilization): "Who's playing?" fills the RP Classic; wide covers on 3D cases fixed; Case Flow title ghost, Side drawer and art-pack sheet fixed on 4:3; Classic Shelf pacing measured (no change)
 
 Staging only (patch `staging_local\0.6.68\staging.patch`, SHA-256 75e70fc14eb93e87d03f984e83a2785fb44620945551fd6ab3fdeade5c99de9a, 231 files, applies on 589fdd4 with an identical tree (bdc87488); backup `staging_local\backups\staging_514_75e70fc1.patch`, read back and checksum-verified; 513 b0d1b0d8 and earlier kept). Voltcap QA 0.6.68-qa514a→d on Retroid Pocket Classic (MC94516AQF091001112) and Nova (d3641c41), USB. Owner's v0.6.67 untouched on both (pids 3209 / 12807 unchanged). No game launched, no sync, no backup / restore, 0 AYN calls, stay_on back to 0. Nothing pushed, merged, published or installed over the real app.

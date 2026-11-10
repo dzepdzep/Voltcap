@@ -187,6 +187,8 @@ internal object TestHooks {
     val fixtureRoms = mutableStateOf<String?>(null)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
+    /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
+    val ss517 = mutableStateOf<String?>(null)
     /** Update 461 (D137 A/B): `--es voltcap_test_warm off|noprepare|on` — the case layouts' decoding ahead (WarmCaseNeighbours). */
     @Volatile var warmMode: String = "on"
     /** Update 301: `--es voltcap_test_artwork "Game name"` — that game's Artwork & details (for checking the full-scan slot). */
@@ -288,6 +290,7 @@ internal object TestHooks {
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
+        intent?.getStringExtra("voltcap_test_ss517")?.let { if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) ss517.value = it }
         // Update 467: `--es voltcap_test_clip <tag>` — every control / text and how much of it shows, into
         // <external files>/qa_clip/<tag>.json (QaClip; tools/qa/tools/geomcheck.py --clip). Optional `--ei voltcap_test_clip_ms`.
         intent?.getStringExtra("voltcap_test_clip")?.let { if (enabled(context)) QaClip.request(context, it, (intent.getIntExtra("voltcap_test_clip_ms", 700)).toLong()) }

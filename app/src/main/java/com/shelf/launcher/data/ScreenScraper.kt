@@ -43,13 +43,13 @@ data class ScreenScraperCredentials(
 
 /**
  * Update 516 (owner: "a regular user doesn't have a developer ID — it should only ask for their user and password"): every
- * ScreenScraper request needs a developer ID / password per APP, so Voltcap ships its own (build time, from the gitignored
- * screenscraper.properties — never in git, the patch or the docs). With it, the dialog asks only for the person's account.
- * Builds without it (a fork, a local test build) keep the developer fields.
+ * ScreenScraper request needs a developer ID / password per APP. Batch 517 (security): 0.6.68 built Voltcap's own into the
+ * APK, where anyone could read it; now it stays on Voltcap's service ([VoltcapService]), which adds it to each request. The
+ * dialog still asks only for the person's account. Builds without the service (a fork) keep the developer fields.
  */
 object ScreenScraperDevKey {
-    /** The developer ID / password built into this APK, or null. */
-    val builtIn: Pair<String, String>? get() = of(com.shelf.launcher.BuildConfig.SS_DEV_ID, com.shelf.launcher.BuildConfig.SS_DEV_PASSWORD)
+    /** Voltcap's service as the "developer key" (a marker, never a real key), or null when this build has no service. */
+    val builtIn: Pair<String, String>? get() = if (VoltcapService.configured) VoltcapService.SERVICE_ID to VoltcapService.SERVICE_ID else null
 
     /** The software name sent with every request (ScreenScraper's "softname"; the name the key was requested for). */
     val softName: String get() = com.shelf.launcher.BuildConfig.SS_SOFT_NAME.trim().ifEmpty { "ShelfLauncher" }
@@ -87,9 +87,10 @@ class ScreenScraperStore(context: Context) {
             .putString(KEY_PASSWORD, c.password)
             .apply()
         SecureStore.clearRelogin(app, "ScreenScraper")
+        SsMedia.signInChanged()
     }
 
-    fun clear() = prefs.edit().clear().apply()
+    fun clear() { prefs.edit().clear().apply(); SsMedia.signInChanged() }
 
 
     companion object {
@@ -123,7 +124,49 @@ interface ScreenScraperApi {
     suspend fun systemList(@QueryMap params: Map<String, String>): Response<ResponseBody>
 }
 
+/**
+ * Batch 517: requests made with Voltcap's service marker go to the service (which adds the developer key); the person's
+ * account travels in headers there, never in an address. Requests with a developer key someone entered go straight to
+ * ScreenScraper as before.
+ */
+private class RoutingScreenScraperApi(private val direct: ScreenScraperApi, private val service: ScreenScraperApi?) : ScreenScraperApi {
+    private fun pick(p: Map<String, String>): ScreenScraperApi =
+        if (p["devid"] == VoltcapService.SERVICE_ID) service ?: throw java.io.IOException("Voltcap's service isn't available in this build.") else direct
+    override suspend fun gameInfo(params: Map<String, String>) = pick(params).gameInfo(params)
+    override suspend fun userInfo(params: Map<String, String>) = pick(params).userInfo(params)
+    override suspend fun infraInfo(params: Map<String, String>) = pick(params).infraInfo(params)
+    override suspend fun searchGames(params: Map<String, String>) = pick(params).searchGames(params)
+    override suspend fun systemList(params: Map<String, String>) = pick(params).systemList(params)
+}
+
+/** The service's request: the markers and output removed, the account moved into headers, the install id added. */
+private val serviceCredentialsInterceptor = okhttp3.Interceptor { chain ->
+    val req = chain.request()
+    val u = req.url
+    val b = req.newBuilder()
+    u.queryParameter("ssid")?.takeIf { it.isNotEmpty() }?.let { b.header("X-SS-User", it) }
+    u.queryParameter("sspassword")?.takeIf { it.isNotEmpty() }?.let { b.header("X-SS-Password", it) }
+    val clean = u.newBuilder().apply { listOf("devid", "devpassword", "softname", "ssid", "sspassword", "output").forEach { removeAllQueryParameters(it) } }.build()
+    chain.proceed(b.url(clean).build())
+}
+
+private fun screenScraperClient(service: Boolean): OkHttpClient = OkHttpClient.Builder()
+    .connectTimeout(20, TimeUnit.SECONDS)
+    // Batch 519: ScreenScraper sometimes needs ~45 s before it answers; the service waits up to 60 s, so the app a bit longer.
+    .readTimeout(if (service) 75L else 45L, TimeUnit.SECONDS)
+    .callTimeout(90, TimeUnit.SECONDS)
+    .apply { if (service) { addInterceptor(serviceCredentialsInterceptor); addInterceptor(VoltcapService.interceptor) } }
+    .build()
+
 fun createScreenScraperApi(): ScreenScraperApi {
+    val service = VoltcapService.retrofitBase?.let { base ->
+        Retrofit.Builder().baseUrl(base.resolve("v1/ss/")!!).client(screenScraperClient(true)).build()
+            .create(ScreenScraperApi::class.java)
+    }
+    return RoutingScreenScraperApi(createDirectScreenScraperApi(), service)
+}
+
+private fun createDirectScreenScraperApi(): ScreenScraperApi {
     // ScreenScraper is often slow under load; the default 10s gives up too early.
     val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -354,21 +397,15 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
             val r = m.str("region")?.lowercase()
             order.indexOf(r).let { if (it >= 0) it else 100 + regionRank(r) }
         }
-        return best?.str("url")?.let { ManualLinks.withoutLogin(it) }
+        return best?.str("url")?.let { SsMedia.clean(it) }
     }
 
     /**
      * Update 202: a ScreenScraper media address ([url], kept without the login) ready to download: this app's developer
      * ID and your account (ssid / sspassword — your quota, and media only members get) put in, as every API request has.
      */
-    fun withLogin(url: String, c: ScreenScraperCredentials?): String {
-        if (c == null) return url
-        val parsed = url.toHttpUrlOrNull() ?: return url
-        if (!parsed.host.contains("screenscraper", ignoreCase = true)) return url
-        val b = parsed.newBuilder()
-        baseParams(c).forEach { (k, v) -> if (k != "output") b.setQueryParameter(k, v) }
-        return b.build().toString()
-    }
+    fun withLogin(url: String, c: ScreenScraperCredentials?): String =
+        url.toHttpUrlOrNull()?.let { SsMedia.resolve(it, c).toString() } ?: url
 
     /** Art for one ROM, or null if ScreenScraper doesn't know it (or it's not a ROM). */
     suspend fun fetchArt(c: ScreenScraperCredentials, game: Game): GameArt? {
@@ -632,8 +669,9 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
         }.getOrNull()
     }
 
+    // (Batch 517: every address in an answer loses its credentials before anything reads it — SsMedia.)
     private fun parseJson(body: String): JsonObject? =
-        runCatching { gson.fromJson(body, JsonObject::class.java) }.getOrNull()
+        runCatching { gson.fromJson(SsMedia.cleanText(body), JsonObject::class.java) }.getOrNull()
 
     private fun JsonObject.obj(key: String): JsonObject? = get(key)?.takeIf { it.isJsonObject }?.asJsonObject
     private fun JsonObject.str(key: String): String? = get(key)?.takeIf { it.isJsonPrimitive }?.asString
@@ -653,6 +691,8 @@ class ScreenScraperRepository(private val api: ScreenScraperApi) {
     }
 
     private fun explainError(code: Int, body: String): String {
+        // (Batch 517: Voltcap's service explains its own refusals — switched off, too many requests, busy, timed out.)
+        VoltcapService.messageOf(body)?.let { return "ScreenScraper (through Voltcap's service): $it" }
         val detail = body.trim().take(140)
         return when (code) {
             400 -> "ScreenScraper rejected the request: $detail"

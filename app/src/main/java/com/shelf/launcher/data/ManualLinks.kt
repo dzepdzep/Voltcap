@@ -99,11 +99,11 @@ object ManualLinks {
         prefs?.edit()?.clear()?.apply()
     }
 
-    /** [url] without the person's ScreenScraper login (it's never kept in the noted addresses). */
-    fun withoutLogin(url: String): String = url.toHttpUrlOrNull()?.newBuilder()
-        ?.removeAllQueryParameters("ssid")
-        ?.removeAllQueryParameters("sspassword")
-        ?.build()?.toString() ?: url
+    /**
+     * [url] without the person's ScreenScraper login — and (batch 517) without the developer key either: 0.6.68 kept the
+     * developer ID / password in these noted addresses (and so in every backup). Both are added only to download ([SsMedia]).
+     */
+    fun withoutLogin(url: String): String = SsMedia.clean(url)
 
     /**
      * ScreenScraper's region codes in the order a manual is picked for [game]: the region its case is drawn in (from the

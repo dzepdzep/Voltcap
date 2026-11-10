@@ -62,7 +62,7 @@ internal fun PlatformIntroVideo(address: String, onDone: () -> Unit) {
                         val ok = runCatching {
                             surface = Surface(texture)
                             player.setSurface(surface)
-                            player.setDataSource(context, Uri.parse(address))
+                            com.shelf.launcher.data.SsMedia.forPlayer(address).let { (u, h) -> player.setDataSource(context, Uri.parse(u), h) } // (Batch 517: key added only here)
                             player.setOnPreparedListener { mp -> fitInside(view, mp.videoWidth, mp.videoHeight); mp.start(); started = true }
                             player.setOnVideoSizeChangedListener { _, w, h -> fitInside(view, w, h) }
                             player.setOnCompletionListener { finish() }
