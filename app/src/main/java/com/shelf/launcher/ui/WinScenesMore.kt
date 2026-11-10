@@ -109,12 +109,25 @@ internal fun SceneKey(
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
     // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
     val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
+    val lab = PopupLab.spec.value?.actions == true
+    if (lab && PopupLab.isMore(a)) {
+        // (Batch 523 design lab: More as a small round "•••" key beside Details; open (Less) it stays lit-edged.)
+        SceneControl(a, Modifier) { on ->
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(height).clip(androidx.compose.foundation.shape.CircleShape).background(if (on) k.onFill else k.fill.copy(alpha = k.fill.alpha * 0.6f))
+                    .border(if (on || a.label == "Less") 2.dp else 1.dp, if (on) k.onEdge else if (a.label == "Less") onFill.copy(alpha = 1f) else k.edge,
+                        androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Text("•••", color = if (on) k.onInk else k.ink, fontSize = size, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
+        }
+        return
+    }
     // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
     // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
     // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
     SceneControl(a, Modifier) { on ->
         Row(
-            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else k.fill)
+            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
                 .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
             verticalAlignment = Alignment.CenterVertically
         ) {

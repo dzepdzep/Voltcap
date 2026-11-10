@@ -237,7 +237,10 @@ fun ShelfLauncherTheme(
     // Headings only: the 32-bit console style with the normal font (the pixel type where it fits).
     val headings = !pixelAll && com.shelf.launcher.data.Features.uiStyle.value == com.shelf.launcher.data.Features.UiStyle.PIXEL
     // (Update 231, #59: the type styles are made once per font setting, not again on every recomposition of the theme.)
-    val typography = remember(pixelAll, headings) {
+    // (Batch 523, QA only: the popup design lab's font / weights - PopupLab; null for everyone else.)
+    val lab = com.shelf.launcher.ui.PopupLab.spec.value
+    val labContext = androidx.compose.ui.platform.LocalContext.current
+    val typography = remember(pixelAll, headings, lab) {
         val normal = androidx.compose.material3.Typography()
         val mono = androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.shelf.launcher.R.font.volt_pixel))
         fun androidx.compose.ui.text.TextStyle.px(k: Float = 1f) = copy(fontFamily = mono, fontSize = fontSize * k, lineHeight = lineHeight * k)
@@ -251,7 +254,18 @@ fun ShelfLauncherTheme(
             displayLarge = normal.displayLarge.px(0.86f), displayMedium = normal.displayMedium.px(0.86f), displaySmall = normal.displaySmall.px(0.86f),
             headlineLarge = normal.headlineLarge.px(0.86f), headlineMedium = normal.headlineMedium.px(0.86f), headlineSmall = normal.headlineSmall.px(0.86f),
             titleLarge = normal.titleLarge.px(0.86f), titleMedium = normal.titleMedium.px(0.86f), titleSmall = normal.titleSmall.px(0.86f)
-        ) else normal
+        ) else if (lab != null) {
+            val fam = com.shelf.launcher.ui.PopupLab.family(labContext, lab)
+            fun androidx.compose.ui.text.TextStyle.lab() = copy(fontFamily = fam ?: fontFamily,
+                fontSynthesis = if (lab.weights) androidx.compose.ui.text.font.FontSynthesis.Style else fontSynthesis)
+            normal.copy(
+                displayLarge = normal.displayLarge.lab(), displayMedium = normal.displayMedium.lab(), displaySmall = normal.displaySmall.lab(),
+                headlineLarge = normal.headlineLarge.lab(), headlineMedium = normal.headlineMedium.lab(), headlineSmall = normal.headlineSmall.lab(),
+                titleLarge = normal.titleLarge.lab(), titleMedium = normal.titleMedium.lab(), titleSmall = normal.titleSmall.lab(),
+                bodyLarge = normal.bodyLarge.lab(), bodyMedium = normal.bodyMedium.lab(), bodySmall = normal.bodySmall.lab(),
+                labelLarge = normal.labelLarge.lab(), labelMedium = normal.labelMedium.lab(), labelSmall = normal.labelSmall.lab()
+            )
+        } else normal
     }
 
     // (QA pass 2, D22: the same colours as one stable State, for draw-time readers — see LocalShelfColorsLive.)

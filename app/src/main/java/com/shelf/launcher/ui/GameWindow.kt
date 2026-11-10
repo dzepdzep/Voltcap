@@ -2234,13 +2234,19 @@ private fun SceneBody(
         if (qaMore != null) TestHooks.winMore.value = null
     }
     LaunchedEffect(moreOpen, compactMore) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "win more=${if (!compactMore) "n/a" else if (moreOpen) "open" else "closed"} scene=$scene") }
+    // (Batch 523, QA design lab only - PopupLab "actions": Play, Details, a round ••• More beside it; Back leaves the row for a
+    // corner hint. Everyone else: exactly as before.)
+    val labActions = PopupLab.spec.value?.actions == true
+    val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
+        else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {
             WinPage.MAIN -> {
-                if (perf && showAll) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
+                if (perf && showAll && !labActions) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
-                add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+                if (labActions) moreKey?.let { add(it) }
+                else add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
             WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
             WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
@@ -2262,10 +2268,11 @@ private fun SceneBody(
         }
     }
     val tools = when {
-        !compactMore -> allTools
-        moreOpen -> allTools + WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
-        else -> allTools.filter { it.label == "Inspect" } +
-            WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
+        !compactMore -> allTools + (if (labActions && perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+        labActions -> if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+            else allTools.filter { it.label == "Inspect" }
+        moreOpen -> allTools + moreKey!!
+        else -> allTools.filter { it.label == "Inspect" } + moreKey!!
     }
     // (A save problem stays in view: it needs you.)
     val chips = if (showAll) allChips else allChips.filter { it.urgent }
@@ -2301,6 +2308,10 @@ private fun SceneBody(
     // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
     // own in the window's colours, the scene's quick window coming back on B / Back.
     if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    else if (labActions && page == WinPage.MAIN) Box {
+        DrawWinScene(scene, ctx)
+        LabBackHint(onClose, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+    }
     else DrawWinScene(scene, ctx)
 }
 

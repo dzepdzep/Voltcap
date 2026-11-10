@@ -763,6 +763,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.94f, 900.dp)
     val h = minOf(ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
+    val labStorage = PopupLab.spec.value?.storage == true
     val tabs = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
     // (Achievements and Options open as GameWindow opens them: their page, else the full list / the game's menu.)
     fun openTab(t: WinPage) = when (t) {
@@ -831,16 +832,23 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                             scaleX = s; scaleY = s
                         }
                     ) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
+                    // (Batch 523 design lab "storage": the console tag sits on the picture's corner, like a label on the box.)
+                    if (labStorage) Box(Modifier.align(Alignment.TopStart).padding(6.dp).clip(RoundedCornerShape(50)).background(red)
+                        .padding(horizontal = 10.dp, vertical = 3.dp)) {
+                        WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
-                Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = 5.dp)) {
-                    WinFullText(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                Spacer(Modifier.height(if (labStorage) 10.dp else 8.dp))
+                Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = if (labStorage) 8.dp else 5.dp)) {
+                    WinFullText(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = if (labStorage) 19.sp else 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
+                if (!labStorage) {
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 12.dp, vertical = 3.dp)) {
                     // (Batch 522, popup sweep: "SUPER NINTENDO" - the rest of the name was cut by the one line. Whole: smaller, then sliding.)
                     WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                }
                 }
             }
             Spacer(Modifier.width(12.dp))
@@ -849,7 +857,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     // The facts in cells.
                     @Composable
                     fun cell(label: String, value: String?) {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().padding(vertical = if (labStorage) 3.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(if (w < 560.dp) 100.dp else 118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
                                 Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
                             }
@@ -888,10 +896,23 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     // primary action alone on the first line, a size up; the others in an even grid of equal cells (two a
                     // row beside the case, three in a wide window), one text size, whole words over two lines when needed,
                     // Back last. Rows of a plain Column / Row - D-pad order is reading order, ▲ ▼ between rows.)
-                    Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = if (labStorage) 10.dp else 6.dp, vertical = if (labStorage) 8.dp else 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
                         val primary = ctx.buttons.filter { !it.back && it.primary }
-                        val rest = ctx.buttons.filter { !it.back && !it.primary } + ctx.tools + ctx.buttons.filter { it.back }
+                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } else emptyList()
+                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools + ctx.buttons.filter { it.back }
+                        // (Batch 523 design lab "storage": Play, Details and ••• on one line - the main choice and its two neighbours.)
+                        if (labStorage) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.weight(1.6f)) }
+                            inLine.forEach { a ->
+                                if (PopupLab.isMore(a)) SceneControl(a, Modifier) { on ->
+                                    Box(Modifier.size(40.dp).clip(CircleShape).background(if (on) Color(0xFFE6EEF8) else Color.Transparent)
+                                        .border(1.5.dp, if (on || a.label == "Less") red else RecInk.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
+                                        Text("•••", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                                    }
+                                } else StorageKey(a, red, big = false, modifier = Modifier.weight(1f))
+                            }
+                        } else
                         primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.fillMaxWidth()) }
                         rest.chunked(storageKeysPerRow(w.value)).forEach { row ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {

@@ -175,6 +175,8 @@ android {
     if (debugIsQa) sourceSets.getByName("debug") {
         manifest.srcFile("src/qa/AndroidManifest.xml")
         res.srcDir("src/qa/res")
+        // (Batch 523: the popup design lab's fonts - Inter, Manrope, SIL OFL 1.1 - in the QA app only, never the release APK.)
+        assets.srcDir("src/qa/assets")
     }
 
     compileOptions {

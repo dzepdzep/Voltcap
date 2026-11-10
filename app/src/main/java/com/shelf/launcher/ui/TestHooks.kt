@@ -376,6 +376,14 @@ internal object TestHooks {
         // (not saved: the owner's own switch stays as it is).
         if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
         if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        // Batch 523: `--es voltcap_test_popuplab "font=inter,weights=on,actions=on,storage=on"|off` - the popup design lab
+        // (PopupLab), isolated QA app only, this run only.
+        intent?.getStringExtra("voltcap_test_popuplab")?.let { v ->
+            if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) {
+                PopupLab.spec.value = PopupLab.parse(v)
+                android.util.Log.e("VoltcapTest", "popuplab=${PopupLab.spec.value?.text ?: "off"}")
+            }
+        }
         if (intent?.hasExtra("voltcap_test_vault_fixture") == true && enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) {
             vaultFixture = intent.getBooleanExtra("voltcap_test_vault_fixture", false)
             vaultBefore = vaultFixture && intent.getBooleanExtra("voltcap_test_vault_before", false)
