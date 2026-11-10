@@ -504,7 +504,7 @@
    "tree_hash": null,
    "id": "qa-0.6.69-523e",
    "apk_sha256": "76b1a8c2d54674595cc10f38c6280191cf98fd3cf892e24e970a38c683c5fcd9",
-   "base_commit": "PENDING",
+   "base_commit": "169d520b75852ae6482d1a4c7dcc94f236c6db07",
    "note": "batch 523e: 523d + no-art plate console name in whole words; the final 523 gate build (chain523d)"
   }
  ]
