@@ -1,6 +1,9 @@
 import java.util.Properties
 import java.util.zip.ZipFile
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
+import java.security.KeyStore
+import java.io.File
 
 plugins {
     id("com.android.application")
@@ -48,13 +51,21 @@ if (voltcapCiWithoutDiscord && gradle.startParameter.taskNames.any { it.contains
 }
 
 // Update 500 (D295): the isolated QA app "Voltcap QA" (package com.shelf.launcher.qa, own data, no sync / launch / home /
-// all-files access: data/QaVariant.kt + src/qa). Build type "qa" (assembleQa). Claude's PC tools can only run assembleDebug,
-// so a root qa_variant.properties (gitignored, never in project_copy) with debugIsQa=true turns the DEBUG build into the
-// same QA app (R8 like release, not debuggable). Without that file, or with debugIsQa=false, debug is unchanged.
-val debugIsQa = rootProject.file("qa_variant.properties").let { f ->
-    f.isFile && Properties().apply { f.inputStream().use { load(it) } }.getProperty("debugIsQa")?.trim() == "true"
-}
-if (debugIsQa) logger.warn("Voltcap: qa_variant.properties debugIsQa=true - the debug build is the isolated QA app (com.shelf.launcher.qa).")
+// all-files access: data/QaVariant.kt + src/qa). Build type "qa" (assembleQa).
+// Batch 521 (fail-closed): the DEBUG build IS that QA app by default - no file is needed any more, and a missing, stale or
+// mistyped qa_variant.properties can no longer turn it back into a build that installs over the owner's Voltcap. Only the
+// owner can opt out, in the gitignored root qa_variant.properties, with exactly:
+//   debugIsProduction=yes-install-over-my-real-voltcap
+// (the old "debugIsQa=false" is ignored). On top of the separate package, the QA builds are signed with this PC's Android
+// debug key, NOT the release key: even an APK with the wrong package could not replace the owner's Voltcap (Android refuses
+// an update with another signer), and no signature-level permission or data is shared. verifyQaIsolation (below) checks
+// every QA / debug APK after it is built and deletes any that carries the production package or the release signer.
+val qaVariantProps = props("qa_variant.properties")
+val debugIsProduction = qaVariantProps.getProperty("debugIsProduction")?.trim() == "yes-install-over-my-real-voltcap"
+val debugIsQa = !debugIsProduction
+if (qaVariantProps.getProperty("debugIsQa")?.trim() == "false" && !debugIsProduction)
+    logger.warn("Voltcap: qa_variant.properties debugIsQa=false is ignored (Batch 521) - the debug build stays the isolated QA app.")
+if (debugIsProduction) logger.warn("Voltcap: qa_variant.properties debugIsProduction - the debug build is com.shelf.launcher with the release key (installs over the real Voltcap).")
 
 android {
     // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
@@ -115,7 +126,9 @@ android {
         // Studio installs are signed with it too, so they, the GitHub releases and the in-app updater all install over
         // each other. Without it, everything stays on this PC's debug key as before.
         getByName("debug") {
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // (Batch 521: only while the owner opted out of the QA debug build - see debugIsProduction above.)
+            signingConfig = if (debugIsProduction) signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+                else signingConfigs.getByName("debug")
         }
         release {
             // R8: strips the unused parts of the libraries (Material icons alone is tens of MB of
@@ -142,10 +155,13 @@ android {
             matchingFallbacks += "release"
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
+            // Batch 521: never the release key (see debugIsQa above).
+            signingConfig = signingConfigs.getByName("debug")
         }
         if (debugIsQa) getByName("debug") {
             applicationIdSuffix = ".qa"
             versionNameSuffix = "-qa"
+            signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
@@ -274,3 +290,78 @@ val verifyNoEmbeddedSecrets by tasks.registering {
     }
 }
 tasks.matching { it.name.startsWith("assemble") && it.name != "assemble" }.configureEach { finalizedBy(verifyNoEmbeddedSecrets) }
+
+// Batch 521 (fail-closed QA isolation): after every assemble, each APK in outputs/apk/qa (and outputs/apk/debug while the
+// debug build is the QA app) must carry the QA package and must NOT be signed with the release key. One that does is
+// deleted at once - so no install tool can pick it up - and the build fails. The production identity is pinned here and
+// also read from keystore.properties' key when that is on this PC. Same rules as tools/adb_mcp/guard.js (the install side).
+val productionPackage = "com.shelf.launcher"
+val productionSignerSha256 = "88ce4b67ae3825a04585114aec25cfaf5023e0b55cfdb61f375d30945f344197"
+fun hex(b: ByteArray) = b.joinToString("") { "%02x".format(it) }
+/** SHA-256 of every signer certificate in the APK Signature Scheme v2 / v3 blocks (empty = unsigned or unreadable). */
+fun apkSignerDigests(apk: File): Set<String> = runCatching {
+    val raw = apk.readBytes()
+    fun u32(p: Int) = (raw[p].toLong() and 0xff) or ((raw[p + 1].toLong() and 0xff) shl 8) or
+        ((raw[p + 2].toLong() and 0xff) shl 16) or ((raw[p + 3].toLong() and 0xff) shl 24)
+    fun u64(p: Int) = u32(p) or (u32(p + 4) shl 32)
+    var eocd = -1
+    for (i in raw.size - 22 downTo maxOf(0, raw.size - 22 - 65535))
+        if (raw[i] == 0x50.toByte() && raw[i + 1] == 0x4b.toByte() && raw[i + 2] == 5.toByte() && raw[i + 3] == 6.toByte()) { eocd = i; break }
+    if (eocd < 0) return@runCatching emptySet<String>()
+    val cd = u32(eocd + 16).toInt()
+    if (cd < 24 || String(raw, cd - 16, 16, Charsets.ISO_8859_1) != "APK Sig Block 42") return@runCatching emptySet<String>()
+    val size = u64(cd - 24).toInt()
+    var p = cd - size
+    val out = mutableSetOf<String>()
+    while (p < cd - 24) {
+        val len = u64(p).toInt(); val id = u32(p + 8)
+        if (id == 0x7109871aL || id == 0xf05368c0L) {
+            // signers(len) > signer(len) > signed data(len) > digests(len, ...) > certificates(len) > cert(len)
+            var q = p + 12 + 4 + 4 + 4
+            q += 4 + u32(q).toInt()
+            q += 4
+            val clen = u32(q).toInt(); q += 4
+            out += hex(MessageDigest.getInstance("SHA-256").digest(raw.copyOfRange(q, q + clen)))
+        }
+        p += 8 + len
+    }
+    out
+}.getOrDefault(emptySet())
+val releaseKeyDigest: String? = runCatching {
+    val f = keystoreProps.getProperty("storeFile")?.trim()?.trim('"')?.let { rootProject.file(it) }?.takeIf { it.isFile }
+        ?: return@runCatching null
+    val ks = KeyStore.getInstance(KeyStore.getDefaultType())
+    f.inputStream().use { ks.load(it, keystoreProps.getProperty("storePassword")?.trim()?.toCharArray()) }
+    ks.getCertificate(keystoreProps.getProperty("keyAlias")?.trim())?.encoded?.let { hex(MessageDigest.getInstance("SHA-256").digest(it)) }
+}.getOrNull()
+val verifyQaIsolation by tasks.registering {
+    doLast {
+        val dirs = listOfNotNull("qa", if (debugIsQa) "debug" else null)
+        val forbidden = setOfNotNull(productionSignerSha256, releaseKeyDigest)
+        val problems = mutableListOf<String>()
+        for (d in dirs) {
+            val dir = layout.buildDirectory.dir("outputs/apk/$d").get().asFile
+            if (!dir.isDirectory) continue
+            val meta = File(dir, "output-metadata.json").takeIf { it.isFile }?.readText() ?: ""
+            val appId = Regex("\"applicationId\"\\s*:\\s*\"([^\"]+)\"").find(meta)?.groupValues?.get(1)
+            // Only the APK this build wrote may stay: a stray one (copied in, or left from another setting) is never judged
+            // by the folder's metadata - it is removed.
+            val listed = Regex("\"outputFile\"\\s*:\\s*\"([^\"]+)\"").findAll(meta).map { it.groupValues[1] }.toSet()
+            dir.listFiles { f -> f.isFile && f.name.endsWith(".apk") }?.forEach { apk ->
+                val signers = apkSignerDigests(apk)
+                val why = when {
+                    apk.name !in listed -> "not this build's output (stray APK)"
+                    appId == null -> "no applicationId in output-metadata.json"
+                    appId == productionPackage || !appId.endsWith(".qa") -> "package $appId is not the QA package"
+                    signers.isEmpty() -> "signer certificate unreadable"
+                    signers.any { it in forbidden } -> "signed with the release key"
+                    else -> null
+                }
+                if (why != null) { apk.delete(); problems += "${apk.name}: $why - APK deleted" }
+                else logger.lifecycle("verifyQaIsolation: ${apk.name} = $appId, signer ${signers.first().take(16)}... (not the release key)")
+            }
+        }
+        if (problems.isNotEmpty()) throw GradleException("QA isolation check failed:\n" + problems.joinToString("\n"))
+    }
+}
+tasks.matching { it.name == "assembleQa" || (debugIsQa && it.name == "assembleDebug") }.configureEach { finalizedBy(verifyQaIsolation) }

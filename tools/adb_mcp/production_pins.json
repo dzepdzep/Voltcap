@@ -1,0 +1,7 @@
+{
+  "_doc": "Batch 521: the only APKs install_production may put over the real Voltcap - published GitHub release files, by sha256. Add a new release's hashes only after it is published and checked (tools/release/apkinfo.py).",
+  "apks": [
+    { "file": "Voltcap-0.6.69.apk", "versionCode": 76, "sha256": "1101965042cc84c00fa5acceea5236fdf19a4d74d41bb6358d896d7eb8a5c835" },
+    { "file": "Voltcap-0.6.69-compat.apk", "versionCode": 76, "sha256": "b27f9d7d67ddea68ed09b8aa498d35b80410a7b04a5bd0f482c0fcdf320039e1" }
+  ]
+}

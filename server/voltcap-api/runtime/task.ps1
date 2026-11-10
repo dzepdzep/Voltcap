@@ -90,6 +90,30 @@ query { viewer { accounts(filter: {accountTag: "$acc"}) {
     $lines | Out-File $out -Encoding utf8
     L ("backup=" + $b.Name + " files=" + @($files).Count + " bytes=" + (($files | Measure-Object Length -Sum).Sum) + " manifest=" + (Split-Path $out -Leaf))
   }
+  "guard-tests" {
+    # Batch 521: the QA install guard's regression tests and a DRY RUN against what is on this PC and plugged in (installs
+    # nothing): every built APK's package / signer verdict, and every adb serial's target verdict.
+    $root = Split-Path -Parent $api | Split-Path -Parent
+    Set-Location $root
+    foreach ($t in @("tools\adb_mcp\test\guard.test.js", "tools\adb_mcp\test\helpers.test.js")) {
+      $o = W "node $t"; L "$t exit=$code"; $o | Select-Object -Last 4 | ForEach-Object { L "  $_" }
+    }
+    Get-ChildItem "app\build\outputs\apk" -Recurse -Filter *.apk | ForEach-Object {
+      $o = W "node tools\adb_mcp\guard.js check-apk `"$($_.FullName)`""; L ("apk " + $_.Directory.Name + "\" + $_.Name + ": " + ($o -join " "))
+    }
+    $adb = Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"; $env:ADB = $adb
+    $ser = (& $adb devices) | Select-Object -Skip 1 | Where-Object { $_ -match "\S" } | ForEach-Object { ($_ -split "\s+")[0] }
+    foreach ($s in $ser) { $o = W "node tools\adb_mcp\guard.js check-target `"$s`""; L ("target " + ($o -join " ")) }
+  }
+  "hash-files" {
+    # Batch 521 (P3 / P4): sha256 + size of the files named on lines 2.. of .run-now (paths relative to the project root), read only.
+    $root = Split-Path -Parent $api | Split-Path -Parent
+    Get-Content (Join-Path $PSScriptRoot ".run-now") | Select-Object -Skip 1 | Where-Object { $_.Trim() } | ForEach-Object {
+      $f = Join-Path $root $_.Trim()
+      if (Test-Path -LiteralPath $f -PathType Leaf) { $h = (Get-FileHash -Algorithm SHA256 -LiteralPath $f).Hash.ToLower(); L ("$h  " + (Get-Item -LiteralPath $f).Length + "  " + $_.Trim()) }
+      else { L ("MISSING  " + $_.Trim()) }
+    }
+  }
   "redeploy-production" {
     # Code / vars only: the existing secrets (and the media-signing key, so handed-out addresses stay valid) are kept.
     $o = W "npx --yes wrangler@4 deploy --var PUBLIC_BASE:https://voltcap-api.voltcap-api.workers.dev"

@@ -1,0 +1,9 @@
+{
+  "_doc": "Batch 521: handhelds the QA tools may install the isolated QA app on (USB only). An entry with a serial matches only that serial; an entry without one matches the model. Positively identify a new handheld (USB, model, ro.serialno, not a TV) before adding it. TVs, the Google TV Streamer and wireless connections are never allowed, whatever this file says.",
+  "models": [
+    { "name": "Retroid Pocket Classic", "model": "Retroid_Pocket_Classic", "serial": "MC94516AQF091001112" },
+    { "name": "AYN Thor", "serial": "3140972f" },
+    { "name": "AYN Odin 2 Portal", "serial": "b92036fb" },
+    { "name": "Retroid Pocket Flip 2", "serial": "2037b27d" }
+  ]
+}
