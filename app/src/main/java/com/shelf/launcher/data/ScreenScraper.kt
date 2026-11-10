@@ -774,3 +774,9 @@ fun screenScraperFailureNote(outcome: String?): String? {
         else -> "ScreenScraper answered with an error ($code). Try again later."
     }
 }
+
+/**
+ * Batch 520: whether an artwork look-up counts as "asked" (the automatic runs then leave the game alone for two weeks). Not when
+ * nothing was found because ScreenScraper itself failed ([ssOutcome] is a server problem, [screenScraperFailureNote]).
+ */
+fun artAskCounts(found: Boolean, ssOutcome: String?): Boolean = found || screenScraperFailureNote(ssOutcome) == null

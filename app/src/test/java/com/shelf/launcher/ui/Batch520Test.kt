@@ -148,4 +148,14 @@ class Batch520Test {
             assertEquals(50, R1Spacing.minFor(l)); assertEquals(250, R1Spacing.maxFor(l))
         }
     }
+
+    @Test fun aFailedScreenScraperLookupIsAskedAgainSoon() {
+        val f: (Boolean, String?) -> Boolean = { a, b -> com.shelf.launcher.data.artAskCounts(a, b) }
+        assertTrue(f(true, null)); assertTrue(f(false, null)) // found / plainly not found: remembered as before
+        assertTrue(f(false, com.shelf.launcher.data.OUTCOME_UNKNOWN))
+        assertFalse(f(false, com.shelf.launcher.data.OUTCOME_OFFLINE)) // no connection / timeout: not remembered
+        assertFalse(f(false, "ScreenScraper answered 504")); assertFalse(f(false, "ScreenScraper answered 430"))
+        assertTrue(f(true, "ScreenScraper answered 504")) // another source found art: counts
+        assertTrue(src("LauncherViewModel.kt").contains("if (com.shelf.launcher.data.artAskCounts(art != null, screenScraperRepository.lookupOutcome[game.stableKey]))"))
+    }
 }

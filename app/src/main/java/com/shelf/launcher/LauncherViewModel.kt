@@ -2956,7 +2956,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     }
                 }.getOrNull()
                 // (Only while online: a lookup that failed for want of a connection is tried again next time.)
-                if (deviceOnline()) askedPrefs.edit().putLong(game.stableKey, System.currentTimeMillis()).apply()
+                // (Batch 520: nor one that failed on ScreenScraper's side — timeout, busy, limit — artAskCounts.)
+                if (deviceOnline() && com.shelf.launcher.data.artAskCounts(fresh != null, screenScraperRepository.lookupOutcome[game.stableKey]))
+                    askedPrefs.edit().putLong(game.stableKey, System.currentTimeMillis()).apply()
                 if (fresh != null) {
                     val saved = _uiState.value.metadata[game.stableKey]
                     val merged = saved.mergeFields(fresh, fields)
@@ -6268,7 +6270,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                                 // (Update 190: only waits for the game when "Keep getting artwork in the background" is off.)
                                 com.shelf.launcher.data.GameMode.awaitForArt()
                                 val art = withContext(Dispatchers.IO) { fetchArtFromSelectedSource(game) }
-                                asked[game.stableKey] = System.currentTimeMillis()
+                                // (Batch 520: a look-up that failed on ScreenScraper's side — timeout, busy, limit — isn't "asked": the
+                                // automatic runs skipped such a game for two weeks although nothing was learned about it.)
+                                if (com.shelf.launcher.data.artAskCounts(art != null, screenScraperRepository.lookupOutcome[game.stableKey]))
+                                    asked[game.stableKey] = System.currentTimeMillis()
                                 if (art != null) {
                                     val merged = (freshArt[game.stableKey] ?: _uiState.value.art[game.stableKey]).mergeArt(art, fields)
                                     artCacheStore.put(game.stableKey, merged)
