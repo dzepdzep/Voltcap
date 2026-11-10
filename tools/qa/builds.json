@@ -550,6 +550,28 @@
    "apk_sha256": "25dc751d074ec4c377df0737f1718090f48b2c518ffab9726bcc826b813b8765",
    "base_commit": "6add7fb8cbd538c4228ea9e6a030c7642562b449",
    "note": "batch 523j: 523i + console plate short key, PS2 browser emblem slab; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523k",
+   "apk_sha256": "a2789eb746237fcc4f459614d189269ad65f3357be74711c61c219804e357e98",
+   "base_commit": "1341327acaa1c1aa2610cf5ab22beb0c632c27e7",
+   "note": "batch 523k: Row opens Details under the buttons; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523l",
+   "apk_sha256": "8d471dccd97af19727580b9f856165e9b43911265e79210944cd3648e7f8f82d",
+   "base_commit": "d637f3578c3591ae724e1410472a03bdae854bb4",
+   "note": "batch 523l: 523k + Performance switch crash fixed, crash report marked for QA; GT78"
   }
  ]
 }
