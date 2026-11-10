@@ -1660,8 +1660,12 @@ internal fun VaultArtPlate(platform: String, name: String, modifier: Modifier = 
             val mark: @Composable (Modifier) -> Unit = { m ->
                 if (sym != null) AsyncImage(sym.first, platform, m, contentScale = ContentScale.Fit,
                     colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White.copy(alpha = 0.85f)))
-                else Text(com.shelf.launcher.data.ConsoleNames.label(platform), color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                // (No symbol in the set: the console's short key - "PSP" - in whole words, never "PlayStati" cut by the label.)
+                else Box(m, contentAlignment = Alignment.Center) {
+                    WholeWordsText(if (platform.length <= 6) platform.uppercase() else com.shelf.launcher.data.ConsoleNames.label(platform),
+                        Color.White.copy(alpha = 0.85f), 14.sp, Modifier.fillMaxWidth(), fontWeight = FontWeight.Bold,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
             }
             if (!named) mark(Modifier.fillMaxSize(0.62f))
             else if (wide) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {

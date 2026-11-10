@@ -403,8 +403,11 @@ internal fun Ps2SaveTile(
                     // them cheaply (on older Android each turning icon is drawn offscreen, so only the picked one turns).
                     val cheap = android.os.Build.VERSION.SDK_INT >= 29
                     Ps2IconView(mesh, turning = selected || (cheap && Features.saveTurn.state.value), fast = selected, modifier = Modifier.fillMaxSize().padding(4.dp))
-                } else if (!isPs2 && logo != null) {
-                    LogoSlab(logo, Modifier.fillMaxSize(0.78f), turning = selected && Features.saveTurn.state.value, depth = 0.06f,
+                } else if (!isPs2 && (logo ?: game?.platform?.let { BadgeLogos.symbol(it) }) != null) {
+                    // (Batch 523, owner: "a dedicated PS2-style look with 3D spinning save objects": a game with no logo of its
+                    // own turns as its console's emblem, a solid badge like the PS2's icons - not a flat generic card.)
+                    LogoSlab(logo ?: BadgeLogos.symbol(game!!.platform)!!.first, Modifier.fillMaxSize(if (logo != null) 0.78f else 0.62f),
+                        turning = selected && Features.saveTurn.state.value, depth = 0.06f,
                         fallback = { GenericCardSymbol(Modifier.fillMaxSize(0.7f)) })
                 } else if (pick.done) GenericCardSymbol(Modifier.fillMaxSize(0.7f))
             }
