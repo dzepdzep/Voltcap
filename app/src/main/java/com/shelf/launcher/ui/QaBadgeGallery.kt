@@ -48,7 +48,9 @@ internal object QaBadgeGallery {
         "Atari" to listOf("Atari2600", "Atari5200", "Atari7800", "Lynx", "Jaguar"),
         "Bandai" to listOf("WonderSwan", "WonderSwanColor"),
         "Other" to listOf("3DO", "CDi", "ColecoVision", "Intellivision", "Vectrex", "Atomiswave", "Arcade", "C64", "Amiga", "MSX", "DOS",
-            "ScummVM", "PICO8", "Android")
+            "ScummVM", "PICO8", "Android"),
+        // (Batch 523: the PC game stores - GameNative's / DroidDeck's categories - in the gallery too.)
+        "PC / stores" to listOf("Steam", "Epic", "GOG", "Amazon", "PC")
     )
     const val PER_PAGE = 6
 

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -76,6 +77,12 @@ internal fun consoleColor(platform: String): Color = when (platform) {
     "Jaguar" -> Color(0xFFB0101C)
     "Xbox", "Xbox360", "XboxOne", "XboxSeries" -> Color(0xFF107C10)
     "App", "Apps", "Android" -> Color(0xFF1F8A4C)
+    // (Batch 523: the PC game stores in their own brand colours - Steam's navy, GOG's purple, Epic's near-black, Amazon's dark
+    // "squid ink"; plain PC games keep the neutral grey.)
+    "Steam" -> Color(0xFF1B2838)
+    "GOG" -> Color(0xFF86328A)
+    "Epic" -> Color(0xFF313131)
+    "Amazon" -> Color(0xFF232F3E)
     else -> Color(0xFF44484F)
 }
 
@@ -120,28 +127,36 @@ internal fun BoxScope.ConsoleBadge(
             val context = LocalContext.current
             remember(packageName) { AppKinds.kind(context, packageName).word }
         } else ""
-        val pill = Modifier.align(corner).padding(h * 0.3f).height(h).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
         // Batch 522 (owner): one look per setting, never mixed - Text, Symbol or Logo (Features.BadgeStyle); a console the
         // look has no artwork for shows its short name in the same pill.
         val style = styleOverride ?: Features.consoleBadgeStyle.state.value
+        // (Batch 523, final polish: one pill height per look - the Symbol and Logo looks' name / compact / ES-DE pills are as
+        // tall as their artwork pills (they were 13 % lower than the logos beside them); the Text look keeps its own height.)
+        val pillH = if (android || style == Features.BadgeStyle.TEXT) h else h * BadgeLogos.ART_PILL
+        val pill = Modifier.align(corner).padding(h * 0.3f).height(pillH).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
         // (Batch 522: a big tile lets the pill run a little wider, so a long wordmark - Game Boy Advance - shows whole there.)
         val cap = maxWidth * (if (maxWidth < 150.dp) 0.78f else 0.85f)
-        // The badge set's art for [art] (symbol .webp or wordmark .svg) in a pill as wide as it needs (Update 125 / 129 / 136).
-        val setArt: @Composable (Pair<String, Float>) -> Unit = { art ->
-            val symbol = art.first.endsWith(".webp")
-            val lh = h * (if (symbol) 1.3f else 1.15f)
-            val w = (lh * (if (symbol) 0.74f else 0.62f) * art.second + lh * 0.7f).coerceIn(if (symbol) lh * 1.3f else lh * 2.2f, cap)
+        // The artwork ([url], [aspect] = width / height) in a pill as wide as it needs (Update 125 / 129 / 136). Batch 523: a
+        // wordmark whose lettering is only part of its height (emblem + small words, two lines) is drawn up to 30 % taller
+        // in the same pill ([BadgeLogos.artHeight]), so its words read about as big as the others'; the pill never grows taller.
+        val setArt: @Composable (String, Float, Boolean, Float) -> Unit = { url, aspect, symbol, lettering ->
+            val lh = h * BadgeLogos.ART_PILL
+            val artH = BadgeLogos.artHeight(aspect, lettering, symbol, h.value, cap.value).dp
+            val w = (artH * aspect + lh * 0.7f).coerceIn(if (symbol) lh * 1.3f else lh * 2.2f, cap)
             Box(
                 Modifier.align(corner).padding(h * 0.3f).height(lh).width(w).clip(RoundedCornerShape(50))
-                    .background(bg.copy(alpha = 0.94f)).padding(horizontal = lh * 0.35f, vertical = lh * (if (symbol) 0.13f else 0.19f)),
+                    .background(bg.copy(alpha = 0.94f)).padding(horizontal = lh * 0.35f),
                 contentAlignment = Alignment.Center
             ) {
                 val context = LocalContext.current
-                val req = remember(art.first) {
-                    coil.request.ImageRequest.Builder(context).data(art.first)
-                        .apply { if (!symbol) decoderFactory(coil.decode.SvgDecoder.Factory()) }.size(384).build()
+                val req = remember(url) {
+                    coil.request.ImageRequest.Builder(context).data(url)
+                        .apply { if (url.endsWith(".svg")) decoderFactory(coil.decode.SvgDecoder.Factory()) }.size(384).build()
                 }
-                AsyncImage(req, platform, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxSize())
+                AsyncImage(
+                    req, platform, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.White),
+                    modifier = Modifier.fillMaxWidth().height(artH)
+                )
             }
         }
         val nameText: @Composable () -> Unit = {
@@ -167,30 +182,26 @@ internal fun BoxScope.ConsoleBadge(
             }
         }
         if (android || style == Features.BadgeStyle.TEXT) { nameText(); return@BoxWithConstraints }
-        if (style == Features.BadgeStyle.SYMBOL) {
-            BadgeLogos.symbol(platform)?.let { setArt(it) } ?: nameText()
-            return@BoxWithConstraints
+        val symbolArt: @Composable () -> Unit = {
+            BadgeLogos.symbol(platform)?.let { setArt(it.first, it.second, true, 1f) } ?: nameText()
         }
+        if (style == Features.BadgeStyle.SYMBOL) { symbolArt(); return@BoxWithConstraints }
         // LOGO: the console's own wordmark. One too wide for this tile's pill (GBA 11 : 1, Lynx, Genesis…: drawn at under
-        // 90 % of its size in the pill) shows the compact form here - its symbol, else its name - and the whole
-        // wordmark on tiles with room for it.
+        // 90 % of its size in the pill), or whose words would be smaller than the Text look's letters here (Batch 523), shows
+        // the compact form here - its symbol, else its name - and the whole wordmark on tiles with room for it.
         val mark = BadgeLogos.wordmark(platform)
         if (mark != null) {
-            if (!BadgeLogos.fitsWordmark(mark.second, h.value, cap.value)) BadgeLogos.symbol(platform)?.let { setArt(it) } ?: nameText()
-            else setArt(mark)
+            val lettering = BadgeLogos.lettering(platform)
+            if (BadgeLogos.showsWordmark(mark.second, lettering, h.value, cap.value)) setArt(mark.first, mark.second, false, lettering)
+            else symbolArt()
             return@BoxWithConstraints
         }
-        // No wordmark in the set: the ES-DE logo in white (Batch 521b: not one that turns into a solid block in one colour).
+        // No wordmark in the set: the ES-DE logo in white (Batch 521b: not one that turns into a solid block in one colour),
+        // sized and checked like a wordmark (Batch 523: it sat in a fixed 3.4 x pill, so TurboGrafx / NGPC came out tiny).
         val logo = SystemLogos.bundled(platform)?.takeUnless { SystemLogos.silhouetteUnreadable(platform) }
-        if (logo != null) Box(
-            pill.width(h * 3.4f).padding(horizontal = h * 0.35f, vertical = h * 0.18f),
-            contentAlignment = Alignment.Center
-        ) {
-            val context = LocalContext.current
-            val req = remember(logo) {
-                coil.request.ImageRequest.Builder(context).data(logo).decoderFactory(coil.decode.SvgDecoder.Factory()).size(192).build()
-            }
-            AsyncImage(req, platform, contentScale = ContentScale.Fit, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxSize())
+        val form = logo?.let { BadgeLogos.esdeForm(it) }
+        if (logo != null && form != null && BadgeLogos.showsWordmark(form.first, form.second, h.value, cap.value)) {
+            setArt(logo, form.first, false, form.second)
         } else nameText()
     }
 }
@@ -299,7 +310,58 @@ internal object BadgeLogos {
      * wider than [capDp] on a badge [hDp] tall (the pill sizes of the badge above); narrower = the compact form there.
      */
     fun fitsWordmark(aspect: Float, hDp: Float, capDp: Float): Boolean {
-        val lh = hDp * 1.15f
+        val lh = hDp * ART_PILL
         return (capDp - lh * 0.7f) / (lh * 0.62f * aspect) >= 0.9f
     }
+
+    /** Batch 523: the Symbol / Logo looks' pill height, × the badge height (the Text look's pill). */
+    const val ART_PILL = 1.15f
+
+    /**
+     * Batch 523 (owner: "some logos look noticeably smaller"): the height the artwork is drawn at in its pill. A symbol fills
+     * 84 % of the pill; a wordmark 62 %, or up to 30 % more (never past the pill, never wider than [capDp]) when its
+     * lettering - [lettering], the height of its words ÷ the logo's height - is under 0.75 (an emblem with small words
+     * beside it, two lines). Partial (square root), so each logo keeps its own proportions.
+     */
+    fun artHeight(aspect: Float, lettering: Float, symbol: Boolean, hDp: Float, capDp: Float): Float {
+        val lh = hDp * ART_PILL
+        if (symbol) return minOf(lh * 0.84f, (capDp - lh * 0.7f) / aspect)
+        val boost = kotlin.math.sqrt(0.75f / lettering.coerceIn(0.1f, 1f)).coerceIn(1f, 1.3f)
+        return minOf(lh * 0.62f * boost, (capDp - lh * 0.7f) / aspect)
+    }
+
+    /**
+     * Batch 523: the whole wordmark fits this badge ([fitsWordmark]) and its words come out at least as big as 3/4 of
+     * the Text look's capital letters on the same badge (0.26 × badge height); otherwise the compact form shows.
+     */
+    fun showsWordmark(aspect: Float, lettering: Float, hDp: Float, capDp: Float): Boolean =
+        fitsWordmark(aspect, hDp, capDp) && artHeight(aspect, lettering, false, hDp, capDp) * lettering >= hDp * 0.26f
+
+    /**
+     * Batch 523: the height of each wordmark's words ÷ the logo's height, measured on the white set (connected shapes,
+     * emblems left out, width-weighted; 3DS / DS by eye: their big "3DS" / "DS"). Not listed = 1 (the words are the logo).
+     */
+    private val LETTERING = mapOf(
+        "Atomiswave" to 0.29f, "MasterSystem" to 0.33f, "GameCube" to 0.34f, "N64" to 0.36f, "NES" to 0.38f,
+        "NeoGeoPocket" to 0.40f, "Xbox" to 0.43f, "WonderSwan" to 0.47f, "ColecoVision" to 0.48f, "Naomi" to 0.51f,
+        "PS2" to 0.51f, "PS1" to 0.52f, "Switch" to 0.53f, "Dreamcast" to 0.56f, "PICO8" to 0.56f, "PS3" to 0.59f,
+        "PSVita" to 0.61f, "Lynx" to 0.62f, "PS4" to 0.62f, "Xbox360" to 0.63f, "PCEngineCD" to 0.64f,
+        "PokemonMini" to 0.65f, "Saturn" to 0.65f, "PCEngine" to 0.66f, "FDS" to 0.69f, "SegaCD" to 0.71f,
+        "Vectrex" to 0.71f, "Jaguar" to 0.72f, "3DS" to 0.85f, "NDS" to 0.85f
+    )
+
+    /** Batch 523: [platform]'s wordmark lettering (see [LETTERING]). */
+    fun lettering(platform: String): Float = LETTERING[WORDMARK_ALIAS[platform] ?: platform] ?: 1f
+
+    /**
+     * Batch 523: the ES-DE logos the Logo look falls back to (consoles without a wordmark in the set): width ÷ height and
+     * lettering, measured like [LETTERING]. One not listed has no measured form and shows the name.
+     */
+    private val ESDE_FORM = mapOf(
+        "tg16" to (5.47f to 0.86f), "tg-cd" to (5.47f to 0.86f), "ngpc" to (2.68f to 0.23f),
+        "wonderswancolor" to (5.13f to 0.41f), "c64" to (3.26f to 0.45f), "amiga" to (3.06f to 0.54f)
+    )
+
+    /** Batch 523: (aspect, lettering) of the ES-DE logo at [url] (file:///android_asset/system_logos/<name>.svg), or null. */
+    fun esdeForm(url: String): Pair<Float, Float>? = ESDE_FORM[url.substringAfterLast('/').removeSuffix(".svg")]
 }

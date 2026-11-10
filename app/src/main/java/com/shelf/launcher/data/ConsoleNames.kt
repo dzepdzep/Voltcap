@@ -34,6 +34,8 @@ object ConsoleNames {
         "Genesis" to "Sega Mega Drive / Genesis",
         // (Batch 522: the stores GameNative runs besides Steam - their games' categories.)
         "Epic" to "Epic Games Store", "GOG" to "GOG", "Amazon" to "Amazon Games", "PC" to "PC games",
+        // (Batch 523: Steam - GameNative's and DroidDeck's Steam games - named like the other stores; it showed its key, the same word.)
+        "Steam" to "Steam",
         "MasterSystem" to "Sega Master System",
         "SegaCD" to "Sega CD",
         "Saturn" to "Sega Saturn",

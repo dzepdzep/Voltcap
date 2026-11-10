@@ -74,8 +74,11 @@ object SystemLogos {
      * (a white badge, a tinted folder) they become a solid block with no lettering left (3DO and MSX a white rectangle, Genesis /
      * Mega Drive / Sega CD / Pokémon mini / Vectrex / DOS a blob). Measured: opaque share of the logo's box 0.68 - 1.0 with the
      * lettering cut out of the plate. Those places show the console's name instead.
+     * (Batch 523, final badge pass: ScummVM - its outlined lettering fills into one blob - and Steam - its emblem becomes a
+     * plain white disc.)
      */
-    internal val SILHOUETTE_UNREADABLE: Set<String> = setOf("3do", "dos", "genesis", "megadrive", "msx", "msx1", "pokemini", "segacd", "vectrex")
+    internal val SILHOUETTE_UNREADABLE: Set<String> =
+        setOf("3do", "dos", "genesis", "megadrive", "msx", "msx1", "pokemini", "segacd", "vectrex", "scummvm", "steam")
 
     /** Batch 521b: [platform]'s bundled ES-DE logo can't be drawn in one colour (see [SILHOUETTE_UNREADABLE]). */
     fun silhouetteUnreadable(platform: String): Boolean = ESDE[platform]?.firstOrNull { it in BUNDLED } in SILHOUETTE_UNREADABLE

@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -451,6 +451,17 @@
    "patch_sha256": null,
    "tree_hash": null,
    "note": "batch 522h: 522g + the details page's console pill whole (SourceBadge, found at font x1.3)"
+  },
+  {
+   "id": "qa-0.6.69-523a",
+   "apk_sha256": "66bf42f0f4c8f41e1339be17457e9d8cafaf9201f8fbce73ed46bb9e1858a421",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "8a4a92fbb3d5c4975dfd6796ce82d478b4266687",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523a: 522h + badge optical sizing (lettering-aware wordmark height, legibility check, one pill height per look, ES-DE fallback sized by its shape, ScummVM / Steam one-colour -> name, store colours, PC / stores gallery page). Installed on RP Classic (popup / badge gate) and GT78 (KONKR memory / scroll; old release-key QA app removed with the owner's OK)"
   }
  ]
 }
