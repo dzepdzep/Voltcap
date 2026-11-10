@@ -48,11 +48,12 @@ switch ($action) {
     try { $x = Invoke-WebRequest -UseBasicParsing "https://voltcap-api-staging.voltcap-api.workers.dev/v1/health" -TimeoutSec 10; L ("health " + $x.StatusCode + " " + $x.Content) } catch { L ("health " + $_.Exception.Response.StatusCode.value__) }
   }
   "usage" {
-    # Requests, errors and CPU time of the STAGING Workers in the last 3 hours (Cloudflare GraphQL Analytics API).
+    # Requests, errors and CPU time of the account's Workers in the last 6 hours (Cloudflare GraphQL Analytics API).
+    $null = W "npx --yes wrangler@4 whoami"   # refreshes wrangler's OAuth token when it expired
     $cfg = Get-Content "$env:APPDATA\xdg.config\.wrangler\config\default.toml" -Raw
     $tok = ([regex]'oauth_token\s*=\s*"([^"]+)"').Match($cfg).Groups[1].Value
     $acc = "a4553ca28e18a670b602472b2afb6556"
-    $since = (Get-Date).ToUniversalTime().AddHours(-3).ToString("yyyy-MM-ddTHH:mm:ssZ"); $until = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $since = (Get-Date).ToUniversalTime().AddHours(-6).ToString("yyyy-MM-ddTHH:mm:ssZ"); $until = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     $q = @"
 query { viewer { accounts(filter: {accountTag: "$acc"}) {
   workersInvocationsAdaptive(limit: 20, filter: {datetime_geq: "$since", datetime_leq: "$until"}) {
@@ -64,6 +65,12 @@ query { viewer { accounts(filter: {accountTag: "$acc"}) {
     $body = @{ query = $q } | ConvertTo-Json -Depth 4
     try { $r = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/graphql" -Method POST -Headers @{ Authorization = "Bearer $tok"; "Content-Type" = "application/json" } -Body $body
       L ($r | ConvertTo-Json -Depth 12 -Compress) } catch { L ("graphql error " + $_.ErrorDetails.Message) }
+    foreach ($ep in @("subscriptions", "workers/scripts")) {
+      try { $x = Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/accounts/$acc/$ep" -Headers @{ Authorization = "Bearer $tok" }
+        if ($ep -eq "subscriptions") { @($x.result) | ForEach-Object { L ("subscription: " + $_.rate_plan.id + " / " + $_.rate_plan.public_name + " price=" + $_.price + " state=" + $_.state) }; if (-not @($x.result).Count) { L "subscriptions: none" } }
+        else { L ("workers: " + ((@($x.result) | ForEach-Object { $_.id + "(" + $_.usage_model + ")" }) -join ", ")) } }
+      catch { L ("$ep status " + $_.Exception.Response.StatusCode.value__) }
+    }
   }
   "reset" { $u = Get-Content $urls; Invoke-WebRequest -UseBasicParsing -Method POST "$($u[1])/__reset" | Out-Null; L "mock calls reset" }
   "calls" {
@@ -146,6 +153,18 @@ query { viewer { accounts(filter: {accountTag: "$acc"}) {
     @{ TWITCH_CLIENT_SECRET = $new } | ConvertTo-Json | Out-File $tmp -Encoding ascii
     $o = W "npx --yes wrangler@4 secret bulk `"$tmp`""; Remove-Item $tmp -Force
     L ("new secret uploaded exit=$code temp_file_left=" + (Test-Path $tmp)); $o | Select-String -Pattern "secret|Success|error" | ForEach-Object { L ("  " + $_.Line) }
+  }
+  "cleanup-old-token" {
+    # The test token kept for the rotation check: revoked at Twitch, then the local file deleted.
+    $root = Split-Path -Parent $api | Split-Path -Parent; $ig = @{}
+    Get-Content (Join-Path $root "igdb.properties") | Where-Object { $_ -match '^\s*([A-Za-z]+)\s*=\s*(.*?)\s*$' } | ForEach-Object { $ig[$Matches[1]] = $Matches[2] }
+    $ot = Join-Path $PSScriptRoot ".old-token"
+    if (Test-Path $ot) {
+      $t = (Get-Content $ot).Trim()
+      try { Invoke-WebRequest -UseBasicParsing -Method POST "https://id.twitch.tv/oauth2/revoke" -Body @{ client_id = $ig["clientId"]; token = $t } | Out-Null; L "test token revoked" } catch { L ("revoke status " + $_.Exception.Response.StatusCode.value__) }
+      try { Invoke-WebRequest -UseBasicParsing "https://id.twitch.tv/oauth2/validate" -Headers @{ Authorization = "OAuth $t" } | Out-Null; L "test token still valid" } catch { L ("test token validate after revoke " + $_.Exception.Response.StatusCode.value__) }
+      Remove-Item $ot -Force; L ("token file left=" + (Test-Path $ot))
+    } else { L "no token file" }
   }
   "twitch-verify" {
     $root = Split-Path -Parent $api | Split-Path -Parent; $ig = @{}
