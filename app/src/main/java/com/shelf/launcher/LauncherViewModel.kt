@@ -3099,6 +3099,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _vaultArt = MutableStateFlow<Map<String, String>>(emptyMap())
     /** Game key → cover for Save Vault games that aren't on this device (looked up by name, kept in prefs). */
     val vaultArt: StateFlow<Map<String, String>> = _vaultArt.asStateFlow()
+    /** Batch 523: the same saves' logos (Icons only / PS2 browser looks), kept beside their covers in "save_vault_art". */
+    private val _vaultLogo = MutableStateFlow<Map<String, String>>(emptyMap())
+    val vaultLogo: StateFlow<Map<String, String>> = _vaultLogo.asStateFlow()
     @Volatile private var vaultArtRunning = false
     /** Update 317as: games asked for while a look-up was running (they were dropped), and the rest past a pass's 40. */
     private val vaultArtPending = java.util.concurrent.ConcurrentLinkedQueue<Game>()
@@ -3188,11 +3191,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val prefs = app.getSharedPreferences("save_vault_art", android.content.Context.MODE_PRIVATE)
         if (_vaultArt.value.isEmpty()) {
             _vaultArt.value = prefs.all.mapNotNull { (k, v) -> if (k.startsWith("art:") && v is String) k.removePrefix("art:") to v else null }.toMap()
+            _vaultLogo.value = prefs.all.mapNotNull { (k, v) -> if (k.startsWith("logo:") && v is String) k.removePrefix("logo:") to v else null }.toMap()
         }
         if (vaultArtRunning) { vaultArtPending.addAll(games); return }
+        // (Batch 523, owner: "missing artwork for games not present locally": a save looked up before the logo was kept
+        // ("tried2" missing) is looked up once more for its logo; its cover, if it has one, stays.)
         val todo = games.distinctBy { it.stableKey }.filter { g ->
-            g.stableKey !in _vaultArt.value &&
-                System.currentTimeMillis() - prefs.getLong("tried:${g.stableKey}", 0L) > 7L * 86_400_000L
+            (g.stableKey !in _vaultArt.value || (g.stableKey !in _vaultLogo.value && !prefs.contains("tried2:${g.stableKey}"))) &&
+                System.currentTimeMillis() - prefs.getLong("tried2:${g.stableKey}", 0L) > 7L * 86_400_000L
         }
         if (todo.isEmpty()) return
         vaultArtRunning = true
@@ -3203,10 +3209,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     val search = g.copy(name = vaultSearchName(g.name), romPath = null)
                     val art = runCatching { fetchArtFromSelectedSource(search) }.getOrNull()
                     val url = art?.gridUrl ?: art?.wideGridUrl ?: art?.heroUrl
-                    val e = prefs.edit().putLong("tried:${g.stableKey}", System.currentTimeMillis())
-                    if (url != null) {
+                    val e = prefs.edit().putLong("tried:${g.stableKey}", System.currentTimeMillis()).putLong("tried2:${g.stableKey}", System.currentTimeMillis())
+                    if (url != null && g.stableKey !in _vaultArt.value) {
                         e.putString("art:${g.stableKey}", url)
                         _vaultArt.update { it + (g.stableKey to url) }
+                    }
+                    art?.logoUrl?.let { logo ->
+                        e.putString("logo:${g.stableKey}", logo)
+                        _vaultLogo.update { it + (g.stableKey to logo) }
                     }
                     e.apply()
                 }

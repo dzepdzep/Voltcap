@@ -70,6 +70,6 @@ class TwinHinge142Test {
         assertTrue(s.contains("val panel = !opens && state.appearance.homeLayout.styleHome &&") && s.contains("HomeLayout.CHAN || !sideRoom) && (fitsBelow || fitsAbove)"))
         assertTrue("name inside the panel", s.contains("else if (panel) Offset(pad + panelPad, panelTop + panelPad)"))
         assertTrue("the notch closes its path, not the window", s.contains("this.close()") && !s.contains("lineTo(nx + notch, bottom - 1f) }\n                    close()"))
-        assertTrue("the badge strip stays off the tiles", s.contains("if (!panel && buttonsSize != IntSize.Zero"))
+        assertTrue("the badge strip stays off the tiles", s.contains("if (!panel && !showAll && buttonsSize != IntSize.Zero"))
     }
 }

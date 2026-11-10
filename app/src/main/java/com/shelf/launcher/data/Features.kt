@@ -946,8 +946,18 @@ object Features {
          * Update 285 (Toni: "the logos without the cards"): no object — each save as its game's icon on its own: a PS2
          * save's own 3D icon from its memory card, else the RetroAchievements icon, else the SteamGridDB logo.
          */
-        ICONS("Icons only")
+        ICONS("Icons only"),
+        /**
+         * Batch 523 (owner: "a distinct PS2-style look with 3D spinning save icons and a generic fallback"): every save as the
+         * PS2's memory-card browser shows it — a PS2 save its own 3D icon (PS2IODB's for the game when the card's can't be
+         * read), any other game its logo / icon as a solid turning badge, nothing at all a plain generic card. Icons only is
+         * now flat icons and nothing else. Added last: the saved choice of the others is unchanged.
+         */
+        PS2("PS2 browser")
     }
+
+    /** Batch 523: the looks that show a save as its icon (no card): which picture a save gets ([logoFor] in the vault). */
+    fun SaveVaultStyle.showsIcons(): Boolean = this == SaveVaultStyle.ICONS || this == SaveVaultStyle.PS2
     val saveVaultStyle = EnumPref("save_vault_style", SaveVaultStyle.CLASSIC, SaveVaultStyle.values())
     /** Update 136: the 3D card's model (SD card or a memory card colour) and whether it's the clear one. */
     val saveVaultCard = EnumPref("save_vault_card", com.shelf.launcher.ui.ModelSpare.SD, com.shelf.launcher.ui.ModelSpare.values())

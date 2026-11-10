@@ -1,5 +1,9 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
@@ -231,6 +235,11 @@ internal fun RowMotionWindow(
     }
     val live: (() -> Unit) -> Unit = { f -> if (!closing) f() }
     var swallowUp by remember { mutableStateOf<androidx.compose.ui.input.key.Key?>(null) }
+    // (Batch 523, owner: "Details opens a completely different-looking popup" - in Row opens / Row reveal, Details now opens
+    // the whole story and every fact IN this window, its type and colours, where the short version was; B / Less go back.
+    // The grid's action panel - no room for a story - still opens the full details screen.)
+    var showAll by remember(g.stableKey) { mutableStateOf(false) }
+    val detailsFocus = remember { FocusRequester() }
     var openKeyDown by remember { mutableStateOf(false) }
     // The row's cards follow the move while it draws.
     LaunchedEffect(p) {
@@ -260,6 +269,7 @@ internal fun RowMotionWindow(
             onDispose { }
         }
         val playFocus = remember { FocusRequester() }
+        val storyFocus = remember { FocusRequester() }
         // (Update 325, Toni: "moving right from Continue it goes straight back to Continue" — here and in Row reveal: Play
         // was asked for again and again for the first ~0.9 s, and again whenever the window got the focus back, so a step
         // to the next button was taken back. Once a button has the focus it's left alone.)
@@ -287,6 +297,12 @@ internal fun RowMotionWindow(
                 if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) { openKeyDown = true; HomeKeyGuard.aDown = false }
                 else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp && !openKeyDown) return@onPreviewKeyEvent true
                 else if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) openKeyDown = false
+            }
+            // (Batch 523: B with the story open goes back to the short view first, not out of the window.)
+            if (showAll && !closing && (e.key == androidx.compose.ui.input.key.Key.Back || e.key == androidx.compose.ui.input.key.Key.ButtonB ||
+                    e.key == androidx.compose.ui.input.key.Key.Escape)) {
+                if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { showAll = false; runCatching { detailsFocus.requestFocus() } }
+                return@onPreviewKeyEvent true
             }
             if (!closing) return@onPreviewKeyEvent false
             if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown && rowWindowOpenKey(e.key)) { swallowUp = e.key; reopen() }
@@ -493,6 +509,34 @@ internal fun RowMotionWindow(
                 // entirely on a short screen. Before, the story claimed its 3–5 lines first and the facts / achievements under it
                 // were laid out with no height at all: KONKR 17 combinations, Odin 5, k471a / k474a.)
                 val summary = meta?.summary?.takeIf { it.isNotBlank() }
+                if (showAll) {
+                    // (Batch 523: Details in this window - the whole story, scrolled with ▲ ▼ / a finger, then every fact.)
+                    val sc = androidx.compose.foundation.rememberScrollState()
+                    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { storyFocus.requestFocus() } }
+                    val storyScope = androidx.compose.runtime.rememberCoroutineScope()
+                    Column(Modifier.weight(1f).focusRequester(storyFocus)
+                        // ▲ ▼ scroll the story while there's more; at its end ▼ goes on to the buttons (Less is there).
+                        .onKeyEvent { e ->
+                            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onKeyEvent false
+                            val dir = when (e.key) { androidx.compose.ui.input.key.Key.DirectionDown -> 1; androidx.compose.ui.input.key.Key.DirectionUp -> -1; else -> return@onKeyEvent false }
+                            if ((dir > 0 && !sc.canScrollForward) || (dir < 0 && !sc.canScrollBackward)) return@onKeyEvent false
+                            storyScope.launch { sc.animateScrollBy(dir * 180f) }; true
+                        }
+                        .focusable().verticalScroll(sc)) {
+                        Text(summary ?: "No description yet.", color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, lineHeight = (13 * 1.45f).sp)
+                        val all = revealFacts(meta?.developer, meta?.genres?.joinToString(", "), meta?.releaseYear, earned, total)
+                        if (all.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(
+                            Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            all.forEach { (h, v) ->
+                                Column {
+                                    Text(h.uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.08.em, maxLines = 1)
+                                    Text(v, color = Color.White, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                } else {
                 if (summary != null) StoryLines(
                     summary, Color.White.copy(alpha = 0.9f), 13.sp, (13 * 1.4f).sp, if (infoH > with(d) { 170.dp.toPx() }) 5 else 3,
                     Modifier.weight(1f, fill = false)
@@ -514,6 +558,7 @@ internal fun RowMotionWindow(
                         Box(Modifier.fillMaxWidthFraction(earned.toFloat() / total).height(5.dp).background(accent))
                     }
                 }
+                }
             }
 
             // ---- Play / Continue and the buttons ----
@@ -534,7 +579,10 @@ internal fun RowMotionWindow(
                 RevealButton(if (resumed) "▶  Continue" else "▶  Play", main = true, accent = accent, onAccent = onAccent, modifier = Modifier.focusRequester(playFocus)) {
                     live { RowReveal.reset(); onPlay() }
                 }
-                RevealButton("Details", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onFullDetails() } }
+                RevealButton(if (showAll) "Less" else "Details", accent = accent, onAccent = onAccent, modifier = Modifier.focusRequester(detailsFocus)) {
+                    // (Batch 523: in this window where it has room for the story; the grid's panel opens the details screen.)
+                    if (infoBottom - infoTop > with(d) { 40.dp.toPx() }) showAll = !showAll else live { RowReveal.reset(); onFullDetails() }
+                }
                 if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onAchievements() } }
                 RevealButton("Options", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onOptions() } }
                 if (onInspect != null) RevealButton("◧  Inspect", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onInspect() } }
@@ -548,7 +596,7 @@ internal fun RowMotionWindow(
             val badges = trophies.sortedWith(compareBy<com.shelf.launcher.data.RaAchievementDetail> { if (it.isUnlocked) 0 else 1 }.then(com.shelf.launcher.data.RA_DISPLAY_ORDER))
                 .mapNotNull { a -> com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { it to a.isUnlocked } }.take(10)
             val shots = if (badges.isEmpty()) state.screenshots[k].orEmpty().take(4) else emptyList()
-            if (!panel && buttonsSize != IntSize.Zero && (badges.isNotEmpty() || shots.isNotEmpty()) && stripTop + stripH <= H - with(d) { 12.dp.toPx() }) Row(
+            if (!panel && !showAll && buttonsSize != IntSize.Zero && (badges.isNotEmpty() || shots.isNotEmpty()) && stripTop + stripH <= H - with(d) { 12.dp.toPx() }) Row(
                 Modifier
                     .graphicsLayer {
                         val t = p.value

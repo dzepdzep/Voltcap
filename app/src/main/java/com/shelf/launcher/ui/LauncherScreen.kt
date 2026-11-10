@@ -5627,6 +5627,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     if (showSaveExplorer) {
         // Saves whose game isn't in this library: their covers looked up by name (once; kept).
         val vaultArt by viewModel.vaultArt.collectAsState()
+        val vaultLogo by viewModel.vaultLogo.collectAsState()
         val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
         LaunchedEffect(capsules) {
             // (0.6.18: not for saves without a game name — there is nothing to look up.)
@@ -5647,8 +5648,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 285: Icons only — the RetroAchievements icon, else the SteamGridDB logo, else as above.)
             logoFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
-                    ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
-                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: vaultArt[g.stableKey]
+                    ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl ?: vaultLogo[g.stableKey]
+                // (Batch 523, owner: "a real Icons Only look": no cover in place of an icon - a game with none shows its
+                // console's symbol (Icons only) or a plain memory card (PS2 browser).)
             }
         )
     }

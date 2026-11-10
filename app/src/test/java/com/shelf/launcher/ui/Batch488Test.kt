@@ -68,7 +68,7 @@ class Batch488Test {
 
     @Test fun ps2SwitchOnlyForPs2Saves() {
         val s = src("SaveExplorer.kt")
-        assertTrue(s.contains("val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS\n"))
+        assertTrue(s.contains("val ps2Style = with(Features) { Features.saveVaultStyle.state.value.showsIcons() }")) // (Batch 523: Icons only or PS2 browser)
         assertTrue(src("TestHooks.kt").contains("voltcap_test_ps2browser"))
     }
 }

@@ -406,11 +406,15 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                     if (pv > 0f) {
                                         translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
-                                            rotationY = 90f * shelfTurn(pv)
+                                            // (Batch 523: the box's spine face — turning with the front, beside it, never over it.)
+                                            val t = shelfTurn(pv)
+                                            rotationY = -SPINE_SIDE * 90f * t
                                             cameraDistance = 14f * density
-                                            alpha = if (shelfTurn(pv) >= 0.99f) 0f else 1f
+                                            val frontW = s.h.toPx() * pulledAspect(g.platform, Features.shelfPulled.state.value == Features.ShelfPulled.SIDE)
+                                            translationX += shelfBoxFaces(t, s.w.toPx(), frontW).first
+                                            alpha = if (t >= 0.999f) 0f else 1f
                                         } else {
-                                            alpha = if (shelfFront(pv) > 0f) 0f else 1f
+                                            alpha = if (shelfTurn(pv) > 0f) 0f else 1f
                                         }
                                     }
                                     // (0.6.15: every spine in its own kept layer — a bookcase of ~150 spines was drawn piece by
@@ -444,8 +448,10 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val s = plan.slots.getOrNull(index) ?: return
                 val g = games.getOrNull(index) ?: return
                 if (s.row !in 0 until plan.rows) return
-                val turn = shelfFront(p)
-                if (turn <= 0f) return
+                // (Batch 523: [spin] turns it round at the shelf's size, then [turn] brings it forward and up to size.)
+                val spin = shelfTurn(p)
+                val turn = shelfGrow(p)
+                if (spin <= 0f) return
                 // (Update 156: [vrow] is its shelf counted on round the endless bookcase; without it, its own shelf.)
                 val rowTop = top + plan.rowH * (vrow - scroll.value)
                 val rowLeft = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
@@ -490,7 +496,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val boardY = rowTop + plan.rowH * 0.9f
                 val shadowW = w * 1.08f
                 val shadowH = (plan.rowH * 0.07f).coerceAtLeast(6.dp)
-                val caseX = startX + (endX - startX) * turn
+                // (Batch 523: while it turns, the front sits beside its spine — shelfBoxFaces — then slides to its own middle.)
+                val faceShift = if (stand == Features.ShelfStand.SPINES) with(androidx.compose.ui.platform.LocalDensity.current) {
+                    shelfBoxFaces(spin, s.w.toPx(), startW.toPx()).second.toDp()
+                } else 0.dp
+                val caseX = startX + (endX - startX) * turn + faceShift
                 Box(
                     Modifier
                         .offset { IntOffset((caseX + (w - shadowW) / 2).roundToPx(), (boardY - shadowH * 0.55f).roundToPx()) }
@@ -505,13 +515,13 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 )
                 Box(
                     Modifier
-                        .offset { IntOffset((startX + (endX - startX) * turn).roundToPx(), (startY + (endY - startY) * turn).roundToPx()) }
+                        .offset { IntOffset(caseX.roundToPx(), (startY + (endY - startY) * turn).roundToPx()) }
                         .size(w, h)
                         .then(if (resting) Modifier.focusedCard() else Modifier)
                         .graphicsLayer {
                             // Comes round from edge-on (its spine side) to facing you, then (resting) bobs and turns gently.
                             val amp = bobK * bobAmp.value
-                            rotationY = fromAngle * (1f - turn) + (bob?.let { 14f * amp * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
+                            rotationY = (if (stand == Features.ShelfStand.SPINES) SPINE_SIDE * 90f else fromAngle) * (1f - spin) + (bob?.let { 14f * amp * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f)
                             translationY = bob?.let { -size.height * 0.03f * amp * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
                             cameraDistance = 14f * density
                             // A soft shadow grows under it as it comes off the shelf.
@@ -607,10 +617,34 @@ private const val PULL_LIFT = 0.42f
 
 private fun ease(t: Float): Float = FastOutSlowInEasing.transform(t.coerceIn(0f, 1f))
 
-/** Pull-out phases (0..1 of the whole move): the spine slides up (first 40 %), turns away (35–60 %), the front comes round and forward (45–100 %). */
-private fun shelfSlide(p: Float): Float = ease(p / 0.4f)
-private fun shelfTurn(p: Float): Float = ease((p - 0.35f) / 0.25f)
-private fun shelfFront(p: Float): Float = ease((p - 0.45f) / 0.55f)
+/**
+ * Pull-out phases (0..1 of the whole move). Batch 523 (owner: "slide out, then a gentle turn; no flips" — before, the spine
+ * turned away edge-on while a second picture came round from the other edge, both half-visible for a moment, and only then
+ * grew: it read as a flip and a swap). Now ONE box: it slides up out of its gap (first 30 %), turns in place at the shelf's
+ * size as a rigid box — the spine and the front side by side, each as wide as the turn shows it (30–70 %) — then the front,
+ * now facing you, comes forward to its big place (62–100 %).
+ */
+private fun shelfSlide(p: Float): Float = ease(p / 0.3f)
+internal fun shelfTurn(p: Float): Float = ease((p - 0.3f) / 0.4f)
+internal fun shelfGrow(p: Float): Float = ease((p - 0.62f) / 0.38f)
+/** How far the neighbours have made room: along with the turn and the growth. */
+private fun shelfFront(p: Float): Float = ease((p - 0.3f) / 0.7f)
+/** Which side of the front the spine is on as the box turns (-1: left, as a case's spine is). */
+private const val SPINE_SIDE = -1f
+
+/**
+ * Batch 523: the turning box seen from the front, at angle [t] × 90° (0: spine facing you, 1: front facing you), spine [d] wide
+ * and front [w] wide: each face's centre relative to the box's centre (spine, front) — they touch, nothing overlaps. Pure.
+ */
+internal fun shelfBoxFaces(t: Float, d: Float, w: Float): Pair<Float, Float> {
+    val a = (t.coerceIn(0f, 1f) * Math.PI / 2).toFloat()
+    val ds = d * kotlin.math.cos(a); val ws = w * kotlin.math.sin(a)
+    val total = ds + ws
+    // spine first (on SPINE_SIDE), then the front
+    val spine = SPINE_SIDE * (total / 2f - ds / 2f)
+    val front = -SPINE_SIDE * (total / 2f - ws / 2f)
+    return spine to front
+}
 
 @Composable private fun ShelfTheme_accent(): Color = com.shelf.launcher.ui.theme.ShelfTheme.accent
 

@@ -437,8 +437,17 @@ internal object CoverFlight {
     /** How hidden the slot's own spine is (0 = drawn, 1 = empty slot): only while its case is clearly away from it. */
     fun hide(key: String): Float {
         val p = flights[key]?.value ?: return 0f
-        return appear(p)
+        // (Batch 523, owner: "physically connected pickup and return — no duplicate copies, the original hidden while lifted":
+        // the slot is empty the moment its case leaves it and until the same case is back in it; there is never a spine and
+        // a case of the same game on screen together — the case itself turns from its spine to its front on the way out.)
+        return if (p > 0.001f) 1f else 0f
     }
+    /** Batch 523: the flying case's turn — spine-on in its slot ([SPINE_YAW]), round to [to] in the first 60 % of the way. */
+    fun yaw(p: Float, to: Float): Float {
+        val t = (p / 0.6f).coerceIn(0f, 1f); val e = t * t * (3f - 2f * t)
+        return SPINE_YAW + (to - SPINE_YAW) * e
+    }
+    const val SPINE_YAW = 88f
     /** Update 405: ONE ramp for both the case (alpha) and its slot (1 - alpha): the spine turns into the case in place, the slot stays empty while the case is out. */
     fun appear(p: Float): Float { val t = (p / 0.3f).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
     /** Pure: the case's scale and centre (as a share 0..1 between slot and big place) for flight [p]. */
@@ -504,12 +513,15 @@ private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.F
                         translationX = cx - s * size.width / 2f - st.left
                         translationY = cy - s * size.height / 2f - st.top
                     }
-                    alpha = CoverFlight.appear(p)
+                    // (Batch 523: the same object all the way - whole from the first frame, no fade from / into a second copy.)
+                    alpha = if (p > 0.001f) 1f else 0f
                 }
         ) {
+            val restYaw = if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN
             Case3D(
-                gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN,
+                gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], restYaw,
                 case3dAspect(gm, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
+                yawOf = { CoverFlight.yaw(o.p.value, restYaw) },
                 frame = false, frameColor = accent,
                 realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
                 fill = bigCaseFill(depth)

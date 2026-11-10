@@ -129,7 +129,7 @@ internal fun SaveExplorerDialog(
     // (Update 488, K3, owner: "if I choose Memory Card, SD Card, Floppy … it should show that physical object": the PS2 browser
     // switch now does what its note says — a PS2 game's save shows its own PS2 save icon; every other save keeps the chosen
     // physical card with its cover, in the grid and up close alike. Logos instead of covers only with the Icons look.)
-    val ps2Style = Features.saveVaultStyle.state.value == Features.SaveVaultStyle.ICONS
+    val ps2Style = with(Features) { Features.saveVaultStyle.state.value.showsIcons() }
     // Google Drive sync, right inside the vault: "Sync now" runs a saves sync, then looks for saves again.
     // (Update 151: read before the first frame, so a connected vault never flashes "Not connected".)
     remember { com.shelf.launcher.data.CloudSync.load(context) }
@@ -585,8 +585,10 @@ internal fun SaveExplorerDialog(
                                 // (Update 343, Toni: "the PS2 save icon: either all memory cards or all logos, no mix — toggle between those
                                 // two": "PS2 browser style" on draws EVERY save as the PS2 browser does (a PS2 game its own 3D save icon,
                                 // any other game its logo turning in its place); off, every save gets the vault's own look.)
-                                ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform))
-                                    ps2RefsOf(capsuleByKey[game.stableKey]) else null
+                                // (Batch 523: the PS2 browser look draws every save so; Icons only a PS2 save's own icon - ps2BrowserFor.)
+                                ps2 = when (ps2BrowserFor(Features.saveVaultStyle.state.value, com.shelf.launcher.data.Ps2BrowserStyle.on.value, game.platform)) {
+                                    true -> ps2RefsOf(capsuleByKey[game.stableKey]); false -> emptyList(); null -> null
+                                }
                             )
                           }
                         }
@@ -606,8 +608,9 @@ internal fun SaveExplorerDialog(
                 if (d != null) SaveDetail(
                     game = d.first, st = d.second, icon = if (ps2Style) logoFor(d.first) else iconFor(d.first), phase = phase,
                     // (Update 487, K3: the same object as the grid's slot.)
-                    ps2 = if (com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(d.first.platform))
-                        ps2RefsOf(capsuleByKey[d.first.stableKey]) else null,
+                    ps2 = when (ps2BrowserFor(Features.saveVaultStyle.state.value, com.shelf.launcher.data.Ps2BrowserStyle.on.value, d.first.platform)) {
+                        true -> ps2RefsOf(capsuleByKey[d.first.stableKey]); false -> emptyList(); null -> null
+                    },
                     logo = if (ps2Style) logoFor(d.first) else null,
                     capsule = capsuleByKey[d.first.stableKey],
                     hidden = d.first.stableKey in capsuleOptions.hidden,
@@ -806,12 +809,12 @@ private fun SaveSlot(
             ) {
                 if (selected) Box(Modifier.fillMaxSize(0.9f).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(ShelfTheme.accent.copy(alpha = 0.35f), Color.Transparent))))
                 // (Update 330: with the PS2 browser style on, the logo / icon as a solid 3D badge that turns like a PS2 save icon.)
-                if (icon != null && com.shelf.launcher.data.Ps2BrowserStyle.on.value) LogoSlab(
-                    icon, Modifier.fillMaxSize(0.92f), turning = selected && turnOn, depth = 0.06f,
-                    fallback = { Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold) }
-                )
-                else if (icon != null) AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(10.dp)))
-                else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                // (Batch 523, owner: "a real Icons Only look": flat icons, nothing else - the turning 3D badge is the PS2 browser
+                // look's now; a game with no icon / logo (or one that fails to load) shows its console's symbol, never a cover.)
+                if (icon != null) coil.compose.SubcomposeAsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(10.dp)),
+                    error = { VaultIconFallback(game) })
+                else VaultIconFallback(game)
                 SyncBadge(status.state, 18.dp, Modifier.align(Alignment.TopEnd).padding(2.dp))
             }
         } else Box(
@@ -836,14 +839,12 @@ private fun SaveSlot(
                 .border(1.dp + 1.5.dp * lift, if (selected) ShelfTheme.accent else Color.White.copy(alpha = 0.12f), SquareIconShape),
             contentAlignment = Alignment.Center
         ) {
+            // (Batch 523: a cover that's missing or fails to load - a save whose game isn't on this device and wasn't found
+            // yet - shows its console's symbol, not two letters.)
             if (icon != null) {
-                AsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            } else {
-                Text(
-                    gameDisplayName(game.name).take(2).uppercase(),
-                    color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold
-                )
-            }
+                coil.compose.SubcomposeAsyncImage(model = icon, contentDescription = game.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+                    error = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { VaultIconFallback(game) } })
+            } else VaultIconFallback(game)
             SyncBadge(status.state, 18.dp, Modifier.align(Alignment.TopEnd).padding(4.dp))
         }
         // A soft shadow under the floating icon, smaller when it floats higher.
@@ -1128,6 +1129,22 @@ private fun SaveDetail(
 /** Update 487 (K3): what a save is drawn as — in the grid, in flight and up close alike (pure; Batch487Test). */
 internal enum class SaveObjectKind { PS2_BROWSER, CARD_3D, DRAWN, CAPSULE, ICON }
 
+/**
+ * Batch 523: whether a save is drawn as the PS2 memory-card browser draws it, and how — true: a PS2 save with its own icon
+ * (Ps2SaveTile with its memory-card saves); false: drawn by the browser too, but as its logo badge (no PS2 saves to read);
+ * null: the vault's own look. PS2 browser look: every save. Icons only: a PS2 save (its own icon IS its icon). The card
+ * looks: the "PS2 browser style" switch, as before (update 343: every save then). Pure.
+ */
+internal fun ps2BrowserFor(style: Features.SaveVaultStyle, switchOn: Boolean, platform: String?): Boolean? {
+    val isPs2 = com.shelf.launcher.data.Ps2BrowserStyle.isPs2(platform)
+    return when {
+        style == Features.SaveVaultStyle.PS2 -> isPs2
+        style == Features.SaveVaultStyle.ICONS -> if (isPs2) true else null
+        switchOn -> if (isPs2) true else null
+        else -> null
+    }
+}
+
 internal fun saveObjectKind(ps2Browser: Boolean, style: Features.SaveVaultStyle, has3dCard: Boolean): SaveObjectKind = when {
     ps2Browser -> SaveObjectKind.PS2_BROWSER
     style == Features.SaveVaultStyle.CARD_3D -> if (has3dCard) SaveObjectKind.CARD_3D else SaveObjectKind.DRAWN
@@ -1153,7 +1170,7 @@ private fun SaveIconCard(
     // style draws every save as the PS2 browser does in the grid (the icon / logo), so it does up close too; the drawn
     // cards (memory card, SD card, floppy, capsule) are drawn up close as well (they showed the plain cover there).
     val vaultStyle = Features.saveVaultStyle.state.value
-    val kind = saveObjectKind(com.shelf.launcher.data.Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform), vaultStyle, Models3D.saveCardIdFor(look) != null)
+    val kind = saveObjectKind(ps2BrowserFor(vaultStyle, com.shelf.launcher.data.Ps2BrowserStyle.on.value, game.platform) != null, vaultStyle, Models3D.saveCardIdFor(look) != null)
     if (kind == SaveObjectKind.PS2_BROWSER && ps2 != null) {
         Box(modifier, contentAlignment = Alignment.Center) {
             Ps2SaveTile(ps2, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, game = game, logo = logo)
@@ -1224,7 +1241,7 @@ private val SquareIconShape = RoundedCornerShape(16.dp)
 @Composable
 private fun saveIconShape(): androidx.compose.ui.graphics.Shape = when (Features.saveVaultStyle.state.value) {
     Features.SaveVaultStyle.CAPSULE -> CapsuleIconShape
-    Features.SaveVaultStyle.CLASSIC, Features.SaveVaultStyle.ICONS -> SquareIconShape
+    Features.SaveVaultStyle.CLASSIC, Features.SaveVaultStyle.ICONS, Features.SaveVaultStyle.PS2 -> SquareIconShape
     else -> RoundedCornerShape(6.dp)
 }
 
@@ -1612,3 +1629,13 @@ internal fun vaultFloor(family: ChannelWindowTokens?): Color =
 
 /** Update 499: the vault is drawn in a dark layout family's colours ([vaultFamilyColors]). */
 internal val LocalVaultFamily = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/** (Batch 523) A save with no icon in the icon looks: its console's own symbol, light on the dark vault; else its initials. */
+@Composable
+internal fun VaultIconFallback(game: Game) {
+    val sym = remember(game.platform) { BadgeLogos.symbol(game.platform) }
+    if (sym != null) Box(Modifier.fillMaxSize(0.6f), contentAlignment = Alignment.Center) {
+        AsyncImage(model = sym.first, contentDescription = game.platform, contentScale = ContentScale.Fit,
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White.copy(alpha = 0.78f)), modifier = Modifier.fillMaxSize())
+    } else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+}
