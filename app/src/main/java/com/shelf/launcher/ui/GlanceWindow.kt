@@ -486,7 +486,8 @@ private fun GlancePill(label: String, accent: Color, onAccent: Color, modifier: 
     }
 }
 
-/** (Batch 523) Details in the page: the whole story in the room under the actions, ▲ ▼ / a finger scroll it, no auto-pan. */
+/** (Batch 523) Details in the page: the whole story in the room under the actions, ▲ ▼ / a finger scroll it, no auto-pan.
+ * (523o: at least 48 dp tall - it takes focus, and a one-line story made a 38 px target; popup gate p523f, Shared x 46 layouts.) */
 @Composable
 private fun GlanceAllDetails(summary: String?, roomPx: Float) {
     val d = androidx.compose.ui.platform.LocalDensity.current
@@ -496,7 +497,7 @@ private fun GlanceAllDetails(summary: String?, roomPx: Float) {
     LaunchedEffect(Unit) { delay(60); runCatching { fr.requestFocus() } }
     Spacer(Modifier.height(8.dp))
     Box(
-        Modifier.heightIn(max = with(d) { roomPx.coerceAtLeast(40.dp.toPx()).toDp() }).focusRequester(fr)
+        Modifier.heightIn(min = 48.dp, max = with(d) { roomPx.coerceAtLeast(48.dp.toPx()).toDp() }).focusRequester(fr)
             .onKeyEvent { e ->
                 if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onKeyEvent false
                 val dir = when (e.key) { androidx.compose.ui.input.key.Key.DirectionDown -> 1; androidx.compose.ui.input.key.Key.DirectionUp -> -1; else -> return@onKeyEvent false }

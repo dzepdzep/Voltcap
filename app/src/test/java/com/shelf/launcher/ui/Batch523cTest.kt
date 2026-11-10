@@ -160,3 +160,13 @@ class Batch523PickupTest {
         for (i in 1..100) { val y = CoverFlight.yaw(i / 100f, -20f); assertTrue(y <= prev + 1e-4f); prev = y } // one way round, no flip
     }
 }
+
+/** 523o: popup gate p523f (RP Classic, x1.0) failed Shared in 46 layouts - the focusable story box under the actions was 38 px tall (< 24 dp). */
+class Batch523oTouchTest {
+    @Test fun sharedStoryBoxIsATouchSizedTarget() {
+        val src = java.io.File("src/main/java/com/shelf/launcher/ui/GlanceWindow.kt").readText()
+        val f = src.substring(src.indexOf("private fun GlanceAllDetails"), src.indexOf("private fun GlanceRound"))
+        assertTrue("story box at least 48 dp", f.contains("heightIn(min = 48.dp"))
+        assertTrue("never capped below 48 dp", f.contains("coerceAtLeast(48.dp.toPx())"))
+    }
+}
