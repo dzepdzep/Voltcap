@@ -46,3 +46,17 @@ Read-only first:
 - a screenshot of the QA app home.
 
 Then compare with the Thor (where the bar hides). Only after the cause is known: a fix in MainActivity's window insets (no system setting changed). Never guess.
+
+## Running the device tests efficiently (520)
+
+- **One unattended gate per device:** `tools/qa/device/hwgate520.sh TAG` (about 35 min). It chains the controller contract on 13 layouts, the flat / wide art check, Case stacks and Game shelf frame pacing, and a 3-round memory soak.
+  - Same quality as running each script alone: each part restores the QA app's settings, blocks launches and never presses HOME.
+  - Push the five scripts once (CR stripped), start with `nohup`, and collect `<QA files>/TAG_*` and `perf514/` afterwards.
+- **KONKR:** run `hwgate520.sh k520`. For the long soak, also run `mem520.sh k520mem 10`.
+  - Pass: no monotonic Java / Native growth, and PSS after trim within 20 % of round 1.
+  - Compare Case stacks pacing with 516 (burst p90 36 ms, 10.4 % janky).
+- **Thor:** `hwgate520.sh t520`, plus the second-screen items above (they need the owner).
+- **Odin 3:** the read-only navigation-bar commands above first, then `hwgate520.sh o520`.
+- **Rules in all scripts:**
+  - never press A in the R1 panel (real Wi-Fi / Bluetooth / DND);
+  - check before installing that the APK is `com.shelf.launcher.qa` (`apk_secret_scan.py`).

@@ -1,3 +1,20 @@
+# Update 520i (10 Nov 2026) — P2 backup verified, Game grid single-row ▲▼, Hero tiles / Cinema spacing, ScreenScraper retries, Drive mixed-version tests, memory soak script (local, next/0.6.70)
+
+- **P2 (owner-approved)**: the RP Classic's save folders were copied to `Claude outputs\backup_2026-11-10_P2\RPClassic_MC94516AQF091001112\saves`, structure kept.
+  - 33/33 files, 19,185,603 bytes; sha256 matches between the handheld (`SHA256SUMS_device.txt`) and the PC (`SHA256SUMS_pc_105651.txt`).
+  - Found: RetroArch saves are also synced by **Syncthing**.
+- **Game grid** (`ui/LauncherScreen.kt`, `ui/GridHome.kt` `gridLoopRowMoves`): with Endless on and every game in one row, ▲ ▼ wrapped round onto game (cols mod n). They now stay on the game; grids with two or more rows are unchanged. RP Classic: checked at 100 % and 50 % spacing.
+- **K1** (`data/Features.kt` `hero_tiles_spacing`, `cn_spacing`; `ui/StyleHeroTiles.kt`, `ui/StyleCinema.kt`, `ui/R1Extras.kt`, `ui/SettingsIndex.kt`): Game spacing for Hero tiles and Cinema, in their own options, R1 and search. At 100 % the spacing is unchanged. RP Classic: screenshots at 100 / 50 / 200 %, controller pass PASS.
+- **ScreenScraper** (`data/ScreenScraper.kt` `artAskCounts`, `LauncherViewModel.kt`): before, a look-up that failed on ScreenScraper's side was recorded as "asked", so the automatic art and details runs skipped that game for 14 days. They now try it again.
+- **Drive with mixed versions:** `DriveMix520Test` checks with fake data that:
+  - inbound addresses are cleaned;
+  - 0.6.69's own addresses stay stable;
+  - other data is untouched.
+- **Tools:**
+  - `tools/qa/device/mem520.sh`: memory soak. RP Classic 3-round reference: 108 → 200 MB, 194 MB after trim, Java flat.
+  - `runtime/task.ps1 hash-backup`: PC-side hashes of a P2 backup.
+- **Tests:** unit tests, `static_checks --strict` and QA self-tests pass. RP Classic device checks are listed above and in MASTER_BACKLOG.
+
 # Update 520e (10 Nov 2026) — Game grid spacing, ScreenScraper failure notes, R1 D-pad safety, Cover details recordings, upgrade P1 (local, next/0.6.70)
 
 - **K1 Game grid** (`data/Features.kt` `grid_spacing`, `ui/GridHome.kt`, `ui/SettingsDialog.kt`, `ui/R1Extras.kt`):

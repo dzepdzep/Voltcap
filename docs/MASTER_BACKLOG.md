@@ -35,6 +35,7 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Automatic art / details runs no longer skip a game for two weeks after a ScreenScraper timeout / busy / limit (it was recorded as "asked") | 520, `artAskCounts` + unit test; device: not forceable without changing the production service |
 | Game grid ▲ ▼ with every game in one row (Endless on) stay on the game instead of jumping to (cols mod n) | 520, unit test + RP Classic q521 (100 % and 50 %: Zelda stays after ▼ and ▲) |
 | Game spacing for Hero tiles and Cinema (own options + R1; 100 % = as before) | 520, unit tests + RP Classic q521 screenshots (100 / 50 / 200 %) + controller pass |
 | Game spacing for the Game grid (own option + R1) | 520, RP Classic grid520 (100 / 50 / 180 %) |
@@ -68,7 +69,7 @@ Statuses:
 
 | Item | Status / next step |
 |---|---|
-| KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW: not connected) |
+| KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW). 520: one-command soak `tools/qa/device/mem520.sh TAG [rounds]` (10 layouts × 20 moves + window per round, meminfo per round, after 60 s idle and after a critical trim; no HOME press — the real Voltcap is the KONKR's home app). Classic reference run (3 rounds): PSS 108 → 184 / 193 / 200 MB, 195 idle, 194 after trim; Java flat 10–17 MB, native 114 → 121 MB (+3 % per round, flattening) |
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | OPEN, render-bound (494); no change without a new measurement plan |
 | ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
 | Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 RP Classic: 2 recordings (`flash513.sh` COVERDETAILS, 690 + 784 frames): 1 one-frame event, during the fast 5-step burst — the NEW case's first frame (its no-art generated cover drawn at another texture size, then redrawn), not the leaving case's flight; 0 in the second run. Both look like first-frame texture / bounds, not motion maths. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
@@ -119,6 +120,13 @@ Statuses:
 | Light-up cartridge, owner's exact Pokémon Brown label | OWNER data |
 | KONKR / Thor re-runs of A1 / A3 / A5 / B3 / C1 / C2 | BLOCKED-HW this session (only the RP Classic is connected) |
 | Production backups P2–P7, real install B2–B6 | BLOCKED-OWNER (each step approved separately; docs/DATA_BACKUP_513.md, docs/REAL_INSTALL_510.md) |
+
+## 5b. Process risks found (520)
+
+| Risk | Status |
+|---|---|
+| `install_build debug` installs whatever the debug build is. With `qa_variant.properties` set to false the debug APK is `com.shelf.launcher`, same key, versionCode 76 > 74, so it **would install over the owner's real app**. | Mitigated in practice: every QA install in 520 was preceded by an `apk_secret_scan` package check (`com.shelf.launcher.qa`). Proposal (owner decision): let the PC tool build the existing `qa` build type (`assembleQa`) so QA never depends on a properties toggle. |
+| QA scripts pressing A blindly in the R1 panel could toggle the real Wi-Fi / Bluetooth / DND. | Rule: QA scripts never press A in R1; R1 checks go through unit tests or a dedicated hook. |
 
 ## 6. Deferred
 New system layouts, new 3D templates, consoles without references, Studio templates, popups inside the activity window,
