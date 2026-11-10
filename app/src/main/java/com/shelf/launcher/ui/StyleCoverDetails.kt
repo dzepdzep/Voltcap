@@ -363,6 +363,7 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
                 key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[real]) {
                     val sp = sizeOf(real)
                     val gm = c.games[real]
+                    val topCache = remember { CaseTopCache() }
                     val near = i == lo || i == lo + 1
                     val j = (i - lo) + side + 1
                     Box(
@@ -388,7 +389,7 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
                             }
                             .drawBehind {
                                 val cam = (posFn() - lo) * (rel[(side + 2).coerceAtMost(rel.lastIndex)] - rel[side + 1])
-                                drawCaseTop(com.shelf.launcher.data.Features.spineDepth.state.value, c0 - (c0 + rel[j.coerceIn(0, rel.lastIndex)] - cam - sp.w / 2f))
+                                drawCaseTop(com.shelf.launcher.data.Features.spineDepth.state.value, c0 - (c0 + rel[j.coerceIn(0, rel.lastIndex)] - cam - sp.w / 2f), cache = topCache)
                             }
                             .pointerInput(real) { detectTapGestures { if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave(); if (real == latestFocus) open() else select(real) } }
                     ) {
