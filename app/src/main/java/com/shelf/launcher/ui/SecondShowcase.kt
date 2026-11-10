@@ -188,7 +188,7 @@ internal fun ShowcaseTopBar(
         Pill(Modifier.tapOnly(onPageTap)) {
             Box(Modifier.size(26.dp).clip(CircleShape).background(ShelfTheme.accent), contentAlignment = Alignment.Center) {
                 if (avatarUrl != null) AsyncImage(avatarUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                else Text("P1", color = onAccentColor(), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                else InkGlyph("P1", onAccentColor(), 10.dp) // (Batch 521: centred by its ink)
             }
             if (points != null) {
                 Spacer(Modifier.width(7.dp))

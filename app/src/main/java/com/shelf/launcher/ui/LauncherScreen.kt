@@ -4291,7 +4291,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val y = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
+                            // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
+                            val y = if (rowShiftPx == 0f || top == androidx.compose.ui.layout.AlignmentLine.Unspecified ||
+                                line == androidx.compose.ui.layout.AlignmentLine.Unspecified) y0 else {
+                                val boxH = 2f * (line - top)
+                                val minY = 40.dp.toPx() - top - rowShiftPx // (the name above the tiles too)
+                                val maxY = h - top - rowShiftPx - boxH
+                                y0.toFloat().coerceIn(minOf(minY, maxY), maxOf(minY, maxY)).toInt()
+                            }
                             tilePlaced[0] = y; tilePlaced[1] = h
                             if (QaTrace.on) QaTrace.event("tilemid", "h=$h group=${p.height} line=$line mid=$mid shift=${tileScreenShift.floatValue} y=$y")
                             layout(p.width, h) { p.place(0, y) }

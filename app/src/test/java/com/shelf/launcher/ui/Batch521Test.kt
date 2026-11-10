@@ -38,8 +38,20 @@ class Batch521Test {
         assertTrue(ls.contains("val line = p[TilesMidLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }"))
         assertTrue(ls.contains("val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }"))
         assertTrue(ls.contains("com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp"))
+        assertTrue("a moved row stays on the screen", ls.contains("y0.toFloat().coerceIn(minOf(minY, maxY), maxOf(minY, maxY)).toInt()"))
         // The profiles row itself: 12 dp from the top, 40 dp tall at most (TileSwitchProfiles) - 60 dp clears it.
         assertTrue(ls.contains("padding(start = 22.dp, top = 12.dp)"))
         assertTrue(src("ui/TileSwitch.kt").contains("val d = if (on) 40.dp else 32.dp"))
+    }
+
+    @Test fun buttonLettersAreCentredByTheirInk() {
+        // The shared glyph draws at the glyph's own bounds (not the line box) and the button hints use it.
+        val chrome = src("ui/HomeChrome.kt")
+        assertTrue(chrome.contains("size.height / 2f - (bounds.top + bounds.bottom) / 2f"))
+        assertTrue(chrome.contains("InkGlyph(text, tint, sizeDp.dp)"))
+        for ((file, call) in listOf("ui/ProfileSelect.kt" to "InkGlyph(key,", "ui/CubeHub.kt" to "InkGlyph(button,",
+            "ui/StyleMemoryCard.kt" to "InkGlyph(button,", "ui/StyleCardBinder.kt" to "InkGlyph(letter,", "ui/PlatformBrowser.kt" to "InkGlyph(button,",
+            "ui/StylePocketQuest.kt" to "InkGlyph(label,", "ui/SecondShowcase.kt" to "InkGlyph(\"P1\""))
+            assertTrue(file, src(file).contains(call))
     }
 }

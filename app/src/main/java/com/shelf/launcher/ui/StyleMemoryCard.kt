@@ -405,7 +405,7 @@ private fun McHints(modifier: Modifier) {
         fun Hint(button: String, word: String) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF2A2C31).copy(alpha = 0.85f)), contentAlignment = Alignment.Center) {
-                    Text(button, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, lineHeight = 10.sp)
+                    InkGlyph(button, Color.White, 9.dp) // (Batch 521: centred by its ink)
                 }
                 Spacer(Modifier.width(5.dp))
                 Text(word, color = Color.White, fontSize = 12.sp, style = outline)

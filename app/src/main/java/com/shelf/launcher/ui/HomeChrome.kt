@@ -43,6 +43,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1183,6 +1186,39 @@ private enum class PsShape(val color: Color) {
 }
 
 /**
+ * Batch 521 (owner: "A B X Y aren't centred in the circles in many popups"): a button letter or short label whose INK - the
+ * drawn shape, measured with the font's real glyph bounds - is the box's exact size, so a parent that centres it centres
+ * the letter itself. A Text centres its line box instead, and a font's ascent / descent (more room above capitals than
+ * below) left the letters a pixel or two low or high in every small circle. [textSize] in dp (a big system font can't push
+ * it out of its circle); a fixed bold sans, like a controller's own printing.
+ */
+@Composable
+internal fun InkGlyph(text: String, color: Color, textSize: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier, bold: Boolean = true) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val paint = remember(textSize, bold, density.density) {
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF,
+                if (bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            this.textSize = with(density) { textSize.toPx() }
+        }
+    }
+    val bounds = remember(paint, text) { inkBounds(paint, text) }
+    val w = with(density) { (bounds.width() + 2).toDp() }
+    val h = with(density) { (bounds.height() + 2).coerceAtLeast(2).toDp() }
+    androidx.compose.foundation.Canvas(modifier.size(w, h).semantics { contentDescription = text }) {
+        paint.color = color.toArgbInt()
+        drawContext.canvas.nativeCanvas.drawText(text, size.width / 2f - (bounds.left + bounds.right) / 2f,
+            size.height / 2f - (bounds.top + bounds.bottom) / 2f, paint)
+    }
+}
+
+/** The pixel box [text]'s glyphs cover when drawn with [paint] at (0, 0) on the baseline (empty text: a zero box). */
+internal fun inkBounds(paint: android.graphics.Paint, text: String): android.graphics.Rect =
+    android.graphics.Rect().also { if (text.isNotEmpty()) paint.getTextBounds(text, 0, text.length, it) }
+
+private fun Color.toArgbInt(): Int = android.graphics.Color.argb((alpha * 255).toInt(), (red * 255).toInt(), (green * 255).toInt(), (blue * 255).toInt())
+
+/**
  * Round for one-letter buttons, a small pill for L1 / SELECT etc. — never wraps, and the letter or shape
  * always sits dead centre in its circle: sizes are in dp (not sp, so a big system font size can't push
  * the letter out of the circle) and the font's extra top/bottom padding is trimmed.
@@ -1232,13 +1268,11 @@ internal fun GlyphPill(symbol: String) {
     val tint = if (style == com.shelf.launcher.data.ButtonGlyphs.XBOX && single) when (text) {
         "A" -> Color(0xFF7BE07B); "B" -> Color(0xFFFF7B7B); "X" -> Color(0xFF7FB4FF); "Y" -> Color(0xFFFFD866); else -> Color.White
     } else Color.White
-    val density = androidx.compose.ui.platform.LocalDensity.current
     val sizeDp = when {
         single -> 10.5f
         text.length > 2 -> 8f
         else -> 9f
     }
-    val fontSize = with(density) { sizeDp.dp.toSp() }
     Box(
         Modifier
             .height(18.dp)
@@ -1248,22 +1282,8 @@ internal fun GlyphPill(symbol: String) {
             .padding(horizontal = if (single) 0.dp else 6.dp),
         contentAlignment = Alignment.Center
     ) {
-        FullText(
-            text,
-            color = tint,
-            fontSize = fontSize,
-            lineHeight = fontSize,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
-                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),
-                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
-                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
-                )
-            ))
-        )
+        // (Batch 521: the letter's own ink centred, not its line box.)
+        InkGlyph(text, tint, sizeDp.dp)
     }
 }
 
