@@ -398,8 +398,10 @@ internal fun RowMotionWindow(
 
             // ---- the cover (The row opens up only: in Row reveal the row's own card stays where it is) ----
             if (opens && cover != null) {
-                AsyncImage(
-                    rememberCardArtRequest(cover, ArtKind.COVER), g.name, contentScale = ContentScale.Crop,
+                // (Batch 523, Smart Fill: the opened card cut a portrait cover's foot off in a square tile's shape - it now
+                // fills by a light crop or shows the whole cover over its soft copy; never stretched.)
+                SmartArt(
+                    cover, g.name, request = rememberCardArtRequest(cover, ArtKind.COVER), well = Color(0xFF101114),
                     modifier = Modifier
                         .graphicsLayer {
                             val t = p.value

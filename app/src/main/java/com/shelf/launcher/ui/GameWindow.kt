@@ -1793,7 +1793,7 @@ private fun TvWindowBody(
         val roomy = maxWidth > 380.dp
         when (page) {
             WinPage.MAIN -> {
-                if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                if (backdrop != null) SmartArt(backdrop, null, Modifier.fillMaxSize().pixelArtwork(), request = rememberBackdropRequest(backdrop), maxCrop = SmartFill.maxCropFor(backdrop, cover))
                 val video = state.videoUrls[g.stableKey]
                 VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
@@ -2000,7 +2000,8 @@ private fun WindowBody(
             ) { pg ->
                 when (pg) {
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
-                        if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Batch 523, Smart Fill: the cover standing in for a missing backdrop shows whole over its soft copy.)
+                        if (backdrop != null) SmartArt(backdrop, null, Modifier.fillMaxSize().pixelArtwork(), request = rememberBackdropRequest(backdrop), maxCrop = SmartFill.maxCropFor(backdrop, cover))
                         val video = state.videoUrls[g.stableKey]
                         VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                         if (showName) {
@@ -2143,7 +2144,8 @@ private fun WindowBody(
                 if (!LocalWinInspect.current) {
                     Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
                         // (Update 202: Crop fills the place; the cover's file's flat strips trimmed — rememberCoverRequest.)
-                        if (cover != null) AsyncImage(rememberCoverRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Batch 523: Smart Fill - a light crop, else the whole cover over its soft copy.)
+                        if (cover != null) SmartArt(cover, g.name, Modifier.fillMaxSize().pixelArtwork(), request = rememberCoverRequest(cover))
                     }
                     Spacer(Modifier.width(16.dp))
                 }
@@ -2800,7 +2802,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     val coverBox: @Composable (Modifier) -> Unit = { m ->
         Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
             // (Update 202: the cover's file's flat strips trimmed — rememberCoverRequest; Crop fills the place.)
-            if (cover != null) AsyncImage(rememberCoverRequest(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (cover != null) SmartArt(cover, null, Modifier.fillMaxSize(), request = rememberCoverRequest(cover))
         }
     }
     val stacked = fit == null

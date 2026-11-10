@@ -46,7 +46,13 @@ internal object SmartFill {
     }
 
     /** Whether the picture fills by a crop (true) or shows whole over its soft copy (false). Pure. */
-    fun fills(art: Float, room: Float): Boolean = cropLoss(art, room) <= MAX_CROP
+    fun fills(art: Float, room: Float, maxCrop: Float = MAX_CROP): Boolean = cropLoss(art, room) <= maxCrop
+
+    /**
+     * The crop a picture may take in a room: a cover (box art - its title and logo run to its edges) [MAX_CROP]; a
+     * backdrop / screenshot / fan art (scenery, nothing at its edges to lose) up to 45 %. Pure.
+     */
+    fun maxCropFor(url: String?, cover: String?): Float = if (url != null && url == cover) MAX_CROP else 0.45f
 
     /** Where the crop is anchored: a picture taller than its room keeps its upper part (vertical bias -0.4). Pure. */
     fun cropBias(art: Float, room: Float): Float = if (art < room) -0.4f else 0f
@@ -59,6 +65,8 @@ internal fun SmartArt(
     well: Color = Color.Black,
     /** The style's own request for [url] (backdrop / trimmed cover); default the shared style-art request. */
     request: Any? = null,
+    /** The largest share a crop may cut ([SmartFill.maxCropFor]: less for a cover than for scenery). */
+    maxCrop: Float = SmartFill.MAX_CROP,
     noArt: @Composable (Modifier) -> Unit = { m -> Box(m.background(well)) }
 ) {
     if (url == null) { noArt(modifier); return }
@@ -73,7 +81,7 @@ internal fun SmartArt(
                 CoverAspects.note(url, sz.width, sz.height); art = sz.width / sz.height
             }
         }
-        if (a != null && SmartFill.fills(a, room)) {
+        if (a != null && SmartFill.fills(a, room, maxCrop)) {
             AsyncImage(req, contentDescription, Modifier.fillMaxSize(), contentScale = ContentScale.Crop,
                 alignment = BiasAlignment(0f, SmartFill.cropBias(a, room)), onSuccess = onSuccess)
         } else {

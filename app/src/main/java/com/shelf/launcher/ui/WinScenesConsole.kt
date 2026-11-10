@@ -219,7 +219,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                         Row(Modifier.fillMaxSize()) {
                             Box(Modifier.size(coverW, coverW / 0.72f).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))
                                 .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(3.dp))) {
-                                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                             }
                             Spacer(Modifier.width(12.dp))
                             // (Update 471, facts gate: beside the cover the facts ran past the column at rest — "KIND" shown, its
@@ -319,14 +319,14 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             drawPeelFlap(pk)
         }.clip(RoundedCornerShape(10.dp)).background(ground)
     ) {
-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
         Row(Modifier.fillMaxSize().padding(18.dp)) {
             Column(Modifier.weight(0.5f).fillMaxHeight()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(if (compact) 44.dp else 56.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.DarkGray)
                         .border(2.dp, Color.White, androidx.compose.foundation.shape.CircleShape)) {
-                        if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        if (ctx.cover != null) SmartArt(ctx.cover, null, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                     }
                     Spacer(Modifier.width(10.dp))
                     Column {
@@ -556,7 +556,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize()) {
             // The art strip with the name.
             Box(Modifier.fillMaxWidth().height(if (compact) 78.dp else if (short) 100.dp else 132.dp).background(p.bottom)) {
-                (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
                     WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
@@ -599,7 +599,7 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                     val coverW = minOf(maxHeight * 0.72f, maxWidth * 0.6f)
                     if (ctx.page == WinPage.MAIN) Row(Modifier.fillMaxSize()) {
                         Box(Modifier.width(coverW).height(coverW / 0.72f).background(Color.Black.copy(alpha = 0.1f))) {
-                            if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                            if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f).then(fadeScroll())) {
@@ -684,7 +684,7 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             // The cover, taped on.
             Box(Modifier.fillMaxHeight(0.78f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
-                    if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                 }
                 Box(Modifier.align(Alignment.TopCenter).offset(y = (-8).dp).size(60.dp, 18.dp).graphicsLayer { rotationZ = -6f }.background(Color(0x99F3E9C6)))
             }

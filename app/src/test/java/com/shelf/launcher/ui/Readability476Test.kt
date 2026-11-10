@@ -98,7 +98,8 @@ class Readability476Test {
     @Test fun windowWidePicturesUseTheBackdropRequest() {
         val homes = src("WinScenesHomes2.kt")
         val spot = homes.substring(homes.indexOf("internal fun SpotPoster"), homes.indexOf("internal fun SpotPoster") + 2500)
-        assertTrue(spot.contains("(ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it)"))
+        // (Batch 523: through Smart Fill, still with the backdrop request.)
+        assertTrue(spot.contains("(ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, ") && spot.contains("request = rememberBackdropRequest(it)"))
         for (f in listOf("WinScenesHomes2.kt", "WinScenesConsole.kt"))
             assertFalse(f, Regex("\\(ctx\\.backdrop \\?: ctx\\.wide[^)]*\\)\\?\\.let \\{ AsyncImage\\(rememberStyleArtRequest").containsMatchIn(src(f)))
     }

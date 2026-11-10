@@ -630,7 +630,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         Modifier.fillMaxHeight().aspectRatio(0.74f).clip(RoundedCornerShape(14.dp)).background(mixS(base, Color.Black, 0.45f))
                             .border(4.dp, mixS(base, Color.White, 0.6f), RoundedCornerShape(14.dp)).padding(4.dp).clip(RoundedCornerShape(10.dp))
                     ) {
-                        if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                     }
                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -1027,7 +1027,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 val clipUrl = ctx.state.videoUrls[ctx.g.stableKey]?.takeIf { ctx.state.appearance.videoPreviews }
                 var clipOn by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
                 if (pick != null && !clipOn) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 if (!artHere) CaseFlowNoArt(ctx, Modifier.fillMaxSize())
                 if (clipOn && clipUrl != null) VideoBackdrop(clipUrl, ctx.state.appearance.videoSound, Modifier.fillMaxSize(), fit = true, shade = false)
                 if (clipUrl != null) SceneControl(
@@ -1495,7 +1495,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     ) {
         Row(Modifier.fillMaxWidth().weight(1f)) {
             Box(Modifier.fillMaxHeight().aspectRatio(0.74f).clip(RoundedCornerShape(20.dp)).background(Color(0xFFE6ECF3))) {
-                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
             }
             Spacer(Modifier.width(22.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -1625,7 +1625,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
         Box(slide(1).padding(start = w * 0.03f, top = h * 0.2f).size(h * 0.52f, h * 0.68f).graphicsLayer { rotationZ = -3f }) {
             Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
             Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
-                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
             }
         }
         // The stats panel.
