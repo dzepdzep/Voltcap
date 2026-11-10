@@ -5,7 +5,8 @@
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; N=${2:-10}
 LAYS=${3:-"SHELF STACKS TILES CHAN CASEFLOW COVERDETAILS GRID HERO_TILES CINEMA BOX"}
 O=$F/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt
-A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
+# (Batch 523: QA_FIX=true = the stand-in library on every start - the hook is not saved, a restarted QA app had none: GT78.)
+A() { am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_fixture_roms ${QA_FIX:-false} "$@" >/dev/null 2>&1; }
 log() { echo "$*" >> $L; }
 k() { f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *com.shelf.launcher.qa*) input keyevent $1; sleep ${2:-0.35};; *) log "ABORT $f"; echo DONE >> $L; exit 2;; esac; }
 mem() { dumpsys meminfo $P | awk -v t="$1" '/TOTAL PSS:/{pss=$3} /Java Heap:/{j=$3} /Native Heap:/{n=$3} /Graphics:/{g=$2} /EGL mtrack/{e=$3} /GL mtrack/{gl=$3} END{print t, "pss="pss, "java="j, "native="n, "graphics="g, "egl="e, "gl="gl}' >> $L; }

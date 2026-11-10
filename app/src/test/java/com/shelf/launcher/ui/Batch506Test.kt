@@ -71,8 +71,9 @@ class Batch506Test {
         assertEquals("PS", studioInitials("PlayStation"))
         assertEquals("?", studioInitials(""))
         val s = src("ui/WinSceneStudio.kt")
-        // The art at its own shape, whole; the name never over it.
-        assertTrue(s.contains("contentScale = ContentScale.Fit") && !s.contains("ContentScale.Crop"))
+        // The art never stretched, the name never over it. (Batch 523, owner: no bars round the picture - Smart Fill: a light
+        // crop, else the whole picture over its soft copy; SmartArt never stretches.)
+        assertTrue(s.contains("SmartArt(") && !s.contains("ContentScale.FillBounds"))
         assertTrue(WinScene.STUDIO_PANEL in MORE_SCENES)
     }
 

@@ -364,7 +364,9 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             val rich = listOfNotNull(ctx.year, ctx.developer, ctx.genres, ctx.summary?.takeIf { it.isNotBlank() }).size >= 2
             val liveArt = ctx.wide ?: ctx.backdrop ?: ctx.cover
             if (ctx.page == WinPage.MAIN && !rich && liveArt != null) Box(Modifier.weight(0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(ground)) {
-                AsyncImage(rememberStyleArtRequest(liveArt), ctx.name, Modifier.fillMaxSize(), contentScale = if (liveArt == ctx.cover) ContentScale.Fit else ContentScale.Crop)
+                // (Batch 523: Smart Fill for a cover too - it sat whole between bars in the wide panel.)
+                if (liveArt == ctx.cover) SmartArt(liveArt, ctx.name, Modifier.fillMaxSize(), well = ground)
+                else AsyncImage(rememberStyleArtRequest(liveArt), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Color.White.copy(alpha = 0.92f)).padding(horizontal = 12.dp, vertical = 8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(ctx.played, color = Color(0xFF1A2633), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
@@ -388,7 +390,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     // heads it, as on the console's page, and its description follows the facts.)
                     (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { art ->
                         Box(Modifier.fillMaxWidth().height(if (compact) 96.dp else 140.dp).clip(RoundedCornerShape(6.dp)).background(ground)) {
-                            AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = if (art == ctx.cover) ContentScale.Fit else ContentScale.Crop)
+                            if (art == ctx.cover) SmartArt(art, ctx.name, Modifier.fillMaxSize(), well = ground)
+                            else AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         }
                         Spacer(Modifier.height(10.dp))
                     }

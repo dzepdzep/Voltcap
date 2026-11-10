@@ -4,7 +4,8 @@
 # forward and back), Select (main menu, 3 down), Start (game options); after each a screenshot and the focused window, then B
 # (twice for the menu) and a check that the home window has the focus again.  sh ctl516.sh TAG [LAYOUTS]
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=${2:-SHELF TILES CHAN STACKS}; O=$F/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt
-A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
+# (Batch 523: QA_FIX=true = the stand-in library on every start - the hook is not saved, a restarted QA app had none: GT78.)
+A() { am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_fixture_roms ${QA_FIX:-false} "$@" >/dev/null 2>&1; }
 W() { dumpsys window | grep mCurrentFocus | grep -o "Window{[0-9a-f]*" | tail -1; }
 log() { echo "$*" >> $L; }
 k() { f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *com.shelf.launcher.qa*) ;; *) log "ABORT: focus $f"; echo DONE >> $L; exit 2;; esac; input keyevent $1; sleep ${2:-0.8}; }

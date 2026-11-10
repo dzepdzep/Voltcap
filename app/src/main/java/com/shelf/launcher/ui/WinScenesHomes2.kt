@@ -574,7 +574,7 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
             // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)
             Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
                 Box(Modifier.width(minOf(w * 0.24f, 150.dp)).aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.Black)) {
-                    ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+                    SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> SceneNoArt(ctx, m) })
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {

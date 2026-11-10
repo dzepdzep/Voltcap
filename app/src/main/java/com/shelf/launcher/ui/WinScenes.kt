@@ -931,7 +931,8 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 1)
+                                    // (Batch 523 gate, p523all: "Saves: Save sync isn't set up" was cut at one line - whole now.)
+                                    WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
                                 }
                             }
                         }
@@ -966,7 +967,7 @@ private fun CaseFlowNoArt(ctx: WinSceneCtx, modifier: Modifier) {
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.fillMaxHeight().aspectRatio(0.7f).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.06f))
             .border(1.5.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
-            if (ctx.cover != null) AsyncImage(rememberStyleArtRequest(ctx.cover), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            if (ctx.cover != null) SmartArt(ctx.cover, null, Modifier.fillMaxSize(), well = Color(0xFF15171C))
             // The case's spine line, as the cases on the shelf have.
             else Box(Modifier.align(Alignment.CenterStart).padding(start = 5.dp).width(1.5.dp).fillMaxHeight(0.8f).background(Color.White.copy(alpha = 0.3f)))
         }

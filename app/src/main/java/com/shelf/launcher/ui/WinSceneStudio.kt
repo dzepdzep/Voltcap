@@ -148,7 +148,8 @@ private fun StudioArt(ctx: WinSceneCtx, width: Dp, accent: Color, ink: Color) {
             }
         }
         Box(Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.22f))) {
-            if (art != null) AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            // (Batch 523: Smart Fill - a light crop, else the whole picture over its soft copy, never bars.)
+            if (art != null) SmartArt(art, ctx.name, Modifier.fillMaxSize(), well = Color.Black.copy(alpha = 0.22f))
             else {
                 // No art: an empty frame with the console's initials.
                 Canvas(Modifier.fillMaxSize().padding(4.dp)) {

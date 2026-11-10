@@ -2,7 +2,8 @@
 # Batch 520: Game shelf pulled-out case with wide / portrait fixture art — isolated Voltcap QA app ONLY (fixture art,
 # preview layout, settings snapshotted and restored). sh q520.sh TAG
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; O=$F/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt
-A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
+# (Batch 523: QA_FIX=true = the stand-in library on every start - the hook is not saved, a restarted QA app had none: GT78.)
+A() { am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_fixture_roms ${QA_FIX:-false} "$@" >/dev/null 2>&1; }
 log() { echo "$*" >> $L; }
 k() { f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *com.shelf.launcher.qa*) input keyevent $1; sleep ${2:-0.8};; *) log "ABORT $f"; echo DONE >> $L; exit 2;; esac; }
 log "start $(date +%T) $(getprop ro.product.model) real=$(pidof com.shelf.launcher) qa=$(dumpsys package $P | grep -m1 versionName)"

@@ -89,7 +89,9 @@ private fun Modifier.sceneEnter(ctx: WinSceneCtx, rise: Float = 0.18f, squash: B
 @Composable
 private fun ArtWell(art: String?, modifier: Modifier, frame: Color, well: Color, shape: Shape, crop: Boolean = false) {
     Box(modifier.clip(shape).background(well).border(2.dp, frame, shape)) {
-        art?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.matchParentSize().padding(3.dp), contentScale = if (crop) ContentScale.Crop else ContentScale.Fit) }
+        // (Batch 523: Smart Fill instead of a whole picture between bars.)
+        art?.let { if (crop) AsyncImage(rememberStyleArtRequest(it), null, Modifier.matchParentSize().padding(3.dp), contentScale = ContentScale.Crop)
+            else SmartArt(it, null, Modifier.matchParentSize().padding(3.dp), well = well) }
     }
 }
 

@@ -34,6 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -390,7 +392,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
             // (Update 423: the cover follows the room left under the keys — sized by its width it grew past the row and covered
             // the title once the keys wrapped onto more lines.)
             Box(Modifier.widthIn(max = minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f, matchHeightConstraintsFirst = true).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
-                ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit) }
+                ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize().padding(2.dp), well = dim) }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
@@ -427,7 +429,7 @@ internal fun PocketScreen(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(c3).border(3.dp, c0.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).padding(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(minOf(h * 0.28f, 72.dp)).background(c2).border(2.dp, c0)) {
-                    ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, alpha = 0.92f) }
+                    ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize().padding(2.dp).graphicsLayer { alpha = 0.92f }, well = c2) }
                 }
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
@@ -506,7 +508,14 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
-                if (art != null) AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                // (Batch 523: the work in a frame of ITS shape - the mat hugs it instead of a whole picture floating in a wide mat.)
+                if (art != null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    var shape by remember(art) { mutableStateOf(CoverAspects.rawOf(art)) }
+                    AsyncImage(rememberStyleArtRequest(art), ctx.name,
+                        Modifier.then(shape?.let { Modifier.aspectRatio(it.coerceIn(0.4f, 3f), matchHeightConstraintsFirst = true) } ?: Modifier.fillMaxSize()),
+                        contentScale = ContentScale.Fit,
+                        onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f && sz.width.isFinite()) { CoverAspects.note(art, sz.width, sz.height); shape = sz.width / sz.height } })
+                }
             } else ctx.pageBody(Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(10.dp))
