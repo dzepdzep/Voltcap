@@ -462,6 +462,28 @@
    "patch_sha256": null,
    "tree_hash": null,
    "note": "batch 523a: 522h + badge optical sizing (lettering-aware wordmark height, legibility check, one pill height per look, ES-DE fallback sized by its shape, ScummVM / Steam one-colour -> name, store colours, PC / stores gallery page). Installed on RP Classic (popup / badge gate) and GT78 (KONKR memory / scroll; old release-key QA app removed with the owner's OK)"
+  },
+  {
+   "id": "qa-0.6.69-523b",
+   "apk_sha256": "674206dc1d314fb8b40c80d8a74564994e4a2f85a2ea9fddcc6f9e00eb510b73",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "dcb4ed46bf65351cab48ea2d935801ce9730b7f6",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523b: 523a + Smart Fill (popup artwork), Inspect pinch zoom on the piece out of its case, Storage chip whole (built, never installed: superseded by 523c)"
+  },
+  {
+   "id": "qa-0.6.69-523c",
+   "apk_sha256": "22cfc40c6c518d627f5d79d0616449885bd8d7a92aa318858bcffb536dd46998",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "46b810aa4b29af8f7ce48bd6c1de2417c6d8754e",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523c: 523b + Smart Fill on every popup cover / cover-as-backdrop (GameWindow, row opens, scenes); the final 523 gate build"
   }
  ]
 }
