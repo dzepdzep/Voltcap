@@ -36,6 +36,7 @@ Statuses:
 | Item | Evidence |
 |---|---|
 | Console badge / logo audit: 69 consoles, 0 broken references; wrong regional branding (Famicom→NES, Mega Drive→Genesis, TG16 / TGCD→PC Engine, NGPC→NGP badges + folder logos), "FAMICOM DISK SY…" cut, one-colour white blocks (3DO, DOS, Genesis, Mega Drive, MSX, Pokémon mini, Sega CD, Vectrex), 3DO white rectangle, grey pills (PS4 / PS5 / Xbox 360 / One / Series / Switch 2 / regional keys) | FIXED (522), RP Classic QA-app gallery before / after (15 pages × badges / assets + GRID / TILES / CLASSIC), docs/BATCH_522.md |
+| Popup sweep 53 layouts × 6 styles (522) | DONE on RP Classic: p522own / p522scale / p522sty graded; every FAIL fixed or classed as a test limitation (docs/BATCH_522.md §7); re-checks p522gc / p522fix / p522fix2 / p522bub. KONKR / Flip 2 / Thor NOT TESTED |
 | Controller glyph centring in popups / hint bars (InkGlyph, 521) | 522: popclip `glyphs` category + glyphcheck.py; OWN × 53 layouts on RP Classic: 43 glyph measurements on 13 layouts, 0 off centre; font ×1.3: Green Core header keys 7.5 px low → FIXED (InkGlyph), device re-check pending; 5 other styles running (docs/BATCH_522.md §6) |
 | GameNative launch intent = GameNative's own shortcut (`app.gamenative.LAUNCH_GAME`, int `app_id`, `game_source=STEAM`, CLEAR_TOP); DroidDeck `.droiddeck` files validated, Steam category, shortcut / file dedupe; missing-app messages | 522, checked against GameNative's source; unit tests (GameClients522Test, GameNative478Test). Real launch NOT TESTED (neither app on a connected handheld) |
 | Tile home placement on the RP Flip 2: Edit Home row move + hand-placed buttons fought R1's Row place (Middle gap, Top off-screen, Bottom on the buttons); Top hid the "All" chip under the profile pictures | FIXED (521), Flip 2 + Classic QA app Top / Middle / Bottom PASS, `Batch521Test` |
@@ -122,9 +123,11 @@ Statuses:
 | Real RetroAchievements account path | BLOCKED-OWNER |
 | GameNative real launch (D1) | BLOCKED-OWNER (GameNative not signed in; Odin 3 not connected in 522) — then: intent accepted vs game started, return to Voltcap |
 | DroidDeck real launch (shortcut + `.droiddeck` file) | BLOCKED-HW (DroidDeck not on the RP Classic / GT78); confirm the `.droiddeck` / `droiddeck://game/<id>` contract with `dumpsys package com.droiddeck.launcher` |
-| GameNative `.epic` / `.gog` / `.amazon` / `.pcgame` exports | OPEN — not imported (store field + category design; owner decision). GOG ids can be exported as 0 |
-| Tile home: moving / resetting a flow part (round shortcuts) re-flows the row and chips by 18 px and shows / hides the info line (`FlowSlot` keeps the space only while editing) | OPEN — owner decision A (keep the moved part's space, a gap) / B (re-flow, today); affects every layout with flow parts. 522 tile522 evidence |
-| Badge look decisions: one look per mode, very wide wordmarks, PS5 / Xbox One / Series / Switch 2 artwork, Genesis vs Mega Drive name, RA icons | OWNER decision / BLOCKED-REF (docs/BATCH_522.md §1) |
+| GameNative `.epic` / `.gog` / `.amazon` / `.pcgame` exports | DONE-O (522): imported, launched with their `game_source` (contract from GameNative's source); real launch NOT TESTED (no GameNative on a connected handheld) |
+| Tile home: moving / resetting the round buttons moved the row and chips (18 px) and the facts line; Edit Home moved the row 50 dp at Top; resetting the row snapped untouched buttons back | FIXED (522e / 522g, Tile home only): buttons' room kept while they float, Top padding kept in Edit Home, drop check only for a drop. tile522b.sh + tile522.py (RP Classic); RP Flip 2 NOT TESTED (not connected) |
+| Console badge looks | DONE (522, owner decision): Text / Symbol / Logo, wide wordmarks compact on small tiles, regional identities kept; RP Classic gallery b522modes / b522final |
+| PS5 / Xbox One / Xbox Series / Switch 2 badge + folder artwork | BLOCKED-REF — sources and owner download steps in docs/ARTWORK_522_NEW_CONSOLES.md |
+| RA icons for regional keys | OPEN (recommendation only; RA console mapping is metadata — not changed) |
 | MCP install guard active in the desktop tool | BLOCKED-OWNER — restart the Claude desktop app (the tool still serves the pre-521 server.js) |
 | GT78 QA app is release-key signed (0.6.68-qa516a) | owner decision before the debug-key QA build can go on the GT78 |
 | B2 background clip measurement | BLOCKED-HW (no clip library on the connected devices) |

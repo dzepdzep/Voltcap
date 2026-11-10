@@ -429,6 +429,28 @@
    "patch_sha256": null,
    "tree_hash": null,
    "note": "batch 522e: three badge looks, Tile home buttons' room kept, GameNative stores, popup names / facts whole (Storage, Bubbles, Camera, Orbit, Blades, Banner, Row styles), Green Core InkGlyph keys, Edit Home QA hook"
+  },
+  {
+   "id": "qa-0.6.69-522g",
+   "apk_sha256": "1cf6dc11e67158a5b4c7ecd8fc859d7b7d56a0324824d8aa1433acb636648eb1",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "d5ba4330fe23add62f2e21dbdbac7e77451cc172",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522g: 522e + Tile home Edit Home fixes (Top padding, drop check only for a drop), wide wordmarks whole on big tiles, Bubbles window name / hint whole"
+  },
+  {
+   "id": "qa-0.6.69-522h",
+   "apk_sha256": "5000ae9d493d08dbeb9782e4df65c7bdd2b8b53af635f6e0a8321f0ed97f2b0d",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "d5ba4330fe23add62f2e21dbdbac7e77451cc172",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522h: 522g + the details page's console pill whole (SourceBadge, found at font x1.3)"
   }
  ]
 }

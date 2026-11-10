@@ -131,3 +131,58 @@ p522sty (BANNER, ROW_OPENS, ROW_REVEAL, SHARED, CLASSIC × 53 on 522b) is runnin
   focus on the first action and buttons (Details / More / Play taps) PASS 53 / 53 in both runs; launches blocked (QA guard).
 - Not verified: Flip 2 (not connected), KONKR, Thor; the popup styles other than OWN until p522sty is graded; frame-by-frame
   motion of glyphs; R1 panel keys (QA never presses A in R1).
+
+## 7. Batch 522 second part (owner decisions of 10 Nov) — builds 522e / 522g, RP Classic, QA app only
+
+### Full popup sweep: 53 layouts × 6 styles (existing popclip, graded with the extended glyph check)
+| Run | Build | Combinations | PASS | FAIL | SKIP (style not offered) |
+|---|---|---|---|---|---|
+| p522own (OWN, ×1.0) | 522a | 53 | 47 | 6 | 0 |
+| p522scale (OWN, font ×1.3 / density ×1.15) | 522b | 53 | 47 | 6 | 0 |
+| p522sty (BANNER, ROW_OPENS, ROW_REVEAL, SHARED, CLASSIC) | 522b | 265 | 161 | 83 | 21 |
+
+Every FAIL was looked at; defects vs test limitations:
+- **Defects, fixed:** console name cut without a mark (Storage, Camera, Orbit, Bubbles' own window — rule 11); Blades' facts
+  laid out 0 px wide beside a too-wide cover; Banner style "LAST PLAY…" / "Never pla…" (52 combinations); Row opens / Row
+  reveal title and console line ending in "…" (28); Green Core L2 / R2 keys 7.5 px low at font ×1.3.
+- **Re-checked on 522e:** p522gc (Green Core, Library, Memory card, Spotlight at ×1.3) 4 / 4 PASS, Green Core keys dx 0 / dy 0
+  (before 7.5 px); p522fix (Storage, Bubbles, Camera, Orbit, Blades ×1.0) 4 / 5 PASS — Bubbles' own window still cut → fixed
+  in 522g (StyleBubbles), re-check p522bub; p522fix2 (6 layouts × Banner / Row opens / Row reveal) 16 / 16 PASS, 2 n/a.
+- **Test limitations, not app defects:** Twin showcase "78 %" battery text 3 px clipped under the page that covers it (not
+  visible); Cube Shared ▲▼ measured against the Play button drawn over them (glyphcheck now ignores ink touching its
+  shape); Library / Memory card / Spotlight glyphs of the home under a popup window (now left out).
+- **Glyphs:** 382 measured in p522sty (L1 R1 A B X Y L2 R2 START SELECT on 79 screens), 43 + 35 in the OWN runs:
+  0 off centre after the Green Core fix.
+
+### Console badges: three looks (owner decision 1)
+`Features.consoleBadgeStyle` (Text / Symbol / Logo, default Logo; the old Small / Big logo switch was two logo looks):
+Game look › Console badges chips and the R1 tile (Off → Text → Symbol → Logo). Text = short name only; Symbol = the set's
+symbol where it has one, else short name; Logo = the console's own wordmark, else its readable ES-DE logo, else short name.
+A wordmark that would be drawn under 90 % of its size in the pill (tile < 150 dp: pill 78 % of the tile; bigger: 85 %) shows
+its symbol / name there and the whole wordmark on big tiles (GBA, Lynx, Genesis, GBC, 3DS, Pokémon mini compact at 96 dp,
+whole at 200 dp). Regional keys never borrow a wordmark (SFC ≠ SUPER NINTENDO, Famicom ≠ NES, Mega Drive ≠ GENESIS,
+WSC ≠ WonderSwan); symbols both models print stay shared. Genesis key's short name is "Genesis" (was "Mega Drive").
+Unit tests Batch522Test. Gallery b522modes / b522final: Text / Symbol / Logo at 96 dp + Logo at 200 dp, every console.
+PS5 / Xbox One / Xbox Series / Switch 2 artwork: docs/ARTWORK_522_NEW_CONSOLES.md (sources, owner download steps).
+
+### Tile home (owner decision 2) — Tile-specific, other layouts unchanged
+- The round buttons' room under (or over) the tiles is kept while they float (moved, or Edit Home open): measured, not drawn
+  (`ReservedRoom`), so the row, chips and name stay put; the facts strip no longer appears in their place.
+- Edit Home no longer moves the row at Top (the profile-picture room is kept while editing: it moved 50 dp).
+- The "dropped near the tiles → back by the tiles" rule only applies to a drop made in that Edit Home session: resetting the
+  row had moved the tiles close to the untouched buttons and snapped them back (found by tile522b, MIDDLE and BOTTOM).
+- QA: `voltcap_test_edithome open|save|discard|reset:<id>|resetlayout:<LAYOUT>` + tile522b.sh + tile522.py (row, chips and
+  the round buttons' row compared step by step at Middle / Top / Bottom; everything inside the screen). 522e run: row / chip
+  steps PASS except Top Edit Home open (fixed in 522g); buttons kept their place through row reset / layout reset: FAIL at
+  Middle / Bottom (fixed in 522g). **522g re-run t522c: 39 / 39 PASS** (row, chips and the buttons' row unmoved through
+  buttons moved, Edit Home open, Reset this part (buttons, row), Reset this layout and Save, at Middle / Top / Bottom; nothing
+  off screen). R1 Row places as in 521. RP Flip 2: not connected — NOT TESTED there.
+
+### GameNative / DroidDeck (owner decision 3)
+- GameNative `.epic` / `.gog` / `.amazon` / `.pcgame` exports imported (GameNative source: FrontendSyncManager writes the int id;
+  IntentLaunchManager takes `app_id` int + `game_source` EPIC / GOG / AMAZON / CUSTOM_GAME; PluviaMain resolves it per store
+  and shows "game not installed" otherwise). Categories Epic Games Store / GOG / Amazon Games / PC games; key
+  `gamenative:<store>:<id>` (an Epic id equal to a Steam AppID is another game); GOG 0 skipped. Launch = the same intent with
+  that store. Unit test GameNativeStores522Test. No real launch: GameNative not on a connected handheld — NOT TESTED.
+- DroidDeck: format still unverified (closed source; ES-DE's Android docs not reachable from here) → no change to its launch;
+  its own home-screen shortcuts stay the preferred entry (`LauncherApps.startShortcut`, nothing rebuilt).
