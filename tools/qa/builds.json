@@ -572,6 +572,28 @@
    "apk_sha256": "8d471dccd97af19727580b9f856165e9b43911265e79210944cd3648e7f8f82d",
    "base_commit": "d637f3578c3591ae724e1410472a03bdae854bb4",
    "note": "batch 523l: 523k + Performance switch crash fixed, crash report marked for QA; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523m",
+   "apk_sha256": "3e722fe50fe890d0539a1774f8fa70e77b30be809ba59257892aea4651e3b997",
+   "base_commit": "40ea28433f22ca2aa46d21b878927f38d72132c3",
+   "note": "batch 523m: popup design lab (QA hook only) + QA fonts in debug assets; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523n",
+   "apk_sha256": "6b2a0909d4d3e702a6fd8e71afc4a01010c26179a5ac28cfeb528c5a94c4a1aa",
+   "base_commit": "08962ff3b726632f4feb95c16e797cb1f6161786",
+   "note": "batch 523n: Storage menu cells from the column width, lab Back hint pill; GT78"
   }
  ]
 }
