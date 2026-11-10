@@ -166,6 +166,10 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
 | **P6** | The owner keeps the originals of profile pictures, picked art and clips. | none | — |
 | **P7** | The owner turns the launch-time Drive sync OFF in the real Voltcap and reads the switches back. **Also pause Syncthing** for `RetroArch/saves` (found in P2) until B4 is done. | Two switches (owner's own) | Read back nothing private; only confirm with the owner. |
 
+## Batch 521 status
+
+The owner updated the **RP Flip 2** (11:48) and the **RP Classic** (12:31, 10 Nov) to the published `Voltcap-0.6.69.apk` with Voltcap's own updater (checked read-only: sha256 `1101965042…`, same signer, in place, data kept). For those two the B-steps are done; P3 / P4 below still give a settings and layouts copy. P7 applies only to handhelds still on 0.6.67.
+
 ## Batch 521: owner steps for P3 and P4 (about 3 minutes, RP Classic)
 
 P5: the visible Voltcap folder stays as it is (no setting changed). P7 waits until just before an approved install.

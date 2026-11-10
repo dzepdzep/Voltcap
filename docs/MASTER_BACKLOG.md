@@ -37,6 +37,8 @@ Statuses:
 |---|---|
 | Tile home placement on the RP Flip 2: Edit Home row move + hand-placed buttons fought R1's Row place (Middle gap, Top off-screen, Bottom on the buttons); Top hid the "All" chip under the profile pictures | FIXED (521), Flip 2 + Classic QA app Top / Middle / Bottom PASS, `Batch521Test` |
 | QA install protection (process risk 5b) | FIXED (521), see 5b |
+| Button letters (A B X Y, L2, START …) not centred in their circles (owner) | FIXED (521), `InkGlyph`; Flip 2 before / after |
+| RP Flip 2 hardware gate (controller 16 layouts, art, Tile home) | PASS (521), 80 / 80 |
 | Automatic art / details runs no longer skip a game for two weeks after a ScreenScraper timeout / busy / limit (it was recorded as "asked") | 520, `artAskCounts` + unit test; device: not forceable without changing the production service |
 | Game grid ▲ ▼ with every game in one row (Endless on) stay on the game instead of jumping to (cols mod n) | 520, unit test + RP Classic q521 (100 % and 50 %: Zelda stays after ▼ and ▲) |
 | Game spacing for Hero tiles and Cinema (own options + R1; 100 % = as before) | 520, unit tests + RP Classic q521 screenshots (100 / 50 / 200 %) + controller pass |
@@ -94,7 +96,7 @@ Statuses:
 | P1 inventory, RP Classic | DONE (520, owner-approved): read-only; results in docs/UPGRADE_069_CHECKLIST.md |
 | Drive with mixed versions | Reviewed (520): no data loss possible; a 0.6.67 device can't load pictures a 0.6.69 device scraped / cleaned until it is updated |
 | P2 save copy, RP Classic | DONE (520, owner-approved): 33 files / 19,185,603 bytes, 33/33 sha256 identical, new dated folder; details in docs/UPGRADE_069_CHECKLIST.md. Found: RetroArch saves are also synced by Syncthing |
-| P3–P7, B1–B6 | BLOCKED-OWNER (each step its own approval; exact operations listed in docs/UPGRADE_069_CHECKLIST.md) |
+| P3–P7, B1–B6 | 521: the owner updated the Flip 2 and the RP Classic to the published 0.6.69 himself (Voltcap's own updater). P3 / P4 owner steps prepared (still worth doing: a settings + layouts copy); P7 only matters for handhelds still on 0.6.67 (KONKR / Thor / Odin 3: not connected) |
 
 ## 4. Cosmetic refinements worth doing
 
