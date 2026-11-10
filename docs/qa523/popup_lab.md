@@ -33,6 +33,8 @@ Shared / Banner styles on the Voltcap row — `Claude outputs\b523\lab523m.tar`;
 | inter_wa | Inter, one step lighter + hierarchy — the crispest at 12–15 sp; **wider**: the Banner style's tab row lost "Options" to its "+1" overflow on the GT78 |
 | manrope_wa | Manrope — rounder and friendlier, more open spacing; small caps labels ("CONSOLE", "PLAYED") less distinct at 9 sp |
 
+Re-shot on 523n (lab523n: Storage + Voltcap row, base / current_wa / inter_wa): "ACHIEVEMENTS" whole, the Back hint readable on both.
+
 Found while comparing (fixed in 523n, also without the lab): Storage boxes' menu broke "ACHIEVEMENTS" inside the word on the
 GT78 (three cells a row in a narrow column) — cells are now counted from the menu's own width. The lab's Back hint
 vanished on Storage's light panel — it now sits on a dark pill.
