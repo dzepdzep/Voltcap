@@ -490,14 +490,21 @@ internal fun RowMotionWindow(
             }
 
             // ---- what appears in the room they leave ----
-            val infoH = (infoBottom - infoTop)
+            // (Batch 523: Row opens has no room between its name and its buttons - Details there shows the whole story and
+            // facts UNDER the buttons, in the same window, where the screen is empty; Row reveal keeps its room above them.)
+            val inPlace = infoBottom - infoTop > with(d) { 40.dp.toPx() }
+            val belowTop = buttonsTo.y + buttonsSize.height + with(d) { 16.dp.toPx() }
+            val belowRoom = H - with(d) { 24.dp.toPx() } - belowTop
+            val detailsHere = !panel && (inPlace || belowRoom > with(d) { 80.dp.toPx() })
+            val iTop = if (showAll && !inPlace) belowTop else infoTop
+            val infoH = if (showAll && !inPlace) belowRoom else (infoBottom - infoTop)
             if (infoH > with(d) { 40.dp.toPx() }) Column(
                 Modifier
                     .graphicsLayer {
                         // (After the name has passed over it on its way up — Row reveal's name rises across this room.)
                         val t = part(p.value, if (opens) 0.42f else 0.55f, 1f)
                         translationX = textLeft
-                        translationY = infoTop + with(d) { 14.dp.toPx() } * (1f - t)
+                        translationY = iTop + with(d) { 14.dp.toPx() } * (1f - t)
                         alpha = t
                     }
                     // (Row reveal: the left part only, clear of the game's art and logo on the right.)
@@ -581,7 +588,7 @@ internal fun RowMotionWindow(
                 }
                 RevealButton(if (showAll) "Less" else "Details", accent = accent, onAccent = onAccent, modifier = Modifier.focusRequester(detailsFocus)) {
                     // (Batch 523: in this window where it has room for the story; the grid's panel opens the details screen.)
-                    if (infoBottom - infoTop > with(d) { 40.dp.toPx() }) showAll = !showAll else live { RowReveal.reset(); onFullDetails() }
+                    if (detailsHere) showAll = !showAll else live { RowReveal.reset(); onFullDetails() }
                 }
                 if (g.raGameId != null || g.platform == "Steam") RevealButton("Achievements", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onAchievements() } }
                 RevealButton("Options", accent = accent, onAccent = onAccent) { live { RowReveal.reset(); onOptions() } }
