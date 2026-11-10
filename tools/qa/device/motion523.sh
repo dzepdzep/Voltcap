@@ -16,7 +16,7 @@ LYS="SHELF COVERDETAILS"; [ "$2" = det ] && LYS=""
 for LY in $LYS; do
   # (Performance FULL for this session only: on AUTO a handheld that saw slow frames turns Lite on, and Lite swaps the
   # big case at once - the flight being recorded isn't drawn.)
-  A --ez voltcap_test_preview true; A --es voltcap_test_perf FULL --es voltcap_test_layout $LY --es voltcap_test_category ALL; sleep 4; pk
+  A --ez voltcap_test_preview true; A --es voltcap_test_perf FULL; sleep 1.5; A --es voltcap_test_layout $LY --es voltcap_test_category ALL; sleep 4; pk
   [ $LY = SHELF ] && A --es voltcap_test_pref "shelf_stand=SPINES"; sleep 1
   screenrecord --time-limit 7 --bit-rate 10000000 $O/${LY}.mp4 &
   R=$!; sleep 0.8
