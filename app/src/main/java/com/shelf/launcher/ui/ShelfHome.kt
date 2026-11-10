@@ -702,11 +702,12 @@ internal fun PulledOutCase(
     }
     // (Update 173: an app without art: its icon in the case's window.)
     if (cov != null) androidx.compose.runtime.CompositionLocalProvider(LocalCaseOwner provides if (forAll) g.platform else null) {
-        CoverCase(cov, coverOrAppIcon(g, rememberWrapFront(cover, g.platform, decode = false)), placeholderBrush(g.hue), modifier)
+        CoverCase(cov, coverOrAppIcon(g, rememberWrapFront(cover, g.platform, decode = false)), placeholderBrush(g.hue), modifier, hidden = wrapShapePending(cover, g.platform))
     }
     else Box(modifier.clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue))) {
         // (Update 202: the cover's file's flat strips trimmed — coverModel / TrimMargins.kt; Crop fills the front.)
-        if (cover != null) AsyncImage(coverModel(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+        // (Batch 520: CropUnlessMuchCut as every case view — a wide picture you picked is shown whole, not its middle.)
+        if (cover != null) AsyncImage(coverModel(cover), g.name, contentScale = CropUnlessMuchCut, modifier = Modifier.fillMaxSize().pixelArtwork())
     }
 }
 

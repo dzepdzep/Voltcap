@@ -567,8 +567,10 @@ internal fun PlainCase(
                 Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
                     .clipToBounds().then(if (shown != null && shownIn) Modifier else Modifier.background(placeholder))
             ) {
+                // (Batch 520: the same fit as the template cases and the 3D faces — CropUnlessMuchCut, update 402: a far-off
+                // shape, e.g. a 16:9 picture you picked, is shown whole on the case's plastic instead of a centre slice.)
                 if (shown != null) AsyncImage(
-                    cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = Alignment.Center,
+                    cardArtModel(shown), null, contentScale = CropUnlessMuchCut, alignment = Alignment.Center,
                     onSuccess = { r -> shownIn = true; (shown as? String)?.let { s -> r.painter.intrinsicSize.let { sz -> CoverAspects.note(s, sz.width, sz.height) } } },
                     onError = { if (shown == art && fallback != null && fallback != art) failed = true },
                     modifier = Modifier.fillMaxSize()
@@ -670,7 +672,7 @@ private fun FittedFrame(cov: CoverTpl, fit: CaseFit) {
  * never shown whole between bars or over a blurred copy of itself.
  */
 @Composable
-private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier, fit: CaseFit? = null) {
+private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier, fit: CaseFit? = null, hidden: Boolean = false) {
     // Update 141: another console's case picked for every game (R1 › Case): only its shape — its frame in one plain
     // colour, nothing printed on it — with the game's own console's logo in the frame's biggest band.
     val owner = LocalCaseOwner.current
@@ -697,7 +699,7 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
             Modifier.offset(w * win[0], h * win[1]).size(w * (win[2] - win[0]), h * (win[3] - win[1]))
                 .clipToBounds().then(
                     when {
-                        art != null && artShown && !icon && !moved && owner != null -> Modifier
+                        art != null && artShown && !hidden && !icon && !moved && owner != null -> Modifier
                         art != null && owner == null -> Modifier.background(androidx.compose.ui.graphics.lerp(frameColor, Color(0xFF15181D), 0.6f)) // (Update 398: a muted plate until the cover is in, never a bright flash)
                         else -> Modifier.background(placeholder)
                     }
@@ -717,6 +719,8 @@ private fun CoverFace(cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Mo
                 // (Update 169: its shape noted, so the case can take it — caseFitFor.)
                 onSuccess = { r -> artShown = true; if (art is String) r.painter.intrinsicSize.let { sz -> CoverAspects.note(art, sz.width, sz.height) } },
                 modifier = Modifier.fillMaxSize().graphicsLayer {
+                    // (Batch 520: kept invisible while its shape decides what is drawn — [hidden], wrapShapePending.)
+                    alpha = if (hidden) 0f else 1f
                     scaleX = pos.zoom; scaleY = pos.zoom
                     translationX = pos.x * size.width * ArtPlace.REACH; translationY = pos.y * size.height * ArtPlace.REACH
                 }
@@ -851,7 +855,13 @@ private fun PlainFrame(cov: CoverTpl, owner: String, w: androidx.compose.ui.unit
 @Composable
 internal fun CoverCase(
     cov: CoverTpl, art: Any?, placeholder: Brush, modifier: Modifier = Modifier,
-    caseModifier: Modifier = Modifier
+    caseModifier: Modifier = Modifier,
+    /**
+     * Batch 520: [art]'s shape isn't known yet and decides what is drawn (a whole wrap is cut to its front,
+     * [wrapShapePending]): it loads invisibly — the plate shows — and appears once measured, instead of the whole wrap
+     * for a moment and then its front.
+     */
+    hidden: Boolean = false
 ) {
     // Update 169: reshaped to the cover (Steam / Android cases; the consoles' with "Console cases too"), not when it's
     // drawn as another console's plain shape (R1 › Case).
@@ -861,7 +871,7 @@ internal fun CoverCase(
         val w = minOf(maxWidth, maxHeight * aspect)
         val h = w / aspect
         Box(Modifier.size(w, h).caseShadow().then(caseModifier)) {
-            CoverFace(cov, art, placeholder, Modifier.fillMaxSize(), fit)
+            CoverFace(cov, art, placeholder, Modifier.fillMaxSize(), fit, hidden)
             CaseSheen(Modifier.fillMaxSize())
         }
     }
@@ -893,8 +903,11 @@ internal fun ScanCase(
     val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
     val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
     val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
-        raw != null && looksUnfolded(raw, hi)
+        raw != null && looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)
     val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    // Batch 520: a scan whose shape isn't known yet may be the whole unfolded box (back | spine | front): until it is
+    // measured it loads invisibly (the cover / plate shows), so its middle — the spine — never flashes before the front cut.
+    val probing = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null && raw == null
     val shownKey = shown.toString()
     val own = (if (unfolded) CoverAspects.rawOf(shownKey) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
     val shape = own ?: aspect
@@ -902,7 +915,8 @@ internal fun ScanCase(
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape
         // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
-        var scanIn by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+        var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+        val scanIn = loaded && !probing
         // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
         // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
@@ -910,10 +924,10 @@ internal fun ScanCase(
             AsyncImage(
                 cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
                 // (Update 240: the front cut's own shape under its own address — the scan's stays the whole scan's.)
-                onSuccess = { r -> scanIn = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
+                onSuccess = { r -> loaded = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
                 onError = { onFail() },
-                modifier = if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
-                else Modifier.fillMaxSize()
+                modifier = (if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
+                else Modifier.fillMaxSize()).graphicsLayer { alpha = if (probing) 0f else 1f }
             )
             CaseSheen(Modifier.fillMaxSize())
         }

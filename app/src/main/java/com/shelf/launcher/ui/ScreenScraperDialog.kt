@@ -28,6 +28,8 @@ fun ScreenScraperDialog(
     var password by remember { mutableStateOf("") }
     // Update 516: with Voltcap's own developer key built in, only the person's account is asked for.
     val builtInKey = remember { com.shelf.launcher.data.ScreenScraperDevKey.builtIn != null }
+    // Batch 520: the check can take up to a minute when ScreenScraper is busy — one press, and say so.
+    val testing = statusMessage == SS_TESTING_MESSAGE
 
     ShelfDialog(
         icon = Icons.Filled.Image,
@@ -41,8 +43,8 @@ fun ScreenScraperDialog(
                 Chip("Disconnect", accent = false, onClick = onDisconnect)
             } else {
                 Chip(
-                    "Connect",
-                    enabled = if (builtInKey) user.isNotBlank() && password.isNotBlank() else devId.isNotBlank() && devPassword.isNotBlank(),
+                    if (testing) "Checking…" else "Connect",
+                    enabled = !testing && if (builtInKey) user.isNotBlank() && password.isNotBlank() else devId.isNotBlank() && devPassword.isNotBlank(),
                     onClick = { onConnect(devId, devPassword, user, password) }
                 )
             }
@@ -85,7 +87,13 @@ fun ScreenScraperDialog(
         }
         statusMessage?.let {
             Spacer(Modifier.height(12.dp))
-            MutedNote(it)
+            MutedNote(if (testing) "$it ScreenScraper can take up to a minute to answer when it's busy." else it)
         }
     }
 }
+
+/** The status shown while the account is being checked (LauncherViewModel.connectScreenScraper). */
+internal const val SS_TESTING_MESSAGE = "Testing ScreenScraper…"
+
+/** Batch 520: how long a status message stays: 3.5 s, plus time to read a long one (55 ms per character past 60), at most 10 s. */
+internal fun statusReadMs(message: String): Long = (3500L + 55L * (message.length - 60).coerceAtLeast(0)).coerceAtMost(10_000L)

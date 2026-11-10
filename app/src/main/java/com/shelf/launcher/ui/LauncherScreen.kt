@@ -663,9 +663,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(state.statusMessage) {
-        if (state.statusMessage != null) {
-            kotlinx.coroutines.delay(3500)
+    // Batch 520: while an account window that shows this message is open (ScreenScraper, IGDB, RAWG, TheGamesDB) it stays
+    // until replaced — "Testing ScreenScraper…" vanished after 3.5 s although ScreenScraper can take ~45 s, and a long error
+    // went before it could be read. Elsewhere it goes after a time that grows with its length (statusReadMs).
+    val accountWindowOpen = showScreenScraper || showIgdb || showRawg || showTgdb
+    LaunchedEffect(state.statusMessage, accountWindowOpen) {
+        val message = state.statusMessage
+        if (message != null && !accountWindowOpen) {
+            kotlinx.coroutines.delay(statusReadMs(message))
             viewModel.clearStatusMessage()
         }
     }

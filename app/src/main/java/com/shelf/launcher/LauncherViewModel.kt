@@ -3056,7 +3056,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         val typedKey = creds.devId.isNotBlank() && creds.devPassword.isNotBlank()
         val test = creds.copy(devId = key.first, devPassword = key.second)
-        _uiState.update { it.copy(statusMessage = "Testing ScreenScraper…") }
+        _uiState.update { it.copy(statusMessage = com.shelf.launcher.ui.SS_TESTING_MESSAGE) }
         viewModelScope.launch {
             val error = screenScraperRepository.testConnection(test)
             if (error == null) {

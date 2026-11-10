@@ -159,6 +159,41 @@ internal object CollectorBacks {
 
     // ---- the parts ----
 
+    private val darkLogos = java.util.WeakHashMap<Bitmap, Boolean>()
+
+    /**
+     * Batch 520: true when [logo]'s drawn pixels (alpha ≥ 50 %) average under 3 : 1 against the header bar (0xFF0A0B0E) —
+     * WCAG relative luminance, sampled on a coarse grid, remembered per bitmap.
+     */
+    internal fun logoTooDarkOnBar(logo: Bitmap): Boolean = synchronized(darkLogos) {
+        darkLogos.getOrPut(logo) { barContrast(averageLuminance(logo) ?: return@getOrPut false) < 3f }
+    }
+
+    private fun averageLuminance(b: Bitmap): Float? = runCatching {
+        val soft = if (b.config == Bitmap.Config.HARDWARE) b.copy(Bitmap.Config.ARGB_8888, false) else b
+        val step = maxOf(1, minOf(soft.width, soft.height) / 48)
+        var sum = 0.0; var n = 0
+        var y = 0
+        while (y < soft.height) { var x = 0
+            while (x < soft.width) {
+                val px = soft.getPixel(x, y)
+                if ((px ushr 24) >= 128) { sum += relLuminance(px); n++ }
+                x += step }
+            y += step }
+        if (n == 0) null else (sum / n).toFloat()
+    }.getOrNull()
+
+    internal fun relLuminance(argb: Int): Double {
+        fun ch(v: Int): Double { val c = v / 255.0; return if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4) }
+        return 0.2126 * ch((argb shr 16) and 0xFF) + 0.7152 * ch((argb shr 8) and 0xFF) + 0.0722 * ch(argb and 0xFF)
+    }
+
+    /** Contrast of luminance [l] against the header bar's 0xFF0A0B0E. */
+    internal fun barContrast(l: Float): Float {
+        val bar = relLuminance(0xFF0A0B0E.toInt()).toFloat()
+        return (maxOf(l, bar) + 0.05f) / (minOf(l, bar) + 0.05f)
+    }
+
     /** The platform's band across the top; returns where it ends. */
     private fun header(context: android.content.Context, c: Canvas, w: Int, h: Int, spec: PrintedBack, st: Style): Float {
         val p = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
@@ -182,6 +217,10 @@ internal object CollectorBacks {
             val dst = RectF(x, (bh - lhh) / 2f, x + lw, (bh + lhh) / 2f)
             if (spec.platform != null && PlatformLogos.mono(spec.platform)) {
                 p.colorFilter = android.graphics.ColorMatrixColorFilter(floatArrayOf(-1f, 0f, 0f, 0f, 255f, 0f, -1f, 0f, 0f, 255f, 0f, 0f, -1f, 0f, 255f, 0f, 0f, 0f, 1f, 0f))
+            } else if (logoTooDarkOnBar(logo)) {
+                // Batch 520: a colour logo too dark for the near-black bar (PS4's blue read ~1.7 : 1) is printed white, as
+                // the real band prints it; its shape and edges are kept (only the colour is replaced).
+                p.colorFilter = android.graphics.ColorMatrixColorFilter(floatArrayOf(0f, 0f, 0f, 0f, 255f, 0f, 0f, 0f, 0f, 255f, 0f, 0f, 0f, 0f, 255f, 0f, 0f, 0f, 1f, 0f))
             }
             p.color = 0xFFFFFFFF.toInt() // (opaque: a paint's alpha applies to the picture too)
             c.drawBitmap(logo, null, dst, p); p.colorFilter = null

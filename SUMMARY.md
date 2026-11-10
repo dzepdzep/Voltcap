@@ -1,3 +1,25 @@
+# Update 520 (10 Nov 2026) — flat case art fits like the 3D cases, no empty case for a picture taken for a wrap, ScreenScraper check stays readable, readable PS4 back logo (local branch next/0.6.70, not pushed)
+
+- **Flat case art** (`ui/CoverCases.kt`, `ui/ShelfHome.kt`): the plain keep / jewel case (PS3–PS5, Xbox …) and the Game shelf's plain cover used a plain centre crop, while the template cases and the 3D faces use CropUnlessMuchCut (update 402). A 16:9 picture you picked showed its middle 39 % on the shelf and whole on the 3D case. All flat views now use CropUnlessMuchCut: covers close to the window still fill it; a far-off shape is shown whole, never stretched.
+- **Picture taken for a wrap** (`ui/BoxTexture.kt`, `ui/RealMedia.kt`, `ui/CoverCases.kt`): by its shape alone a 16:9 picture on a PlayStation jewel case counted as a whole unfolded box. Its front cut found no folds, the load failed and the Game shelf showed an **empty case** (Voltcap's case and Real case modes). A failed FRONT cut is now remembered (`BoxTexture.frontCutFailed`) and every view shows the picture itself.
+- **No flash before the front cut** (`CoverCase(hidden)`, `wrapShapePending`, ScanCase `probing`): a cover or box scan whose shape is still unknown, and that may be a whole wrap / unfolded box, loads invisibly (the plate shows) until measured. Its whole width or its spine no longer shows for a moment before the front.
+- **ScreenScraper account check** (`ui/LauncherScreen.kt`, `ui/ScreenScraperDialog.kt`, `LauncherViewModel.kt`):
+  - "Testing ScreenScraper…" was cleared after 3.5 s, although ScreenScraper can take about 45 s (measured in 519). In the account windows (ScreenScraper, IGDB, RAWG, TheGamesDB) a status now stays until it is replaced.
+  - Elsewhere a status stays 3.5–10 s, by its length (`statusReadMs`).
+  - Connect reads "Checking…" and is disabled while checking; a note says ScreenScraper can take up to a minute.
+- **Collector backs** (`ui/CollectorBacks.kt`): a colour console logo under 3 : 1 on the dark header bar (the PS4 blue was 1.8 : 1) is printed white, as the real band prints it. Xbox green (3.7 : 1) stays.
+- **Tests:** `Batch520Test` (fit rule, hidden loading, failed cut, status timing, logo contrast); unit tests, `static_checks.py --strict` and QA self-tests pass.
+- **Device (RP Classic, Voltcap QA 0.6.69-qa, fixture art, settings snapshotted and restored, 0 launches; owner's 0.6.67 untouched, pid unchanged):**
+  - `q520.sh`: wide and portrait fixtures × Plain cover / Voltcap's case / Real case × PS1 / PS2 / GameCube.
+  - Wide: shown whole in Plain cover (was centre-cropped). PS1 shows the picture (was an empty case).
+  - Portrait screenshots are pixel-identical before and after.
+  - `ctl516.sh` controller pass on 6 layouts (see the batch notes).
+- **Not tested on a device:** the ScreenScraper dialog (the QA app is signed in with the owner's account and was not disconnected); the PS4 collector back (no PS4 fixture in the QA library this session); KONKR, Thor and Odin (not connected).
+- Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E`.
+  - Files: ui/BoxTexture.kt, ui/Carousel.kt, ui/CollectorBacks.kt, ui/CoverCases.kt, ui/LauncherScreen.kt, ui/RealMedia.kt, ui/ScreenScraperDialog.kt, ui/ShelfHome.kt, LauncherViewModel.kt.
+  - Test: app/src/test/java/com/shelf/launcher/ui/Batch520Test.kt.
+  - Docs: docs/MASTER_BACKLOG.md (reconciled tracker).
+
 # Update 519 (10 Nov 2026) — v0.6.69: ScreenScraper and IGDB through Voltcap's own service, cleaner media addresses
 
 0.6.69 (76). Details for the owner are in the project's private notes.
