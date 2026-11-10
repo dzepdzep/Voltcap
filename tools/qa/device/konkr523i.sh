@@ -4,6 +4,7 @@ export QA_FIX=true
 D=/data/local/tmp; S=/sdcard/pc/konkr523i.txt
 echo "start $(date +%T) real=$(pidof com.shelf.launcher)" > $S
 sh $D/vault523.sh kv523i "CLASSIC ICONS PS2 MEMORY_CARD SD_CARD FLOPPY CAPSULE" > /dev/null 2>&1; echo "vault done $(date +%T)" >> $S
-for L in COVERDETAILS CASEFLOW SHELF STACKS HERO; do sh $D/perf514.sh k523i$L $L > /dev/null 2>&1; echo "perf $L done $(date +%T)" >> $S; done
+# (each layout twice: a warm-up run first - the first run after an install measures shader / image warm-up, not the motion)
+for R in a b; do for L in COVERDETAILS CASEFLOW SHELF STACKS HERO; do sh $D/perf514.sh k523i$R$L $L > /dev/null 2>&1; echo "perf $R $L done $(date +%T)" >> $S; done; done
 am force-stop com.shelf.launcher.qa
 echo "real=$(pidof com.shelf.launcher) fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')" >> $S; echo DONE >> $S
