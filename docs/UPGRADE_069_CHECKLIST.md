@@ -166,4 +166,33 @@ APPROVAL needs the owner's separate yes.** Never uninstall, clear data or downgr
 | **P6** | The owner keeps the originals of profile pictures, picked art and clips. | none | — |
 | **P7** | The owner turns the launch-time Drive sync OFF in the real Voltcap and reads the switches back. **Also pause Syncthing** for `RetroArch/saves` (found in P2) until B4 is done. | Two switches (owner's own) | Read back nothing private; only confirm with the owner. |
 
+## Batch 521: owner steps for P3 and P4 (about 3 minutes, RP Classic)
+
+P5: the visible Voltcap folder stays as it is (no setting changed). P7 waits until just before an approved install.
+
+**P3 — settings backup (one file)**
+1. Real Voltcap › Settings › **Backup**.
+2. Tick **Include game data**, **Include this device's setup** and **Include accounts**.
+3. Tap **Export to…** (not "Export": that one overwrites `Voltcap/Voltcap settings sync/voltcap-backup.json`, which a sync app may copy to other devices).
+4. In the file picker choose **Download** and name it `voltcap-backup-P3-2026-11-10.json` (a `voltcap-backup.json` from earlier is already there; don't replace it). Save.
+5. Tell Claude "P3 done".
+
+**P4 — custom layouts (Layout Studio)**
+1. Settings › Home › Layout options › Layout Studio options (or Settings search: "Layout Studio").
+2. For each layout of your own: tap its chip, then **Save this layout**, choose **Download**, keep the suggested `<name>.vclayout`, Save.
+3. Afterwards tap the layout that was picked before (tapping a chip changes which Layout Studio layout is used).
+4. Tell Claude "P4 done" and how many you saved. (`Voltcap/Layouts/side-list.vclayout`, 13 Oct, is copied as well.)
+
+**What Claude does then (read only, nothing on the handheld changes):** `adb pull` of exactly those files into a new folder
+`Claude outputs\backup_2026-11-10_P3P4\RPClassic_MC94516AQF091001112\` (never over an existing backup), sha256 + size on the
+handheld (`sha256sum`) and on the PC (`hash-files`), compared one by one; any mismatch or missing file stops the step. The P3 file
+holds account keys: it stays only in that git-ignored folder (never in the repo, a patch, a doc, Drive or the chat), its
+contents are not printed, and Claude proposes that you delete the copy in `Download` on the handheld afterwards.
+
+**P6 inventory (read only, 10 Nov):** on the Classic the visible folder `/sdcard/Voltcap` holds Art 29 files (8.5 MB), Data 7,
+Layouts 1, Settings 1, Sync backups 2, Sync conflicts 3, Voltcap settings sync 1, Crash reports 30. Not in any backup file:
+profile pictures (Voltcap's private `profiles/p<id>.webp`) and art you picked from your own pictures (the originals stay in
+your gallery). Checklist for you: [ ] each profile's picture original still in your gallery / PC; [ ] pictures you picked as
+covers still in your gallery; [ ] nothing else. An in-place update (B-steps) keeps all private data; this is only insurance.
+
 After P3–P7, B1–B6 follow, each with its own approval. Install the published `Voltcap-0.6.69.apk` (sha256 `1101965042cc84c0…`) only; never a development build.

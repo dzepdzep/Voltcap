@@ -853,6 +853,9 @@ fun QuickSettingsCard(
                 // (Update 315: Tile home's own place — in the middle by default; the Voltcap row keeps its own.)
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockHere.label, false) {
                     val all = com.shelf.launcher.data.DockPosition.values()
+                    // (Batch 521: on Tile home a new Row place also drops the game row's Edit Home move up / down and the
+                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.)
+                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a)
                     home.setAppearance(a.withDockHere(all[(a.dockHere.ordinal + 1) % all.size]))
                 })
             }
@@ -2195,4 +2198,14 @@ internal enum class PopupStyle(val label: String, val short: String) {
             }
         }
     }
+}
+
+/**
+ * Batch 521: Tile home's Row place (R1 Row tile, Top / Middle / Bottom) is the one that counts: the game row's Edit Home move
+ * up / down and the round buttons' spot saved "by the tiles" are dropped (an "Anywhere" spot of the buttons stays).
+ */
+internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings) {
+    LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))
+    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && HomeWidgets.position(HomeWidgets.SHORTCUTS) != null)
+        HomeWidgets.reset(HomeWidgets.SHORTCUTS)
 }

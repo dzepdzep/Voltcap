@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 internal object TestHooks {
     /** The layout asked for (by its enum name), taken by the home screen. */
     val layout = mutableStateOf<String?>(null)
+    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
+    val dock = mutableStateOf<String?>(null)
     /** A game to start from (part of its name): its console's category, the game focused — `--es voltcap_test_game …`. */
     val game = mutableStateOf<String?>(null)
     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
@@ -279,6 +281,7 @@ internal object TestHooks {
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }
         val want = intent?.getStringExtra("voltcap_test_layout")
+        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
         val lk = intent?.getStringExtra("voltcap_test_look")

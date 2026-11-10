@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.withDockHere
 import com.shelf.launcher.data.dockHere
 import com.shelf.launcher.data.categoryBarFor
 import com.shelf.launcher.data.categoryBarHere
@@ -1257,6 +1258,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
             if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(homeLayout = l))
             else viewModel.setAppearance(state.appearance.copy(homeLayout = l))
+        }
+    }
+
+    // (Batch 521: the R1 Row tile's own change - withDockHere - asked for by a QA run, shown only during a preview.)
+    val testDock = TestHooks.dock.value
+    LaunchedEffect(testDock) {
+        val name = testDock ?: return@LaunchedEffect
+        TestHooks.dock.value = null
+        com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
+            if (TestHooks.previewOnly) {
+                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance)
+                viewModel.previewAppearance(state.appearance.withDockHere(d))
+            }
         }
     }
 
@@ -4265,13 +4279,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val h = constraints.maxHeight
                             if (h == androidx.compose.ui.unit.Constraints.Infinity) return@layout layout(p.width, p.height) { p.place(0, 0) }
                             // (QA pass 3, D30: the tiles' middle from this very measure, not from the frame before.)
-                            val line = p[TilesMidLine]
+                            // (Batch 521: the tiles' lines without their Edit Home move up / down - centring on the moved tiles
+                            // undid the move and pushed the name, buttons and game facts the other way, Flip 2.)
+                            val rowShiftPx = (LayoutParts.shift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))?.second ?: 0f).dp.toPx()
+                            val line = p[TilesMidLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val tilesMid = if (line != androidx.compose.ui.layout.AlignmentLine.Unspecified) line.toFloat()
                                 else tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
                             // (Toni, with the Switch home as the example: the round buttons under the tiles belong to the
                             // tiles — the tiles and the buttons are centred as one group, so the tiles sit a little above the
                             // middle. The name and categories above stay out of it, as before.)
-                            val top = p[TilesTopLine]
+                            val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
                             val y = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
@@ -4283,7 +4300,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     .onGloballyPositioned { tileCoords[0] = it; measureTileMid() }
                     .padding(
                         // At the top it sits right under the edge like the classic row (the status bar moves to the bottom).
-                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 10.dp else 0.dp,
+                        // (Batch 521, Flip 2: with Switch-style profiles top-left, Top put the categories / first tile under them -
+                        // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
+                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
+                            (if (TileSwitch.profiles && !screensaverOn && !HomeEditState.active && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
