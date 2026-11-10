@@ -136,14 +136,15 @@ internal fun SaveExplorerDialog(
     val cloud by com.shelf.launcher.data.CloudSync.state.collectAsState()
     LaunchedEffect(Unit) { com.shelf.launcher.data.CloudSync.load(context) }
     // Update 151: without Google Drive the vault shows only that, with a button to connect it (as in Settings › Sync).
-    val connected = cloud.settings.connected
+    val connected = cloud.settings.connected || TestHooks.vaultFixture
     // Only games with real save evidence (save files, memory-card / SAVEDATA saves, saves Drive moved):
     // looking at a game never makes a capsule. Read again each time the browser opens.
     // (Update 496, QA only: `--ez voltcap_test_vault_dry true` — the vault shows the saves it last listed and nothing more: no
     // look for saves, no list rewritten, no sync, no cover lookups. For appearance screenshots; off without the hooks file.)
     val dry = TestHooks.vaultDry
     LaunchedEffect(games, lastPlayed, connected) {
-        if (dry) com.shelf.launcher.data.SaveCapsules.showCached(context, games)
+        if (TestHooks.vaultFixture) com.shelf.launcher.data.SaveCapsules.showFixture(context, games)
+        else if (dry) com.shelf.launcher.data.SaveCapsules.showCached(context, games)
         else if (connected) com.shelf.launcher.data.SaveCapsules.refresh(context, games, lastPlayed)
     }
     // (Update 241, #76: a sync that wasn't started from here (the watcher, another screen) finishing while the vault is
@@ -787,7 +788,7 @@ private fun SaveSlot(
                 spin = spin, look = look
             )
         } else if (vaultStyle == Features.SaveVaultStyle.CAPSULE) {
-            CapsuleSaveCard(icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, look)
+            CapsuleSaveCard(icon, gameDisplayName(game.name), status.state, selected, lift, bob, hidden, onIconPlaced, look, platform = game.platform)
         } else if (vaultStyle == Features.SaveVaultStyle.ICONS) {
             // (Update 285: the icon on its own — no card, no frame: lifted, bigger and lit when it's the one you're on.)
             Box(
@@ -880,7 +881,9 @@ internal fun CapsuleSaveCard(
     bob: () -> Float,
     hidden: Boolean,
     onIconPlaced: (androidx.compose.ui.geometry.Rect) -> Unit,
-    look: SaveLook? = null
+    look: SaveLook? = null,
+    /** Batch 523: the save's console, for its plate when there's no picture. */
+    platform: String? = null
 ) {
     val shape = RoundedCornerShape(50)
     val charge = stateColor(state)
@@ -929,7 +932,8 @@ internal fun CapsuleSaveCard(
                 if (icon != null) {
                     AsyncImage(model = icon, contentDescription = name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
-                    Text(
+                    if (platform != null) VaultArtPlate(platform, name, Modifier.fillMaxSize(), showName = false)
+                    else Text(
                         name.take(2).uppercase(),
                         color = Color.White.copy(alpha = 0.8f), fontSize = 20.sp, fontWeight = FontWeight.Bold
                     )
@@ -1179,7 +1183,7 @@ private fun SaveIconCard(
     }
     if (kind == SaveObjectKind.DRAWN || kind == SaveObjectKind.CAPSULE) {
         Box(modifier, contentAlignment = Alignment.Center) {
-            if (kind == SaveObjectKind.CAPSULE) CapsuleSaveCard(icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, look)
+            if (kind == SaveObjectKind.CAPSULE) CapsuleSaveCard(icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, look, platform = game.platform)
             else StyledSaveCard(vaultStyle, icon, gameDisplayName(game.name), state, false, 0f, { 0f }, false, {}, platform = game.platform, look = look)
         }
         return
@@ -1212,7 +1216,7 @@ private fun SaveIconCard(
         // Undo the mirror on the back side, so the picture reads the right way round.
         Box(Modifier.fillMaxSize().graphicsLayer { scaleX = if (back) -1f else 1f }, contentAlignment = Alignment.Center) {
             if (icon != null) AsyncImage(model = icon, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+            else VaultArtPlate(game.platform, game.name, Modifier.fillMaxSize(), nameSize = 16.sp)
             if (back) {
                 Box(
                     Modifier
@@ -1630,12 +1634,52 @@ internal fun vaultFloor(family: ChannelWindowTokens?): Color =
 /** Update 499: the vault is drawn in a dark layout family's colours ([vaultFamilyColors]). */
 internal val LocalVaultFamily = androidx.compose.runtime.staticCompositionLocalOf { false }
 
-/** (Batch 523) A save with no icon in the icon looks: its console's own symbol, light on the dark vault; else its initials. */
+/**
+ * Batch 523 (owner: "no ugly blank placeholder - a fallback that looks intentionally designed"): a save whose game has no
+ * picture anywhere (not here, none recorded by another device, none found by name) wears its console's plate — a restrained
+ * gradient in the console's colour (the same tones as Smart App Artwork), the console's own symbol in white and, where
+ * there's room, the game's name in whole words. Never a blank label, never two letters.
+ */
+@Composable
+internal fun VaultArtPlate(platform: String, name: String, modifier: Modifier = Modifier, showName: Boolean = true, nameSize: androidx.compose.ui.unit.TextUnit = 10.sp) {
+    if (TestHooks.vaultBefore) {
+        // (QA before / after only: the old two letters on a blank label.)
+        Box(modifier, contentAlignment = Alignment.Center) { Text(gameDisplayName(name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+        return
+    }
+    val tones = remember(platform) { appArtTones(consoleColor(platform).toArgb()) }
+    val sym = remember(platform) { BadgeLogos.symbol(platform) }
+    Box(
+        modifier.background(Brush.linearGradient(listOf(Color(tones.first), Color(tones.second))))
+            .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent))),
+        contentAlignment = Alignment.Center
+    ) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+            val wide = maxWidth > maxHeight * 1.4f
+            val named = showName && maxHeight >= 40.dp && maxWidth >= 48.dp
+            val mark: @Composable (Modifier) -> Unit = { m ->
+                if (sym != null) AsyncImage(sym.first, platform, m, contentScale = ContentScale.Fit,
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White.copy(alpha = 0.85f)))
+                else Text(com.shelf.launcher.data.ConsoleNames.label(platform), color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+            if (!named) mark(Modifier.fillMaxSize(0.62f))
+            else if (wide) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                mark(Modifier.fillMaxHeight(0.62f).aspectRatio(1f))
+                Spacer(Modifier.width(6.dp))
+                WholeWordsText(gameDisplayName(name), Color.White, nameSize, Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            } else Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                mark(Modifier.fillMaxWidth(0.5f).weight(1f, fill = false).aspectRatio(1f))
+                Spacer(Modifier.height(4.dp))
+                WholeWordsText(gameDisplayName(name), Color.White, nameSize, Modifier.fillMaxWidth(), fontWeight = FontWeight.SemiBold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+    }
+}
+
+/** (Batch 523) A save with no icon in the icon looks: its console's plate as a rounded tile (no name: it's under the slot). */
 @Composable
 internal fun VaultIconFallback(game: Game) {
-    val sym = remember(game.platform) { BadgeLogos.symbol(game.platform) }
-    if (sym != null) Box(Modifier.fillMaxSize(0.6f), contentAlignment = Alignment.Center) {
-        AsyncImage(model = sym.first, contentDescription = game.platform, contentScale = ContentScale.Fit,
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White.copy(alpha = 0.78f)), modifier = Modifier.fillMaxSize())
-    } else Text(gameDisplayName(game.name).take(2).uppercase(), color = Color.White.copy(alpha = 0.8f), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+    VaultArtPlate(game.platform, game.name, Modifier.fillMaxSize(0.86f).clip(RoundedCornerShape(14.dp)), showName = false)
 }

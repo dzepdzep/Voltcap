@@ -5337,12 +5337,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             "Couldn't read $rootPath — check the path and storage permission."
                     )
                 }
-                result.games.isEmpty() -> _uiState.update {
-                    it.copy(
-                        isScanning = false,
-                        statusMessage = if (silent) it.statusMessage else
-                            "No ROMs found in $rootPath for the known file types."
-                    )
+                result.games.isEmpty() -> {
+                    // (Batch 523, owner: deleted games stayed after a rescan. A rescan YOU started that read every folder and
+                    // found no games means they are gone: the list follows. An automatic scan finding nothing is still
+                    // treated as storage not mounted yet - the saved list stays, as before.)
+                    if (!silent && result.unreadable.isEmpty() && currentRomGames.isNotEmpty()) {
+                        currentRomGames = emptyList()
+                        withContext(Dispatchers.IO) { saveRomCache(emptyList()) }
+                        recombineGames()
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isScanning = false,
+                            statusMessage = if (silent) it.statusMessage else
+                                "No ROMs found in $rootPath for the known file types."
+                        )
+                    }
                 }
                 else -> {
                     // The game you're on stays selected (the startup scan finishes after the saved list is

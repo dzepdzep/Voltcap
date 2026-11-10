@@ -1745,11 +1745,12 @@ private fun BackdropArtLayer(
             // Nothing to load: show right away.
             LaunchedEffect(Unit) { readyNow() }
             if (game != null && game.sourceType == com.shelf.launcher.data.SourceType.APP) {
-                // No background art for this app: its own icon, blown up and
-                // blurred, instead of a plain colour.
+                // No background art for this app: its Smart App Artwork as a hero - the icon's own tones, the icon whole
+                // on the right third. (Batch 523, owner: "oversized blurry backgrounds" - it was the icon blown up and blurred
+                // 28 dp, a full-screen GPU blur on every frame of a move.)
                 AppIconArt(
                     game.packageName, wide = true,
-                    modifier = Modifier.fillMaxSize().then(zoomModifier).then(if (LocalLiteEffects.current) Modifier else Modifier.blur(28.dp))
+                    modifier = Modifier.fillMaxSize().then(zoomModifier)
                 )
             } else if (game != null) {
                 Box(

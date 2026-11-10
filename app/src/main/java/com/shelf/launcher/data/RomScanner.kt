@@ -481,6 +481,12 @@ object RomScanner {
         }
         val consumedPaths = mutableSetOf<String>()
 
+        // (Batch 523, owner: "after deleting the game from files on my handheld it still appears, even after a rescan".
+        // A disc game is its sheet / playlist: deleting the discs left Game.cue / Game.gdi or the playlist Voltcap wrote
+        // (Game.m3u) behind, and those alone kept listing the game. A sheet whose track files are all gone, and a playlist
+        // whose discs are all gone, are no game any more - left on the card, untouched, but not listed.)
+        knownFiles.removeAll { (it.extension.equals("cue", true) || it.extension.equals("gdi", true)) && orphanSheet(it) }
+
         // The track files a .cue / .gdi sheet points at (Game.bin, Game (Track 2).bin…) are part of that
         // disc, not games of their own: only the sheet is listed, as emulators expect.
         knownFiles.filter { it.extension.equals("cue", true) || it.extension.equals("gdi", true) }.forEach { sheet ->
@@ -494,7 +500,7 @@ object RomScanner {
         // (Update 325: each listed set's folder and title without any tags — see the lone later disc below.)
         val setBases = mutableMapOf<String, File>()
         m3uFiles.forEach { m3u ->
-            val discPaths = parseM3u(m3u)
+            val discPaths = parseM3u(m3u).filter { discPresent(it) }
             val platform = discPaths.firstOrNull()?.let { platformFor(it, rootPath, deep) }
             if (platform != null && discPaths.isNotEmpty()) {
                 games += Game(
@@ -660,6 +666,16 @@ object RomScanner {
 
         return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures, missingM3u = missingM3u, duplicates = duplicates)
     }
+
+    /** Batch 523: a .cue / .gdi naming track files of which none is there any more (one naming none is kept). */
+    internal fun orphanSheet(sheet: File): Boolean {
+        val tracks = sheetTracks(sheet)
+        return tracks.isNotEmpty() && tracks.none { it.exists() }
+    }
+
+    /** Batch 523: a playlist's disc that is really there (a sheet: with at least one of its tracks). */
+    internal fun discPresent(disc: File): Boolean =
+        disc.exists() && !((disc.extension.equals("cue", true) || disc.extension.equals("gdi", true)) && orphanSheet(disc))
 
     /** Files a CUE sheet (`FILE "Game (Track 1).bin" BINARY`) or a GDI list (`1 0 4 2352 track01.bin 0`) names. */
     private fun sheetTracks(sheet: File): List<File> = try {

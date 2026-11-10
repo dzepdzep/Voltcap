@@ -388,7 +388,7 @@ internal fun StyledSaveCard(
             }
             return
         }
-        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced, look = look)
+        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced, platform = platform, look = look)
         return
     }
     val accent = ShelfTheme.accent
@@ -490,6 +490,8 @@ internal fun StyledSaveCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (icon != null) AsyncImage(model = icon, contentDescription = name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(if (style == SaveVaultStyle.FLOPPY) 3.dp else 0.dp))
+                // (Batch 523: no picture anywhere - the console's plate on the label, never a blank label or two letters.)
+                else if (platform != null) VaultArtPlate(platform, name, Modifier.fillMaxSize().padding(if (style == SaveVaultStyle.FLOPPY) 3.dp else 0.dp), nameSize = 9.sp)
                 else Text(name.take(2).uppercase(), color = if (style == SaveVaultStyle.FLOPPY) Color(0xFF333333) else Color.White.copy(alpha = 0.8f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }

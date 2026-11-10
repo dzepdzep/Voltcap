@@ -158,6 +158,7 @@ object CloudSync {
     private const val ROOT = "Voltcap Sync"
     private const val SAVES = "Saves"
     private const val LAUNCHER_FILE = "launcher-data.json"
+    private const val VAULT_ART_FILE = "vault-art.json"
 
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -984,6 +985,8 @@ object CloudSync {
                     } catch (e: LauncherDataUnreadable) {
                         report.failed++
                     }
+                    // (Batch 523: what each game with saves looks like, for the Save Vault on devices without the game.)
+                    if (!stopRequested) runCatching { syncVaultArt(context, drive, root) }
                 }
                 val complete = !stopRequested && report.failed == 0
                 if (settings.syncSaves && !skipSaves && !stopRequested) {
@@ -2176,6 +2179,22 @@ object CloudSync {
             )
         }
         return legacy to since
+    }
+
+    /**
+     * Batch 523: "Voltcap Sync/vault-art.json" — VaultArtIndex (each game with saves: console, the names its saves go by, its
+     * cover / logo / icon web addresses). Merged by union both ways; a copy that can't be read is left alone (never
+     * overwritten from here). Uploaded only when Drive's lacks something this device knows.
+     */
+    private fun syncVaultArt(context: Context, drive: DriveClient, root: String) {
+        val existing = drive.list(root, "name='$VAULT_ART_FILE'").filter { !it.isFolder }.maxByOrNull { it.modifiedTime }
+        val remote = if (existing == null) emptyList() else {
+            val raw = runCatching { drive.downloadBytes(existing.id).decodeToString() }.getOrNull() ?: return
+            VaultArtIndex.fromJson(raw).also { if (it.isEmpty() && raw.contains("\"games\"").not()) return }
+        }
+        val upload = VaultArtIndex.mergeRemote(context, remote) ?: return
+        if (upload.isEmpty()) return
+        drive.uploadBytes(VaultArtIndex.toJson(upload).toByteArray(), VAULT_ART_FILE, root, existing?.id)
     }
 
     /** Drive's launcher-data file is there but couldn't be read this time. */

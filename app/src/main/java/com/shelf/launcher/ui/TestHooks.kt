@@ -38,6 +38,16 @@ internal object TestHooks {
     @Volatile var allowWrites = false
     /** Update 496: `--ez voltcap_test_vault_dry true` — the Save Vault shows what it last listed and searches / writes / syncs nothing. */
     @Volatile var vaultDry = false
+    /**
+     * Batch 523: `--ez voltcap_test_vault_fixture true` (isolated QA app only) — the Save Vault shows a fixed set of saves:
+     * games of this library, games that are NOT here with a look another device recorded (VaultArtIndex, the QA portrait
+     * pictures), and games that are not here with no picture at all. Display only: no save is read or written, nothing
+     * synced, no index written (implies the dry view).
+     */
+    @Volatile var vaultFixture = false
+    /** Batch 523, with the fixture: `--ez voltcap_test_vault_before true` — the vault as before 523g (no recorded looks,
+     *  two letters on a blank label), for before / after screenshots of the same saves. QA app only, this run only. */
+    @Volatile var vaultBefore = false
 
     /** Update 469: the game a test asks for — its name or ROM file name holding [q], compared on letters and digits only. */
     fun matchGame(games: List<com.shelf.launcher.data.Game>, q: String): com.shelf.launcher.data.Game? {
@@ -366,6 +376,13 @@ internal object TestHooks {
         // (not saved: the owner's own switch stays as it is).
         if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
         if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        if (intent?.hasExtra("voltcap_test_vault_fixture") == true && enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            vaultFixture = intent.getBooleanExtra("voltcap_test_vault_fixture", false)
+            vaultBefore = vaultFixture && intent.getBooleanExtra("voltcap_test_vault_before", false)
+            if (vaultFixture) vaultDry = true
+            com.shelf.launcher.data.SaveCapsules.clearFixture()
+            if (!vaultFixture) com.shelf.launcher.data.VaultArtIndex.fixture = emptyList()
+        }
         // Update 499 (D295, owner option C for unattended QA): `--es voltcap_test_cloudhold show|off` — `show` writes the three
         // Drive switches (Sync game saves, Sync favourites and playtime, Automatic backup) and whether Drive is connected to
         // <files>/voltcap_test_cloudhold.json (kept if it exists: the first note is the owner's original); `off` turns those

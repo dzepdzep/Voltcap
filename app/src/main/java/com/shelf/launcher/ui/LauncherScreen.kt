@@ -5629,16 +5629,44 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val vaultArt by viewModel.vaultArt.collectAsState()
         val vaultLogo by viewModel.vaultLogo.collectAsState()
         val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
+        // (Batch 523: what games with saves look like, kept and synced - VaultArtIndex - for devices without the game.)
+        val vaultIndex by com.shelf.launcher.data.VaultArtIndex.entries.collectAsState()
+        val ctxVault = androidx.compose.ui.platform.LocalContext.current
+        fun indexed(g: com.shelf.launcher.data.Game) = if (TestHooks.vaultBefore || vaultIndex.isEmpty() && com.shelf.launcher.data.VaultArtIndex.fixture.isEmpty()) null
+            else com.shelf.launcher.data.VaultArtIndex.find(g.platform, g.name)
+        LaunchedEffect(Unit) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.data.VaultArtIndex.load(ctxVault.applicationContext) } }
         LaunchedEffect(capsules) {
             // (0.6.18: not for saves without a game name — there is nothing to look up.)
-            val away = capsules.filter { !it.onDevice && it.named }.map { it.game }
+            // (Batch 523: nor for one whose look another device already recorded.)
+            val away = capsules.filter { !it.onDevice && it.named && indexed(it.game)?.cover == null }.map { it.game }
             if (away.isNotEmpty() && !TestHooks.vaultDry) viewModel.loadVaultArt(away)
+        }
+        LaunchedEffect(capsules, state.art) {
+            if (TestHooks.vaultDry) return@LaunchedEffect
+            // (Batch 523: the games here that have saves - the names those saves go by and their pictures' web addresses.)
+            val found = capsules.filter { it.onDevice }.map { c ->
+                val g = c.game; val k = g.stableKey
+                val names = buildSet {
+                    add(com.shelf.launcher.data.VaultArtIndex.norm(g.name))
+                    g.romPath?.substringAfterLast('/')?.substringBeforeLast('.')?.let { add(com.shelf.launcher.data.VaultArtIndex.norm(it)) }
+                    c.saves.forEach { sv -> add(com.shelf.launcher.data.VaultArtIndex.norm(sv.title)) }
+                }.filter { it.length >= 3 }.toSet()
+                com.shelf.launcher.data.VaultArtIndex.Entry(
+                    com.shelf.launcher.data.VaultArtIndex.platformKey(g.platform), names,
+                    cover = com.shelf.launcher.data.VaultArtIndex.shareable(state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl),
+                    logo = com.shelf.launcher.data.VaultArtIndex.shareable(state.artOverrides[k]?.logo ?: state.art[k]?.logoUrl),
+                    icon = com.shelf.launcher.data.VaultArtIndex.shareable(g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }),
+                    at = System.currentTimeMillis()
+                )
+            }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.data.VaultArtIndex.record(ctxVault.applicationContext, found) }
         }
         SaveExplorerDialog(
             games = state.games,
             iconFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
-                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: vaultArt[g.stableKey]
+                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl
+                    ?: indexed(g)?.let { it.cover ?: it.icon } ?: vaultArt[g.stableKey]
             },
             onOpenGame = { g -> showSaveExplorer = false; saveSyncForGame = g },
             onDismiss = { showSaveExplorer = false },
@@ -5648,9 +5676,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // (Update 285: Icons only — the RetroAchievements icon, else the SteamGridDB logo, else as above.)
             logoFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
-                    ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl ?: vaultLogo[g.stableKey]
+                    ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
+                    ?: indexed(g)?.let { it.icon ?: it.logo } ?: vaultLogo[g.stableKey]
                 // (Batch 523, owner: "a real Icons Only look": no cover in place of an icon - a game with none shows its
-                // console's symbol (Icons only) or a plain memory card (PS2 browser).)
+                // console's designed tile (Icons only) or a plain memory card (PS2 browser).)
             }
         )
     }

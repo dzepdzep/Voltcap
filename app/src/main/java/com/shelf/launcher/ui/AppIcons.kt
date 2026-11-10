@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -315,27 +317,49 @@ internal fun AppIconArt(
             Image(banner, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         } else if (icon != null) {
             // (Batch 523, owner - DroidDeck / PXPlay: "enormous blurry app-icon backgrounds or tiny icons floating in empty
-            // rectangles". Smart App Artwork: a restrained two-tone ground in the icon's own colour (measured once per icon,
-            // kept in its range so white titles over it stay readable), a soft light behind the icon, and the icon itself at
-            // its own proportions - big enough to read on a small tile, never blown up into a blur. Real banners / art win.)
-            val tones = androidx.compose.runtime.remember(icon) { appArtTones(runCatching { averageColor(icon.asAndroidBitmap().let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b }) }.getOrDefault(0xFF2A2F3A.toInt())) }
+            // rectangles". Smart App Artwork: a restrained two-tone ground in the icon's own colour (measured once per app and
+            // kept - AppArtTones - in a range where white titles over it stay readable), a soft light behind the icon, and
+            // the icon itself at its own proportions - big enough to read on a small tile, never blown up into a blur.
+            // Wide capsules and big hero cards: the icon sits on the right third, balanced by two faint rings drawn round it
+            // (one draw, no blur, no animation) instead of a bigger icon. No name drawn here: the layouts print it already.
+            // Real banners / art win.)
+            val tones = AppArtTones.of(packageName, icon)
             val top = Color(tones.first); val bottom = Color(tones.second)
             Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(top, bottom))))
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val side = appArtIconSide(maxWidth.value, maxHeight.value, wide).dp
+                val hero = wide || maxHeight > 220.dp
                 val center = if (wide) Alignment.CenterEnd else Alignment.Center
+                val endPad = if (wide) maxWidth * 0.12f else 0.dp
+                if (hero) androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    // (The rings' centre = the icon's centre.)
+                    val cx = if (wide) size.width - endPad.toPx() - side.toPx() / 2f else size.width / 2f
+                    val c = androidx.compose.ui.geometry.Offset(cx, size.height / 2f)
+                    val r = side.toPx()
+                    drawCircle(Color.White.copy(alpha = 0.05f), r * 1.35f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.06f))
+                    drawCircle(Color.White.copy(alpha = 0.035f), r * 2.05f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.04f))
+                    // A soft sheen from the top left, so the empty side reads as lit space, not a blank band.
+                    drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.Transparent), androidx.compose.ui.geometry.Offset.Zero,
+                        androidx.compose.ui.geometry.Offset(size.width * 0.6f, size.height)))
+                }
                 Box(
-                    Modifier.align(center).padding(end = if (wide) maxWidth * 0.08f else 0.dp).size(side * 1.9f)
+                    Modifier.align(center).offset(x = if (wide) -(endPad - side * 0.45f) else 0.dp).size(side * 1.9f)
                         .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent)))
                 )
                 Image(
                     icon, null, contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .align(center)
-                        .padding(end = if (wide) maxWidth * 0.08f + side * 0.45f else 0.dp)
+                        .padding(end = endPad)
                         .size(side)
                         .clip(RoundedCornerShape(side * 0.22f))
                 )
+            }
+        } else if (packageName != null) {
+            // (Batch 523: no readable icon at all - a clean neutral plate with the apps glyph, never an empty rectangle.)
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF39404C), Color(0xFF1C2028)))), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Apps, null, tint = Color.White.copy(alpha = 0.55f),
+                    modifier = Modifier.fillMaxSize(0.34f))
             }
         }
     }
@@ -421,4 +445,21 @@ internal fun coverOrAppIcon(g: com.shelf.launcher.data.Game, cover: Any?): Any? 
     val icon = if (want) rememberOwnAppIcon(g.packageName) else null
     val bmp = icon?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
     return cover ?: bmp
+}
+
+/**
+ * Batch 523: each app's ground tones, measured once from its icon (a hardware bitmap copied once) and kept for the run —
+ * a home screen of app tiles redrew and re-measured them per card before.
+ */
+internal object AppArtTones {
+    private val cache = android.util.LruCache<String, Pair<Int, Int>>(256)
+    fun of(packageName: String?, icon: androidx.compose.ui.graphics.ImageBitmap): Pair<Int, Int> {
+        val key = packageName ?: "#" + System.identityHashCode(icon)
+        cache.get(key)?.let { return it }
+        val t = appArtTones(runCatching {
+            averageColor(icon.asAndroidBitmap().let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b })
+        }.getOrDefault(0xFF2A2F3A.toInt()))
+        cache.put(key, t)
+        return t
+    }
 }
