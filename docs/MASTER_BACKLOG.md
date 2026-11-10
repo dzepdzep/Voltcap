@@ -35,6 +35,8 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Tile home placement on the RP Flip 2: Edit Home row move + hand-placed buttons fought R1's Row place (Middle gap, Top off-screen, Bottom on the buttons); Top hid the "All" chip under the profile pictures | FIXED (521), Flip 2 + Classic QA app Top / Middle / Bottom PASS, `Batch521Test` |
+| QA install protection (process risk 5b) | FIXED (521), see 5b |
 | Automatic art / details runs no longer skip a game for two weeks after a ScreenScraper timeout / busy / limit (it was recorded as "asked") | 520, `artAskCounts` + unit test; device: not forceable without changing the production service |
 | Game grid ▲ ▼ with every game in one row (Endless on) stay on the game instead of jumping to (cols mod n) | 520, unit test + RP Classic q521 (100 % and 50 %: Zelda stays after ▼ and ▲) |
 | Game spacing for Hero tiles and Cinema (own options + R1; 100 % = as before) | 520, unit tests + RP Classic q521 screenshots (100 / 50 / 200 %) + controller pass |
@@ -125,8 +127,9 @@ Statuses:
 
 | Risk | Status |
 |---|---|
-| `install_build debug` installs whatever the debug build is. With `qa_variant.properties` set to false the debug APK is `com.shelf.launcher`, same key, versionCode 76 > 74, so it **would install over the owner's real app**. | Mitigated in practice: every QA install in 520 was preceded by an `apk_secret_scan` package check (`com.shelf.launcher.qa`). Proposal (owner decision): let the PC tool build the existing `qa` build type (`assembleQa`) so QA never depends on a properties toggle. |
-| QA scripts pressing A blindly in the R1 panel could toggle the real Wi-Fi / Bluetooth / DND. | Rule: QA scripts never press A in R1; R1 checks go through unit tests or a dedicated hook. |
+| `install_build debug` installs whatever the debug build is. With `qa_variant.properties` set to false the debug APK was `com.shelf.launcher`, same key, versionCode 76 > 74, so it **would have installed over the owner's real app**. | **FIXED (521), fail-closed:** debug = QA app by default (no file needed), QA builds signed with the debug key (Android refuses them as an update of the real app), `verifyQaIsolation` deletes any production-identity / stray APK, `guard.js` checks APK manifest + signer + USB handheld before every install and watches the real app. The install-side guard runs in the PC tool **after the owner restarts the Claude desktop app** (MCP server reload); until then the build-side and signature protections already hold. |
+| QA scripts pressing A blindly in the R1 panel could toggle the real Wi-Fi / Bluetooth / DND. | Rule: QA scripts never press A in R1; R1 checks go through unit tests or a dedicated hook (521: `voltcap_test_dock` for the Row tile). The shell / push guard (521) refuses `settings put`, `svc wifi|bluetooth`, DND and screen-size commands. |
+| `vqa.sh rate60` changed the panel refresh-rate setting (restored afterwards). | Removed (521). |
 
 ## 6. Deferred
 New system layouts, new 3D templates, consoles without references, Studio templates, popups inside the activity window,

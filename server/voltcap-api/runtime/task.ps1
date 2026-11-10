@@ -95,7 +95,7 @@ query { viewer { accounts(filter: {accountTag: "$acc"}) {
     # nothing): every built APK's package / signer verdict, and every adb serial's target verdict.
     $root = Split-Path -Parent $api | Split-Path -Parent
     Set-Location $root
-    foreach ($t in @("tools\adb_mcp\test\guard.test.js", "tools\adb_mcp\test\helpers.test.js")) {
+    foreach ($t in @("tools\adb_mcp\test\guard.test.js", "tools\adb_mcp\test\helpers.test.js", "tools\adb_mcp\test\server_e2e.test.js")) {
       $o = W "node $t"; L "$t exit=$code"; $o | Select-Object -Last 4 | ForEach-Object { L "  $_" }
     }
     Get-ChildItem "app\build\outputs\apk" -Recurse -Filter *.apk | ForEach-Object {
