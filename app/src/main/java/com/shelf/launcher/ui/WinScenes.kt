@@ -850,11 +850,13 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     @Composable
                     fun cell(label: String, value: String?) {
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.width(118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                            Box(Modifier.width(if (w < 560.dp) 100.dp else 118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
                                 Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
                             }
                             Spacer(Modifier.width(8.dp))
-                            Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                            // (Batch 523: "Never playe" - the value took the room it wanted and was cut by the window's edge;
+                            // it has the rest of the line now, whole words, two lines.)
+                            WholeWordsText(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                         }
                     }
                     // (Update 475, D246: whole rows only — on a short screen the facts that don't fit are left out whole (all of
@@ -881,28 +883,20 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     }
                     Spacer(Modifier.height(8.dp))
                     // The menu with its pointer.
-                    Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp)) {
-                        // (Update 467, popup gate: beside the case — Inspect, a narrow window — three a row broke "SUMMARY"
-                        // over two lines; two a row there.)
-                        FlowRow(maxItemsInEachRow = if (w < 560.dp) 2 else 3, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
-                                SceneControl(a, Modifier.weight(1f)) { on ->
-                                    Row(
-                                        Modifier.fillMaxWidth().background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 5.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
-                                        // (Update 469: "ACHIEVEMENTS" broke mid-word, "ACHIEVEME / NTS", on the KONKR — long keys a
-                                        // little smaller. Not FitText: it is a SubcomposeLayout, and FlowRow's weighted items ask for
-                                        // intrinsic sizes — that crashed Voltcap on A (IllegalStateException, Odin + KONKR sweep).
-                                        // Still two lines at most, never cut.)
-                                        // (Recheck: 10 sp still broke "ACHIEVEMENT / S" in the KONKR's 100 dp cell — Compose's own
-                                        // step auto-size (a text node, no subcomposition), one line, 13 → 8 sp.)
-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp,
-                                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 13.sp, stepSize = 0.5.sp),
-                                            fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
-                                    }
-                                }
+                    // (Batch 523, owner: "the selectable options are visually scattered" - a FlowRow of auto-sized keys left
+                    // "SAVE SYN" cut at 8 sp next to a full-size BACK on the same line, Play no bigger than the rest. Now: the
+                    // primary action alone on the first line, a size up; the others in an even grid of equal cells (two a
+                    // row beside the case, three in a wide window), one text size, whole words over two lines when needed,
+                    // Back last. Rows of a plain Column / Row - D-pad order is reading order, ▲ ▼ between rows.)
+                    Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        val primary = ctx.buttons.filter { !it.back && it.primary }
+                        val rest = ctx.buttons.filter { !it.back && !it.primary } + ctx.tools + ctx.buttons.filter { it.back }
+                        primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.fillMaxWidth()) }
+                        rest.chunked(storageKeysPerRow(w.value)).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                row.forEach { a -> StorageKey(a, red, big = false, modifier = Modifier.weight(1f)) }
+                                repeat(storageKeysPerRow(w.value) - row.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }
@@ -939,6 +933,25 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
+internal fun storageKeysPerRow(windowDp: Float): Int = if (windowDp < 560f) 2 else 3
+
+/** Batch 523: one key of Storage's menu - the pointer, the label in whole words (one size, two lines at most), an even height. */
+@Composable
+private fun StorageKey(a: WinAction, red: Color, big: Boolean, modifier: Modifier) {
+    SceneControl(a, modifier) { on ->
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = if (big) 40.dp else 36.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(if (on) "▶" else " ", color = red, fontSize = if (big) 15.sp else 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
+            WholeWordsText(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = if (big) 16.sp else 12.sp,
+                fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
         }
     }
 }

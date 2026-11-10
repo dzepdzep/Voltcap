@@ -86,8 +86,10 @@ internal fun nightMenuKey(ctx: StyleKeyCtx): Boolean {
     val f = ctx.focus
     val loop = StyleLoop.on && n > 1
     val target: Int? = when (ctx.key) {
-        Key.DirectionUp -> if (f > 0) f - 1 else if (loop) n - 1 else return ctx.reach(true)
-        Key.DirectionDown -> if (f < n - 1) f + 1 else if (loop) 0 else return ctx.reach(false)
+        // (Batch 523: every ▲ ▼ step tells the list which way it went - StyleLoop - so fast presses and two or three games
+        // step on round instead of bouncing back the short way.)
+        Key.DirectionUp -> (if (f > 0) f - 1 else if (loop) n - 1 else return ctx.reach(true)).also { if (loop) StyleLoop.wrapped(-1) }
+        Key.DirectionDown -> (if (f < n - 1) f + 1 else if (loop) 0 else return ctx.reach(false)).also { if (loop) StyleLoop.wrapped(1) }
         Key.DirectionLeft -> (f - NightNav.rows).coerceAtLeast(0)
         Key.DirectionRight -> (f + NightNav.rows).coerceAtMost(n - 1)
         else -> return false
@@ -170,16 +172,13 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
     val hi = Color(col.hi)
     val titles = LocalTitleOptions.current
     val density = LocalDensity.current
-    val scroll = remember { Animatable(focus.toFloat()) }
-    LaunchedEffect(focus, count) {
-        var cur = scroll.value
-        if (loop && count > 1) {
-            while (focus - cur > count / 2f) cur += count
-            while (cur - focus > count / 2f) cur -= count
-            scroll.snapTo(cur)
-        }
-        if (!animate || abs(cur - focus) > rowsN * 3f) scroll.snapTo(focus.toFloat())
-        else scroll.animateTo(focus.toFloat(), spring(dampingRatio = 0.85f, stiffness = 320f))
+    // (Batch 523: the list's place on the endless line counts every step - rememberLoopFocus - instead of guessing the
+    // shorter way after each one: with two or three games, or fast presses, the selection bounced back and forth.)
+    val target = rememberLoopFocus(focus, count, loop && count > 1, StyleLoop.tick, StyleLoop.step, c.games)
+    val scroll = remember { Animatable(target.toFloat()) }
+    LaunchedEffect(target, count) {
+        if (!animate || abs(scroll.value - target) > rowsN * 3f) scroll.snapTo(target.toFloat())
+        else scroll.animateTo(target.toFloat(), spring(dampingRatio = 0.85f, stiffness = 320f))
     }
     val caption = CategoryTitle.captionOn(c.state.appearance)
     if (caption) CategoryTitle.Native(null)
@@ -237,11 +236,11 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             val half = rowsN / 2 + 1
             // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
             val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
-            for (off in -half..half) {
-                var i = base + off
-                if (loop) i = ((i % count) + count) % count else if (i !in 0 until count) continue
+            // (Batch 523: each game once when the list is shorter than the bars on screen - loopSlots; no second highlight.)
+            for ((slot, i) in loopSlots(base, count, half, loop, com.shelf.launcher.data.Features.endlessFill.value)) {
+                val off = slot - base
                 val gg = c.games[i]
-                key(base + off) {
+                key(if (loop && count < 2 * half + 1) "g$i" else slot) {
                     val on = i == focus
                     val pull by animateFloatAsState(if (on) 1f else 0f, if (animate) spring(dampingRatio = 0.7f, stiffness = 500f) else tween(0), label = "nmPull")
                     Box(

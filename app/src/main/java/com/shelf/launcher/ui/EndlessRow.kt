@@ -58,11 +58,14 @@ internal fun rememberLoopFocus(focus: Int, n: Int, loop: Boolean, tick: Int, ste
     }
     seen[0] = list
     if (t[2] != tick) {
-        // A D-pad step: slide exactly that way (with two games the index alone can't tell which way it went).
+        // A D-pad step: slide exactly that way. (Batch 523, owner - Endless "bounced left and right" on fast presses: two
+        // steps that land in one frame bump the tick twice; counting only one step left the place one behind the focus, and
+        // the "jump" below then went back the short way. Every step since the last look is counted - [loopSteps].)
+        val k = loopSteps(t[0], focus, n, step, tick - t[2])
         t[2] = tick
         if (step != 0) {
-            t[1] += step
-            t[0] = (t[0] + step).mod(n)
+            t[1] += step * k
+            t[0] = (t[0] + step * k).mod(n)
         }
     }
     if (t[0] != focus) {
@@ -219,4 +222,33 @@ internal fun drawnOnce(off: Int, n: Int, before: Int = (n - 1) / 2): Boolean {
     if (com.shelf.launcher.data.Features.endlessFill.value) return true
     val b = before.coerceIn(0, n - 1)
     return off >= -b && off <= n - 1 - b
+}
+
+
+/**
+ * Batch 523: how many D-pad steps of [step] (+1 / -1) went by since the row last looked: [ticks] key steps were made; if
+ * that many lead from [from] to [focus] on [n] games they all count, else one (a tick that also moved by other means). Pure.
+ */
+internal fun loopSteps(from: Int, focus: Int, n: Int, step: Int, ticks: Int): Int {
+    if (n <= 0 || step == 0 || ticks <= 1) return 1
+    val k = ticks.coerceAtMost(n * 8)
+    return if ((from + step * k).mod(n) == focus.mod(n)) k else 1
+}
+
+/**
+ * Batch 523 (owner: Endless "the same game appears or is highlighted several times" with few games): the slots a
+ * hand-drawn endless list draws around [base] (its rounded scroll place), [half] each side, as (virtual place, game index).
+ * With more games than slots, every slot (games repeat only far apart, never on screen twice); with fewer, each game ONCE,
+ * at its copy nearest the scroll place (so one game, two, three... show once each and step round predictably); Endless off:
+ * the real places only; [fill] (Endless › Fill the row) keeps every slot as before. Pure.
+ */
+internal fun loopSlots(base: Int, count: Int, half: Int, loop: Boolean, fill: Boolean = false): List<Pair<Int, Int>> {
+    if (count <= 0) return emptyList()
+    if (!loop) return (base - half..base + half).filter { it in 0 until count }.map { it to it }
+    // (Endless › Fill the row, the owner's own choice, keeps the copies.)
+    if (fill || count >= 2 * half + 1) return (base - half..base + half).map { it to it.mod(count) }
+    return (0 until count).map { i ->
+        val v = i + count * Math.floorDiv(base - i + count / 2, count)
+        v to i
+    }.sortedBy { it.first }
 }
