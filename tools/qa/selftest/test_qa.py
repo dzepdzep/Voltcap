@@ -1504,6 +1504,14 @@ class GlyphCheck521(unittest.TestCase):
         r = glyphcheck.check(img, (30, 30, 12, 14), True)
         self.assertEqual(r["verdict"], "NO-SHAPE")
 
+    def test_glyph_under_a_later_window_is_left_out(self):
+        """Batch 522: windows are bottom to top; a home glyph under a popup / page window is not graded."""
+        import glyphcheck
+        dump = {"windows": [
+            {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "L2", "shown": [10, 10, 20, 20]}], "glyphs": [{"text": "A", "shown": [40, 10, 12, 14]}]},
+            {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "R1", "shown": [60, 10, 20, 20]}], "glyphs": []}]}
+        self.assertEqual([t for t, _, _ in glyphcheck.candidates(dump)], ["R1"])
+
     def test_covered_and_oversized(self):
         """Batch 522: a glyph in the dump with no ink on the screenshot (under a popup) is HIDDEN; a letter on a big card is not
         measured against the card."""

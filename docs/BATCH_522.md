@@ -108,6 +108,26 @@ Unit tests: GameClients522Test (ids, scan, Steam category, dedupe) + GameNative4
   (0.6.68-qa516a) is signed with the release key, so the debug-key QA build can't be installed over it without removing that
   QA app first (not done; owner's call).
 
-## 6. Results still running
+## 6. Scaled run and the other popup styles
 
-(Filled in when p522scale / p522sty are graded.)
+p522scale (OWN × 53 at font ×1.3 / density ×1.15 through `voltcap_test_scale`, build 522b): popup gate 47 PASS / 6 FAIL (after the glyphcheck fix below).
+Non-glyph FAILs = the same known families as at ×1.0 (BLADES readability, BUBBLES / CAMERA / ORBIT / STORAGE geometry).
+Glyphs: 35 measured on 8 layouts PASS (worst Spotlight A, 1 px = 1.8 %), **1 real defect: Green Core's header keys L2 / R2
+7.5 px low (11.7 %)** — its header is a fixed 30 dp and the font-scaled Text line box outgrew the key. Fixed: GcChip draws
+its label with InkGlyph (monospace face, dp-sized, ink-centred) like the other key caps. Device re-check pending (build 522c).
+Three more FAILs of the first grading were false positives (glyphs of the home under a popup / page window, Library L2,
+Memory card R2, Spotlight START): glyphcheck now leaves out a glyph whose window has a later window over it (self-test).
+
+p522sty (BANNER, ROW_OPENS, ROW_REVEAL, SHARED, CLASSIC × 53 on 522b) is running on the RP Classic (≈ 2 h).
+
+### Numbers so far
+- Popup types × screens inspected: 53 layouts × OWN at ×1.0 and ×1.3 = 106 combinations, 4–5 steps each (home, popup, page,
+  More, closed): 459 + 446 screenshots with their QaClip dumps.
+- Controller glyphs measured: 78 (43 + 35); misaligned: 1 component (Green Core header key: L2, R2, also ◀ / SORT / SEARCH
+  through the same chip), fixed. 0 misaligned at ×1.0.
+- Before / after: the OWN ×1.0 InkGlyph results confirm the 521 fix (0 off centre) — the 521 Flip 2 before / after pair is
+  the "before"; Green Core ×1.3 before = p522scale, after = pending.
+- Navigation: A opened every popup (Cube at ×1.0: first A opened nothing, the second did; PASS at ×1.3), B closed all,
+  focus on the first action and buttons (Details / More / Play taps) PASS 53 / 53 in both runs; launches blocked (QA guard).
+- Not verified: Flip 2 (not connected), KONKR, Thor; the popup styles other than OWN until p522sty is graded; frame-by-frame
+  motion of glyphs; R1 panel keys (QA never presses A in R1).

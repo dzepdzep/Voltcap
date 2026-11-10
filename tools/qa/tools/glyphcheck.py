@@ -147,14 +147,26 @@ def check(img, box, is_ink_box, text=''):
 
 def candidates(dump):
     out = []
-    for win in dump.get('windows', []):
+    wins = dump.get('windows', [])
+    for wi, win in enumerate(wins):
         ox, oy = win['at'][0], win['at'][1]
+        # (Batch 522: windows are listed bottom to top - a glyph of a window under a later one (a popup / page dialog over
+        # the home) is not what the screen shows there: left out.)
+        above = [w['at'] for w in wins[wi + 1:] if len(w.get('at', [])) == 4 and (w.get('nodes') or w.get('texts'))]
+
+        def covered(b):
+            cx, cy = b[0] + b[2] / 2.0, b[1] + b[3] / 2.0
+            return any(a[0] <= cx <= a[0] + a[2] and a[1] <= cy <= a[1] + a[3] for a in above)
         for g in win.get('glyphs', []):
             if g.get('placed', True):
-                s = g['shown']; out.append((g['text'], (s[0] + ox, s[1] + oy, s[2], s[3]), True))
+                s = g['shown']; b = (s[0] + ox, s[1] + oy, s[2], s[3])
+                if not covered(b):
+                    out.append((g['text'], b, True))
         for t in win.get('texts', []):
             if LABEL.match(t['text'].strip()) and t.get('placed', True):
-                s = t['shown']; out.append((t['text'].strip(), (s[0] + ox, s[1] + oy, s[2], s[3]), False))
+                s = t['shown']; b = (s[0] + ox, s[1] + oy, s[2], s[3])
+                if not covered(b):
+                    out.append((t['text'].strip(), b, False))
     return out
 
 

@@ -1193,13 +1193,16 @@ private enum class PsShape(val color: Color) {
  * it out of its circle); a fixed bold sans, like a controller's own printing.
  */
 @Composable
-internal fun InkGlyph(text: String, color: Color, textSize: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier, bold: Boolean = true) {
+internal fun InkGlyph(text: String, color: Color, textSize: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier, bold: Boolean = true,
+    /** Batch 522: the layout's own key-cap face (Green Core's monospace) and its letter spacing (em). */
+    monospace: Boolean = false, letterSpacingEm: Float = 0f) {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val paint = remember(textSize, bold, density.density) {
+    val paint = remember(textSize, bold, density.density, monospace, letterSpacingEm) {
         android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = android.graphics.Typeface.create(android.graphics.Typeface.SANS_SERIF,
+            typeface = android.graphics.Typeface.create(if (monospace) android.graphics.Typeface.MONOSPACE else android.graphics.Typeface.SANS_SERIF,
                 if (bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
             this.textSize = with(density) { textSize.toPx() }
+            letterSpacing = letterSpacingEm
         }
     }
     val bounds = remember(paint, text) { inkBounds(paint, text) }
