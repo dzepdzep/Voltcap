@@ -25,10 +25,12 @@ class PopupMore451Test {
         val b = src.substring(src.indexOf("val compactMore = scene in MORE_SCENES"), src.indexOf("internal val MORE_SCENES"))
         // Play is added unconditionally; Details and Back stay; Inspect stays in view; the rest are all in More.
         assertTrue(b.contains("add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))"))
-        assertTrue(b.contains("moreOpen -> allTools + WinAction(\"Less\""))
-        assertTrue(b.contains("else -> allTools.filter { it.label == \"Inspect\" } +"))
+        // (Batch 523: the More / Less key is built once - moreKey - and, with the QA design lab off, still ends the tools.)
+        assertTrue(b.contains("moreOpen -> allTools + moreKey!!"))
+        assertTrue(b.contains("else -> allTools.filter { it.label == \"Inspect\" } + moreKey!!"))
+        assertTrue(b.contains("WinAction(\"Less\", I.ExpandLess"))
         assertTrue(b.contains("val chips = if (showAll) allChips else allChips.filter { it.urgent }"))
-        assertTrue(b.contains("if (perf && showAll) add(WinAction(PERF_LABEL"))
+        assertTrue(b.contains("if (perf && showAll && !labActions) add(WinAction(PERF_LABEL"))
         // B closes More before the window; focus goes to the first revealed action and back to More.
         assertTrue(b.contains("BackHandler(enabled = compactMore && moreOpen) { moreOpen = false; moreRefocus(moreF) }"))
         assertTrue(b.contains("{ moreOpen = true; moreRefocus(optionsF) }"))
