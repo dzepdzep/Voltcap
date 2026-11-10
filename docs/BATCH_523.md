@@ -64,10 +64,32 @@ hook on every start; default off, the Classic runs are unchanged) and re-run as 
 | Game shelf pulled case, wide / portrait art (q520b) | 18 screenshots, settings restored |
 
 ## 4. Install guard (PC tool)
-**Still not active after the restart.** The running `voltcap-adb` server is the pre-521 one: its tools still offer
-`install_build` with release / compat, `launch_app` defaulting to `com.shelf.launcher`, and no `install_production` /
-`uninstall_qa`. The PC's `tools\adb_mcp\server.js` IS the new one (sha1 827b34aa…, same as the branch; guard self-test
-93 checks OK). So the desktop app either was not fully restarted after 11:57 or its MCP config points at another copy of
-server.js. Owner step: Claude desktop › Settings › Developer › Edit config: `voltcap-adb` → `…\ShelfLauncher\tools\adb_mcp\server.js`;
-quit from the tray, start again. Until then every install this batch was checked by hand (isolation build line, package,
-signer, sha256 on the device).
+**Active** since the owner restarted the Claude desktop app (10 Nov): the PC tool offers `install_production` / `uninstall_qa`;
+refusals checked by hand — `launch_app com.shelf.launcher`, `install_build release`, an install on a wireless serial and
+`pm clear com.shelf.launcher` are refused. Every 523 install went through `install_build debug` (QA app, debug signer
+a48b27ed, SHA-256 compared on the device afterwards; the tool reports the real app unchanged). GT78: the real Voltcap was
+updated to 0.6.69 at 20:08 on 10 Nov by **its own updater** (installer = com.shelf.launcher) — not by these tools; the GT78
+and the RP Classic now run the same production version, so the mixed-version concern is gone.
+
+## 5. Owner's UX batch (items 1–18) and the later requests
+
+| # | Item | Status | Root cause / change | Evidence |
+|---|---|---|---|---|
+| 1 | Pickup / return as one object | FIXED (523f) | Coverflow details: the slot's spine and the big case cross-faded (two copies for ~110 ms). Now the slot is empty the moment the case lifts, the case is whole from its first frame and turns from spine-on to its front; the same case goes back. Lite mode keeps its instant swap | `Batch523PickupTest`; recordings km523l2 (GT78, Full), m523f (Classic) |
+| 2 | Natural Shelf extraction | FIXED (523f), owner's eye | Game shelf: the spine turned away edge-on while a second picture came round from the other edge (both half visible — a flip), then grew. Now one box: slide up, turn in place at shelf size with spine and front side by side (`shelfBoxFaces`), then come forward | unit test; Classic m523f / GT78 km523f recordings |
+| 3 | 318-combination matrix | see §6 | p523f (×1.0) / p523fb (×1.3), RP Classic, build 523f | |
+| 4 | Details / More keep the popup's look | FIXED (523f / 523k) | Row opens, Row reveal and Shared opened the generic full-screen details. Now Details shows the whole story and every fact in the window itself (Row reveal: where the short story was; Row opens: under the buttons; Shared: in its page); B / Less goes back with focus on Details. Classic style keeps its full screen by design; the grid's side panel (no room) still opens it | m523f (Classic) + km523l (GT78): open → Less + story → B back on Details → B closed |
+| 5 | Storage box popup | FIXED (523d) | the main action alone, an even grid of the rest, Back last, whole words | 523d |
+| 6 | Smart Fill | DONE (523b–e) | WWE portrait in Tiles: no grey bars; Hero portrait whole over its soft copy; Spot wide whole | s523before vs s523after |
+| 7 | Inspect zoom on extracted media | FIXED (523b) | real multi-touch: disc 2.83×, cartridge 2.73× | ins523.tar |
+| 8 | Endless duplicates / oscillation | FIXED (523d / 523f) | each game once with Fill the row off (the owner's earlier "fill" stays the default), fast steps never bounce back; Case flow joins | e523f / ke523f (fixture: 1, 2, 3 and 36 games; fill on / off) |
+| 9 | CoverFlow continuous movement | FIXED (523f) | Case flow drew 2 games as 5 cases, 5 as 7 (copies sliding in): now each once, crossing round the loop with a fade, keyed by game | `Batch523CaseFlowTest`; GT78 recordings, 2 / 3 games |
+| 10 | Cinema platform icon | FIXED (523d) | | |
+| 11 | Save Vault art for games not here | FIXED (523g) | see `docs/qa523/vault_audit.md` | GT78 kv523h / i / j before / after |
+| 12 | Icons only / PS2 look | FIXED (523f / 523j) | Icons only = flat icons + console tile; new **PS2 browser** look | kv523j |
+| 13 | Smart App Artwork | IMPROVED (523d / 523g) | tones measured once per app (cached); wide / hero cards: icon on the right third with two faint rings; the home header no longer blurs an enlarged icon by 28 dp; apps without a readable icon get a neutral plate. DroidDeck / PXPlay / Moonlight are not installed on a connected handheld (nothing was installed for the test) | |
+| 18 | Motion pass | PARTIAL | (a) soft copies decoded tiny instead of RenderEffect blurs behind moving cards and the Hero cover-only backdrop; (b) Coverflow details case tops reuse their path / gradients (~200 allocations a frame removed) — GT78 burst janky 12.8 % → 0.6 %, steps median unchanged (15–16 ms CPU; cause not found); (c) **crash** switching Performance between Automatic and Full / Lite FIXED (523l) | perf514 k523g / h / i; flip523 |
+| — | Deleted games stay after a rescan | FIXED (523g) | a playlist (.m3u — Voltcap writes them) or cue / gdi sheet left behind without its discs kept listing the game; an explicit rescan that found nothing kept the old list | `DeletedRoms523Test` (3); the device test was inconclusive (files made over adb are unreadable to the app) |
+
+## 6. Popup gate (318 combinations) — build 523f
+(running on the RP Classic; results added when graded)
