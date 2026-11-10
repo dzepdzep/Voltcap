@@ -1,6 +1,8 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
@@ -83,9 +85,11 @@ internal object PopupLab {
 /** The lab's Back: a small controller hint in the window's corner (still a touch target). */
 @Composable
 internal fun LabBackHint(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.clickable(onClick = onBack).padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        InkGlyph("B", Color.White.copy(alpha = 0.75f), 18.dp)
+    // (On its own dark pill: on a light window - Storage boxes - white letters alone vanished.)
+    Row(modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))
+        .clickable(onClick = onBack).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        InkGlyph("B", Color.White.copy(alpha = 0.85f), 16.dp)
         Spacer(Modifier.width(6.dp))
-        Text("Back", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text("Back", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }

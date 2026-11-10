@@ -901,6 +901,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                         val primary = ctx.buttons.filter { !it.back && it.primary }
                         val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } else emptyList()
                         val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools + ctx.buttons.filter { it.back }
+                        // (Batch 523, GT78 lab shots: "ACHIEVEMENT S" - three cells a row in the menu's column (two thirds of the
+                        // window) left a long word narrower than its smallest readable size, so it broke inside the word. The cells
+                        // are counted from the menu's own width now: two a row unless the column is wide.)
                         // (Batch 523 design lab "storage": Play, Details and ••• on one line - the main choice and its two neighbours.)
                         if (labStorage) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                             primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.weight(1.6f)) }
@@ -914,10 +917,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                             }
                         } else
                         primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.fillMaxWidth()) }
-                        rest.chunked(storageKeysPerRow(w.value)).forEach { row ->
+                        rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                 row.forEach { a -> StorageKey(a, red, big = false, modifier = Modifier.weight(1f)) }
-                                repeat(storageKeysPerRow(w.value) - row.size) { Spacer(Modifier.weight(1f)) }
+                                repeat(storageKeysPerRow(w.value * 0.67f) - row.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }
