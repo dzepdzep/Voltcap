@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **10 Nov 2026 (batch 522; base reconciliation batch 520)** against main `a1f762c` (v0.6.69, versionCode 76), the batch 505–519 evidence
+Last reconciled **11 Nov 2026 (batch 523; base reconciliation batch 520)** against main `a1f762c` (v0.6.69, versionCode 76), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -35,6 +35,16 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Popup gate 523: Details in the popup's own style (Row opens / Row reveal / Shared) + Storage box layout | RP Classic p523f (×1.0, 523f): 244 PASS / 52 FAIL → Shared's story box < 24 dp × 46 FIXED 523o, verified p523or (135 PASS; Shared 46 / 46); remaining FAILs = Crate home "overlap", a checker false positive (D297). ×1.3 run p523ob (523o) — see docs/BATCH_523.md §6 |
+| Coverflow details pickup / return as one object; Game shelf extraction (slide, turn in place, forward); Case flow each game once | FIXED (523f), recordings m523f (Classic) / km523f, km523l2 (GT78, Full); `Batch523PickupTest`, `Batch523CaseFlowTest` |
+| Endless with few games: each game once (fill off) | FIXED (523d / 523f), e523f / ke523f (1, 2, 3, 36 games) |
+| Save Vault art for saves whose game isn't on this handheld (VaultArtIndex, synced vault-art.json), console plate instead of two letters, Icons only flat, new PS2 browser look | FIXED (523g–j), GT78 kv523h–j + RP Classic v523n before / after; docs/qa523/vault_audit.md |
+| Smart App Artwork (tones cached, wide / hero compositions, no 28 dp blur, neutral plate) | 523d / 523g, RP Classic a523n (JoiPlay / FolderSync / Obtainium × 12 layouts) |
+| Crash switching Performance Automatic ↔ Full / Lite (`remember` inside a `when`) | FIXED (523l), GT78 flip523: 6 / 6 crashes before, 0 / 6 after |
+| Deleted games still listed after a rescan (orphan .m3u / cue / gdi; empty explicit rescan kept the list) | FIXED (523g), `DeletedRoms523Test`; device test inconclusive (adb-made files unreadable to the app) |
+| Storage boxes menu broke "ACHIEVEMENTS" mid-word (GT78) | FIXED (523n), lab523n |
+| Smart Fill (portrait in Tiles, Hero portrait whole), Inspect zoom real multi-touch, Cinema platform icon | 523b–e, s523before / after, ins523 |
+| KONKR memory soak + Case Stacks fast scroll (mem520 / perf514) | 523 konkr523c: PSS plateau after round 1 (440 MB, 66 MB released idle) — cache, not a growing leak; Case Stacks burst p90 36 → 26 ms, janky 10.4 → 3.2 %; ctl516 55 / 55 |
 | Console badge / logo audit: 69 consoles, 0 broken references; wrong regional branding (Famicom→NES, Mega Drive→Genesis, TG16 / TGCD→PC Engine, NGPC→NGP badges + folder logos), "FAMICOM DISK SY…" cut, one-colour white blocks (3DO, DOS, Genesis, Mega Drive, MSX, Pokémon mini, Sega CD, Vectrex), 3DO white rectangle, grey pills (PS4 / PS5 / Xbox 360 / One / Series / Switch 2 / regional keys) | FIXED (522), RP Classic QA-app gallery before / after (15 pages × badges / assets + GRID / TILES / CLASSIC), docs/BATCH_522.md |
 | Popup sweep 53 layouts × 6 styles (522) | DONE on RP Classic: p522own / p522scale / p522sty graded; every FAIL fixed or classed as a test limitation (docs/BATCH_522.md §7); re-checks p522gc / p522fix / p522fix2 / p522bub. KONKR / Flip 2 / Thor NOT TESTED |
 | Controller glyph centring in popups / hint bars (InkGlyph, 521) | 522: popclip `glyphs` category + glyphcheck.py; OWN × 53 layouts on RP Classic: 43 glyph measurements on 13 layouts, 0 off centre; font ×1.3: Green Core header keys 7.5 px low → FIXED (InkGlyph), device re-check pending; 5 other styles running (docs/BATCH_522.md §6) |
@@ -72,13 +82,17 @@ Statuses:
 | Title / logo slot remembered (475 / 503) | no visit-to-visit jump seen; no dedicated recording |
 | Header backdrop cross-fade to "none" (~0.4 s) | keep or remove |
 | Flat Game shelf wide pictures (520): the strips round a whole wide picture show the game's colour gradient | keep, or a plain dark plate |
+| **Popup design lab (523m / n, QA hook only — nothing on for users)** | pick: (1) Play / Details / ••• hierarchy + Back as hint + one step lighter on the current font [recommended]; (2) Inter later, after its own ×1.0 / ×1.3 gate; Manrope not recommended; Storage lab layout yes. docs/qa523/popup_lab.md, Batch 523 evidence page |
+| Game shelf extraction / Coverflow pickup motion (523f) | owner's eye on the device |
 
 ## 3. Genuinely open and reproducible
 
 | Item | Status / next step |
 |---|---|
-| KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW). 520: one-command soak `tools/qa/device/mem520.sh TAG [rounds]` (10 layouts × 20 moves + window per round, meminfo per round, after 60 s idle and after a critical trim; no HOME press — the real Voltcap is the KONKR's home app). Classic reference run (3 rounds): PSS 108 → 184 / 193 / 200 MB, 195 idle, 194 after trim; Java flat 10–17 MB, native 114 → 121 MB (+3 % per round, flattening) |
-| Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | OPEN, render-bound (494); no change without a new measurement plan |
+| KONKR native / graphics memory growth under heavy navigation (183 → 433 MB, 383 at rest; Classic flat) | 523: soak run on the GT78 = plateau after round 1 (161 → 428 → 440 → 440 MB, 374 idle) — cache, not a growing leak; kept for a Thor / Odin comparison only. Earlier: OPEN — suspected MediaTek driver / texture caching, **not** a confirmed leak; needs a KONKR soak (BLOCKED-HW). 520: one-command soak `tools/qa/device/mem520.sh TAG [rounds]` (10 layouts × 20 moves + window per round, meminfo per round, after 60 s idle and after a critical trim; no HOME press — the real Voltcap is the KONKR's home app). Classic reference run (3 rounds): PSS 108 → 184 / 193 / 200 MB, 195 idle, 194 after trim; Java flat 10–17 MB, native 114 → 121 MB (+3 % per round, flattening) |
+| Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | IMPROVED (523): GT78 burst p90 26 ms / 3.2 % janky |
+| Coverflow details steps on the GT78: CPU median 15–16 ms per step (burst janky fixed 12.8 → 0.6 % in 523i) | OPEN — cause of the step median not found; needs a trace |
+| QA checker: readcheck flags text hidden under another layer (Crate back sleeves) as overlap | OPEN (D297), tools only: the QaClip dump has no draw order |
 | ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
 | Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 RP Classic: 2 recordings (`flash513.sh` COVERDETAILS, 690 + 784 frames): 1 one-frame event, during the fast 5-step burst — the NEW case's first frame (its no-art generated cover drawn at another texture size, then redrawn), not the leaving case's flight; 0 in the second run. Both look like first-frame texture / bounds, not motion maths. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
 | K1 game spacing in the remaining compatible layouts | PARTIAL — 520: **Hero tiles** and **Cinema** got Game spacing (own option + R1; 100 % = today's 8–12 / 8 dp; RP Classic 100 / 50 / 200 % screenshots + controller pass PASS). **Game grid** has its own Game spacing (Layout options + R1, 50–250 %, 100 % = the old 14 / 12 dp; main screen only; RP Classic: 100 / 50 / 180 % screenshots, D-pad, controller pass PASS). R1 Spacing tile + slider also on Case flow, Cardboard box, Storage boxes, File select (their own pref and range; unit tests; controller pass on those layouts PASS; the R1 tile itself reached only by unit test). Carousel (a look, not a layout), Ribbon / Twin (dp gaps), Arctic / Memory card (3-step choices) keep their own controls. The other ~35 layouts have no spacing control: each needs its own design + device check |
@@ -129,7 +143,7 @@ Statuses:
 | PS5 / Xbox One / Xbox Series / Switch 2 badge + folder artwork | BLOCKED-REF — sources and owner download steps in docs/ARTWORK_522_NEW_CONSOLES.md |
 | RA icons for regional keys | OPEN (recommendation only; RA console mapping is metadata — not changed) |
 | MCP install guard active in the desktop tool | BLOCKED-OWNER — restart the Claude desktop app (the tool still serves the pre-521 server.js) |
-| GT78 QA app is release-key signed (0.6.68-qa516a) | owner decision before the debug-key QA build can go on the GT78 |
+| GT78 QA app is release-key signed (0.6.68-qa516a) | DONE (523, owner decision): replaced by the debug-key QA app; real Voltcap untouched (it self-updated to 0.6.69 on its own updater) |
 | B2 background clip measurement | BLOCKED-HW (no clip library on the connected devices) |
 | E1 cartridges: GBA side / top, SFC + PAL rears, Famicom / NES rears, Mega Drive, double labels; E2 case calipers / box sides | BLOCKED-REF — 9 photos listed in tools/qa/E1E2_REFS_487.md |
 | GBC PCB refinement for MBC1 / MBC5 layouts | BLOCKED-REF — approximate layouts stay; MBC3 + RTC (Pokémon G / S / C) is reference-based and protected |
@@ -153,7 +167,7 @@ a separate hero surface for Ken Burns (only with a measured net win), screensave
 
 | Class | Items |
 |---|---|
-| **Critical blockers** | (1) versionCode 77 / 0.6.70 bump and a release build passing `apk_secret_scan` (identity, signer, no secrets); (2) one regression pass of the 520 changes on the **KONKR** (the owner's most-used compact device; nothing of 520 has run there) — `ctl516.sh` on the changed layouts + `q520.sh` + `mem520.sh 3`; (3) owner OK to merge next/0.6.70 into main. Not blockers: everything else below |
+| **Critical blockers** | (0, 523) the ×1.3 popup gate p523ob graded; RP Flip 2 check of the 523 popups (not connected in 523); (1) versionCode 77 / 0.6.70 bump and a release build passing `apk_secret_scan` (identity, signer, no secrets); (2) one regression pass of the 520 changes on the **KONKR** (the owner's most-used compact device; nothing of 520 has run there) — `ctl516.sh` on the changed layouts + `q520.sh` + `mem520.sh 3`; (3) owner OK to merge next/0.6.70 into main. Not blockers: everything else below |
 | **Important (in 0.6.70 already, verified on the RP Classic)** | flat case art fit + failed-wrap fallback, PS4 back logo, Game grid single-row ▲▼, game spacing (Grid, Hero tiles, Cinema + R1 tile on 4 more layouts), ScreenScraper check status + failure notes |
 | **Important, still open** | KONKR memory soak (`mem520.sh`), Case Stacks fast scroll on KONKR; Thor quick check of the 520 layouts |
 | **Optional** | more layouts with Game spacing; Cover details first-frame texture glitch (needs evidence); header backdrop fade; scan crop audit |
