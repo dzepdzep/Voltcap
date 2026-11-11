@@ -682,6 +682,17 @@
    "apk_sha256": "83dd35e1110aa8c9c45ece42af45fdbef0db9f483064248639b8a26d28bafe4c",
    "base_commit": "6bc73b9",
    "note": "batch 523y (final candidate): 523w + Back hint under the window, Banner facts first, Storage saves 24 dp, Tile home fades under row windows; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z",
+   "apk_sha256": "183aba5d60bc148e3d579ec8f918bfe6c9c71795a2f724852948daa145043371",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z: 523y + Row opens Details takes the bigger room (D303), Back hint measured first (D304), Camera rows 24 dp (D305), Details banner on very short windows (D307); GT78 + Flip 2"
   }
  ]
 }
