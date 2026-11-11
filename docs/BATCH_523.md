@@ -103,6 +103,14 @@ and the RP Classic now run the same production version, so the mixed-version con
 | Twin showcase × Row opens | 1 | the home's clock cut by 6 px by its parent on the page step, under the full-screen details | 523k replaced that page for Row opens (details in the window); re-graded in chain523n |
 | NOT TESTED: Classic layout × Banner | 1 | page step had no window buttons for the pixel comparison | — |
 
+**a523n — Smart App Artwork, apps without art (RP Classic, 523n, 12 layouts × JoiPlay / FolderSync / Obtainium):** each app shows
+its own icon on its own tones (JoiPlay's monochrome icon → a neutral grey plate), never another game's art; hero / wide cards
+place the icon whole. Cinema's header backdrop stays dark with no icon (by design: the backdrop is cover art only). PASS (by eye).
+
+**v523n — Save Vault looks on the RP Classic (523n, 8 looks, before / after):** where 523g's "before" drew two letters ("CR",
+"FI", "WI"), every look now shows the console plate / emblem, also for Wipeout 2097 (not here, nothing recorded). PS2 browser:
+turning emblems. Same result as the GT78 (kv523h–j). PASS (by eye).
+
 ### ×1.3 / density ×1.15 (p523fb)
 Stopped after 12 layouts when ×1.0 ended (the chain ran past its slot); not graded. Superseded by chain523n.
 
