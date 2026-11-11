@@ -16,11 +16,18 @@
   **Crash fixed:** switching Performance Automatic ↔ Full / Lite (`remember` inside a `when` in LauncherScreen).
 - **Deleted games** (`data/RomScanner.kt`, `LauncherViewModel.kt`): orphan .m3u / cue / gdi no longer keep a game; an empty
   explicit rescan clears the list. `DeletedRoms523Test`.
+- **Cover details recomposed** (523r / 523s, owner's sketch; `ui/StyleCoverDetails.kt`, QA hook `voltcap_test_loop` in
+  `ui/TestHooks.kt` + `ui/LauncherScreen.kt`): big case upper left under title / console · year, facts upper right, other games
+  as 32°-turned Case3D cases on a compact lower-right shelf (spaced by case shape), Endless each game once (no fill copies), the
+  case flight goes shelf ↔ big place. Tests `Batch523rCoverShelfTest`; Layouts374 / Spawning398 updated. KONKR cd523s evidence.
+- **KONKR Coverflow timing explained** (523p A/B, reverted): UI 3 ms, GPU 7 ms, rest is queue latency; no code change kept.
+- QA: popclip.sh focus guard; flip523p / konkr523q / konkr523s / cd523r scripts; Flip 2 + KONKR controller 80 / 80, Flip 2 Tile
+  home PASS.
 - **Popup design lab** (`ui/PopupLab.kt` new, `ui/theme/Theme.kt`, `ui/GameWindow.kt`, `ui/WinScenesMore.kt`, `ui/WinScenes.kt`,
   `app/build.gradle.kts` debug assets, `app/src/qa/assets/qa_fonts/`): QA hook only (`voltcap_test_popuplab`), nothing on for
   users. Recommendation in docs/qa523/popup_lab.md — awaiting the owner's pick.
 - Copy: every file above to `src_copy/` / `project_copy/` (already written there and in `app/`). Checked: unit tests (all pass),
-  QA self-tests, QA builds 523a–523o (isolated QA app; real Voltcap untouched). Popup gate ×1.0 (523f): 244 PASS / 52 FAIL
+  QA self-tests, QA builds 523a–523s (isolated QA app; real Voltcap untouched). Popup gate ×1.0 (523f): 244 PASS / 52 FAIL
   (Shared touch → fixed 523o; Crate = checker false positive) — re-run 523o in progress. Not tested: RP Flip 2 (not connected),
   DroidDeck / PXPlay / Moonlight (not installed). Details: docs/BATCH_523.md.
 
