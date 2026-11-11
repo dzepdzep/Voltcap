@@ -22,7 +22,7 @@ class Spawning398Test {
     fun aCachedPictureNeverFadesIn() {
         val m = src("ui/Motion.kt") ?: return
         assertTrue(m.contains("!l.quick"))
-        assertTrue(m.contains("instant = { m -> shared && m is String && heldCached(context, m) }"))
+        assertTrue(m.contains("instant = { m -> shared && m is String && heldCached(context, m, softPx) }")) // (523p: + the soft copy's key)
     }
 
     @Test
