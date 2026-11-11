@@ -3668,7 +3668,7 @@
    "title": "Row opens Details on KONKR: facts in the ~40 dp between name and buttons, achievements value cut, room under the buttons empty",
    "rule": "R26",
    "severity": "medium",
-   "status": "fixed in 523z (Details takes the bigger room), re-gate pending",
+   "status": "fixed in 523z (Details takes the bigger room), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
    "found": "2026-11-11 kp523y x1.0, 31 ROW_OPENS"
   },
   {
@@ -3676,7 +3676,7 @@
    "title": "Own windows Bar / Cross / Side: the 523x Back hint laid out 0 px tall under scenes that fill their height",
    "rule": "R26",
    "severity": "low",
-   "status": "fixed in 523z (hint measured first), re-gate pending",
+   "status": "fixed in 523z (hint measured first), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
    "found": "2026-11-11 kp523y + fp523y x1.0"
   },
   {
@@ -3684,7 +3684,7 @@
    "title": "Camera own window on KONKR: menu rows 32 px (< 24 dp) after the Back hint room",
    "rule": "R26",
    "severity": "low",
-   "status": "fixed in 523z (rows >= 24 dp), re-gate pending",
+   "status": "fixed in 523z (rows >= 24 dp), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
    "found": "2026-11-11 kp523y x1.0 CAMERA_OWN"
   },
   {
@@ -3700,12 +3700,12 @@
    "title": "Details window (Classic popup / Row reveal Details) on KONKR at x1.3: Play row 8 px past the window's foot (140 dp banner floor)",
    "rule": "R26",
    "severity": "medium",
-   "status": "fixed in 523z (banner 32 % / 104 dp floor under 400 dp), re-gate pending",
+   "status": "fixed in 523z (banner 32 % / 104 dp floor under 400 dp), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
    "found": "2026-11-11 kpb523y x1.3, CLASSIC x32 + ROW_REVEAL x16"
   },
   {
    "id": "D308",
-   "title": "Home layouts at x1.3: home text / status chips behind the popup counted by the popup gate (File select 'Never played', Stacks free-space line, status '79%' / controller chip)",
+   "title": "Home layouts at x1.3: home text / status chips behind the popup counted by the popup gate (File select 'Never played', Stacks free-space line, status '79%' / controller chip); also Card binder / Cover details status clock over the console name, Blades controller chip, Cube L2 R2 hint (KONKR x1.3, same in 523y)",
    "rule": "QA-TOOL",
    "severity": "low",
    "status": "home-layout x1.3 text, outside the popup; open low (checker scope like D297)",
