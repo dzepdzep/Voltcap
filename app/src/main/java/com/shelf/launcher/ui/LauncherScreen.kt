@@ -1266,6 +1266,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
 
+    // (Batch 523r: Endless on / off asked for by a QA run, shown only during a preview - nothing saved.)
+    val testLoop = TestHooks.loop.value
+    LaunchedEffect(testLoop) {
+        val v = testLoop ?: return@LaunchedEffect
+        TestHooks.loop.value = null
+        if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(loopRow = v))
+    }
+
     // (Batch 521: the R1 Row tile's own change - withDockHere - asked for by a QA run, shown only during a preview.)
     val testDock = TestHooks.dock.value
     LaunchedEffect(testDock) {

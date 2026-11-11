@@ -14,6 +14,8 @@ internal object TestHooks {
     val layout = mutableStateOf<String?>(null)
     /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
     val dock = mutableStateOf<String?>(null)
+    /** Batch 523r: `--es voltcap_test_loop true|false` — Endless (Home › the row goes round) for a preview only (nothing saved). */
+    val loop = mutableStateOf<Boolean?>(null)
     /** Batch 521b: `--es voltcap_test_badgegallery N|aN|off` — the console badge audit page N (aN: its assets view), QaBadgeGallery.kt. */
     val badgeGallery = mutableStateOf<String?>(null)
     /** Batch 521b: `--es voltcap_test_scale font=F,density=D|off` — (font scale, density factor) for Voltcap's own drawing only. */
@@ -318,6 +320,7 @@ internal object TestHooks {
             android.util.Log.i("VoltcapTest", "edithome $v active=${HomeEditState.active}")
         }
         intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
+        intent?.getStringExtra("voltcap_test_loop")?.let { v -> if (enabled(context) && (v == "true" || v == "false")) loop.value = v == "true" }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
         val lk = intent?.getStringExtra("voltcap_test_look")
