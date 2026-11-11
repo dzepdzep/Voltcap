@@ -2311,7 +2311,9 @@ private fun SceneBody(
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
     else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
-        DrawWinScene(scene, ctx)
+        // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
+        // The hint is measured first; the scene gets the rest.)
+        Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
         LabBackHint(onClose, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)

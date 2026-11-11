@@ -496,8 +496,11 @@ internal fun RowMotionWindow(
             val belowTop = buttonsTo.y + buttonsSize.height + with(d) { 16.dp.toPx() }
             val belowRoom = H - with(d) { 24.dp.toPx() } - belowTop
             val detailsHere = !panel && (inPlace || belowRoom > with(d) { 80.dp.toPx() })
-            val iTop = if (showAll && !inPlace) belowTop else infoTop
-            val infoH = if (showAll && !inPlace) belowRoom else (infoBottom - infoTop)
+            // (523z, KONKR kp523y Row opens x31: Details took the ~40 dp between the name and the buttons and cut the facts while
+            // the screen under the buttons stood empty. Details goes to whichever room is bigger.)
+            val useBelow = detailsBelow(showAll, inPlace, infoBottom - infoTop, belowRoom, with(d) { 80.dp.toPx() })
+            val iTop = if (useBelow) belowTop else infoTop
+            val infoH = if (useBelow) belowRoom else (infoBottom - infoTop)
             if (infoH > with(d) { 40.dp.toPx() }) Column(
                 Modifier
                     .graphicsLayer {
@@ -719,3 +722,7 @@ internal fun revealFacts(developer: String?, genre: String?, year: Int?, earned:
     developer?.takeIf { it.isNotBlank() }?.let { "Developer" to it }, genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
     year?.let { "Released" to it.toString() }, total.takeIf { it > 0 }?.let { "Achievements" to "$earned / $it" }
 )
+
+/** 523z: Details opens under the buttons when that room is usable and bigger than the room between the name and the buttons. */
+internal fun detailsBelow(showAll: Boolean, inPlace: Boolean, inPlaceRoom: Float, belowRoom: Float, minBelow: Float): Boolean =
+    showAll && belowRoom > minBelow && (!inPlace || belowRoom > inPlaceRoom)

@@ -494,7 +494,9 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                         val rows = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                         rows.forEach { a ->
                             SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                                Row(Modifier.fillMaxWidth().background(if (on) c0 else Color.Transparent).padding(horizontal = u * 2, vertical = u * 0.5f),
+                                // (523z, KONKR kp523y CAMERA_OWN: with the Back hint's room taken from the window the pixel unit fell a
+                                // step and the rows were 32 px - under the 24 dp touch minimum. Each row keeps at least 24 dp; the list scrolls.)
+                                Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).background(if (on) c0 else Color.Transparent).padding(horizontal = u * 2, vertical = u * 0.5f),
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Canvas(Modifier.size(u * 7)) { if (on) pixelIcon(PX_CURSOR, Offset.Zero, u.toPx(), c3) }
                                     Spacer(Modifier.width(u * 2))
