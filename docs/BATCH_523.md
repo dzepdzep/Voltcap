@@ -153,3 +153,37 @@ Findings:
   pass, not this one.
 - Next step if wanted: a GPU profile (AGI / `dumpsys gfxinfo` with Profile GPU rendering) — needs a developer-option change on the
   handheld, so not done without your OK.
+
+## 8. Flip 2 and KONKR regression on build 523o (11 Nov, isolated QA app; RP Classic away)
+
+Identity checked before any install: Flip 2 = `Retroid Pocket Flip2`, ro.serialno 2037b27d, USB; KONKR = `GT78_VN`,
+BW0306N230000845, USB; both listed in tools/adb_mcp/qa_devices.json; installs through `install_build` (guard: QA package, debug
+signer a48b27ed, real Voltcap checked before / after — unchanged on both: 0.6.69 / 76). QA APK sha 18a72c06 verified on both.
+
+| Check | Flip 2 | KONKR (GT78) |
+|---|---|---|
+| Controller contract (ctl516, 16 layouts × R1 / L1 / Select / Start / R2-L2) | **80 / 80** (fc523p) | **80 / 80** (kc523q) |
+| Endless with few games (endless523b: 1 / 2 / 3 / many × fill on / off × 5 layouts) | ran (fe523p), pulled to the PC — **not graded yet** | done in 523f (ke523f) |
+| Tile home independence (tile522b) | ran (ft523p), pulled — **not graded yet** | — |
+| Popup gate ×1.0 (318) | **running** (fp523p, from 06:22) | stopped to make room for the 523r check |
+
+New QA safety: popclip.sh now presses keys / taps only while a QA app window has the focus (a crash dialog ends the run).
+
+## 9. Cover details recomposed (523r, owner's sketch, 11 Nov) — built, unit-tested, **device check pending**
+
+Layout identified: `HomeLayout.COVERDETAILS` → `StyleCoverDetails.kt` (`CoverDetailsBody`, the shelf, `CoverBigCases`,
+`CoverFlight`). Case flow (`StyleCaseFlow.kt`) untouched.
+- Big case (Case3D, the console's own case / real scan, unchanged geometry and art) at the upper left under the game's name and
+  "console · year"; facts and story at the upper right.
+- The other games as smaller Case3D cases on a shelf at the lower right, turned 32° (spine + part of the front), packed with a
+  quarter overlap, a little darker further along; Game spacing still applies.
+- The game you're on takes no room in the row: the one before and the one after stand one slot apart (no gap).
+- Endless: each game exactly once (`coverRowD`), with 1 / 2 / 3 games side by side after the one you're on; "Fill the row" is
+  ignored here (no copies); a game going round fades at the loop's ends instead of jumping.
+- Moving on: the next case leaves its slot and scales / moves / turns (32° → the big case's turn) into the big place; the one you
+  were on goes back into its own slot the same way (same objects; the slot is empty while its case is out). Each slot has the
+  big box's shape, so the flight only scales and moves.
+- Unit tests: `Batch523rCoverShelfTest` (row places, each game once for 2–7 games, edge fades, flight turn); Layouts374 /
+  Spawning398 follow the redesign; all tests pass. QA hook `voltcap_test_loop true|false` (preview only) + `cd523r.sh`
+  (1 / 2 / 3 / many games × Endless on / off, shots + recordings) prepared.
+- **Not yet seen on a device**: the PC connection dropped while installing 523r on the GT78 (install result unknown).
