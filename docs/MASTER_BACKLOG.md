@@ -35,6 +35,9 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Row-style windows over the home: header / category chips / Tile home tiles at full strength under the window (duplicated title) | FIXED (523w / 523y), D301; KONKR + Flip 2 shots; final gate on 523y running |
+| Banner Game info on 16:9: facts half under the edge (Flip 2 ×52); Back hint over scene keys (×4); Storage saves line < 24 dp | FIXED (523x), D299 / D300; re-grade in the 523y gate |
+| QA tooling on Android 12 FUSE (GT78): request files unreadable → no dumps (kp523u INFRA 318) | FIXED (QA tools), D302 |
 | Approved popup direction (lighter Roboto, Play / Details / •••, Back hint, Storage layout) | DONE-O (523t / 523u): all popups; KONKR + Flip 2 before / after; popup gates on 523u running |
 | Cover details recomposed to the owner's sketch (big case upper left, angled 3D cases on a compact lower-right shelf, Endless each game once, case flight shelf ↔ big place) | DONE-O (523r / 523s): KONKR cd523s screenshots + recordings; owner review; Flip 2 / Thor NOT TESTED |
 | Controller contract 16 layouts on Flip 2 and KONKR (523o) | 80 / 80 each (fc523p, kc523q) |
@@ -98,6 +101,8 @@ Statuses:
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | IMPROVED (523): GT78 burst p90 26 ms / 3.2 % janky |
 | Coverflow details steps on the GT78: 15–16 ms frame median (burst janky fixed 12.8 → 0.6 % in 523i) | EXPLAINED (11 Nov): UI thread 3 ms, GPU 7 ms; the rest is buffer-queue wait (latency, not work); 0.6–5 % frames miss their deadline. Removing the blur or all effects (Lite) changes nothing → no code change (523p A/B reverted). Further only with a GPU profile (developer option, owner OK). docs/BATCH_523.md §7 |
 | Hero on the GT78: GPU 11–12 ms a frame, its popup window 17 ms median | OPEN, low — the heaviest layout on this GPU; next perf candidate |
+| Home legend glyphs off centre on the Flip 2 (Pocket ribbon START 3 px, Spotlight SELECT) | OPEN, low (home, not popup) |
+| Classic details on Hub / Resume: achievements list squeezed with 10 achievements (Flip 2) | OPEN, low |
 | Airy, game without art: the card's fallback title is white on the white card (Flip 2 fe523p) | OPEN, low |
 | QA checker: readcheck flags text hidden under another layer (Crate back sleeves) as overlap | OPEN (D297), tools only: the QaClip dump has no draw order |
 | ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
@@ -174,7 +179,7 @@ a separate hero surface for Ken Burns (only with a measured net win), screensave
 
 | Class | Items |
 |---|---|
-| **Critical blockers** | (0, 523) the ×1.3 popup gate p523ob graded (results kept on the RP Classic, /sdcard/pc/p523ob); RP Flip 2 popup gate fp523p + KONKR kp523q (running 11 Nov); (1) versionCode 77 / 0.6.70 bump and a release build passing `apk_secret_scan` (identity, signer, no secrets); (2) one regression pass of the 520 changes on the **KONKR** (the owner's most-used compact device; nothing of 520 has run there) — `ctl516.sh` on the changed layouts + `q520.sh` + `mem520.sh 3`; (3) owner OK to merge next/0.6.70 into main. Not blockers: everything else below |
+| **Critical blockers** | (0, 523) final candidate 523y: full 318 gate ×1.0 + ×1.3 on KONKR and Flip 2 graded all-PASS (running 11 Nov); RP Classic ×1.3 p523ob graded (kept on the device); (1) versionCode 77 / 0.6.70 bump and a release build passing `apk_secret_scan` (identity, signer, no secrets); (2) one regression pass of the 520 changes on the **KONKR** (the owner's most-used compact device; nothing of 520 has run there) — `ctl516.sh` on the changed layouts + `q520.sh` + `mem520.sh 3`; (3) owner OK to merge next/0.6.70 into main. Not blockers: everything else below |
 | **Important (in 0.6.70 already, verified on the RP Classic)** | flat case art fit + failed-wrap fallback, PS4 back logo, Game grid single-row ▲▼, game spacing (Grid, Hero tiles, Cinema + R1 tile on 4 more layouts), ScreenScraper check status + failure notes |
 | **Important, still open** | KONKR memory soak (`mem520.sh`), Case Stacks fast scroll on KONKR; Thor quick check of the 520 layouts |
 | **Optional** | more layouts with Game spacing; Cover details first-frame texture glitch (needs evidence); header backdrop fade; scan crop audit |
