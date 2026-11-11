@@ -36,6 +36,8 @@ class Batch523zTest {
         assertTrue(categoryNameRoomPx(42f, 663f, 120f, 160f, 675f, 480f, 12f, 52f, 12f) == null)
         // starts right of the cluster's left edge (Hero's spot further right): no limit
         assertTrue(categoryNameRoomPx(600f, 700f, 30f, 74f, 712f, 480f, 12f, 52f, 12f) == null)
+        // Resume on the Flip 2 at x1.3: the name under the clock row, touching it by 5 px - no limit (it fitted as it was)
+        assertTrue(categoryNameRoomPx(240f, 720f, 245f, 300f, 730f, 580f, 205f, 250f, 12f) == null)
         // no status bar: no limit
         assertTrue(categoryNameRoomPx(42f, 300f, 30f, 74f, 312f, null, 0f, 0f, 12f) == null)
         // a short name keeps the same room as a long one (stable: never switches back and forth)

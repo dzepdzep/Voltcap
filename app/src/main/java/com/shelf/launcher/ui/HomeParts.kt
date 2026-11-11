@@ -126,7 +126,10 @@ internal fun categoryNameRoomPx(
     clusterLeft: Float?, clusterTop: Float, clusterBottom: Float, gapPx: Float
 ): Float? {
     if (clusterLeft == null) return null
-    if (partBottom <= clusterTop || partTop >= clusterBottom) return null
+    // (Sharing the band means overlapping it by more than a quarter of the name's height: Resume's name sits under the clock
+    // row and touches it by a few px - narrowing it there made it slide on the Flip 2 at x1.3, where it had fitted.)
+    val shared = minOf(partBottom, clusterBottom) - maxOf(partTop, clusterTop)
+    if (shared <= 0.25f * (partBottom - partTop)) return null
     if (textLeft >= clusterLeft) return null
     val pad = (partRight - textRight).coerceAtLeast(0f)
     val room = clusterLeft - gapPx - pad - textLeft
