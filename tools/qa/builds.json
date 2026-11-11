@@ -616,6 +616,17 @@
    "apk_sha256": "b408c1baba470fb7d784e2d3ad4bb126527d2d6cba9351bde37ea6e7f0e772c0",
    "base_commit": "462c310",
    "note": "batch 523p: Coverflow details backdrop soft decoded copy (no RenderEffect blur); GT78 A/B only - no measurable gain, REVERTED (rebuilt APK = 523o, sha 18a72c06 re-verified on the GT78)"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523r",
+   "apk_sha256": "737b686ed647c378992b27a671542bcfb608b5d58b5b81a1602a0390b6836360",
+   "base_commit": "aac9f7f",
+   "note": "batch 523r: Cover details recomposed (owner sketch), voltcap_test_loop hook; GT78"
   }
  ]
 }
