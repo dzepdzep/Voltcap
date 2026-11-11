@@ -649,6 +649,17 @@
    "apk_sha256": "3ff32331b754b7392705f475a37b63bc25242b853539f2f3d6a0595eee7528af",
    "base_commit": "1d7731a",
    "note": "batch 523t: approved popup direction default, Cover details bigger / higher case + title synced, fixture metadata; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523u",
+   "apk_sha256": "081074ac8a37690356a081cacaf34cf22025119000f73b8999eedbb221a43cb9",
+   "base_commit": "799e009",
+   "note": "batch 523u: popup type from bundled Roboto weights, Cover details one-line title room; GT78 + Flip 2"
   }
  ]
 }
