@@ -3662,6 +3662,38 @@
    "severity": "high",
    "status": "fixed (chmod 666 on request files)",
    "found": "2026-11-11 kp523u INFRA 318"
+  },
+  {
+   "id": "D303",
+   "title": "Row opens Details on KONKR: facts in the ~40 dp between name and buttons, achievements value cut, room under the buttons empty",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 523z (Details takes the bigger room), re-gate pending",
+   "found": "2026-11-11 kp523y x1.0, 31 ROW_OPENS"
+  },
+  {
+   "id": "D304",
+   "title": "Own windows Bar / Cross / Side: the 523x Back hint laid out 0 px tall under scenes that fill their height",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 523z (hint measured first), re-gate pending",
+   "found": "2026-11-11 kp523y + fp523y x1.0"
+  },
+  {
+   "id": "D305",
+   "title": "Camera own window on KONKR: menu rows 32 px (< 24 dp) after the Back hint room",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 523z (rows >= 24 dp), re-gate pending",
+   "found": "2026-11-11 kp523y x1.0 CAMERA_OWN"
+  },
+  {
+   "id": "D306",
+   "title": "popclip: Arctic home clock behind the full-screen details page counted as a squeezed page element",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "checker false positive (occluded home element, like D297); open",
+   "found": "2026-11-11 kp523y + fp523y ARCTIC_ROW_REVEAL"
   }
  ]
 }
