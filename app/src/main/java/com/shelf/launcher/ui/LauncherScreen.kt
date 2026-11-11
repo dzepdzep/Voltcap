@@ -280,6 +280,19 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         // it — and none of its pop-ups, which open in their own windows above
         // everything — can show through. It appears as the intro fades out.
         var contentVisible by remember { mutableStateOf(!showIntro) }
+        // Connected Ignition (IgnitionStage.kt): this start-up asks "Who's playing?" and the intro is Full / Short with system
+        // animations on — the intro flows straight into the picker on the same stage. Decided in the first frame with the same
+        // rule the start-up picker uses below (it then sees WhoPlaying.asked and stays away); otherwise nothing changes.
+        var stageOn by remember {
+            mutableStateOf(showIntro && ignitionIntro(appearance.introStyle,
+                runCatching { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) }.getOrDefault(1f)) && run {
+                com.shelf.launcher.data.Profiles.ensure(context)
+                val mode = com.shelf.launcher.data.Features.startupMode.value
+                val asks = mode != com.shelf.launcher.data.Features.StartupMode.CATEGORIES ||
+                    (com.shelf.launcher.data.Features.whoPlays.value && com.shelf.launcher.data.Profiles.list.value.size >= 2)
+                asks && !WhoPlaying.asked && com.shelf.launcher.data.FirstRun.isDone(context) && viewModel.takeStartupSlot()
+            }.also { if (it) WhoPlaying.asked = true })
+        }
         // Start-up work held back for the intro (StartupGate) goes ahead once it ends, is skipped, or never plays.
         LaunchedEffect(showIntro) { if (!showIntro) StartupGate.release() }
         val introScope = rememberCoroutineScope()
@@ -297,7 +310,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                 .focusable()
                 .onPreviewKeyEvent { event ->
                     when {
-                        showIntro && !isSystemKey(event.nativeKeyEvent.keyCode) -> {
+                        showIntro && !stageOn && !isSystemKey(event.nativeKeyEvent.keyCode) -> {
                             if (event.type == KeyEventType.KeyDown) {
                                 introEndedAt = android.os.SystemClock.uptimeMillis()
                                 showIntro = false
@@ -324,7 +337,42 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             )
             // Update 169: the extra art packs' download, wherever you are (it showed only in its Settings card).
             if (!showIntro) PacksProgressPill(Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 14.dp))
-            if (showIntro) {
+            if (showIntro && stageOn) {
+                val startupMode = com.shelf.launcher.data.Features.startupMode
+                IgnitionStage(
+                    style = appearance.introStyle,
+                    profiles = com.shelf.launcher.data.Profiles.list.value,
+                    activeId = com.shelf.launcher.data.Profiles.activeId.value,
+                    raNames = viewModel.uiState.value.raAccounts,
+                    steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value,
+                    onBolt = {
+                        val a = viewModel.uiState.value.appearance
+                        if (a.lightsEnabled) introScope.launch {
+                            com.shelf.launcher.data.ControllerLights.flash(
+                                context, 0xFFFFD84A.toInt(), times = 1,
+                                restoreColor = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), restoreBrightness = a.lightsBrightness,
+                                onMs = 260
+                            )
+                        }
+                    },
+                    onSettled = {},
+                    // (The start-up picker's own choices, as its Dialog makes them below: the profile, then the start-up mode.)
+                    onPick = { id ->
+                        viewModel.switchProfile(id)
+                        when (startupMode.value) {
+                            com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> viewModel.categoryScreenOpenState.value = true
+                            com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
+                            else -> Unit
+                        }
+                        contentVisible = true
+                    },
+                    onKeep = {
+                        if (startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
+                        contentVisible = true
+                    },
+                    onGone = { introEndedAt = android.os.SystemClock.uptimeMillis(); showIntro = false; stageOn = false; contentVisible = true }
+                )
+            } else if (showIntro) {
                 VoltcapIntro(
                     style = appearance.introStyle,
                     onBolt = {

@@ -1548,7 +1548,9 @@ object Features {
      * Saved and backed up like the other look settings.
      */
     enum class PickerLook(val label: String) {
-        AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue")
+        AURORA("Aurora glass"), CONSOLE("Console classic"), NEON("Neon arcade"), OLED("Minimal OLED"), THEME("Follow Voltcap theme"), MIDNIGHT("Midnight blue"),
+        /** Connected Ignition (owner-approved rev 2): the intro's warm stage, the profiles joined by its gold line (IgnitionWire.kt). */
+        IGNITION("Ignition")
     }
     val pickerLook = EnumPref("picker_look", PickerLook.MIDNIGHT, PickerLook.values())
     /** The look a setup without a saved one starts on: [existingInstall] (FirstRun done before this version) keeps Midnight blue. */

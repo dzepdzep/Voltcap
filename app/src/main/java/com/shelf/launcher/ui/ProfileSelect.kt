@@ -64,6 +64,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -116,7 +117,14 @@ internal fun ProfileSelectScreen(
      */
     demo: Boolean = false,
     /** v0.6.67: L1 / R1 (or the arrows on the look strip) change the look live — Settings' preview. */
-    lookStrip: Boolean = false
+    lookStrip: Boolean = false,
+    /**
+     * Connected Ignition: drawn in the activity's own window as the intro's continuation (IgnitionStage) instead of a Dialog —
+     * one window, one clock, no swap. [stage] carries the intro clock while it runs; [onStageSkip] jumps to the settled picker.
+     */
+    inStage: Boolean = false,
+    stage: IgnitionReveal? = null,
+    onStageSkip: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lite = LocalLiteEffects.current
@@ -138,7 +146,7 @@ internal fun ProfileSelectScreen(
     val scope = rememberCoroutineScope()
     val enter = remember { Animatable(0f) }
     val exit = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { enter.animateTo(1f, tween(if (lite) 180 else 520, easing = FastOutSlowInEasing)) }
+    LaunchedEffect(Unit) { if (inStage) enter.snapTo(1f) else enter.animateTo(1f, tween(if (lite) 180 else 520, easing = FastOutSlowInEasing)) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(editing) { if (editing == null) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } } }
     // v0.6.67: the look (ProfileLooks.kt) — QA can show one for this session only (TestHooks.pickerLook), nothing saved.
@@ -146,6 +154,30 @@ internal fun ProfileSelectScreen(
     val style = pickerStyle(look)
     val looks = Features.PickerLook.values()
     val planPerRow = remember { intArrayOf(1) }
+    // Connected Ignition (Ignition look, rev 2): the cursor moves at once; the drawn focus glides to it from wherever it is drawn
+    // (held / rapid D-pad retargets, never snaps or lags) and each press sends one short spark along the wire.
+    val ignition = look == Features.PickerLook.IGNITION
+    val wireOn = ignition || stage != null
+    val focusPos = remember { Animatable(cursor.toFloat()) }
+    val lastMove = remember { longArrayOf(-1000L) }
+    val impulses = remember { androidx.compose.runtime.mutableStateListOf<WireImpulse>() }
+    val centers = remember { androidx.compose.runtime.mutableStateListOf<androidx.compose.ui.geometry.Offset>() }
+    LaunchedEffect(cursor) {
+        val dist = kotlin.math.abs(cursor - focusPos.value)
+        if (dist < 0.001f) return@LaunchedEffect
+        val now = android.os.SystemClock.uptimeMillis()
+        val dur = if (lite) 120 else IgnK.glideMs(dist, now - lastMove[0])
+        lastMove[0] = now
+        focusPos.animateTo(cursor.toFloat(), tween(dur, easing = androidx.compose.animation.core.CubicBezierEasing(0.33f, 1f, 0.68f, 1f)))
+    }
+    fun moveTo(n: Int) {
+        if (n == cursor) return
+        if (wireOn && !lite) impulses.add(WireImpulse(focusPos.value, n, android.os.SystemClock.uptimeMillis(), (IgnK.glideMs(kotlin.math.abs(n - focusPos.value), android.os.SystemClock.uptimeMillis() - lastMove[0]) + 60).coerceIn(160, 340)))
+        cursor = n
+    }
+    val stageClock = stage?.clock
+    fun stageT(): Float = stageClock?.value ?: Float.MAX_VALUE
+    val stageSettled = stage == null || stageT() >= stage.tm.settled
     fun stepLook(d: Int) { Features.pickerLook.value = looks[(looks.indexOf(look) + d).mod(looks.size)] }
 
     fun pick(i: Int) {
@@ -170,8 +202,7 @@ internal fun ProfileSelectScreen(
     // laid out inside the bars Android counts as shown, and on a Retroid whose own hide_nav_bar hides the bar Voltcap's windows
     // leave it shown (GestureHint.systemOwnsNav) — so the window stopped 48 px above the bottom (frame [0,0][1240,1032]) and the
     // home showed through there. Edge to edge like the game windows (decorFitsSystemWindows = false): the whole display.
-    Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false)) {
-        ImmersiveDialogWindow()
+    val body: @Composable () -> Unit = {
         val accentNow = profiles.getOrNull(cursor)?.let { style.accent(it.hue) } ?: style.accent(210f)
         BoxWithConstraints(
             Modifier.fillMaxSize()
@@ -183,12 +214,14 @@ internal fun ProfileSelectScreen(
                     // settled drift comes back on the first press, as the home's effects do.)
                     if (e.type == KeyEventType.KeyDown) HomeIdle.poke()
                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    // (Connected Ignition: a press before the picker has settled jumps to the settled picker — never to the home.)
+                    if (stage != null && stageT() < stage.tm.settled) { onStageSkip(); return@onPreviewKeyEvent true }
                     val per = planPerRow[0]
                     when (e.key) {
-                        Key.DirectionLeft -> { cursor = PickerGrid.step(cursor, count, per, -1, 0); true }
-                        Key.DirectionRight -> { cursor = PickerGrid.step(cursor, count, per, 1, 0); true }
-                        Key.DirectionUp -> { cursor = PickerGrid.step(cursor, count, per, 0, -1); true }
-                        Key.DirectionDown -> { cursor = PickerGrid.step(cursor, count, per, 0, 1); true }
+                        Key.DirectionLeft -> { moveTo(PickerGrid.step(cursor, count, per, -1, 0)); true }
+                        Key.DirectionRight -> { moveTo(PickerGrid.step(cursor, count, per, 1, 0)); true }
+                        Key.DirectionUp -> { moveTo(PickerGrid.step(cursor, count, per, 0, -1)); true }
+                        Key.DirectionDown -> { moveTo(PickerGrid.step(cursor, count, per, 0, 1)); true }
                         Key.ButtonL1 -> { if (lookStrip) stepLook(-1); lookStrip }
                         Key.ButtonR1 -> { if (lookStrip) stepLook(1); lookStrip }
                         Key.ButtonA, Key.Enter, Key.DirectionCenter, Key.NumPadEnter -> { pick(cursor); true }
@@ -206,12 +239,29 @@ internal fun ProfileSelectScreen(
                 },
             contentAlignment = Alignment.Center
         ) {
-            PickerBackdrop(look, accentNow, animate = !lite)
+            // (Connected Ignition: at start-up the look's own backdrop rises in under the wire while the title arrives — a dissolve
+            // on the intro's stage, never a swap; the intro itself is drawn by IgnitionStage behind this.)
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (stage == null) 1f else IgnK.eInOut(IgnK.ph(stageT(), stage.tm.titleFrom, stage.tm.settled)) }) {
+                PickerBackdrop(look, accentNow, animate = !lite)
+            }
+            val rootPos = remember { floatArrayOf(0f, 0f) }
+            Box(Modifier.matchParentSize().onPlaced { c -> val q = c.positionInRoot(); rootPos[0] = q.x; rootPos[1] = q.y })
             val compact = maxHeight < 360.dp || maxWidth < 520.dp
             val plan = PickerGrid.plan(count, maxWidth.value, maxHeight.value, compact)
             planPerRow[0] = plan.perRow
             val viewport = (maxWidth - (PickerGrid.SIDE * 2).dp)
             val avatar = plan.avatar.dp
+            while (centers.size < count) centers.add(androidx.compose.ui.geometry.Offset(Float.NaN, Float.NaN))
+            while (centers.size > count) centers.removeAt(centers.size - 1)
+            val density0 = LocalDensity.current
+            if (wireOn) IgnitionWireLayer(
+                WireInputs(
+                    centers, List(count) { i -> style.accent(profiles.getOrNull(i)?.hue ?: 210f) },
+                    rho = with(density0) { (avatar / 2 + 6.dp).toPx() }, rise = with(density0) { (avatar * 0.08f).toPx() },
+                    cursor = cursor, focusPos = { focusPos.value }, exit = { exit.value }, impulses = impulses, keep = ignition, lite = lite
+                ),
+                stage, Modifier.fillMaxSize()
+            )
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer {
                 translationY = (1f - enter.value) * 40f
             }) {
@@ -222,7 +272,10 @@ internal fun ProfileSelectScreen(
                 Text(
                     "Who's playing?", color = style.title, fontSize = if (compact) 22.sp else 30.sp, fontWeight = style.titleWeight,
                     letterSpacing = style.titleSpacing.sp, fontFamily = style.titleFont,
-                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }
+                    modifier = Modifier.graphicsLayer {
+                        val ta = if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.titleFrom, stage.tm.titleTo))
+                        alpha = (1f - exit.value) * ta; translationY = (1f - ta) * 10f * density
+                    }
                 )
                 Spacer(Modifier.height(if (compact) 16.dp else 30.dp))
                 // One row; when the pictures can't all fit at a readable size it scrolls, keeping the one you're on in view.
@@ -242,7 +295,28 @@ internal fun ProfileSelectScreen(
                 ) {
                     for (i in 0 until count) {
                         val p = profiles.getOrNull(i)
-                        ProfileBubble(
+                        val report: (androidx.compose.ui.geometry.Offset) -> Unit = { c -> if (i < centers.size) centers[i] = androidx.compose.ui.geometry.Offset(c.x - rootPos[0], c.y - rootPos[1]) }
+                        // When this profile appears as the start-up's trace passes it (immediately otherwise).
+                        val appearOf: () -> Float = {
+                            if (stage == null) 1f else {
+                                val cs = centers; val f = cursor.coerceIn(0, cs.size - 1)
+                                val rho = with(density) { (avatar / 2 + 6.dp).toPx() }
+                                if (cs.isEmpty() || cs[i].x.isNaN() || cs[f].x.isNaN()) 0f else {
+                                    val at = WireGeo.appearAt(cs[i].x, cs[f].x, cs.first().x - rho, cs.last().x + rho, cs[f].x - rho, cs[f].x + rho, stage.tm)
+                                    IgnK.eOut(IgnK.ph(stageT(), at, at + 260f))
+                                }
+                            }
+                        }
+                        if (ignition || stage != null) IgnitionBubble(
+                            p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
+                            leaving = leaving, exitOf = { exit.value },
+                            liftOf = { IgnK.liftAt(if (ignition) focusPos.value else cursor.toFloat(), i) * (if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.rowEnd, stage.tm.focusTo))) },
+                            appearOf = appearOf, onCenter = report,
+                            model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
+                            playing = p?.id == activeId, ra = p?.raSlot?.let { raNames.getOrNull(it) },
+                            onTap = { if (stageSettled) { moveTo(i); pick(i) } else onStageSkip() },
+                            onLong = { if (p != null && !lookStrip && stageSettled) { moveTo(i); unlockThen(p) { editing = p } } }
+                        ) else ProfileBubble(
                             p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
                             leaving = leaving, exit = exit.value,
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
@@ -255,7 +329,7 @@ internal fun ProfileSelectScreen(
                 }
                 Spacer(Modifier.height(if (compact) 14.dp else 28.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.graphicsLayer { alpha = 1f - exit.value }) {
+                    modifier = Modifier.graphicsLayer { alpha = (1f - exit.value) * (if (stage == null) 1f else IgnK.ph(stageT(), stage.tm.hintsFrom, stage.tm.hintsTo)) }) {
                     PickerHint(style, "A", if (cursor < profiles.size) "Play" else "Add")
                     if (cursor < profiles.size && !lookStrip) PickerHint(style, "Y", "Edit")
                     PickerHint(style, "B", if (atStart) "Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "Close")
@@ -263,6 +337,11 @@ internal fun ProfileSelectScreen(
                 }
             }
         }
+    }
+    // The start-up's continuation lives in the activity's window (IgnitionStage); everywhere else the full-screen Dialog as before.
+    if (inStage) body() else Dialog(onDismissRequest = { if (!atStart) onSkip() }, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false)) {
+        ImmersiveDialogWindow()
+        body()
     }
     pinFor?.let { p ->
         PinPad("${p.name}'s PIN", check = { if (demo) true else Profiles.pinOpens(p, it) }, onDone = {
@@ -709,6 +788,108 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
                 Spacer(Modifier.height(10.dp))
                 Text("Ⓑ Cancel   Ⓧ Delete", color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
             }
+        }
+    }
+}
+
+/**
+ * Connected Ignition (rev 2): one profile on the Ignition look (and on every look while the start-up continuation runs). Resting:
+ * the picture shaded toward the stage (never faded — the wire must not show through it), a fine neutral edge. Focused ([liftOf]
+ * 0..1, read only while drawing): lifted, a solid ring in the profile's own colour with a cream hairline inside, a soft halo, and
+ * the name in a small capsule nameplate of that colour. "Playing" is a neutral pill so the colour belongs to the selection.
+ * [onCenter]: the picture's centre at rest (before the lift), for the wire.
+ */
+@Composable
+private fun IgnitionBubble(
+    p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean,
+    exitOf: () -> Float, liftOf: () -> Float, appearOf: () -> Float, onCenter: (androidx.compose.ui.geometry.Offset) -> Unit,
+    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
+) {
+    val hue = p?.hue ?: 210f
+    val accent = style.accent(hue)
+    val cream = Color(0xFFFFF6D6)
+    val stage = Color(0xFF08070B)
+    val stamp = Profiles.pictureStamp.value
+    val pad = size * 0.06f
+    val density = LocalDensity.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(slot)
+            .onGloballyPositioned { c -> val pos = c.positionInRoot(); with(density) { onCenter(androidx.compose.ui.geometry.Offset(pos.x + c.size.width / 2f, pos.y + (pad + size / 2).toPx())) } }
+            .graphicsLayer {
+                val l = liftOf(); val ap = appearOf(); val ex = exitOf()
+                val out = if (leaving && !on) ex else 0f
+                val k = (1f + 0.16f * l + (if (leaving && on) 0.22f * ex else 0f)) * (0.86f + 0.14f * ap)
+                scaleX = k; scaleY = k
+                translationY = -size.toPx() * 0.08f * l + out * size.toPx() * 0.25f
+                alpha = (1f - out) * ap
+            }
+            .pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
+    ) {
+        Box(Modifier.padding(pad).drawBehind {
+            val l = liftOf()
+            if (l > 0.01f && style.glow > 0f) {
+                val r = this.size.minDimension * 1.0f
+                drawCircle(Brush.radialGradient(0.35f to accent.copy(alpha = style.glow * l), 1f to Color.Transparent, radius = r), radius = r, blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
+            }
+        }, contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(size).clip(CircleShape).background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
+                    .drawWithContent {
+                        drawContent()
+                        val l = liftOf()
+                        drawRect(stage.copy(alpha = 0.34f * (1f - l)))
+                        val fl = if (on && leaving) kotlin.math.sin(Math.PI.toFloat() * IgnK.ph(exitOf(), 0.4f, 0.9f)) else 0f
+                        if (fl > 0f) drawRect(Brush.radialGradient(listOf(cream.copy(alpha = 0.55f * fl), accent.copy(alpha = 0.25f * fl))), blendMode = androidx.compose.ui.graphics.BlendMode.Plus)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    p == null -> Icon(Icons.Filled.Add, "Add a profile", tint = cream.copy(alpha = 0.8f), modifier = Modifier.size(size * 0.36f))
+                    model != null -> AsyncImage(
+                        coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
+                            .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
+                        p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
+                    )
+                    else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            // The rings, drawn over the picture's edge.
+            Box(Modifier.size(size).drawBehind {
+                val l = liftOf()
+                val r = this.size.minDimension / 2f
+                drawCircle(cream.copy(alpha = 0.16f * (1f - l)), r, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                if (l > 0.01f) {
+                    drawCircle(accent.copy(alpha = l), r + 1.5.dp.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(3.5.dp.toPx() * l))
+                    drawCircle(cream.copy(alpha = 0.55f * l), r - 0.6.dp.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                }
+            })
+            if (p?.locked == true) Box(
+                Modifier.align(Alignment.BottomEnd).size((size * 0.26f).coerceAtLeast(20.dp)).clip(CircleShape).background(Color.Black.copy(alpha = 0.72f))
+                    .border(1.dp, accent, CircleShape), contentAlignment = Alignment.Center
+            ) { Icon(Icons.Filled.Lock, "Locked", tint = Color.White, modifier = Modifier.size((size * 0.14f).coerceAtLeast(11.dp))) }
+        }
+        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+        // The nameplate: a capsule of the profile's own colour behind the focused name (whole names, wrapping, never "…").
+        Box(Modifier.drawBehind {
+            val l = liftOf()
+            if (l > 0.02f) {
+                val cr = androidx.compose.ui.geometry.CornerRadius(minOf(this.size.height / 2f, 14.dp.toPx()))
+                drawRoundRect(accent.copy(alpha = 0.16f * l), cornerRadius = cr)
+                drawRoundRect(accent.copy(alpha = 0.75f * l), cornerRadius = cr, style = androidx.compose.ui.graphics.drawscope.Stroke(1.2.dp.toPx()))
+            }
+        }.padding(horizontal = 11.dp, vertical = 3.dp)) {
+            ProfileName(p?.name ?: "Add", color = if (on) style.nameOn else style.nameOff, maxSize = if (compact) 14f else 16f, bold = on)
+        }
+        if (ra != null && on) Text("RetroAchievements · $ra", color = style.nameOff.copy(alpha = 0.8f), fontSize = 10.sp, textAlign = TextAlign.Center)
+        if (playing) Row(
+            Modifier.padding(top = 6.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(cream.copy(alpha = 0.08f))
+                .border(1.dp, cream.copy(alpha = 0.28f), androidx.compose.foundation.shape.RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(6.dp).clip(CircleShape).background(accent))
+            Spacer(Modifier.width(5.dp))
+            Text("Playing", color = cream.copy(alpha = 0.85f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

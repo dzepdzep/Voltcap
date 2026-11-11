@@ -107,6 +107,10 @@ internal fun pickerStyle(look: PickerLook): PickerStyle = when (look) {
         ShelfTheme.colors.textPrimary.copy(alpha = 0.05f), ShelfTheme.accent.copy(alpha = 0.25f), 3.dp, ShelfTheme.colors.textPrimary.copy(alpha = 0.22f), 0.5f, 0.64f)
     PickerLook.MIDNIGHT -> PickerStyle(look, CircleShape, Color.White, FontWeight.SemiBold, 0f, null, Color.White, Color.White.copy(alpha = 0.7f),
         Color.White.copy(alpha = 0.6f), Color.White.copy(alpha = 0.14f), null, null, 3.dp, Color.White.copy(alpha = 0.25f), 0.55f, 0.62f)
+    // Connected Ignition (rev 2): cream type on the intro's stage; resting profiles are shaded in the bubble (not faded: the gold
+    // line must never show through a picture), the one you're on carries a ring, halo and nameplate in its own colour.
+    PickerLook.IGNITION -> PickerStyle(look, CircleShape, Color(0xFFFFF6D6), FontWeight.SemiBold, 0.5f, null, Color.White, Color(0xFFFFF6D6).copy(alpha = 0.66f),
+        Color(0xFFFFF6D6).copy(alpha = 0.72f), Color(0xFFFFF6D6).copy(alpha = 0.16f), null, null, 3.5.dp, Color(0xFFFFF6D6).copy(alpha = 0.16f), 0.30f, 1f)
 }
 
 /**
@@ -184,6 +188,7 @@ internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, m
                     radius = size.width * 0.3f), radius = size.width * 0.3f, center = Offset(size.width / 2, size.height * 0.6f))
             }
         }
+        PickerLook.IGNITION -> IgnitionBackdrop(modifier)
         PickerLook.MIDNIGHT -> Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF16305E), Color(0xFF0A1734), Color(0xFF03060F)), radius = 1600f))) {
             if (animate) MidnightSparks(Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().midnightFloor())
@@ -309,5 +314,20 @@ internal fun PickerLookThumbs() {
                     fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.padding(top = 4.dp))
             }
         }
+    }
+}
+
+/**
+ * Connected Ignition: the intro's stage as it settles — Stage black, the capsule's warm glow where the logo was, the vignette, and
+ * a floor of warm light under the row. Static: drawn once, nothing moves (HomeIdle-friendly).
+ */
+@Composable
+internal fun IgnitionBackdrop(modifier: Modifier = Modifier) {
+    Canvas(modifier.fillMaxSize().background(Color(0xFF08070B))) {
+        val w = size.width; val h = size.height
+        val r = minOf(0.2f * w, 0.26f * h)
+        drawRect(Brush.radialGradient(0f to Color(0xFFF59A2C).copy(alpha = 0.20f), 0.45f to Color(0xFF964614).copy(alpha = 0.07f), 1f to Color.Transparent,
+            center = Offset(w / 2f, h * 0.43f), radius = 3.4f * r))
+        drawRect(Brush.radialGradient(0.4f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.65f), center = Offset(w / 2f, h / 2f), radius = maxOf(w, h) * 0.75f))
     }
 }
