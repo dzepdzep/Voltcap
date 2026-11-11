@@ -638,6 +638,17 @@
    "apk_sha256": "4d1dc77e8dcac685b5be88fbc785e13693cc4b1f7f0fb2ee6f3407fe763cbb4b",
    "base_commit": "9017af7",
    "note": "batch 523s: Cover details shelf sized / spaced by case shape; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523t",
+   "apk_sha256": "3ff32331b754b7392705f475a37b63bc25242b853539f2f3d6a0595eee7528af",
+   "base_commit": "1d7731a",
+   "note": "batch 523t: approved popup direction default, Cover details bigger / higher case + title synced, fixture metadata; GT78 + Flip 2"
   }
  ]
 }
