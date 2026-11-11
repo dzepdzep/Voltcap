@@ -627,6 +627,17 @@
    "apk_sha256": "737b686ed647c378992b27a671542bcfb608b5d58b5b81a1602a0390b6836360",
    "base_commit": "aac9f7f",
    "note": "batch 523r: Cover details recomposed (owner sketch), voltcap_test_loop hook; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523s",
+   "apk_sha256": "4d1dc77e8dcac685b5be88fbc785e13693cc4b1f7f0fb2ee6f3407fe763cbb4b",
+   "base_commit": "9017af7",
+   "note": "batch 523s: Cover details shelf sized / spaced by case shape; GT78"
   }
  ]
 }
