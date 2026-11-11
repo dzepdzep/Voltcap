@@ -207,3 +207,27 @@ Layout identified: `HomeLayout.COVERDETAILS` → `StyleCoverDetails.kt` (`CoverD
 ## 11. Other finding (Flip 2, endless run)
 Airy with games without art: the card's fallback title is white on the white card (invisible) — seen in fe523p (Flip 2). Not
 fixed yet (logged; the stand-in library has no art, real libraries mostly have it).
+
+## 12. Approved popup direction implemented (523t / 523u / 523v, owner 11 Nov)
+
+Owner approved: lighter existing Roboto, Play / Details / round •••, Back as a subtle hint, the Storage boxes layout; Cover details
+kept (bigger / higher case, balanced with real art and metadata, title synced with the case).
+- `PopupLab.APPROVED` is now what every popup uses (`PopupLab.active`; `voltcap_test_popuplab legacy` shows the old popups
+  for before / after, Inter / Manrope stay QA-only). GameWindow / WinScenesMore / WinScenes read `active`.
+- Type: `PopupType {}` around GameWindow and GameDetailsOverlay (LauncherScreen) gives every theme-font text inside a popup the
+  lighter family; styles with their own font (pixel, monospace, console lettering) keep it. First try (device faces
+  "sans-serif-medium") changed nothing on titles: Android re-weights the device face to the asked Bold — the lab's "current_w"
+  had the same limit. **523u bundles Roboto 400 / 500 / 600 / 700** (static instances of the device's own Roboto variable font,
+  Latin subset, ~77 KB each, Apache 2.0, `app/src/main/assets/fonts/` + licence) and draws each weight one step lighter
+  (Bold → SemiBold, ExtraBold → SemiBold, Black → Bold, SemiBold → Medium). Verified: Banner / Row opens / Shared titles now
+  lighter (KONKR klab523u).
+- Action row (own-style popups, 53 layouts): Play filled, Details outlined, ••• round, "B Back" hint pill in the corner. Row
+  reveal / Row opens / Shared / Banner keep their own layout (already Play first, no Back in the row); only lighter type.
+- Cover details: big case column 44 % wide, the title room one line + console (a 2-line name runs over the case's empty top
+  margin, the case keeps its size and place), case room right under it; title + console and the facts / story change WITH the
+  case flight (`CoverWithFlight`: old out by 35 % of the flight, new in by 85 %; dropped once faded; category change / no
+  animation: at once). KONKR + Flip 2 shots with fixture art + details (kcd523u / fcd523u), recordings.
+- QA fixture: `voltcap_test_artfix` now also gives 3 games in 4 synthetic details (year, studio, genre, story; session only);
+  fixture pictures generated for the QA app (`Claude outputs\b523\qa_art.tar`, pushed to both handhelds).
+- Builds: 523t (3ff32331), 523u (081074ac, on both handhelds), 523v (facts synced) built, not yet installed (gates running on 523u).
+- Popup gates on 523u: Flip 2 ×1.0 (fp523u), KONKR ×1.0 (kp523u) then ×1.3 (kpb523u) — running.

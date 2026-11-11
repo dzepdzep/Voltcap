@@ -35,6 +35,7 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Approved popup direction (lighter Roboto, Play / Details / •••, Back hint, Storage layout) | DONE-O (523t / 523u): all popups; KONKR + Flip 2 before / after; popup gates on 523u running |
 | Cover details recomposed to the owner's sketch (big case upper left, angled 3D cases on a compact lower-right shelf, Endless each game once, case flight shelf ↔ big place) | DONE-O (523r / 523s): KONKR cd523s screenshots + recordings; owner review; Flip 2 / Thor NOT TESTED |
 | Controller contract 16 layouts on Flip 2 and KONKR (523o) | 80 / 80 each (fc523p, kc523q) |
 | Tile home independence on Flip 2 (523o) | PASS (ft523p, tile522) |
@@ -85,7 +86,8 @@ Statuses:
 | Title / logo slot remembered (475 / 503) | no visit-to-visit jump seen; no dedicated recording |
 | Header backdrop cross-fade to "none" (~0.4 s) | keep or remove |
 | Flat Game shelf wide pictures (520): the strips round a whole wide picture show the game's colour gradient | keep, or a plain dark plate |
-| **Popup design lab (523m / n, QA hook only — nothing on for users)** | pick: (1) Play / Details / ••• hierarchy + Back as hint + one step lighter on the current font [recommended]; (2) Inter later, after its own ×1.0 / ×1.3 gate; Manrope not recommended; Storage lab layout yes. docs/qa523/popup_lab.md, Batch 523 evidence page |
+| ~~Popup design lab (523m / n)~~ | APPROVED 11 Nov → implemented 523t / 523u (see section 1); Inter / Manrope stay QA-only |
+| (was) **Popup design lab** | pick: (1) Play / Details / ••• hierarchy + Back as hint + one step lighter on the current font [recommended]; (2) Inter later, after its own ×1.0 / ×1.3 gate; Manrope not recommended; Storage lab layout yes. docs/qa523/popup_lab.md, Batch 523 evidence page |
 | Game shelf extraction / Coverflow pickup motion (523f) | owner's eye on the device |
 
 ## 3. Genuinely open and reproducible
