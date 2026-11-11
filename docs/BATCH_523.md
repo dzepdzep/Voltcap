@@ -231,3 +231,33 @@ kept (bigger / higher case, balanced with real art and metadata, title synced wi
   fixture pictures generated for the QA app (`Claude outputs\b523\qa_art.tar`, pushed to both handhelds).
 - Builds: 523t (3ff32331), 523u (081074ac, on both handhelds), 523v (facts synced) built, not yet installed (gates running on 523u).
 - Popup gates on 523u: Flip 2 ×1.0 (fp523u), KONKR ×1.0 (kp523u) then ×1.3 (kpb523u) — running.
+
+## 13. 523u popup gates graded, fixes 523w–523y (11 Nov)
+
+**Flip 2 fp523u (×1.0, 318, build 523u): PASS 229 · FAIL 68 · SKIP 21 · INFRA 0.** Real Voltcap pid unchanged, 0 fatal.
+
+| FAIL | n | Cause | Status |
+|---|---|---|---|
+| Banner × every layout | 52 | 16:9 Game info page: the facts card stood half under the page's bottom edge — "CONSOLE" shown, value cut | FIXED 523x: facts card before the story |
+| Back hint over the scene's keys (Arctic System, Channel grid Start, Pocket classic / ribbon Inspect) | 4 | 523t hint pill in the window's corner | FIXED 523x: hint under the window in room the scene gives up (BACK_HINT_ROOM 32 dp) |
+| Hero tiles × Own: 'B' off centre | 1 | hint letter measured against its pill | FIXED 523x: B in its own ring |
+| Storage × Own: "Saves …" 40 px < 24 dp | 1 | 360 dpi | FIXED 523x: 24 dp minimum |
+| Pocket ribbon home START glyph 3 px low (6), Spotlight home SELECT (1) | 7 | home screen legend, not a popup; pre-existing | OPEN (low), logged |
+| Hub / Resume × Classic: achievements squeezed in the classic details | 2 | classic details' list under the fixture's 10 achievements; pre-existing | OPEN (low) |
+| Cube × Own first A opened nothing; Arctic × Row reveal clock 0 px on page | 2 | timing at capture | re-checked in the 523y gate |
+
+**KONKR kp523u: INFRA 318** — no QaClip dump and no launch-check answer: on this Android 12 handheld a request file written by the shell
+(owner shell, mode 660) is unreadable to the QA app through FUSE, so every request went unanswered (and the Play tap was skipped by
+the launch guard — safe). FIXED in the QA tools: request files are made world-readable (popclip.sh, qaguard.sh, cd523u.sh). The ×1.3
+run was stopped (same problem). Verified: dumps and launch checks answered on the GT78 afterwards.
+
+**Row reveal duplicated title (owner):** genuine. Under Row reveal / Row opens / Shared the home's game header and category chips
+(523w) and, on Tile home, the other tiles, the name over them and the round buttons (523y) stayed at full strength under the window.
+They fade with the row now (`rowRevealFade`, `RowReveal.alphaFor / sharedAlpha`). KONKR + Flip 2 shots (klab523w / flab523w): Classic
+clean; Tile home fixed in 523y (re-shot in chain523y).
+
+**Cover details (523v/w):** title + console and the facts / story change with the case flight on both handhelds (kcd523w / fcd523w
+recordings; frame strip: old text until the cases cross, new as the case lands).
+
+**Final candidate 523y** (sha 83dd35e1) on both handhelds; `chain523y.sh k|f`: Cover details, row-style + fixed popups shots, the full
+318 gate at ×1.0 AND ×1.3 / density ×1.15 on each — running.

@@ -3630,6 +3630,38 @@
    "severity": "low",
    "status": "open",
    "found": "2026-11-11 Flip 2 fe523p (endless523b, AIRY_*_ffalse)"
+  },
+  {
+   "id": "D299",
+   "title": "Banner Game info on 16:9: facts card half under the page edge (CONSOLE value cut)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed (523x: facts before the story) - device re-grade in chain523y",
+   "found": "2026-11-11 Flip 2 fp523u x52"
+  },
+  {
+   "id": "D300",
+   "title": "Back hint pill over scene keys (Arctic, Channel grid, Pocket classic / ribbon)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed (523x: hint under the window)",
+   "found": "2026-11-11 Flip 2 fp523u"
+  },
+  {
+   "id": "D301",
+   "title": "Row-style windows: home game header / category chips / Tile home tiles, name and buttons at full strength under the window (duplicated title)",
+   "rule": "READABILITY",
+   "severity": "medium",
+   "status": "fixed (523w / 523y) - popclip reads only the window's own texts, so the gate could not see it",
+   "found": "2026-11-11 owner, KONKR klab523u"
+  },
+  {
+   "id": "D302",
+   "title": "QA: request files written by adb shell unreadable to the QA app on Android 12 FUSE (GT78) - no dumps, no launch checks",
+   "rule": "QA-TOOL",
+   "severity": "high",
+   "status": "fixed (chmod 666 on request files)",
+   "found": "2026-11-11 kp523u INFRA 318"
   }
  ]
 }
