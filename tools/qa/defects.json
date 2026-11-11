@@ -3710,6 +3710,14 @@
    "severity": "low",
    "status": "home-layout x1.3 text, outside the popup; open low (checker scope like D297)",
    "found": "2026-11-11 fpb523y / kpb523y"
+  },
+  {
+   "id": "D309",
+   "title": "x1.3 home: shared Category name ran under the status bar's clock (Card binder, Cover details, TV room, Twin icons); File select title / console name collided and the file's stars / 'Never played' were cut",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in 523z3 (cbf9162c), verified home13.sh before/after on KONKR + Flip 2 at x1.0 and x1.3; File select popups 6/6 PASS",
+   "found": "2026-11-11 kpb523z2 review (owner)"
   }
  ]
 }

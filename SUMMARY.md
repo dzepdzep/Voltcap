@@ -1,3 +1,23 @@
+# Update 523z3 (11 Nov 2026) — ×1.3 home-screen fixes before v0.6.70 (owner-approved scope; next/0.6.70, local)
+
+- **Category name next to the status bar** (`ui/HomeParts.kt` `CategoryNamePart` + `categoryNameRoomPx`, `ui/LauncherScreen.kt`):
+  - It now stops 8 dp before the clock / icons cluster, but only where the two really share the top band.
+  - This fixes the ×1.3 collisions on Card binder, Cover details, TV room and Twin icons.
+  - It's unchanged wherever there's room.
+- **File select** (`ui/StyleFileSelect.kt`):
+  - The caption keeps a gap after SELECT FILE and is shown whole.
+  - A file's name drops to one line only when the block is too short, so the stars and "Never played" stay visible.
+- **Copy:**
+  - `src_copy/ui/{HomeParts,LauncherScreen,StyleFileSelect}.kt`
+  - `app/src/test/.../ui/Batch523zTest.kt`
+  - `tools/qa/device/home13.sh`
+- **Checked:**
+  - Unit tests and the type-check pass.
+  - `home13.sh` before / after on KONKR + Flip 2 at ×1.0 / ×1.3.
+  - File select popup gate: 6 / 6 PASS at both sizes on KONKR.
+  - Release build R8 + secret scan.
+- **Not re-run:** the full 318 popup gates, because popups are untouched apart from File select, which was re-gated.
+
 # Update 523 (10–11 Nov 2026) — owner's UX batch 1–18, Save Vault art, popup design lab (local, next/0.6.70)
 
 - **Pickup / extraction / Case flow** (`ui/StyleCoverDetails.kt`, `ui/SpineDepth.kt`, `ui/ShelfHome.kt`, `ui/StyleCaseFlow.kt`):
