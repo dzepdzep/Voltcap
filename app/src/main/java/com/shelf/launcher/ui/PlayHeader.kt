@@ -201,7 +201,8 @@ internal fun SourceBadge(text: String, icon: ImageVector? = null) {
             Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
             Spacer(Modifier.width(5.dp))
         }
-        Text(text, color = Color.White, fontSize = if (LocalHeaderDense.current) 9.5.sp else 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (LocalHeaderDense.current) 9.5.sp else 11.sp), maxFontSize = if (LocalHeaderDense.current) 9.5.sp else 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // (Batch 522, sweep at font ×1.3: "Super Nintendo Enterta…" in the details page (rule 11) - whole: smaller, then sliding.)
+        FullText(text, color = Color.White, fontSize = if (LocalHeaderDense.current) 9.5.sp else 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 

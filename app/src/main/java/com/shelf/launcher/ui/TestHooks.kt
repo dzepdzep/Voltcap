@@ -12,6 +12,14 @@ import androidx.compose.runtime.mutableStateOf
 internal object TestHooks {
     /** The layout asked for (by its enum name), taken by the home screen. */
     val layout = mutableStateOf<String?>(null)
+    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
+    val dock = mutableStateOf<String?>(null)
+    /** Batch 523r: `--es voltcap_test_loop true|false` — Endless (Home › the row goes round) for a preview only (nothing saved). */
+    val loop = mutableStateOf<Boolean?>(null)
+    /** Batch 521b: `--es voltcap_test_badgegallery N|aN|off` — the console badge audit page N (aN: its assets view), QaBadgeGallery.kt. */
+    val badgeGallery = mutableStateOf<String?>(null)
+    /** Batch 521b: `--es voltcap_test_scale font=F,density=D|off` — (font scale, density factor) for Voltcap's own drawing only. */
+    val scale = mutableStateOf<Pair<Float, Float>?>(null)
     /** A game to start from (part of its name): its console's category, the game focused — `--es voltcap_test_game …`. */
     val game = mutableStateOf<String?>(null)
     /** A Settings page to open (its name, "_" for spaces) — `--es voltcap_test_settings Game_look`. */
@@ -32,6 +40,16 @@ internal object TestHooks {
     @Volatile var allowWrites = false
     /** Update 496: `--ez voltcap_test_vault_dry true` — the Save Vault shows what it last listed and searches / writes / syncs nothing. */
     @Volatile var vaultDry = false
+    /**
+     * Batch 523: `--ez voltcap_test_vault_fixture true` (isolated QA app only) — the Save Vault shows a fixed set of saves:
+     * games of this library, games that are NOT here with a look another device recorded (VaultArtIndex, the QA portrait
+     * pictures), and games that are not here with no picture at all. Display only: no save is read or written, nothing
+     * synced, no index written (implies the dry view).
+     */
+    @Volatile var vaultFixture = false
+    /** Batch 523, with the fixture: `--ez voltcap_test_vault_before true` — the vault as before 523g (no recorded looks,
+     *  two letters on a blank label), for before / after screenshots of the same saves. QA app only, this run only. */
+    @Volatile var vaultBefore = false
 
     /** Update 469: the game a test asks for — its name or ROM file name holding [q], compared on letters and digits only. */
     fun matchGame(games: List<com.shelf.launcher.data.Game>, q: String): com.shelf.launcher.data.Game? {
@@ -279,6 +297,30 @@ internal object TestHooks {
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }
         val want = intent?.getStringExtra("voltcap_test_layout")
+        intent?.getStringExtra("voltcap_test_scale")?.let { v -> if (enabled(context)) scale.value = if (v == "off") null else {
+            val m = v.split(',').mapNotNull { kv -> kv.split('=').takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim().toFloatOrNull() } }.toMap()
+            ((m["font"] ?: 1f).coerceIn(0.7f, 2f)) to ((m["density"] ?: 1f).coerceIn(0.6f, 1.6f))
+        } }
+        intent?.getStringExtra("voltcap_test_badgegallery")?.let { v -> if (enabled(context)) badgeGallery.value = v.takeIf { it != "off" } }
+        // Batch 522: `--es voltcap_test_edithome open|save|discard|reset:<part id>|resetlayout:<LAYOUT>` - Edit Home's own
+        // actions (Edit Home, Done / Save, Discard, "Reset this part", "Reset this layout"), for the Tile home independence check.
+        // QA app / hooks only; with a preview running nothing reaches the saved settings (Features.holdWrites).
+        intent?.getStringExtra("voltcap_test_edithome")?.let { v ->
+            if (!enabled(context)) return@let
+            runCatching {
+                when {
+                    v == "open" -> HomeEditState.open()
+                    v == "save" -> HomeEditSession.save()
+                    v == "discard" -> HomeEditSession.discard()
+                    v.startsWith("reset:") -> HomeEditSession.resetSelected(v.removePrefix("reset:"))
+                    v.startsWith("resetlayout:") -> com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == v.removePrefix("resetlayout:") }
+                        ?.let { HomeEditSession.resetLayout(it) }
+                }
+            }.onFailure { android.util.Log.w("VoltcapTest", "edithome $v: ${it.message}") }
+            android.util.Log.i("VoltcapTest", "edithome $v active=${HomeEditState.active}")
+        }
+        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
+        intent?.getStringExtra("voltcap_test_loop")?.let { v -> if (enabled(context) && (v == "true" || v == "false")) loop.value = v == "true" }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
         val lk = intent?.getStringExtra("voltcap_test_look")
@@ -337,6 +379,21 @@ internal object TestHooks {
         // (not saved: the owner's own switch stays as it is).
         if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
         if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        // Batch 523: `--es voltcap_test_popuplab "font=inter,weights=on,actions=on,storage=on"|off` - the popup design lab
+        // (PopupLab), isolated QA app only, this run only.
+        intent?.getStringExtra("voltcap_test_popuplab")?.let { v ->
+            if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) {
+                PopupLab.spec.value = PopupLab.parse(v)
+                android.util.Log.e("VoltcapTest", "popuplab=${PopupLab.spec.value?.text ?: "off"}")
+            }
+        }
+        if (intent?.hasExtra("voltcap_test_vault_fixture") == true && enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            vaultFixture = intent.getBooleanExtra("voltcap_test_vault_fixture", false)
+            vaultBefore = vaultFixture && intent.getBooleanExtra("voltcap_test_vault_before", false)
+            if (vaultFixture) vaultDry = true
+            com.shelf.launcher.data.SaveCapsules.clearFixture()
+            if (!vaultFixture) com.shelf.launcher.data.VaultArtIndex.fixture = emptyList()
+        }
         // Update 499 (D295, owner option C for unattended QA): `--es voltcap_test_cloudhold show|off` — `show` writes the three
         // Drive switches (Sync game saves, Sync favourites and playtime, Automatic backup) and whether Drive is connected to
         // <files>/voltcap_test_cloudhold.json (kept if it exists: the first note is the owner's original); `off` turns those

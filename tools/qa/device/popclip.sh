@@ -4,15 +4,22 @@
 # controller). After each settled step: a screenshot and QaClip's
 # geometry dump (a tag written to <files>/qa_clip_req — an intent would close the popups that live in the home screen). The caller saves / restores the owner's settings (voltcap_test_snapshot) around it.
 # Preview only, launches blocked. Evaluate with tools/qa/tools/popclip.py. Progress in $OUT/log.txt, DONE at the end.
-P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; STYLES=$3; GAME=$4
+# (Batch 521b: the isolated QA app only; its activity keeps the original class name.)
+P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; STYLES=$3; GAME=$4
 OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 # (Update 474: the run manifest — build, device, configuration, start / end — that tools/qa/tools/evidence.py requires
 # before any combination of this run can PASS.)
 . "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
-A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
+A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
-k() { input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
+# (523p: a key or a tap only while a QA app window has the focus - a crash dialog's buttons lead into Settings' App info,
+# GT78 523. A dialog / other window: the QA app is stopped and the run ends; nothing else is pressed.)
+fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) input keyevent KEYCODE_WAKEUP;; esac; sleep 0.5; done
+  echo "ABORT focus=$f" >> $OUT/log.txt 2>/dev/null; am force-stop $P; exit 2; }
+# (523w, KONKR GT78 / Android 12 FUSE: a request file made by the shell stays unreadable to the QA app (owner shell, mode
+# 660) - every dump and launch check went unanswered, kp523u = 318 x INFRA. Each request file is made world-readable.)
+k() { fg; input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 # Is a popup (a Play / Continue action) up? — a probe dump, so B is never pressed once too often (B on the home opens the
 # category chooser, and the next layout would start from there).
 # The layouts' words for Play and Details (GameWindow.kt WinLook; the same lists as geomcheck.PLAY_WORDS / DETAILS_WORDS).
@@ -20,7 +27,7 @@ PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Star
 DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve notes|Card text|Turn over|Summary|The story|Type NFO|Catalogue card)"
 # (Counted against the home step: a layout whose home screen has its own Play button — Custom — is not "a popup up".)
 pc() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' $1 2>/dev/null | wc -l; }
-up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; sleep 0.9; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
+up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 0.9; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
 # tapat LABEL_RE STEP: tap the middle of the shown part of the first control whose label ends in LABEL_RE (false if none shows).
 # (The popup's own control: one that the home step didn't have — Custom's home has a Play button of its own.)
 ctl() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $2 2>/dev/null; }
@@ -29,9 +36,9 @@ tapat() {
   [ "$2" = probe ] && src=$F/qa_clip/${TAG}_probe.json || src=$F/qa_clip/${TAG}_${n}_$2.json
   r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
   [ -n "$r" ] || return 1
-  set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
+  fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
-shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.1; }
+shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
 k WAKEUP 0.5
 # (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
 # run logged "first A opened nothing". The picker is answered with B (keep the profile) first; the app's own mark says so.)
@@ -61,7 +68,7 @@ for lay in $LAYS; do
     # (Green Core's home is its own menu — GAMES / SYSTEMS / ... — A enters the games first; the first combo logged "first
     # A opened nothing" for it.)
     # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
-    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; sleep 1.1
+    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
       grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st

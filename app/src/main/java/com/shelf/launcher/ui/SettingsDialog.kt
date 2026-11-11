@@ -3910,6 +3910,8 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             )
             // (Update 315: Tile home's own place, in the middle by default — the Voltcap row keeps its own.)
             RowChoice("Where the tiles sit", com.shelf.launcher.data.DockPosition.values(), appearance.tileDockPosition, { it.label }) {
+                // (Batch 521: a new place drops the row's Edit Home move up / down, as R1's Row tile does.)
+                if (it != appearance.tileDockPosition) tileRowPlaceReset(appearance)
                 onChange(appearance.copy(tileDockPosition = it))
             }
             RowChoice("Game you're on", com.shelf.launcher.data.TileFocus.values(), appearance.tileFocus, { it.label }) {
@@ -3994,6 +3996,11 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
                 RowChoice(if (layout == com.shelf.launcher.data.HomeLayout.GRID) "Games per row" else "Games across the screen", choices, now, { if (it == 0) "Auto" else it.toString() }) {
                     com.shelf.launcher.data.Features.setRowGames(layout, it)
                 }
+                // (Batch 520, K1: the Game grid's room between the cards, 100 % = as before.)
+                if (layout == com.shelf.launcher.data.HomeLayout.GRID) PercentSlider(
+                    "Game spacing", com.shelf.launcher.data.Features.gridSpacing.state.value,
+                    { com.shelf.launcher.data.Features.gridSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" }
+                )
                 MutedNote(
                     if (now == 0) "Auto: as many as fit at the card size above."
                     else "$now games across: the card size follows from it" + (if (layout == com.shelf.launcher.data.HomeLayout.CLASSIC) " (the wide game you're on counts as one)." else ".")

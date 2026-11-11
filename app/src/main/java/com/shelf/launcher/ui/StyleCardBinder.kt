@@ -792,7 +792,7 @@ private fun HintChip(letter: String, label: String, compact: Boolean, onClick: (
             Modifier.size(if (compact) 16.dp else 18.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.9f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(letter, color = Color(0xFF1B1F27), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            InkGlyph(letter, Color(0xFF1B1F27), 10.dp) // (Batch 521: centred by its ink)
         }
         Spacer(Modifier.width(6.dp))
         Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = if (compact) 11.sp else 12.sp, maxLines = 1)

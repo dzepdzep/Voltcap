@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -453,10 +454,12 @@ fun PlatformBrowser(
 @Composable
 private fun LegendItem(button: String, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            button, color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.85f)).padding(horizontal = 7.dp, vertical = 2.dp)
-        )
+        // (Batch 521: the letter centred by its ink in a pill of fixed height.)
+        Box(
+            Modifier.height(18.dp).widthIn(min = 18.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.85f))
+                .padding(horizontal = if (button.length > 1) 7.dp else 0.dp),
+            contentAlignment = Alignment.Center
+        ) { InkGlyph(button, Color.Black, 10.dp) }
         Spacer(Modifier.width(6.dp))
         Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }

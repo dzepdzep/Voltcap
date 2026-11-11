@@ -1458,6 +1458,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     if (merged?.metacritic != null) " Metacritic via RAWG." else ""
                 source == MetadataSource.SCREENSCRAPER && game.sourceType != SourceType.ROM ->
                     "ScreenScraper only knows ROMs — try IGDB for this one."
+                // (Batch 520: a server problem — timeout, limit, busy — says so instead of "found nothing, try another name".)
+                source == MetadataSource.SCREENSCRAPER && com.shelf.launcher.data.screenScraperFailureNote(screenScraperRepository.lookupOutcome[key]) != null ->
+                    com.shelf.launcher.data.screenScraperFailureNote(screenScraperRepository.lookupOutcome[key])!!
                 else -> "${source.label} found nothing for \"$name\". Try another name or the other source."
             }
             // Screenshots follow the new match.
@@ -2615,8 +2618,25 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = 10, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
             }
         }
+        // (Batch 523t: and, three games in four, details as a scraper gives them - year, studio, genre, a story of a few
+        // sentences - in this session only (never saved), to see layouts with real-length metadata.)
+        val meta = HashMap<String, com.shelf.launcher.data.GameMetadata>()
+        games.forEachIndexed { i, g ->
+            if (i % 4 != 1) meta[g.stableKey] = com.shelf.launcher.data.GameMetadata(
+                title = g.name,
+                summary = "QA fixture story for ${g.name}. A long-form description of the kind a details source returns: " +
+                    "the premise, how it plays and why it is remembered, written to fill three to six lines. " +
+                    "Synthetic text in the isolated QA app only.",
+                releaseYear = 1991 + (i * 3) % 30, criticScore = null, criticCount = null,
+                genres = listOf(listOf("Platformer", "Racing", "Role-playing", "Fighting", "Puzzle", "Adventure")[i % 6], "Action"),
+                developer = listOf("QA Studio North", "Fixture Works", "Test Pattern Games", "Placeholder Interactive")[i % 4],
+                hastilyHours = null, normallyHours = null, completelyHours = null,
+                publisher = if (i % 3 == 0) "QA Publishing" else null
+            )
+        }
         recombineGames()
-        _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll(), raAchievementDetails = it.raAchievementDetails + details, raProgress = it.raProgress + progress) }
+        _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll(), raAchievementDetails = it.raAchievementDetails + details, raProgress = it.raProgress + progress,
+            metadata = it.metadata + meta) }
     }
 
     /** Background upscaling for one game: null = automatic, 1 = off, 2/4/6/8 = times. */
@@ -2953,7 +2973,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     }
                 }.getOrNull()
                 // (Only while online: a lookup that failed for want of a connection is tried again next time.)
-                if (deviceOnline()) askedPrefs.edit().putLong(game.stableKey, System.currentTimeMillis()).apply()
+                // (Batch 520: nor one that failed on ScreenScraper's side — timeout, busy, limit — artAskCounts.)
+                if (deviceOnline() && com.shelf.launcher.data.artAskCounts(fresh != null, screenScraperRepository.lookupOutcome[game.stableKey]))
+                    askedPrefs.edit().putLong(game.stableKey, System.currentTimeMillis()).apply()
                 if (fresh != null) {
                     val saved = _uiState.value.metadata[game.stableKey]
                     val merged = saved.mergeFields(fresh, fields)
@@ -3056,7 +3078,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         val typedKey = creds.devId.isNotBlank() && creds.devPassword.isNotBlank()
         val test = creds.copy(devId = key.first, devPassword = key.second)
-        _uiState.update { it.copy(statusMessage = "Testing ScreenScraper…") }
+        _uiState.update { it.copy(statusMessage = com.shelf.launcher.ui.SS_TESTING_MESSAGE) }
         viewModelScope.launch {
             val error = screenScraperRepository.testConnection(test)
             if (error == null) {
@@ -3094,6 +3116,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _vaultArt = MutableStateFlow<Map<String, String>>(emptyMap())
     /** Game key → cover for Save Vault games that aren't on this device (looked up by name, kept in prefs). */
     val vaultArt: StateFlow<Map<String, String>> = _vaultArt.asStateFlow()
+    /** Batch 523: the same saves' logos (Icons only / PS2 browser looks), kept beside their covers in "save_vault_art". */
+    private val _vaultLogo = MutableStateFlow<Map<String, String>>(emptyMap())
+    val vaultLogo: StateFlow<Map<String, String>> = _vaultLogo.asStateFlow()
     @Volatile private var vaultArtRunning = false
     /** Update 317as: games asked for while a look-up was running (they were dropped), and the rest past a pass's 40. */
     private val vaultArtPending = java.util.concurrent.ConcurrentLinkedQueue<Game>()
@@ -3183,11 +3208,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val prefs = app.getSharedPreferences("save_vault_art", android.content.Context.MODE_PRIVATE)
         if (_vaultArt.value.isEmpty()) {
             _vaultArt.value = prefs.all.mapNotNull { (k, v) -> if (k.startsWith("art:") && v is String) k.removePrefix("art:") to v else null }.toMap()
+            _vaultLogo.value = prefs.all.mapNotNull { (k, v) -> if (k.startsWith("logo:") && v is String) k.removePrefix("logo:") to v else null }.toMap()
         }
         if (vaultArtRunning) { vaultArtPending.addAll(games); return }
+        // (Batch 523, owner: "missing artwork for games not present locally": a save looked up before the logo was kept
+        // ("tried2" missing) is looked up once more for its logo; its cover, if it has one, stays.)
         val todo = games.distinctBy { it.stableKey }.filter { g ->
-            g.stableKey !in _vaultArt.value &&
-                System.currentTimeMillis() - prefs.getLong("tried:${g.stableKey}", 0L) > 7L * 86_400_000L
+            (g.stableKey !in _vaultArt.value || (g.stableKey !in _vaultLogo.value && !prefs.contains("tried2:${g.stableKey}"))) &&
+                System.currentTimeMillis() - prefs.getLong("tried2:${g.stableKey}", 0L) > 7L * 86_400_000L
         }
         if (todo.isEmpty()) return
         vaultArtRunning = true
@@ -3198,10 +3226,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     val search = g.copy(name = vaultSearchName(g.name), romPath = null)
                     val art = runCatching { fetchArtFromSelectedSource(search) }.getOrNull()
                     val url = art?.gridUrl ?: art?.wideGridUrl ?: art?.heroUrl
-                    val e = prefs.edit().putLong("tried:${g.stableKey}", System.currentTimeMillis())
-                    if (url != null) {
+                    val e = prefs.edit().putLong("tried:${g.stableKey}", System.currentTimeMillis()).putLong("tried2:${g.stableKey}", System.currentTimeMillis())
+                    if (url != null && g.stableKey !in _vaultArt.value) {
                         e.putString("art:${g.stableKey}", url)
                         _vaultArt.update { it + (g.stableKey to url) }
+                    }
+                    art?.logoUrl?.let { logo ->
+                        e.putString("logo:${g.stableKey}", logo)
+                        _vaultLogo.update { it + (g.stableKey to logo) }
                     }
                     e.apply()
                 }
@@ -5322,12 +5354,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             "Couldn't read $rootPath — check the path and storage permission."
                     )
                 }
-                result.games.isEmpty() -> _uiState.update {
-                    it.copy(
-                        isScanning = false,
-                        statusMessage = if (silent) it.statusMessage else
-                            "No ROMs found in $rootPath for the known file types."
-                    )
+                result.games.isEmpty() -> {
+                    // (Batch 523, owner: deleted games stayed after a rescan. A rescan YOU started that read every folder and
+                    // found no games means they are gone: the list follows. An automatic scan finding nothing is still
+                    // treated as storage not mounted yet - the saved list stays, as before.)
+                    if (!silent && result.unreadable.isEmpty() && currentRomGames.isNotEmpty()) {
+                        currentRomGames = emptyList()
+                        withContext(Dispatchers.IO) { saveRomCache(emptyList()) }
+                        recombineGames()
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isScanning = false,
+                            statusMessage = if (silent) it.statusMessage else
+                                "No ROMs found in $rootPath for the known file types."
+                        )
+                    }
                 }
                 else -> {
                     // The game you're on stays selected (the startup scan finishes after the saved list is
@@ -5471,9 +5513,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // the hand-added entry wins; two exports of one AppID (two folders) count once.)
         val handSteam = currentSteamGames.mapTo(HashSet()) { it.stableKey }
         val scannedSteam = HashSet<String>()
-        val romGames = currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }
+        val pinned = com.shelf.launcher.data.PinnedShortcuts.games(getApplication())
+        // (Batch 522: one DroidDeck game added both ways - its home-screen shortcut AND an exported .droiddeck file - is one
+        // game: DroidDeck's own shortcut wins, the file is left out. Matched on the title within DroidDeck only.)
+        val romGames = com.shelf.launcher.data.GameClients.withoutPinnedDroidDeckTwins(
+            currentRomGames.filter { it.sourceType != SourceType.STEAM || (it.stableKey !in handSteam && scannedSteam.add(it.stableKey)) }, pinned)
         val merged = (applyOverrides(romGames) + applyOverrides(currentAppGames) + applyOverrides(currentSteamGames) +
-            applyOverrides(com.shelf.launcher.data.PinnedShortcuts.games(getApplication())))
+            applyOverrides(pinned))
             .sortedByDescending { lastPlayed[it.stableKey] ?: -1L }
         _uiState.update { current ->
             val updated = current.copy(games = merged, lastPlayedAt = lastPlayed)
@@ -5713,7 +5759,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     /** The emulator (or GameNative) behind a game, for emulator rules. */
     private fun emulatorPackageFor(game: Game): String? = when (game.sourceType) {
-        SourceType.ROM -> if (game.platform == "DroidDeck") com.shelf.launcher.data.GameClients.DROIDDECK
+        // (Batch 522: DroidDeck's launch files and every pinned shortcut name their own app - DroidDeck's games sit in the
+        // Steam category now, so the platform no longer says it; the shortcut key does.)
+        SourceType.ROM -> if (game.romPath?.endsWith(".droiddeck", ignoreCase = true) == true) com.shelf.launcher.data.GameClients.DROIDDECK
+            else if (com.shelf.launcher.data.PinnedShortcuts.isShortcut(game)) com.shelf.launcher.data.PinnedShortcuts.packageOf(game)
             else gameEmulatorOverride(game) ?: _uiState.value.emulatorConfigs[game.platform]?.packageName
         SourceType.STEAM -> _uiState.value.gameNativeConfig.packageName
         SourceType.APP -> null
@@ -6056,9 +6105,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             ).joinToString(" ").ifEmpty { null }
             is LaunchOutcome.NotConfigured ->
                 "No emulator set up for ${com.shelf.launcher.data.ConsoleNames.label(game.platform)} yet — pick one (Start › Emulator changes it later)."
-            is LaunchOutcome.EmulatorNotFound ->
-                "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
-                    "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} (Start › Emulator), or try a different game path format there."
+            // (Batch 522: GameNative / DroidDeck aren't "the emulator set for Steam" - say which app is missing.)
+            is LaunchOutcome.EmulatorNotFound -> when {
+                game.sourceType == SourceType.STEAM ->
+                    "GameNative (${outcome.packageName}) isn't installed or didn't accept the launch. Install GameNative, or check its package under Settings › Steam games."
+                outcome.packageName == com.shelf.launcher.data.GameClients.DROIDDECK ->
+                    "DroidDeck isn't installed or didn't accept the launch. Install DroidDeck (0.3.1 or newer) and export the game again."
+                else ->
+                    "${outcome.packageName ?: "The emulator"} didn't accept the launch. Check the emulator set for " +
+                        "${com.shelf.launcher.data.ConsoleNames.label(game.platform)} (Start › Emulator), or try a different game path format there."
+            }
             is LaunchOutcome.Error ->
                 "Couldn't launch ${game.name}: ${outcome.message}"
         }
@@ -6265,7 +6321,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                                 // (Update 190: only waits for the game when "Keep getting artwork in the background" is off.)
                                 com.shelf.launcher.data.GameMode.awaitForArt()
                                 val art = withContext(Dispatchers.IO) { fetchArtFromSelectedSource(game) }
-                                asked[game.stableKey] = System.currentTimeMillis()
+                                // (Batch 520: a look-up that failed on ScreenScraper's side — timeout, busy, limit — isn't "asked": the
+                                // automatic runs skipped such a game for two weeks although nothing was learned about it.)
+                                if (com.shelf.launcher.data.artAskCounts(art != null, screenScraperRepository.lookupOutcome[game.stableKey]))
+                                    asked[game.stableKey] = System.currentTimeMillis()
                                 if (art != null) {
                                     val merged = (freshArt[game.stableKey] ?: _uiState.value.art[game.stableKey]).mergeArt(art, fields)
                                     artCacheStore.put(game.stableKey, merged)

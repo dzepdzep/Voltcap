@@ -60,7 +60,21 @@ internal fun DrawScope.drawSpineDepth(level: Features.SpineDepth, seed: Int) {
  * a dark seam at both ends, drawn ABOVE the spine's slot (slot space: 0,0 = its top-left corner). A contact shadow on the board
  * under the foot. The spine's own artwork is untouched (never stretched); off with the Spine depth Off switch.
  */
-internal fun DrawScope.drawCaseTop(level: Features.SpineDepth, vanishX: Float, cardboard: Boolean = false) {
+/**
+ * Batch 523 (motion pass, KONKR Coverflow details: steps median 16 ms of CPU a frame, GPU 7 ms): the case top was re-made
+ * from scratch on every frame of a move for every spine on the shelf - a new Path and four new gradient shaders each, ~200
+ * allocations a frame. [cache] keeps one spine's path (rewound, not re-allocated) and its gradients (re-made only when the
+ * spine's size changes; the side shading no longer follows the camera's few pixels). Looks the same.
+ */
+internal class CaseTopCache {
+    val path = androidx.compose.ui.graphics.Path()
+    var key = 0L
+    var vBrush: Brush? = null
+    var hBrush: Brush? = null
+    var shadow: Brush? = null
+}
+
+internal fun DrawScope.drawCaseTop(level: Features.SpineDepth, vanishX: Float, cardboard: Boolean = false, cache: CaseTopCache? = null) {
     if (level == Features.SpineDepth.OFF) return
     val w = size.width
     val h = size.height
@@ -71,19 +85,30 @@ internal fun DrawScope.drawCaseTop(level: Features.SpineDepth, vanishX: Float, c
     val top = (h * (if (real) 0.085f else 0.05f)).coerceAtLeast(2f * px)
     val shrink = if (real) 0.9f else 0.95f
     fun back(x: Float) = vanishX + (x - vanishX) * shrink
-    val face = androidx.compose.ui.graphics.Path().apply {
-        moveTo(0f, 0f); lineTo(w, 0f); lineTo(back(w), -top); lineTo(back(0f), -top); close()
-    }
+    val face = cache?.path?.apply { rewind() } ?: androidx.compose.ui.graphics.Path()
+    face.apply { moveTo(0f, 0f); lineTo(w, 0f); lineTo(back(w), -top); lineTo(back(0f), -top); close() }
+    val sh = (if (real) 6f else 4f) * px
     // (Update 501: a cardboard box's top is printed card, light — the dark plastic top suits keep cases only; caseTopTones.)
-    val (far, near) = caseTopTones(cardboard)
-    drawPath(face, Brush.verticalGradient(0f to far, 1f to near, startY = -top, endY = 0f))
-    if (real) drawPath(face, Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.5f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.25f), startX = minOf(back(0f), 0f), endX = maxOf(back(w), w)))
+    val key = (w.toRawBits().toLong() shl 32) xor h.toRawBits().toLong() xor (if (real) 1L else 0L) xor (if (cardboard) 2L else 0L)
+    if (cache == null || cache.key != key || cache.vBrush == null) {
+        val (far, near) = caseTopTones(cardboard)
+        val v = Brush.verticalGradient(0f to far, 1f to near, startY = -top, endY = 0f)
+        val hz = Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.5f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.25f), startX = -w * 0.05f, endX = w * 1.05f)
+        val shd = Brush.verticalGradient(0f to Color.Black.copy(alpha = if (real) 0.55f else 0.4f), 1f to Color.Transparent, startY = h, endY = h + sh)
+        if (cache != null) { cache.key = key; cache.vBrush = v; cache.hBrush = hz; cache.shadow = shd }
+        else { drawTop(face, v, if (real) hz else null, w, top, px, ::back); drawRect(shd, Offset(-px, h), androidx.compose.ui.geometry.Size(w + 2f * px, sh)); return }
+    }
+    drawTop(face, cache.vBrush!!, if (real) cache.hBrush else null, w, top, px, ::back)
+    // Where it stands on the board.
+    drawRect(cache.shadow!!, Offset(-px, h), androidx.compose.ui.geometry.Size(w + 2f * px, sh))
+}
+
+private inline fun DrawScope.drawTop(face: androidx.compose.ui.graphics.Path, v: Brush, hz: Brush?, w: Float, top: Float, px: Float, back: (Float) -> Float) {
+    drawPath(face, v)
+    if (hz != null) drawPath(face, hz)
     drawLine(Color.White.copy(alpha = 0.38f), Offset(0f, 0f), Offset(w, 0f), px.coerceAtLeast(1f))
     drawLine(Color.Black.copy(alpha = 0.6f), Offset(0f, 0f), Offset(back(0f), -top), px.coerceAtLeast(1f))
     drawLine(Color.Black.copy(alpha = 0.6f), Offset(w, 0f), Offset(back(w), -top), px.coerceAtLeast(1f))
-    // Where it stands on the board.
-    val sh = (if (real) 6f else 4f) * px
-    drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = if (real) 0.55f else 0.4f), 1f to Color.Transparent, startY = h, endY = h + sh), Offset(-px, h), androidx.compose.ui.geometry.Size(w + 2f * px, sh))
 }
 
 /** Update 501: the top of a standing case, far edge → near edge: printed card for a cardboard box, dark plastic otherwise. */

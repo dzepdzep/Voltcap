@@ -194,7 +194,8 @@ internal fun GameDock(
         // instead of running out. Positions are tracked on an endless "virtual"
         // index, so stepping from the last game to the first still slides by
         // one card instead of jumping back through the whole library.
-        val loop = look.loopRow && games.size >= 1 && !pinnedFirst
+        // (Batch 523, owner: "one game: stable selection" - a single game no longer slides on to copies of itself.)
+        val loop = look.loopRow && games.size >= 2 && !pinnedFirst
         // [last focus, virtual focus, last step count]
         val tracker: IntArray = androidx.compose.runtime.remember { intArrayOf(focus, focus, loopTick) }
         // A new list (re-sorted, art or details came in): carry on from the same place on the endless row
@@ -213,10 +214,12 @@ internal fun GameDock(
             // A D-pad step: slide exactly that way. With one or two games the
             // index alone can't tell (2 games: 0→1 and 1→0 look like back and
             // forth; 1 game: it never changes).
+            // (Batch 523: every step since the last look - loopSteps; fast presses no longer bounce back.)
+            val k = loopSteps(tracker[0], focus, games.size, loopStep, loopTick - tracker[2])
             tracker[2] = loopTick
             if (loopStep != 0) {
-                tracker[1] += loopStep
-                tracker[0] = (tracker[0] + loopStep).mod(games.size)
+                tracker[1] += loopStep * k
+                tracker[0] = (tracker[0] + loopStep * k).mod(games.size)
             }
         }
         if (tracker[0] != focus) {

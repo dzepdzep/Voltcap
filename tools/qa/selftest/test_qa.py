@@ -1473,5 +1473,55 @@ class TestLaunchGuard(unittest.TestCase):
         self.assertIn("touch $F/qa_nolaunch\ncat $R", s)
 
 
+class GlyphCheck521(unittest.TestCase):
+    """Batch 521b: glyphcheck finds a letter that sits off the middle of its circle (and passes a centred one)."""
+    def _scene(self, offsets):
+        from PIL import Image, ImageDraw
+        img = Image.new("RGB", (60 * len(offsets) + 20, 80), (20, 20, 30)); d = ImageDraw.Draw(img)
+        glyphs = []
+        for i, (ox, oy) in enumerate(offsets):
+            cx, cy = 40 + 60 * i, 40
+            d.ellipse((cx - 16, cy - 16, cx + 16, cy + 16), fill=(80, 80, 92))
+            # a solid "letter" 10 x 12 px, moved by (ox, oy)
+            x0, y0 = cx - 5 + ox, cy - 6 + oy
+            d.rectangle((x0, y0, x0 + 9, y0 + 11), fill=(255, 255, 255))
+            glyphs.append({"text": "A", "shown": [x0 - 1, y0 - 1, 12, 14], "placed": True})
+        return img, {"windows": [{"at": [0, 0], "nodes": [], "texts": [], "glyphs": glyphs}]}
+
+    def test_centred_and_off(self):
+        import glyphcheck
+        img, dump = self._scene([(0, 0), (0, 4), (4, 0)])
+        res = [glyphcheck.check(img, tuple(b), ink) for _, b, ink in glyphcheck.candidates(dump)]
+        self.assertEqual([r["verdict"] for r in res], ["PASS", "FAIL", "FAIL"])
+        self.assertAlmostEqual(res[1]["dy"], 4, delta=1)
+
+    def test_no_shape_is_not_graded(self):
+        import glyphcheck
+        from PIL import Image
+        from PIL import ImageDraw
+        img = Image.new("RGB", (80, 80), (20, 20, 30))
+        ImageDraw.Draw(img).rectangle((31, 31, 40, 42), fill=(255, 255, 255))  # a letter straight on the background
+        r = glyphcheck.check(img, (30, 30, 12, 14), True)
+        self.assertEqual(r["verdict"], "NO-SHAPE")
+
+    def test_glyph_under_a_later_window_is_left_out(self):
+        """Batch 522: windows are bottom to top; a home glyph under a popup / page window is not graded."""
+        import glyphcheck
+        dump = {"windows": [
+            {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "L2", "shown": [10, 10, 20, 20]}], "glyphs": [{"text": "A", "shown": [40, 10, 12, 14]}]},
+            {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "R1", "shown": [60, 10, 20, 20]}], "glyphs": []}]}
+        self.assertEqual([t for t, _, _ in glyphcheck.candidates(dump)], ["R1"])
+
+    def test_covered_and_oversized(self):
+        """Batch 522: a glyph in the dump with no ink on the screenshot (under a popup) is HIDDEN; a letter on a big card is not
+        measured against the card."""
+        import glyphcheck
+        from PIL import Image, ImageDraw
+        img = Image.new("RGB", (300, 200), (20, 20, 30))
+        self.assertEqual(glyphcheck.check(img, (30, 30, 12, 14), True)["verdict"], "HIDDEN")
+        d = ImageDraw.Draw(img); d.rectangle((40, 40, 260, 160), fill=(80, 80, 92)); d.rectangle((60, 60, 69, 71), fill=(255, 255, 255))
+        self.assertEqual(glyphcheck.check(img, (59, 59, 12, 14), True)["verdict"], "NO-SHAPE")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1793,7 +1793,7 @@ private fun TvWindowBody(
         val roomy = maxWidth > 380.dp
         when (page) {
             WinPage.MAIN -> {
-                if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                if (backdrop != null) SmartArt(backdrop, null, Modifier.fillMaxSize().pixelArtwork(), request = rememberBackdropRequest(backdrop), maxCrop = SmartFill.maxCropFor(backdrop, cover))
                 val video = state.videoUrls[g.stableKey]
                 VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
@@ -2000,7 +2000,8 @@ private fun WindowBody(
             ) { pg ->
                 when (pg) {
                     WinPage.MAIN -> Box(Modifier.fillMaxSize()) {
-                        if (backdrop != null) AsyncImage(rememberBackdropRequest(backdrop), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Batch 523, Smart Fill: the cover standing in for a missing backdrop shows whole over its soft copy.)
+                        if (backdrop != null) SmartArt(backdrop, null, Modifier.fillMaxSize().pixelArtwork(), request = rememberBackdropRequest(backdrop), maxCrop = SmartFill.maxCropFor(backdrop, cover))
                         val video = state.videoUrls[g.stableKey]
                         VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                         if (showName) {
@@ -2143,7 +2144,8 @@ private fun WindowBody(
                 if (!LocalWinInspect.current) {
                     Box(Modifier.fillMaxHeight().aspectRatio(0.72f, matchHeightConstraintsFirst = true).clip(RoundedCornerShape(look.mediaCorner)).background(placeholderBrush(g.hue))) {
                         // (Update 202: Crop fills the place; the cover's file's flat strips trimmed — rememberCoverRequest.)
-                        if (cover != null) AsyncImage(rememberCoverRequest(cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork())
+                        // (Batch 523: Smart Fill - a light crop, else the whole cover over its soft copy.)
+                        if (cover != null) SmartArt(cover, g.name, Modifier.fillMaxSize().pixelArtwork(), request = rememberCoverRequest(cover))
                     }
                     Spacer(Modifier.width(16.dp))
                 }
@@ -2232,13 +2234,19 @@ private fun SceneBody(
         if (qaMore != null) TestHooks.winMore.value = null
     }
     LaunchedEffect(moreOpen, compactMore) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "win more=${if (!compactMore) "n/a" else if (moreOpen) "open" else "closed"} scene=$scene") }
+    // (Batch 523, QA design lab only - PopupLab "actions": Play, Details, a round ••• More beside it; Back leaves the row for a
+    // corner hint. Everyone else: exactly as before.)
+    val labActions = PopupLab.active.actions // (523t: approved - everyone)
+    val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
+        else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {
             WinPage.MAIN -> {
-                if (perf && showAll) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
+                if (perf && showAll && !labActions) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
-                add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+                if (labActions) moreKey?.let { add(it) }
+                else add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
             WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
             WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
@@ -2260,10 +2268,11 @@ private fun SceneBody(
         }
     }
     val tools = when {
-        !compactMore -> allTools
-        moreOpen -> allTools + WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
-        else -> allTools.filter { it.label == "Inspect" } +
-            WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
+        !compactMore -> allTools + (if (labActions && perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+        labActions -> if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+            else allTools.filter { it.label == "Inspect" }
+        moreOpen -> allTools + moreKey!!
+        else -> allTools.filter { it.label == "Inspect" } + moreKey!!
     }
     // (A save problem stays in view: it needs you.)
     val chips = if (showAll) allChips else allChips.filter { it.urgent }
@@ -2283,7 +2292,7 @@ private fun SceneBody(
         earned = earned, total = total,
         page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
         buttons = buttons, tools = tools, chips = chips, close = onClose,
-        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = maxH, reveal = reveal,
+        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
         closing = closing,
         pageBody = { m ->
             when (page) {
@@ -2299,6 +2308,14 @@ private fun SceneBody(
     // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
     // own in the window's colours, the scene's quick window coming back on B / Back.
     if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
+    // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
+    else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
+        // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
+        // The hint is measured first; the scene gets the rest.)
+        Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
+        LabBackHint(onClose, Modifier.padding(top = 4.dp))
+    }
     else DrawWinScene(scene, ctx)
 }
 
@@ -2308,6 +2325,9 @@ private fun SceneBody(
  * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
  * Storage, Box, Orbit, Blades).
  */
+/** 523x: the height the Back hint takes under a scene (hint 28 dp + 4 dp gap). */
+internal val BACK_HINT_ROOM = 32.dp
+
 internal val MORE_SCENES = setOf(
     WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
     WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,
@@ -2800,7 +2820,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     val coverBox: @Composable (Modifier) -> Unit = { m ->
         Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
             // (Update 202: the cover's file's flat strips trimmed — rememberCoverRequest; Crop fills the place.)
-            if (cover != null) AsyncImage(rememberCoverRequest(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (cover != null) SmartArt(cover, null, Modifier.fillMaxSize(), request = rememberCoverRequest(cover))
         }
     }
     val stacked = fit == null

@@ -87,3 +87,5 @@ server/voltcap-api/runtime/.old-token
 server/voltcap-api/runtime/production-url.txt
 server/voltcap-api/runtime/ss-diag.mjs
 server/voltcap-api/mock/.wrangler/
+# FW1 dual-screen welcome (feature/dual-welcome) - kept out of v0.6.70, lives in its worktree/bundle
+docs/fw1/

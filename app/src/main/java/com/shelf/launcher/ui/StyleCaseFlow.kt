@@ -193,62 +193,79 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
                     }
                 }
         ) {
-            val from = lo - nSide - 1
-            val to = lo + nSide + 2
-            for (v in from..to) {
-                if (!loop && (v < 0 || v >= count)) continue
-                val idx = if (loop) v.mod(count) else v
-                val g = c.games[idx]
-                key(v) {
-                    val k = g.stableKey
-                    val physical = c.state.physicalMedia[k]
-                    LaunchedEffect(k) { if (physical == null) needPhysical(g) }
-                    val aspect = case3dAspect(g, false)
-                    val scaleK = realCaseScale(g.platform)
-                    val hDp = baseH * scaleK
-                    val wDp = hDp * aspect * 1.25f // room for the turn
-                    val on = v == vFocus
-                    Box(
-                        Modifier.size(wDp, hDp).zIndex(-abs(v - centre).toFloat())
-                            .graphicsLayer {
-                                val r = v - pos.value
-                                val a = abs(r)
-                                val side = sign(r)
-                                val near = min(a, 1f)
-                                val far = max(a - 1f, 0f)
-                                val x = side * (x0 * near + step * far)
-                                translationX = cx + x - size.width / 2f
-                                // Along the curve: the further out, the smaller and a little higher (receding).
-                                val s = ((1f - 0.2f * near) * (1f - curve * 0.07f * far)).coerceAtLeast(0.35f) * (1f + 0.14f * expand * (1f - near))
-                                scaleX = s; scaleY = s
-                                translationY = cy - size.height / 2f - curve * baseHPx * 0.035f * far * far.coerceAtMost(4f) - expand * (1f - near) * baseHPx * 0.05f
-                                alpha = (nSide + 1.3f - a).coerceIn(0f, 1f) * (1f - 0.35f * expand * near)
-                            }
-                            .pointerInput(v) {
-                                detectTapGestures {
-                                    if (on) open() else select(idx)
+            // (Batch 523, owner: "CoverFlow continuous movement - no spawning, test small counts". Endless with fewer games than
+            // the row shows used to draw every place round the loop - 2 games as 5 cases, 5 games as 7 - so the same box stood
+            // twice on screen and copies slid in at the edges. Unless Endless › Fill the row is on, a short list now draws each
+            // game ONCE, at its place nearest the row (flowPlace), keyed by the game so nothing is rebuilt as it moves; where a
+            // game passes round the back of the loop it fades out at one end and in at the other (flowEdgeFade).)
+            val short = loop && !Features.endlessFill.state.value && count < 2 * 5 + 1
+            @Composable
+            fun Item(idx: Int, isOn: Boolean, rOf: () -> Float, zOf: () -> Float) {
+                    val g = c.games[idx]
+                        val k = g.stableKey
+                        val physical = c.state.physicalMedia[k]
+                        LaunchedEffect(k) { if (physical == null) needPhysical(g) }
+                        val aspect = case3dAspect(g, false)
+                        val scaleK = realCaseScale(g.platform)
+                        val hDp = baseH * scaleK
+                        val wDp = hDp * aspect * 1.25f // room for the turn
+                        val on = isOn
+                        Box(
+                            Modifier.size(wDp, hDp).zIndex(zOf())
+                                .graphicsLayer {
+                                    val r = rOf()
+                                    val a = abs(r)
+                                    val side = sign(r)
+                                    val near = min(a, 1f)
+                                    val far = max(a - 1f, 0f)
+                                    val x = side * (x0 * near + step * far)
+                                    translationX = cx + x - size.width / 2f
+                                    // Along the curve: the further out, the smaller and a little higher (receding).
+                                    val s = ((1f - 0.2f * near) * (1f - curve * 0.07f * far)).coerceAtLeast(0.35f) * (1f + 0.14f * expand * (1f - near))
+                                    scaleX = s; scaleY = s
+                                    translationY = cy - size.height / 2f - curve * baseHPx * 0.035f * far * far.coerceAtMost(4f) - expand * (1f - near) * baseHPx * 0.05f
+                                    alpha = (if (short) flowEdgeFade(r, count) else (nSide + 1.3f - a).coerceIn(0f, 1f)) * (1f - 0.35f * expand * near)
                                 }
+                                .pointerInput(idx) {
+                                    detectTapGestures {
+                                        if (on) open() else select(idx)
+                                    }
+                                }
+                        ) {
+                            MediaFocus(on) {
+                                val spin = if (on && expand < 0.01f) rememberCaseSpin() else null
+                                Case3D(
+                                    g, c.cover(g), physical, 0f, aspect, Modifier.fillMaxSize().gameOrigin(k, on),
+                                    reflect = reflect, pitch = pitch,
+                                    yawOf = {
+                                        val r = rOf()
+                                        val near = min(abs(r), 1f)
+                                        val turn = if (spines) near * 80f else -sign(r) * near * angle
+                                        turn + (spin?.invoke() ?: 0f) * (1f - near)
+                                    },
+                                    shadeOf = {
+                                        val a = abs(rOf())
+                                        (0.12f * min(a, 1f) + 0.08f * max(a - 1f, 0f)).coerceAtMost(0.55f)
+                                    },
+                                    realFront = c.state.artOverrides[k]?.cover == null, fill = 0.8f
+                                )
                             }
-                    ) {
-                        MediaFocus(on) {
-                            val spin = if (on && expand < 0.01f) rememberCaseSpin() else null
-                            Case3D(
-                                g, c.cover(g), physical, 0f, aspect, Modifier.fillMaxSize().gameOrigin(k, on),
-                                reflect = reflect, pitch = pitch,
-                                yawOf = {
-                                    val r = v - pos.value
-                                    val near = min(abs(r), 1f)
-                                    val turn = if (spines) near * 80f else -sign(r) * near * angle
-                                    turn + (spin?.invoke() ?: 0f) * (1f - near)
-                                },
-                                shadeOf = {
-                                    val a = abs(v - pos.value)
-                                    (0.12f * min(a, 1f) + 0.08f * max(a - 1f, 0f)).coerceAtMost(0.55f)
-                                },
-                                realFront = c.state.artOverrides[k]?.cover == null, fill = 0.8f
-                            )
                         }
-                    }
+            }
+            if (short) {
+                val focusIdx = vFocus.mod(count)
+                for (i in 0 until count) key(c.games[i].stableKey) {
+                    // (The draw order changes only when a game passes half way, as before - read in composition, not every frame.)
+                    val z = remember(i, count) { derivedStateOf { -abs(flowPlace(i, pos.value, count)).roundToInt().toFloat() } }
+                    Item(i, i == focusIdx, { flowPlace(i, pos.value, count) }, { z.value })
+                }
+            } else {
+                val from = lo - nSide - 1
+                val to = lo + nSide + 2
+                for (v in from..to) {
+                    if (!loop && (v < 0 || v >= count)) continue
+                    val idx = if (loop) v.mod(count) else v
+                    key(v) { Item(idx, v == vFocus, { v - pos.value }, { -abs(v - centre).toFloat() }) }
                 }
             }
         }
@@ -332,4 +349,22 @@ internal enum class CaseFlowShape(val label: String, val curve: Int, val angle: 
             return values().firstOrNull { it.curve == c && it.angle == a && it.spacing == sp && it.side == sd }
         }
     }
+}
+
+/**
+ * (Batch 523) Where game [i] of a short Endless list stands relative to the row at [pos] (in cases): its place round the loop
+ * nearest the middle, inside the window [L, L + count) with L = -floor((count - 1) / 2) - 0.5 (an even count keeps its extra
+ * game on the right). Each game has exactly one place; it jumps only at the window's ends, where [flowEdgeFade] is 0. Pure.
+ */
+internal fun flowPlace(i: Int, pos: Float, count: Int): Float {
+    if (count <= 0) return 0f
+    val l = -((count - 1) / 2).toFloat() - 0.5f
+    val r = (i - pos) - l
+    return (r - count * kotlin.math.floor(r / count)) + l
+}
+
+/** (Batch 523) A short Endless list's fade at the window's ends (half a case wide) so the jump round the loop is never seen. Pure. */
+internal fun flowEdgeFade(r: Float, count: Int): Float {
+    val l = -((count - 1) / 2).toFloat() - 0.5f
+    return (minOf(r - l, l + count - r) / 0.5f).coerceIn(0f, 1f)
 }

@@ -1088,6 +1088,25 @@ internal object LayoutParts {
         p.substring(0, i) to (x to y)
     }.toMap()
 
+    /**
+     * Batch 521 (owner, RP Flip 2: "Tile home placement broken, moving it via R1"): a new place picked for [id] another way
+     * (R1's Row tile: Top / Middle / Bottom) drops its Edit Home move up / down, which was added on top of every place - at
+     * Top it pushed the tiles off the screen, at Bottom onto the round buttons. A move left / right stays.
+     */
+    fun dropVerticalShift(id: String) {
+        val now = Features.partShifts.value
+        val next = withoutVerticalShift(now, id)
+        if (next != now) Features.partShifts.value = next
+    }
+
+    /** [stored] (the part_shifts value) with [id]'s move up / down taken out; unchanged when it has none. */
+    fun withoutVerticalShift(stored: String, id: String): String {
+        val m = parse(stored)
+        val s = m[id] ?: return stored
+        if (kotlin.math.abs(s.second) <= 0.5f) return stored
+        return format(m + (id to (s.first to 0f)))
+    }
+
     fun format(m: Map<String, Pair<Float, Float>>): String =
         m.entries.filter { kotlin.math.abs(it.value.first) > 0.5f || kotlin.math.abs(it.value.second) > 0.5f }
             .joinToString(";") { "${it.key}=${"%.1f".format(java.util.Locale.US, it.value.first)},${"%.1f".format(java.util.Locale.US, it.value.second)}" }

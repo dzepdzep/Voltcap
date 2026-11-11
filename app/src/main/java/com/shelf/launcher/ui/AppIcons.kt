@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -314,35 +316,93 @@ internal fun AppIconArt(
         if (banner != null) {
             Image(banner, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         } else if (icon != null) {
-            // Update 130: the enlarged copy is blurred once, in the picture (BakedBlur): the live blur did nothing on
-            // Android 11 and older (and was left out in Lite), so a small icon blown up to the card showed its pixels.
-            val soft = rememberBakedBlur(androidx.compose.runtime.remember(icon) { icon.asAndroidBitmap() }, 24.dp, keepLast = false)
-            if (soft != null) Image(
-                soft, null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(0.55f)
-            )
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.45f))))
-            )
+            // (Batch 523, owner - DroidDeck / PXPlay: "enormous blurry app-icon backgrounds or tiny icons floating in empty
+            // rectangles". Smart App Artwork: a restrained two-tone ground in the icon's own colour (measured once per app and
+            // kept - AppArtTones - in a range where white titles over it stay readable), a soft light behind the icon, and
+            // the icon itself at its own proportions - big enough to read on a small tile, never blown up into a blur.
+            // Wide capsules and big hero cards: the icon sits on the right third, balanced by two faint rings drawn round it
+            // (one draw, no blur, no animation) instead of a bigger icon. No name drawn here: the layouts print it already.
+            // Real banners / art win.)
+            val tones = AppArtTones.of(packageName, icon)
+            val top = Color(tones.first); val bottom = Color(tones.second)
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(top, bottom))))
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                val side = (if (wide) maxHeight * 0.55f else minOf(maxWidth, maxHeight) * 0.6f)
+                val side = appArtIconSide(maxWidth.value, maxHeight.value, wide).dp
+                val hero = wide || maxHeight > 220.dp
+                val center = if (wide) Alignment.CenterEnd else Alignment.Center
+                val endPad = if (wide) maxWidth * 0.12f else 0.dp
+                if (hero) androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    // (The rings' centre = the icon's centre.)
+                    val cx = if (wide) size.width - endPad.toPx() - side.toPx() / 2f else size.width / 2f
+                    val c = androidx.compose.ui.geometry.Offset(cx, size.height / 2f)
+                    val r = side.toPx()
+                    drawCircle(Color.White.copy(alpha = 0.05f), r * 1.35f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.06f))
+                    drawCircle(Color.White.copy(alpha = 0.035f), r * 2.05f, c, style = androidx.compose.ui.graphics.drawscope.Stroke(r * 0.04f))
+                    // A soft sheen from the top left, so the empty side reads as lit space, not a blank band.
+                    drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.Transparent), androidx.compose.ui.geometry.Offset.Zero,
+                        androidx.compose.ui.geometry.Offset(size.width * 0.6f, size.height)))
+                }
+                Box(
+                    Modifier.align(center).offset(x = if (wide) -(endPad - side * 0.45f) else 0.dp).size(side * 1.9f)
+                        .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent)))
+                )
                 Image(
-                    icon, null,
+                    icon, null, contentScale = ContentScale.Fit,
                     modifier = Modifier
-                        .align(if (wide) Alignment.CenterEnd else Alignment.Center)
-                        .padding(end = if (wide) 20.dp else 0.dp)
+                        .align(center)
+                        .padding(end = endPad)
                         .size(side)
                         .clip(RoundedCornerShape(side * 0.22f))
                 )
             }
+        } else if (packageName != null) {
+            // (Batch 523: no readable icon at all - a clean neutral plate with the apps glyph, never an empty rectangle.)
+            Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF39404C), Color(0xFF1C2028)))), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Apps, null, tint = Color.White.copy(alpha = 0.55f),
+                    modifier = Modifier.fillMaxSize(0.34f))
+            }
         }
     }
 }
+
+/**
+ * Batch 523 (Smart App Artwork): the ground's two tones from an icon's average colour [argb]: its hue, saturation kept
+ * between 0.22 and 0.62 (no neon, no grey mud), the top at 0.34-0.44 brightness, the bottom darker - white text stays
+ * readable on both. Pure.
+ */
+internal fun appArtTones(argb: Int): Pair<Int, Int> {
+    val hsv = FloatArray(3)
+    val r = (argb shr 16) and 255; val g = (argb shr 8) and 255; val b = argb and 255
+    val max = maxOf(r, g, b) / 255f; val min = minOf(r, g, b) / 255f; val d = max - min
+    hsv[2] = max
+    hsv[1] = if (max == 0f) 0f else d / max
+    hsv[0] = when {
+        d == 0f -> 0f
+        max == r / 255f -> 60f * (((g - b) / 255f / d) % 6f)
+        max == g / 255f -> 60f * (((b - r) / 255f / d) + 2f)
+        else -> 60f * (((r - g) / 255f / d) + 4f)
+    }.let { if (it < 0f) it + 360f else it }
+    val sat = if (hsv[1] < 0.08f) hsv[1] else hsv[1].coerceIn(0.22f, 0.62f)
+    val v = hsv[2].coerceIn(0.34f, 0.44f)
+    return hsvToArgb(hsv[0], sat, v) to hsvToArgb(hsv[0], (sat * 1.1f).coerceAtMost(0.7f), v * 0.5f)
+}
+
+private fun hsvToArgb(h: Float, s: Float, v: Float): Int {
+    val c = v * s; val x = c * (1 - kotlin.math.abs((h / 60f) % 2f - 1)); val m = v - c
+    val (r, g, b) = when ((h / 60f).toInt().coerceIn(0, 5)) {
+        0 -> Triple(c, x, 0f); 1 -> Triple(x, c, 0f); 2 -> Triple(0f, c, x)
+        3 -> Triple(0f, x, c); 4 -> Triple(x, 0f, c); else -> Triple(c, 0f, x)
+    }
+    fun ch(f: Float) = ((f + m) * 255f).toInt().coerceIn(0, 255)
+    return (0xFF shl 24) or (ch(r) shl 16) or (ch(g) shl 8) or ch(b)
+}
+
+/**
+ * Batch 523: the app icon's side (dp) on a card [w] x [h] dp: a square tile 46 % of its short side, a wide capsule / hero
+ * 52 % of its height; never under 28 dp (readable) nor over 160 dp (an icon is not artwork - no blow-up). Pure.
+ */
+internal fun appArtIconSide(w: Float, h: Float, wide: Boolean): Float =
+    (if (wide) h * 0.52f else minOf(w, h) * 0.46f).coerceIn(28f, 160f).coerceAtMost(minOf(w, h) * 0.9f)
 
 /**
  * Update 319 / 371: [src] baked in [tint] for [look]: the app's own monochrome icon filled with it, its shape alone (Solid),
@@ -385,4 +445,21 @@ internal fun coverOrAppIcon(g: com.shelf.launcher.data.Game, cover: Any?): Any? 
     val icon = if (want) rememberOwnAppIcon(g.packageName) else null
     val bmp = icon?.let { androidx.compose.runtime.remember(it) { it.asAndroidBitmap() } }
     return cover ?: bmp
+}
+
+/**
+ * Batch 523: each app's ground tones, measured once from its icon (a hardware bitmap copied once) and kept for the run —
+ * a home screen of app tiles redrew and re-measured them per card before.
+ */
+internal object AppArtTones {
+    private val cache = android.util.LruCache<String, Pair<Int, Int>>(256)
+    fun of(packageName: String?, icon: androidx.compose.ui.graphics.ImageBitmap): Pair<Int, Int> {
+        val key = packageName ?: "#" + System.identityHashCode(icon)
+        cache.get(key)?.let { return it }
+        val t = appArtTones(runCatching {
+            averageColor(icon.asAndroidBitmap().let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b })
+        }.getOrDefault(0xFF2A2F3A.toInt()))
+        cache.put(key, t)
+        return t
+    }
 }

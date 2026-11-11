@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.foundation.focusable
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -202,6 +205,10 @@ internal fun GlanceWindow(
         } else { leave.snapTo(1f); p.snapTo(1f) }
     }
 
+    // (Batch 523, owner: Details must keep the popup's look - here it opens the whole story and every fact in this page,
+    // its type and colours; B / Details again go back to the short page with focus on Details.)
+    var showAll by remember(g.stableKey) { mutableStateOf(false) }
+    val detailsFocus = remember { FocusRequester() }
     androidx.compose.ui.window.Dialog(
         onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
@@ -215,6 +222,11 @@ internal fun GlanceWindow(
                 if (t == androidx.compose.ui.input.key.KeyEventType.KeyDown) { openKeyDown = true; HomeKeyGuard.aDown = false }
                 else if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp && !openKeyDown) return@onPreviewKeyEvent true
                 else if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp) openKeyDown = false
+            }
+            if (showAll && !closing && (e.key == androidx.compose.ui.input.key.Key.Back || e.key == androidx.compose.ui.input.key.Key.ButtonB ||
+                    e.key == androidx.compose.ui.input.key.Key.Escape)) {
+                if (t == androidx.compose.ui.input.key.KeyEventType.KeyUp) { showAll = false; runCatching { detailsFocus.requestFocus() } }
+                return@onPreviewKeyEvent true
             }
             if (!closing) return@onPreviewKeyEvent false
             if (t == androidx.compose.ui.input.key.KeyEventType.KeyDown && HomeKeyGuard.isOpenKey(e.key)) { swallowUp = e.key; reopen() }
@@ -400,7 +412,7 @@ internal fun GlanceWindow(
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
             ) {
                 GlancePill(if (resumed) "Continue" else "Play", accent, onAccent, Modifier.focusRequester(playFocus)) { live { RowReveal.reset(); onPlay() } }
-                GlanceRound(Icons.Filled.Info, "Details", accent) { live { RowReveal.reset(); onFullDetails() } }
+                GlanceRound(Icons.Filled.Info, if (showAll) "Less" else "Details", accent, Modifier.focusRequester(detailsFocus)) { showAll = !showAll }
                 if (g.raGameId != null || g.platform == "Steam") GlanceRound(Icons.Filled.EmojiEvents, "Achievements", accent) { live { RowReveal.reset(); onAchievements() } }
                 if (onInspect != null) GlanceRound(InspectIcon.vector, "Inspect", accent) { live { RowReveal.reset(); onInspect() } }
                 GlanceRound(Icons.Filled.MoreHoriz, "Options", accent) { live { RowReveal.reset(); onOptions() } }
@@ -421,8 +433,11 @@ internal fun GlanceWindow(
                     titles.console(g.platform).takeIf { g.sourceType != com.shelf.launcher.data.SourceType.APP },
                     meta?.releaseYear?.toString(), meta?.developer, meta?.genres?.firstOrNull()
                 )
-                if (facts.isNotEmpty()) Text(facts.joinToString("  ·  "), color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                meta?.summary?.takeIf { it.isNotBlank() }?.let {
+                if (facts.isNotEmpty()) Text(facts.joinToString("  ·  "), color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp,
+                    maxLines = if (showAll) 4 else 1, overflow = TextOverflow.Ellipsis)
+                if (showAll) {
+                    GlanceAllDetails(meta?.summary, H - restY - with(d) { 64.dp.toPx() })
+                } else meta?.summary?.takeIf { it.isNotBlank() }?.let {
                     Spacer(Modifier.height(8.dp))
                     // (v0.6.66 popup review: on the GT78 the "max lines" guess ignored the facts line above, so the story ran
                     // off the bottom of the screen, and it ended in "…" (rule 11). It now has exactly the room left — at most
@@ -471,14 +486,36 @@ private fun GlancePill(label: String, accent: Color, onAccent: Color, modifier: 
     }
 }
 
+/** (Batch 523) Details in the page: the whole story in the room under the actions, ▲ ▼ / a finger scroll it, no auto-pan.
+ * (523o: at least 48 dp tall - it takes focus, and a one-line story made a 38 px target; popup gate p523f, Shared x 46 layouts.) */
 @Composable
-private fun GlanceRound(icon: ImageVector, label: String, accent: Color, onClick: () -> Unit) {
+private fun GlanceAllDetails(summary: String?, roomPx: Float) {
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val sc = androidx.compose.foundation.rememberScrollState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val fr = remember { FocusRequester() }
+    LaunchedEffect(Unit) { delay(60); runCatching { fr.requestFocus() } }
+    Spacer(Modifier.height(8.dp))
+    Box(
+        Modifier.heightIn(min = 48.dp, max = with(d) { roomPx.coerceAtLeast(48.dp.toPx()).toDp() }).focusRequester(fr)
+            .onKeyEvent { e ->
+                if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onKeyEvent false
+                val dir = when (e.key) { androidx.compose.ui.input.key.Key.DirectionDown -> 1; androidx.compose.ui.input.key.Key.DirectionUp -> -1; else -> return@onKeyEvent false }
+                if ((dir > 0 && !sc.canScrollForward) || (dir < 0 && !sc.canScrollBackward)) return@onKeyEvent false
+                scope.launch { sc.animateScrollBy(dir * 180f) }; true
+            }
+            .focusable().verticalScroll(sc)
+    ) { Text(summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, lineHeight = 1.45.em) }
+}
+
+@Composable
+private fun GlanceRound(icon: ImageVector, label: String, accent: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
     Box(
-        Modifier
+        modifier
             .size(46.dp)
             .clip(CircleShape)
             .background(if (focused) accent else Color.White.copy(alpha = 0.14f))

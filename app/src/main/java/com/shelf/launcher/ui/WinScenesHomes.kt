@@ -85,10 +85,12 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
             Box(Modifier.fillMaxWidth().height(h * (if (ctx.page != WinPage.MAIN) 0.26f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Update 469: the window-wide backdrop at the screen's size — rememberBackdropRequest — not the 360–720 px card decode.)
-                if (art != null) AsyncImage(
-                    if (art == ctx.cover) rememberStyleArtRequest(art) else rememberBackdropRequest(art), null, Modifier.fillMaxSize().graphicsLayer {
+                // (Batch 523, Smart Fill: a cover standing in for the backdrop shows whole over its soft copy instead of a band cut
+                // out of its middle.)
+                if (art != null) SmartArt(
+                    art, null, Modifier.fillMaxSize().graphicsLayer {
                         val k = ctx.reveal().coerceIn(0f, 1f); val z = 1.14f - 0.14f * k; scaleX = z; scaleY = z
-                    }, contentScale = ContentScale.Crop
+                    }, request = if (art == ctx.cover) rememberStyleArtRequest(art) else rememberBackdropRequest(art), maxCrop = SmartFill.maxCropFor(art, ctx.cover)
                 )
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.55f to Color(0xFF181818).copy(alpha = 0.35f), 1f to Color(0xFF181818))))
                 Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF181818).copy(alpha = 0.7f), 0.5f to Color.Transparent)))
@@ -242,7 +244,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                 shadowElevation = 18.dp.toPx() * k
             }.background(Color(0xFF1B2633))
         ) {
-            ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            ctx.cover?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         }
         // The drawer.
         Column(

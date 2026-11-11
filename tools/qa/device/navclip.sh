@@ -5,11 +5,11 @@
 # there early or how late it came, the open window's game, and Coil's own load times (QaArt).
 # Run detached:  setsid sh navclip.sh TAG "LAYOUTS" "GAME" &   (wrapped in voltcap_test_snapshot save / restore by the caller)
 # Preview only (nothing saved), launches blocked, owner's view state untouched by the caller's snapshot. Needs evidence.sh.
-P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; GAME=$3
+P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; GAME=$3
 OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 . "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
 ev_start $OUT $TAG "kind=navclip" "layouts=$LAYS" "game=$GAME" "content=${QA_CONTENT:-default}" "category=${QA_CATEGORY:-}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
-A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
+A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 k() { input keyevent KEYCODE_$1; }
 dump() { rm -f $F/qa_clip/${TAG}_$1.json; echo "${TAG}_$1" > $F/qa_clip_req; i=0; while [ ! -s $F/qa_clip/${TAG}_$1.json ] && [ $i -lt 20 ]; do sleep 0.15; i=$((i+1)); done; }
 foc() { grep -o '"focusedGame":"[^"]*"' $F/qa_clip/${TAG}_$1.json 2>/dev/null | head -1; }

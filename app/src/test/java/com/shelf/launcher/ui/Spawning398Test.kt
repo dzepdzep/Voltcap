@@ -36,7 +36,9 @@ class Spawning398Test {
     @Test
     fun spineTopFaceIsPartOfTheCoverShelf() {
         val s = src("ui/StyleCoverDetails.kt") ?: return
-        assertTrue(s.contains("drawCaseTop("))
+        // (523r: Cover details' shelf holds whole Case3D cases - their tops drawn by the case itself; drawCaseTop stays for the
+        // other spine shelves.)
+        assertTrue(s.contains("Case3D(") && s.contains("COVER_ROW_YAW"))
         assertTrue((src("ui/SpineDepth.kt") ?: return).contains("fun DrawScope.drawCaseTop"))
     }
 

@@ -1,0 +1,4 @@
+Roboto (static 400 / 500 / 600 / 700 instances of the Roboto variable font, subset to Latin, Latin-1, Latin Extended-A/B
+and common punctuation / arrows) - Copyright 2011 Google Inc. All Rights Reserved.
+Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+Used by Voltcap's game windows (Batch 523t, PopupLab.APPROVED: the device font one step lighter).

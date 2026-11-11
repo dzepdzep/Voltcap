@@ -54,7 +54,6 @@ object RomScanner {
         "lnx" to "Lynx", "j64" to "Jaguar", "a78" to "Atari7800",
         "vpk" to "PSVita", "p8" to "PICO8", "min" to "PokemonMini",
         "col" to "ColecoVision", "int" to "Intellivision", "vec" to "Vectrex",
-        "droiddeck" to "DroidDeck",
     )
 
     /**
@@ -260,6 +259,40 @@ object RomScanner {
             sourceType = SourceType.STEAM, steamAppId = id)
     }
 
+    /**
+     * Batch 522: GameNative's frontend exports for its other stores (its FrontendSyncManager: `<title>.epic` / `.gog` /
+     * `.amazon` / `.pcgame`, the file holding GameNative's int id for the game - EpicGame.id, GOGGame.id parsed, AmazonGame.appId,
+     * the custom game's id) → the `game_source` GameNative's LAUNCH_GAME intent takes with that id (IntentLaunchManager) and
+     * the category the game goes in. Checked against GameNative's source (master, Nov 2026); a GOG id that isn't a number is
+     * exported as 0 and skipped (no game to start).
+     */
+    internal val GAMENATIVE_STORES = mapOf("epic" to ("EPIC" to "Epic"), "gog" to ("GOG" to "GOG"), "amazon" to ("AMAZON" to "Amazon"),
+        "pcgame" to ("CUSTOM_GAME" to "PC"))
+
+    internal fun gameNativeStoreExport(file: File): Game? {
+        val (source, platform) = GAMENATIVE_STORES[file.extension.lowercase()] ?: return null
+        if (!file.isFile || file.length() !in 1..64) return null
+        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
+        val id = parseSteamExport(text) ?: return null
+        val title = file.nameWithoutExtension.trim().ifBlank { "$platform game $id" }
+        return Game(name = title, platform = platform, hue = (("$source$id").hashCode() and 0x7fffffff) % 360,
+            sourceType = SourceType.STEAM, storeGameId = id, gameNativeSource = source)
+    }
+
+    /**
+     * Batch 522: one DroidDeck launch file - `<Game title>.droiddeck` holding DroidDeck's game id (digits, or the same
+     * `droiddeck://game/<id>` DroidDeck uses; GameClients.droidDeckId). A Steam game (platform "Steam", like DroidDeck's
+     * pinned shortcuts) whose key stays the file's path - the file itself is what Play hands back to DroidDeck. Null for a
+     * file that is empty, too big or not a DroidDeck id (it used to be listed as a game that could only fail to start).
+     */
+    internal fun droidDeckExport(file: File): Game? {
+        if (!file.isFile || file.length() !in 1..128) return null
+        val text = runCatching { file.readText(Charsets.UTF_8) }.getOrNull() ?: return null
+        GameClients.droidDeckId(text.removePrefix("\uFEFF")) ?: return null
+        val title = prettifyName(file.nameWithoutExtension).ifBlank { file.nameWithoutExtension.trim() }
+        return Game(name = title, platform = "Steam", hue = hueFor(file.name), sourceType = SourceType.ROM, romPath = file.absolutePath)
+    }
+
     /** The AppID of a `.steam` export's text: digits only (a BOM / whitespace / newline round it allowed), 1..Int.MAX. */
     internal fun parseSteamExport(text: String): Int? {
         val t = text.removePrefix("\uFEFF").trim()
@@ -393,6 +426,8 @@ object RomScanner {
         val m3uFiles = mutableListOf<File>()
         val skipped = mutableSetOf<String>()
         val steamFiles = mutableListOf<File>()
+        val droidDeckFiles = mutableListOf<File>()
+        val storeFiles = mutableListOf<File>()
         // Update 175: games that are a whole folder (a PS3 game: PS3_GAME / PS3_DISC.SFB inside) — one game each, its
         // folder not walked (every file in it — EBOOT.BIN, ICON0.PNG, PARAM.SFO, the DAT files — was listed as a game).
         val folderGames = mutableListOf<File>()
@@ -412,6 +447,12 @@ object RomScanner {
                     // (Update 478, D1: GameNative's frontend export — "<Game>.steam" holding the Steam AppID — is a PC /
                     // Steam game handed to GameNative, whatever folder it sits in; one that isn't a valid AppID is skipped.)
                     ext == "steam" -> steamFiles += file
+                    // (Batch 522: GameNative's other stores' exports - same format, its own id per store.)
+                    ext in GAMENATIVE_STORES -> storeFiles += file
+                    // (Batch 522: DroidDeck's exported launch file - "<Game>.droiddeck" holding its game id - is a Steam game
+                    // started through DroidDeck, whatever folder it sits in, like DroidDeck's own home-screen shortcuts
+                    // (PinnedShortcuts: Steam category). A file without a valid id is not listed.)
+                    ext == "droiddeck" -> droidDeckFiles += file
                     // (Update 175: never a picture, a text or a disc's system file — in a console's folder every file
                     // used to count as one of its games.)
                     ext in notGames -> {}
@@ -426,6 +467,8 @@ object RomScanner {
 
         val games = mutableListOf<Game>()
         steamFiles.forEach { f -> gameNativeExport(f)?.let { games += it } }
+        droidDeckFiles.forEach { f -> droidDeckExport(f)?.let { games += it } }
+        storeFiles.forEach { f -> gameNativeStoreExport(f)?.let { games += it } }
         folderGames.forEach { dir ->
             val platform = folderGamePlatform(dir, rootPath, deep) ?: return@forEach
             games += Game(
@@ -437,6 +480,12 @@ object RomScanner {
             )
         }
         val consumedPaths = mutableSetOf<String>()
+
+        // (Batch 523, owner: "after deleting the game from files on my handheld it still appears, even after a rescan".
+        // A disc game is its sheet / playlist: deleting the discs left Game.cue / Game.gdi or the playlist Voltcap wrote
+        // (Game.m3u) behind, and those alone kept listing the game. A sheet whose track files are all gone, and a playlist
+        // whose discs are all gone, are no game any more - left on the card, untouched, but not listed.)
+        knownFiles.removeAll { (it.extension.equals("cue", true) || it.extension.equals("gdi", true)) && orphanSheet(it) }
 
         // The track files a .cue / .gdi sheet points at (Game.bin, Game (Track 2).bin…) are part of that
         // disc, not games of their own: only the sheet is listed, as emulators expect.
@@ -451,7 +500,7 @@ object RomScanner {
         // (Update 325: each listed set's folder and title without any tags — see the lone later disc below.)
         val setBases = mutableMapOf<String, File>()
         m3uFiles.forEach { m3u ->
-            val discPaths = parseM3u(m3u)
+            val discPaths = parseM3u(m3u).filter { discPresent(it) }
             val platform = discPaths.firstOrNull()?.let { platformFor(it, rootPath, deep) }
             if (platform != null && discPaths.isNotEmpty()) {
                 games += Game(
@@ -617,6 +666,16 @@ object RomScanner {
 
         return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures, missingM3u = missingM3u, duplicates = duplicates)
     }
+
+    /** Batch 523: a .cue / .gdi naming track files of which none is there any more (one naming none is kept). */
+    internal fun orphanSheet(sheet: File): Boolean {
+        val tracks = sheetTracks(sheet)
+        return tracks.isNotEmpty() && tracks.none { it.exists() }
+    }
+
+    /** Batch 523: a playlist's disc that is really there (a sheet: with at least one of its tracks). */
+    internal fun discPresent(disc: File): Boolean =
+        disc.exists() && !((disc.extension.equals("cue", true) || disc.extension.equals("gdi", true)) && orphanSheet(disc))
 
     /** Files a CUE sheet (`FILE "Game (Track 1).bin" BINARY`) or a GDI list (`1 0 4 2352 track01.bin 0`) names. */
     private fun sheetTracks(sheet: File): List<File> = try {

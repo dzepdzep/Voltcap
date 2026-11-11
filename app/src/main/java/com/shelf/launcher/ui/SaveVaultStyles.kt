@@ -332,7 +332,7 @@ internal fun SaveVaultStyle.aspect(): Float = when (this) {
     SaveVaultStyle.MEMORY_CARD -> 0.86f
     SaveVaultStyle.FLOPPY -> 0.95f
     SaveVaultStyle.CAPSULE -> 0.62f
-    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> 1f
+    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS, SaveVaultStyle.PS2 -> 1f
     SaveVaultStyle.CARD_3D -> Models3D.saveCardId()?.let { Models3D.aspect(it) } ?: 0.86f
 }
 
@@ -388,7 +388,7 @@ internal fun StyledSaveCard(
             }
             return
         }
-        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced, look = look)
+        StyledSaveCard(SaveVaultStyle.MEMORY_CARD, icon, name, state, selected, lift, bob, hidden, onIconPlaced, platform = platform, look = look)
         return
     }
     val accent = ShelfTheme.accent
@@ -490,6 +490,8 @@ internal fun StyledSaveCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (icon != null) AsyncImage(model = icon, contentDescription = name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(if (style == SaveVaultStyle.FLOPPY) 3.dp else 0.dp))
+                // (Batch 523: no picture anywhere - the console's plate on the label, never a blank label or two letters.)
+                else if (platform != null) VaultArtPlate(platform, name, Modifier.fillMaxSize().padding(if (style == SaveVaultStyle.FLOPPY) 3.dp else 0.dp), nameSize = 9.sp)
                 else Text(name.take(2).uppercase(), color = if (style == SaveVaultStyle.FLOPPY) Color(0xFF333333) else Color.White.copy(alpha = 0.8f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
@@ -705,7 +707,7 @@ internal fun SaveOpenAnimation(
                     drawRoundRect(glass.copy(alpha = 0.9f * (1 - t * 0.7f)), Offset(cx - w / 2, cy + gap), Size(w, h / 2), androidx.compose.ui.geometry.CornerRadius(w / 2))
                 }
             }
-            SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> Unit
+            SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS, SaveVaultStyle.PS2 -> Unit
             else -> {
                 // A slot (console / reader / drive) with the save sliding in, then a loading bar.
                 val insert = (t / 0.55f).coerceIn(0f, 1f)
@@ -853,7 +855,8 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
             if (Models3D.saveCardId() == null) Text("The 3D cards come with the 3D models pack (Settings › Game look › Extra art packs); until then it's the drawn memory card.", color = label, fontSize = 11.sp)
         }
         // (Update 241, #44: "SaveVault" and Voltcap's cloud moulded into the objects — big views and their backs only.)
-        if (Features.saveVaultStyle.state.value != SaveVaultStyle.CLASSIC && Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS) ChipFlow {
+        if (Features.saveVaultStyle.state.value != SaveVaultStyle.CLASSIC && Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS &&
+            Features.saveVaultStyle.state.value != SaveVaultStyle.PS2) ChipFlow {
             Chip(if (Features.saveEngraving.state.value) "✓ SaveVault engraving" else "SaveVault engraving", accent = Features.saveEngraving.state.value) {
                 Features.saveEngraving.toggle()
             }
@@ -864,7 +867,7 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
         val context = androidx.compose.ui.platform.LocalContext.current
         remember { com.shelf.launcher.data.Ps2BrowserStyle.load(context) }
         val ps2On = com.shelf.launcher.data.Ps2BrowserStyle.on.value
-        if (Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS) {
+        if (Features.saveVaultStyle.state.value != SaveVaultStyle.ICONS && Features.saveVaultStyle.state.value != SaveVaultStyle.PS2) {
             ChipFlow {
                 Chip(if (ps2On) "✓ PS2 browser style" else "PS2 browser style", accent = ps2On) {
                     com.shelf.launcher.data.Ps2BrowserStyle.set(context, !ps2On)
@@ -876,7 +879,11 @@ internal fun SaveVaultSettings(onDark: Boolean = false) {
             )
         }
         if (Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS) Text(
-            "Each save as its game's icon, no card: a PS2 save's own icon from the memory card, else its RetroAchievements icon, else its SteamGridDB logo.",
+            "Each save as its game's icon, flat, no card: its RetroAchievements icon, else its logo; a game with neither shows its console's symbol.",
+            color = label, fontSize = 11.sp
+        )
+        if (Features.saveVaultStyle.state.value == SaveVaultStyle.PS2) Text(
+            "Every save as the PS2's memory-card browser shows it: a PS2 save its own 3D icon from the card, any other game its icon or logo as a turning 3D badge, a save with neither a plain memory card.",
             color = label, fontSize = 11.sp
         )
         Spacer(Modifier.height(6.dp))

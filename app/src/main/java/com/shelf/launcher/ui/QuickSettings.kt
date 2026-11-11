@@ -391,15 +391,16 @@ fun QuickSettingsCard(
             val F = com.shelf.launcher.data.Features
             // (Update 125: the Media tile — Covers → Cartridges & discs → Discs only — is part of the Look tile now, with
             // Cartridges only added; saved tile orders just skip the old "media" id.)
-            // Update 125: Off → Console badges → Logo badges (the console's own logo on its colour) → Off.
+            // Update 125 / Batch 522: Off → Text badges → Symbol badges → Logo badges → Off.
             val badgesOn = F.consoleBadges.state.value
-            val logoBadges = F.consoleBadgeLogos.state.value
+            val bs = F.consoleBadgeStyle.state.value
             add(R1Tile("badges", Icons.Filled.Label,
-                when { !badgesOn -> "Badges\noff"; logoBadges -> "Logo\nbadges"; else -> "Console\nbadges" }, badgesOn) {
+                if (!badgesOn) "Badges\noff" else "${bs.label}\nbadges", badgesOn) {
                 when {
-                    !F.consoleBadges.value -> { F.consoleBadges.value = true; F.consoleBadgeLogos.value = false }
-                    !F.consoleBadgeLogos.value -> F.consoleBadgeLogos.value = true
-                    else -> { F.consoleBadges.value = false; F.consoleBadgeLogos.value = false }
+                    !F.consoleBadges.value -> { F.consoleBadges.value = true; F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.TEXT }
+                    F.consoleBadgeStyle.value == com.shelf.launcher.data.Features.BadgeStyle.TEXT -> F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.SYMBOL
+                    F.consoleBadgeStyle.value == com.shelf.launcher.data.Features.BadgeStyle.SYMBOL -> F.consoleBadgeStyle.value = com.shelf.launcher.data.Features.BadgeStyle.LOGO
+                    else -> F.consoleBadges.value = false
                 }
             })
             // (Update 325, Toni: "an R1 tile for the game you're on — with a colour outline or not": Coloured frame on / off.)
@@ -507,7 +508,7 @@ fun QuickSettingsCard(
             R1Spacing.prefFor(a.homeLayout)?.let { sp ->
                 val v = sp.state.value
                 add(R1Tile("spacing", Icons.Filled.SpaceBar, "Spacing\n" + R1Spacing.label(v), false, longAction = { showSpacing = true }) {
-                    sp.value = R1Spacing.next(v).coerceIn(R1Spacing.MIN, R1Spacing.maxFor(a.homeLayout))
+                    sp.value = R1Spacing.next(v).coerceIn(R1Spacing.minFor(a.homeLayout), R1Spacing.maxFor(a.homeLayout))
                 })
             }
             // Update 179: the two-screen layouts — the gap between their tiles (tap: the next, hold: the list).
@@ -853,6 +854,9 @@ fun QuickSettingsCard(
                 // (Update 315: Tile home's own place — in the middle by default; the Voltcap row keeps its own.)
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockHere.label, false) {
                     val all = com.shelf.launcher.data.DockPosition.values()
+                    // (Batch 521: on Tile home a new Row place also drops the game row's Edit Home move up / down and the
+                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.)
+                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a)
                     home.setAppearance(a.withDockHere(all[(a.dockHere.ordinal + 1) % all.size]))
                 })
             }
@@ -1918,8 +1922,8 @@ private fun GameSpacingPopup(home: R1Home, onDismiss: () -> Unit) {
             val first = remember { FocusRequester() }
             LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
             Box(Modifier.focusRequester(first)) {
-                PercentSlider("Game spacing", sp.state.value, { sp.value = it.coerceIn(R1Spacing.MIN, R1Spacing.maxFor(l)) },
-                    min = R1Spacing.MIN, max = R1Spacing.maxFor(l), valueText = { "$it%" })
+                PercentSlider("Game spacing", sp.state.value, { sp.value = it.coerceIn(R1Spacing.minFor(l), R1Spacing.maxFor(l)) },
+                    min = R1Spacing.minFor(l), max = R1Spacing.maxFor(l), valueText = { "$it%" })
             }
             Spacer(Modifier.height(10.dp))
             Chip("Done", onClick = onDismiss)
@@ -2195,4 +2199,14 @@ internal enum class PopupStyle(val label: String, val short: String) {
             }
         }
     }
+}
+
+/**
+ * Batch 521: Tile home's Row place (R1 Row tile, Top / Middle / Bottom) is the one that counts: the game row's Edit Home move
+ * up / down and the round buttons' spot saved "by the tiles" are dropped (an "Anywhere" spot of the buttons stays).
+ */
+internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings) {
+    LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))
+    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && HomeWidgets.position(HomeWidgets.SHORTCUTS) != null)
+        HomeWidgets.reset(HomeWidgets.SHORTCUTS)
 }

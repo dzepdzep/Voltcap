@@ -754,3 +754,29 @@ const val OUTCOME_FOUND = "Found"
 const val OUTCOME_UNKNOWN = "Not on ScreenScraper"
 const val OUTCOME_UNSURE = "No sure match"
 const val OUTCOME_OFFLINE = "No connection"
+
+/**
+ * Batch 520: what to tell the person when a ScreenScraper look-up came back empty because of the server, not because the
+ * game is unknown ([outcome] = [ScreenScraperRepository.lookupOutcome]). Null: nothing went wrong (not found / found) — the
+ * usual "found nothing" note applies. Before, a timeout or a rate limit read "found nothing — try another name".
+ */
+fun screenScraperFailureNote(outcome: String?): String? {
+    if (outcome == null) return null
+    if (outcome == OUTCOME_OFFLINE) return "ScreenScraper didn't answer — it can take up to a minute when it's busy. Try again in a moment."
+    val code = Regex("""^ScreenScraper answered (\d{3})""").find(outcome)?.groupValues?.get(1)?.toIntOrNull() ?: return null
+    return when (code) {
+        401, 403 -> "ScreenScraper refused the account — check your username and password (Settings › Accounts)."
+        423 -> "ScreenScraper is closed for maintenance. Try again later."
+        426 -> "ScreenScraper wants a newer Voltcap. Check for an update."
+        429, 430, 431 -> "ScreenScraper's limit for your account is reached for now (requests or threads). Try again later — your free account's daily quota resets each day."
+        503 -> "ScreenScraper (or Voltcap's service) is busy right now. Try again in a minute."
+        504 -> "ScreenScraper didn't answer in time — it can be very slow when busy. Try again in a minute."
+        else -> "ScreenScraper answered with an error ($code). Try again later."
+    }
+}
+
+/**
+ * Batch 520: whether an artwork look-up counts as "asked" (the automatic runs then leave the game alone for two weeks). Not when
+ * nothing was found because ScreenScraper itself failed ([ssOutcome] is a server problem, [screenScraperFailureNote]).
+ */
+fun artAskCounts(found: Boolean, ssOutcome: String?): Boolean = found || screenScraperFailureNote(ssOutcome) == null

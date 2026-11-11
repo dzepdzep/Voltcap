@@ -21,6 +21,7 @@ class RevealFacts475Test {
         // (The story is the Column's only weighted child: Compose measures it last, in the room the facts leave.)
         val src = java.io.File("src/main/java/com/shelf/launcher/ui/RowRevealWindow.kt").readText()
         val room = src.substringAfter("// ---- what appears in the room they leave ----").substringBefore("// ---- Play / Continue")
+            .substringAfter("if (showAll) {").substringAfter("} else {") // (Batch 523: the short view; Details shows all in place)
         assertTrue(room.contains("StoryLines("))
         assertTrue(room.indexOf("StoryLines(") < room.indexOf("revealFacts("))
         assertTrue(room.contains("Modifier.weight(1f, fill = false)"))

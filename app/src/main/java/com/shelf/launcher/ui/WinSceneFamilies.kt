@@ -128,18 +128,17 @@ internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color
     Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
             Text(studioInitials(ctx.console), color = ink, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            Text(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, lineHeight = 12.sp)
+            // (Batch 523, Inspect test: "Super Nintendo Entertainme" - a word wider than the plate was cut; whole words now, the size
+            // stepping down until the longest one fits.)
+            WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
         }
     }
 }
 
-/** The game's picture whole (Fit) on [well], or [SceneNoArt]. */
+/** The game's picture filling its room (Smart Fill, Batch 523: a light crop, else whole over its soft copy — never bars), or [SceneNoArt]. */
 @Composable
 private fun SceneArt(ctx: WinSceneCtx, url: String?, modifier: Modifier, well: Color) {
-    if (url == null) SceneNoArt(ctx, modifier)
-    else Box(modifier.background(well)) {
-        AsyncImage(rememberStyleArtRequest(url), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-    }
+    SmartArt(url, ctx.name, modifier, well = well, noArt = { m -> SceneNoArt(ctx, m) })
 }
 
 private fun inkOn(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else Color.White
@@ -250,6 +249,19 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
 
 // ───────────────────────────── Tile home / Grid: the tile lifted out of the grid ─────────────────────────────
 
+/**
+ * Batch 523: the lifted tile's (width, height) dp for a [tile] dp square and the picture's shape [art] (w / h, null =
+ * unknown: the square): a portrait picture makes a tile 0.86 as wide and as tall as its shape asks, up to [maxH] and 1.5
+ * tiles; a wide one a lower tile, never under 0.62 tiles. Pure.
+ */
+internal fun tileLiftSize(tile: Float, art: Float?, maxH: Float): Pair<Float, Float> {
+    if (art == null || !art.isFinite() || art <= 0f) return tile to tile
+    val a = art.coerceIn(0.55f, 2.2f)
+    val w = if (a < 0.95f) tile * 0.86f else tile
+    val h = (w / a).coerceIn(tile * 0.62f, minOf(tile * 1.5f, maxOf(maxH, tile)))
+    return w to h
+}
+
 /** Update 508: Tile home's type size — a size up on a small screen (GT78 960×640), as before on a large one. Pure. */
 internal fun tileLiftType(compact: Boolean): Float = if (compact) 1.18f else 1f
 
@@ -267,9 +279,14 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
     val tile = minOf(w * (if (compact) 0.24f else 0.34f), ctx.maxH * (if (compact) 0.42f else 0.55f), 230.dp)
     val type = tileLiftType(compact)
     val lift = 14.dp
+    // (Batch 523, owner — WWE SmackDown: a portrait cover sat between grey bars in the square tile, with empty card under
+    // it. The lifted tile takes the picture's own shape: a portrait cover makes a taller, slightly narrower tile that runs
+    // down the card's side; a wide picture a lower one. The card is never shorter than the tile beside it.)
+    val (tileW, tileH) = tileLiftSize(tile.value, CoverAspects.rawOf(ctx.cover ?: ctx.wide), ctx.maxH.value * (if (compact) 0.66f else 0.72f))
+        .let { it.first.dp to it.second.dp }
     Box(Modifier.width(w).heightIn(max = ctx.maxH)) {
         // The card behind: it unrolls downward from the tile's row.
-        Row(Modifier.padding(top = lift).fillMaxWidth().graphicsLayer {
+        Row(Modifier.padding(top = lift).fillMaxWidth().heightIn(min = tileH - lift + 14.dp).graphicsLayer {
             val e = sceneEase(sceneStage(ctx.reveal(), 0.25f, 1f))
             scaleY = 0.2f + 0.8f * e; transformOrigin = TransformOrigin(0.5f, 0f); alpha = e
             shape = RoundedCornerShape(18.dp); clip = true
@@ -281,7 +298,7 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
                 val x = size.width - (q + 1) * (c + gap); val y = gap + r * (c + gap)
                 drawRoundRect(a.copy(alpha = 0.07f + 0.03f * ((r + q) % 2)), Offset(x, y), androidx.compose.ui.geometry.Size(c, c), androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))
             }
-        }.border(1.dp, ink.copy(alpha = 0.1f), RoundedCornerShape(18.dp)).padding(start = tile + 28.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
+        }.border(1.dp, ink.copy(alpha = 0.1f), RoundedCornerShape(18.dp)).padding(start = tileW + 28.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
             Column(Modifier.weight(1f)) {
                 StableFullText(ctx.name, color = ink, fontSize = (20f * type).sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                 Text(ctx.console, color = a, fontSize = (12f * type).sp, fontWeight = FontWeight.SemiBold)
@@ -295,7 +312,7 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
             }
         }
         // The tile itself, lifted above the card's edge, its focus ring on: it pops forward first, then the card unrolls under it.
-        Box(Modifier.padding(start = 14.dp).size(tile).graphicsLayer {
+        Box(Modifier.padding(start = 14.dp).size(tileW, tileH).graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.55f)
             val pop = if (ctx.closing()) 0f else 0.06f * kotlin.math.sin(k * Math.PI.toFloat())
             val s = 0.7f + 0.3f * sceneEase(k) + pop

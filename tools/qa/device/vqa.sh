@@ -10,11 +10,12 @@
 #   sh vqa.sh perf_reset                reset Voltcap's frame stats
 #   sh vqa.sh perf_dump NAME            save gfxinfo framestats + summary to out/NAME_*
 #   sh vqa.sh rec NAME SECONDS          screen recording to out/NAME.mp4 (background, returns at once)
-#   sh vqa.sh rate60 | rate_restore     lock the panel at 60 Hz while recording (each app frame = one video frame)
+#   (rate60 / rate_restore removed in Batch 521: they changed a system setting - the panel's refresh rate)
 #   sh vqa.sh mem NAME                  dumpsys meminfo summary to out/NAME_mem.txt
 #   sh vqa.sh trace NAME SECONDS        Perfetto trace (gfx, view, input, sched, freq) to out/NAME.pftrace
 #   sh vqa.sh stress NAME COUNT GAP     COUNT random-ish D-pad/L1/R1 steps with GAP ms (rapid navigation)
-PKG=com.shelf.launcher
+# Batch 521: the isolated QA app by default; the real Voltcap is never the target of these helpers.
+PKG=com.shelf.launcher.qa
 D=/data/local/tmp/vqa
 OUT=$D/out
 mkdir -p $OUT
@@ -108,14 +109,8 @@ case $cmd in
     rm -f $OUT/$1.mp4
     (screenrecord --bit-rate 40000000 --time-limit $s $OUT/$1.mp4 > /dev/null 2>&1 &) ;
     sleep 0.6; log_mark "rec $1 $s";;
-  rate60)
-    settings get system peak_refresh_rate > $D/peak.bak; settings get system min_refresh_rate > $D/min.bak
-    settings put system peak_refresh_rate 60.0; settings put system min_refresh_rate 60.0; sleep 0.5
-    dumpsys display | grep -m1 -o "renderFrameRate [0-9.]*\|refreshRate=[0-9.]*";;
-  rate_restore)
-    [ -s $D/peak.bak ] && settings put system peak_refresh_rate $(cat $D/peak.bak)
-    [ -s $D/min.bak ] && settings put system min_refresh_rate $(cat $D/min.bak)
-    dumpsys display | grep -m1 -o "refreshRate=[0-9.]*";;
+  rate60|rate_restore)
+    echo "refused: $1 changed a system setting (removed in Batch 521)"; exit 2;;
   mem)
     dumpsys meminfo $PKG | sed -n '1,40p' > $OUT/$1_mem.txt; grep -E "TOTAL PSS|TOTAL RSS|Graphics|Native Heap|Java Heap|Views|Activities" $OUT/$1_mem.txt;;
   trace)

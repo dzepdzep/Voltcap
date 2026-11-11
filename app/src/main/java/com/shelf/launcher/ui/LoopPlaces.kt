@@ -42,11 +42,14 @@ internal fun rememberLoopPlace(focus: Int, n: Int, loop: Boolean, tick: Int, ste
     }
     seen[0] = list
     if (t[2] != tick) {
-        // A D-pad step: slide exactly that way.
+        // A D-pad step: slide exactly that way. (Batch 523, owner - Endless "bounced left and right" on fast presses: two
+        // steps that land in one frame bump the tick twice; counting only one step left the place one behind the focus, and
+        // the "jump" below then went back the short way. Every step since the last look is counted - [loopSteps].)
+        val k = loopSteps(t[0], focus, n, step, tick - t[2])
         t[2] = tick
         if (step != 0) {
-            t[1] += step
-            t[0] = (t[0] + step).mod(n)
+            t[1] += step * k
+            t[0] = (t[0] + step * k).mod(n)
         }
     }
     if (t[0] != focus) {

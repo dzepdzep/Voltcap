@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import com.shelf.launcher.data.withDockHere
 import com.shelf.launcher.data.dockHere
 import com.shelf.launcher.data.categoryBarFor
 import com.shelf.launcher.data.categoryBarHere
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
@@ -161,12 +163,25 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         AlbumArtBlur.sync(appearance.secondMusicBlurArt, appearance.secondMusicBlur)
     }
     val liteContext = androidx.compose.ui.platform.LocalContext.current
+    // (Batch 523, GT78 crash - ClassCastException "Boolean cannot be cast to ComposableLambda" in this screen's composition,
+    // reproduced 6 of 6 by switching Performance between Automatic and Full: the `remember` sat inside the Automatic branch
+    // only, so the remembered slots after it shifted by one when the mode changed. Remembered unconditionally now.)
+    val lowEndDevice = remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) }
+    // (Batch 523: the same for Automatic scene quality - remembered whatever the setting, not inside its branch.)
+    val autoScene = remember {
+        when {
+            com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) -> com.shelf.launcher.data.SceneQuality.LOW
+            com.shelf.launcher.device.MemoryBudget.small(liteContext) -> com.shelf.launcher.data.SceneQuality.BALANCED
+            // Strong handhelds (Odin 2, Thor…): 60 fps, like the rest of the UI. (Update 126: on 60 Hz screens
+            // too — they got 30 before; FrameWatch still steps it down to 30 if the device drops frames.)
+            else -> com.shelf.launcher.data.SceneQuality.SMOOTH
+        }
+    }
     val liteEffects = when (appearance.performanceMode) {
         com.shelf.launcher.data.PerformanceMode.LITE -> true
         com.shelf.launcher.data.PerformanceMode.FULL -> false
         // Automatic also turns lite on when the frames watched this session stay slow (FrameWatch).
-        com.shelf.launcher.data.PerformanceMode.AUTO -> remember { com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) } ||
-            com.shelf.launcher.device.FrameWatch.steps.intValue >= 2
+        com.shelf.launcher.data.PerformanceMode.AUTO -> lowEndDevice || com.shelf.launcher.device.FrameWatch.steps.intValue >= 2
     }
     // Update 125: where the names go in this layout (its options), else Game names.
     com.shelf.launcher.data.Features.namesByLayout.state.value
@@ -180,15 +195,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         LocalAnimateOnLite provides appearance.animateOnLite,
         LocalSceneQuality provides when (appearance.sceneQuality) {
             // Automatic: Low on slower handhelds, Balanced on small-memory ones, Full elsewhere.
-            com.shelf.launcher.data.SceneQuality.AUTO -> remember {
-                when {
-                    com.shelf.launcher.device.DevicePerformance.isLowEnd(liteContext) -> com.shelf.launcher.data.SceneQuality.LOW
-                    com.shelf.launcher.device.MemoryBudget.small(liteContext) -> com.shelf.launcher.data.SceneQuality.BALANCED
-                    // Strong handhelds (Odin 2, Thor…): 60 fps, like the rest of the UI. (Update 126: on 60 Hz screens
-                    // too — they got 30 before; FrameWatch still steps it down to 30 if the device drops frames.)
-                    else -> com.shelf.launcher.data.SceneQuality.SMOOTH
-                }
-            }.let { q ->
+            com.shelf.launcher.data.SceneQuality.AUTO -> autoScene.let { q ->
                 // Still missing frames on this device: one step lower per FrameWatch step (Automatic only).
                 val down = com.shelf.launcher.device.FrameWatch.steps.intValue
                 com.shelf.launcher.data.SceneQuality.values()[(q.ordinal + down).coerceAtMost(com.shelf.launcher.data.SceneQuality.LOWEST.ordinal)]
@@ -663,9 +670,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(state.statusMessage) {
-        if (state.statusMessage != null) {
-            kotlinx.coroutines.delay(3500)
+    // Batch 520: while an account window that shows this message is open (ScreenScraper, IGDB, RAWG, TheGamesDB) it stays
+    // until replaced — "Testing ScreenScraper…" vanished after 3.5 s although ScreenScraper can take ~45 s, and a long error
+    // went before it could be read. Elsewhere it goes after a time that grows with its length (statusReadMs).
+    val accountWindowOpen = showScreenScraper || showIgdb || showRawg || showTgdb
+    LaunchedEffect(state.statusMessage, accountWindowOpen) {
+        val message = state.statusMessage
+        if (message != null && !accountWindowOpen) {
+            kotlinx.coroutines.delay(statusReadMs(message))
             viewModel.clearStatusMessage()
         }
     }
@@ -1252,6 +1264,27 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             closeAllDialogs(); categoryScreenOpen = false; showDetails = false; StyleNav.reset()
             if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(homeLayout = l))
             else viewModel.setAppearance(state.appearance.copy(homeLayout = l))
+        }
+    }
+
+    // (Batch 523r: Endless on / off asked for by a QA run, shown only during a preview - nothing saved.)
+    val testLoop = TestHooks.loop.value
+    LaunchedEffect(testLoop) {
+        val v = testLoop ?: return@LaunchedEffect
+        TestHooks.loop.value = null
+        if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(loopRow = v))
+    }
+
+    // (Batch 521: the R1 Row tile's own change - withDockHere - asked for by a QA run, shown only during a preview.)
+    val testDock = TestHooks.dock.value
+    LaunchedEffect(testDock) {
+        val name = testDock ?: return@LaunchedEffect
+        TestHooks.dock.value = null
+        com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
+            if (TestHooks.previewOnly) {
+                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance)
+                viewModel.previewAppearance(state.appearance.withDockHere(d))
+            }
         }
     }
 
@@ -1944,7 +1977,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 detailsAction = DetailsAction.PLAY
             }
         }
-        GameDetailsOverlay(
+        PopupType { GameDetailsOverlay(  // (523t: the popups' approved type - PopupLab.kt)
             game = game,
             lastSummary = state.sessionSummary,
             art = displayArt[game.stableKey],
@@ -2015,7 +2048,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             achievementCommentsLoading = state.raCommentsLoading,
             onOpenAchievementList = { achievementsShowMissing = false; viewingAchievementsForGame = game },
             raCompletion = game.raGameId?.let { state.raCompletionById[it] }
-        )
+        ) }
     }
 
     val availableLetters = remember(state.visibleGames) {
@@ -2720,14 +2753,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
     }
     // Edit Home finished with the round shortcuts moved: they float where they were put from now on.
+    // (Batch 522, tile522b: where the buttons were when Edit Home opened - the drop check below is for a drop, not for a
+    // place you made earlier: resetting the row moved the tiles closer to the buttons and "dropped near the tiles" sent the
+    // untouched buttons back under them.)
+    val shortcutsAtEditOpen = remember { arrayOfNulls<Pair<Float, Float>>(1) }
     LaunchedEffect(HomeEditState.active) {
-        if (HomeEditState.active) return@LaunchedEffect
+        if (HomeEditState.active) { shortcutsAtEditOpen[0] = HomeWidgets.position(HomeWidgets.SHORTCUTS); return@LaunchedEffect }
         val a = state.appearance
         val moved = HomeWidgets.position(HomeWidgets.SHORTCUTS) != null
+        val droppedNow = HomeWidgets.position(HomeWidgets.SHORTCUTS) != shortcutsAtEditOpen[0]
         val atTiles = tileLayout && a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW
         // (QA pass 4, D39: on the Tile home, buttons dropped on or just under the tiles go back to "by the tiles" — a
         // place saved there floated at that fixed spot, and once the tiles moved (Middle) they covered them.)
-        if (moved && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
+        if (moved && droppedNow && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
             val r = PartRects.at[HomeWidgets.SHORTCUTS]
             if (r != null && r.top < TileRowSpan.bottom + 120f && r.bottom > TileRowSpan.top) HomeWidgets.reset(HomeWidgets.SHORTCUTS)
         }
@@ -2759,8 +2797,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onDetails = { openDetails() },
                 onOptions = { optionsForGame = g },
                 onSync = { saveSyncForGame = g },
+                // (523w, KONKR klab523u: with Row reveal / Row opens / Shared the game header stayed at full strength under the
+                // window - "Super Mario World" twice, its chips and Play under the window's own. It fades with the row now.)
                 modifier = (if (only != null) Modifier else if (fill) Modifier.fillMaxWidth().padding(horizontal = if (compactHeader) 16.dp else 24.dp)
-                    else Modifier.widthIn(max = 520.dp))
+                    else Modifier.widthIn(max = 520.dp)).then(if (HomeEditState.active) Modifier else Modifier.rowRevealFade())
                     // The next game's header rises into place (update 108).
                     .riseOnChange(g.stableKey),
                 slots = only == null, only = only,
@@ -3898,7 +3938,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // Category bar above the row, or under it (Appearance › Game row).
         @Composable
         fun CategoriesBar() {
-            if (state.games.isNotEmpty()) Box(Modifier) {
+            // (523w: the category chips fade with the row under a row-style window too - they showed through its buttons.)
+            if (state.games.isNotEmpty()) Box(if (HomeEditState.active) Modifier else Modifier.rowRevealFade()) {
                 // (Update 212: the category bar is this layout's own category title, CategoryTitle.kt.)
                 if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                 when (state.appearance.categoryBarHere) {
@@ -4232,8 +4273,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
             // Tile-style: tiles a little above the middle, round buttons under them.
             // Top / middle / bottom like the classic row (Appearance › Game row › Where the tiles sit).
+            // (Batch 522, owner: "moving the round buttons shifts the game row and the category chips". Moved in Edit Home (or
+            // while editing) the buttons float, and their room under the tiles went with them: Middle re-centred the group
+            // 18 dp lower and the game facts strip took their place. Tile home keeps the room they had - exactly their size,
+            // nothing drawn there - so the row, chips and name stay where they were; Reset this part puts the bar back into
+            // the same room. Only "by the tiles" buttons (not "Anywhere", not taken off with ✕); other layouts unchanged.)
+            val tileBarReserved = state.appearance.tileShortcuts && state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW &&
+                shortcutsFloating && tileShortcuts.isNotEmpty() && !HomeWidgets.hidden(HomeWidgets.SHORTCUTS)
             val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
-                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && !shortcutsFloating && tileShortcuts.isNotEmpty()
+                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && (!shortcutsFloating || tileBarReserved) && tileShortcuts.isNotEmpty()
             // Update 480 (D257): in the middle with no round buttons under the tiles, the room under them was left empty (~45 %
             // of the screen): the tiles grow a little (LocalTileRoom) and the focused game's facts sit under them, centred
             // with the tiles as one group (as the buttons are).
@@ -4260,16 +4308,28 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val h = constraints.maxHeight
                             if (h == androidx.compose.ui.unit.Constraints.Infinity) return@layout layout(p.width, p.height) { p.place(0, 0) }
                             // (QA pass 3, D30: the tiles' middle from this very measure, not from the frame before.)
-                            val line = p[TilesMidLine]
+                            // (Batch 521: the tiles' lines without their Edit Home move up / down - centring on the moved tiles
+                            // undid the move and pushed the name, buttons and game facts the other way, Flip 2.)
+                            val rowShiftPx = (LayoutParts.shift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))?.second ?: 0f).dp.toPx()
+                            val line = p[TilesMidLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val tilesMid = if (line != androidx.compose.ui.layout.AlignmentLine.Unspecified) line.toFloat()
                                 else tileMid.floatValue.takeIf { it > 0f } ?: (p.height / 2f)
                             // (Toni, with the Switch home as the example: the round buttons under the tiles belong to the
                             // tiles — the tiles and the buttons are centred as one group, so the tiles sit a little above the
                             // middle. The name and categories above stay out of it, as before.)
-                            val top = p[TilesTopLine]
+                            val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val y = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
+                            // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
+                            val y = if (rowShiftPx == 0f || top == androidx.compose.ui.layout.AlignmentLine.Unspecified ||
+                                line == androidx.compose.ui.layout.AlignmentLine.Unspecified) y0 else {
+                                val boxH = 2f * (line - top)
+                                val minY = 40.dp.toPx() - top - rowShiftPx // (the name above the tiles too)
+                                val maxY = h - top - rowShiftPx - boxH
+                                y0.toFloat().coerceIn(minOf(minY, maxY), maxOf(minY, maxY)).toInt()
+                            }
                             tilePlaced[0] = y; tilePlaced[1] = h
                             if (QaTrace.on) QaTrace.event("tilemid", "h=$h group=${p.height} line=$line mid=$mid shift=${tileScreenShift.floatValue} y=$y")
                             layout(p.width, h) { p.place(0, y) }
@@ -4278,7 +4338,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     .onGloballyPositioned { tileCoords[0] = it; measureTileMid() }
                     .padding(
                         // At the top it sits right under the edge like the classic row (the status bar moves to the bottom).
-                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 10.dp else 0.dp,
+                        // (Batch 521, Flip 2: with Switch-style profiles top-left, Top put the categories / first tile under them -
+                        // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
+                        // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
+                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
+                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
@@ -4307,8 +4371,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                 }
-                if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) {
+                if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) Box(Modifier.rowRevealFade()) { // (523y: fades under a row-style window)
                     HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight)
+                } else if (shortcutsAbove && tileBarReserved) {
+                    ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight) }
                 }
                 // A one-line name takes one line's room: the second line's room goes up here (above the
                 // category), so the category sits right on the name and the tiles never move.
@@ -4386,9 +4452,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         CategoriesBar()
                     }
                 }
-                if (!shortcutsAbove && shortcutsByRow && !shortcutsFloating) {
+                if (!shortcutsAbove && shortcutsByRow && (!shortcutsFloating || tileBarReserved)) {
                     Spacer(Modifier.height(if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 2.dp else 8.dp))
-                    HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight)
+                    if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
+                    else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
                 }
             }
         } else {
@@ -4757,12 +4824,26 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 // Update 220 (#04): a tap on the category's name opens Choose a category (every category,
                                 // Continue playing too) — TV room and the other layouts showing just the name had no way to
                                 // change category by touch. (Not while Edit Home moves it; no focus, so the D-pad is unchanged.)
+                                // (523z2, KONKR text x1.3: the name ran under the status bar's clock on Card binder / Cover details.
+                                // It now stops short of the clock / icons cluster when the two share a band; elsewhere it's unchanged.)
+                                val partRect = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+                                val textRect = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+                                val nameDensity = androidx.compose.ui.platform.LocalDensity.current
+                                val roomPx = run {
+                                    val pr = partRect.value; val tr = textRect.value; val cl = barClusterRect
+                                    if (pr == null || tr == null || cl == null) null
+                                    else categoryNameRoomPx(tr.left, tr.right, pr.top, pr.bottom, pr.right, cl.left, cl.top, cl.bottom, with(nameDensity) { 8.dp.toPx() })
+                                }
                                 Box(Modifier.categoryTitleFade(key).then(
                                     if (HomeEditState.active) Modifier
                                     else Modifier.pointerInput(Unit) { detectTapGestures { openCategoryScreen() } }
-                                )) {
+                                ).onGloballyPositioned { val r = it.boundsInRoot(); if (partRect.value != r) partRect.value = r }) {
                                     PartBackingBox(state.appearance.homeLayout) {
-                                        CategoryNamePart(CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop)
+                                        CategoryNamePart(
+                                            CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop,
+                                            maxWidth = roomPx?.let { with(nameDensity) { it.toDp() } } ?: 420.dp,
+                                            modifier = Modifier.onGloballyPositioned { val r = it.boundsInRoot(); if (textRect.value != r) textRect.value = r }
+                                        )
                                     }
                                 }
                             }
@@ -4815,6 +4896,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // Update 358: Tile home › Switch style › Hint bar: a thin line over the legend, across the screen.
                 if (tileLayout && TileSwitch.hints) Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 24.dp).height(1.dp).background(Color.White.copy(alpha = 0.32f)))
                 LegendBar()
+            }
+        }
+        // (Batch 521b: the QA console badge audit gallery over everything - test hooks only.)
+        TestHooks.badgeGallery.value?.let { g ->
+            // (Its own full-screen window: over Who's playing and any first-time hint, which are windows too.)
+            androidx.compose.ui.window.Dialog({ TestHooks.badgeGallery.value = null },
+                androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+                Box(Modifier.fillMaxSize()) { QaBadgeGalleryPage(g.removePrefix("a").toIntOrNull() ?: 0, assetsView = g.startsWith("a")) }
             }
         }
         // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
@@ -5519,7 +5608,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     // Update 113: the game window (A or a tap on the game you're on), in the layout's own look, over the main screen.
     GamePopup.game?.let { g ->
-        GameWindow(
+        PopupType { GameWindow(  // (523t: the popups' approved type - PopupLab.kt)
             layout = state.appearance.homeLayout, g = g, state = state, art = displayArt,
             onClose = { GamePopup.closed(g) },
             onPlay = { GamePopup.game = null; startGame(g) },
@@ -5563,23 +5652,52 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onEmulator = { configuringPlatform = g.platform },
                 onMatching = { configuringRaForGame = g }
             )
-        )
+        ) }
     }
 
     if (showSaveExplorer) {
         // Saves whose game isn't in this library: their covers looked up by name (once; kept).
         val vaultArt by viewModel.vaultArt.collectAsState()
+        val vaultLogo by viewModel.vaultLogo.collectAsState()
         val capsules by com.shelf.launcher.data.SaveCapsules.all.collectAsState()
+        // (Batch 523: what games with saves look like, kept and synced - VaultArtIndex - for devices without the game.)
+        val vaultIndex by com.shelf.launcher.data.VaultArtIndex.entries.collectAsState()
+        val ctxVault = androidx.compose.ui.platform.LocalContext.current
+        fun indexed(g: com.shelf.launcher.data.Game) = if (TestHooks.vaultBefore || vaultIndex.isEmpty() && com.shelf.launcher.data.VaultArtIndex.fixture.isEmpty()) null
+            else com.shelf.launcher.data.VaultArtIndex.find(g.platform, g.name)
+        LaunchedEffect(Unit) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.data.VaultArtIndex.load(ctxVault.applicationContext) } }
         LaunchedEffect(capsules) {
             // (0.6.18: not for saves without a game name — there is nothing to look up.)
-            val away = capsules.filter { !it.onDevice && it.named }.map { it.game }
+            // (Batch 523: nor for one whose look another device already recorded.)
+            val away = capsules.filter { !it.onDevice && it.named && indexed(it.game)?.cover == null }.map { it.game }
             if (away.isNotEmpty() && !TestHooks.vaultDry) viewModel.loadVaultArt(away)
+        }
+        LaunchedEffect(capsules, state.art) {
+            if (TestHooks.vaultDry) return@LaunchedEffect
+            // (Batch 523: the games here that have saves - the names those saves go by and their pictures' web addresses.)
+            val found = capsules.filter { it.onDevice }.map { c ->
+                val g = c.game; val k = g.stableKey
+                val names = buildSet {
+                    add(com.shelf.launcher.data.VaultArtIndex.norm(g.name))
+                    g.romPath?.substringAfterLast('/')?.substringBeforeLast('.')?.let { add(com.shelf.launcher.data.VaultArtIndex.norm(it)) }
+                    c.saves.forEach { sv -> add(com.shelf.launcher.data.VaultArtIndex.norm(sv.title)) }
+                }.filter { it.length >= 3 }.toSet()
+                com.shelf.launcher.data.VaultArtIndex.Entry(
+                    com.shelf.launcher.data.VaultArtIndex.platformKey(g.platform), names,
+                    cover = com.shelf.launcher.data.VaultArtIndex.shareable(state.artOverrides[k]?.cover ?: state.art[k]?.gridUrl),
+                    logo = com.shelf.launcher.data.VaultArtIndex.shareable(state.artOverrides[k]?.logo ?: state.art[k]?.logoUrl),
+                    icon = com.shelf.launcher.data.VaultArtIndex.shareable(g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }),
+                    at = System.currentTimeMillis()
+                )
+            }
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.shelf.launcher.data.VaultArtIndex.record(ctxVault.applicationContext, found) }
         }
         SaveExplorerDialog(
             games = state.games,
             iconFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
-                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: vaultArt[g.stableKey]
+                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl
+                    ?: indexed(g)?.let { it.cover ?: it.icon } ?: vaultArt[g.stableKey]
             },
             onOpenGame = { g -> showSaveExplorer = false; saveSyncForGame = g },
             onDismiss = { showSaveExplorer = false },
@@ -5590,7 +5708,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             logoFor = { g ->
                 g.raGameId?.let { id -> state.raIcons[id] ?: com.shelf.launcher.data.RaBadges.mediaUrl(state.raCompletionById[id]?.ImageIcon) }
                     ?: state.artOverrides[g.stableKey]?.logo ?: state.art[g.stableKey]?.logoUrl
-                    ?: state.artOverrides[g.stableKey]?.cover ?: state.art[g.stableKey]?.gridUrl ?: vaultArt[g.stableKey]
+                    ?: indexed(g)?.let { it.icon ?: it.logo } ?: vaultLogo[g.stableKey]
+                // (Batch 523, owner: "a real Icons Only look": no cover in place of an icon - a game with none shows its
+                // console's designed tile (Icons only) or a plain memory card (PS2 browser).)
             }
         )
     }
@@ -6850,7 +6970,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // Update 166: Endless on: ▲ ▼ go by the view model's step — past the last row ▼ carries on round to
                         // the first (and ▲ from the first row to the last); it used to do nothing there, so only ◀ ▶ moved,
                         // and a plain jump left the endless grid's place behind.
-                        if (state.appearance.loopRow && n >= 2) { viewModel.moveFocus(if (down) cols else -cols); sounds?.play(UiSound.MOVE) }
+                        // (Batch 520: not when every game fits in one row — a row's step wrapped round the few games and landed on
+                        // whichever one cols mod n gave; there is no other row, so ▲ ▼ stay on the game, as without Endless.)
+                        if (state.appearance.loopRow && gridLoopRowMoves(n, cols)) { viewModel.moveFocus(if (down) cols else -cols); sounds?.play(UiSound.MOVE) }
                         else if (next in visibleGames.indices) { viewModel.setFocus(next); sounds?.play(UiSound.MOVE) }
                         // (Update 166: the last row shorter than the others: ▼ from above its end lands on the last game.)
                         else if (down && state.focusedIndex / cols < (n - 1) / cols) { viewModel.setFocus(n - 1); sounds?.play(UiSound.MOVE) }

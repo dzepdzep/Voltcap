@@ -47,8 +47,10 @@ object PlatformLogos {
     private val MONO = setOf("PS3", "PSP", "PSVita", "NDS", "3DS", "SegaCD", "Vectrex", "Saturn", "Atari2600")
 
     /** Other names a console goes by in Voltcap, mapped to the key of its logo. */
+    // (Batch 521b, badge audit: Mega Drive and TurboGrafx-16 / -CD showed the Genesis / PC Engine logos; they now take their own
+    // ES-DE logo (bundled and baked) — the fallback below.)
     private val ALIAS = mapOf(
-        "Pico8" to "PICO8", "MegaDrive" to "Genesis", "TG16" to "PCEngine", "TGCD" to "PCEngineCD"
+        "Pico8" to "PICO8"
     )
 
     private fun key(platform: String): String? = (ALIAS[platform] ?: platform).takeIf { it in KEYS }
@@ -123,7 +125,10 @@ object PlatformLogos {
 
     /** Update 480 (A5): [platform]'s logo for drawing in ONE colour (tinted): the plain icon (lettering kept), else the baked logo. */
     fun oneColour(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? =
-        plain(context, platform) ?: baked(context, platform)
+        plain(context, platform) ?: baked(context, platform)?.takeUnless {
+            // (Batch 521b: not an ES-DE logo that becomes a solid block in one colour - the caller shows the name.)
+            key(platform) == null && com.shelf.launcher.data.SystemLogos.silhouetteUnreadable(platform)
+        }
 
     /** Update 480 (A5): ES-DE's logo for [platform] when it is a different, narrower picture than the redrawn one (GBA's two lines). */
     fun stacked(context: android.content.Context, platform: String): androidx.compose.ui.graphics.ImageBitmap? {
@@ -197,7 +202,9 @@ internal fun PlatformLogo(
     // (… and a very wide wordmark in a squarish slot — GBA's is 8.5 : 1 — gets ES-DE's stacked logo when that fills it far better.)
     val stacked = remember(platform, oneColour != null) { if (oneColour == null) PlatformLogos.stacked(context, platform) else null }
     Box(modifier, contentAlignment = Alignment.Center) {
-        val pic = plainIcon ?: baked
+        // (Batch 521b: an ES-DE logo that turns into a solid block in one colour - Mega Drive, Sega CD, 3DO… - shows the name instead.)
+        val oneColourBlock = oneColour != null && plainIcon == null && com.shelf.launcher.data.SystemLogos.silhouetteUnreadable(platform)
+        val pic = plainIcon ?: baked?.takeUnless { oneColourBlock }
         if (pic != null) {
             val painter = remember(pic, stacked) { FittedLogoPainter(pic, stacked) }
             androidx.compose.foundation.Image(
@@ -205,7 +212,7 @@ internal fun PlatformLogo(
                 colorFilter = oneColour?.let { ColorFilter.tint(it) },
                 modifier = Modifier.matchParentSize()
             )
-        } else if (url != null && !failed) {
+        } else if (url != null && !failed && !oneColourBlock) {
             val request = remember(url) { PlatformLogos.request(context, url) }
             AsyncImage(
                 request, name, contentScale = ContentScale.Fit,

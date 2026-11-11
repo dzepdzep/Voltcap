@@ -1,3 +1,146 @@
+# Update 523 (10–11 Nov 2026) — owner's UX batch 1–18, Save Vault art, popup design lab (local, next/0.6.70)
+
+- **Pickup / extraction / Case flow** (`ui/StyleCoverDetails.kt`, `ui/SpineDepth.kt`, `ui/ShelfHome.kt`, `ui/StyleCaseFlow.kt`):
+  Coverflow details lifts ONE case (spine → front, no cross-fade copy); Game shelf box slides, turns in place, comes forward;
+  Case flow draws each game once (no copies sliding in); case-top paths / gradients cached (GT78 burst janky 12.8 % → 0.6 %).
+- **Details in the popup's own style** (`ui/RowRevealWindow.kt`, `ui/GlanceWindow.kt`): Row opens / Row reveal / Shared show the
+  whole story and facts in the window, Less / B back to Details. 523o: Shared's story box ≥ 48 dp (gate touch FAIL × 46).
+- **Endless** (fill off: each game once), **Smart Fill**, **Inspect zoom**, **Storage box popup** (menu cells from the column width:
+  no "ACHIEVEMENT S"), **Cinema icon**.
+- **Save Vault** (`data/VaultArtIndex.kt` new, `data/CloudSync.kt` vault-art.json, `ui/SaveExplorer.kt`, `ui/SaveVaultStyles.kt`,
+  `ui/SaveInspect.kt`, `ui/Ps2Browser.kt`, `data/Features.kt`, `LauncherViewModel.kt`, `ui/LauncherScreen.kt`): art for saves
+  whose game isn't on this handheld (web addresses recorded and synced, ~200 B a game), designed console plate instead of two
+  letters, Icons only = flat icons, new **PS2 browser** look. docs/qa523/vault_audit.md.
+- **Smart App Artwork** (`ui/AppIcons.kt`, `ui/HomeChrome.kt`): tones cached, wide / hero compositions, no 28 dp blur, neutral plate.
+- **Motion** (`ui/SmartArt.kt`, `ui/GameCard.kt`, `ui/HeroCarousel.kt`): tiny soft copies instead of RenderEffect blurs.
+  **Crash fixed:** switching Performance Automatic ↔ Full / Lite (`remember` inside a `when` in LauncherScreen).
+- **Deleted games** (`data/RomScanner.kt`, `LauncherViewModel.kt`): orphan .m3u / cue / gdi no longer keep a game; an empty
+  explicit rescan clears the list. `DeletedRoms523Test`.
+- **Cover details recomposed** (523r / 523s, owner's sketch; `ui/StyleCoverDetails.kt`, QA hook `voltcap_test_loop` in
+  `ui/TestHooks.kt` + `ui/LauncherScreen.kt`): big case upper left under title / console · year, facts upper right, other games
+  as 32°-turned Case3D cases on a compact lower-right shelf (spaced by case shape), Endless each game once (no fill copies), the
+  case flight goes shelf ↔ big place. Tests `Batch523rCoverShelfTest`; Layouts374 / Spawning398 updated. KONKR cd523s evidence.
+- **Approved popup direction for everyone** (523t / 523u; `ui/PopupLab.kt` APPROVED / active / PopupType, `ui/GameWindow.kt`,
+  `ui/WinScenesMore.kt`, `ui/WinScenes.kt`, `ui/LauncherScreen.kt`; NEW assets `app/src/main/assets/fonts/roboto_{400,500,600,700}.ttf`
+  + LICENSE_Roboto.txt — copy via project_copy): lighter Roboto (bundled weights; device faces could not be drawn lighter),
+  Play / Details / round •••, "B Back" hint, Storage boxes layout. Row / Shared / Banner keep their layout, lighter type.
+- **Cover details** (523t–v, `ui/StyleCoverDetails.kt`): bigger / higher case (44 % column, one-line title room), title and facts
+  change with the case flight. QA fixture details in `LauncherViewModel.qaArtFixture` (session only).
+- **KONKR Coverflow timing explained** (523p A/B, reverted): UI 3 ms, GPU 7 ms, rest is queue latency; no code change kept.
+- QA: popclip.sh focus guard; flip523p / konkr523q / konkr523s / cd523r scripts; Flip 2 + KONKR controller 80 / 80, Flip 2 Tile
+  home PASS.
+- **Popup design lab** (`ui/PopupLab.kt` new, `ui/theme/Theme.kt`, `ui/GameWindow.kt`, `ui/WinScenesMore.kt`, `ui/WinScenes.kt`,
+  `app/build.gradle.kts` debug assets, `app/src/qa/assets/qa_fonts/`): QA hook only (`voltcap_test_popuplab`), nothing on for
+  users. Recommendation in docs/qa523/popup_lab.md — awaiting the owner's pick.
+- Copy: every file above to `src_copy/` / `project_copy/` (already written there and in `app/`). Checked: unit tests (all pass),
+  QA self-tests, QA builds 523a–523s (isolated QA app; real Voltcap untouched). Popup gate ×1.0 (523f): 244 PASS / 52 FAIL
+  (Shared touch → fixed 523o; Crate = checker false positive) — re-run 523o in progress. Not tested: RP Flip 2 (not connected),
+  DroidDeck / PXPlay / Moonlight (not installed). Details: docs/BATCH_523.md.
+
+# Update 522 (10 Nov 2026) — badge looks, popup sweep 53 × 6, Tile home independence, GameNative stores (local, next/0.6.70)
+
+- **Console badges** (`ui/ConsoleBadge.kt`, `data/Features.kt` `consoleBadgeStyle`, `ui/GameLookPicker.kt`, `ui/QuickSettings.kt`,
+  `data/SystemLogos.kt`, `ui/PlatformLogos.kt`, `data/ConsoleNames.kt`): three separate looks Text / Symbol / Logo (default Logo);
+  regional keys keep their own identity (no NES on Famicom, no GENESIS on Mega Drive, no SUPER NINTENDO on SFC, no PC Engine on
+  TG16); wide wordmarks compact on small tiles, whole on big ones; logos that turn into a white block show the name; family
+  colours for PS4 / PS5 / Xboxes / Switch 2 / regional keys. QA gallery hook `voltcap_test_badgegallery`. Gallery on the PC:
+  `Claude outputs\b522\badge_gallery_522.html`. PS5 / Xbox One / Series / Switch 2 artwork: docs/ARTWORK_522_NEW_CONSOLES.md.
+- **Popups** (`ui/WinScenes.kt`, `ui/WinScenesConsole.kt`, `ui/StyleBubbles.kt`, `ui/GameWindowBanner.kt`, `ui/RowRevealWindow.kt`,
+  `ui/PlayHeader.kt`, `ui/StyleGreenCore.kt`, `ui/HomeChrome.kt`): console names / facts whole instead of cut or "…" (Storage,
+  Camera, Orbit, Bubbles, Banner style, Row styles, details pill), Blades facts beside the cover, Green Core keys centred at large
+  font sizes (InkGlyph). Sweep 53 layouts × 6 styles + ×1.3 on the RP Classic; QA tools: glyphcheck.py + popclip `glyphs`.
+- **Tile home** (`ui/LauncherScreen.kt`, `ui/TileHome.kt`): the round buttons' room is kept while they float, Edit Home no longer
+  moves the row, the drop-near-tiles rule only for a drop. `voltcap_test_edithome` + tile522b.sh / tile522.py: 39 / 39 PASS.
+- **GameNative / DroidDeck** (`data/GameLauncher.kt`, `data/RomScanner.kt`, `data/Models.kt`, `data/GameClients.kt`,
+  `data/PinnedShortcuts.kt`, `LauncherViewModel.kt`): launch = GameNative's own shortcut intent (game_source + CLEAR_TOP);
+  `.epic` / `.gog` / `.amazon` / `.pcgame` imported; DroidDeck files validated, Steam category, shortcut / file twins once. Real
+  launches NOT TESTED (neither app on a connected handheld).
+- Copy: every file above to `src_copy/` (already written there and in `app/`). Checked: unit tests, static checks, QA self-tests
+  138, guard 93, QA builds 522a–522h on the RP Classic (isolated QA app; the real Voltcap 0.6.69 untouched, pid 10087 throughout).
+  Not tested: RP Flip 2, KONKR, Thor, GT78 (its old QA app is release-signed; not removed). Details: docs/BATCH_522.md.
+
+# Update 521 (10 Nov 2026) — fail-closed QA isolation, Tile home placement (RP Flip 2), P3/P4 owner steps (local, next/0.6.70)
+
+- **QA can no longer install over the real Voltcap** (`app/build.gradle.kts`, `tools/adb_mcp/guard.js`, `tools/adb_mcp/server.js`):
+  - The debug build IS the isolated QA app by default (`com.shelf.launcher.qa`); `qa_variant.properties debugIsQa` is no longer read. Only the owner can opt out, with `debugIsProduction=yes-install-over-my-real-voltcap`.
+  - QA builds (build type `qa` and the debug-as-QA build) are signed with this PC's Android **debug key**, not the release key: Android itself refuses such an APK as an update of the real app, and no signature-level access is shared.
+  - `verifyQaIsolation` runs after every `assembleDebug` / `assembleQa`: an APK with the production package, the release signer (pinned 88ce4b67… and read from keystore.properties), an unreadable signer or one this build didn't write is deleted and the build fails.
+  - Install side (`guard.js`, active in the PC tool after the MCP server restarts): the APK's own manifest must say `com.shelf.launcher.qa` and its signer must not be the release key; the target must be named by USB serial, report the same `ro.serialno`, not be a TV and be listed in `tools/adb_mcp/qa_devices.json`; the real app's versionCode / update time / signer are read before and after (alarm on change). `install_build` only offers `qa` / `debug`; production installs only through `install_production` with a sha256 pinned in `production_pins.json`. The shell tool refuses commands that clear / uninstall / stop / launch / run-as the real app, touch its files, change system settings, radios, DND or screen size; pushed `.sh` files are scanned line by line. `uninstall_qa` removes only the QA app. `launch_app` defaults to the QA app.
+  - `tools/qa/device/vqa.sh`: targets the QA app; `rate60` / `rate_restore` removed (they changed the panel refresh rate setting).
+  - Tests: `tools/adb_mcp/test/guard.test.js` (83 checks: synthetic APKs, fake devices, shell rules, the shipped scripts), `QaIsolation521Test`; PC dry run (`task.ps1 guard-tests`): the old release-signed QA APK and every production APK refused, the new QA APK allowed, Google TV Streamer refused, both handhelds allowed; a stray APK dropped into the debug output was deleted by the build (negative test).
+  - Devices: RP Flip 2 and RP Classic now run the debug-key QA app (`signatures [37f7930]`, own uid) next to the real app (`[1903d14a]`), real apps unchanged (Classic 0.6.67 / pid 31950, Flip 2 0.6.69 / pid 10481). The old QA app on the Classic shared the real app's signer; it was uninstalled (QA app only) and reinstalled.
+- **Tile home placement** (owner, RP Flip 2; `ui/LauncherScreen.kt`, `ui/QuickSettings.kt`, `ui/SettingsDialog.kt`, `ui/HomeEdit.kt`):
+  - Cause: a game row moved by hand in Edit Home (`part_shifts`) and round buttons placed by hand stayed on top of R1's Row place. Middle centred the moved tiles (undoing the move and pushing the name, buttons and game facts away), Top pushed the tiles off the screen, Bottom put them on the buttons. Reproduced in the QA app with the same kind of move.
+  - Fix: picking a Row place (R1 Row tile or Settings › Where the tiles sit) drops the row's up / down move and the buttons' by-the-tiles spot (`tileRowPlaceReset`, `LayoutParts.withoutVerticalShift`); Middle centres the unmoved tiles, so a hand move stays a move.
+  - Top with Switch-style profile pictures: the categories / first tile sat under the picture ("All" hidden); the group now starts below it.
+  - QA hook `voltcap_test_dock TOP|MIDDLE|BOTTOM` (preview, same reset as the R1 tile); `tools/qa/device/tile521.sh`. Flip 2 + Classic: Top / Middle / Bottom with and without the move, screenshots PASS. `Batch521Test`.
+- **Button letters centred** (owner: "A B X Y not centred in the circles"; `ui/HomeChrome.kt` `InkGlyph`, `GlyphPill`, `ui/ProfileSelect.kt`, `ui/CubeHub.kt`, `ui/StyleMemoryCard.kt`, `ui/StyleCardBinder.kt`, `ui/StylePocketQuest.kt`, `ui/PlatformBrowser.kt`, `ui/SecondShowcase.kt`): the circles centred the text's line box, and the font's ascent / descent left capitals low (clearest in Card binder, Cube, Who's playing). The letter is now drawn at its own glyph bounds. Flip 2 before / after screenshots (`glyph521.sh`), `Batch521Test`.
+- **Tile home, big old moves:** at Middle a row moved far in Edit Home is kept on the screen (name included) now that Middle no longer undoes the move (Classic: 200 dp up / 150 dp down).
+- **RP Flip 2 (new USB handheld, 853 × 480 dp, the shortest screen so far):** gate521 — controller contract on 16 layouts 80 / 80 PASS, flat / wide art (q520b) as on the Classic, Tile home placement PASS; real Voltcap untouched (pid 10481 throughout).
+- **Owner's handhelds:** the Flip 2 (11:48) and the RP Classic (12:31, the owner tapped Update in Voltcap's own prompt) now run the published 0.6.69 (sha256 1101965042…).
+- **Upgrade:** P3 / P4 owner steps and P6 inventory in `docs/UPGRADE_069_CHECKLIST.md` (Export to… into Download under a new name; never the sync folder).
+- Files: `app/build.gradle.kts`, `src_copy/ui/{LauncherScreen,QuickSettings,SettingsDialog,HomeEdit,TestHooks}.kt`, tests, `tools/adb_mcp/*`, `tools/qa/device/{vqa,tile521,q520b}.sh`, `server/voltcap-api/runtime/task.ps1` (`guard-tests`, `hash-files`).
+
+# Update 520i (10 Nov 2026) — P2 backup verified, Game grid single-row ▲▼, Hero tiles / Cinema spacing, ScreenScraper retries, Drive mixed-version tests, memory soak script (local, next/0.6.70)
+
+- **P2 (owner-approved)**: the RP Classic's save folders were copied to `Claude outputs\backup_2026-11-10_P2\RPClassic_MC94516AQF091001112\saves`, structure kept.
+  - 33/33 files, 19,185,603 bytes; sha256 matches between the handheld (`SHA256SUMS_device.txt`) and the PC (`SHA256SUMS_pc_105651.txt`).
+  - Found: RetroArch saves are also synced by **Syncthing**.
+- **Game grid** (`ui/LauncherScreen.kt`, `ui/GridHome.kt` `gridLoopRowMoves`): with Endless on and every game in one row, ▲ ▼ wrapped round onto game (cols mod n). They now stay on the game; grids with two or more rows are unchanged. RP Classic: checked at 100 % and 50 % spacing.
+- **K1** (`data/Features.kt` `hero_tiles_spacing`, `cn_spacing`; `ui/StyleHeroTiles.kt`, `ui/StyleCinema.kt`, `ui/R1Extras.kt`, `ui/SettingsIndex.kt`): Game spacing for Hero tiles and Cinema, in their own options, R1 and search. At 100 % the spacing is unchanged. RP Classic: screenshots at 100 / 50 / 200 %, controller pass PASS.
+- **ScreenScraper** (`data/ScreenScraper.kt` `artAskCounts`, `LauncherViewModel.kt`): before, a look-up that failed on ScreenScraper's side was recorded as "asked", so the automatic art and details runs skipped that game for 14 days. They now try it again.
+- **Drive with mixed versions:** `DriveMix520Test` checks with fake data that:
+  - inbound addresses are cleaned;
+  - 0.6.69's own addresses stay stable;
+  - other data is untouched.
+- **Tools:**
+  - `tools/qa/device/mem520.sh`: memory soak. RP Classic 3-round reference: 108 → 200 MB, 194 MB after trim, Java flat.
+  - `runtime/task.ps1 hash-backup`: PC-side hashes of a P2 backup.
+- **Tests:** unit tests, `static_checks --strict` and QA self-tests pass. RP Classic device checks are listed above and in MASTER_BACKLOG.
+
+# Update 520e (10 Nov 2026) — Game grid spacing, ScreenScraper failure notes, R1 D-pad safety, Cover details recordings, upgrade P1 (local, next/0.6.70)
+
+- **K1 Game grid** (`data/Features.kt` `grid_spacing`, `ui/GridHome.kt`, `ui/SettingsDialog.kt`, `ui/R1Extras.kt`):
+  - New Game spacing setting: Layout options › Game spacing and the R1 tile, 50–250 %.
+  - At 100 % the gaps stay 14 / 12 dp as before. Only the main screen changes; the second screen and the Spines look keep their gaps.
+  - With "Auto" games per row, more room fits fewer cards.
+  - RP Classic: tested at 100 / 50 / 180 %, with D-pad moves and a controller pass on GRID, CASEFLOW, BOX, STORAGE, FILESELECT and SHELF — 30 of 30 PASS.
+- **ScreenScraper failure notes** (`data/ScreenScraper.kt` `screenScraperFailureNote`, `LauncherViewModel.kt`): before, a timeout, busy service, quota limit or refused login read "found nothing — try another name". The game's note now says which of these happened.
+- **R1 D-pad safety:** moving the D-pad never toggles a tile; only A, Enter or a tap does. On the device, 22 moves over all tiles left Wi-Fi, Bluetooth, DND and brightness unchanged.
+- **Cover details:** two RP Classic recordings (690 + 784 frames) caught one one-frame event. It was the new case's first frame during a fast burst, not the leaving case's flight. Not changed; the cause and the test still needed are in MASTER_BACKLOG.
+- **Upgrade:** P1 (owner-approved, read-only) inventory and the mixed-version Drive review are in `docs/UPGRADE_069_CHECKLIST.md`.
+- **Tests:** unit tests (Batch520Test, Batch491Test) pass; `static_checks --strict` passes.
+
+# Update 520c (10 Nov 2026) — R1 Game spacing on four more layouts, v0.6.69 upgrade Part A (RP Classic), hardware test cases (local, next/0.6.70)
+
+- **K1** (`ui/R1Extras.kt`, `ui/QuickSettings.kt`): the R1 Spacing tile (tap = next step, hold = slider) now also appears on Case flow, Cardboard box, Storage boxes and File select. Each uses that layout's own existing Spacing pref and range (60–160 / 70–150 / 60–150 / 60–150 %), so nothing new is stored and saved values are kept. `Batch491Test` was updated (nine layouts) and `Batch520Test` checks the ranges.
+- **PS4 collector back:** checked on the RP Classic (`xcase516.sh` re-run on the 520 QA build). The PS4 logo is now white on the dark band; the Xbox 360, PS3, PS5 and Xbox One backs are unchanged. Stand-ins removed, library rescanned, snapshot restored, 0 launches.
+- **v0.6.69 upgrade Part A (RP Classic, read-only):** results and the mixed-version Drive risk are in `docs/UPGRADE_069_CHECKLIST.md`.
+- **Hardware test cases:** `docs/HW_TESTS_520.md` covers KONKR memory and fast scroll, Thor second screen and the Odin 3 navigation bar.
+- **Not tested on a device:** the R1 Spacing tile itself. It sits in the collapsed R1 row, and a blind D-pad walk there passes the real Wi-Fi / Bluetooth / Do not disturb toggles. Checked afterwards that Wi-Fi, Bluetooth, DND and brightness were unchanged.
+
+# Update 520 (10 Nov 2026) — flat case art fits like the 3D cases, no empty case for a picture taken for a wrap, ScreenScraper check stays readable, readable PS4 back logo (local branch next/0.6.70, not pushed)
+
+- **Flat case art** (`ui/CoverCases.kt`, `ui/ShelfHome.kt`): the plain keep / jewel case (PS3–PS5, Xbox …) and the Game shelf's plain cover used a plain centre crop, while the template cases and the 3D faces use CropUnlessMuchCut (update 402). A 16:9 picture you picked showed its middle 39 % on the shelf and whole on the 3D case. All flat views now use CropUnlessMuchCut: covers close to the window still fill it; a far-off shape is shown whole, never stretched.
+- **Picture taken for a wrap** (`ui/BoxTexture.kt`, `ui/RealMedia.kt`, `ui/CoverCases.kt`): by its shape alone a 16:9 picture on a PlayStation jewel case counted as a whole unfolded box. Its front cut found no folds, the load failed and the Game shelf showed an **empty case** (Voltcap's case and Real case modes). A failed FRONT cut is now remembered (`BoxTexture.frontCutFailed`) and every view shows the picture itself.
+- **No flash before the front cut** (`CoverCase(hidden)`, `wrapShapePending`, ScanCase `probing`): a cover or box scan whose shape is still unknown, and that may be a whole wrap / unfolded box, loads invisibly (the plate shows) until measured. Its whole width or its spine no longer shows for a moment before the front.
+- **ScreenScraper account check** (`ui/LauncherScreen.kt`, `ui/ScreenScraperDialog.kt`, `LauncherViewModel.kt`):
+  - "Testing ScreenScraper…" was cleared after 3.5 s, although ScreenScraper can take about 45 s (measured in 519). In the account windows (ScreenScraper, IGDB, RAWG, TheGamesDB) a status now stays until it is replaced.
+  - Elsewhere a status stays 3.5–10 s, by its length (`statusReadMs`).
+  - Connect reads "Checking…" and is disabled while checking; a note says ScreenScraper can take up to a minute.
+- **Collector backs** (`ui/CollectorBacks.kt`): a colour console logo under 3 : 1 on the dark header bar (the PS4 blue was 1.8 : 1) is printed white, as the real band prints it. Xbox green (3.7 : 1) stays.
+- **Tests:** `Batch520Test` (fit rule, hidden loading, failed cut, status timing, logo contrast); unit tests, `static_checks.py --strict` and QA self-tests pass.
+- **Device (RP Classic, Voltcap QA 0.6.69-qa, fixture art, settings snapshotted and restored, 0 launches; owner's 0.6.67 untouched, pid unchanged):**
+  - `q520.sh`: wide and portrait fixtures × Plain cover / Voltcap's case / Real case × PS1 / PS2 / GameCube.
+  - Wide: shown whole in Plain cover (was centre-cropped). PS1 shows the picture (was an empty case).
+  - Portrait screenshots are pixel-identical before and after.
+  - `ctl516.sh` controller pass on 6 layouts (see the batch notes).
+- **Not tested on a device:** the ScreenScraper dialog (the QA app is signed in with the owner's account and was not disconnected); the PS4 collector back (no PS4 fixture in the QA library this session); KONKR, Thor and Odin (not connected).
+- Copy: `robocopy src_copy app\src\main\java\com\shelf\launcher /E`.
+  - Files: ui/BoxTexture.kt, ui/Carousel.kt, ui/CollectorBacks.kt, ui/CoverCases.kt, ui/LauncherScreen.kt, ui/RealMedia.kt, ui/ScreenScraperDialog.kt, ui/ShelfHome.kt, LauncherViewModel.kt.
+  - Test: app/src/test/java/com/shelf/launcher/ui/Batch520Test.kt.
+  - Docs: docs/MASTER_BACKLOG.md (reconciled tracker).
+
 # Update 519 (10 Nov 2026) — v0.6.69: ScreenScraper and IGDB through Voltcap's own service, cleaner media addresses
 
 0.6.69 (76). Details for the owner are in the project's private notes.

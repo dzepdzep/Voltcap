@@ -174,15 +174,17 @@ internal fun HeroCarouselBackdrop(heroUrl: String?, fallbackUrl: String?, modifi
             val settle = remember(url) { Animatable(1.045f) }
             LaunchedEffect(url) { settle.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
             run {
+                // (Batch 523, motion pass: only a cover to show - its soft copy, decoded tiny, instead of a 28 dp full-screen
+                // RenderEffect blur that was redrawn on every frame of the 1.4 s settle and of the slow zoom.)
                 AsyncImage(
-                    model = heroRequest(context, url, w, hgt, layerKey), contentDescription = null, contentScale = ContentScale.Crop,
+                    model = if (fallback) rememberSoftArt(url) else heroRequest(context, url, w, hgt, layerKey), contentDescription = null, contentScale = ContentScale.Crop,
                     onSuccess = { ready() }, onError = { failed() },
+                    filterQuality = if (fallback) androidx.compose.ui.graphics.FilterQuality.High else androidx.compose.ui.graphics.drawscope.DrawScope.DefaultFilterQuality,
                     modifier = Modifier
                         .fillMaxSize()
-                        .pixelArtwork()
+                        .then(if (fallback) Modifier else Modifier.pixelArtwork())
                         .graphicsLayer { scaleX = settle.value; scaleY = settle.value }
-                        // Only a cover to show: always softened, it would look rough stretched.
-                        .then(if (blur || fallback) Modifier.blur(if (fallback) 28.dp else 10.dp) else Modifier)
+                        .then(if (blur && !fallback) Modifier.blur(10.dp) else Modifier)
                 )
             }
         }

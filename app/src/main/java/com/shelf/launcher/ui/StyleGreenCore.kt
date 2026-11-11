@@ -1075,7 +1075,9 @@ private fun GcChip(text: String, accent: Color, onTap: () -> Unit) {
             .padding(horizontal = 8.dp, vertical = 3.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = accent, fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
+        // (Batch 522, glyph sweep at font ×1.3: the header is a fixed 30 dp, so a font-scaled Text line box outgrew the chip and
+        // L2 / R2 sat 7 px low in their keys. The label's ink, centred, in dp like the header - InkGlyph, same face.)
+        InkGlyph(text, accent, 10.dp, monospace = true, letterSpacingEm = 0.1f)
     }
 }
 

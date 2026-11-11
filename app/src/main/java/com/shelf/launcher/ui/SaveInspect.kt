@@ -155,12 +155,12 @@ internal fun inspectObjectFor(style: SaveVaultStyle): InspectObject? = when (sty
     SaveVaultStyle.FLOPPY -> InspectObject.FLOPPY
     SaveVaultStyle.CAPSULE -> InspectObject.CAPSULE
     SaveVaultStyle.CARD_3D -> if (Models3D.saveCardId() != null) InspectObject.CARD_3D else InspectObject.MEMORY_CARD
-    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS -> null
+    SaveVaultStyle.CLASSIC, SaveVaultStyle.ICONS, SaveVaultStyle.PS2 -> null
 }
 
 /** (Update 241, #48: a PS2 save's memory-card saves when the vault draws it with its own icon — the PS2 browser style.) */
 private fun ps2InspectRefs(game: Game, capsule: SaveCapsules.Capsule?): List<Ps2SaveRef> =
-    if ((Features.saveVaultStyle.state.value == SaveVaultStyle.ICONS || Ps2BrowserStyle.on.value) && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
+    if (ps2BrowserFor(Features.saveVaultStyle.state.value, Ps2BrowserStyle.on.value, game.platform) != null && Ps2BrowserStyle.isPs2(game.platform)) ps2RefsOf(capsule) else emptyList()
 
 /** (Update 241, #50: whether a save's details in Save Vault offer Inspect — a 3D object to look at.) */
 internal fun saveInspectable(game: Game, capsule: SaveCapsules.Capsule?): Boolean =

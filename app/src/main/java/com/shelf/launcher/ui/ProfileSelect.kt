@@ -296,7 +296,7 @@ private fun PickerHint(style: PickerStyle, key: String, what: String) {
             Modifier.height(22.dp).widthIn(min = 22.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(style.hintKey)
                 .padding(horizontal = if (key.length > 1) 7.dp else 0.dp),
             contentAlignment = Alignment.Center
-        ) { Text(key, color = style.hint, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+        ) { InkGlyph(key, style.hint, 11.dp) } // (Batch 521: the letter centred by its ink)
         Spacer(Modifier.width(6.dp))
         // (Whole name of the profile kept: it wraps, never "…".)
         Text(what, color = style.hint, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.widthIn(max = 220.dp))

@@ -22,6 +22,8 @@ internal object QaClip {
 
     /** Update 467: set by focusRing on the element showing the controller focus (test hooks only) — merged up to its control. */
     val Ring = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaRing") { a, b -> a == true || b == true }
+    /** Batch 521b: a controller glyph drawn by InkGlyph (its text); dumped under "glyphs" for tools/qa/tools/glyphcheck.py. */
+    val Glyph = androidx.compose.ui.semantics.SemanticsPropertyKey<String>("QaGlyph") { a, _ -> a }
     /** Update 467: a scene drawn tilted (the rental tag): its children's boxes overlap by the tilt. */
     val Tilted = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaTilted") { a, b -> a == true || b == true }
 
@@ -191,6 +193,16 @@ internal object QaClip {
                 // one it had, so 'full' and 'shown' look fine while nothing is drawn (Airy's chips with More open, k477e).)
                 sb.append("\"placed\":${placed(n)},")
                 sb.append("\"scroll\":${scrolls(n)},\"giveway\":${givesWay(n)},\"id\":${n.id}}")
+            }
+            sb.append("],")
+            // (Batch 521b: every InkGlyph - the letter's ink box - for glyphcheck.py, which finds its circle / pill in the screenshot.)
+            sb.append("\"glyphs\":[")
+            var firstG = true
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                val g = n.config.getOrNull(Glyph) ?: continue
+                val b = n.boundsInWindow
+                if (!firstG) sb.append(','); firstG = false
+                sb.append("{\"text\":\"${esc(g)}\",\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
             }
             sb.append("]}")
         }

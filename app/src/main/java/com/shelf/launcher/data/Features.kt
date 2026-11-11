@@ -393,6 +393,15 @@ object Features {
     val consoleBadgeTheme = BoolPref("console_badge_theme", false)
     /** Update 125: badges with the console's logo from Dan Patrick's white set (the R1 Console badges tile's second step). */
     val consoleBadgeLogos = BoolPref("console_badge_logos", false)
+    /**
+     * Batch 522 (owner): three separate looks for the console badge, never mixed inside one look - TEXT the console's short
+     * name; SYMBOL the console's symbol where the badge set has one, else the short name; LOGO the console's own wordmark
+     * (badge set, else its ES-DE logo where that stays readable in white), else the short name. A wordmark too wide for a small
+     * tile's pill shows its symbol (or name) there and the whole wordmark where there's room. Replaces the old Small / Big
+     * logo switch ([consoleBadgeLogos], kept only so old presets still read): both were logo looks, so LOGO is the default.
+     */
+    enum class BadgeStyle(val label: String) { TEXT("Text"), SYMBOL("Symbol"), LOGO("Logo") }
+    val consoleBadgeStyle = EnumPref("console_badge_style", BadgeStyle.LOGO, BadgeStyle.values())
     /** Update 317ao: which corner of a game's tile the console badge takes (Auto: where each layout puts it, clear of the rest). */
     enum class BadgeCorner(val label: String) { AUTO("Auto"), TOP_LEFT("Top left"), TOP_RIGHT("Top right"), BOTTOM_LEFT("Bottom left"), BOTTOM_RIGHT("Bottom right") }
     val consoleBadgeCorner = EnumPref("console_badge_corner", BadgeCorner.AUTO, BadgeCorner.values())
@@ -937,8 +946,18 @@ object Features {
          * Update 285 (Toni: "the logos without the cards"): no object — each save as its game's icon on its own: a PS2
          * save's own 3D icon from its memory card, else the RetroAchievements icon, else the SteamGridDB logo.
          */
-        ICONS("Icons only")
+        ICONS("Icons only"),
+        /**
+         * Batch 523 (owner: "a distinct PS2-style look with 3D spinning save icons and a generic fallback"): every save as the
+         * PS2's memory-card browser shows it — a PS2 save its own 3D icon (PS2IODB's for the game when the card's can't be
+         * read), any other game its logo / icon as a solid turning badge, nothing at all a plain generic card. Icons only is
+         * now flat icons and nothing else. Added last: the saved choice of the others is unchanged.
+         */
+        PS2("PS2 browser")
     }
+
+    /** Batch 523: the looks that show a save as its icon (no card): which picture a save gets ([logoFor] in the vault). */
+    fun SaveVaultStyle.showsIcons(): Boolean = this == SaveVaultStyle.ICONS || this == SaveVaultStyle.PS2
     val saveVaultStyle = EnumPref("save_vault_style", SaveVaultStyle.CLASSIC, SaveVaultStyle.values())
     /** Update 136: the 3D card's model (SD card or a memory card colour) and whether it's the clear one. */
     val saveVaultCard = EnumPref("save_vault_card", com.shelf.launcher.ui.ModelSpare.SD, com.shelf.launcher.ui.ModelSpare.values())
@@ -1645,6 +1664,8 @@ object Features {
     val stacksSpacing = IntPref("stacks_spacing", 100, 50..250)
     /** Update 488 (K1): the Voltcap row — room between the games, % of the standard gap (100 = as before). */
     val rowSpacing = IntPref("row_spacing", 100, 50..300)
+    /** Batch 520 (K1): the Game grid (main screen) — room between the cards, % of the standard gaps (100 = as before). */
+    val gridSpacing = IntPref("grid_spacing", 100, 50..250)
     /** Update 487 (K1): Game shelf — room between the games, % of the standard gap (100 = as before). */
     val shelfSpacing = IntPref("shelf_spacing", 100, 50..250)
     enum class ShelfLook(val label: String) { DARK("Dark"), WOOD("Wood"), GLASS("Glass") }
@@ -2203,6 +2224,8 @@ object Features {
     // collections below it; A opens Cinema Premiere (WinScenesHomes.kt). ----
     enum class CnHero(val label: String) { BIG("Big billboard"), COMPACT("Compact") }
     val cnHero = EnumPref("cn_hero", CnHero.BIG, CnHero.values())
+    /** Batch 520 (K1): Cinema — room between the tiles of a row, % of the standard 8 dp (100 = as before). */
+    val cnSpacing = IntPref("cn_spacing", 100, 50..250)
     enum class CnTiles(val label: String) { WIDE("Wide art"), POSTER("Posters"), MIXED("Wide, posters for the first row") }
     val cnTiles = EnumPref("cn_tiles", CnTiles.WIDE, CnTiles.values())
     /** The gameplay clip plays in the billboard after you rest on a game (with Video previews on). */
@@ -2400,6 +2423,8 @@ object Features {
     val heroTilesRows = IntPref("hero_tiles_rows", 2, 1..2)
     /** Update 158, Hero tiles: tile size, % of a row's height (smaller: more tiles across). */
     val heroTilesSize = IntPref("hero_tiles_size", 90, 50..100)
+    /** Batch 520 (K1): Hero tiles — room between the tiles, % of the standard gap (100 = as before; tile size stays its own). */
+    val heroTilesSpacing = IntPref("hero_tiles_spacing", 100, 50..250)
     /** Update 158, Hero tiles: the app dock at the bottom in the middle. */
     val heroTilesDock = BoolPref("hero_tiles_dock", true)
     /** Update 158, Hero tiles: the dock's own apps (package names, comma separated); empty = Files, Browser, Store, System settings. */

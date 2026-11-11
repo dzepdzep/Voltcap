@@ -137,7 +137,10 @@ internal fun HomeGameGrid(
     val select by rememberUpdatedState(onSelect)
     val open by rememberUpdatedState(onOpen)
     BoxWithConstraints(modifier) {
-        val gap = if (spines) 4.dp else if (secondScreen) 10.dp else 14.dp
+        // (Batch 520, K1: Layout options › Game spacing scales the main screen's gaps; 100 % = 14 / 12 dp as before. The second
+        // screen and the Spines look keep theirs. With "Auto" games per row, more room fits fewer cards — as a wider gap would.)
+        val spacingK = if (secondScreen || spines) 1f else com.shelf.launcher.data.Features.gridSpacing.state.value / 100f
+        val gap = if (spines) 4.dp else if (secondScreen) 10.dp else 14.dp * spacingK
         // Layout options › Games across the screen (main screen only), else from the card size.
         val fixedCols = if (secondScreen) 0 else com.shelf.launcher.data.Features.rowGamesFor(com.shelf.launcher.data.HomeLayout.GRID)
         val cols = if (fixedCols > 0) fixedCols.coerceIn(2, if (spines) 40 else 12)
@@ -176,7 +179,7 @@ internal fun HomeGameGrid(
         LazyVerticalGrid(
             columns = GridCells.Fixed(cols), state = state,
             modifier = Modifier.fillMaxSize().categorySlide(),
-            horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(if (secondScreen) 10.dp else 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(if (secondScreen) 10.dp else 12.dp * spacingK),
             // Room for the glow / bolts round the edge cards.
             contentPadding = PaddingValues(12.dp)
         ) {
@@ -338,3 +341,9 @@ private fun gridSpin(): androidx.compose.runtime.State<Float>? {
     )
     return if (still) null else a
 }
+
+/**
+ * Batch 520: whether ▲ ▼ move a whole row round an Endless grid of [n] games in [cols] columns. Only with more than one row:
+ * in a single row a step of [cols] wrapped round [n] < [cols] games onto an arbitrary one (cols mod n).
+ */
+internal fun gridLoopRowMoves(n: Int, cols: Int): Boolean = n >= 2 && n > cols

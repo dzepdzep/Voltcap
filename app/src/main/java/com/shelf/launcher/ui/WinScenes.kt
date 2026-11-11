@@ -630,7 +630,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         Modifier.fillMaxHeight().aspectRatio(0.74f).clip(RoundedCornerShape(14.dp)).background(mixS(base, Color.Black, 0.45f))
                             .border(4.dp, mixS(base, Color.White, 0.6f), RoundedCornerShape(14.dp)).padding(4.dp).clip(RoundedCornerShape(10.dp))
                     ) {
-                        if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                     }
                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -763,6 +763,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.94f, 900.dp)
     val h = minOf(ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
+    val labStorage = PopupLab.active.storage // (523t: approved - everyone)
     val tabs = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
     // (Achievements and Options open as GameWindow opens them: their page, else the full list / the game's menu.)
     fun openTab(t: WinPage) = when (t) {
@@ -831,15 +832,23 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                             scaleX = s; scaleY = s
                         }
                     ) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
+                    // (Batch 523 design lab "storage": the console tag sits on the picture's corner, like a label on the box.)
+                    if (labStorage) Box(Modifier.align(Alignment.TopStart).padding(6.dp).clip(RoundedCornerShape(50)).background(red)
+                        .padding(horizontal = 10.dp, vertical = 3.dp)) {
+                        WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
-                Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = 5.dp)) {
-                    WinFullText(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                Spacer(Modifier.height(if (labStorage) 10.dp else 8.dp))
+                Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 5.dp).padding(horizontal = 8.dp, vertical = if (labStorage) 8.dp else 5.dp)) {
+                    WinFullText(ctx.name, color = RecInk, fontSize = 15.sp, lineHeight = if (labStorage) 19.sp else 17.sp, fontWeight = FontWeight.Black, maxLines = 3,
                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
+                if (!labStorage) {
                 Spacer(Modifier.height(6.dp))
                 Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 12.dp, vertical = 3.dp)) {
-                    Text(ctx.console.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                    // (Batch 522, popup sweep: "SUPER NINTENDO" - the rest of the name was cut by the one line. Whole: smaller, then sliding.)
+                    WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                }
                 }
             }
             Spacer(Modifier.width(12.dp))
@@ -848,12 +857,14 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     // The facts in cells.
                     @Composable
                     fun cell(label: String, value: String?) {
-                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.width(118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                        Row(Modifier.fillMaxWidth().padding(vertical = if (labStorage) 3.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.width(if (w < 560.dp) 100.dp else 118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
                                 Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
                             }
                             Spacer(Modifier.width(8.dp))
-                            Text(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                            // (Batch 523: "Never playe" - the value took the room it wanted and was cut by the window's edge;
+                            // it has the rest of the line now, whole words, two lines.)
+                            WholeWordsText(value ?: "—", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                         }
                     }
                     // (Update 475, D246: whole rows only — on a short screen the facts that don't fit are left out whole (all of
@@ -880,28 +891,36 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     }
                     Spacer(Modifier.height(8.dp))
                     // The menu with its pointer.
-                    Box(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = 6.dp, vertical = 6.dp)) {
-                        // (Update 467, popup gate: beside the case — Inspect, a narrow window — three a row broke "SUMMARY"
-                        // over two lines; two a row there.)
-                        FlowRow(maxItemsInEachRow = if (w < 560.dp) 2 else 3, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).forEach { a ->
-                                SceneControl(a, Modifier.weight(1f)) { on ->
-                                    Row(
-                                        Modifier.fillMaxWidth().background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 5.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(if (on) "▶" else " ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
-                                        // (Update 469: "ACHIEVEMENTS" broke mid-word, "ACHIEVEME / NTS", on the KONKR — long keys a
-                                        // little smaller. Not FitText: it is a SubcomposeLayout, and FlowRow's weighted items ask for
-                                        // intrinsic sizes — that crashed Voltcap on A (IllegalStateException, Odin + KONKR sweep).
-                                        // Still two lines at most, never cut.)
-                                        // (Recheck: 10 sp still broke "ACHIEVEMENT / S" in the KONKR's 100 dp cell — Compose's own
-                                        // step auto-size (a text node, no subcomposition), one line, 13 → 8 sp.)
-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp,
-                                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = 13.sp, stepSize = 0.5.sp),
-                                            fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
+                    // (Batch 523, owner: "the selectable options are visually scattered" - a FlowRow of auto-sized keys left
+                    // "SAVE SYN" cut at 8 sp next to a full-size BACK on the same line, Play no bigger than the rest. Now: the
+                    // primary action alone on the first line, a size up; the others in an even grid of equal cells (two a
+                    // row beside the case, three in a wide window), one text size, whole words over two lines when needed,
+                    // Back last. Rows of a plain Column / Row - D-pad order is reading order, ▲ ▼ between rows.)
+                    Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = if (labStorage) 10.dp else 6.dp, vertical = if (labStorage) 8.dp else 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
+                        val primary = ctx.buttons.filter { !it.back && it.primary }
+                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } else emptyList()
+                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools + ctx.buttons.filter { it.back }
+                        // (Batch 523, GT78 lab shots: "ACHIEVEMENT S" - three cells a row in the menu's column (two thirds of the
+                        // window) left a long word narrower than its smallest readable size, so it broke inside the word. The cells
+                        // are counted from the menu's own width now: two a row unless the column is wide.)
+                        // (Batch 523 design lab "storage": Play, Details and ••• on one line - the main choice and its two neighbours.)
+                        if (labStorage) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.weight(1.6f)) }
+                            inLine.forEach { a ->
+                                if (PopupLab.isMore(a)) SceneControl(a, Modifier) { on ->
+                                    Box(Modifier.size(40.dp).clip(CircleShape).background(if (on) Color(0xFFE6EEF8) else Color.Transparent)
+                                        .border(1.5.dp, if (on || a.label == "Less") red else RecInk.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
+                                        Text("•••", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black)
                                     }
-                                }
+                                } else StorageKey(a, red, big = false, modifier = Modifier.weight(1f))
+                            }
+                        } else
+                        primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.fillMaxWidth()) }
+                        rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                row.forEach { a -> StorageKey(a, red, big = false, modifier = Modifier.weight(1f)) }
+                                repeat(storageKeysPerRow(w.value * 0.67f) - row.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }
@@ -926,17 +945,38 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ctx.chips.forEach { a ->
                             SceneControl(a, Modifier) { on ->
-                                Row(Modifier.background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
+                                // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
+                                Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 1)
+                                    // (Batch 523 gate, p523all: "Saves: Save sync isn't set up" was cut at one line - whole now.)
+                                    WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
+internal fun storageKeysPerRow(windowDp: Float): Int = if (windowDp < 560f) 2 else 3
+
+/** Batch 523: one key of Storage's menu - the pointer, the label in whole words (one size, two lines at most), an even height. */
+@Composable
+private fun StorageKey(a: WinAction, red: Color, big: Boolean, modifier: Modifier) {
+    SceneControl(a, modifier) { on ->
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = if (big) 40.dp else 36.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(if (on) "▶" else " ", color = red, fontSize = if (big) 15.sp else 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(16.dp))
+            WholeWordsText(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = if (big) 16.sp else 12.sp,
+                fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -965,7 +1005,7 @@ private fun CaseFlowNoArt(ctx: WinSceneCtx, modifier: Modifier) {
         verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.fillMaxHeight().aspectRatio(0.7f).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.06f))
             .border(1.5.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
-            if (ctx.cover != null) AsyncImage(rememberStyleArtRequest(ctx.cover), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            if (ctx.cover != null) SmartArt(ctx.cover, null, Modifier.fillMaxSize(), well = Color(0xFF15171C))
             // The case's spine line, as the cases on the shelf have.
             else Box(Modifier.align(Alignment.CenterStart).padding(start = 5.dp).width(1.5.dp).fillMaxHeight(0.8f).background(Color.White.copy(alpha = 0.3f)))
         }
@@ -1025,7 +1065,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 val clipUrl = ctx.state.videoUrls[ctx.g.stableKey]?.takeIf { ctx.state.appearance.videoPreviews }
                 var clipOn by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf(false) }
                 if (pick != null && !clipOn) AsyncImage(pick, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                else if (!clipOn) (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 if (!artHere) CaseFlowNoArt(ctx, Modifier.fillMaxSize())
                 if (clipOn && clipUrl != null) VideoBackdrop(clipUrl, ctx.state.appearance.videoSound, Modifier.fillMaxSize(), fit = true, shade = false)
                 if (clipUrl != null) SceneControl(
@@ -1387,7 +1427,8 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("DISC", style = label)
                 Spacer(Modifier.width(8.dp))
-                Text(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
+                // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
+                WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
                     modifier = Modifier.weight(1f))
                 // A small LED, breathing.
                 Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }
@@ -1492,7 +1533,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     ) {
         Row(Modifier.fillMaxWidth().weight(1f)) {
             Box(Modifier.fillMaxHeight().aspectRatio(0.74f).clip(RoundedCornerShape(20.dp)).background(Color(0xFFE6ECF3))) {
-                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
             }
             Spacer(Modifier.width(22.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -1622,7 +1663,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
         Box(slide(1).padding(start = w * 0.03f, top = h * 0.2f).size(h * 0.52f, h * 0.68f).graphicsLayer { rotationZ = -3f }) {
             Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
             Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
-                if (ctx.cover != null) AsyncImage(rememberCoverRequest(ctx.cover), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
             }
         }
         // The stats panel.

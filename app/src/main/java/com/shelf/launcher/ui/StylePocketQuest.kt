@@ -790,7 +790,7 @@ private fun PqKeyGlyph(symbol: String, pal: PqPalette, size: Dp) {
             .padding(horizontal = if (wide) 6.dp else 0.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = pal.accentLight, fontSize = (size.value * (if (wide) 0.42f else 0.6f)).sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+        InkGlyph(label, pal.accentLight, (size.value * (if (wide) 0.42f else 0.6f)).dp) // (Batch 521: centred by its ink)
     }
 }
 

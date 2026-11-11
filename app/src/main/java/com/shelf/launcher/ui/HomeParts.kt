@@ -106,11 +106,35 @@ internal fun HomeRaLogoPart(name: String, icon: String?) {
  * sizes or removes it.
  */
 @Composable
-internal fun CategoryNamePart(label: String, backdrop: NameBackdrop) {
+internal fun CategoryNamePart(label: String, backdrop: NameBackdrop, maxWidth: androidx.compose.ui.unit.Dp = 420.dp, modifier: Modifier = Modifier) {
     // (Update 212: a long name ends in "…" instead of running over the screen.)
+    // (523z2, KONKR text x1.3: [maxWidth] stops it short of the status bar's clock - see categoryNameRoomPx.)
     FullText(
-        label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(backdrop), modifier = Modifier.widthIn(max = 420.dp)
+        label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(backdrop),
+        modifier = modifier.widthIn(max = minOf(420.dp, maxWidth))
     )
+}
+
+/**
+ * 523z2 (owner, KONKR at text x1.3: Card binder / Cover details drew the status bar's clock over "System"): how wide the
+ * category name may be, in px, so its backing ends [gapPx] before the status bar's clock / icons cluster - or null (no
+ * limit: the usual 420 dp) when the name's backing doesn't share the cluster's height band or starts right of it.
+ * [textLeft] / [textRight]: the name's own bounds; [partRight]: its backing's right edge (the backing's padding is kept).
+ */
+internal fun categoryNameRoomPx(
+    textLeft: Float, textRight: Float, partTop: Float, partBottom: Float, partRight: Float,
+    clusterLeft: Float?, clusterTop: Float, clusterBottom: Float, gapPx: Float
+): Float? {
+    if (clusterLeft == null) return null
+    // (Sharing the band means overlapping it by more than a quarter of the name's height: Resume's name sits under the clock
+    // row and touches it by a few px - narrowing it there made it slide on the Flip 2 at x1.3, where it had fitted.)
+    val shared = minOf(partBottom, clusterBottom) - maxOf(partTop, clusterTop)
+    if (shared <= 0.25f * (partBottom - partTop)) return null
+    if (textLeft >= clusterLeft) return null
+    val pad = (partRight - textRight).coerceAtLeast(0f)
+    val room = clusterLeft - gapPx - pad - textLeft
+    // (Always the room when they share the band - a name that fits stays as it was; never switching back and forth.)
+    return room.coerceAtLeast(0f)
 }
 
 /**

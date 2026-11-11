@@ -21,13 +21,21 @@ data class Game(
     val packageName: String? = null,
     val sgdbGameId: Int? = null,
     val steamAppId: Int? = null,
-    val raGameId: Int? = null
+    val raGameId: Int? = null,
+    /**
+     * Batch 522: a game from another store that GameNative runs (its frontend export `.epic` / `.gog` / `.amazon` /
+     * `.pcgame`): GameNative's own id for it and the store, as GameNative's launch intent takes them (`app_id`, int;
+     * `game_source` = EPIC / GOG / AMAZON / CUSTOM_GAME). Null for Steam games, which use [steamAppId].
+     */
+    val storeGameId: Int? = null,
+    val gameNativeSource: String? = null
 ) {
     /** Stable identity for persisting per-game overrides across rescans —
      * the display name alone isn't a safe key since two different ROMs or
      * apps could share a label. */
     val stableKey: String
-        get() = romPath ?: packageName ?: steamAppId?.let { "steam:$it" } ?: name
+        get() = romPath ?: packageName ?: steamAppId?.let { "steam:$it" }
+            ?: storeGameId?.let { "gamenative:${gameNativeSource.orEmpty().lowercase()}:$it" } ?: name
 }
 
 /** Every candidate asset SteamGridDB has for a game, for the artwork picker. */

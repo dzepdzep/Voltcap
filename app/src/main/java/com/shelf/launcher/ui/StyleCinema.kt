@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -279,7 +280,9 @@ private fun CinemaBillboard(c: StyleCtx, g: com.shelf.launcher.data.Game, modifi
         ) {
             val logo = if (Features.cnLogo.state.value) c.logo(g) else null
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Movie, null, tint = accent, modifier = Modifier.size(14.dp))
+                // (Batch 523, owner: the film-strip icon read as a mini movie poster beside the console - the console's own
+                // symbol now, in the accent colour, else a plain controller mark.)
+                CinemaConsoleMark(g.platform, accent)
                 Spacer(Modifier.width(6.dp))
                 StableFullText(titles.console(g.platform).uppercase(), color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
             }
@@ -344,7 +347,8 @@ private fun CinemaRow(
     select: (Int) -> Unit, open: () -> Unit
 ) {
     val tileW = if (poster) tileH * 0.70f else tileH * 1.78f
-    val gap = 8.dp
+    // (Batch 520, K1: × Game spacing; 100 % = 8 dp as before. The glide, the name and taps all use the same stride.)
+    val gap = 8.dp * (Features.cnSpacing.state.value / 100f)
     val stride = tileW + gap
     val col = if (here) CinemaNav.cursor.col(CinemaNav.rows).coerceIn(0, r.games.lastIndex) else (CinemaNav.cursor.cols[r.key] ?: 0).coerceIn(0, r.games.lastIndex)
     val glide by animateFloatAsState(col.toFloat(), if (rememberAnimationsEnabled()) tween(320, easing = FastOutSlowInEasing) else tween(0), label = "cnGlide")
@@ -418,6 +422,8 @@ internal fun CinemaSettings() {
     Spacer(Modifier.height(10.dp))
     StyleChoice("Billboard", Features.CnHero.values(), Features.cnHero.state.value, { it.label }) { Features.cnHero.value = it }
     StyleChoice("Tiles", Features.CnTiles.values(), Features.cnTiles.state.value, { it.label }) { Features.cnTiles.value = it }
+    // (Batch 520, K1: the room between the tiles of a row; 100 % = as before.)
+    PercentSlider("Game spacing", Features.cnSpacing.state.value, { Features.cnSpacing.value = it.coerceIn(50, 250) }, min = 50, max = 250, valueText = { "$it%" })
     StyleChoice("Highlight colour", Features.CnAccent.values(), Features.cnAccent.state.value, { it.label }) { Features.cnAccent.value = it }
     Toggle(Icons.Filled.Movie, "Gameplay previews", "Rest on a game and its clip fades in over the billboard (needs Video previews on).", Features.cnPreview)
     Toggle(Icons.Filled.Movie, "Logo on the billboard", "The game's logo instead of its name, when it has one.", Features.cnLogo)
@@ -427,4 +433,21 @@ internal fun CinemaSettings() {
     Toggle(Icons.Filled.Movie, "Your favourites", "The category's favourites.", Features.cnRowFav)
     Toggle(Icons.Filled.Movie, "Most played", "By time played.", Features.cnRowMost)
     Toggle(Icons.Filled.Movie, "Not played yet", "Games you haven't started.", Features.cnRowNew)
+}
+
+
+/**
+ * Batch 523: the small mark before the console's name on Cinema's hero - the console's own symbol from the badge set
+ * (PlayStation shapes, the N64 cube, the Dreamcast swirl, ... - BadgeLogos.symbol: regional keys keep their own or none),
+ * tinted in the hero's accent, 14 dp high at its own proportions; a console without a symbol gets a plain controller mark.
+ */
+@Composable
+internal fun CinemaConsoleMark(platform: String, tint: Color) {
+    val sym = BadgeLogos.symbol(platform)
+    if (sym != null) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val req = androidx.compose.runtime.remember(sym.first) { coil.request.ImageRequest.Builder(context).data(sym.first).size(96).build() }
+        AsyncImage(req, null, colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tint),
+            contentScale = ContentScale.Fit, modifier = Modifier.height(14.dp).width(14.dp * sym.second.coerceIn(0.8f, 2.2f)))
+    } else Icon(Icons.Filled.SportsEsports, null, tint = tint, modifier = Modifier.size(14.dp))
 }

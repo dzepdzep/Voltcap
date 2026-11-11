@@ -385,9 +385,29 @@ internal object R1Spacing {
         com.shelf.launcher.data.HomeLayout.SHELF -> com.shelf.launcher.data.Features.shelfSpacing
         com.shelf.launcher.data.HomeLayout.COVERDETAILS -> com.shelf.launcher.data.Features.cdSpacing
         com.shelf.launcher.data.HomeLayout.STACKS -> com.shelf.launcher.data.Features.stacksSpacing
+        com.shelf.launcher.data.HomeLayout.GRID -> com.shelf.launcher.data.Features.gridSpacing
+        com.shelf.launcher.data.HomeLayout.HERO_TILES -> com.shelf.launcher.data.Features.heroTilesSpacing
+        com.shelf.launcher.data.HomeLayout.CINEMA -> com.shelf.launcher.data.Features.cnSpacing
+        // Batch 520 (K1): the layouts whose own Spacing slider is already a percentage of today's room (100 % = as it was)
+        // get the R1 tile and its slider too — the same pref and range as their own options, nothing new stored.
+        com.shelf.launcher.data.HomeLayout.CASEFLOW -> com.shelf.launcher.data.Features.cfSpacing
+        com.shelf.launcher.data.HomeLayout.BOX -> com.shelf.launcher.data.Features.boxSpacing
+        com.shelf.launcher.data.HomeLayout.STORAGE -> com.shelf.launcher.data.Features.stSpacing
+        com.shelf.launcher.data.HomeLayout.FILESELECT -> com.shelf.launcher.data.Features.fsSpacing
         else -> null
     }
-    fun maxFor(l: com.shelf.launcher.data.HomeLayout): Int = if (l == com.shelf.launcher.data.HomeLayout.CLASSIC) 300 else 250
+    /** The slider's range for [l] — the same as that layout's own Spacing slider. */
+    fun minFor(l: com.shelf.launcher.data.HomeLayout): Int = when (l) {
+        com.shelf.launcher.data.HomeLayout.CASEFLOW, com.shelf.launcher.data.HomeLayout.STORAGE, com.shelf.launcher.data.HomeLayout.FILESELECT -> 60
+        com.shelf.launcher.data.HomeLayout.BOX -> 70
+        else -> MIN
+    }
+    fun maxFor(l: com.shelf.launcher.data.HomeLayout): Int = when (l) {
+        com.shelf.launcher.data.HomeLayout.CLASSIC -> 300
+        com.shelf.launcher.data.HomeLayout.CASEFLOW -> 160
+        com.shelf.launcher.data.HomeLayout.BOX, com.shelf.launcher.data.HomeLayout.STORAGE, com.shelf.launcher.data.HomeLayout.FILESELECT -> 150
+        else -> 250
+    }
     const val MIN = 50
     /** Tap: the next step (a value between steps goes to the next one up), round to the first. */
     val STEPS = listOf(80, 100, 120, 150)

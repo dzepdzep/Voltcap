@@ -178,6 +178,41 @@ object SaveCapsules {
         if (!cached.isNullOrEmpty() && _all.value.isEmpty()) _all.value = cached
     }
 
+    /**
+     * Batch 523 (QA only, isolated app, `voltcap_test_vault_fixture`): a fixed vault — up to 6 games of this library with a
+     * save each, and six games that are NOT here: three with a look another device recorded (VaultArtIndex.fixture, the QA
+     * portrait pictures), three with none. Nothing read from or written to a save, the kept list or Drive.
+     */
+    suspend fun showFixture(context: Context, games: List<Game>) {
+        val app = context.applicationContext
+        val dir = kotlinx.coroutines.suspendCancellableCoroutine<java.io.File?> { c ->
+            com.shelf.launcher.ui.QaFixture.prepare(app, "portrait") { d -> if (c.isActive) c.resumeWith(Result.success(d)) }
+        }
+        val now = System.currentTimeMillis()
+        fun item(t: String, k: Kind, where: String) = SaveItem(t, where, 8192, now - 3_600_000L, k)
+        val here = games.filter { it.sourceType == SourceType.ROM && it.romPath != null }.sortedBy { it.name }.take(6).map { g ->
+            Capsule(g, listOf(item(g.name, Kind.SAVE_FILE, "RetroArch saves · ${g.name}.srm")), null, true, onDevice = true)
+        }
+        data class Away(val name: String, val platform: String, val kind: Kind, val pic: Int?)
+        val away = listOf(
+            Away("WWE SmackDown! vs. RAW", "PS2", Kind.MEMORY_CARD, 3), Away("Pokemon Crystal", "GBC", Kind.SYNCED_FROM_OTHER_DEVICE, 7),
+            Away("Metroid Prime", "GameCube", Kind.SYNCED_FROM_OTHER_DEVICE, 11), Away("Chrono Trigger", "SNES", Kind.SYNCED_FROM_OTHER_DEVICE, null),
+            Away("Wipeout 2097", "PS1", Kind.MEMORY_CARD, null), Away("Golden Sun", "GBA", Kind.SYNCED_FROM_OTHER_DEVICE, null)
+        )
+        VaultArtIndex.fixture = away.filter { it.pic != null && dir != null }.map { a ->
+            val f = "file://" + java.io.File(dir, "a_${a.pic}.png").absolutePath
+            VaultArtIndex.Entry(VaultArtIndex.platformKey(a.platform), setOf(VaultArtIndex.norm(a.name)), cover = f, icon = f, at = now)
+        }
+        val gone = away.map { a ->
+            Capsule(Game(name = a.name, platform = a.platform, hue = (a.name.hashCode() and 0xFFFF) % 360, sourceType = SourceType.ROM),
+                listOf(item(a.name, a.kind, if (a.kind == Kind.MEMORY_CARD) "Mcd001 · synced from another device" else "Saves · synced from another device")),
+                null, false, onDevice = false)
+        }
+        _all.value = here + gone
+    }
+
+    fun clearFixture() { _all.value = emptyList() }
+
     suspend fun refreshLocal(context: Context, games: List<Game>, lastPlayed: Map<String, Long>) {
         if (localDone || games.isEmpty()) return
         localDone = true

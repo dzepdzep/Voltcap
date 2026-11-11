@@ -63,6 +63,7 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
 import kotlin.math.floor
+import kotlinx.coroutines.flow.first
 
 /*
  * Update 374 (Toni: "Coverflow details — LaunchBox Big Box 3-Dimensions-inspired"): one scene. The game you're on as a big
@@ -71,6 +72,11 @@ import kotlin.math.floor
  * selected spine lifting off it. Behind: the game's own art, darkened toward the theme. No new 3D engine: Case3D, GameSpine
  * (the console's real spine / the game's scan), case3dAspect / shelfSpineAspect (each console's real proportions),
  * PickedFacing (the "faces you / turned" setting), Endless (rememberLoopFocus). ◀ ▶ move along the shelf; A / tap opens the game.
+ *
+ * Batch 523r (owner's sketch, 11 Nov): recomposed — the big case at the upper LEFT under the game's name, console and year; the
+ * facts and story at the upper right; the shelf at the lower RIGHT holds the other games as smaller 3D cases (Case3D,
+ * case3dAspect: each console's own case and art) turned to show spine and front, packed with a little overlap. The spines
+ * (GameSpine) are no longer drawn upright here. The case flight (CoverFlight) and the glide are the same objects as before.
  */
 
 /** ▲ ▼ go on to what lies above / below (the shelf takes ◀ ▶ through the home screen's own previous / next game). */
@@ -187,38 +193,117 @@ internal fun bigCaseFill(d: com.shelf.launcher.data.Features.SpineDepth) = when 
 private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
     val accent = ShelfTheme.accent
     LaunchedEffect(g.stableKey) { kotlinx.coroutines.delay(250); c.actions.needMetadata(g) }
+    // Batch 523r (owner's sketch): the game you're on as ONE big 3D case on the upper left under its title and console; its
+    // facts and story at the upper right; the other games as smaller 3D cases on a shelf at the lower right, turned so their
+    // spines and part of their fronts show, packed side by side with a little overlap. Moving on, the next case leaves the
+    // shelf and grows / turns into the big place while the one you were on shrinks back into its own slot; the shelf glides
+    // as one row. Endless: each game once, never repeated to fill the shelf.
     BoxWithConstraints(modifier.fillMaxSize()) {
         val w = maxWidth; val h = maxHeight
         val compact = h < 380.dp
-        val shelfH = (h * (if (compact) 0.32f else 0.33f)).coerceIn(84.dp, 210.dp)
-        val shelfPad = if (compact) 6.dp else 12.dp
-        val stageH = (h - shelfH - shelfPad).coerceAtLeast(120.dp)
+        val pad = if (compact) 14.dp else 26.dp
+        val leftW = (w * 0.44f).coerceIn(180.dp, 660.dp) // (523t, owner: the big case a little bigger)
+        val shelfH = (h * (if (compact) 0.50f else 0.48f)).coerceIn(96.dp, 360.dp)
+        val rightW = (w - leftW - pad * 2.2f).coerceAtLeast(120.dp)
+        var bigAspect by remember { mutableStateOf(0.8f) }
 
-        // The stage: the big box, then the facts.
-        Row(Modifier.fillMaxWidth().height(stageH).padding(start = 28.dp, end = 28.dp, top = if (compact) 4.dp else 26.dp)) {
-            val boxW = (w * 0.48f).coerceAtMost(600.dp)
-            // Update 392: the case sits at the top of the stage (its reflection runs on into the room under it) instead of floating in
-            // the middle of a tall box with an empty band above it.
-            Box(Modifier.width(boxW).fillMaxHeight().onGloballyPositioned { CoverFlight.stage = it.boundsInWindow() }, contentAlignment = Alignment.TopCenter) {
-                val depth = com.shelf.launcher.data.Features.spineDepth.state.value
-                CoverBigCases(c, g, depth, stageH, shelfH, accent)
-            }
-            Spacer(Modifier.width(if (compact) 18.dp else 32.dp))
-            // (Update 432, Odin 2 Portal 1080p: the shelf is drawn 16 % taller than its slot, over the stage's bottom edge, and the
-            // story's last line ran under the spines. The facts stop above the shelf's top edge.)
-            CoverDetailsInfo(c, g, compact, accent, Modifier.weight(1f).fillMaxHeight().padding(bottom = shelfH * 0.16f + 6.dp)
-                .riseOnChange(g.stableKey, floor = 0.4f, ms = 240))
+        // The shelf first: the case flying out of it / back into it passes over it.
+        CoverCaseShelf(
+            c, bigAspect, accent,
+            Modifier.align(Alignment.BottomEnd).padding(end = pad * 0.5f, bottom = pad * 0.35f).width(rightW + pad * 0.7f).height(shelfH)
+        )
+        // The facts at the upper right, above the shelf.
+        // (523t: the facts change with the case flight too, as the title does.)
+        CoverWithFlight(g, Modifier.align(Alignment.TopEnd).padding(top = pad, end = pad).width(rightW).height((h - shelfH - pad * 1.6f).coerceAtLeast(60.dp))) { gm, m ->
+            CoverDetailsInfo(c, gm, compact, accent, m, head = false)
         }
+        // The title and the big case on the left (over everything: it flies to and from the shelf).
+        // (523t, owner: the big case a little higher - the title block is tighter and the case's room starts right under it.)
+        // (523t, KONKR with real-length names: the title's room is one line + the console line; a name that needs a second line
+        // runs over the top of the case's room - its empty margin - so the big case keeps one size and place for every game.)
+        val headH = if (compact) 46.dp else 54.dp
+        Column(Modifier.zIndex(2f).padding(start = pad, top = pad * 0.8f, bottom = pad * 0.2f).width(leftW).fillMaxHeight()) {
+            Spacer(Modifier.height(headH + 2.dp))
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().weight(1f).onGloballyPositioned {
+                    CoverFlight.stage = it.boundsInWindow()
+                    if (it.size.height > 0) bigAspect = it.size.width.toFloat() / it.size.height
+                },
+                contentAlignment = Alignment.TopCenter
+            ) {
+                val depth = com.shelf.launcher.data.Features.spineDepth.state.value
+                CoverBigCases(c, g, depth, maxHeight, 0.dp, accent)
+            }
+        }
+        CoverDetailsHead(c, g, compact, accent, Modifier.zIndex(3f).padding(start = pad, top = pad * 0.8f).width(leftW))
+    }
+}
 
-        // The shelf of spines along the bottom.
-        CoverShelf(c, shelfH, accent, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(shelfH * 1.16f))
+/**
+ * 523r: the game's name, and its console and year, over the big case. 523t (owner: "synchronise the title with the case"):
+ * the name changes WITH the case flight - the one you left fades out while its case starts back, the new one comes in as its
+ * case arrives (read from the flight's own progress while drawing). A category change or no animation: at once, as before.
+ */
+@Composable
+private fun CoverDetailsHead(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) =
+    CoverWithFlight(g, modifier) { gm, m -> CoverHeadText(c, gm, compact, accent, m) }
+
+/**
+ * 523t: [content] for the game you're on, changing WITH the case flight: the one you left fades out while its case starts
+ * back, the new one comes in as its case arrives (title, console, facts and story together). No flight (category change,
+ * animations off): at once.
+ */
+@Composable
+private fun CoverWithFlight(g: Game, modifier: Modifier, content: @Composable (Game, Modifier) -> Unit) {
+    var last by remember { mutableStateOf(g) }
+    val old = remember(g.stableKey) { last.takeIf { it.stableKey != g.stableKey } }
+    androidx.compose.runtime.SideEffect { last = g }
+    val k = g.stableKey
+    val density = LocalDensity.current
+    // (The leaving one is dropped once it has faded - not kept invisible under the new one.)
+    var showOld by remember(k) { mutableStateOf(old != null) }
+    LaunchedEffect(k) {
+        if (old != null) androidx.compose.runtime.snapshotFlow { CoverFlight.flights[k]?.value ?: 1f }.first { coverHeadOut(it) <= 0f }
+        showOld = false
+    }
+    Box(modifier) {
+        if (old != null && showOld) key(old.stableKey) { content(old, Modifier.fillMaxSize().graphicsLayer {
+            alpha = coverHeadOut(CoverFlight.flights[k]?.value ?: 1f)
+        }) }
+        key(k) { content(g, Modifier.fillMaxSize().graphicsLayer {
+            val a = coverHeadIn(CoverFlight.flights[k]?.value ?: 1f)
+            alpha = a
+            translationY = (1f - a) * with(density) { 8.dp.toPx() }
+        }) }
+    }
+}
+
+/** Pure (523t): the leaving title's opacity at the new case's flight [p] — gone before the cases cross. */
+internal fun coverHeadOut(p: Float): Float = (1f - p / 0.35f).coerceIn(0f, 1f)
+/** Pure (523t): the new title's opacity at its case's flight [p] — in while the case comes to rest. */
+internal fun coverHeadIn(p: Float): Float { val t = ((p - 0.35f) / 0.5f).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+
+@Composable
+private fun CoverHeadText(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
+    val titles = LocalTitleOptions.current
+    val year = c.state.metadata[g.stableKey]?.releaseYear
+    Column(modifier) {
+        FullText(
+            titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
+            maxLines = 2, modifier = Modifier.fillMaxWidth(), reserve = false
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            titles.console(g.platform) + (year?.let { " · $it" } ?: ""),
+            color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, lineHeight = 18.sp
+        )
     }
 }
 
 /** The facts of the game you're on: only the ones the game really has (no blank headings, nothing made up). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
+private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier, head: Boolean = true) {
     val titles = LocalTitleOptions.current
     val meta = c.state.metadata[g.stableKey]
     val story = meta?.summary?.takeIf { it.isNotBlank() }
@@ -227,27 +312,30 @@ private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Col
         // (lines = 0) was dropped. When the column is short and there is a story, the facts go on one line under the console
         // (achievements beside the console) and the title is a little smaller, so the story keeps ≥ 3 whole lines.
         val tight = !compact && story != null && maxHeight < coverDetailsTightBelow
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = if (head) Arrangement.Center else Arrangement.Top) {
+            val ach = c.progress(g)
+            // (523r: the title and console stand over the big case - CoverDetailsHead - and this column starts with the facts.)
+            if (head) {
             StableFullText(
                 titles.display(g.name), color = Color.White, fontSize = if (compact) 24.sp else if (tight) 30.sp else 36.sp, fontWeight = FontWeight.Bold,
                 maxLines = 2, modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(4.dp))
-            val ach = c.progress(g)
             Text(
                 if (tight && ach != null) titles.console(g.platform) + " · " + ach.first + " / " + ach.second + " achievements" else titles.console(g.platform),
                 color = accent, fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp, lineHeight = 18.sp
             )
             Spacer(Modifier.height(if (compact) 8.dp else if (tight) 8.dp else 14.dp))
+            }
             // Label / value pairs, each only when there is a value.
             val facts = buildList {
-                meta?.releaseYear?.let { add("Released" to it.toString()) }
+                if (head) meta?.releaseYear?.let { add("Released" to it.toString()) }
                 meta?.developer?.takeIf { it.isNotBlank() }?.let { add("Developer" to it) }
                 if (!tight) meta?.publisher?.takeIf { it.isNotBlank() && it != meta.developer }?.let { add("Publisher" to it) }
                 meta?.genres?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { add("Genre" to it.take(if (tight) 2 else 3).joinToString(", ")) }
                 if (!tight) c.playtime(g)?.let { add("Played" to stylePlaytime(it, true)) }
-                if (!tight) ach?.let { (e, t) -> add("Achievements" to "$e / $t") }
+                if (!tight || !head) ach?.let { (e, t) -> add("Achievements" to "$e / $t") }
             }
             if (tight) {
                 if (facts.isNotEmpty()) Text(
@@ -280,15 +368,57 @@ private fun CoverDetailsInfo(c: StyleCtx, g: Game, compact: Boolean, accent: Col
 /** Update 487: below this column height (with a story) Cover details puts its facts on one line (D281). */
 internal val coverDetailsTightBelow = 270.dp
 
-/** What one spine on the shelf needs: its place's game, width and height in px. */
-private class ShelfSpine(val w: Float, val h: Float)
+/** Batch 523r: how far the shelf's cases are turned (front to the right, spine and part of the front showing). */
+internal const val COVER_ROW_YAW = 32f
 
 /**
- * The shelf: every game as its console's upright spine, packed edge to edge, gliding as one row under the middle (the place
- * is [rememberGlidePos]); each spine keeps its console's width and height, the one you're on lifts and is outlined.
+ * Pure (523r): where a shelf case [d] places from the game you're on stands, in slots from that game's own spot. The game
+ * you're on is out in the big place, so its spot takes no room: the one before it and the one after it stand one slot apart.
+ */
+internal fun coverRowX(d: Float): Float = when {
+    d >= 1f -> d - 0.5f
+    d <= -1f -> d + 0.5f
+    else -> d * 0.5f
+}
+
+/** Pure (523r): how wide a case of shape [aspect] (w / h) looks at [COVER_ROW_YAW], as a share of its height (front + spine). */
+internal fun coverRowSeenWidth(aspect: Float): Float =
+    aspect * kotlin.math.cos(Math.toRadians(COVER_ROW_YAW.toDouble())).toFloat() + 0.18f * kotlin.math.sin(Math.toRadians(COVER_ROW_YAW.toDouble())).toFloat()
+
+/** Pure (523r): Endless — the first place of the [n] places a game can take (one before the game you're on, the rest after). */
+internal fun coverRowLead(n: Int): Float = if (n >= 3) -1.5f else -0.5f
+
+/**
+ * Pure (523r): the place of game [r] with the row at [pos]. Endless: each game exactly once, in [lead, lead + n) — with few
+ * games they stand side by side after the one you're on, never repeated to fill the shelf.
+ */
+internal fun coverRowD(r: Int, pos: Float, n: Int, loop: Boolean): Float {
+    if (!loop || n <= 0) return r - pos
+    val lead = coverRowLead(n)
+    val x = (r - pos - lead).mod(n.toFloat())
+    return x + lead
+}
+
+/**
+ * Pure (523r): a case's opacity at place [d]: it fades out past the one before the game you're on (left end) and, Endless,
+ * as it nears the far end of the loop, so a game going round from one end to the other never jumps while seen.
+ */
+internal fun coverRowAlpha(d: Float, n: Int, loop: Boolean): Float {
+    if (!loop) return ((d + 1.5f) / 0.5f).coerceIn(0f, 1f)
+    val lead = coverRowLead(n)
+    val inL = ((d - lead) / 0.5f).coerceIn(0f, 1f)
+    val inR = ((lead + n - d) / 0.5f).coerceIn(0f, 1f)
+    return minOf(inL, inR)
+}
+
+/**
+ * Batch 523r: the shelf at the lower right — the other games as smaller 3D cases (their console's own case and art, Case3D),
+ * turned [COVER_ROW_YAW] so the spine and part of the front show, packed side by side with a little overlap, gliding as one
+ * row ([rememberGlidePos]). Each case stands in a box of the big case's own shape ([bigAspect]), so the case flying between
+ * a slot and the big place only scales and moves: no jump at either end.
  */
 @Composable
-private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifier) {
+private fun CoverCaseShelf(c: StyleCtx, bigAspect: Float, accent: Color, modifier: Modifier) {
     val count = c.games.size
     val keys = remember(c.games) { gameKeys(c.games) }
     val loop = loopRowOn(c)
@@ -301,36 +431,33 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
     val latestLoop by rememberUpdatedState(loop)
     val density = LocalDensity.current
     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
-    val posFn: () -> Float = remember(pos) { { pos.value } }
-    BoxWithConstraints(modifier.clipToBounds().onGloballyPositioned { CoverFlight.shelf = it.boundsInWindow() }) {
+    val depth = com.shelf.launcher.data.Features.spineDepth.state.value
+    val lite = LocalLiteEffects.current
+    val realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL
+    BoxWithConstraints(modifier.onGloballyPositioned { CoverFlight.shelf = it.boundsInWindow() }) {
         val wPx = with(density) { maxWidth.toPx() }
-        val spineHmax = with(density) { (shelfH * 0.80f).toPx() }
-        // (Update 487, K1: Layout options › Game spacing — 100 % is the packed shelf; each 10 % adds 0.4 dp.)
-        val gap = with(density) { coverShelfGapDp(Features.cdSpacing.state.value).dp.toPx() }
-        val minW = with(density) { 12.dp.toPx() }
-        val maxW = with(density) { 56.dp.toPx() }
-        // A spine's size from its console: the real width / height of the case it came in.
-        fun sizeOf(real: Int): ShelfSpine {
-            val gm = c.games.getOrNull(real) ?: return ShelfSpine(minW, spineHmax)
-            val hh = spineHmax * (((realCaseMm(gm.platform)?.second ?: 190f) / 190f).coerceIn(0.55f, 1f))
-            return ShelfSpine((hh * CaseThickness.orElse(gm, shelfSpineAspect(gm.platform))).coerceIn(with(density) { CaseThickness.MIN_SPINE_DP.dp.toPx() }, maxW), hh)
+        val hPx = with(density) { maxHeight.toPx() }
+        val boardPx = hPx * 0.06f
+        val slotH = hPx * 0.97f - boardPx
+        val boxW = slotH * bigAspect
+        // The cases' usual shape here (the middle one of the games near you: a list of one console has one), so a row of wide
+        // jewel cases stands as close as a row of tall DVD cases - each a fifth over the next (523r, GT78 first look: PS1
+        // cases hid most of each other).
+        val aspect = remember(c.games, c.focus / 16) {
+            val near = (0 until minOf(count, 15)).map { k -> c.games[(c.focus + k - 7).mod(count.coerceAtLeast(1))] }
+            near.map { case3dAspect(it, false) }.sorted().let { it.getOrNull(it.size / 2) ?: 0.71f }
         }
-        val side = ((wPx / 2f) / (minW + gap)).toInt().plus(2).coerceIn(4, SHELF_MAX_SIDE)
-        // Where each place's middle stands against the middle of the one at [lo] (px), worked out when [lo] changes only.
-        val rel = remember(lo, count, loop, side, wPx, spineHmax, c.games) {
-            val a = FloatArray(side * 2 + 3)
-            fun real(i: Int) = if (loop) i.mod(count) else i.coerceIn(0, (count - 1).coerceAtLeast(0))
-            // index j → place lo + (j - side - 1); the middle of lo is a[side + 1]
-            val mid = side + 1
-            a[mid] = 0f
-            for (j in mid + 1 until a.size) a[j] = a[j - 1] + sizeOf(real(lo + (j - 1 - mid))).w / 2f + gap + sizeOf(real(lo + (j - mid))).w / 2f
-            for (j in mid - 1 downTo 0) a[j] = a[j + 1] - sizeOf(real(lo + (j + 1 - mid))).w / 2f - gap - sizeOf(real(lo + (j - mid))).w / 2f
-            a
-        }
+        val caseH = minOf(slotH, boxW / aspect) * bigCaseFill(depth)
+        val seenW = caseH * coverRowSeenWidth(aspect)
+        // (Layout options › Game spacing: 100 % = a fifth of each case under the next.)
+        val slotW = seenW * 0.80f * (0.6f + 0.4f * Features.cdSpacing.state.value / 100f)
+        val margin = seenW * 0.55f
+        // How many slots the shelf shows after the game you're on.
+        val after = ((wPx - margin) / slotW).toInt() + 2
         // The shelf board.
         val board = themeDark(Color(0xFF05070B), 0.5f)
         Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(shelfH * 0.1f)
+            Modifier.align(Alignment.BottomStart).fillMaxWidth().height(with(density) { boardPx.toDp() })
                 .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.55f), board)))
         )
         Box(
@@ -354,52 +481,33 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
                 }
             }
         ) {
-            val first = if (loop) lo - side else (lo - side).coerceAtLeast(0)
-            val last = if (loop) lo + side + 1 else (lo + side + 1).coerceAtMost(count - 1)
-            val c0 = wPx / 2f
-            // (The places picked before the loop, as Case stacks does: a `continue` in it would give each pass its own group.)
-            for (i in (first..last).filter { i -> !(loop && !drawnOnce(i - lo, count)) }) {
-                val real = if (loop) i.mod(count) else i
-                key(if (loop) "${keys[real]}#${Math.floorDiv(i, count)}" else keys[real]) {
-                    val sp = sizeOf(real)
-                    val gm = c.games[real]
-                    val near = i == lo || i == lo + 1
-                    val j = (i - lo) + side + 1
-                    Box(
-                        Modifier
-                            .size(with(density) { sp.w.toDp() }, with(density) { sp.h.toDp() })
-                            .align(Alignment.BottomStart)
-                            .zIndex(if (near) 10f else 0f)
-                            .graphicsLayer {
-                                val f = posFn() - lo
-                                val cam = f * (rel[(side + 2).coerceAtMost(rel.lastIndex)] - rel[side + 1])
-                                translationX = c0 + rel[j.coerceIn(0, rel.lastIndex)] - cam - sp.w / 2f
-                                // Lifts as it comes under the middle, back down as it leaves.
-                                val sel = (1f - abs(i - posFn())).coerceIn(0f, 1f)
-                                translationY = -(shelfH.toPx() * 0.1f) - sel * 10.dp.toPx()
-                                val s = 1f + 0.05f * sel
-                                scaleX = s; scaleY = s
-                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
-                                // (404: this slot's place in the window, for the case flying out of / back into it.)
-                                CoverFlight.shelf?.let { sh -> CoverFlight.spines[gm.stableKey] = Rect(sh.left + translationX, sh.bottom + translationY - sp.h, sh.left + translationX + sp.w, sh.bottom + translationY) }
-                                // The ends of the shelf fade out instead of stopping hard.
-                                val fromMid = abs(translationX + sp.w / 2f - c0)
-                                alpha = ((wPx / 2f - fromMid) / (wPx * 0.08f)).coerceIn(0f, 1f) * (1f - CoverFlight.hide(gm.stableKey)) // (404: the slot is empty while its case is out on the way)
-                            }
-                            .drawBehind {
-                                val cam = (posFn() - lo) * (rel[(side + 2).coerceAtMost(rel.lastIndex)] - rel[side + 1])
-                                drawCaseTop(com.shelf.launcher.data.Features.spineDepth.state.value, c0 - (c0 + rel[j.coerceIn(0, rel.lastIndex)] - cam - sp.w / 2f))
-                            }
-                            .pointerInput(real) { detectTapGestures { if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave(); if (real == latestFocus) open() else select(real) } }
-                    ) {
-                        GameSpine(gm, c.state.physicalMedia[gm.stableKey], Modifier.fillMaxSize(), realFirst = true)
-                        // The outline of the one you're on, fading with its lift.
-                        Box(
-                            Modifier.fillMaxSize()
-                                .graphicsLayer { alpha = (1f - abs(i - posFn())).coerceIn(0f, 1f) }
-                                .border(2.dp, accent, RoundedCornerShape(2.dp))
-                        )
-                    }
+            // The games near the row's place (each game once; Endless: its one place in the loop).
+            val shown = (0 until count).filter { r -> coverRowD(r, lo.toFloat(), count, loop).let { it >= -2.6f && it <= after + 1f } }
+            for (real in shown) key(keys[real]) {
+                val gm = c.games[real]
+                Box(
+                    Modifier
+                        .size(with(density) { boxW.toDp() }, with(density) { slotH.toDp() })
+                        .align(Alignment.TopStart)
+                        .zIndex(coverRowD(real, lo.toFloat(), count, loop))
+                        .graphicsLayer {
+                            val d = coverRowD(real, pos.value, count, loop)
+                            val cx = margin + slotW * (coverRowX(d) + 1f)
+                            translationX = cx - boxW / 2f
+                            translationY = hPx - boardPx - slotH
+                            // (The slot is empty while its case is out in the big place or on its way.)
+                            CoverFlight.shelf?.let { sh -> CoverFlight.spines[gm.stableKey] = Rect(sh.left + translationX, sh.top + translationY, sh.left + translationX + boxW, sh.top + translationY + slotH) }
+                            alpha = coverRowAlpha(d, count, loop) * (1f - CoverFlight.hide(gm.stableKey)) *
+                                ((wPx + boxW * 0.2f - (cx + slotW * 0.5f)) / (slotW * 0.8f)).coerceIn(0f, 1f) // (the right edge: out of room)
+                        }
+                        .pointerInput(real) { detectTapGestures { if (StyleNav.zone != StyleNav.Zone.GAMES) StyleNav.leave(); if (real == latestFocus) open() else select(real) } }
+                ) {
+                    Case3D(
+                        gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], COVER_ROW_YAW, case3dAspect(gm, false), Modifier.fillMaxSize(),
+                        reflect = !lite, pitch = bigCasePitch(depth), realFront = realFront, fill = bigCaseFill(depth),
+                        // (Further along the shelf, a little darker: depth.)
+                        shadeOf = { (coverRowD(real, pos.value, count, loop) - 1f).coerceIn(0f, 4f) * 0.05f }
+                    )
                 }
             }
         }
@@ -409,9 +517,10 @@ private fun CoverShelf(c: StyleCtx, shelfH: Dp, accent: Color, modifier: Modifie
 @Composable
 internal fun CoverDetailsSettings() {
     MutedNote(
-        "The game you're on as a big 3D box on the left (the console's own case, or its real scan), its year, studio, genre and " +
-            "story beside it, and a shelf of upright spines along the bottom that glides as one row. ◀ ▶ move along the shelf, A or a tap opens the game, " +
-            "swipe the shelf to move. The box faces you or stands turned like the others (Game look › The one you're on)."
+        "The game you're on as a big 3D box at the upper left (the console's own case, or its real scan) under its name, its year, studio, genre and " +
+            "story beside it, and the other games as smaller cases on a shelf at the lower right, turned so their spines and fronts show. " +
+            "◀ ▶ move along the shelf (the next case comes out into the big place), A or a tap opens the game, swipe the shelf to move. " +
+            "The box faces you or stands turned like the others (Game look › The one you're on)."
     )
     Spacer(Modifier.height(8.dp))
     // Update 487 (K1): this layout's own room between the spines (100 % = packed, as before).
@@ -437,8 +546,18 @@ internal object CoverFlight {
     /** How hidden the slot's own spine is (0 = drawn, 1 = empty slot): only while its case is clearly away from it. */
     fun hide(key: String): Float {
         val p = flights[key]?.value ?: return 0f
-        return appear(p)
+        // (Batch 523, owner: "physically connected pickup and return — no duplicate copies, the original hidden while lifted":
+        // the slot is empty the moment its case leaves it and until the same case is back in it; there is never a spine and
+        // a case of the same game on screen together — the case itself turns from its spine to its front on the way out.)
+        return if (p > 0.001f) 1f else 0f
     }
+    /** Batch 523: the flying case's turn — spine-on in its slot ([SPINE_YAW]), round to [to] in the first 60 % of the way. */
+    fun yaw(p: Float, to: Float): Float {
+        val t = (p / 0.6f).coerceIn(0f, 1f); val e = t * t * (3f - 2f * t)
+        return SPINE_YAW + (to - SPINE_YAW) * e
+    }
+    /** 523r: the shelf's cases stand turned [COVER_ROW_YAW], so a case leaves / reaches its slot at that turn. */
+    const val SPINE_YAW = COVER_ROW_YAW
     /** Update 405: ONE ramp for both the case (alpha) and its slot (1 - alpha): the spine turns into the case in place, the slot stays empty while the case is out. */
     fun appear(p: Float): Float { val t = (p / 0.3f).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
     /** Pure: the case's scale and centre (as a share 0..1 between slot and big place) for flight [p]. */
@@ -495,21 +614,24 @@ private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.F
                     val st = CoverFlight.stage
                     val sp = CoverFlight.spines[gm.stableKey]
                     if (p < 1f && st != null && sp != null && size.width > 0f) {
-                        val s0 = (sp.height / size.height / 0.85f).coerceIn(0.05f, 1f)
+                        val s0 = (sp.height / size.height).coerceIn(0.05f, 1f) // (523r: the slot's box has the big box's shape)
                         val s = CoverFlight.lerp(s0, 1f, p)
                         val cx = CoverFlight.lerp(sp.center.x, st.left + size.width / 2f, p)
-                        val cy = CoverFlight.lerp(sp.center.y, st.top + size.height / 2f, p) - kotlin.math.sin(Math.PI.toFloat() * p) * sp.height * 0.45f // (405: lifts up out of the slot, then forward)
+                        val cy = CoverFlight.lerp(sp.center.y, st.top + size.height / 2f, p) - kotlin.math.sin(Math.PI.toFloat() * p) * sp.height * 0.18f // (405: lifts up out of the slot, then forward; 523r: a gentle arc)
                         transformOrigin = TransformOrigin(0f, 0f)
                         scaleX = s; scaleY = s
                         translationX = cx - s * size.width / 2f - st.left
                         translationY = cy - s * size.height / 2f - st.top
                     }
-                    alpha = CoverFlight.appear(p)
+                    // (Batch 523: the same object all the way - whole from the first frame, no fade from / into a second copy.)
+                    alpha = if (p > 0.001f) 1f else 0f
                 }
         ) {
+            val restYaw = if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN
             Case3D(
-                gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN,
+                gm, c.cover(gm), c.state.physicalMedia[gm.stableKey], restYaw,
                 case3dAspect(gm, false), Modifier.fillMaxSize(), reflect = !LocalLiteEffects.current, pitch = bigCasePitch(depth),
+                yawOf = { CoverFlight.yaw(o.p.value, restYaw) },
                 frame = false, frameColor = accent,
                 realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL,
                 fill = bigCaseFill(depth)

@@ -54,6 +54,15 @@ internal fun looksUnfolded(ratio: Float, front: Float): Boolean = front > 0f && 
 internal object BoxTexture {
     private const val PREFIX = "voltcrop:"
 
+    /**
+     * Batch 520: pictures whose FRONT cut failed — taken for a whole wrap by their shape, but no back | spine | front found
+     * (a 16:9 picture you picked for a PlayStation jewel case). Every view that guessed "wrap" shows the picture itself
+     * instead (CropUnlessMuchCut), never an empty case. State, so the views change as soon as it is known; per process.
+     */
+    private val frontCutFailed = androidx.compose.runtime.mutableStateMapOf<String, Boolean>()
+    fun frontCutFailed(url: String?): Boolean = url != null && frontCutFailed[url] == true
+    internal fun noteFrontCutFailed(url: String) { if (frontCutFailed[url] != true) frontCutFailed[url] = true }
+
     /** The label the full scan is saved under in the game's physical media (ScreenScraper.physicalMedia). */
     const val LABEL = "Box (full scan)"
 
@@ -408,6 +417,9 @@ internal class BoxCropInterceptor : Interceptor {
             .data(url)
             .transformations(listOf(BoxCrop(part, platform, BoxTexture.cutOf(chain.request.data), BoxTexture.bleedOf(chain.request.data))) + chain.request.transformations)
             .build()
-        return chain.withSize(Size(1600, 1600)).proceed(request)
+        val result = chain.withSize(Size(1600, 1600)).proceed(request)
+        // (Batch 520: a FRONT cut that found no wrap is remembered, so the views show the picture whole instead — frontCutFailed.)
+        if (part == BoxPart.FRONT && result is coil.request.ErrorResult && BoxTexture.cutOf(chain.request.data) == null) BoxTexture.noteFrontCutFailed(url)
+        return result
     }
 }

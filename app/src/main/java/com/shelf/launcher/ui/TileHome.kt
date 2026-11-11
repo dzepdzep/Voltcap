@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -426,7 +427,9 @@ internal fun TileHomeRow(
             val lineDp = with(LocalDensity.current) { (18.sp * ts).toDp() }
             val boxH = if (lines == 1) maxOf(24.dp * ts, lineDp + 6.dp) else maxOf(46.dp * ts, lineDp * 2 + 10.dp)
             val nameBarColor = ShelfTheme.accent
-            Box(Modifier.fillMaxWidth().height(boxH)) {
+            // (523y: the game's name over the tiles fades with the row under a row-style window - the window shows the name itself.)
+            Box(Modifier.fillMaxWidth().height(boxH).then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier)) {
                 Text(
                     shownName,
                     // (0.6.17: white with a bar in the theme's colour under it — the name in the theme's colour vanished on
@@ -596,6 +599,10 @@ internal fun TileHomeRow(
                                     val x = (m.start.value + i * strideDpValue - scroll.value).dp
                                     IntOffset(x.roundToPx(), 0)
                                 }
+                                // (523y, KONKR klab523w: under a row-style window (Row reveal / Row opens / Shared) the other tiles
+                                // stayed at full strength under its buttons; they fade with the row as the Voltcap row's cards do.)
+                                .then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                                    Modifier.graphicsLayer { alpha = RowReveal.alphaFor(i == vFocus) } else Modifier)
                                 .then(
                                     if (carousel) Modifier.graphicsLayer {
                                         // Distance from the game you're on, gliding with the row.
@@ -921,6 +928,19 @@ internal class HomeShortcut(
  * the D-pad is on (null: the selection is on the tiles). Its name shows under
  * the pill; that line's space is always kept, so nothing moves.
  */
+/**
+ * Batch 522: the room [content] would take, with nothing of it drawn, touched or announced - measured, never placed (an
+ * unplaced node isn't drawn, hit-tested or in the semantics a screen reader / QaClip reads). Tile home keeps the round
+ * buttons' room under the tiles while they float elsewhere, so nothing else moves.
+ */
+@Composable
+internal fun ReservedRoom(content: @Composable () -> Unit) {
+    Box(Modifier.layout { measurable, constraints ->
+        val p = measurable.measure(constraints)
+        layout(p.width, p.height) { }
+    }.clearAndSetSemantics { }) { content() }
+}
+
 @Composable
 internal fun HomeShortcutBar(
     shortcuts: List<HomeShortcut>,

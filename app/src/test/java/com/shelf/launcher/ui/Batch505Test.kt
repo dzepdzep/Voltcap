@@ -79,7 +79,7 @@ class Batch505Test {
         assertTrue(m.contains("if (content) motion.idlePaused.value = true"))
         // The content's own Initial-pass hands-on handler, before its tap / drag.
         val i = m.indexOf("// (Update 505: hands on what came out")
-        assertTrue(i > 0 && m.indexOf("motion.touchDown()", i) in i..(i + 900) && m.indexOf("motion.touchUp(scope)", i) in i..(i + 1300))
+        assertTrue(i > 0 && m.indexOf("motion.touchDown()", i) in i..(i + 900) && m.indexOf("motion.touchUp(scope)", i) in i..(i + 2600)) // (Batch 523: its pinch zoom added in the same handler)
     }
 
     /** Thor repro (long-title fixtures): Hero wheel side names ended in "…" after two lines; the rows have room for three. */

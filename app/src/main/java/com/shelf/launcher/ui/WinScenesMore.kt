@@ -34,6 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -107,12 +109,25 @@ internal fun SceneKey(
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
     // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
     val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
+    val lab = PopupLab.active.actions // (523t: approved - everyone)
+    if (lab && PopupLab.isMore(a)) {
+        // (Batch 523 design lab: More as a small round "•••" key beside Details; open (Less) it stays lit-edged.)
+        SceneControl(a, Modifier) { on ->
+            androidx.compose.foundation.layout.Box(
+                Modifier.size(height).clip(androidx.compose.foundation.shape.CircleShape).background(if (on) k.onFill else k.fill.copy(alpha = k.fill.alpha * 0.6f))
+                    .border(if (on || a.label == "Less") 2.dp else 1.dp, if (on) k.onEdge else if (a.label == "Less") onFill.copy(alpha = 1f) else k.edge,
+                        androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) { Text("•••", color = if (on) k.onInk else k.ink, fontSize = size, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
+        }
+        return
+    }
     // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
     // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
     // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
     SceneControl(a, Modifier) { on ->
         Row(
-            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else k.fill)
+            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
                 .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -248,7 +263,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Box(Modifier.size(side * 0.26f).background(ink.copy(alpha = 0.08f)).border(1.dp, ink.copy(alpha = 0.3f))) {
-                    ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                    ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -390,7 +405,7 @@ internal fun CorePanel(ctx: WinSceneCtx) {
             // (Update 423: the cover follows the room left under the keys — sized by its width it grew past the row and covered
             // the title once the keys wrapped onto more lines.)
             Box(Modifier.widthIn(max = minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f, matchHeightConstraintsFirst = true).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
-                ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit) }
+                ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize().padding(2.dp), well = dim) }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
@@ -427,7 +442,7 @@ internal fun PocketScreen(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(c3).border(3.dp, c0.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).padding(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(minOf(h * 0.28f, 72.dp)).background(c2).border(2.dp, c0)) {
-                    ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize().padding(2.dp), contentScale = ContentScale.Fit, alpha = 0.92f) }
+                    ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize().padding(2.dp).graphicsLayer { alpha = 0.92f }, well = c2) }
                 }
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
@@ -506,7 +521,14 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
-                if (art != null) AsyncImage(rememberStyleArtRequest(art), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                // (Batch 523: the work in a frame of ITS shape - the mat hugs it instead of a whole picture floating in a wide mat.)
+                if (art != null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    var shape by remember(art) { mutableStateOf(CoverAspects.rawOf(art)) }
+                    AsyncImage(rememberStyleArtRequest(art), ctx.name,
+                        Modifier.then(shape?.let { Modifier.aspectRatio(it.coerceIn(0.4f, 3f), matchHeightConstraintsFirst = true) } ?: Modifier.fillMaxSize()),
+                        contentScale = ContentScale.Fit,
+                        onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f && sz.width.isFinite()) { CoverAspects.note(art, sz.width, sz.height); shape = sz.width / sz.height } })
+                }
             } else ctx.pageBody(Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(10.dp))

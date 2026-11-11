@@ -679,18 +679,19 @@ internal fun GameLookPicker(appearance: AppearanceSettings, onChange: (Appearanc
             F.consoleBadges.value = true; F.consoleBadgeTheme.value = true
         }
     }
-    // Update 125: the console's own logo (Dan Patrick's white set) instead of the small one.
+    // Batch 522 (owner): what the badge shows - the console's short name, its symbol, or its own logo; one look at a time.
     ChipFlow {
-        val logos = F.consoleBadgeLogos.state.value
-        Chip((if (!logos) "✓ " else "") + "Small logo", accent = !logos) { F.consoleBadgeLogos.value = false }
-        Chip((if (logos) "✓ " else "") + "Big logo", accent = logos) { F.consoleBadges.value = true; F.consoleBadgeLogos.value = true }
+        val st = F.consoleBadgeStyle.state.value
+        com.shelf.launcher.data.Features.BadgeStyle.values().forEach { b: com.shelf.launcher.data.Features.BadgeStyle ->
+            Chip((if (st == b) "✓ " else "") + b.label, accent = st == b) { F.consoleBadges.value = true; F.consoleBadgeStyle.value = b }
+        }
     }
     // (Update 317ao: where the badge sits — Auto keeps each layout's own place, clear of the trophy count.)
     ChipFlow {
         val at = F.consoleBadgeCorner.state.value
         com.shelf.launcher.data.Features.BadgeCorner.values().forEach { c: com.shelf.launcher.data.Features.BadgeCorner -> Chip((if (at == c) "✓ " else "") + c.label, accent = at == c) { F.consoleBadgeCorner.value = c } }
     }
-    MutedNote("A small badge in the corner of each game's tile: the console's logo in white on the console's own colour (or your theme's). On every look: covers, cases, cartridges (3D ones too) and discs (not on a spine too slim for it).")
+    MutedNote("A small badge in the corner of each game's tile, white on the console's own colour (or your theme's). Text: the console's short name. Symbol: the console's symbol where it has one, else its name. Logo: the console's own logo; a very wide one shows its symbol or name on small tiles and the whole logo where there's room. On every look: covers, cases, cartridges (3D ones too) and discs (not on a spine too slim for it).")
     // (Update 240, #32/#57: the strip under round discs that carries the trophy count and game status.)
     if (now == CardArtType.DISC || now == CardArtType.CARTRIDGE_DISC) {
         Spacer(Modifier.height(8.dp))

@@ -3605,6 +3605,119 @@
    "status": "fixed (staging 496: CloudSync.qaPaused while the hooks file exists; Thor + KONKR logged 'sync paused' / 'launch sync skipped')",
    "found": "2026-11-08 update 496 (Save Vault dry view showed 'Last checked' at the install times 16:38 / 16:55, Thor)",
    "note": "Status line = check only, no transfer shown. Pre-existing in every earlier QA batch (0.6.67 code has no gate). Restoring 0.6.67 still runs its normal launch sync."
+  },
+  {
+   "id": "D296",
+   "title": "Shared style Details: focusable story box 38 px tall (touch < 24 dp) in 46 layouts",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified (p523or, RP Classic, build 523o: Shared 46 / 46 PASS)",
+   "found": "2026-11-11 popup gate p523f (RP Classic, x1.0, build 523f)"
+  },
+  {
+   "id": "D297",
+   "title": "readcheck overlap flags Crate's back-sleeve fallback titles that are hidden under the front sleeve",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "suspect (checker false positive: the screenshot shows no overlapping text; the QaClip dump carries no z-order / occlusion)",
+   "found": "2026-11-11 popup gate p523f, CRATE x 5 styles, home step",
+   "note": "Fix belongs in readcheck (skip texts covered by a later opaque sibling) once the dump records draw order; no product change."
+  },
+  {
+   "id": "D298",
+   "title": "Airy: a game without art shows its fallback title white on the white card (invisible)",
+   "rule": "READABILITY",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-11 Flip 2 fe523p (endless523b, AIRY_*_ffalse)"
+  },
+  {
+   "id": "D299",
+   "title": "Banner Game info on 16:9: facts card half under the page edge (CONSOLE value cut)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed (523x: facts before the story) - device re-grade in chain523y",
+   "found": "2026-11-11 Flip 2 fp523u x52"
+  },
+  {
+   "id": "D300",
+   "title": "Back hint pill over scene keys (Arctic, Channel grid, Pocket classic / ribbon)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed (523x: hint under the window)",
+   "found": "2026-11-11 Flip 2 fp523u"
+  },
+  {
+   "id": "D301",
+   "title": "Row-style windows: home game header / category chips / Tile home tiles, name and buttons at full strength under the window (duplicated title)",
+   "rule": "READABILITY",
+   "severity": "medium",
+   "status": "fixed (523w / 523y) - popclip reads only the window's own texts, so the gate could not see it",
+   "found": "2026-11-11 owner, KONKR klab523u"
+  },
+  {
+   "id": "D302",
+   "title": "QA: request files written by adb shell unreadable to the QA app on Android 12 FUSE (GT78) - no dumps, no launch checks",
+   "rule": "QA-TOOL",
+   "severity": "high",
+   "status": "fixed (chmod 666 on request files)",
+   "found": "2026-11-11 kp523u INFRA 318"
+  },
+  {
+   "id": "D303",
+   "title": "Row opens Details on KONKR: facts in the ~40 dp between name and buttons, achievements value cut, room under the buttons empty",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 523z (Details takes the bigger room), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
+   "found": "2026-11-11 kp523y x1.0, 31 ROW_OPENS"
+  },
+  {
+   "id": "D304",
+   "title": "Own windows Bar / Cross / Side: the 523x Back hint laid out 0 px tall under scenes that fill their height",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 523z (hint measured first), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
+   "found": "2026-11-11 kp523y + fp523y x1.0"
+  },
+  {
+   "id": "D305",
+   "title": "Camera own window on KONKR: menu rows 32 px (< 24 dp) after the Back hint room",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 523z (rows >= 24 dp), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
+   "found": "2026-11-11 kp523y x1.0 CAMERA_OWN"
+  },
+  {
+   "id": "D306",
+   "title": "popclip: Arctic home clock behind the full-screen details page counted as a squeezed page element",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "checker false positive (occluded home element, like D297); open",
+   "found": "2026-11-11 kp523y + fp523y ARCTIC_ROW_REVEAL"
+  },
+  {
+   "id": "D307",
+   "title": "Details window (Classic popup / Row reveal Details) on KONKR at x1.3: Play row 8 px past the window's foot (140 dp banner floor)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 523z (banner 32 % / 104 dp floor under 400 dp), verified 523z re-gate v2 (KONKR + Flip 2, x1.0 + x1.3)",
+   "found": "2026-11-11 kpb523y x1.3, CLASSIC x32 + ROW_REVEAL x16"
+  },
+  {
+   "id": "D308",
+   "title": "Home layouts at x1.3: home text / status chips behind the popup counted by the popup gate (File select 'Never played', Stacks free-space line, status '79%' / controller chip); also Card binder / Cover details status clock over the console name, Blades controller chip, Cube L2 R2 hint (KONKR x1.3, same in 523y)",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "home-layout x1.3 text, outside the popup; open low (checker scope like D297)",
+   "found": "2026-11-11 fpb523y / kpb523y"
+  },
+  {
+   "id": "D309",
+   "title": "x1.3 home: shared Category name ran under the status bar's clock (Card binder, Cover details, TV room, Twin icons); File select title / console name collided and the file's stars / 'Never played' were cut",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in 523z3 (cbf9162c), verified home13.sh before/after on KONKR + Flip 2 at x1.0 and x1.3; File select popups 6/6 PASS",
+   "found": "2026-11-11 kpb523z2 review (owner)"
   }
  ]
 }

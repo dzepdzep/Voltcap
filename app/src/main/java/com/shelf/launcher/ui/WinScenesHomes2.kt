@@ -139,7 +139,7 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.weight(1f, fill = false)) {
             Box(Modifier.width(minOf(w * 0.3f, 160.dp)).aspectRatio(1f).background(a)) {
-                (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, upperLabels = false) }
@@ -169,7 +169,7 @@ internal fun DashCard(ctx: WinSceneCtx) {
     }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
         // Header strip with the art.
         Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.3f, 150.dp))) {
-            (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
         }
         // (Update 476, D255: the name was drawn over the art's lower part — where the game's own logo usually sits — and the
@@ -224,7 +224,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
             shadowElevation = 20.dp.toPx()
         }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
             Box(Modifier.fillMaxWidth().height(headerH)) {
-                (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
             }
             Column(Modifier.padding(horizontal = 14.dp)) {
@@ -273,7 +273,7 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
         // (Update 476, D256: the poster's picture was decoded at the CARDS' size — 360 px on the KONKR, 512 on the Odin — and
         // drawn across the whole window: 2.7–3.8× upscaled, soft. Window-wide pictures in the scenes now use the backdrop
         // request (the screen's long side), as the classic window already did; the picture itself is the owner's choice.)
-        (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.75f) }
+        (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = 0.75f }, request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         // The spotlight: dark round the edges, a pool of light on the title.
         Canvas(Modifier.fillMaxSize()) {
             drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * 0.3f), radius = size.maxDimension * 0.7f))
@@ -317,7 +317,7 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp)).padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(72.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
-                        (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+                        (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -389,7 +389,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
         // keys one per line and the facts a 14 dp sliver showing half a line; it now leaves the card at least 290 dp).
         val side = minOf(h, (w - 10.dp - 290.dp).coerceAtLeast(140.dp))
         Box(Modifier.size(side).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
-            (ctx.cover ?: ctx.wide)?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            (ctx.cover ?: ctx.wide)?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
         }
@@ -476,7 +476,7 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
     }.background(ground)) {
         // The hero banner across the top, logo on it.
         Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
-            (ctx.backdrop ?: ctx.wide)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+            (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, ground))))
             Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                 ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
@@ -526,7 +526,7 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
         alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(16.dp); clip = true
     }.background(Color.Black)) {
-        (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { AsyncImage(rememberBackdropRequest(it), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
         Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
             ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
@@ -574,7 +574,7 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
             // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)
             Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
                 Box(Modifier.width(minOf(w * 0.24f, 150.dp)).aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.Black)) {
-                    ctx.cover?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+                    SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> SceneNoArt(ctx, m) })
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {

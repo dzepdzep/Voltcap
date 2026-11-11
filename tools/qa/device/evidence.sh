@@ -6,7 +6,7 @@
 #   ev_note OUT key=value              one more line (e.g. style_set CARDS_ROW_OPENS ok)
 #   ev_end OUT                         finished=<epoch>  (a run without it is never graded: interrupted = INFRA)
 # Read-only: it only reads system state and the installed APK. tools/qa/tools/evidence.py checks it on the host.
-P=com.shelf.launcher
+P=${P:-com.shelf.launcher.qa}   # (Batch 521b: the isolated QA app)
 ev_apk() { pm path $P 2>/dev/null | sed -n 's/^package://p' | grep -m1 base.apk; }
 ev_start() {
   o=$1; t=$2; shift 2; m=$o/manifest.txt; a=$(ev_apk)

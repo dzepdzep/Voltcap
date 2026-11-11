@@ -102,13 +102,24 @@ object GameLauncher {
         }
     }
 
+    /** GameNative's `game_source` extra (its IntentLaunchManager.EXTRA_GAME_SOURCE). */
+    internal const val GAMENATIVE_SOURCE_EXTRA = "game_source"
+
     private fun launchSteamGame(context: Context, game: Game, config: GameNativeConfig, options: android.os.Bundle?): LaunchOutcome {
-        val appId = game.steamAppId ?: return LaunchOutcome.Error("Steam entry has no App ID")
+        // (Batch 522: a GameNative game from another store - Epic / GOG / Amazon / its own PC games - goes with GameNative's
+        // id for it and that store, exactly as GameNative's own export and launch intent pair them.)
+        val appId = game.steamAppId ?: game.storeGameId ?: return LaunchOutcome.Error("Steam entry has no App ID")
+        val source = if (game.steamAppId != null) "STEAM" else game.gameNativeSource ?: "STEAM"
         val intent = Intent(config.action).apply {
             setClassName(config.packageName, config.activityClassName)
             putExtra(config.appIdExtraKey, appId) // must stay an Int extra — GameNative's
                                                   // documented intent uses -ei (integer), not -e (string)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            // (Batch 522: exactly what GameNative's own per-game home-screen shortcut sends (its ShortcutUtils): the store
+            // the id belongs to - STEAM; GameNative reads it upper-cased and falls back to STEAM without it - and CLEAR_TOP,
+            // so a GameNative already open on another screen (its library, settings) brings THIS game up instead of only
+            // coming to the front where it was left.)
+            putExtra(GAMENATIVE_SOURCE_EXTRA, source)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         return try {
             context.startActivity(intent, options)

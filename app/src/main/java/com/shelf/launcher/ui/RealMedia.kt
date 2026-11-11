@@ -924,7 +924,18 @@ internal fun rememberWrapFront(cover: Any?, platform: String?, decode: Boolean =
     val bmp = if (decode && known == null) rememberSoftBitmap(s, 160) else null
     if (known == null && bmp != null) androidx.compose.runtime.SideEffect { CoverAspects.note(s, bmp.width.toFloat(), bmp.height.toFloat()) }
     val raw = known ?: bmp?.let { it.width.toFloat() / it.height.coerceAtLeast(1) } ?: return cover
-    return if (looksUnfolded(raw, real)) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
+    return if (looksUnfolded(raw, real) && !BoxTexture.frontCutFailed(s)) BoxTexture.model(s, BoxPart.FRONT, platform) else cover
+}
+
+/**
+ * Batch 520: true while [cover]'s shape is still unknown and could make it a whole wrap for [platform] ([rememberWrapFront]
+ * with decode = false hands such a cover on as it is). Drawn hidden until measured ([CoverCase] hidden), so the whole wrap
+ * never shows for a moment before its front. Reads CoverAspects (state), so it turns false by itself once noted.
+ */
+internal fun wrapShapePending(cover: Any?, platform: String?): Boolean {
+    val s = cover as? String ?: return false
+    if (platform == null || BoxTexture.parse(s) != null || CoverAspects.rawOf(s) != null) return false
+    return CaseCatalog.frontAspect(platform) != null || realCaseMm(platform) != null
 }
 
 /** The case alone (as set: flat official case, 3D box, box turned to its spine, disc in its case). */

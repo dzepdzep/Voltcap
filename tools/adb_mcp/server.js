@@ -24,6 +24,7 @@ const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const guard = require('./guard');                                     // Batch 521: fail-closed protection of the real Voltcap
 
 function findAdb() {
   if (process.env.ADB) return process.env.ADB;
@@ -36,8 +37,21 @@ const SHOTS = process.env.SHOTS_DIR || path.resolve(__dirname, '..', '..', 'scre
 const ROOT = path.resolve(__dirname, '..', '..');                       // the ShelfLauncher project folder
 const BUILDS = path.join(ROOT, 'Claude outputs', 'builds');             // git-ignored
 // (Update 437, owner-authorized: assembleCompat — the compat variant release.ps1 also builds; still a fixed list, no free commands.)
-const GRADLE_TASKS = ['assembleRelease', 'assembleCompat', 'assembleDebug', ':app:compileReleaseKotlin', ':app:compileDebugKotlin', 'lintRelease', 'testDebugUnitTest'];
+// (Batch 521: assembleQa - the isolated QA build type, debug-key signed.)
+const GRADLE_TASKS = ['assembleQa', 'assembleRelease', 'assembleCompat', 'assembleDebug', ':app:compileReleaseKotlin', ':app:compileDebugKotlin', 'lintRelease', 'testDebugUnitTest'];
 let job = null;                                                          // the one Gradle run at a time
+// FW1 (owner, 11 Nov 2026): isolated builds of a feature branch in its own git worktree, never in the release candidate's tree.
+// A fixed allow-list: the name picks the folder (git-ignored, under Claude outputs) and the only branch it may hold.
+const WORKTREES = { fw1: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'fw1'), branch: 'feature/dual-welcome' } };
+// Git-ignored files a build needs, copied from the main tree into a worktree (no signing keys: QA builds use the debug key).
+const WORKTREE_COPY = ['local.properties', 'voltcap_api.properties', 'screenscraper.properties', 'igdb.properties', 'secret_denylist.txt', 'qa_variant.properties'];
+const BACKUPS = path.join(ROOT, 'Claude outputs', 'backups');
+function worktreeOf(name) {
+  if (name === undefined || name === null || name === '') return null;
+  const w = WORKTREES[name];
+  if (!w) throw new Error('Unknown worktree: ' + name + ' (allowed: ' + Object.keys(WORKTREES).join(', ') + ')');
+  return w;
+}
 
 function buildEnv() {
   const env = Object.assign({}, process.env);
@@ -58,15 +72,15 @@ function runCapture(cmd, args, opts = {}) {
   });
 }
 const tail = (t, n) => t.split(/\r?\n/).filter((l) => l.trim() !== '').slice(-n).join('\n');
-function newestApk(variant) {
-  const dir = path.join(ROOT, 'app', 'build', 'outputs', 'apk', variant);
+function newestApk(variant, root) {
+  const dir = path.join(root || ROOT, 'app', 'build', 'outputs', 'apk', variant);
   if (!fs.existsSync(dir)) return null;
   const apks = fs.readdirSync(dir).filter((f) => f.endsWith('.apk')).map((f) => path.join(dir, f));
   apks.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
   return apks[0] || null;
 }
 /** (Update 437) Which outputs folder an assemble task fills: assembleDebug → debug, assembleCompat → compat, else release. */
-function apkVariantOf(task) { return task === 'assembleDebug' ? 'debug' : (task === 'assembleCompat' ? 'compat' : 'release'); }
+function apkVariantOf(task) { return task === 'assembleDebug' ? 'debug' : (task === 'assembleCompat' ? 'compat' : (task === 'assembleQa' ? 'qa' : 'release')); }
 /** (Update 437) "0.6.65" → [0, 6, 65]; compare(a, b) < 0 when a is older. */
 function verParts(x) { return String(x).replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0); }
 function verCompare(a, b) { const x = verParts(a), y = verParts(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); } return 0; }
@@ -76,10 +90,10 @@ function jobStatus(lines) {
   const secs = Math.round(((job.ended || Date.now()) - job.started) / 1000);
   const state = job.code === null ? 'RUNNING' : (job.code === 0 ? 'SUCCESS' : 'FAILED (exit ' + job.code + ')');
   const errs = log.split(/\r?\n/).filter((l) => /^e: |^w: .*(error)|FAILURE:|What went wrong|> Task .*FAILED|BUILD (SUCCESSFUL|FAILED)/.test(l)).slice(0, 40);
-  let s = `Gradle ${job.task}: ${state} after ${secs} s\nLog: ${job.log}`;
+  let s = `Gradle ${job.task}${job.worktree ? ' [worktree ' + job.worktree + ']' : ''}: ${state} after ${secs} s\nLog: ${job.log}`;
   if (errs.length) s += '\n--- key lines ---\n' + errs.join('\n');
   s += '\n--- last lines ---\n' + tail(log, lines || 30);
-  if (job.code === 0 && /^assemble/.test(job.task)) { const v = apkVariantOf(job.task); const a = newestApk(v); if (a) s += `\nAPK: ${a} (${new Date(fs.statSync(a).mtimeMs).toISOString()})`; }
+  if (job.code === 0 && /^assemble/.test(job.task)) { const v = apkVariantOf(job.task); const a = newestApk(v, job.root); if (a) s += `\nAPK: ${a} (${new Date(fs.statSync(a).mtimeMs).toISOString()})`; }
   return s;
 }
 
@@ -177,27 +191,65 @@ const TOOLS = [
   { name: 'type_text', description: 'Type text into the focused field.', inputSchema: { type: 'object', properties: { serial: SERIAL, text: { type: 'string' } }, required: ['text'] } },
   { name: 'screen_size', description: 'Screen size and density.', inputSchema: { type: 'object', properties: { serial: SERIAL } } },
   { name: 'foreground_app', description: 'Which app / activity is in front.', inputSchema: { type: 'object', properties: { serial: SERIAL } } },
-  { name: 'launch_app', description: 'Start an app by package name (default com.shelf.launcher).', inputSchema: { type: 'object', properties: { serial: SERIAL, package: { type: 'string' } } } },
+  { name: 'launch_app', description: 'Start an app by package name (default: the isolated QA app com.shelf.launcher.qa; the real Voltcap is refused).', inputSchema: { type: 'object', properties: { serial: SERIAL, package: { type: 'string' } } } },
   { name: 'logcat', description: 'Recent log lines (default 300), optionally only lines containing "grep".', inputSchema: { type: 'object', properties: { serial: SERIAL, lines: { type: 'integer' }, grep: { type: 'string' }, crashes_only: { type: 'boolean' } } } },
   { name: 'shell', description: 'Run an adb shell command on the handheld and return its output.', inputSchema: { type: 'object', properties: { serial: SERIAL, command: { type: 'string' } }, required: ['command'] } },
   // (Update 144: installing a test build and moving files, without anyone at the PC.)
-  { name: 'install_apk', description: 'Install an APK from this PC on the handheld (adb install -r; "downgrade" also allows an older version).',
-    inputSchema: { type: 'object', properties: { serial: SERIAL, path: { type: 'string', description: 'Full path of the .apk on this PC' }, downgrade: { type: 'boolean' } }, required: ['path'] } },
+  { name: 'install_apk', description: 'Install a QA APK file from this PC on one handheld (adb install -r). Same fail-closed checks as install_build: only com.shelf.launcher.qa, not release-signed, USB handheld in qa_devices.json; "downgrade" only for the QA app.',
+    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial - required' }, path: { type: 'string', description: 'Full path of the .apk on this PC' }, downgrade: { type: 'boolean' } }, required: ['serial', 'path'] } },
   { name: 'push', description: 'Copy a file from this PC to the handheld.', inputSchema: { type: 'object', properties: { serial: SERIAL, pc_path: { type: 'string' }, handheld_path: { type: 'string' } }, required: ['pc_path', 'handheld_path'] } },
   { name: 'pull', description: 'Copy a file from the handheld to this PC.', inputSchema: { type: 'object', properties: { serial: SERIAL, handheld_path: { type: 'string' }, pc_path: { type: 'string' } }, required: ['handheld_path', 'pc_path'] } },
   { name: 'sync_sources', description: 'The project\'s own copy step (HANDOVER rule 13): robocopy src_copy into app\\src\\main\\java\\com\\shelf\\launcher, then project_copy over the project root (/E /NJH /NP). Nothing is deleted.', inputSchema: { type: 'object', properties: {} } },
-  { name: 'gradle_start', description: 'Start gradlew.bat with one allowed task in the project folder, in the background: ' + GRADLE_TASKS.join(', ') + '. Check with gradle_status.',
-    inputSchema: { type: 'object', properties: { task: { type: 'string', enum: GRADLE_TASKS } }, required: ['task'] } },
+  { name: 'gradle_start', description: 'Start gradlew.bat with one allowed task in the project folder (or, with "worktree", in that allow-listed git worktree - see worktree_prepare), in the background: ' + GRADLE_TASKS.join(', ') + '. Check with gradle_status.',
+    inputSchema: { type: 'object', properties: { task: { type: 'string', enum: GRADLE_TASKS }, worktree: { type: 'string', enum: Object.keys(WORKTREES) } }, required: ['task'] } },
+  { name: 'worktree_prepare', description: 'FW1: make or update an allow-listed git worktree (fw1 = branch feature/dual-welcome in Claude outputs\\worktrees\\fw1, git-ignored) from a verified git bundle in Claude outputs\\backups. Fast-forward only; refuses a worktree with local changes. Copies the git-ignored build files (local.properties, service address / denylist files, app\\libs) from the main tree, never signing keys. The main tree\'s files and branch are not touched.',
+    inputSchema: { type: 'object', properties: { worktree: { type: 'string', enum: Object.keys(WORKTREES) }, bundle: { type: 'string', description: 'File name of the .bundle in Claude outputs\\backups' } }, required: ['worktree', 'bundle'] } },
   { name: 'gradle_status', description: 'State of the current/last Gradle run: running/success/failed, compile errors, last log lines, built APK.', inputSchema: { type: 'object', properties: { lines: { type: 'integer', description: 'Last log lines to show (default 30)' } } } },
   { name: 'gradle_stop', description: 'Stop the running Gradle build.', inputSchema: { type: 'object', properties: {} } },
-  { name: 'install_build', description: 'Install the newest built Voltcap APK (variant release, compat or debug) on a handheld with adb install -r: an update in place, app data and settings kept. Never downgrades or uninstalls.',
-    inputSchema: { type: 'object', properties: { serial: SERIAL, variant: { type: 'string', enum: ['release', 'compat', 'debug'] } } } },
+  { name: 'install_build', description: 'Install the newest built ISOLATED QA app (com.shelf.launcher.qa; variant qa = assembleQa, or debug = assembleDebug, which is the QA app by default) on ONE handheld named by its USB serial, with adb install -r. Fail-closed (Batch 521): the APK\'s own manifest must say com.shelf.launcher.qa and it must not be signed with the release key; the handheld must be USB, not a TV, and listed in qa_devices.json; the real Voltcap is checked before and after. Production builds are refused here (install_production).',
+    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial of the handheld (list_handhelds) - required' }, variant: { type: 'string', enum: ['qa', 'debug'] }, worktree: { type: 'string', enum: Object.keys(WORKTREES), description: 'Install the build from this allow-listed worktree instead of the main tree' } }, required: ['serial'] } },
+  { name: 'uninstall_qa', description: 'Remove ONLY the isolated QA app (com.shelf.launcher.qa) and its test data from one USB handheld - needed once when the QA signing key changes (Batch 521). The real Voltcap cannot be named.',
+    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial - required' } }, required: ['serial'] } },
+  { name: 'install_production', description: 'Owner-approved upgrade of the REAL Voltcap only: adb install -r of a published release APK whose sha256 is pinned in tools/adb_mcp/production_pins.json (never -d, never uninstall). Anything else is refused.',
+    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial - required' }, path: { type: 'string', description: 'Full path of the published .apk on this PC' }, sha256: { type: 'string', description: 'Expected sha256 (must match the file and a pin)' } }, required: ['serial', 'path', 'sha256'] } },
   { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } },
   { name: 'publish_release', description: 'Publish a Voltcap release with tools\\release\\release.ps1: bumps versionName/versionCode (or keeps an already staged version and its code), builds the release + compat APKs, commits + pushes, and creates the GitHub release the in-app updater offers. Needs everything committed first, and a version higher than the current one, or equal to the staged one when it is newer than the latest published release and its tag does not exist yet. Runs in the background: check with gradle_status.',
     inputSchema: { type: 'object', properties: { version: { type: 'string', description: 'e.g. 0.6.9' }, notes: { type: 'string', description: 'Release notes (plain text)' } }, required: ['version', 'notes'] } },
   { name: 'git_commit_push', description: 'Commit everything (git add -A) with the given message and push to origin main. Only on branch main, never force; refuses while Gradle runs or when nothing changed.',
     inputSchema: { type: 'object', properties: { message: { type: 'string', description: 'Commit title, e.g. "Update 217: ..."' }, body: { type: 'string', description: 'Optional second paragraph (e.g. Co-Authored-By lines)' } }, required: ['message'] } }
 ];
+
+
+// Batch 521: the ONLY way an APK reaches a handheld from these tools (install_build / install_apk). Fail-closed: anything the
+// guard can't positively confirm as the isolated QA app on a known USB handheld is refused before adb install runs.
+async function qaInstall(serialArg, apk, downgrade) {
+  const t = await guard.targetProblems(serialArg, adb, guard.loadDevices());
+  if (t.problems.length) throw new Error('Refused (nothing installed): ' + t.problems.join('; '));
+  if (!apk || !fs.existsSync(apk)) throw new Error('No such APK: ' + apk);
+  const id = guard.apkIdentity(apk);
+  const p = guard.qaApkProblems(id);
+  if (p.length) throw new Error('Refused (nothing installed): ' + path.basename(apk) + ': ' + p.join('; '));
+  const before = await guard.productionState(serialArg, adb);
+  let dm = null;
+  try {
+    const meta = JSON.parse(fs.readFileSync(path.join(path.dirname(apk), 'output-metadata.json'), 'utf8'));
+    const sdk = parseInt((await adb(['shell', 'getprop', 'ro.build.version.sdk'], serialArg)).trim(), 10) || 0;
+    const bp = (meta.baselineProfiles || []).find((b) => sdk >= b.minApi && sdk <= b.maxApi);
+    const f = bp && bp.baselineProfiles && bp.baselineProfiles[0] ? path.join(path.dirname(apk), bp.baselineProfiles[0]) : null;
+    if (f && fs.existsSync(f) && /-(qa|debug)\.dm$/.test(f)) dm = f;
+  } catch (e) { dm = null; }
+  const flags = downgrade ? ['-r', '-d'] : ['-r'];
+  let out;
+  if (dm) {
+    try { out = '(with profile ' + path.basename(dm) + ')\n' + await adb(['install-multiple', ...flags, apk, dm], serialArg, { timeout: 300000 }); }
+    catch (e) { dm = null; }
+  }
+  if (!dm) out = await adb(['install', ...flags, apk], serialArg, { timeout: 300000 });
+  const after = await guard.productionState(serialArg, adb);
+  const same = guard.sameProduction(before, after);
+  return text(`${apk} (${new Date(fs.statSync(apk).mtimeMs).toISOString()})\n${id.package} ${id.versionName} signer ${id.signers[0].slice(0, 16)}... on ${t.model} ${serialArg}\n` + out.trim() +
+    `\nreal Voltcap ${same ? 'unchanged' : 'CHANGED - ALARM'}: versionCode ${after.versionCode || '-'}, last update ${after.lastUpdateTime || '-'}`);
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const text = (t) => ({ content: [{ type: 'text', text: t }] });
@@ -207,7 +259,7 @@ let serial = Promise.resolve();
 function queued(fn) { const run = serial.then(fn, fn); serial = run.catch(() => {}); return run; }
 
 async function call(name, a) {
-  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release') return queued(() => call2(name, a));
+  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release' || name === 'worktree_prepare') return queued(() => call2(name, a));
   return call2(name, a);
 }
 
@@ -253,7 +305,8 @@ async function call2(name, a) {
       return text(line ? line.trim() : 'Unknown');
     }
     case 'launch_app': {
-      const pkg = a.package || 'com.shelf.launcher';
+      const pkg = a.package || guard.QA_PACKAGE;
+      if (pkg === guard.PRODUCTION_PACKAGE) throw new Error('Refused (Batch 521): launching the real Voltcap from the tools is not allowed - use ' + guard.QA_PACKAGE + '.');
       return text((await adb(['shell', 'monkey', '-p', pkg, '-c', 'android.intent.category.LAUNCHER', '1'], s)).trim());
     }
     case 'logcat': {
@@ -263,14 +316,21 @@ async function call2(name, a) {
       if (a.grep) out = out.split('\n').filter((l) => l.includes(a.grep)).join('\n');
       return text(out.trim() || '(empty)');
     }
-    case 'shell': return text((await adb(['shell', a.command], s, { timeout: 60000 })).trim() || '(no output)');
-    case 'install_apk': {
-      const args = ['install', '-r'];
-      if (a.downgrade) args.push('-d');
-      args.push(a.path);
-      return text((await adb(args, s, { timeout: 180000 })).trim());
+    case 'shell': {
+      const why = guard.shellProblems(a.command);
+      if (why.length) throw new Error('Refused (Batch 521 guard): this command ' + why.join('; ') + '. Nothing was run.');
+      return text((await adb(['shell', a.command], s, { timeout: 60000 })).trim() || '(no output)');
     }
-    case 'push': return text((await adb(['push', a.pc_path, a.handheld_path], s, { timeout: 180000 })).trim());
+    case 'install_apk': return qaInstall(a.serial, a.path, !!a.downgrade);
+    case 'push': {
+      if (guard.shellProblems('push ' + a.handheld_path).length || /\/(RetroArch|Voltcap)\b/i.test(String(a.handheld_path)))
+        throw new Error('Refused (Batch 521 guard): ' + a.handheld_path + ' belongs to the real Voltcap or your saves.');
+      if (/\.(sh|txt)$/i.test(String(a.pc_path)) && fs.existsSync(a.pc_path) && fs.statSync(a.pc_path).size < 2e6) {
+        const bad = guard.scriptProblems(fs.readFileSync(a.pc_path, 'utf8'));
+        if (bad.length) throw new Error('Refused (Batch 521 guard): ' + path.basename(a.pc_path) + ' would act on the real Voltcap / system:\n' + bad.slice(0, 12).join('\n'));
+      }
+      return text((await adb(['push', a.pc_path, a.handheld_path], s, { timeout: 180000 })).trim());
+    }
     case 'pull': {
       fs.mkdirSync(path.dirname(a.pc_path), { recursive: true });
       return text((await adb(['pull', a.handheld_path, a.pc_path], s, { timeout: 180000 })).trim());
@@ -292,15 +352,55 @@ async function call2(name, a) {
       if (!GRADLE_TASKS.includes(a.task)) throw new Error('Task not allowed: ' + a.task);
       if (job && job.code === null) throw new Error('Gradle is already running ' + job.task + ' (gradle_status / gradle_stop).');
       fs.mkdirSync(BUILDS, { recursive: true });
-      const log = path.join(BUILDS, 'gradle_' + a.task.replace(/[^A-Za-z]/g, '') + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
+      const log = path.join(BUILDS, 'gradle_' + (a.worktree ? String(a.worktree).replace(/[^a-z0-9]/g, '') + '_' : '') + a.task.replace(/[^A-Za-z]/g, '') + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
       const ws = fs.createWriteStream(log);
-      const p = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'gradlew.bat', a.task, '--console=plain'], { cwd: ROOT, env: buildEnv(), windowsHide: true });
-      job = { task: a.task, started: Date.now(), ended: null, code: null, log, pid: p.pid };
+      const wt = worktreeOf(a.worktree);
+      const cwd = wt ? wt.dir : ROOT;
+      if (wt && !fs.existsSync(path.join(cwd, 'gradlew.bat'))) throw new Error('Worktree ' + a.worktree + ' is not prepared (worktree_prepare).');
+      const p = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'gradlew.bat', a.task, '--console=plain'], { cwd, env: buildEnv(), windowsHide: true });
+      job = { task: a.task, started: Date.now(), ended: null, code: null, log, pid: p.pid, root: cwd, worktree: wt ? a.worktree : null };
       const j = job;
       p.stdout.pipe(ws, { end: false }); p.stderr.pipe(ws, { end: false });
       p.on('error', (e) => { ws.write('\n' + e.message + '\n'); });
       p.on('close', (code) => { j.code = code === null ? -1 : code; j.ended = Date.now(); ws.end(); });
       return text(`Started gradlew ${a.task} (pid ${p.pid}). Log: ${log}\nCheck with gradle_status.`);
+    }
+    case 'worktree_prepare': {
+      const wt = worktreeOf(a.worktree);
+      if (!wt) throw new Error('worktree is required');
+      if (job && job.code === null) throw new Error('A Gradle run is in progress - wait for it first.');
+      const name = String(a.bundle || '');
+      if (!/^[A-Za-z0-9_.-]+\.bundle$/.test(name)) throw new Error('bundle must be a plain .bundle file name in Claude outputs\\backups');
+      const bundle = path.join(BACKUPS, name);
+      if (!fs.existsSync(bundle)) throw new Error('No such bundle: ' + bundle);
+      const out = [];
+      const g = async (args, cwd) => { const r = await runCapture('git', args, { cwd: cwd || ROOT }); out.push('$ git ' + args.join(' ') + ' -> ' + r.code + (r.out.trim() ? '\n' + tail(r.out, 12) : '')); if (r.code !== 0) throw new Error(out.join('\n')); return r.out; };
+      await g(['bundle', 'verify', bundle]);
+      const ref = 'refs/remotes/bundle/' + wt.branch;
+      await g(['fetch', '--no-tags', bundle, '+refs/heads/' + wt.branch + ':' + ref]);
+      if (!fs.existsSync(wt.dir)) {
+        fs.mkdirSync(path.dirname(wt.dir), { recursive: true });
+        // (LF files as in the main tree: with this PC's core.autocrlf=true a worktree came out CRLF, and the tests that read
+        // the sources looking for "\n" failed there - 9 of 1056, fw1 11 Nov.)
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add', '-B', wt.branch, wt.dir, ref]);
+      } else {
+        const st = (await g(['status', '--porcelain', '--untracked-files=no'], wt.dir)).trim();
+        if (st) throw new Error('Worktree ' + a.worktree + ' has local changes - nothing done:\n' + st);
+        const br = (await g(['rev-parse', '--abbrev-ref', 'HEAD'], wt.dir)).trim();
+        if (br !== wt.branch) throw new Error('Worktree ' + a.worktree + ' is on ' + br + ', expected ' + wt.branch + ' - nothing done.');
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'merge', '--ff-only', ref], wt.dir);
+        // Files written CRLF by an earlier checkout are written again as LF (the worktree was clean: nothing of yours changes).
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'checkout-index', '-a', '-f'], wt.dir);
+      }
+      for (const f of WORKTREE_COPY) {
+        const from = path.join(ROOT, f);
+        if (fs.existsSync(from)) { fs.copyFileSync(from, path.join(wt.dir, f)); out.push('copied ' + f); }
+      }
+      const libs = path.join(ROOT, 'app', 'libs');
+      if (fs.existsSync(libs)) { const r = await runCapture('robocopy', [libs, path.join(wt.dir, 'app', 'libs'), '/E', '/NJH', '/NP', '/NFL', '/NDL']); out.push('robocopy app\\libs -> exit ' + r.code); if (r.code < 0 || r.code >= 8) throw new Error(out.join('\n')); }
+      const head = (await g(['log', '-1', '--oneline'], wt.dir)).trim();
+      const main = (await g(['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+      return text(`Worktree ${a.worktree}: ${wt.dir}\nHEAD ${head}\nmain tree still on ${main} (its files untouched)\n\n` + out.join('\n'));
     }
     case 'gradle_status': return text(jobStatus(a.lines));
     case 'gradle_stop': {
@@ -309,28 +409,34 @@ async function call2(name, a) {
       return text('Stopped ' + job.task + '.');
     }
     case 'install_build': {
-      const variant = a.variant || 'release';
-      if (!['release', 'compat', 'debug'].includes(variant)) throw new Error('Unknown variant: ' + variant);
+      const variant = a.variant || 'qa';
+      if (!['qa', 'debug'].includes(variant)) throw new Error('Refused (Batch 521): install_build only installs the isolated QA app (variant qa or debug). Production: install_production.');
       if (job && job.code === null) throw new Error('Gradle is still running - wait for it first.');
-      const apk = newestApk(variant);
-      if (!apk) throw new Error('No built ' + variant + ' APK in app\\build\\outputs\\apk\\' + variant);
-      // (0.6.15: with the build's profile (.dm) for the handheld's Android version when there is one, so Android compiles
-      // Voltcap during the install - an APK alone runs uncompiled until Android's overnight optimisation.)
-      let dm = null;
-      try {
-        const meta = JSON.parse(fs.readFileSync(path.join(path.dirname(apk), 'output-metadata.json'), 'utf8'));
-        const sdk = parseInt((await adb(['shell', 'getprop', 'ro.build.version.sdk'], s)).trim(), 10) || 0;
-        const bp = (meta.baselineProfiles || []).find((b) => sdk >= b.minApi && sdk <= b.maxApi);
-        const f = bp && bp.baselineProfiles && bp.baselineProfiles[0] ? path.join(path.dirname(apk), bp.baselineProfiles[0]) : null;
-        if (f && fs.existsSync(f)) dm = f;
-      } catch (e) { dm = null; }
-      let out;
-      if (dm) {
-        try { out = await adb(['install-multiple', '-r', apk, dm], s, { timeout: 300000 }); out = '(with profile ' + path.basename(dm) + ')\n' + out; }
-        catch (e) { dm = null; }
-      }
-      if (!dm) out = await adb(['install', '-r', apk], s, { timeout: 300000 });
-      return text(`${apk} (${new Date(fs.statSync(apk).mtimeMs).toISOString()})\n` + out.trim());
+      const wtI = worktreeOf(a.worktree);
+      const apk = newestApk(variant, wtI ? wtI.dir : ROOT);
+      if (!apk) throw new Error('No built ' + variant + ' APK in ' + (wtI ? 'worktree ' + a.worktree + ' ' : '') + 'app\\build\\outputs\\apk\\' + variant);
+      return qaInstall(a.serial, apk, false);
+    }
+    case 'uninstall_qa': {
+      const t = await guard.targetProblems(a.serial, adb, guard.loadDevices());
+      if (t.problems.length) throw new Error('Refused: ' + t.problems.join('; '));
+      const before = await guard.productionState(a.serial, adb);
+      const out = await adb(['uninstall', guard.QA_PACKAGE], a.serial, { timeout: 60000 }).catch((e) => e.message);
+      const after = await guard.productionState(a.serial, adb);
+      return text(`uninstall ${guard.QA_PACKAGE} on ${t.model}: ${String(out).trim()}\nreal Voltcap ${guard.sameProduction(before, after) ? 'unchanged' : 'CHANGED - ALARM'}`);
+    }
+    case 'install_production': {
+      const t = await guard.targetProblems(a.serial, adb, guard.loadDevices());
+      if (t.problems.length) throw new Error('Refused: ' + t.problems.join('; '));
+      if (!a.path || !fs.existsSync(a.path)) throw new Error('No such file: ' + a.path);
+      const id = guard.apkIdentity(a.path);
+      const p = guard.productionApkProblems(id, guard.loadPins());
+      if (String(a.sha256 || '').toLowerCase() !== id.sha256) p.push('sha256 does not match the one given');
+      if (p.length) throw new Error('Refused: ' + p.join('; '));
+      const before = await guard.productionState(a.serial, adb);
+      const out = await adb(['install', '-r', a.path], a.serial, { timeout: 300000 });
+      const after = await guard.productionState(a.serial, adb);
+      return text(`${path.basename(a.path)} ${id.versionName} (${id.versionCode}) sha256 ${id.sha256}\n${out.trim()}\nreal Voltcap: ${before.versionCode} -> ${after.versionCode}`);
     }
     case 'git_status': {
       const b = await runCapture('git', ['-C', ROOT, 'rev-parse', '--abbrev-ref', 'HEAD']);

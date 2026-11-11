@@ -676,7 +676,25 @@ internal class InspectMotion {
         val (z, x, y) = inspectPinchStep(zoom.floatValue, panX.floatValue, panY.floatValue, dz, dx, dy, w, h)
         zoom.floatValue = z; panX.floatValue = x; panY.floatValue = y
     }
-    fun resetZoom() { zoom.floatValue = 1f; panX.floatValue = 0f; panY.floatValue = 0f }
+    fun resetZoom() { zoom.floatValue = 1f; panX.floatValue = 0f; panY.floatValue = 0f; resetContentZoom() }
+
+    /**
+     * Batch 523 (owner: "pinch-to-zoom works on cases, but NOT on extracted CDs / discs or cartridges"): what came out of the
+     * case is drawn by its own composable (InspectContent) over the case's side, with its own touch handlers — the case's
+     * pinch handler sits on the case's Box, a sibling, so two fingers on the disc / cartridge never reached it and the disc's
+     * drag handler took them as a turn. It now has the same pinch / pan (same limits: [inspectPinchStep]), its own zoom,
+     * eased back with its turn ([releaseContent]), reset by Y / long press ([resetPose]) and when it goes back in the case.
+     */
+    val contentZoom = mutableFloatStateOf(1f)
+    val contentPanX = mutableFloatStateOf(0f)
+    val contentPanY = mutableFloatStateOf(0f)
+    fun pinchContent(dz: Float, dx: Float, dy: Float, w: Float, h: Float) {
+        if (closing || !started || out.floatValue < 0.5f) return
+        contentEase?.cancel()
+        val (z, x, y) = inspectPinchStep(contentZoom.floatValue, contentPanX.floatValue, contentPanY.floatValue, dz, dx, dy, w, h)
+        contentZoom.floatValue = z; contentPanX.floatValue = x; contentPanY.floatValue = y
+    }
+    fun resetContentZoom() { contentZoom.floatValue = 1f; contentPanX.floatValue = 0f; contentPanY.floatValue = 0f }
 
     /*
      * Update 504 (owner: "pause the automatic motion while I handle it, then let it settle back"): fingers on the piece now
@@ -826,13 +844,24 @@ internal class InspectMotion {
                 val now = contentTurn.floatValue
                 val to = (now / 360f).roundToInt() * 360f
                 val p0 = contentPitch.floatValue
-                if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect content settle hold=$hold dur=$dur touch=$touch turn=$now->$to")
+                val z0 = contentZoom.floatValue; val x0 = contentPanX.floatValue; val y0 = contentPanY.floatValue
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect content settle hold=$hold dur=$dur touch=$touch turn=$now->$to zoom=$z0")
                 animate(0f, 1f, animationSpec = tween(dur, easing = if (touch) FastOutSlowInEasing else RETURN_EASE)) { k, _ ->
                     contentTurn.floatValue = now + (to - now) * k
                     contentPitch.floatValue = p0 * (1f - k)
+                    // (Batch 523: its zoom and pan come back with it, as the case's do.)
+                    contentZoom.floatValue = z0 + (1f - z0) * k; contentPanX.floatValue = x0 * (1f - k); contentPanY.floatValue = y0 * (1f - k)
                 }
                 contentTurn.floatValue = 0f
                 contentPitch.floatValue = 0f
+                resetContentZoom()
+            } else if (contentZoom.floatValue != 1f || contentPanX.floatValue != 0f || contentPanY.floatValue != 0f) {
+                // (Batch 523: with "turn back by themselves" off the turn stays, the zoom still eases back - as the case's.)
+                val z0 = contentZoom.floatValue; val x0 = contentPanX.floatValue; val y0 = contentPanY.floatValue
+                animate(0f, 1f, animationSpec = tween(dur, easing = FastOutSlowInEasing)) { k, _ ->
+                    contentZoom.floatValue = z0 + (1f - z0) * k; contentPanX.floatValue = x0 * (1f - k); contentPanY.floatValue = y0 * (1f - k)
+                }
+                resetContentZoom()
             }
             if (fingers == 0) idlePaused.value = false
         }
@@ -981,7 +1010,13 @@ internal class InspectMotion {
         caseJob?.cancel()
         // (Update 324: back in the case upright.)
         contentEase?.cancel(); contentPitch.floatValue = 0f
+        // (Batch 523: back in the case at its own size - the next time it comes out it starts unzoomed, centred.)
+        val z0 = contentZoom.floatValue; val x0 = contentPanX.floatValue; val y0 = contentPanY.floatValue
         caseJob = scope.launch {
+            if (z0 != 1f || x0 != 0f || y0 != 0f) animate(0f, 1f, animationSpec = tween(200, easing = FastOutSlowInEasing)) { k, _ ->
+                contentZoom.floatValue = z0 + (1f - z0) * k; contentPanX.floatValue = x0 * (1f - k); contentPanY.floatValue = y0 * (1f - k)
+            }
+            resetContentZoom()
             if (out.floatValue > 0f) animate(out.floatValue, 0f, animationSpec = tween(560, easing = FastOutSlowInEasing)) { v, _ -> out.floatValue = v }
             caseStepDone() // (Update 504)
         }
@@ -1152,7 +1187,8 @@ internal class InspectMotion {
                 }
             }
             if (turnBack) pitch.floatValue = 0f
-            resetZoom()
+            // (Batch 523: the case's own zoom only - what came out eases its zoom back with its turn, releaseContent.)
+            zoom.floatValue = 1f; panX.floatValue = 0f; panY.floatValue = 0f
             if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect resume")
             idlePaused.value = false // (the slow turn of what came out carries on where it stopped)
             startSway(scope) // (Update 274: still again, it goes back to its sway.)
@@ -1661,25 +1697,50 @@ private fun InspectContent(
                 translationY = (startCy - endCy) * (1f - e) - lift
                 if (disc) rotationZ = 360f * (spin?.value ?: 0f)
             }
+            // (Batch 523: its own pinch zoom / pan, draw-time only - the same rule as the case's layer.)
+            .graphicsLayer {
+                val z = motion.contentZoom.floatValue
+                if (z != 1f || motion.contentPanX.floatValue != 0f || motion.contentPanY.floatValue != 0f) {
+                    scaleX = z; scaleY = z
+                    translationX = motion.contentPanX.floatValue; translationY = motion.contentPanY.floatValue
+                }
+            }
             // (Update 200: only while it's out. Unseen in the case it stood over the case's right half and took the taps
             // meant for the case — a finger on the case didn't open it.)
             .then(if (!outNow) Modifier else Modifier
                 .pointerInput(Unit) {
                     // (Update 505: hands on what came out — its slow turn and the settle-back pause, as on the case (504); the
                     // wait starts when the last finger lifts. Initial pass: before the tap / drag below, which stay as they were.)
+                    // (Batch 523: two fingers zoom / pan it - consumed here, so the turn and tap below stop, as on the case.)
                     awaitEachGesture {
                         awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                         motion.touchDown()
+                        var pinched = false
                         do {
                             val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                            motion.fingers = ev.changes.count { it.pressed }
+                            val down = ev.changes.count { it.pressed }
+                            motion.fingers = down
+                            if (down >= 2) {
+                                pinched = true
+                                motion.lastPinchAt = android.os.SystemClock.uptimeMillis()
+                                val dz = ev.calculateZoom()
+                                val dp = ev.calculatePan()
+                                val z = motion.contentZoom.floatValue
+                                motion.pinchContent(dz, dp.x * z, dp.y * z, size.width.toFloat(), size.height.toFloat())
+                                ev.changes.forEach { if (it.positionChanged()) it.consume() }
+                            }
                         } while (ev.changes.any { it.pressed })
                         motion.touchUp(scope)
+                        if (pinched) {
+                            motion.releaseContent(scope)
+                            if (QaTrace.on) android.util.Log.e("VoltcapQA", "inspect content pinch zoom=${"%.2f".format(motion.contentZoom.floatValue)} " +
+                                "pan=${motion.contentPanX.floatValue.roundToInt()},${motion.contentPanY.floatValue.roundToInt()} size=${size.width}x${size.height}")
+                        }
                     }
                 }
                 .pointerInput(Unit) {
                     // (Update 200: a tap lays it back in the open case; a tap on the case then shuts it.)
-                    detectTapGestures(onTap = { if (motion.out.floatValue > 0.5f) motion.putBack(scope) })
+                    detectTapGestures(onTap = { if (motion.out.floatValue > 0.5f && !motion.pinchedJustNow()) motion.putBack(scope) })
                 }
                 // A drag turns it round (a disc: over to its data side); up / down tilts it over (update 324); let go and it
                 // comes back.

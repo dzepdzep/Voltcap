@@ -139,16 +139,13 @@ private fun AiryRow(c: StyleCtx, loop: Boolean, modifier: Modifier) {
     val curve = Features.ahCurve.state.value / 100f
     val titles = LocalTitleOptions.current
     val density = LocalDensity.current
-    val scroll = remember { Animatable(focus.toFloat()) }
-    LaunchedEffect(focus, count) {
-        var cur = scroll.value
-        if (loop && count > 1) {
-            while (focus - cur > count / 2f) cur += count
-            while (cur - focus > count / 2f) cur -= count
-            scroll.snapTo(cur)
-        }
-        if (!animate || abs(cur - focus) > 30f) scroll.snapTo(focus.toFloat())
-        else scroll.animateTo(focus.toFloat(), spring(dampingRatio = 0.9f, stiffness = 260f))
+    // (Batch 523: the row's endless place counts every D-pad step - rememberLoopFocus - so fast presses and short lists step on
+    // round instead of bouncing back the shorter way.)
+    val target = rememberLoopFocus(c)
+    val scroll = remember { Animatable(target.toFloat()) }
+    LaunchedEffect(target, count) {
+        if (!animate || abs(scroll.value - target) > 30f) scroll.snapTo(target.toFloat())
+        else scroll.animateTo(target.toFloat(), spring(dampingRatio = 0.9f, stiffness = 260f))
     }
     val bob = rememberGcClock(animate && rememberIsActive() && !HomeIdle.calm, 1f, 30)
     val caption = CategoryTitle.captionOn(c.state.appearance)
@@ -170,11 +167,11 @@ private fun AiryRow(c: StyleCtx, loop: Boolean, modifier: Modifier) {
         val visible = (wPx / (pitch * 0.7f) / 2f).toInt() + 2
         // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
         val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
-        for (off in -visible..visible) {
-            var i = base + off
-            if (loop) i = ((i % count) + count) % count else if (i !in 0 until count) continue
+        // (Batch 523: each game once when the row is shorter than the room - loopSlots; never two lit copies.)
+        for ((slot, i) in loopSlots(base, count, visible, loop, com.shelf.launcher.data.Features.endlessFill.value)) {
+            val off = slot - base
             val g = c.games[i]
-            key(base + off) {
+            key(if (loop && count < 2 * visible + 1) "g$i" else slot) {
                 val on = i == focus
                 val lit by animateFloatAsState(if (on) 1f else 0f, if (animate) spring(dampingRatio = 0.6f) else tween(0), label = "ahLit")
                 Box(

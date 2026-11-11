@@ -38,6 +38,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -197,9 +201,10 @@ private fun FileSelectScreen(c: StyleCtx, modifier: Modifier) {
     Column(modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 6.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text("SELECT FILE", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Black, style = outline)
-            Spacer(Modifier.weight(1f))
-            Column(horizontalAlignment = Alignment.End) {
-                if (caption) Text(c.categoryLabel.uppercase(), color = Color(0xFFFFD84A), fontSize = 15.sp, fontWeight = FontWeight.Bold, style = outline, maxLines = 1)
+            // (523z2, KONKR text x1.3: the category ran into "SELECT FILE" and lost its end - "...ENTERTAINMENT" without
+            // "SYSTEM". It keeps a gap and takes only the room left, shown whole - it fits, else it slides - right-aligned as before.)
+            Column(Modifier.weight(1f).padding(start = 14.dp), horizontalAlignment = Alignment.End) {
+                if (caption) FullText(c.categoryLabel.uppercase(), color = Color(0xFFFFD84A), fontSize = 15.sp, fontWeight = FontWeight.Bold, style = outline, maxLines = 1)
                 if (pages > 1) Text("PAGE ${page + 1} / $pages", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, style = outline)
             }
         }
@@ -316,9 +321,24 @@ private fun FileBlock(c: StyleCtx, g: Game, index: Int, slot: Int, on: Boolean, 
                     else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
+                // (523z2, KONKR text x1.3: a two-line name pushed the stars down to the block's edge and "Never played" out of
+                // it. Where the block is too short for all five lines the name takes one line - shown whole, it fits or
+                // slides - and the stars and the time played stay; with room it is two lines as before.)
+                androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                val fsd = androidx.compose.ui.platform.LocalDensity.current
+                // (The heights FullText really keeps - reservedLinesHeight - not an estimate: the first try, ×1.3 on the KONKR,
+                // under-counted the console line and still drew two lines.)
+                val twoNeed = reservedLinesHeight(12.sp, fontWeight = FontWeight.Black) +
+                    reservedLinesHeight(17.sp, 19.sp, FontWeight.Black, lines = 2) + 4.dp +
+                    maxOf(16.dp, reservedLinesHeight(13.sp, fontWeight = FontWeight.Bold)) + reservedLinesHeight(12.sp)
+                val boxH = maxHeight
+                // (And checked after layout: if the column still came out taller than the block, one line.)
+                var overflowed by remember(g.stableKey, boxH) { mutableStateOf(false) }
+                val nameLines = if (overflowed) 1 else fsTitleLines(with(fsd) { boxH.toPx() }, with(fsd) { twoNeed.toPx() })
+                if (QaTrace.on) SideEffect { android.util.Log.e("VoltcapQA", "fs '${g.name.take(20)}' box=$boxH need2=$twoNeed lines=$nameLines over=$overflowed") }
+                Column(Modifier.wrapContentHeight(unbounded = true).onSizeChanged { if (nameLines == 2 && it.height > with(fsd) { boxH.toPx() } + 1f) overflowed = true }) {
                     FullText(consoleLabel, color = ink.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                    FullText(titles.display(g.name), color = ink, fontSize = 17.sp, lineHeight = 19.sp, fontWeight = FontWeight.Black, maxLines = 2, style = if (ink == Color.White) TextStyle(shadow = FsShadow) else TextStyle())
+                    FullText(titles.display(g.name), color = ink, fontSize = 17.sp, lineHeight = 19.sp, fontWeight = FontWeight.Black, maxLines = nameLines, style = if (ink == Color.White) TextStyle(shadow = FsShadow) else TextStyle())
                     Spacer(Modifier.height(4.dp))
                     val p = c.progress(g)
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -329,6 +349,7 @@ private fun FileBlock(c: StyleCtx, g: Game, index: Int, slot: Int, on: Boolean, 
                         )
                     }
                     Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = ink.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)
+                }
                 }
             }
         }
@@ -368,3 +389,7 @@ internal fun FileSelectSettings() {
     Toggle(Icons.Filled.Texture, "Moving pattern", "A slowly drifting diamond pattern on the blue behind the blocks. Off: plain blue.", Features.fsPattern)
     Toggle(Icons.Filled.MusicNote, "Console-era blips", "A short synth blip as you move between files.", Features.fsSounds)
 }
+
+
+/** 523z2: two lines for the name when the block has the room for all five lines, else one (the stars and time stay). */
+internal fun fsTitleLines(availablePx: Float, twoLineNeedPx: Float): Int = if (availablePx >= twoLineNeedPx) 2 else 1

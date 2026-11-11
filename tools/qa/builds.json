@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -396,6 +396,325 @@
    "patch_sha256": "6eee477db088270eac39cccdc03539c00695c55e5e66cb13c929107731f3b556",
    "tree_hash": "",
    "note": "update 489d: D287 launch guards at every launch path (vm.launchNow / vm.app / GameLauncher / QuickResume / ScreenLayouts / hero dock) + K4 spines in their own effect (SPINE_AHEAD 8, nearest first)"
+  },
+  {
+   "id": "qa-0.6.69-522a",
+   "apk_sha256": "31622f123e5c863346998ff66f3c1ac03410493d7892da523f9763d9de3af9a0",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3ca47e3",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522: badge audit fixes (own logos for MegaDrive/TG16/TGCD/Famicom/NGPC, short-name text without ellipsis, family colours, one-colour block logos -> name, 3DO out of the badge set), badge gallery + scale test hooks, InkGlyph QaClip glyph boxes"
+  },
+  {
+   "id": "qa-0.6.69-522b",
+   "apk_sha256": "6453cce4d8860d07d2c7267c6a618065ef3621e651411e21380288dad698bb6a",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3ca47e3",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522b: 522a + PS4 / PS5 badge colours, GameNative launch = GameNative's own shortcut intent (game_source STEAM + CLEAR_TOP), DroidDeck .droiddeck files validated + Steam category + shortcut/file dedupe, clearer missing-app messages"
+  },
+  {
+   "id": "qa-0.6.69-522e",
+   "apk_sha256": "fe20191cdd997b6a49bc55b0e1c7435f5a4f1beeeb920d35e5dc2f99c4b5440f",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c82af51a8cec9d4518ead8fb47dace698f29fb86",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522e: three badge looks, Tile home buttons' room kept, GameNative stores, popup names / facts whole (Storage, Bubbles, Camera, Orbit, Blades, Banner, Row styles), Green Core InkGlyph keys, Edit Home QA hook"
+  },
+  {
+   "id": "qa-0.6.69-522g",
+   "apk_sha256": "1cf6dc11e67158a5b4c7ecd8fc859d7b7d56a0324824d8aa1433acb636648eb1",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "d5ba4330fe23add62f2e21dbdbac7e77451cc172",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522g: 522e + Tile home Edit Home fixes (Top padding, drop check only for a drop), wide wordmarks whole on big tiles, Bubbles window name / hint whole"
+  },
+  {
+   "id": "qa-0.6.69-522h",
+   "apk_sha256": "5000ae9d493d08dbeb9782e4df65c7bdd2b8b53af635f6e0a8321f0ed97f2b0d",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "d5ba4330fe23add62f2e21dbdbac7e77451cc172",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 522h: 522g + the details page's console pill whole (SourceBadge, found at font x1.3)"
+  },
+  {
+   "id": "qa-0.6.69-523a",
+   "apk_sha256": "66bf42f0f4c8f41e1339be17457e9d8cafaf9201f8fbce73ed46bb9e1858a421",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "8a4a92fbb3d5c4975dfd6796ce82d478b4266687",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523a: 522h + badge optical sizing (lettering-aware wordmark height, legibility check, one pill height per look, ES-DE fallback sized by its shape, ScummVM / Steam one-colour -> name, store colours, PC / stores gallery page). Installed on RP Classic (popup / badge gate) and GT78 (KONKR memory / scroll; old release-key QA app removed with the owner's OK)"
+  },
+  {
+   "id": "qa-0.6.69-523b",
+   "apk_sha256": "674206dc1d314fb8b40c80d8a74564994e4a2f85a2ea9fddcc6f9e00eb510b73",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "dcb4ed46bf65351cab48ea2d935801ce9730b7f6",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523b: 523a + Smart Fill (popup artwork), Inspect pinch zoom on the piece out of its case, Storage chip whole (built, never installed: superseded by 523c)"
+  },
+  {
+   "id": "qa-0.6.69-523c",
+   "apk_sha256": "22cfc40c6c518d627f5d79d0616449885bd8d7a92aa318858bcffb536dd46998",
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "46b810aa4b29af8f7ce48bd6c1de2417c6d8754e",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "note": "batch 523c: 523b + Smart Fill on every popup cover / cover-as-backdrop (GameWindow, row opens, scenes); the final 523 gate build"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523d",
+   "apk_sha256": "417592936686aa128e1314baf9b1cb43d0770a89f9965639d48bb183cfa326d8",
+   "base_commit": "527bf69468401484cadd7a215b9b2c6dc6eae99e",
+   "note": "batch 523d: 523c + Endless steps / short lists, Cinema console mark, Smart App Artwork, Storage menu; installed on RP Classic (guarded install_build) for the Inspect gesture test"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523e",
+   "apk_sha256": "76b1a8c2d54674595cc10f38c6280191cf98fd3cf892e24e970a38c683c5fcd9",
+   "base_commit": "169d520b75852ae6482d1a4c7dcc94f236c6db07",
+   "note": "batch 523e: 523d + no-art plate console name in whole words; the final 523 gate build (chain523d)"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523f",
+   "apk_sha256": "35e0a6c471b0c5f4efc43ab0f0a52008ed5c3770e2b26ba24950a87029d12632",
+   "base_commit": "4af336c6aa1ed909df333d80ba1d0969c7503d2a",
+   "note": "batch 523f: 523e + Details in the window (Row opens / Row reveal / Shared), Case flow short Endless each game once, shelf pull-out one box, Coverflow details flight one object, Save Vault Icons only flat + PS2 browser look; the final 523 gate build (chain523f)"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523h",
+   "apk_sha256": "ec9ac511c8a02f8084735a6e9360d21092e4f7092821b47695766d59fcf8063e",
+   "base_commit": "0c5da4207c450678dcd905af3afa0a9e9316e7e6",
+   "note": "batch 523g/h: deleted games leave the list, Save Vault looks across devices (VaultArtIndex) + console plates, Smart App Artwork hero / cache / no blur, soft copies instead of moving RenderEffect blurs; installed on the GT78 via the guard"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523i",
+   "apk_sha256": "d401cd330ed5f483d88836d5f136ca8c8526f24932821ef4164539bc5b75a19c",
+   "base_commit": "e9ba4ba4ea7929896a2f365bc6d6ff3fb4e33465",
+   "note": "batch 523i: 523h + Coverflow details case-top cache (motion pass); GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523j",
+   "apk_sha256": "25dc751d074ec4c377df0737f1718090f48b2c518ffab9726bcc826b813b8765",
+   "base_commit": "6add7fb8cbd538c4228ea9e6a030c7642562b449",
+   "note": "batch 523j: 523i + console plate short key, PS2 browser emblem slab; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523k",
+   "apk_sha256": "a2789eb746237fcc4f459614d189269ad65f3357be74711c61c219804e357e98",
+   "base_commit": "1341327acaa1c1aa2610cf5ab22beb0c632c27e7",
+   "note": "batch 523k: Row opens Details under the buttons; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523l",
+   "apk_sha256": "8d471dccd97af19727580b9f856165e9b43911265e79210944cd3648e7f8f82d",
+   "base_commit": "d637f3578c3591ae724e1410472a03bdae854bb4",
+   "note": "batch 523l: 523k + Performance switch crash fixed, crash report marked for QA; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523m",
+   "apk_sha256": "3e722fe50fe890d0539a1774f8fa70e77b30be809ba59257892aea4651e3b997",
+   "base_commit": "40ea28433f22ca2aa46d21b878927f38d72132c3",
+   "note": "batch 523m: popup design lab (QA hook only) + QA fonts in debug assets; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523n",
+   "apk_sha256": "6b2a0909d4d3e702a6fd8e71afc4a01010c26179a5ac28cfeb528c5a94c4a1aa",
+   "base_commit": "08962ff3b726632f4feb95c16e797cb1f6161786",
+   "note": "batch 523n: Storage menu cells from the column width, lab Back hint pill; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523o",
+   "apk_sha256": "18a72c06284683692262f14b4a1c06f03185c4c766c8dfd0a5686714b99f0542",
+   "base_commit": "54bf764",
+   "note": "batch 523o: Shared details story box >= 48 dp (popup gate p523f touch FAIL x46); RP Classic"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523p",
+   "apk_sha256": "b408c1baba470fb7d784e2d3ad4bb126527d2d6cba9351bde37ea6e7f0e772c0",
+   "base_commit": "462c310",
+   "note": "batch 523p: Coverflow details backdrop soft decoded copy (no RenderEffect blur); GT78 A/B only - no measurable gain, REVERTED (rebuilt APK = 523o, sha 18a72c06 re-verified on the GT78)"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523r",
+   "apk_sha256": "737b686ed647c378992b27a671542bcfb608b5d58b5b81a1602a0390b6836360",
+   "base_commit": "aac9f7f",
+   "note": "batch 523r: Cover details recomposed (owner sketch), voltcap_test_loop hook; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523s",
+   "apk_sha256": "4d1dc77e8dcac685b5be88fbc785e13693cc4b1f7f0fb2ee6f3407fe763cbb4b",
+   "base_commit": "9017af7",
+   "note": "batch 523s: Cover details shelf sized / spaced by case shape; GT78"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523t",
+   "apk_sha256": "3ff32331b754b7392705f475a37b63bc25242b853539f2f3d6a0595eee7528af",
+   "base_commit": "1d7731a",
+   "note": "batch 523t: approved popup direction default, Cover details bigger / higher case + title synced, fixture metadata; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523u",
+   "apk_sha256": "081074ac8a37690356a081cacaf34cf22025119000f73b8999eedbb221a43cb9",
+   "base_commit": "799e009",
+   "note": "batch 523u: popup type from bundled Roboto weights, Cover details one-line title room; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523w",
+   "apk_sha256": "69859cb36e2464b9172d076a11c128cd2f6a9eb66367a4aacf722bbf1613083c",
+   "base_commit": "fa6a2bd",
+   "note": "batch 523w: 523v (Cover details facts sync) + Row-style header / category fade; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523y",
+   "apk_sha256": "83dd35e1110aa8c9c45ece42af45fdbef0db9f483064248639b8a26d28bafe4c",
+   "base_commit": "6bc73b9",
+   "note": "batch 523y (final candidate): 523w + Back hint under the window, Banner facts first, Storage saves 24 dp, Tile home fades under row windows; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z",
+   "apk_sha256": "183aba5d60bc148e3d579ec8f918bfe6c9c71795a2f724852948daa145043371",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z: 523y + Row opens Details takes the bigger room (D303), Back hint measured first (D304), Camera rows 24 dp (D305), Details banner on very short windows (D307); GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z2",
+   "apk_sha256": "09bb38175fc46b64711f534468508e85ecea3b3443e66ae27d7c33e1098fa1d7",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z2: 523z + x1.3 home fixes (category name stops before the status bar clock; File select title row and file text); GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z3",
+   "apk_sha256": "cbf9162ca7895e4153d31eb0c6941ace8832a8a4c123c77e7d07c9de0012e320",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z3: 523z2 + File select line count from real heights, category name limited only when it really shares the clock band; GT78 + Flip 2"
   }
  ]
 }

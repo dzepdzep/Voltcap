@@ -84,7 +84,9 @@ class Batch487Test {
         assertEquals(SaveObjectKind.ICON, saveObjectKind(false, S.CLASSIC, false))
         assertTrue(src("SaveExplorer.kt").contains("look = look, state = st.state, ps2 = ps2, logo = logo"))
         // (488: the PS2 switch only for PS2 games — every other save keeps its physical look.)
-        assertTrue(src("SaveExplorer.kt").contains("Ps2BrowserStyle.on.value && com.shelf.launcher.data.Ps2BrowserStyle.isPs2(game.platform), vaultStyle"))
+        // (Batch 523: through ps2BrowserFor - the switch for the card looks, the PS2 browser look for every save.)
+        assertTrue(src("SaveExplorer.kt").contains("saveObjectKind(ps2BrowserFor(vaultStyle, com.shelf.launcher.data.Ps2BrowserStyle.on.value, game.platform) != null, vaultStyle"))
+        assertEquals(null, ps2BrowserFor(S.MEMORY_CARD, true, "SNES"))
     }
 
     @Test fun spinePicturesAreKeptAtScreenSize() {
