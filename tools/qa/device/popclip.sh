@@ -13,7 +13,11 @@ OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
-k() { input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
+# (523p: a key or a tap only while a QA app window has the focus - a crash dialog's buttons lead into Settings' App info,
+# GT78 523. A dialog / other window: the QA app is stopped and the run ends; nothing else is pressed.)
+fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) input keyevent KEYCODE_WAKEUP;; esac; sleep 0.5; done
+  echo "ABORT focus=$f" >> $OUT/log.txt 2>/dev/null; am force-stop $P; exit 2; }
+k() { fg; input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 # Is a popup (a Play / Continue action) up? — a probe dump, so B is never pressed once too often (B on the home opens the
 # category chooser, and the next layout would start from there).
 # The layouts' words for Play and Details (GameWindow.kt WinLook; the same lists as geomcheck.PLAY_WORDS / DETAILS_WORDS).
@@ -30,7 +34,7 @@ tapat() {
   [ "$2" = probe ] && src=$F/qa_clip/${TAG}_probe.json || src=$F/qa_clip/${TAG}_${n}_$2.json
   r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
   [ -n "$r" ] || return 1
-  set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
+  fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
 shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; sleep 1.1; }
 k WAKEUP 0.5
