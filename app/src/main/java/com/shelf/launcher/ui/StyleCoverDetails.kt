@@ -202,7 +202,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         val compact = h < 380.dp
         val pad = if (compact) 14.dp else 26.dp
         val leftW = (w * 0.40f).coerceIn(180.dp, 620.dp)
-        val shelfH = (h * (if (compact) 0.44f else 0.42f)).coerceIn(96.dp, 320.dp)
+        val shelfH = (h * (if (compact) 0.50f else 0.48f)).coerceIn(96.dp, 360.dp)
         val rightW = (w - leftW - pad * 2.2f).coerceAtLeast(120.dp)
         var bigAspect by remember { mutableStateOf(0.8f) }
 
@@ -335,6 +335,10 @@ internal fun coverRowX(d: Float): Float = when {
     else -> d * 0.5f
 }
 
+/** Pure (523r): how wide a case of shape [aspect] (w / h) looks at [COVER_ROW_YAW], as a share of its height (front + spine). */
+internal fun coverRowSeenWidth(aspect: Float): Float =
+    aspect * kotlin.math.cos(Math.toRadians(COVER_ROW_YAW.toDouble())).toFloat() + 0.18f * kotlin.math.sin(Math.toRadians(COVER_ROW_YAW.toDouble())).toFloat()
+
 /** Pure (523r): Endless — the first place of the [n] places a game can take (one before the game you're on, the rest after). */
 internal fun coverRowLead(n: Int): Float = if (n >= 3) -1.5f else -0.5f
 
@@ -388,11 +392,20 @@ private fun CoverCaseShelf(c: StyleCtx, bigAspect: Float, accent: Color, modifie
         val wPx = with(density) { maxWidth.toPx() }
         val hPx = with(density) { maxHeight.toPx() }
         val boardPx = hPx * 0.06f
-        val slotH = hPx * 0.94f - boardPx
+        val slotH = hPx * 0.97f - boardPx
         val boxW = slotH * bigAspect
-        // (Layout options › Game spacing: 100 % = cases a quarter over each other.)
-        val slotW = slotH * 0.40f * (0.6f + 0.4f * Features.cdSpacing.state.value / 100f)
-        val margin = slotH * 0.30f
+        // The cases' usual shape here (the middle one of the games near you: a list of one console has one), so a row of wide
+        // jewel cases stands as close as a row of tall DVD cases - each a fifth over the next (523r, GT78 first look: PS1
+        // cases hid most of each other).
+        val aspect = remember(c.games, c.focus / 16) {
+            val near = (0 until minOf(count, 15)).map { k -> c.games[(c.focus + k - 7).mod(count.coerceAtLeast(1))] }
+            near.map { case3dAspect(it, false) }.sorted().let { it.getOrNull(it.size / 2) ?: 0.71f }
+        }
+        val caseH = minOf(slotH, boxW / aspect) * bigCaseFill(depth)
+        val seenW = caseH * coverRowSeenWidth(aspect)
+        // (Layout options › Game spacing: 100 % = a fifth of each case under the next.)
+        val slotW = seenW * 0.80f * (0.6f + 0.4f * Features.cdSpacing.state.value / 100f)
+        val margin = seenW * 0.55f
         // How many slots the shelf shows after the game you're on.
         val after = ((wPx - margin) / slotW).toInt() + 2
         // The shelf board.
