@@ -65,7 +65,7 @@ class Batch523cStorageTest {
         assertEquals(3, storageKeysPerRow(860f))
         val src = java.io.File("src/main/java/com/shelf/launcher/ui/WinScenes.kt").readText()
         val storage = src.substring(src.indexOf("private fun StorageRecord"), src.indexOf("internal fun storageKeysPerRow"))
-        assertTrue(storage.contains("primary.forEach { a -> StorageKey(a, red, big = true"))   // Play alone, first, bigger
+        assertTrue(storage.contains("primary.forEach { a -> StorageKey(a.live(live), red, big = true"))   // Play alone, first, bigger (popup motion work: a.live)
         assertTrue(!storage.contains("maxItemsInEachRow"))                                     // no ragged FlowRow
         assertTrue(!storage.contains("minFontSize = 8.sp"))                                    // no per-key shrinking to cut text
     }

@@ -1,3 +1,26 @@
+# Popup native pages P1 — Storage boxes (12 Nov 2026, branch feature/popup-native, local, not built on the PC yet)
+
+- **Storage boxes keeps its own Details / Achievements / Options** (owner-reported regression "Storage → unrelated Details"):
+  - Cause: `SceneBody` replaced every layout window's non-main page with the shared `ExpandedWinPage` (update 426), so Storage's
+    record (which already had tabs and in-record pages) never showed them.
+  - Now a scene in `WinPageFlow.NATIVE_PAGE_SCENES` (Storage only so far) draws its pages itself.
+- **Storage's pages as sheets of the record** (`ui/WinScenes.kt` `StorageRecord`, `StorageTabs`, `StorageRecordMain`, `StorageRecordPage`):
+  - The record, its band and its tabs stay; the new sheet files in from the side the D-pad went over the old one (280 ms),
+    going back runs the other way; the open tab's paper slides from tab to tab. Animations off: instant, same end states.
+  - Sub-pages fill the record under a slim name line (small sprite, whole-word name, console tag) with Play / page keys / Back.
+  - The leaving sheet carries no focus requesters; focus moves into the new page after the change.
+- **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
+  120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
+  asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from
+  another page keeps the first opener.
+- **Files:** `ui/WinPageFlow.kt` (new), `ui/GameWindow.kt`, `ui/WinScenes.kt`; tests `ui/PopupNativeStorageTest.kt` (new, 6),
+  `ui/Visual426Test.kt` + `ui/Batch523cTest.kt` (assertions updated to the new text, same intent).
+- **Checked (cloud):** Kotlin 2.2.10 + Compose type-check 0 errors; all 1061 unit tests run with real JUnit 4.13.2 — the same 134
+  fail on unchanged v0.6.70 (Android stubs: no `isReturnDefaultValues` in this harness), no new failure; static_checks PASS
+  (summary identical to v0.6.70).
+- **Not done:** PC Gradle build (the PC tool builds only the `fw1` / `ci` worktrees — needs an allow-list entry + restart);
+  hardware (KONKR asleep, Flip 2 showing the real Voltcap). Statistics is still its own dialog (not a window page).
+
 # v0.6.70 published (11 Nov 2026)
 
 - Owner-approved release of the verified 523z3 candidate: main `aed4501` (RC) + `cc646b4` ("Voltcap 0.6.70", versionCode 77).

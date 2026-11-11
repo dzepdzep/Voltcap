@@ -1249,6 +1249,8 @@ internal fun GameWindow(
         LaunchedEffect(askedInspect) { if (askedInspect) { kotlinx.coroutines.delay(80); runCatching { playFocus.requestFocus() } } }
         // Update 125: the picture, the details, the options and the achievements are pages of the same window.
         var page by remember { mutableStateOf(WinPage.MAIN) }
+        // (Popup motion work: the control that opened the current page - B comes back onto it. Shared with SceneBody.)
+        val pageOpener = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
         val details = page != WinPage.MAIN
         val listFocus = remember { FocusRequester() }
         androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
@@ -1281,15 +1283,31 @@ internal fun GameWindow(
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
         var turned by remember { mutableStateOf(false) }
+        // (Popup motion work: one rule, WinPageFlow.pageFocusTarget. Back on the first page the opener is asked first - it used to
+        // be Play at 60 ms and the opener at 120 ms, so Play was lit for a moment and a quick A after B started the game. A layout
+        // window that draws its own pages moves the focus in once its page change has run, so the leaving page can't take it.)
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
-            kotlinx.coroutines.delay(60)
-            if (page == WinPage.OPTIONS || page == WinPage.TROPHIES || page == WinPage.PERF) {
-                if (runCatching { listFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
-            } else if (page == WinPage.MAIN && fromPerf) {
-                fromPerf = false
-                if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
-            } else runCatching { playFocus.requestFocus() }
+            val opener = pageOpener[0]
+            when (pageFocusTarget(page, fromPerf, opener != null)) {
+                PageFocus.LIST -> {
+                    kotlinx.coroutines.delay(if (nativePages(scene)) NATIVE_PAGE_MS.toLong() else 60L)
+                    if (!focusWhenAttached(listFocus)) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.PERF -> {
+                    fromPerf = false
+                    kotlinx.coroutines.delay(60)
+                    if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.OPENER -> {
+                    pageOpener[0] = null
+                    if (!focusWhenAttached(opener!!)) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.PLAY -> {
+                    kotlinx.coroutines.delay(if (nativePages(scene)) NATIVE_PAGE_MS.toLong() else 60L)
+                    if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
+                }
+            }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
         // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)
@@ -1433,7 +1451,7 @@ internal fun GameWindow(
                         onPlaced = { r -> if (target == null) target = r },
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
-                        if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { motion.closing }) { motion.lift.floatValue } }
+                        if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { motion.closing }) { motion.lift.floatValue } }
                         else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                     }
                 } else Box(
@@ -1480,7 +1498,7 @@ internal fun GameWindow(
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
                     if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value } }
+                        androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { shrinking }) { grow.value } }
                     }
                     else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
                 }
@@ -2195,6 +2213,7 @@ private fun SceneBody(
     scene: WinScene, look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
     page: WinPage, setPage: (WinPage) -> Unit, maxW: Dp, maxH: Dp, playFocus: FocusRequester, listFocus: FocusRequester,
     onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, options: List<WinOption>,
+    pageOpener: Array<FocusRequester?>,
     closing: () -> Boolean = { false },
     reveal: () -> Float
 ) {
@@ -2209,16 +2228,9 @@ private fun SceneBody(
     val detailsF = remember { FocusRequester() }
     val optionsF = remember { FocusRequester() }
     val trophiesF = remember { FocusRequester() }
-    val returnTo = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
-    fun opener(f: FocusRequester, act: () -> Unit): () -> Unit = { returnTo[0] = f; act() }
-    LaunchedEffect(page) {
-        if (page != WinPage.MAIN) return@LaunchedEffect
-        val f = returnTo[0] ?: return@LaunchedEffect
-        returnTo[0] = null
-        // (After the window's own ask for Play, 60 ms after the page changes.)
-        kotlinx.coroutines.delay(120)
-        runCatching { f.requestFocus() }
-    }
+    // (Popup motion work: the opener is GameWindow's [pageOpener]; its page effect brings the D-pad back to it, with no Play
+    // in between. A page turned to from another page (L1 / R1) keeps the first page's opener.)
+    fun opener(f: FocusRequester, act: () -> Unit): () -> Unit = { if (page == WinPage.MAIN) pageOpener[0] = f; act() }
     // v0.6.67 (update 451): the windows that showed every action as a wall of chips keep Play, Details, Inspect and Back in
     // view and put the rest (Performance, Options, Achievements, Save sync, Manual, the save / performance lines) behind
     // More, opened in place. B closes More first; focus goes to the first revealed action, and back to More when it closes.
@@ -2302,12 +2314,33 @@ private fun SceneBody(
                 WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, m, extras.onLoadComments)
                 WinPage.PERF -> WindowPerformance(look, listFocus, m)
             }
+        },
+        // (Popup motion work: a native scene draws a page that is leaving with its own, unattached list focus.)
+        pageFor = { p, m, live ->
+            val lf = if (live) listFocus else remember { FocusRequester() }
+            when (p) {
+                WinPage.MAIN -> {}
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.OPTIONS -> WindowOptions(look, options, lf, m)
+                WinPage.TROPHIES -> WindowTrophies(look, g, state, lf, m, extras.onLoadComments)
+                WinPage.PERF -> WindowPerformance(look, lf, m)
+            }
+        },
+        open = { p ->
+            when (p) {
+                WinPage.DETAILS -> opener(detailsF) { setPage(WinPage.DETAILS) }()
+                WinPage.TROPHIES -> opener(trophiesF, extras.onAchievements)()
+                WinPage.OPTIONS -> opener(optionsF, extras.onOptions)()
+                else -> setPage(p)
+            }
         }
     )
     // Update 426: Details / Options / Achievements / Performance were drawn inside the scene's own small picture or panel
     // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
     // own in the window's colours, the scene's quick window coming back on B / Back.
-    if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    // (Popup motion work: a layout that draws its own pages (WinPageFlow.NATIVE_PAGE_SCENES) keeps them - Storage's record
+    // turning its tabs - instead of the shared page; that swap was the "Storage → unrelated Details" regression.)
+    if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
     else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
