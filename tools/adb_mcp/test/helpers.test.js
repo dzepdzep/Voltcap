@@ -21,4 +21,11 @@ assert.strictEqual(H.apkVariantOf('assembleQa'), 'qa');
 assert(H.GRADLE_TASKS.includes('assembleQa'));
 assert(/Tag v\$\{v\} already exists/.test(src) && /isn't newer than the latest published release/.test(src), 'publish guards present');
 assert(/Not on main - nothing done/.test(src) && /Commit everything first/.test(src) && /not signed in/.test(src), 'old safeguards kept');
+// FW1: isolated worktree builds - a fixed allow-list, git-ignored folder, fast-forward only, no signing keys copied.
+const wts = src.match(/const WORKTREES = (\{[^\n]+\});/); assert(wts, 'WORKTREES allow-list present');
+assert(/'Claude outputs', 'worktrees', 'fw1'/.test(wts[1]) && /branch: 'feature\/dual-welcome'/.test(wts[1]), 'fw1 -> feature/dual-welcome in Claude outputs');
+const copy = src.match(/const WORKTREE_COPY = (\[[^\]]+\])/)[1];
+assert(!/keystore|\.jks/i.test(copy), 'no signing keys copied into a worktree');
+assert(/'merge', '--ff-only'/.test(src) && /has local changes - nothing done/.test(src), 'worktree update is fast-forward only and refuses local changes');
+assert(/\^\[A-Za-z0-9_.-\]\+\\\\.bundle\$/.test(src) || /\.bundle\$\/\.test\(name\)/.test(src), 'bundle is a plain file name in backups');
 console.log('adb_mcp helpers: OK');

@@ -40,6 +40,18 @@ const BUILDS = path.join(ROOT, 'Claude outputs', 'builds');             // git-i
 // (Batch 521: assembleQa - the isolated QA build type, debug-key signed.)
 const GRADLE_TASKS = ['assembleQa', 'assembleRelease', 'assembleCompat', 'assembleDebug', ':app:compileReleaseKotlin', ':app:compileDebugKotlin', 'lintRelease', 'testDebugUnitTest'];
 let job = null;                                                          // the one Gradle run at a time
+// FW1 (owner, 11 Nov 2026): isolated builds of a feature branch in its own git worktree, never in the release candidate's tree.
+// A fixed allow-list: the name picks the folder (git-ignored, under Claude outputs) and the only branch it may hold.
+const WORKTREES = { fw1: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'fw1'), branch: 'feature/dual-welcome' } };
+// Git-ignored files a build needs, copied from the main tree into a worktree (no signing keys: QA builds use the debug key).
+const WORKTREE_COPY = ['local.properties', 'voltcap_api.properties', 'screenscraper.properties', 'igdb.properties', 'secret_denylist.txt', 'qa_variant.properties'];
+const BACKUPS = path.join(ROOT, 'Claude outputs', 'backups');
+function worktreeOf(name) {
+  if (name === undefined || name === null || name === '') return null;
+  const w = WORKTREES[name];
+  if (!w) throw new Error('Unknown worktree: ' + name + ' (allowed: ' + Object.keys(WORKTREES).join(', ') + ')');
+  return w;
+}
 
 function buildEnv() {
   const env = Object.assign({}, process.env);
@@ -60,8 +72,8 @@ function runCapture(cmd, args, opts = {}) {
   });
 }
 const tail = (t, n) => t.split(/\r?\n/).filter((l) => l.trim() !== '').slice(-n).join('\n');
-function newestApk(variant) {
-  const dir = path.join(ROOT, 'app', 'build', 'outputs', 'apk', variant);
+function newestApk(variant, root) {
+  const dir = path.join(root || ROOT, 'app', 'build', 'outputs', 'apk', variant);
   if (!fs.existsSync(dir)) return null;
   const apks = fs.readdirSync(dir).filter((f) => f.endsWith('.apk')).map((f) => path.join(dir, f));
   apks.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
@@ -78,10 +90,10 @@ function jobStatus(lines) {
   const secs = Math.round(((job.ended || Date.now()) - job.started) / 1000);
   const state = job.code === null ? 'RUNNING' : (job.code === 0 ? 'SUCCESS' : 'FAILED (exit ' + job.code + ')');
   const errs = log.split(/\r?\n/).filter((l) => /^e: |^w: .*(error)|FAILURE:|What went wrong|> Task .*FAILED|BUILD (SUCCESSFUL|FAILED)/.test(l)).slice(0, 40);
-  let s = `Gradle ${job.task}: ${state} after ${secs} s\nLog: ${job.log}`;
+  let s = `Gradle ${job.task}${job.worktree ? ' [worktree ' + job.worktree + ']' : ''}: ${state} after ${secs} s\nLog: ${job.log}`;
   if (errs.length) s += '\n--- key lines ---\n' + errs.join('\n');
   s += '\n--- last lines ---\n' + tail(log, lines || 30);
-  if (job.code === 0 && /^assemble/.test(job.task)) { const v = apkVariantOf(job.task); const a = newestApk(v); if (a) s += `\nAPK: ${a} (${new Date(fs.statSync(a).mtimeMs).toISOString()})`; }
+  if (job.code === 0 && /^assemble/.test(job.task)) { const v = apkVariantOf(job.task); const a = newestApk(v, job.root); if (a) s += `\nAPK: ${a} (${new Date(fs.statSync(a).mtimeMs).toISOString()})`; }
   return s;
 }
 
@@ -188,12 +200,14 @@ const TOOLS = [
   { name: 'push', description: 'Copy a file from this PC to the handheld.', inputSchema: { type: 'object', properties: { serial: SERIAL, pc_path: { type: 'string' }, handheld_path: { type: 'string' } }, required: ['pc_path', 'handheld_path'] } },
   { name: 'pull', description: 'Copy a file from the handheld to this PC.', inputSchema: { type: 'object', properties: { serial: SERIAL, handheld_path: { type: 'string' }, pc_path: { type: 'string' } }, required: ['handheld_path', 'pc_path'] } },
   { name: 'sync_sources', description: 'The project\'s own copy step (HANDOVER rule 13): robocopy src_copy into app\\src\\main\\java\\com\\shelf\\launcher, then project_copy over the project root (/E /NJH /NP). Nothing is deleted.', inputSchema: { type: 'object', properties: {} } },
-  { name: 'gradle_start', description: 'Start gradlew.bat with one allowed task in the project folder, in the background: ' + GRADLE_TASKS.join(', ') + '. Check with gradle_status.',
-    inputSchema: { type: 'object', properties: { task: { type: 'string', enum: GRADLE_TASKS } }, required: ['task'] } },
+  { name: 'gradle_start', description: 'Start gradlew.bat with one allowed task in the project folder (or, with "worktree", in that allow-listed git worktree - see worktree_prepare), in the background: ' + GRADLE_TASKS.join(', ') + '. Check with gradle_status.',
+    inputSchema: { type: 'object', properties: { task: { type: 'string', enum: GRADLE_TASKS }, worktree: { type: 'string', enum: Object.keys(WORKTREES) } }, required: ['task'] } },
+  { name: 'worktree_prepare', description: 'FW1: make or update an allow-listed git worktree (fw1 = branch feature/dual-welcome in Claude outputs\\worktrees\\fw1, git-ignored) from a verified git bundle in Claude outputs\\backups. Fast-forward only; refuses a worktree with local changes. Copies the git-ignored build files (local.properties, service address / denylist files, app\\libs) from the main tree, never signing keys. The main tree\'s files and branch are not touched.',
+    inputSchema: { type: 'object', properties: { worktree: { type: 'string', enum: Object.keys(WORKTREES) }, bundle: { type: 'string', description: 'File name of the .bundle in Claude outputs\\backups' } }, required: ['worktree', 'bundle'] } },
   { name: 'gradle_status', description: 'State of the current/last Gradle run: running/success/failed, compile errors, last log lines, built APK.', inputSchema: { type: 'object', properties: { lines: { type: 'integer', description: 'Last log lines to show (default 30)' } } } },
   { name: 'gradle_stop', description: 'Stop the running Gradle build.', inputSchema: { type: 'object', properties: {} } },
   { name: 'install_build', description: 'Install the newest built ISOLATED QA app (com.shelf.launcher.qa; variant qa = assembleQa, or debug = assembleDebug, which is the QA app by default) on ONE handheld named by its USB serial, with adb install -r. Fail-closed (Batch 521): the APK\'s own manifest must say com.shelf.launcher.qa and it must not be signed with the release key; the handheld must be USB, not a TV, and listed in qa_devices.json; the real Voltcap is checked before and after. Production builds are refused here (install_production).',
-    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial of the handheld (list_handhelds) - required' }, variant: { type: 'string', enum: ['qa', 'debug'] } }, required: ['serial'] } },
+    inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial of the handheld (list_handhelds) - required' }, variant: { type: 'string', enum: ['qa', 'debug'] }, worktree: { type: 'string', enum: Object.keys(WORKTREES), description: 'Install the build from this allow-listed worktree instead of the main tree' } }, required: ['serial'] } },
   { name: 'uninstall_qa', description: 'Remove ONLY the isolated QA app (com.shelf.launcher.qa) and its test data from one USB handheld - needed once when the QA signing key changes (Batch 521). The real Voltcap cannot be named.',
     inputSchema: { type: 'object', properties: { serial: { type: 'string', description: 'USB serial - required' } }, required: ['serial'] } },
   { name: 'install_production', description: 'Owner-approved upgrade of the REAL Voltcap only: adb install -r of a published release APK whose sha256 is pinned in tools/adb_mcp/production_pins.json (never -d, never uninstall). Anything else is refused.',
@@ -245,7 +259,7 @@ let serial = Promise.resolve();
 function queued(fn) { const run = serial.then(fn, fn); serial = run.catch(() => {}); return run; }
 
 async function call(name, a) {
-  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release') return queued(() => call2(name, a));
+  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release' || name === 'worktree_prepare') return queued(() => call2(name, a));
   return call2(name, a);
 }
 
@@ -338,15 +352,51 @@ async function call2(name, a) {
       if (!GRADLE_TASKS.includes(a.task)) throw new Error('Task not allowed: ' + a.task);
       if (job && job.code === null) throw new Error('Gradle is already running ' + job.task + ' (gradle_status / gradle_stop).');
       fs.mkdirSync(BUILDS, { recursive: true });
-      const log = path.join(BUILDS, 'gradle_' + a.task.replace(/[^A-Za-z]/g, '') + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
+      const log = path.join(BUILDS, 'gradle_' + (a.worktree ? String(a.worktree).replace(/[^a-z0-9]/g, '') + '_' : '') + a.task.replace(/[^A-Za-z]/g, '') + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.log');
       const ws = fs.createWriteStream(log);
-      const p = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'gradlew.bat', a.task, '--console=plain'], { cwd: ROOT, env: buildEnv(), windowsHide: true });
-      job = { task: a.task, started: Date.now(), ended: null, code: null, log, pid: p.pid };
+      const wt = worktreeOf(a.worktree);
+      const cwd = wt ? wt.dir : ROOT;
+      if (wt && !fs.existsSync(path.join(cwd, 'gradlew.bat'))) throw new Error('Worktree ' + a.worktree + ' is not prepared (worktree_prepare).');
+      const p = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'gradlew.bat', a.task, '--console=plain'], { cwd, env: buildEnv(), windowsHide: true });
+      job = { task: a.task, started: Date.now(), ended: null, code: null, log, pid: p.pid, root: cwd, worktree: wt ? a.worktree : null };
       const j = job;
       p.stdout.pipe(ws, { end: false }); p.stderr.pipe(ws, { end: false });
       p.on('error', (e) => { ws.write('\n' + e.message + '\n'); });
       p.on('close', (code) => { j.code = code === null ? -1 : code; j.ended = Date.now(); ws.end(); });
       return text(`Started gradlew ${a.task} (pid ${p.pid}). Log: ${log}\nCheck with gradle_status.`);
+    }
+    case 'worktree_prepare': {
+      const wt = worktreeOf(a.worktree);
+      if (!wt) throw new Error('worktree is required');
+      if (job && job.code === null) throw new Error('A Gradle run is in progress - wait for it first.');
+      const name = String(a.bundle || '');
+      if (!/^[A-Za-z0-9_.-]+\.bundle$/.test(name)) throw new Error('bundle must be a plain .bundle file name in Claude outputs\\backups');
+      const bundle = path.join(BACKUPS, name);
+      if (!fs.existsSync(bundle)) throw new Error('No such bundle: ' + bundle);
+      const out = [];
+      const g = async (args, cwd) => { const r = await runCapture('git', args, { cwd: cwd || ROOT }); out.push('$ git ' + args.join(' ') + ' -> ' + r.code + (r.out.trim() ? '\n' + tail(r.out, 12) : '')); if (r.code !== 0) throw new Error(out.join('\n')); return r.out; };
+      await g(['bundle', 'verify', bundle]);
+      const ref = 'refs/remotes/bundle/' + wt.branch;
+      await g(['fetch', '--no-tags', bundle, '+refs/heads/' + wt.branch + ':' + ref]);
+      if (!fs.existsSync(wt.dir)) {
+        fs.mkdirSync(path.dirname(wt.dir), { recursive: true });
+        await g(['worktree', 'add', '-B', wt.branch, wt.dir, ref]);
+      } else {
+        const st = (await g(['status', '--porcelain', '--untracked-files=no'], wt.dir)).trim();
+        if (st) throw new Error('Worktree ' + a.worktree + ' has local changes - nothing done:\n' + st);
+        const br = (await g(['rev-parse', '--abbrev-ref', 'HEAD'], wt.dir)).trim();
+        if (br !== wt.branch) throw new Error('Worktree ' + a.worktree + ' is on ' + br + ', expected ' + wt.branch + ' - nothing done.');
+        await g(['merge', '--ff-only', ref], wt.dir);
+      }
+      for (const f of WORKTREE_COPY) {
+        const from = path.join(ROOT, f);
+        if (fs.existsSync(from)) { fs.copyFileSync(from, path.join(wt.dir, f)); out.push('copied ' + f); }
+      }
+      const libs = path.join(ROOT, 'app', 'libs');
+      if (fs.existsSync(libs)) { const r = await runCapture('robocopy', [libs, path.join(wt.dir, 'app', 'libs'), '/E', '/NJH', '/NP', '/NFL', '/NDL']); out.push('robocopy app\\libs -> exit ' + r.code); if (r.code < 0 || r.code >= 8) throw new Error(out.join('\n')); }
+      const head = (await g(['log', '-1', '--oneline'], wt.dir)).trim();
+      const main = (await g(['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+      return text(`Worktree ${a.worktree}: ${wt.dir}\nHEAD ${head}\nmain tree still on ${main} (its files untouched)\n\n` + out.join('\n'));
     }
     case 'gradle_status': return text(jobStatus(a.lines));
     case 'gradle_stop': {
@@ -358,8 +408,9 @@ async function call2(name, a) {
       const variant = a.variant || 'qa';
       if (!['qa', 'debug'].includes(variant)) throw new Error('Refused (Batch 521): install_build only installs the isolated QA app (variant qa or debug). Production: install_production.');
       if (job && job.code === null) throw new Error('Gradle is still running - wait for it first.');
-      const apk = newestApk(variant);
-      if (!apk) throw new Error('No built ' + variant + ' APK in app\\build\\outputs\\apk\\' + variant);
+      const wtI = worktreeOf(a.worktree);
+      const apk = newestApk(variant, wtI ? wtI.dir : ROOT);
+      if (!apk) throw new Error('No built ' + variant + ' APK in ' + (wtI ? 'worktree ' + a.worktree + ' ' : '') + 'app\\build\\outputs\\apk\\' + variant);
       return qaInstall(a.serial, apk, false);
     }
     case 'uninstall_qa': {
