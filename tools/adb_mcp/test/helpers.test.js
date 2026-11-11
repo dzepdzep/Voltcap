@@ -28,4 +28,5 @@ const copy = src.match(/const WORKTREE_COPY = (\[[^\]]+\])/)[1];
 assert(!/keystore|\.jks/i.test(copy), 'no signing keys copied into a worktree');
 assert(/'merge', '--ff-only'/.test(src) && /has local changes - nothing done/.test(src), 'worktree update is fast-forward only and refuses local changes');
 assert(/\^\[A-Za-z0-9_.-\]\+\\\\.bundle\$/.test(src) || /\.bundle\$\/\.test\(name\)/.test(src), 'bundle is a plain file name in backups');
+assert(/'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add'/.test(src), 'worktrees are checked out with LF like the main tree');
 console.log('adb_mcp helpers: OK');

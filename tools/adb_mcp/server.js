@@ -380,13 +380,17 @@ async function call2(name, a) {
       await g(['fetch', '--no-tags', bundle, '+refs/heads/' + wt.branch + ':' + ref]);
       if (!fs.existsSync(wt.dir)) {
         fs.mkdirSync(path.dirname(wt.dir), { recursive: true });
-        await g(['worktree', 'add', '-B', wt.branch, wt.dir, ref]);
+        // (LF files as in the main tree: with this PC's core.autocrlf=true a worktree came out CRLF, and the tests that read
+        // the sources looking for "\n" failed there - 9 of 1056, fw1 11 Nov.)
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add', '-B', wt.branch, wt.dir, ref]);
       } else {
         const st = (await g(['status', '--porcelain', '--untracked-files=no'], wt.dir)).trim();
         if (st) throw new Error('Worktree ' + a.worktree + ' has local changes - nothing done:\n' + st);
         const br = (await g(['rev-parse', '--abbrev-ref', 'HEAD'], wt.dir)).trim();
         if (br !== wt.branch) throw new Error('Worktree ' + a.worktree + ' is on ' + br + ', expected ' + wt.branch + ' - nothing done.');
-        await g(['merge', '--ff-only', ref], wt.dir);
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'merge', '--ff-only', ref], wt.dir);
+        // Files written CRLF by an earlier checkout are written again as LF (the worktree was clean: nothing of yours changes).
+        await g(['-c', 'core.autocrlf=false', '-c', 'core.eol=lf', 'checkout-index', '-a', '-f'], wt.dir);
       }
       for (const f of WORKTREE_COPY) {
         const from = path.join(ROOT, f);
