@@ -615,7 +615,7 @@
    "id": "qa-0.6.69-523p",
    "apk_sha256": "b408c1baba470fb7d784e2d3ad4bb126527d2d6cba9351bde37ea6e7f0e772c0",
    "base_commit": "462c310",
-   "note": "batch 523p: Coverflow details backdrop soft decoded copy (no RenderEffect blur); GT78"
+   "note": "batch 523p: Coverflow details backdrop soft decoded copy (no RenderEffect blur); GT78 A/B only - no measurable gain, REVERTED (rebuilt APK = 523o, sha 18a72c06 re-verified on the GT78)"
   }
  ]
 }

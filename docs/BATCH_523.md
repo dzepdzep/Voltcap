@@ -116,11 +116,40 @@ turning emblems. Same result as the GT78 (kv523h–j). PASS (by eye).
 Twin showcase × Row opens PASS (clock clip gone). The 3 FAILs are Crate's home-step "overlap" — the same checker false positive
 as above (D297). Real Voltcap pid unchanged, 0 fatal, settings restored.
 
-### ×1.3 / density ×1.15 (p523fb)
-Stopped after 12 layouts when ×1.0 ended (the chain ran past its slot); not graded. Superseded by chain523n.
+### ×1.3 / density ×1.15
+p523fb (523f) was stopped after 12 layouts and is not graded. **p523ob (523o, all 318) ran on the RP Classic from 01:28 and is
+NOT GRADED**: the PC was offline when it finished and the RP Classic was then taken away. Its results stay on the handheld in
+`/sdcard/pc/p523ob` + `p523ob_wrap.txt` (nothing deleted); grade with `popclip.py --expect-build qa-0.6.69-523o` when it is back.
 
 ### chain523n (build 523n, 00:13–00:24 11 Nov) → chain523o (build 523o, from 00:25)
 523n ran the Smart App Artwork part (a523n: JoiPlay / FolderSync / Obtainium) and the Save Vault looks (v523n), then was stopped
 so the gate runs on 523o with the Shared fix: chain523o = ×1.0 Row opens / Row reveal / Shared (p523or), then **×1.3 all 318**
 (p523ob). Results below when graded.
 
+
+## 7. KONKR Coverflow details performance (GT78, 11 Nov)
+
+Question: why Coverflow details steps sit at a ~15–16 ms median per frame on the GT78 (60 Hz) when Game shelf does 8–9 ms.
+
+Frame phases from `dumpsys gfxinfo framestats` (perf514, 2nd run of each pair, Performance forced Full / Lite by the QA hook):
+
+| Run (build, mode) | Frame total median / p90 | UI thread (input → draw recorded) | Render thread + GPU wait | GPU (gfxinfo) | Janky (deadline) |
+|---|---|---|---|---|---|
+| Coverflow details steps, 523o Full | 15.5 / 18.9 ms | 3.1 ms | 11.2 ms | 7 ms | 3.9 % |
+| Coverflow details steps, 523p Full (no RenderEffect blur) | 15.4 / 19.0 ms | 3.1 ms | 11.2 ms | 7 ms | 5.2 % |
+| Coverflow details steps, 523p **Lite** (no blur, no reflection) | 15.6 / 20.2 ms | 3.1 ms | 11.2 ms | 7 ms | 4.7 % |
+| Hero steps, 523o Full | 15.7 / 16.9 ms | 1.9 ms | 12.8 ms | 11–12 ms | 2.2 % |
+| Game shelf steps, 523o Full | 8.7 / 10.0 ms | 2.3 ms | 5.5 ms | 4 ms | 0 % |
+
+Findings:
+- The UI thread (Compose) needs ~3 ms a frame — **not CPU-bound**. 523i's case-top cache already removed the allocations.
+- The rest is the render thread issuing the frame and waiting for a free buffer while the GPU (~7 ms) and composition finish:
+  the 15 ms is frame **latency** in a full buffer queue, not 15 ms of work. Frames still land on their vsync — 0.6–5 % miss
+  their deadline.
+- Removing the backdrop's RenderEffect blur (523p) or every effect (Lite) changes **nothing** measurable, so 523p's code change
+  was **reverted** (the art keeps its real blur; no speculative change ships). The GPU cost is the scene itself (full-screen
+  backdrop + gradients + 3D case + ~40 spines).
+- Hero is the heavier layout on this GPU (11–12 ms, its popup window 17 ms median, 57 % over 16.7 ms) — a candidate for the next
+  pass, not this one.
+- Next step if wanted: a GPU profile (AGI / `dumpsys gfxinfo` with Profile GPU rendering) — needs a developer-option change on the
+  handheld, so not done without your OK.
