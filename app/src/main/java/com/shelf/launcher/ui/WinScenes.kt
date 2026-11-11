@@ -763,7 +763,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.94f, 900.dp)
     val h = minOf(ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
-    val labStorage = PopupLab.spec.value?.storage == true
+    val labStorage = PopupLab.active.storage // (523t: approved - everyone)
     val tabs = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
     // (Achievements and Options open as GameWindow opens them: their page, else the full list / the game's menu.)
     fun openTab(t: WinPage) = when (t) {

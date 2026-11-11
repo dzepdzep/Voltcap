@@ -2236,7 +2236,7 @@ private fun SceneBody(
     LaunchedEffect(moreOpen, compactMore) { if (QaTrace.on) android.util.Log.e("VoltcapQA", "win more=${if (!compactMore) "n/a" else if (moreOpen) "open" else "closed"} scene=$scene") }
     // (Batch 523, QA design lab only - PopupLab "actions": Play, Details, a round ••• More beside it; Back leaves the row for a
     // corner hint. Everyone else: exactly as before.)
-    val labActions = PopupLab.spec.value?.actions == true
+    val labActions = PopupLab.active.actions // (523t: approved - everyone)
     val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
         else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {

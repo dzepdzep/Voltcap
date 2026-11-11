@@ -201,7 +201,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         val w = maxWidth; val h = maxHeight
         val compact = h < 380.dp
         val pad = if (compact) 14.dp else 26.dp
-        val leftW = (w * 0.40f).coerceIn(180.dp, 620.dp)
+        val leftW = (w * 0.44f).coerceIn(180.dp, 660.dp) // (523t, owner: the big case a little bigger)
         val shelfH = (h * (if (compact) 0.50f else 0.48f)).coerceIn(96.dp, 360.dp)
         val rightW = (w - leftW - pad * 2.2f).coerceAtLeast(120.dp)
         var bigAspect by remember { mutableStateOf(0.8f) }
@@ -219,9 +219,10 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
             head = false
         )
         // The title and the big case on the left (over everything: it flies to and from the shelf).
-        Column(Modifier.zIndex(2f).padding(start = pad, top = pad, bottom = pad * 0.5f).width(leftW).fillMaxHeight()) {
-            CoverDetailsHead(c, g, compact, accent, Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.4f, ms = 240))
-            Spacer(Modifier.height(if (compact) 4.dp else 10.dp))
+        // (523t, owner: the big case a little higher - the title block is tighter and the case's room starts right under it.)
+        Column(Modifier.zIndex(2f).padding(start = pad, top = pad * 0.8f, bottom = pad * 0.2f).width(leftW).fillMaxHeight()) {
+            CoverDetailsHead(c, g, compact, accent, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(if (compact) 2.dp else 4.dp))
             BoxWithConstraints(
                 Modifier.fillMaxWidth().weight(1f).onGloballyPositioned {
                     CoverFlight.stage = it.boundsInWindow()
@@ -236,14 +237,42 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
     }
 }
 
-/** 523r: the game's name, and its console and year, over the big case. */
+/**
+ * 523r: the game's name, and its console and year, over the big case. 523t (owner: "synchronise the title with the case"):
+ * the name changes WITH the case flight - the one you left fades out while its case starts back, the new one comes in as its
+ * case arrives (read from the flight's own progress while drawing). A category change or no animation: at once, as before.
+ */
 @Composable
 private fun CoverDetailsHead(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
+    var last by remember { mutableStateOf(g) }
+    val old = remember(g.stableKey) { last.takeIf { it.stableKey != g.stableKey } }
+    androidx.compose.runtime.SideEffect { last = g }
+    val key = g.stableKey
+    val density = LocalDensity.current
+    Box(modifier) {
+        if (old != null) CoverHeadText(c, old, compact, accent, Modifier.fillMaxWidth().graphicsLayer {
+            alpha = coverHeadOut(CoverFlight.flights[key]?.value ?: 1f)
+        })
+        CoverHeadText(c, g, compact, accent, Modifier.fillMaxWidth().graphicsLayer {
+            val a = coverHeadIn(CoverFlight.flights[key]?.value ?: 1f)
+            alpha = a
+            translationY = (1f - a) * with(density) { 8.dp.toPx() }
+        })
+    }
+}
+
+/** Pure (523t): the leaving title's opacity at the new case's flight [p] — gone before the cases cross. */
+internal fun coverHeadOut(p: Float): Float = (1f - p / 0.35f).coerceIn(0f, 1f)
+/** Pure (523t): the new title's opacity at its case's flight [p] — in while the case comes to rest. */
+internal fun coverHeadIn(p: Float): Float { val t = ((p - 0.35f) / 0.5f).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+
+@Composable
+private fun CoverHeadText(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val year = c.state.metadata[g.stableKey]?.releaseYear
     Column(modifier) {
         StableFullText(
-            titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Bold,
+            titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
             maxLines = 2, modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(2.dp))

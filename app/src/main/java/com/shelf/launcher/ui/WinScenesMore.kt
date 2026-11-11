@@ -109,7 +109,7 @@ internal fun SceneKey(
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
     // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
     val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
-    val lab = PopupLab.spec.value?.actions == true
+    val lab = PopupLab.active.actions // (523t: approved - everyone)
     if (lab && PopupLab.isMore(a)) {
         // (Batch 523 design lab: More as a small round "•••" key beside Details; open (Less) it stays lit-edged.)
         SceneControl(a, Modifier) { on ->

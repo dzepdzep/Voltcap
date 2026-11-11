@@ -209,3 +209,18 @@ class Batch523rCoverShelfTest {
         assertEquals(24f, CoverFlight.yaw(0.6f, 24f), 1e-4f)
     }
 }
+
+/** 523t: Cover details' title follows the case flight (old out before the cases cross, new in as its case lands). */
+class Batch523tHeadTest {
+    @Test fun titleChangesWithTheCase() {
+        assertEquals(1f, coverHeadOut(0f), 1e-5f); assertEquals(0f, coverHeadOut(0.35f), 1e-5f)
+        assertEquals(0f, coverHeadIn(0.35f), 1e-5f); assertEquals(1f, coverHeadIn(0.85f), 1e-5f); assertEquals(1f, coverHeadIn(1f), 1e-5f)
+        for (i in 0..100) { val p = i / 100f; assertTrue("never both gone and never both whole", coverHeadOut(p) + coverHeadIn(p) <= 1f + 1e-5f) }
+    }
+    @Test fun approvedPopupDirectionIsTheDefault() {
+        assertEquals(PopupLab.APPROVED, PopupLab.active.takeIf { PopupLab.spec.value == null })
+        assertTrue(PopupLab.APPROVED.weights && PopupLab.APPROVED.actions && PopupLab.APPROVED.storage && PopupLab.APPROVED.font == "current")
+        assertEquals(PopupLab.LEGACY, PopupLab.parse("legacy"))
+        assertEquals(null, PopupLab.parse("off"))
+    }
+}

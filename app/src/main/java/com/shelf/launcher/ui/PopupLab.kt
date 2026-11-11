@@ -41,8 +41,20 @@ internal object PopupLab {
 
     val spec = mutableStateOf<Spec?>(null)
 
-    /** "font=inter,weights=on,actions=on" → a spec; "off" / blank → none. Pure. */
+    /**
+     * Batch 523t (owner, 11 Nov, after the lab review): the recommended direction is now what every popup uses — the device
+     * font one step lighter, Play / Details / round ••• with Back as a hint, and the Storage boxes layout. Inter / Manrope stay
+     * QA-only comparisons.
+     */
+    val APPROVED = Spec("current", weights = true, actions = true, storage = true)
+    /** The popups before 523t, for before / after QA runs only (`voltcap_test_popuplab legacy`). */
+    val LEGACY = Spec("current", weights = false, actions = false, storage = false)
+    /** What the popups draw with: a QA run's lab spec, else [APPROVED]. */
+    val active: Spec get() = spec.value ?: APPROVED
+
+    /** "font=inter,weights=on,actions=on" → a spec; "legacy" → the popups before 523t; "off" / blank → none ([APPROVED]). Pure. */
     fun parse(s: String): Spec? {
+        if (s == "legacy") return LEGACY
         if (s.isBlank() || s == "off") return null
         val m = s.split(',').mapNotNull { p -> p.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() } }.toMap()
         fun on(k: String) = m[k] == "on" || m[k] == "true"
@@ -92,4 +104,30 @@ internal fun LabBackHint(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.width(6.dp))
         Text("Back", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
+}
+
+/**
+ * Batch 523t: the popups' type — the [PopupLab.active] family (approved: the device font, Bold drawn Medium, never thickened
+ * again) for every text inside a game window that uses the theme's own font. A style with its own font (pixel, monospace,
+ * a console's lettering) sets it on its texts and keeps it; the pixel UI styles keep theirs (only default-family styles change).
+ */
+@Composable
+internal fun PopupType(content: @Composable () -> Unit) {
+    val s = PopupLab.active
+    if (s.font == "current" && !s.weights) { content(); return }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val base = androidx.compose.material3.MaterialTheme.typography
+    val typo = androidx.compose.runtime.remember(s, base) {
+        val fam = PopupLab.family(ctx, s)
+        fun androidx.compose.ui.text.TextStyle.lab() = if (fam == null || fontFamily !in setOf(null, FontFamily.Default, FontFamily.SansSerif)) this
+            else copy(fontFamily = fam, fontSynthesis = androidx.compose.ui.text.font.FontSynthesis.Style)
+        base.copy(
+            displayLarge = base.displayLarge.lab(), displayMedium = base.displayMedium.lab(), displaySmall = base.displaySmall.lab(),
+            headlineLarge = base.headlineLarge.lab(), headlineMedium = base.headlineMedium.lab(), headlineSmall = base.headlineSmall.lab(),
+            titleLarge = base.titleLarge.lab(), titleMedium = base.titleMedium.lab(), titleSmall = base.titleSmall.lab(),
+            bodyLarge = base.bodyLarge.lab(), bodyMedium = base.bodyMedium.lab(), bodySmall = base.bodySmall.lab(),
+            labelLarge = base.labelLarge.lab(), labelMedium = base.labelMedium.lab(), labelSmall = base.labelSmall.lab()
+        )
+    }
+    androidx.compose.material3.MaterialTheme(colorScheme = androidx.compose.material3.MaterialTheme.colorScheme, typography = typo, content = content)
 }

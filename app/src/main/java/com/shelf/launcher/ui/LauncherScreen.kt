@@ -1976,7 +1976,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 detailsAction = DetailsAction.PLAY
             }
         }
-        GameDetailsOverlay(
+        PopupType { GameDetailsOverlay(  // (523t: the popups' approved type - PopupLab.kt)
             game = game,
             lastSummary = state.sessionSummary,
             art = displayArt[game.stableKey],
@@ -2047,7 +2047,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             achievementCommentsLoading = state.raCommentsLoading,
             onOpenAchievementList = { achievementsShowMissing = false; viewingAchievementsForGame = game },
             raCompletion = game.raGameId?.let { state.raCompletionById[it] }
-        )
+        ) }
     }
 
     val availableLetters = remember(state.visibleGames) {
@@ -5590,7 +5590,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     // Update 113: the game window (A or a tap on the game you're on), in the layout's own look, over the main screen.
     GamePopup.game?.let { g ->
-        GameWindow(
+        PopupType { GameWindow(  // (523t: the popups' approved type - PopupLab.kt)
             layout = state.appearance.homeLayout, g = g, state = state, art = displayArt,
             onClose = { GamePopup.closed(g) },
             onPlay = { GamePopup.game = null; startGame(g) },
@@ -5634,7 +5634,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onEmulator = { configuringPlatform = g.platform },
                 onMatching = { configuringRaForGame = g }
             )
-        )
+        ) }
     }
 
     if (showSaveExplorer) {

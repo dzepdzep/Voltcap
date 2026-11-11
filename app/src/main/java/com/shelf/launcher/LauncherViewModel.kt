@@ -2618,8 +2618,25 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = 10, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
             }
         }
+        // (Batch 523t: and, three games in four, details as a scraper gives them - year, studio, genre, a story of a few
+        // sentences - in this session only (never saved), to see layouts with real-length metadata.)
+        val meta = HashMap<String, com.shelf.launcher.data.GameMetadata>()
+        games.forEachIndexed { i, g ->
+            if (i % 4 != 1) meta[g.stableKey] = com.shelf.launcher.data.GameMetadata(
+                title = g.name,
+                summary = "QA fixture story for ${g.name}. A long-form description of the kind a details source returns: " +
+                    "the premise, how it plays and why it is remembered, written to fill three to six lines. " +
+                    "Synthetic text in the isolated QA app only.",
+                releaseYear = 1991 + (i * 3) % 30, criticScore = null, criticCount = null,
+                genres = listOf(listOf("Platformer", "Racing", "Role-playing", "Fighting", "Puzzle", "Adventure")[i % 6], "Action"),
+                developer = listOf("QA Studio North", "Fixture Works", "Test Pattern Games", "Placeholder Interactive")[i % 4],
+                hastilyHours = null, normallyHours = null, completelyHours = null,
+                publisher = if (i % 3 == 0) "QA Publishing" else null
+            )
+        }
         recombineGames()
-        _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll(), raAchievementDetails = it.raAchievementDetails + details, raProgress = it.raProgress + progress) }
+        _uiState.update { it.copy(artOverrides = artOverridesStore.loadAll(), raAchievementDetails = it.raAchievementDetails + details, raProgress = it.raProgress + progress,
+            metadata = it.metadata + meta) }
     }
 
     /** Background upscaling for one game: null = automatic, 1 = off, 2/4/6/8 = times. */
