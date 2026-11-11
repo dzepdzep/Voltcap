@@ -63,6 +63,7 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
 import kotlin.math.floor
+import kotlinx.coroutines.flow.first
 
 /*
  * Update 374 (Toni: "Coverflow details — LaunchBox Big Box 3-Dimensions-inspired"): one scene. The game you're on as a big
@@ -212,12 +213,10 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
             Modifier.align(Alignment.BottomEnd).padding(end = pad * 0.5f, bottom = pad * 0.35f).width(rightW + pad * 0.7f).height(shelfH)
         )
         // The facts at the upper right, above the shelf.
-        CoverDetailsInfo(
-            c, g, compact, accent,
-            Modifier.align(Alignment.TopEnd).padding(top = pad, end = pad).width(rightW).height((h - shelfH - pad * 1.6f).coerceAtLeast(60.dp))
-                .riseOnChange(g.stableKey, floor = 0.4f, ms = 240),
-            head = false
-        )
+        // (523t: the facts change with the case flight too, as the title does.)
+        CoverWithFlight(g, Modifier.align(Alignment.TopEnd).padding(top = pad, end = pad).width(rightW).height((h - shelfH - pad * 1.6f).coerceAtLeast(60.dp))) { gm, m ->
+            CoverDetailsInfo(c, gm, compact, accent, m, head = false)
+        }
         // The title and the big case on the left (over everything: it flies to and from the shelf).
         // (523t, owner: the big case a little higher - the title block is tighter and the case's room starts right under it.)
         // (523t, KONKR with real-length names: the title's room is one line + the console line; a name that needs a second line
@@ -246,21 +245,36 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
  * case arrives (read from the flight's own progress while drawing). A category change or no animation: at once, as before.
  */
 @Composable
-private fun CoverDetailsHead(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
+private fun CoverDetailsHead(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) =
+    CoverWithFlight(g, modifier) { gm, m -> CoverHeadText(c, gm, compact, accent, m) }
+
+/**
+ * 523t: [content] for the game you're on, changing WITH the case flight: the one you left fades out while its case starts
+ * back, the new one comes in as its case arrives (title, console, facts and story together). No flight (category change,
+ * animations off): at once.
+ */
+@Composable
+private fun CoverWithFlight(g: Game, modifier: Modifier, content: @Composable (Game, Modifier) -> Unit) {
     var last by remember { mutableStateOf(g) }
     val old = remember(g.stableKey) { last.takeIf { it.stableKey != g.stableKey } }
     androidx.compose.runtime.SideEffect { last = g }
-    val key = g.stableKey
+    val k = g.stableKey
     val density = LocalDensity.current
+    // (The leaving one is dropped once it has faded - not kept invisible under the new one.)
+    var showOld by remember(k) { mutableStateOf(old != null) }
+    LaunchedEffect(k) {
+        if (old != null) androidx.compose.runtime.snapshotFlow { CoverFlight.flights[k]?.value ?: 1f }.first { coverHeadOut(it) <= 0f }
+        showOld = false
+    }
     Box(modifier) {
-        if (old != null) CoverHeadText(c, old, compact, accent, Modifier.fillMaxWidth().graphicsLayer {
-            alpha = coverHeadOut(CoverFlight.flights[key]?.value ?: 1f)
-        })
-        CoverHeadText(c, g, compact, accent, Modifier.fillMaxWidth().graphicsLayer {
-            val a = coverHeadIn(CoverFlight.flights[key]?.value ?: 1f)
+        if (old != null && showOld) key(old.stableKey) { content(old, Modifier.fillMaxSize().graphicsLayer {
+            alpha = coverHeadOut(CoverFlight.flights[k]?.value ?: 1f)
+        }) }
+        key(k) { content(g, Modifier.fillMaxSize().graphicsLayer {
+            val a = coverHeadIn(CoverFlight.flights[k]?.value ?: 1f)
             alpha = a
             translationY = (1f - a) * with(density) { 8.dp.toPx() }
-        })
+        }) }
     }
 }
 
