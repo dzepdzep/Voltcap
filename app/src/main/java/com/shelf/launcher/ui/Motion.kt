@@ -225,28 +225,24 @@ private fun heldPx(context: android.content.Context): android.util.Size {
 }
 
 /** The one request a shared backdrop ([HeldImage] with `shared`) and its warm-up make; no crossfade (HeldLayers does the changing). */
-internal fun heldRequest(context: android.content.Context, url: String, soft: Int = 0): coil.request.ImageRequest {
+internal fun heldRequest(context: android.content.Context, url: String): coil.request.ImageRequest {
     val px = heldPx(context)
-    // (523p: [soft] > 0 = the soft copy - decoded that small and scaled up, the blur without a per-frame RenderEffect.)
     return coil.request.ImageRequest.Builder(context)
-        .data(url).apply { if (soft > 0) size(soft, soft) else size(px.width, px.height) }
+        .data(url).size(px.width, px.height)
         .scale(coil.size.Scale.FIT).precision(coil.size.Precision.INEXACT)
-        .memoryCacheKey(heldKey(context, url, soft))
+        .memoryCacheKey("held|$url|${px.width}")
         .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
         .crossfade(false)
         .build()
 }
 
-private fun heldKey(context: android.content.Context, url: String, soft: Int): String =
-    if (soft > 0) "held|$url|soft$soft" else "held|$url|${heldPx(context).width}"
-
-internal fun heldCached(context: android.content.Context, url: String, soft: Int = 0): Boolean =
-    coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key(heldKey(context, url, soft))) != null
+internal fun heldCached(context: android.content.Context, url: String): Boolean =
+    coil.Coil.imageLoader(context).memoryCache?.get(coil.memory.MemoryCache.Key("held|$url|${heldPx(context).width}")) != null
 
 /** Update 398: decodes [urls] as shared backdrops ahead (skips the ones in memory). Returns the handles to dispose. */
-internal fun warmHeld(context: android.content.Context, urls: List<String>, soft: (String) -> Int = { 0 }): List<coil.request.Disposable> {
+internal fun warmHeld(context: android.content.Context, urls: List<String>): List<coil.request.Disposable> {
     val loader = coil.Coil.imageLoader(context)
-    return urls.distinct().filter { !heldCached(context, it, soft(it)) }.map { loader.enqueue(heldRequest(context, it, soft(it))) }
+    return urls.distinct().filter { !heldCached(context, it) }.map { loader.enqueue(heldRequest(context, it)) }
 }
 
 @Composable
@@ -260,14 +256,12 @@ internal fun HeldImage(
     /** Update 363: the slow zoom ([slowZoom]) belongs to each picture, not to the whole stack — see below. */
     zoom: Boolean = false,
     /** Update 398: a full-screen backdrop: one decode size / memory key ([heldRequest]) that [warmHeld] fills ahead, so a warmed picture is there the frame its game is picked. */
-    shared: Boolean = false,
-    /** 523p: a shared backdrop drawn soft — decoded this small (px) and scaled up instead of a RenderEffect blur; 0 = sharp. */
-    softPx: Int = 0
+    shared: Boolean = false
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    HeldLayers(model, fadeMs, modifier, instant = { m -> shared && m is String && heldCached(context, m, softPx) }) { m, ready, failed ->
+    HeldLayers(model, fadeMs, modifier, instant = { m -> shared && m is String && heldCached(context, m) }) { m, ready, failed ->
         AsyncImage(
-            if (shared && m is String) remember(m, softPx) { heldRequest(context, m, softPx) } else m, null, contentScale = contentScale, alignment = alignment,
+            if (shared && m is String) remember(m) { heldRequest(context, m) } else m, null, contentScale = contentScale, alignment = alignment,
             onSuccess = { ready() }, onError = { failed() },
             // (Update 363: with the zoom on the stack, one game change snapped the zoom back to 1 under the picture still on
             // screen while the next loaded — the old art jumped smaller, then the new one faded in. Each picture drifts on its own now.)
