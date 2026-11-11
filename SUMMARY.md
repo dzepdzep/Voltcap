@@ -20,6 +20,12 @@
   `ui/TestHooks.kt` + `ui/LauncherScreen.kt`): big case upper left under title / console · year, facts upper right, other games
   as 32°-turned Case3D cases on a compact lower-right shelf (spaced by case shape), Endless each game once (no fill copies), the
   case flight goes shelf ↔ big place. Tests `Batch523rCoverShelfTest`; Layouts374 / Spawning398 updated. KONKR cd523s evidence.
+- **Approved popup direction for everyone** (523t / 523u; `ui/PopupLab.kt` APPROVED / active / PopupType, `ui/GameWindow.kt`,
+  `ui/WinScenesMore.kt`, `ui/WinScenes.kt`, `ui/LauncherScreen.kt`; NEW assets `app/src/main/assets/fonts/roboto_{400,500,600,700}.ttf`
+  + LICENSE_Roboto.txt — copy via project_copy): lighter Roboto (bundled weights; device faces could not be drawn lighter),
+  Play / Details / round •••, "B Back" hint, Storage boxes layout. Row / Shared / Banner keep their layout, lighter type.
+- **Cover details** (523t–v, `ui/StyleCoverDetails.kt`): bigger / higher case (44 % column, one-line title room), title and facts
+  change with the case flight. QA fixture details in `LauncherViewModel.qaArtFixture` (session only).
 - **KONKR Coverflow timing explained** (523p A/B, reverted): UI 3 ms, GPU 7 ms, rest is queue latency; no code change kept.
 - QA: popclip.sh focus guard; flip523p / konkr523q / konkr523s / cd523r scripts; Flip 2 + KONKR controller 80 / 80, Flip 2 Tile
   home PASS.
