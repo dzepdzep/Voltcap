@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **11 Nov 2026 (batch 523; base reconciliation batch 520)** against main `a1f762c` (v0.6.69, versionCode 76), the batch 505–519 evidence
+Last reconciled **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -190,4 +190,5 @@ a separate hero surface for Ken Burns (only with a measured net win), screensave
 | **Important, still open** | KONKR memory soak (`mem520.sh`), Case Stacks fast scroll on KONKR; Thor quick check of the 520 layouts |
 | **Optional** | more layouts with Game spacing; Cover details first-frame texture glitch (needs evidence); header backdrop fade; scan crop audit |
 | **Hardware / reference / owner** | Odin 3 nav bar, Thor second screen, in-game overlays, RA account, GameNative, E1/E2 photos, finger tests, look approvals |
-| **Owner approvals** | P3–P7, B1–B6 (upgrade); merge + publish of 0.6.70 |
+| **Published** | **v0.6.70 (versionCode 77) published 11 Nov 2026 19:37 UTC** — owner-approved; normal GitHub release (not a prerelease, not a draft; now `releases/latest`): https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.70. Source: RC 523z3 committed on main `aed4501`, version bump `cc646b4` (release.ps1). Assets: `Voltcap-0.6.70.apk` sha256 c842251c…ccfde8 (54,425,322 B), `Voltcap-0.6.70-compat.apk` f295b1db…62ff91 (54,425,230 B), `voltcap-profile-api28.dm` f7ec9e84…, `voltcap-profile-api31.dm` eb68ff71… — GitHub digests equal the local build. Both APKs: com.shelf.launcher 0.6.70 (77), signer 88ce4b67…f344197 (same key as 0.6.69), debuggable=False; Gradle `verifyNoEmbeddedSecrets` 4 values clean on both; `apk_secret_scan` no credential fields; token / private-key pattern scan of the unpacked APKs 0 hits. FW1 not included (`docs/fw1/` gitignored; no StartWelcome code on main). Production pins updated (`tools/adb_mcp/production_pins.json`). No production install or update on any handheld. Accepted risk: RP Classic ×1.3 run not graded. |
+| **Owner approvals** | P3–P7, B1–B6 (upgrade); ~~merge + publish of 0.6.70~~ (given and done 11 Nov) |
