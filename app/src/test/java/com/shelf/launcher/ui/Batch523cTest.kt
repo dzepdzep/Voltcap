@@ -253,3 +253,14 @@ class Batch523xFlipTest {
         assertTrue(src("WinScenes.kt").contains("Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8)"))
     }
 }
+
+/** 523y: Tile home under a row-style window - other tiles, the name over them and the round buttons fade with the row. */
+class Batch523yTileRevealTest {
+    @Test fun tileHomeFadesUnderTheWindow() {
+        val t = java.io.File("src/main/java/com/shelf/launcher/ui/TileHome.kt").readText()
+        assertTrue(t.contains("alpha = RowReveal.alphaFor(i == vFocus)"))
+        assertTrue(t.contains("alpha = RowReveal.sharedAlpha()"))
+        val s = java.io.File("src/main/java/com/shelf/launcher/ui/LauncherScreen.kt").readText()
+        assertTrue(s.contains("Box(Modifier.rowRevealFade()) { HomeShortcutBar("))
+    }
+}

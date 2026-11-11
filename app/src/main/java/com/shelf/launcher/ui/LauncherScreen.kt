@@ -4370,7 +4370,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                 }
-                if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) {
+                if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) Box(Modifier.rowRevealFade()) { // (523y: fades under a row-style window)
                     HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight)
                 } else if (shortcutsAbove && tileBarReserved) {
                     ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight) }
@@ -4453,7 +4453,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 }
                 if (!shortcutsAbove && shortcutsByRow && (!shortcutsFloating || tileBarReserved)) {
                     Spacer(Modifier.height(if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 2.dp else 8.dp))
-                    if (!shortcutsFloating) HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight)
+                    if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
                     else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
                 }
             }

@@ -427,7 +427,9 @@ internal fun TileHomeRow(
             val lineDp = with(LocalDensity.current) { (18.sp * ts).toDp() }
             val boxH = if (lines == 1) maxOf(24.dp * ts, lineDp + 6.dp) else maxOf(46.dp * ts, lineDp * 2 + 10.dp)
             val nameBarColor = ShelfTheme.accent
-            Box(Modifier.fillMaxWidth().height(boxH)) {
+            // (523y: the game's name over the tiles fades with the row under a row-style window - the window shows the name itself.)
+            Box(Modifier.fillMaxWidth().height(boxH).then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier)) {
                 Text(
                     shownName,
                     // (0.6.17: white with a bar in the theme's colour under it — the name in the theme's colour vanished on
@@ -597,6 +599,10 @@ internal fun TileHomeRow(
                                     val x = (m.start.value + i * strideDpValue - scroll.value).dp
                                     IntOffset(x.roundToPx(), 0)
                                 }
+                                // (523y, KONKR klab523w: under a row-style window (Row reveal / Row opens / Shared) the other tiles
+                                // stayed at full strength under its buttons; they fade with the row as the Voltcap row's cards do.)
+                                .then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
+                                    Modifier.graphicsLayer { alpha = RowReveal.alphaFor(i == vFocus) } else Modifier)
                                 .then(
                                     if (carousel) Modifier.graphicsLayer {
                                         // Distance from the game you're on, gliding with the row.
