@@ -3611,7 +3611,7 @@
    "title": "Shared style Details: focusable story box 38 px tall (touch < 24 dp) in 46 layouts",
    "rule": "R26",
    "severity": "medium",
-   "status": "fixed (523o: heightIn(min = 48.dp); Batch523oTouchTest) - device re-grade in chain523n p523nr",
+   "status": "verified (p523or, RP Classic, build 523o: Shared 46 / 46 PASS)",
    "found": "2026-11-11 popup gate p523f (RP Classic, x1.0, build 523f)"
   },
   {

@@ -111,6 +111,11 @@ place the icon whole. Cinema's header backdrop stays dark with no icon (by desig
 "FI", "WI"), every look now shows the console plate / emblem, also for Wipeout 2097 (not here, nothing recorded). PS2 browser:
 turning emblems. Same result as the GT78 (kv523h–j). PASS (by eye).
 
+### ×1.0 re-run, Row opens / Row reveal / Shared, build 523o (p523or, 00:25–01:28, exit 1)
+**PASS 135 · FAIL 3 · SKIP 21 · INFRA 0 · NOT TESTED 0** (159). Shared: **46 / 46 now PASS** (touch fix verified, D296 → verified);
+Twin showcase × Row opens PASS (clock clip gone). The 3 FAILs are Crate's home-step "overlap" — the same checker false positive
+as above (D297). Real Voltcap pid unchanged, 0 fatal, settings restored.
+
 ### ×1.3 / density ×1.15 (p523fb)
 Stopped after 12 layouts when ×1.0 ended (the chain ran past its slot); not graded. Superseded by chain523n.
 
