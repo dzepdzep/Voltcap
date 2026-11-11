@@ -170,3 +170,42 @@ class Batch523oTouchTest {
         assertTrue("never capped below 48 dp", f.contains("coerceAtLeast(48.dp.toPx())"))
     }
 }
+
+/** 523r: Cover details recomposed (owner's sketch): angled 3D cases on a compact shelf, each game once with Endless. */
+class Batch523rCoverShelfTest {
+    @Test fun gamesStandSideBySideAndTheOneYoureOnTakesNoRoom() {
+        assertEquals(-0.5f, coverRowX(-1f), 1e-5f)
+        assertEquals(0.5f, coverRowX(1f), 1e-5f)
+        assertEquals(1.5f, coverRowX(2f), 1e-5f)
+        var prev = coverRowX(-3f)
+        for (i in -299..300) { val x = coverRowX(i / 100f); assertTrue(x >= prev - 1e-5f); prev = x } // one way, no jump
+    }
+    @Test fun endlessShowsEachGameOnceAndCompact() {
+        for (n in 2..7) for (step in 0..40) {
+            val pos = step * 0.25f
+            val ds = (0 until n).map { coverRowD(it, pos, n, true) }
+            // each game exactly one place, all inside one loop's width: never a copy, never far apart
+            assertTrue(ds.all { it >= coverRowLead(n) - 1e-4f && it < coverRowLead(n) + n + 1e-4f })
+            assertEquals(n, ds.map { Math.round(it * 4) }.toSet().size)
+        }
+        // 3 games resting on game 0: the one before at -1, the next at +1 (side by side), game 0 itself in the big place
+        assertEquals(setOf(-1f, 0f, 1f), (0 until 3).map { coverRowD(it, 0f, 3, true) }.toSet())
+        // 2 games: the other one stands next, not before
+        assertEquals(1f, coverRowD(1, 0f, 2, true), 1e-5f)
+    }
+    @Test fun aGameGoingRoundTheLoopIsInvisibleWhereItJumps() {
+        for (n in 2..6) {
+            val lead = coverRowLead(n)
+            assertEquals(0f, coverRowAlpha(lead, n, true), 1e-5f)
+            assertEquals(0f, coverRowAlpha(lead + n, n, true), 1e-5f)
+            assertEquals(1f, coverRowAlpha(1f, n, true), 1e-5f) // the next game is whole at rest
+        }
+        assertEquals(1f, coverRowAlpha(-1f, 5, true), 1e-5f)    // the one before, too
+        assertEquals(1f, coverRowAlpha(-1f, 5, false), 1e-5f)
+        assertEquals(0f, coverRowAlpha(-2f, 5, false), 1e-5f)
+    }
+    @Test fun theFlightStartsAtTheShelfsTurn() {
+        assertEquals(COVER_ROW_YAW, CoverFlight.yaw(0f, 24f), 1e-4f)
+        assertEquals(24f, CoverFlight.yaw(0.6f, 24f), 1e-4f)
+    }
+}

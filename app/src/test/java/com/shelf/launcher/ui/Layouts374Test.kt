@@ -24,7 +24,8 @@ class Layouts374Test {
 
     @Test fun coverflowReusesTheExistingCaseAndSpinePieces() {
         val s = src("ui/StyleCoverDetails.kt")
-        assertTrue(s.contains("Case3D(") && s.contains("GameSpine(") && s.contains("case3dAspect(") && s.contains("shelfSpineAspect("))
+        // (523r: the shelf holds smaller Case3D cases instead of upright GameSpine spines - owner's redesign.)
+        assertTrue(s.contains("Case3D(") && s.contains("case3dAspect("))
         assertTrue(s.contains("PickedFacing") && s.contains("rememberLoopFocus") && s.contains("rememberGlidePos"))
         // No second 3D engine, no new legend.
         assertFalse(s.contains("rotationX") || s.contains("Legend"))
