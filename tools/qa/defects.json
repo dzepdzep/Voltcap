@@ -3622,6 +3622,14 @@
    "status": "suspect (checker false positive: the screenshot shows no overlapping text; the QaClip dump carries no z-order / occlusion)",
    "found": "2026-11-11 popup gate p523f, CRATE x 5 styles, home step",
    "note": "Fix belongs in readcheck (skip texts covered by a later opaque sibling) once the dump records draw order; no product change."
+  },
+  {
+   "id": "D298",
+   "title": "Airy: a game without art shows its fallback title white on the white card (invisible)",
+   "rule": "READABILITY",
+   "severity": "low",
+   "status": "open",
+   "found": "2026-11-11 Flip 2 fe523p (endless523b, AIRY_*_ffalse)"
   }
  ]
 }

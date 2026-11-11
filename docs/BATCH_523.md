@@ -169,7 +169,7 @@ signer a48b27ed, real Voltcap checked before / after — unchanged on both: 0.6.
 
 New QA safety: popclip.sh now presses keys / taps only while a QA app window has the focus (a crash dialog ends the run).
 
-## 9. Cover details recomposed (523r, owner's sketch, 11 Nov) — built, unit-tested, **device check pending**
+## 9. Cover details recomposed (523r / 523s, owner's sketch, 11 Nov) — KONKR checked, owner review open
 
 Layout identified: `HomeLayout.COVERDETAILS` → `StyleCoverDetails.kt` (`CoverDetailsBody`, the shelf, `CoverBigCases`,
 `CoverFlight`). Case flow (`StyleCaseFlow.kt`) untouched.
@@ -186,4 +186,24 @@ Layout identified: `HomeLayout.COVERDETAILS` → `StyleCoverDetails.kt` (`CoverD
 - Unit tests: `Batch523rCoverShelfTest` (row places, each game once for 2–7 games, edge fades, flight turn); Layouts374 /
   Spawning398 follow the redesign; all tests pass. QA hook `voltcap_test_loop true|false` (preview only) + `cd523r.sh`
   (1 / 2 / 3 / many games × Endless on / off, shots + recordings) prepared.
-- **Not yet seen on a device**: the PC connection dropped while installing 523r on the GT78 (install result unknown).
+- KONKR (GT78) cd523r (523r) → first look: PS1 jewel cases hid most of each other and the shelf cases were small → 523s:
+  shelf 48 % of the height, cases spaced by the usual case shape here (a fifth of each under the next). cd523s (523s):
+  1 game: empty shelf; 2: the other beside the big case; 3: one before + one after, touching; many: row to the right, fading
+  where the room ends — no copies (Fill the row on). Two recordings (PS1 3 games, All; 3 right + 3 left): the next case leaves
+  the shelf and grows / turns into the big place while the one before shrinks back into its slot, row in step both ways.
+  Evidence: `Claude outputs\b523\cd523r.tar`, `cd523s.tar`; Batch 523 evidence page.
+- Not yet checked: Flip 2 (16:9, 1920×1080) and Thor; the Cover details popup combinations of the gate (kp523s on the KONKR runs them).
+- Owner review: overall look, the 32° turn, overlap, shelf height.
+
+## 10. Crate layout: genuine vs. checker
+
+- **Checker false positive (D297):** readcheck "overlap" on Crate's home step — the back sleeves' fallback titles (stand-in games
+  have no covers) lie on each other, all **under** the front sleeve; the screenshots show none of them. All 6 popup styles of
+  Crate pass every popup category; only this home-step readability check fails. Fix belongs in the checker (needs draw order in
+  the QaClip dump).
+- **Checked, not a defect:** the crate's front stencil ("… ENTERTAINMENT SYS…") is a scrolling FullText marquee, not cut text.
+- **No genuine Crate failure found** in p523f / p523or.
+
+## 11. Other finding (Flip 2, endless run)
+Airy with games without art: the card's fallback title is white on the white card (invisible) — seen in fe523p (Flip 2). Not
+fixed yet (logged; the stand-in library has no art, real libraries mostly have it).

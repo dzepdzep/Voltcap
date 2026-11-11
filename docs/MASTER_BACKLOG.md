@@ -35,6 +35,9 @@ Statuses:
 
 | Item | Evidence |
 |---|---|
+| Cover details recomposed to the owner's sketch (big case upper left, angled 3D cases on a compact lower-right shelf, Endless each game once, case flight shelf ↔ big place) | DONE-O (523r / 523s): KONKR cd523s screenshots + recordings; owner review; Flip 2 / Thor NOT TESTED |
+| Controller contract 16 layouts on Flip 2 and KONKR (523o) | 80 / 80 each (fc523p, kc523q) |
+| Tile home independence on Flip 2 (523o) | PASS (ft523p, tile522) |
 | Popup gate 523: Details in the popup's own style (Row opens / Row reveal / Shared) + Storage box layout | RP Classic p523f (×1.0, 523f): 244 PASS / 52 FAIL → Shared's story box < 24 dp × 46 FIXED 523o, verified p523or (135 PASS; Shared 46 / 46); remaining FAILs = Crate home "overlap", a checker false positive (D297). ×1.3 run p523ob (523o) — see docs/BATCH_523.md §6 |
 | Coverflow details pickup / return as one object; Game shelf extraction (slide, turn in place, forward); Case flow each game once | FIXED (523f), recordings m523f (Classic) / km523f, km523l2 (GT78, Full); `Batch523PickupTest`, `Batch523CaseFlowTest` |
 | Endless with few games: each game once (fill off) | FIXED (523d / 523f), e523f / ke523f (1, 2, 3, 36 games) |
@@ -93,6 +96,7 @@ Statuses:
 | Case Stacks fast scroll on KONKR: burst p90 36 ms / 10.4 % janky (Shelf 0 %) | IMPROVED (523): GT78 burst p90 26 ms / 3.2 % janky |
 | Coverflow details steps on the GT78: 15–16 ms frame median (burst janky fixed 12.8 → 0.6 % in 523i) | EXPLAINED (11 Nov): UI thread 3 ms, GPU 7 ms; the rest is buffer-queue wait (latency, not work); 0.6–5 % frames miss their deadline. Removing the blur or all effects (Lite) changes nothing → no code change (523p A/B reverted). Further only with a GPU profile (developer option, owner OK). docs/BATCH_523.md §7 |
 | Hero on the GT78: GPU 11–12 ms a frame, its popup window 17 ms median | OPEN, low — the heaviest layout on this GPU; next perf candidate |
+| Airy, game without art: the card's fallback title is white on the white card (Flip 2 fe523p) | OPEN, low |
 | QA checker: readcheck flags text hidden under another layer (Crate back sleeves) as overlap | OPEN (D297), tools only: the QaClip dump has no draw order |
 | ScreenScraper per-game look-ups when the server is slow or refuses | PARTIAL — 520: a timeout / busy / limit / login refusal no longer reads "found nothing for X — try another name": the game's note now says what happened (`screenScraperFailureNote`, from `lookupOutcome`; the note stays on the game until the next look-up). The game shows its loading state meanwhile; the app waits 75 s through the service. Unit tests; no device run with a slow / failing answer (it can't be forced without changing the production service) |
 | Cover details first flight frame (1 of 666 frames, Nova) | OPEN, low. 520 RP Classic: 2 recordings (`flash513.sh` COVERDETAILS, 690 + 784 frames): 1 one-frame event, during the fast 5-step burst — the NEW case's first frame (its no-art generated cover drawn at another texture size, then redrawn), not the leaving case's flight; 0 in the second run. Both look like first-frame texture / bounds, not motion maths. 520 code review: a case's flight reads `CoverFlight.spines`, written inside the shelf spines' graphicsLayer during the same draw pass, so a flight drawn before its spine reads last frame's slot (one-frame lag at the start). Not confirmed on a device (the Nova isn't connected; needs a frame recording) → not changed |
