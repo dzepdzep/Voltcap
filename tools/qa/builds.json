@@ -704,6 +704,17 @@
    "apk_sha256": "09bb38175fc46b64711f534468508e85ecea3b3443e66ae27d7c33e1098fa1d7",
    "base_commit": "6bc73b9",
    "note": "batch 523z2: 523z + x1.3 home fixes (category name stops before the status bar clock; File select title row and file text); GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z3",
+   "apk_sha256": "cbf9162ca7895e4153d31eb0c6941ace8832a8a4c123c77e7d07c9de0012e320",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z3: 523z2 + File select line count from real heights, category name limited only when it really shares the clock band; GT78 + Flip 2"
   }
  ]
 }
