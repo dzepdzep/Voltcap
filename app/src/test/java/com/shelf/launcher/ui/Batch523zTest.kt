@@ -27,4 +27,23 @@ class Batch523zTest {
         assertTrue(detailsBannerH(426.dp) == 426.dp * 0.36f)
         assertTrue(detailsBannerH(720.dp) == 720.dp * 0.42f)
     }
+
+    @Test fun categoryNameStopsBeforeTheClock() {
+        // KONKR x1.3 Card binder: text 42..663, backing 30..675, top band 30..74; the clock cluster from x 480, y 12..52
+        val room = categoryNameRoomPx(42f, 663f, 30f, 74f, 675f, 480f, 12f, 52f, 12f)!!
+        assertTrue(room == 480f - 12f - 12f - 42f)
+        // not in the cluster's band (the name lower down): no limit
+        assertTrue(categoryNameRoomPx(42f, 663f, 120f, 160f, 675f, 480f, 12f, 52f, 12f) == null)
+        // starts right of the cluster's left edge (Hero's spot further right): no limit
+        assertTrue(categoryNameRoomPx(600f, 700f, 30f, 74f, 712f, 480f, 12f, 52f, 12f) == null)
+        // no status bar: no limit
+        assertTrue(categoryNameRoomPx(42f, 300f, 30f, 74f, 312f, null, 0f, 0f, 12f) == null)
+        // a short name keeps the same room as a long one (stable: never switches back and forth)
+        assertTrue(categoryNameRoomPx(42f, 300f, 30f, 74f, 312f, 480f, 12f, 52f, 12f) == room)
+    }
+
+    @Test fun fileNameTakesOneLineOnlyWhenShort() {
+        assertTrue(fsTitleLines(260f, 208f) == 2)
+        assertTrue(fsTitleLines(177f, 208f) == 1)
+    }
 }

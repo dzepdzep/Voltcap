@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.border
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
@@ -4823,12 +4824,26 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                 // Update 220 (#04): a tap on the category's name opens Choose a category (every category,
                                 // Continue playing too) — TV room and the other layouts showing just the name had no way to
                                 // change category by touch. (Not while Edit Home moves it; no focus, so the D-pad is unchanged.)
+                                // (523z2, KONKR text x1.3: the name ran under the status bar's clock on Card binder / Cover details.
+                                // It now stops short of the clock / icons cluster when the two share a band; elsewhere it's unchanged.)
+                                val partRect = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+                                val textRect = remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+                                val nameDensity = androidx.compose.ui.platform.LocalDensity.current
+                                val roomPx = run {
+                                    val pr = partRect.value; val tr = textRect.value; val cl = barClusterRect
+                                    if (pr == null || tr == null || cl == null) null
+                                    else categoryNameRoomPx(tr.left, tr.right, pr.top, pr.bottom, pr.right, cl.left, cl.top, cl.bottom, with(nameDensity) { 8.dp.toPx() })
+                                }
                                 Box(Modifier.categoryTitleFade(key).then(
                                     if (HomeEditState.active) Modifier
                                     else Modifier.pointerInput(Unit) { detectTapGestures { openCategoryScreen() } }
-                                )) {
+                                ).onGloballyPositioned { val r = it.boundsInRoot(); if (partRect.value != r) partRect.value = r }) {
                                     PartBackingBox(state.appearance.homeLayout) {
-                                        CategoryNamePart(CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop)
+                                        CategoryNamePart(
+                                            CategoryTitle.text(state.sortCategoryKey, state.searchQuery), state.appearance.nameBackdrop,
+                                            maxWidth = roomPx?.let { with(nameDensity) { it.toDp() } } ?: 420.dp,
+                                            modifier = Modifier.onGloballyPositioned { val r = it.boundsInRoot(); if (textRect.value != r) textRect.value = r }
+                                        )
                                     }
                                 }
                             }
