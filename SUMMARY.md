@@ -1,3 +1,11 @@
+# v0.6.70 published (11 Nov 2026)
+
+- Owner-approved release of the verified 523z3 candidate: main `aed4501` (RC) + `cc646b4` ("Voltcap 0.6.70", versionCode 77).
+- GitHub release v0.6.70 (normal, not prerelease; latest): https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.70
+- Voltcap-0.6.70.apk c842251c145820de58f2e5d828a1705fd6d5795519af2dfa56ea5aa7ceccfde8; Voltcap-0.6.70-compat.apk f295b1db532d11e8b827f3fa2bc66d31e6ba910cb477269b6a0b6cd0ea62ff91; plus two baseline-profile .dm files. GitHub digests match the local build.
+- Checks: com.shelf.launcher 0.6.70 (77), signer 88ce4b67…f344197, debuggable=False, verifyNoEmbeddedSecrets 4 values clean, apk_secret_scan clean, pattern scan 0 hits.
+- FW1 (dual welcome) kept out; RP Classic ×1.3 grading = accepted documented risk. No production app installed or updated on any handheld.
+
 # Update 523z3 (11 Nov 2026) — ×1.3 home-screen fixes before v0.6.70 (owner-approved scope; next/0.6.70, local)
 
 - **Category name next to the status bar** (`ui/HomeParts.kt` `CategoryNamePart` + `categoryNameRoomPx`, `ui/LauncherScreen.kt`):
