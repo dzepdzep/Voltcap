@@ -175,6 +175,12 @@ Statuses:
 New system layouts, new 3D templates, consoles without references, Studio templates, popups inside the activity window,
 a separate hero surface for Ken Burns (only with a measured net win), screensaver overlay leakage (no repro since 488).
 
+## 6b. Follow-up features (after v0.6.70; not in the release candidate)
+
+| ID | Item | Status |
+|---|---|---|
+| FW1 | **Dual-screen start-up welcome (AYN Thor):** while "Who's playing?" waits at start-up, the lower screen shows the intro's own mark, "Choose a player to begin" and a seam of light under the cursor's player instead of a game layout; hands over to the normal second screen after the pick. Local branch `feature/dual-welcome` (42c1a5e), design + QA plan `docs/DUAL_WELCOME.md`. | **PARTIAL:** implemented, type-checked (0 errors), logic tests 5/5. **Pending:** Gradle build, install in the QA app after the 523y gates, **AYN Thor hardware QA** (`dualwelcome.sh`: 6 looks + ×1.3, cold start, hand-over, idle settle, screen off/on, Categories start-up shows none), owner look approval, merge after 0.6.70. Not hardware-verified. |
+
 ## 7. v0.6.70 release plan (520)
 
 | Class | Items |
