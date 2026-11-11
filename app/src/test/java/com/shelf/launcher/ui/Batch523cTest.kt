@@ -183,6 +183,7 @@ class Batch523pBackdropTest {
         val src = java.io.File("src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt").readText()
         val f = src.substring(src.indexOf("internal fun CoverDetailsBackdrop"), src.indexOf("private const val SHELF_GAP_DP"))
         assertTrue(!f.contains(".blur("))
-        assertTrue(f.contains("rememberSoftArt(art!!, softPx)"))
+        assertTrue(f.contains("softPx = coverBackdropSoftPx(ctx, art, lite)"))
+        assertTrue("warmed soft copies stay instant (update 398)", f.contains("shared = true"))
     }
 }

@@ -92,19 +92,27 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
         val portrait = (CoverAspects.rawOf(art) ?: 2f) < 1f
         // (523p, KONKR: Coverflow details spent 11-13 ms a frame issuing / waiting on the GPU, ~3 ms on the UI thread - a
         // full-screen RenderEffect blur (24 dp / 6 dp) redrawn for every frame of each art cross-fade. The same softness now
-        // comes from decoding the art small and letting it scale up (rememberSoftArt, as Batch 523 did behind moving cards):
+        // comes from decoding the art small and letting it scale up (heldRequest soft, as Batch 523 did behind moving cards):
         // no per-frame blur. Lite effects: the sharp art, as before.)
-        val soft = !LocalLiteEffects.current && art != null
-        val d = androidx.compose.ui.platform.LocalDensity.current
-        val roomPx = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp * d.density
-        val softPx = softArtPx(roomPx, with(d) { (if (portrait) 24.dp else 6.dp).toPx() })
+        // (Shared: the warmed soft copy is in place the frame its game is picked, as the sharp one was - update 398.)
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        val lite = LocalLiteEffects.current
         HeldImage(
-            if (soft) rememberSoftArt(art!!, softPx) else art, Modifier.fillMaxSize(), fadeMs = 450, shared = !soft,
-            contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop
+            art, Modifier.fillMaxSize(), fadeMs = 450, shared = true,
+            contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop,
+            softPx = coverBackdropSoftPx(ctx, art, lite)
         )
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to back.copy(alpha = 0.55f), 0.55f to back.copy(alpha = 0.82f), 1f to back.copy(alpha = 0.7f))))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.5f to back.copy(alpha = 0.35f), 1f to back.copy(alpha = 0.96f))))
     }
+}
+
+/** 523p: the soft copy's decode size for Coverflow details' backdrop [art] (0 = sharp, Lite effects): a portrait cover as a 24 dp blur, a wide picture 6 dp. */
+internal fun coverBackdropSoftPx(context: android.content.Context, art: String?, lite: Boolean): Int {
+    if (lite || art == null) return 0
+    val m = context.resources.displayMetrics
+    val portrait = (CoverAspects.rawOf(art) ?: 2f) < 1f
+    return softArtPx(maxOf(m.widthPixels, m.heightPixels).toFloat(), (if (portrait) 24f else 6f) * m.density)
 }
 
 private const val SHELF_GAP_DP = 0.5f
@@ -130,6 +138,7 @@ private fun CoverShelfRequests(c: StyleCtx) {
     // Update 398: the background and the big case's cover of the games either side are decoded in the exact shape the scene
     // draws them in, so moving on shows both the frame the game is picked (no solid case face, no late background).
     val warmCtx = androidx.compose.ui.platform.LocalContext.current
+    val liteWarm = LocalLiteEffects.current
     val coverPx = cardArtPx(ArtKind.COVER)
     LaunchedEffect(c.focus, games.size, coverPx) {
         kotlinx.coroutines.delay(60)
@@ -138,7 +147,8 @@ private fun CoverShelfRequests(c: StyleCtx) {
         val loop = loopRowOn(c)
         val order = listOf(1, -1, 2, -2, 3, -3)
         val near = order.mapNotNull { d -> games.getOrNull(if (loop) (c.focus + d).mod(games.size.coerceAtLeast(1)) else c.focus + d) }
-        handles += warmHeld(warmCtx, near.mapNotNull { c.backdrop(it) })
+        val liteNow = liteWarm
+        handles += warmHeld(warmCtx, near.mapNotNull { c.backdrop(it) }) { coverBackdropSoftPx(warmCtx, it, liteNow) }
         // The big case's own front / back / spine pictures, decoded as Case3D reads them (Case3D showed the game's colour plate meanwhile).
         val realFront = c.type == com.shelf.launcher.data.CardArtType.CASE || c.type == com.shelf.launcher.data.CardArtType.CASE_REAL
         warmCase3d(warmCtx, near.map { gg -> case3dModels(gg, c.cover(gg), c.state.physicalMedia[gg.stableKey], realFront) })
