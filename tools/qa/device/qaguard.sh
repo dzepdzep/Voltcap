@@ -7,7 +7,7 @@
 QG_F=/sdcard/Android/data/com.shelf.launcher.qa/files
 qa_guard() {
   touch $QG_F/qa_nolaunch $QG_F/voltcap_test_hooks; rm -f $QG_F/qa_allow_launch $QG_F/qa_launch_state
-  echo 1 > $QG_F/qa_launch_check
+  echo 1 > $QG_F/qa_launch_check; chmod 666 $QG_F/qa_launch_check
   qg_i=0; while [ $qg_i -lt 15 ]; do [ -s $QG_F/qa_launch_state ] && break; sleep 0.2; qg_i=$((qg_i+1)); done
   qg_s=$(cat $QG_F/qa_launch_state 2>/dev/null | tr -d '\r\n')
   if [ "$qg_s" = blocked ]; then return 0; fi

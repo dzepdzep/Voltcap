@@ -21,10 +21,10 @@ for LOOP in true false; do
   N=${CAT}_loop$LOOP
   A --es voltcap_test_layout COVERDETAILS --es voltcap_test_category "$CAT"; sleep 3.5; pk
   screencap -p $O/${N}_0.png
-  echo "${TAG}_${N}_0" > $F/qa_clip_req; sleep 1.1
+  echo "${TAG}_${N}_0" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
   k KEYCODE_DPAD_RIGHT; sleep 1.4; screencap -p $O/${N}_r1.png
   k KEYCODE_DPAD_RIGHT; sleep 1.4; screencap -p $O/${N}_r2.png
-  echo "${TAG}_${N}_r2" > $F/qa_clip_req; sleep 1.1
+  echo "${TAG}_${N}_r2" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
   k KEYCODE_DPAD_LEFT; sleep 1.4; screencap -p $O/${N}_l1.png
   if [ $LOOP = true ] && { [ $CAT = PS1 ] || [ $CAT = ALL ]; }; then
     screenrecord --time-limit 9 --bit-rate 10000000 $O/${N}.mp4 &
