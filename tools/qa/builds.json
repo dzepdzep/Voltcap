@@ -605,6 +605,17 @@
    "apk_sha256": "18a72c06284683692262f14b4a1c06f03185c4c766c8dfd0a5686714b99f0542",
    "base_commit": "54bf764",
    "note": "batch 523o: Shared details story box >= 48 dp (popup gate p523f touch FAIL x46); RP Classic"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523p",
+   "apk_sha256": "b408c1baba470fb7d784e2d3ad4bb126527d2d6cba9351bde37ea6e7f0e772c0",
+   "base_commit": "462c310",
+   "note": "batch 523p: Coverflow details backdrop soft decoded copy (no RenderEffect blur); GT78"
   }
  ]
 }
