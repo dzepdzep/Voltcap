@@ -383,7 +383,8 @@ fun GameDetailsOverlay(
             // (Update 469, owner review — Bubbles' Details on the KONKR: the banner took 42 % and the Achievements heading was cut
             // in half at the window's foot. On a short window the banner is a little lower, so Play, the numbers, the facts
             // line and the next heading open whole; the page still scrolls for the rest.)
-            val bannerH = (maxHeight * if (maxHeight < 480.dp) 0.36f else 0.42f).coerceIn(140.dp, 340.dp)
+            // (523z, KONKR x1.3 kpb523y CLASSIC x32: under ~400 dp the 140 dp floor pushed Play 8 px past the window's foot.)
+            val bannerH = detailsBannerH(maxHeight)
             val windowW = maxWidth
             // The chosen backdrop (Appearance › Details window), very faint behind the page.
             DetailsBackdropLayer(
@@ -1516,4 +1517,11 @@ private fun rememberFullQualityHero(url: String): coil.request.ImageRequest {
             .crossfade(180)
             .build()
     }
+}
+
+/** 523z: the Details window's banner: 42 % / 36 % (short) / 32 % (very short, under 400 dp, with a lower floor) of the height. */
+internal fun detailsBannerH(maxHeight: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp = when {
+    maxHeight < 400.dp -> (maxHeight * 0.32f).coerceIn(104.dp, 340.dp)
+    maxHeight < 480.dp -> (maxHeight * 0.36f).coerceIn(140.dp, 340.dp)
+    else -> (maxHeight * 0.42f).coerceIn(140.dp, 340.dp)
 }
