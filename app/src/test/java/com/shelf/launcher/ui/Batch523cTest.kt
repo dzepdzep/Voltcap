@@ -170,19 +170,3 @@ class Batch523oTouchTest {
         assertTrue("never capped below 48 dp", f.contains("coerceAtLeast(48.dp.toPx())"))
     }
 }
-
-/** 523p: Coverflow details' backdrop no longer blurs with a RenderEffect (KONKR: 11-13 ms a frame on the render thread / GPU). */
-class Batch523pBackdropTest {
-    @Test fun softCopySizeFollowsTheBlur() {
-        assertEquals(28, softArtPx(960f, 36f))   // 24 dp at 240 dpi over the KONKR's 960 px: the strongest soft copy
-        assertEquals(106, softArtPx(960f, 9f))   // 6 dp: a light softness
-        assertEquals(160, softArtPx(1920f, 2f))  // capped
-        assertEquals(160, softArtPx(960f, 0f))
-    }
-    @Test fun backdropHasNoRenderEffectBlur() {
-        val src = java.io.File("src/main/java/com/shelf/launcher/ui/StyleCoverDetails.kt").readText()
-        val f = src.substring(src.indexOf("internal fun CoverDetailsBackdrop"), src.indexOf("private const val SHELF_GAP_DP"))
-        assertTrue(!f.contains(".blur("))
-        assertTrue(f.contains("rememberSoftArt(art!!, softPx)"))
-    }
-}

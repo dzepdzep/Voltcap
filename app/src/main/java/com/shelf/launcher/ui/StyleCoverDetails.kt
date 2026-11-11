@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
@@ -90,17 +91,10 @@ internal fun CoverDetailsBackdrop(modifier: Modifier, art: String? = null) {
     val back = themeDark(Color(0xFF070A10), 0.6f)
     Box(modifier.background(Brush.verticalGradient(listOf(themeDark(Color(0xFF121722), 0.6f), base))).clipToBounds()) {
         val portrait = (CoverAspects.rawOf(art) ?: 2f) < 1f
-        // (523p, KONKR: Coverflow details spent 11-13 ms a frame issuing / waiting on the GPU, ~3 ms on the UI thread - a
-        // full-screen RenderEffect blur (24 dp / 6 dp) redrawn for every frame of each art cross-fade. The same softness now
-        // comes from decoding the art small and letting it scale up (rememberSoftArt, as Batch 523 did behind moving cards):
-        // no per-frame blur. Lite effects: the sharp art, as before.)
-        val soft = !LocalLiteEffects.current && art != null
-        val d = androidx.compose.ui.platform.LocalDensity.current
-        val roomPx = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp * d.density
-        val softPx = softArtPx(roomPx, with(d) { (if (portrait) 24.dp else 6.dp).toPx() })
         HeldImage(
-            if (soft) rememberSoftArt(art!!, softPx) else art, Modifier.fillMaxSize(), fadeMs = 450, shared = !soft,
-            contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop
+            art, Modifier.fillMaxSize(), fadeMs = 450, shared = true,
+            contentScale = if (portrait) ContentScale.Fit else ContentScale.Crop,
+            imageModifier = if (!LocalLiteEffects.current) Modifier.blur(if (portrait) 24.dp else 6.dp) else Modifier
         )
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to back.copy(alpha = 0.55f), 0.55f to back.copy(alpha = 0.82f), 1f to back.copy(alpha = 0.7f))))
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.5f to back.copy(alpha = 0.35f), 1f to back.copy(alpha = 0.96f))))

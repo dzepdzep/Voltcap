@@ -63,17 +63,10 @@ internal object SmartFill {
  * Used instead of Modifier.blur behind cards that move: a RenderEffect blur is redrawn on every frame of a scroll (KONKR).
  */
 @Composable
-internal fun rememberSoftArt(url: Any, px: Int = 28): ImageRequest {
+internal fun rememberSoftArt(url: Any): ImageRequest {
     val context = LocalContext.current
-    return remember(url, px, context) { ImageRequest.Builder(context).data(url).size(px, px).memoryCacheKey("$url|soft$px").allowHardware(true).build() }
+    return remember(url, context) { ImageRequest.Builder(context).data(url).size(28, 28).memoryCacheKey("$url|soft28").allowHardware(true).build() }
 }
-
-/**
- * (523p) The decode size whose upscale looks like a [blurPx] blur over a room [roomPx] wide: about one source pixel per blur
- * radius, never under 28 (the strongest soft copy) or over 160. Pure.
- */
-internal fun softArtPx(roomPx: Float, blurPx: Float): Int =
-    if (blurPx <= 0f || roomPx <= 0f) 160 else (roomPx / blurPx).toInt().coerceIn(28, 160)
 
 @Composable
 internal fun SmartArt(
