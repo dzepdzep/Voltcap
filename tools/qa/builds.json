@@ -693,6 +693,17 @@
    "apk_sha256": "183aba5d60bc148e3d579ec8f918bfe6c9c71795a2f724852948daa145043371",
    "base_commit": "6bc73b9",
    "note": "batch 523z: 523y + Row opens Details takes the bigger room (D303), Back hint measured first (D304), Camera rows 24 dp (D305), Details banner on very short windows (D307); GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523z2",
+   "apk_sha256": "09bb38175fc46b64711f534468508e85ecea3b3443e66ae27d7c33e1098fa1d7",
+   "base_commit": "6bc73b9",
+   "note": "batch 523z2: 523z + x1.3 home fixes (category name stops before the status bar clock; File select title row and file text); GT78 + Flip 2"
   }
  ]
 }
