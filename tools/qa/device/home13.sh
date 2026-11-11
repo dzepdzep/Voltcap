@@ -19,13 +19,17 @@ A --es voltcap_test_snapshot save; sleep 2
 A --es voltcap_test_artfix "delay=0"; sleep 4
 touch $F/qa_nolaunch; qa_guard || { echo "STOP: launch guard not confirmed" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
-for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; done
+# (A fresh QA app - just installed - opens on "Who's playing?": its mark is trusted only once it carries this process's pid, as in
+# popclip.sh; then B keeps the profile. The first 523z3 run missed it and its x1.0 shots were all of the picker.)
+pid=$(pidof $P); for i in 1 2 3 4 5 6 7 8 9 10; do grep -q " $pid\$" $F/voltcap_qa_screen 2>/dev/null && break; sleep 0.8; done
+for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
 for sz in 10 13; do
   if [ $sz = 13 ]; then A --es voltcap_test_scale font=1.3,density=1.15; else A --es voltcap_test_scale off; fi; sleep 3
   for lay in $LAYS; do
     dumpsys power | grep -q "mWakefulness=Awake" || k WAKEUP 1.5
     A --ez voltcap_test_preview true; A --es voltcap_test_layout $lay; sleep 3.5
     A --es voltcap_test_game "Super Mario World"; sleep 2.5
+    grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { k BUTTON_B 1.5; echo "picker closed before $lay" >> $OUT/log.txt; }
     n=x${sz}_$lay
     shot ${n}_a_home
     k DPAD_RIGHT 0.9; k DPAD_RIGHT 1.2; shot ${n}_b_right2
