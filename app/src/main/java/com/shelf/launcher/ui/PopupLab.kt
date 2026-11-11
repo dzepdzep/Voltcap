@@ -83,7 +83,14 @@ internal object PopupLab {
             // (The device's own faces, Roboto Regular and Medium only: a Bold / SemiBold / Black request is matched to the
             // nearest face there is - Medium - and Theme turns weight synthesis off while the lab is on, so it isn't
             // thickened again.)
-            else -> if (!s.weights) null else FontFamily(
+            // (523t: the device font's own Roboto, bundled as four static weights - fonts/roboto_*.ttf, Apache 2.0 - because a
+            // device face can't be drawn lighter: Android re-weights "sans-serif-medium" to the asked Bold, which is why the
+            // lab's first try changed nothing on the titles. Each asked weight is drawn one step lighter from these files.)
+            else -> if (!s.weights) null else runCatching {
+                fun file(w: FontWeight) = "fonts/roboto_${drawn(w).weight.coerceIn(400, 700) / 100 * 100}.ttf"
+                context.assets.open(file(FontWeight.Normal)).close()
+                FontFamily(asks.map { w -> Font(file(w), context.assets, w) })
+            }.getOrNull() ?: FontFamily(
                 Font(DeviceFontFamilyName("sans-serif"), FontWeight.Normal),
                 Font(DeviceFontFamilyName("sans-serif-medium"), FontWeight.Medium)
             )

@@ -220,9 +220,11 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         )
         // The title and the big case on the left (over everything: it flies to and from the shelf).
         // (523t, owner: the big case a little higher - the title block is tighter and the case's room starts right under it.)
+        // (523t, KONKR with real-length names: the title's room is one line + the console line; a name that needs a second line
+        // runs over the top of the case's room - its empty margin - so the big case keeps one size and place for every game.)
+        val headH = if (compact) 46.dp else 54.dp
         Column(Modifier.zIndex(2f).padding(start = pad, top = pad * 0.8f, bottom = pad * 0.2f).width(leftW).fillMaxHeight()) {
-            CoverDetailsHead(c, g, compact, accent, Modifier.fillMaxWidth())
-            Spacer(Modifier.height(if (compact) 2.dp else 4.dp))
+            Spacer(Modifier.height(headH + 2.dp))
             BoxWithConstraints(
                 Modifier.fillMaxWidth().weight(1f).onGloballyPositioned {
                     CoverFlight.stage = it.boundsInWindow()
@@ -234,6 +236,7 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
                 CoverBigCases(c, g, depth, maxHeight, 0.dp, accent)
             }
         }
+        CoverDetailsHead(c, g, compact, accent, Modifier.zIndex(3f).padding(start = pad, top = pad * 0.8f).width(leftW))
     }
 }
 
@@ -271,9 +274,9 @@ private fun CoverHeadText(c: StyleCtx, g: Game, compact: Boolean, accent: Color,
     val titles = LocalTitleOptions.current
     val year = c.state.metadata[g.stableKey]?.releaseYear
     Column(modifier) {
-        StableFullText(
+        FullText(
             titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
-            maxLines = 2, modifier = Modifier.fillMaxWidth()
+            maxLines = 2, modifier = Modifier.fillMaxWidth(), reserve = false
         )
         Spacer(Modifier.height(2.dp))
         Text(
