@@ -671,6 +671,17 @@
    "apk_sha256": "69859cb36e2464b9172d076a11c128cd2f6a9eb66367a4aacf722bbf1613083c",
    "base_commit": "fa6a2bd",
    "note": "batch 523w: 523v (Cover details facts sync) + Row-style header / category fade; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.69",
+   "version_code": 76,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.69-523y",
+   "apk_sha256": "83dd35e1110aa8c9c45ece42af45fdbef0db9f483064248639b8a26d28bafe4c",
+   "base_commit": "6bc73b9",
+   "note": "batch 523y (final candidate): 523w + Back hint under the window, Banner facts first, Storage saves 24 dp, Tile home fades under row windows; GT78 + Flip 2"
   }
  ]
 }
