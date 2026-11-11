@@ -2292,7 +2292,7 @@ private fun SceneBody(
         earned = earned, total = total,
         page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
         buttons = buttons, tools = tools, chips = chips, close = onClose,
-        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = maxH, reveal = reveal,
+        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
         closing = closing,
         pageBody = { m ->
             when (page) {
@@ -2308,9 +2308,11 @@ private fun SceneBody(
     // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
     // own in the window's colours, the scene's quick window coming back on B / Back.
     if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
-    else if (labActions && page == WinPage.MAIN) Box {
+    // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
+    // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
+    else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
         DrawWinScene(scene, ctx)
-        LabBackHint(onClose, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+        LabBackHint(onClose, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)
 }
@@ -2321,6 +2323,9 @@ private fun SceneBody(
  * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
  * Storage, Box, Orbit, Blades).
  */
+/** 523x: the height the Back hint takes under a scene (hint 28 dp + 4 dp gap). */
+internal val BACK_HINT_ROOM = 32.dp
+
 internal val MORE_SCENES = setOf(
     WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.GALLERY_PLACARD, WinScene.LIVE_PANEL, WinScene.DASH_CARD,
     WinScene.SPOT_POSTER, WinScene.HUB_PLATE, WinScene.CHIP_SHEET, WinScene.LIBRARY_PAGE, WinScene.TIMELINE_ENTRY, WinScene.HERO_BANNER,

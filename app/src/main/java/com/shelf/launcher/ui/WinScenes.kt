@@ -945,7 +945,8 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ctx.chips.forEach { a ->
                             SceneControl(a, Modifier) { on ->
-                                Row(Modifier.background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
+                                // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
+                                Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
                                     Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
                                     Spacer(Modifier.width(4.dp))

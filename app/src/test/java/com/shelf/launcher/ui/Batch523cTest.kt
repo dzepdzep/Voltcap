@@ -235,3 +235,21 @@ class Batch523wRowRevealTest {
         assertTrue(bar.contains("rowRevealFade()"))
     }
 }
+
+/** 523x: Flip 2 popup gate fp523u - the Back hint under the window (not over its keys), Banner facts before the story, Storage's saves line 24 dp. */
+class Batch523xFlipTest {
+    private fun src(f: String) = java.io.File("src/main/java/com/shelf/launcher/ui/$f").readText()
+    @Test fun backHintStandsUnderTheScene() {
+        val g = src("GameWindow.kt")
+        assertTrue(g.contains("maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH"))
+        assertTrue(!g.contains("LabBackHint(onClose, Modifier.align(Alignment.BottomEnd)"))
+    }
+    @Test fun bannerFactsComeBeforeTheStory() {
+        val b = src("GameWindowBanner.kt")
+        val info = b.substring(b.indexOf("BannerTab.INFO -> {"))
+        assertTrue(info.indexOf("item(key = \"facts\")") in 0 until info.indexOf("item(key = \"story\")"))
+    }
+    @Test fun storageSavesLineIsTouchSized() {
+        assertTrue(src("WinScenes.kt").contains("Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8)"))
+    }
+}

@@ -674,6 +674,20 @@ internal fun BannerGameWindow(
                                     }
                                 }
                                 BannerTab.INFO -> {
+                                    // (523x, Flip 2 fp523u x 52: on a 16:9 screen the facts card stood half under the page's bottom edge -
+                                    // "CONSOLE" shown, its value cut. The facts come first, the story after them.)
+                                    val facts = bannerFacts(meta, titles.console(g.platform))
+                                    if (facts.isNotEmpty()) item(key = "facts") {
+                                        BannerCard(look) {
+                                            facts.chunked(if (narrow) 2 else 3).forEachIndexed { r, row ->
+                                                if (r > 0) Spacer(Modifier.height(10.dp))
+                                                Row(Modifier.fillMaxWidth()) {
+                                                    row.forEach { (l, v) -> BannerStat(look, l, v, Modifier.weight(1f), lines = 2) }
+                                                    repeat((if (narrow) 2 else 3) - row.size) { Spacer(Modifier.weight(1f)) }
+                                                }
+                                            }
+                                        }
+                                    }
                                     item(key = "story") {
                                         val summary = meta?.summary?.takeIf { it.isNotBlank() }
                                         // A / a tap shows the whole story (it starts at a few lines).
@@ -687,18 +701,6 @@ internal fun BannerGameWindow(
                                             if (summary != null && summary.length > 260) {
                                                 Spacer(Modifier.height(6.dp))
                                                 BannerPill(look, if (storyOpen) "Less" else "More")
-                                            }
-                                        }
-                                    }
-                                    val facts = bannerFacts(meta, titles.console(g.platform))
-                                    if (facts.isNotEmpty()) item(key = "facts") {
-                                        BannerCard(look) {
-                                            facts.chunked(if (narrow) 2 else 3).forEachIndexed { r, row ->
-                                                if (r > 0) Spacer(Modifier.height(10.dp))
-                                                Row(Modifier.fillMaxWidth()) {
-                                                    row.forEach { (l, v) -> BannerStat(look, l, v, Modifier.weight(1f), lines = 2) }
-                                                    repeat((if (narrow) 2 else 3) - row.size) { Spacer(Modifier.weight(1f)) }
-                                                }
                                             }
                                         }
                                     }

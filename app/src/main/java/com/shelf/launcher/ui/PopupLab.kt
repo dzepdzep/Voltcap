@@ -1,6 +1,8 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
@@ -107,7 +109,9 @@ internal fun LabBackHint(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // (On its own dark pill: on a light window - Storage boxes - white letters alone vanished.)
     Row(modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.45f))
         .clickable(onClick = onBack).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        InkGlyph("B", Color.White.copy(alpha = 0.85f), 16.dp)
+        // (523x: the letter in its own ring, as every controller key is drawn - centred in it.)
+        androidx.compose.foundation.layout.Box(Modifier.size(18.dp).border(1.dp, Color.White.copy(alpha = 0.6f), androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center) { InkGlyph("B", Color.White.copy(alpha = 0.85f), 12.dp) }
         Spacer(Modifier.width(6.dp))
         Text("Back", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
