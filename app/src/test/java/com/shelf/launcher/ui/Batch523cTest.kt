@@ -224,3 +224,14 @@ class Batch523tHeadTest {
         assertEquals(null, PopupLab.parse("off"))
     }
 }
+
+/** 523w: under a row-style window (Row reveal / Row opens / Shared) the home's game header and category chips fade with the row. */
+class Batch523wRowRevealTest {
+    @Test fun homeHeaderAndCategoryBarFadeUnderTheWindow() {
+        val s = java.io.File("src/main/java/com/shelf/launcher/ui/LauncherScreen.kt").readText()
+        val header = s.substring(s.indexOf("fun HomeHeaderBlock("), s.indexOf("fun RowInfoBlock("))
+        assertTrue(header.contains("rowRevealFade()"))
+        val bar = s.substring(s.indexOf("fun CategoriesBar()"), s.indexOf("fun CategoriesBar()") + 600)
+        assertTrue(bar.contains("rowRevealFade()"))
+    }
+}

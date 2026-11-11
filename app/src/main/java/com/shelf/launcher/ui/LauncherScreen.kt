@@ -2796,8 +2796,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 onDetails = { openDetails() },
                 onOptions = { optionsForGame = g },
                 onSync = { saveSyncForGame = g },
+                // (523w, KONKR klab523u: with Row reveal / Row opens / Shared the game header stayed at full strength under the
+                // window - "Super Mario World" twice, its chips and Play under the window's own. It fades with the row now.)
                 modifier = (if (only != null) Modifier else if (fill) Modifier.fillMaxWidth().padding(horizontal = if (compactHeader) 16.dp else 24.dp)
-                    else Modifier.widthIn(max = 520.dp))
+                    else Modifier.widthIn(max = 520.dp)).then(if (HomeEditState.active) Modifier else Modifier.rowRevealFade())
                     // The next game's header rises into place (update 108).
                     .riseOnChange(g.stableKey),
                 slots = only == null, only = only,
@@ -3935,7 +3937,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // Category bar above the row, or under it (Appearance › Game row).
         @Composable
         fun CategoriesBar() {
-            if (state.games.isNotEmpty()) Box(Modifier) {
+            // (523w: the category chips fade with the row under a row-style window too - they showed through its buttons.)
+            if (state.games.isNotEmpty()) Box(if (HomeEditState.active) Modifier else Modifier.rowRevealFade()) {
                 // (Update 212: the category bar is this layout's own category title, CategoryTitle.kt.)
                 if (state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
                 when (state.appearance.categoryBarHere) {
