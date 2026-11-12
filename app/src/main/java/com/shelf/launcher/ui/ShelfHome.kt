@@ -649,6 +649,8 @@ private fun ShelfPulled3D(
     val on = next == Shelf3D.Mode.CASE_3D
     androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
     androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key) } }
+    // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
+    if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
     if (next == Shelf3D.Mode.FLAT) return false
     val depth = (slotW / slotH).coerceIn(0.03f, 0.4f)
     val d = androidx.compose.ui.platform.LocalDensity.current
