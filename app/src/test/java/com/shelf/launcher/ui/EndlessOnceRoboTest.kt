@@ -10,6 +10,9 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.shelf.launcher.LauncherUiState
 import com.shelf.launcher.data.AppearanceSettings
@@ -150,6 +153,13 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         // the list refreshed (a new list object, same games) and a game removed
         state = state.copy(games = games.toList()); frames(60); check("refresh")
         if (n > 1) { state = state.copy(games = games.drop(1), focusedIndex = 0); frames(90); check("removed") }
+        if (problems.isNotEmpty() || layout == HomeLayout.NIGHT || layout == HomeLayout.TILES) runCatching {
+            // (a picture of the settled screen for the review: app/build/endless524/<layout>_<n>.png)
+            state = state.copy(games = games, focusedIndex = 0); frames(90)
+            val bmp = compose.onAllNodes(isRoot()).onFirst().captureToImage().asAndroidBitmap()
+            val dir = java.io.File("build/endless524").apply { mkdirs() }
+            java.io.FileOutputStream(java.io.File(dir, "${layout}_${n}_x$scale.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        }
         if (slivers.isNotEmpty()) println("EDGE-SLIVERS $layout n=$n x$scale:\n" + slivers.take(6).joinToString("\n"))
         assertTrue("$layout n=$n x$scale: ${problems.size} problem(s)\n" + problems.take(12).joinToString("\n"), problems.isEmpty())
     }
