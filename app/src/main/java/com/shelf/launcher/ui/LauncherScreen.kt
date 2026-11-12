@@ -359,13 +359,20 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                     },
                     onSettled = {},
                     // (The start-up picker's own choices, as its Dialog makes them below: the profile, then the start-up mode.)
-                    onPick = { id ->
+                    // (Sprint 527: the home is built under the stage the moment the choice is accepted - while the chosen picture's
+                    // light runs - so the stage fades straight into it: no dim wait, no first-frame hitch in the fade.)
+                    onAccept = { id ->
                         if (qaStart == null) viewModel.switchProfile(id)
                         when (startupMode.value) {
                             com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> viewModel.categoryScreenOpenState.value = true
-                            com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
+                            // (the layout's roll-out waits at its start under the stage and plays from the hand-over)
+                            com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { viewModel.categoryScreenOpenState.value = false; Rollout.arm() }
                             else -> Unit
                         }
+                        contentVisible = true
+                    },
+                    onPick = { _ ->
+                        if (startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) Rollout.start()
                         contentVisible = true
                     },
                     onKeep = {

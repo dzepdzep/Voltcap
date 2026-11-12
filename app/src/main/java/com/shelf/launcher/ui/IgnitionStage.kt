@@ -44,6 +44,8 @@ internal fun IgnitionStage(
     onSettled: () -> Unit,
     /** A profile was chosen (its light ran in): the home is built under the stage, which then fades. */
     onPick: (Int) -> Unit,
+    /** Sprint 527: the choice was accepted (its light starts): build the home under the stage now. */
+    onAccept: (Int) -> Unit = {},
     /** B at start-up: keep the profile that played last. */
     onKeep: () -> Unit,
     /** The stage has faded out after [onPick] / [onKeep]: remove it. */
@@ -60,7 +62,20 @@ internal fun IgnitionStage(
     val settledCb by rememberUpdatedState(onSettled)
     val once = remember { booleanArrayOf(false, false) }
     val settle = { if (!once[0]) { once[0] = true; StartupGate.release(); settledCb() } }
-    val skip = { if (clock.floatValue < tm.settled) { clock.floatValue = tm.settled; if (!once[1]) { once[1] = true; bolt() } }; settle() }
+    // Sprint 527 (owner: the skip was a one-frame cut): a skip settles the picker at once (input goes to it straight away) and
+    // the moment it was skipped crossfades into it over [SKIP_FADE_MS] - the intro as it was fading out, the picker fading in.
+    val skippedAt = remember { mutableFloatStateOf(-1f) }
+    val skipFade = remember { Animatable(1f) }
+    val skipScope = rememberCoroutineScope()
+    val skip = {
+        if (clock.floatValue < tm.settled) {
+            skippedAt.floatValue = clock.floatValue
+            clock.floatValue = tm.settled
+            if (!once[1]) { once[1] = true; bolt() }
+            skipScope.launch { skipFade.snapTo(0f); skipFade.animateTo(1f, tween(SKIP_FADE_MS, easing = FastOutSlowInEasing)) }
+        }
+        settle()
+    }
     LaunchedEffect(Unit) {
         var last = introWarmUp()
         sounds?.playWhenReady(if (timing.total >= 1500f) UiSound.INTRO else UiSound.LAUNCH)
@@ -91,21 +106,34 @@ internal fun IgnitionStage(
     Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - out.value }) {
         Canvas(Modifier.fillMaxSize()) {
             drawRect(androidx.compose.ui.graphics.Color(0xFF08070B))
-            val t = clock.floatValue
+            val sk = skippedAt.floatValue
+            // (a skip: the intro as it was at that moment, fading out under the picker fading in)
+            val t = if (sk >= 0f && skipFade.value < 1f) sk else clock.floatValue
             if (t > tm.recedeTo + 200f) return@Canvas // (the picker's own backdrop has taken over by now)
             val r = minOf(0.2f * size.width, 0.26f * size.height)
             val fs = 0.40f * r
             if (wordKey[0] != fs || wordCache[0] == null) { wordCache[0] = measureWordmark(measurer, density, fs); wordKey[0] = fs }
-            drawIntro(geo, timing, t, r, wordCache[0]!!, lite, keep = true, rec = IgnK.ph(t, tm.recedeFrom, tm.recedeTo))
+            if (sk >= 0f && skipFade.value < 1f) {
+                val fadeA = 1f - skipFade.value
+                drawContext.canvas.saveLayer(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height), androidx.compose.ui.graphics.Paint().apply { alpha = fadeA })
+                drawIntro(geo, timing, t, r, wordCache[0]!!, lite, keep = true, rec = IgnK.ph(t, tm.recedeFrom, tm.recedeTo))
+                drawContext.canvas.restore()
+            } else drawIntro(geo, timing, t, r, wordCache[0]!!, lite, keep = true, rec = IgnK.ph(t, tm.recedeFrom, tm.recedeTo))
         }
+        Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (skippedAt.floatValue >= 0f) skipFade.value else 1f }) {
         ProfileSelectScreen(
             profiles = profiles, activeId = activeId, raNames = raNames, steamAvatar = steamAvatar, atStart = true,
             onPick = { id -> leave { onPick(id) } },
+            onAccept = onAccept,
             onSkip = { leave { onKeep() } },
             inStage = true, stage = reveal, onStageSkip = { skip() }
         )
+        }
     }
 }
+
+/** Sprint 527: how long a skipped intro takes to crossfade into the settled picker (short: a skip must stay quick). */
+internal const val SKIP_FADE_MS = 200
 
 /** Connected Ignition runs for this start-up: the intro is Full or Short and system animations are on. Pure. */
 internal fun ignitionIntro(style: IntroStyle, animatorScale: Float): Boolean =

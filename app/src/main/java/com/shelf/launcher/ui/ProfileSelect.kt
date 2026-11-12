@@ -63,6 +63,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -124,7 +125,13 @@ internal fun ProfileSelectScreen(
      */
     inStage: Boolean = false,
     stage: IgnitionReveal? = null,
-    onStageSkip: () -> Unit = {}
+    onStageSkip: () -> Unit = {},
+    /**
+     * Sprint 527 (owner: Confirm -> Home "looked frozen" for ~450 ms, then hitched): called the moment a choice is accepted, so the
+     * home can be built under the start-up stage while the chosen picture's light runs; [onPick] follows as the stage begins
+     * to fade (stage) / when the picker has gone (elsewhere).
+     */
+    onAccept: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lite = LocalLiteEffects.current
@@ -179,7 +186,8 @@ internal fun ProfileSelectScreen(
     }
     val stageClock = stage?.clock
     fun stageT(): Float = stageClock?.value ?: Float.MAX_VALUE
-    val stageSettled = stage == null || stageT() >= stage.tm.settled
+    // (Sprint 527: read through derivedStateOf - reading the clock here recomposed the whole picker on every intro frame.)
+    val stageSettled by remember(stage) { androidx.compose.runtime.derivedStateOf { stage == null || stage.clock.value >= stage.tm.settled } }
     fun stepLook(d: Int) { Features.pickerLook.value = looks[(looks.indexOf(look) + d).mod(looks.size)] }
 
     fun pick(i: Int) {
@@ -193,9 +201,15 @@ internal fun ProfileSelectScreen(
         val id = profiles[i].id
         unlockThen(profiles[i]) {
             leaving = true
+            onAccept(id)
             scope.launch {
-                exit.animateTo(1f, tween(if (lite) 120 else 460, easing = FastOutSlowInEasing))
-                onPick(id)
+                // (Sprint 527: on the start-up stage the hand-over starts at 70 % of the chosen picture's light - the stage fades
+                // into the home built under it meanwhile - instead of after it, with a dim stage in between.)
+                var handed = false
+                exit.animateTo(1f, tween(if (lite) 120 else 460, easing = FastOutSlowInEasing)) {
+                    if (stage != null && !handed && value >= 0.7f) { handed = true; onPick(id) }
+                }
+                if (!handed) onPick(id)
             }
         }
     }
@@ -214,7 +228,7 @@ internal fun ProfileSelectScreen(
                 .onPreviewKeyEvent { e ->
                     // (Update 513: this window's keys never reach the activity, so they count as input here — the backdrop's
                     // settled drift comes back on the first press, as the home's effects do.)
-                    if (e.type == KeyEventType.KeyDown) HomeIdle.poke()
+                    if (e.type == KeyEventType.KeyDown) { HomeIdle.poke(); PickerCalm.poke() }
                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     // (Connected Ignition: a press before the picker has settled jumps to the settled picker — never to the home.)
                     if (stage != null && stageT() < stage.tm.settled) { onStageSkip(); return@onPreviewKeyEvent true }
@@ -247,7 +261,7 @@ internal fun ProfileSelectScreen(
             // (Connected Ignition: at start-up the look's own backdrop rises in under the wire while the title arrives — a dissolve
             // on the intro's stage, never a swap; the intro itself is drawn by IgnitionStage behind this.)
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (stage == null) 1f else IgnK.eInOut(IgnK.ph(stageT(), stage.tm.titleFrom, stage.tm.settled)) }) {
-                PickerBackdrop(look, accentNow, animate = !lite)
+                PickerBackdrop(look, accentNow, animate = !lite, hold = stage != null && !stageSettled)
             }
             val rootPos = remember { floatArrayOf(0f, 0f) }
             Box(Modifier.matchParentSize().onPlaced { c -> val q = c.positionInRoot(); rootPos[0] = q.x; rootPos[1] = q.y })
@@ -288,14 +302,29 @@ internal fun ProfileSelectScreen(
                 val density = LocalDensity.current
                 // Room at both ends of a scrolling row, so the one you're on (drawn a little bigger) is never cut at the edge.
                 val edge = plan.slot * 0.1f
+                // (Sprint 527: the first placement - the start-up's, with the light already on its way - is at once; later moves glide.)
+                val placed = remember { booleanArrayOf(false) }
                 LaunchedEffect(cursor, plan) {
                     if (!plan.scroll) return@LaunchedEffect
                     val target = with(density) { (edge + (plan.slot + plan.gap) * cursor - (viewport.value - plan.slot) / 2f).dp.roundToPx() }
-                    if (lite) rowScroll.scrollTo(target.coerceIn(0, rowScroll.maxValue)) else rowScroll.animateScrollTo(target.coerceIn(0, rowScroll.maxValue))
+                    if (lite || !placed[0]) rowScroll.scrollTo(target.coerceIn(0, rowScroll.maxValue)) else rowScroll.animateScrollTo(target.coerceIn(0, rowScroll.maxValue))
+                    placed[0] = true
                 }
+                // Sprint 527 (owner: the selected glow was cut into a rectangle once the row scrolls): the scrolling row no longer
+                // draws through one offscreen layer the size of the row (which cut every glow at its edges). It spans the whole
+                // width with the same resting place for every picture (padding SIDE + edge), has room above and below for the glow
+                // (taken back from the layout, so nothing moves), and each picture fades by itself near the ends instead.
+                val glowRoom = avatar * 0.8f
+                val sidePx = with(density) { PickerGrid.SIDE.dp.toPx() }
+                val bandW = with(density) { viewport.toPx() }
+                val itemPitch = with(density) { (plan.slot + plan.gap).dp.toPx() }
+                val itemFirst = with(density) { (PickerGrid.SIDE + edge + plan.slot / 2f).dp.toPx() }
+                val slotPx = with(density) { plan.slot.dp.toPx() }
+                fun edgeOf(i: Int): Float = if (!plan.scroll) 1f else PickerGrid.edgeFade(itemFirst + itemPitch * i - rowScroll.value, sidePx, sidePx + bandW, slotPx)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(plan.gap.dp), verticalAlignment = Alignment.Top,
-                    modifier = Modifier.then(if (plan.scroll) Modifier.width(viewport).scrollFade(rowScroll).horizontalScroll(rowScroll, enabled = !leaving).padding(horizontal = edge.dp) else Modifier)
+                    modifier = Modifier.then(if (plan.scroll) Modifier.glowRoom(glowRoom).width(maxWidth).horizontalScroll(rowScroll, enabled = !leaving)
+                        .padding(horizontal = (PickerGrid.SIDE + edge).dp).padding(vertical = glowRoom) else Modifier)
                         .padding(vertical = avatar * 0.22f)
                 ) {
                     for (i in 0 until count) {
@@ -306,8 +335,11 @@ internal fun ProfileSelectScreen(
                             if (stage == null) 1f else {
                                 val cs = centers; val f = cursor.coerceIn(0, (cs.size - 1).coerceAtLeast(0))
                                 val rho = with(density) { (avatar / 2 + 6.dp).toPx() }
-                                if (i >= cs.size || cs[i].x.isNaN() || cs[f].x.isNaN()) 0f else { // (Sprint 526: the row can shrink under a frame still drawing it)
-                                    val at = WireGeo.appearAt(cs[i].x, cs[f].x, cs.first().x - rho, cs.last().x + rho, cs[f].x - rho, cs[f].x + rho, stage.tm)
+                                if (i >= cs.size || cs[i].x.isNaN() || cs[f].x.isNaN() || cs.first().x.isNaN() || cs.last().x.isNaN()) 0f else { // (Sprint 526: the row can shrink under a frame still drawing it)
+                                    // (Sprint 527: the focused one emerges as the light reaches it; the others nearest first as it spreads.)
+                                    val ends = WireGeo.ends(cs.first().x, cs.last().x, rho, with(density) { 30.dp.toPx() })
+                                    val reach = WireGeo.reach(cs[f].x - rho, cs[f].x + rho, ends[0], ends[1], with(density) { maxWidth.toPx() })
+                                    val at = WireGeo.appearAt(cs[i].x, cs[f].x, rho, rho, reach, stage.tm)
                                     IgnK.eOut(IgnK.ph(stageT(), at, at + 260f))
                                 }
                             }
@@ -315,15 +347,15 @@ internal fun ProfileSelectScreen(
                         if (ignition || stage != null) IgnitionBubble(
                             p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
                             leaving = leaving, exitOf = { exit.value },
-                            liftOf = { IgnK.liftAt(if (ignition) focusPos.value else cursor.toFloat(), i) * (if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.rowEnd, stage.tm.focusTo))) },
-                            appearOf = appearOf, onCenter = report,
+                            liftOf = { IgnK.liftAt(if (ignition) focusPos.value else cursor.toFloat(), i) * (if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.arrive, stage.tm.liftTo))) },
+                            appearOf = appearOf, edgeOf = { edgeOf(i) }, onCenter = report,
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
                             playing = p?.id == activeId, ra = p?.raSlot?.let { raNames.getOrNull(it) },
                             onTap = { if (stageSettled) { moveTo(i); pick(i) } else onStageSkip() },
                             onLong = { if (p != null && !lookStrip && stageSettled) { moveTo(i); unlockThen(p) { editing = p } } }
                         ) else ProfileBubble(
                             p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
-                            leaving = leaving, exit = exit.value,
+                            leaving = leaving, exit = exit.value, edgeOf = { edgeOf(i) },
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
                             playing = p?.id == activeId,
                             ra = p?.raSlot?.let { raNames.getOrNull(it) },
@@ -333,11 +365,23 @@ internal fun ProfileSelectScreen(
                     }
                 }
                 Spacer(Modifier.height(if (compact) 14.dp else 28.dp))
+                // Sprint 527 (owner: at x1.3 "Keep <long name>" wrapped and broke the row): the B hint names the profile only while the
+                // whole row fits on one line at the current text size; otherwise just "Keep" (the name is right there on its picture).
+                val hintMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+                val keepName = profiles.firstOrNull { it.id == activeId }?.name ?: "last"
+                val keepHint = if (!atStart) "Keep" else {
+                    val hs = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    fun w(t: String) = hintMeasurer.measure(t, hs, softWrap = false).size.width
+                    val keyPx = with(density) { (22.dp + 6.dp).toPx() }
+                    val full = w("Keep $keepName")
+                    val total = 3 * keyPx + with(density) { 36.dp.toPx() } + w("Play") + w("Edit") + full
+                    if (PickerGrid.hintFits(full.toFloat(), total, with(density) { 220.dp.toPx() }, with(density) { viewport.toPx() })) "Keep $keepName" else "Keep"
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.graphicsLayer { alpha = (1f - exit.value) * (if (stage == null) 1f else IgnK.ph(stageT(), stage.tm.hintsFrom, stage.tm.hintsTo)) }) {
                     PickerHint(style, "A", if (cursor < profiles.size) "Play" else "Add")
                     if (cursor < profiles.size && !lookStrip) PickerHint(style, "Y", "Edit")
-                    PickerHint(style, "B", if (atStart) "Keep ${profiles.firstOrNull { it.id == activeId }?.name ?: "last"}" else "Close")
+                    PickerHint(style, "B", if (atStart) keepHint else "Close")
                     if (lookStrip) PickerHint(style, "L1 R1", "Look")
                 }
             }
@@ -394,7 +438,7 @@ private fun PickerHint(style: PickerStyle, key: String, what: String) {
 @Composable
 private fun ProfileBubble(
     p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean, exit: Float,
-    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
+    edgeOf: () -> Float, model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
 ) {
     val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (lite) 120 else 260, easing = FastOutSlowInEasing), label = "bubbleLift")
     val hue = p?.hue ?: 210f
@@ -409,7 +453,9 @@ private fun ProfileBubble(
             val k = 1f + (if (lite) 0.08f else 0.14f) * lift + (if (leaving && on) 0.24f * exit else 0f)
             scaleX = k; scaleY = k
             translationY = -size.toPx() * 0.07f * lift + pickedOut * size.toPx() * 0.25f
-            alpha = (style.dimOthers + (1f - style.dimOthers) * lift) * (1f - pickedOut)
+            alpha = (style.dimOthers + (1f - style.dimOthers) * lift) * (1f - pickedOut) * edgeOf()
+            // (Sprint 527: alpha on each drawing, no offscreen layer the size of the column - that cut the glow into a box.)
+            compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
         }.pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
     ) {
         Box(
@@ -471,18 +517,16 @@ private fun ProfileBubble(
 }
 
 /** A scrolling row fades out at a side that has more profiles beyond it, so a half-shown one reads as "more this way". */
-private fun Modifier.scrollFade(state: androidx.compose.foundation.ScrollState): Modifier =
-    graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }.drawWithContent {
-        drawContent()
-        val f = size.width * 0.08f
-        val l = if (state.value > 0) 0f else 1f
-        val r = if (state.value < state.maxValue) 0f else 1f
-        drawRect(
-            androidx.compose.ui.graphics.Brush.horizontalGradient(
-                0f to Color.Black.copy(alpha = l), f / size.width to Color.Black, 1f - f / size.width to Color.Black, 1f to Color.Black.copy(alpha = r)
-            ), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
-        )
-    }
+/**
+ * Sprint 527: draw room around a node without taking it from the layout - the node is measured [room] taller (its content
+ * padded by [room] above and below) and placed [room] higher, so its parent sees the old size and place. The scrolling row
+ * uses it so the selected glow has room inside the row's clip.
+ */
+private fun Modifier.glowRoom(room: Dp): Modifier = layout { m, c ->
+    val e = room.roundToPx()
+    val pl = m.measure(c.copy(maxHeight = if (c.hasBoundedHeight) c.maxHeight + 2 * e else c.maxHeight))
+    layout(pl.width, (pl.height - 2 * e).coerceAtLeast(0)) { pl.place(0, -e) }
+}
 
 /**
  * A profile's name under its picture: whole words only. It breaks between words or after a hyphen ("Anastasia-" /
@@ -622,7 +666,18 @@ internal object Rollout {
 
     fun start() {
         if (!Features.rolloutOn.value) return
-        placedAny = false; startedAt = System.nanoTime(); clockMs.floatValue = 0f; active = true
+        if (!armed) placedAny = false
+        armed = false; startedAt = System.nanoTime(); clockMs.floatValue = 0f; active = true
+    }
+
+    /**
+     * Sprint 527: the home is being built under the start-up stage before the hand-over - the games wait at the line's start
+     * (hidden) until [start] at the hand-over, so the roll-out still plays where it can be seen.
+     */
+    private var armed = false
+    fun arm() {
+        if (!Features.rolloutOn.value) return
+        placedAny = false; armed = true; startedAt = -1L; clockMs.floatValue = 0f; active = true
     }
 
     /** How long the line of games takes to start, end to end (ms). */
@@ -633,6 +688,7 @@ internal object Rollout {
     fun Run() {
         if (!active) return
         LaunchedEffect(startedAt) {
+            if (startedAt < 0L) return@LaunchedEffect // (armed: held at the start until the hand-over)
             val sp = Features.rolloutSpeed.value
             val end = sp.durMs + spreadMs() * 1.5f + 150f
             while (true) {
@@ -807,7 +863,7 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
 @Composable
 private fun IgnitionBubble(
     p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean,
-    exitOf: () -> Float, liftOf: () -> Float, appearOf: () -> Float, onCenter: (androidx.compose.ui.geometry.Offset) -> Unit,
+    exitOf: () -> Float, liftOf: () -> Float, appearOf: () -> Float, edgeOf: () -> Float, onCenter: (androidx.compose.ui.geometry.Offset) -> Unit,
     model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
 ) {
     val hue = p?.hue ?: 210f
@@ -827,7 +883,9 @@ private fun IgnitionBubble(
                 val k = (1f + 0.16f * l + (if (leaving && on) 0.22f * ex else 0f)) * (0.86f + 0.14f * ap)
                 scaleX = k; scaleY = k
                 translationY = -size.toPx() * 0.08f * l + out * size.toPx() * 0.25f
-                alpha = (1f - out) * ap
+                alpha = (1f - out) * ap * edgeOf()
+                // (Sprint 527: alpha on each drawing - an offscreen layer the size of the column cut the arriving glow into a box.)
+                compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha
             }
             .pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
     ) {

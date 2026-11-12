@@ -42,15 +42,71 @@ class ConnectedIgnitionTest {
         assertEquals(300, IgnK.glideMs(9f, 1000L))           // capped
     }
 
-    @Test fun profilesAppearAsTheTraceReachesThem() {
-        // Traced inward from both ends to the focused ring (x = 500): outer ones first, the focused one last.
-        val outer = WireGeo.appearAt(60f, 500f, 0f, 1000f, 450f, 550f, IG_FULL)
-        val inner = WireGeo.appearAt(400f, 500f, 0f, 1000f, 450f, 550f, IG_FULL)
-        val focused = WireGeo.appearAt(500f, 500f, 0f, 1000f, 450f, 550f, IG_FULL)
-        assertTrue(outer < inner && inner < focused)
-        assertTrue(focused <= IG_FULL.rowEnd)
+    @Test fun theSelectedProfileLeadsAndNeighboursFollowNearestFirst() {
+        // Sprint 527: the light goes straight to the focused ring (x = 300), which emerges first; then it spreads outward from it
+        // and the others appear nearest first, on both sides at the same speed - whatever side of the row the focus is on.
+        val rho = 50f
+        val reach = WireGeo.reach(250f, 350f, 0f, 1000f, 1000f)
+        val focused = WireGeo.appearAt(300f, 300f, rho, rho, reach, IG_FULL)
+        val leftNear = WireGeo.appearAt(150f, 300f, rho, rho, reach, IG_FULL)
+        val rightNear = WireGeo.appearAt(450f, 300f, rho, rho, reach, IG_FULL)
+        val rightFar = WireGeo.appearAt(900f, 300f, rho, rho, reach, IG_FULL)
+        assertEquals(IG_FULL.arrive, focused, 0.01f)
+        assertTrue(focused < leftNear && focused < rightNear)
+        assertEquals("same distance, same moment", leftNear, rightNear, 0.5f)
+        assertTrue(rightNear < rightFar && rightFar <= IG_FULL.spreadTo)
+        // A row that runs off the screen: the ones beyond it come at the end of the visible run, never later.
+        val off = WireGeo.appearAt(5000f, 300f, rho, rho, reach, IG_FULL)
+        assertEquals(IG_FULL.spreadTo, off, 0.01f)
         assertTrue("opens inside the final shine", IG_FULL.open in FULL_TIMING.shineFrom..FULL_TIMING.shineTo)
         assertTrue(IG_FULL.settled > FULL_TIMING.total && IG_SHORT.settled > SHORT_TIMING.total)
+    }
+
+    @Test fun everythingHasFinishedWhenItSettles() {
+        // Sprint 527: nothing is left half-faded (the wire, the pulse) when the clock stops at `settled`.
+        for (tm in listOf(IG_FULL, IG_SHORT)) {
+            assertTrue(tm.open < tm.arrive && tm.arrive < tm.ringTo && tm.arrive < tm.liftTo)
+            assertTrue(tm.spreadFrom < tm.spreadTo && tm.spreadFrom >= tm.arrive)
+            assertTrue(tm.tailTo <= tm.ringTo)
+            for (end in floatArrayOf(tm.spreadTo, tm.pulseTo, tm.hintsTo, tm.titleTo, tm.liftTo, tm.tailTo, tm.recedeTo)) assertTrue(end <= tm.settled)
+            assertTrue(tm.wireOutFrom < tm.settled)
+        }
+    }
+
+    @Test fun theWireEndsAtTheRowNotTheScreenEdges() {
+        val e = WireGeo.ends(200f, 800f, 50f, 30f)
+        assertEquals(120f, e[0], 0.01f); assertEquals(880f, e[1], 0.01f)
+        // The visible run is clipped to the screen.
+        assertEquals(1100f, WireGeo.reach(1100f, 1200f, -400f, 2000f, 1920f), 0.01f)
+    }
+
+    @Test fun scrollingRowFadesEachPictureAtTheEdgesAndTheKeepHintShortens() {
+        assertEquals(1f, PickerGrid.edgeFade(500f, 0f, 1000f, 200f), 1e-4f)
+        assertEquals(0f, PickerGrid.edgeFade(-60f, 0f, 1000f, 200f), 1e-4f)
+        val half = PickerGrid.edgeFade(0f, 0f, 1000f, 200f)
+        assertTrue(half > 0f && half < 1f)
+        assertTrue(PickerGrid.hintFits(100f, 500f, 220f, 1000f))
+        assertFalse("long name", PickerGrid.hintFits(260f, 600f, 220f, 1000f))
+        assertFalse("row too wide", PickerGrid.hintFits(200f, 960f, 220f, 1000f))
+    }
+
+    @Test fun glowIsNeverCutByALayerAndTheIdleBackdropHolds() {
+        val ps = src("ui/ProfileSelect.kt")
+        assertFalse("no offscreen scroll fade", ps.contains("CompositingStrategy.Offscreen"))
+        assertEquals(2, Regex("compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha").findAll(ps).count())
+        val looks = src("ui/ProfileLooks.kt")
+        assertFalse("no unbounded frame loop", looks.contains("while (true) withFrameNanos"))
+        assertTrue(looks.contains("PickerCalm.SETTLE_MS"))
+        assertTrue(ps.contains("PickerCalm.poke()"))
+    }
+
+    @Test fun aChoiceIgnoresLaterPressesAndBuildsTheHomeEarly() {
+        val ps = src("ui/ProfileSelect.kt")
+        assertTrue(ps.contains("if (leaving) return@onPreviewKeyEvent true"))
+        assertTrue(ps.contains("onAccept(id)"))
+        val ls = src("ui/LauncherScreen.kt")
+        assertTrue(ls.contains("Rollout.arm()"))
+        assertTrue(src("ui/IgnitionStage.kt").contains("skipFade.animateTo(1f, tween(SKIP_FADE_MS"))
     }
 
     @Test fun startUpUsesOneWindowAndTheOtherPickersStayDialogs() {

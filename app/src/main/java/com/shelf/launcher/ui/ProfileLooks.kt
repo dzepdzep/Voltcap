@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -118,22 +120,20 @@ internal fun pickerStyle(look: PickerLook): PickerStyle = when (look) {
  * [animate]: slow drifting light (off with Lite effects, Minimal OLED and Console classic never move).
  */
 @Composable
-internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, modifier: Modifier = Modifier) {
+internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, modifier: Modifier = Modifier, hold: Boolean = false) {
     val moving = animate && look != PickerLook.OLED && look != PickerLook.CONSOLE
-    val t = remember { mutableFloatStateOf(0f) }
     // Update 513 (Thor: "Who's playing?" left waiting drew 120 frames a second, ~73 % CPU): the light drifts a few pixels a
     // second, so after ~10 s without input (HomeIdle.settled, as the home's own idle effects since 510 / 511 — Save power when
     // idle) it holds where it is and nothing redraws; the first press carries it on from that same moment (no jump).
-    if (moving && !HomeIdle.settled) LaunchedEffect(look) {
-        val from = t.floatValue
-        val first = withFrameNanos { it }
-        val start = first - (from * 1e9f).toLong()
-        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
-    }
+    // Sprint 527 (Flip 2: at the start-up picker the home's idle watch isn't running yet, so Aurora / Neon / Midnight drew every
+    // frame for as long as it waited, ~14 ms a frame): the picker keeps its own calm (PickerCalm - 8 s after the last press),
+    // the drift steps 24 times a second (it moves ~10 px a second: no visible stepping), and it holds while [hold] (the
+    // start-up stage still arriving).
+    val t = rememberAmbientClock(moving && !hold && !HomeIdle.settled, 24)
     when (look) {
         PickerLook.AURORA -> Box(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF1A1036), Color(0xFF0D1638), Color(0xFF05060F))))) {
             Canvas(Modifier.fillMaxSize()) {
-                val time = t.floatValue
+                val time = t.value
                 val w = size.width; val h = size.height
                 // Three slow curtains of light: violet, blue, and the profile's own colour.
                 fun blob(c: Color, x: Float, y: Float, r: Float, a: Float) =
@@ -155,7 +155,7 @@ internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, m
         }
         PickerLook.NEON -> Box(modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF0B0418), Color(0xFF140726), Color(0xFF05010A))))) {
             Canvas(Modifier.fillMaxSize()) {
-                val time = t.floatValue
+                val time = t.value
                 val w = size.width; val h = size.height
                 // A perspective grid floor, gently scrolling toward you, and faint scanlines.
                 val horizon = h * 0.66f
@@ -190,10 +190,42 @@ internal fun PickerBackdrop(look: PickerLook, accent: Color, animate: Boolean, m
         }
         PickerLook.IGNITION -> IgnitionBackdrop(modifier)
         PickerLook.MIDNIGHT -> Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF16305E), Color(0xFF0A1734), Color(0xFF03060F)), radius = 1600f))) {
-            if (animate) MidnightSparks(Modifier.fillMaxSize())
+            if (animate) MidnightSparks(Modifier.fillMaxSize(), run = !hold)
             Box(Modifier.fillMaxSize().midnightFloor())
         }
     }
+}
+
+/**
+ * Sprint 527: the picker's own calm - "Who's playing?" can wait long before the home (and its idle watch) exists. Any press in
+ * the picker [poke]s it; [SETTLE_MS] after the last one its ambient light holds still and nothing redraws.
+ */
+internal object PickerCalm {
+    const val SETTLE_MS = 8_000L
+    var lastInput by androidx.compose.runtime.mutableLongStateOf(0L)
+    fun poke() { lastInput = android.os.SystemClock.uptimeMillis() }
+}
+
+/**
+ * Sprint 527: an ambient clock (seconds) for the picker's backdrops: while [run], it steps [fps] times a second until
+ * [PickerCalm.SETTLE_MS] pass without a press, then holds; the next press carries it on from the same moment (no jump).
+ */
+@Composable
+internal fun rememberAmbientClock(run: Boolean, fps: Int): androidx.compose.runtime.State<Float> {
+    val t = remember { mutableFloatStateOf(0f) }
+    val input = PickerCalm.lastInput
+    if (run) LaunchedEffect(input) {
+        val from = t.floatValue
+        val first = withFrameNanos { it }
+        val start = first - (from * 1e9f).toLong()
+        val opened = android.os.SystemClock.uptimeMillis()
+        val stepMs = (1000L / fps.coerceIn(1, 120))
+        while (android.os.SystemClock.uptimeMillis() - opened < PickerCalm.SETTLE_MS) {
+            withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
+            kotlinx.coroutines.delay(stepMs)
+        }
+    }
+    return t
 }
 
 /** Midnight blue's soft floor of light under the row (as before). */
@@ -206,19 +238,14 @@ private fun Modifier.midnightFloor(): Modifier = this.drawBehind {
 
 /** Midnight blue's slow sparks drifting up through the dark (the update 332 look), drawn on one canvas. */
 @Composable
-private fun MidnightSparks(modifier: Modifier) {
-    val t = remember { mutableFloatStateOf(0f) }
+private fun MidnightSparks(modifier: Modifier, run: Boolean) {
     // (Update 513: settles with the home's idle settle like PickerBackdrop's light — measured on the RP Nova, 120 frames a
     // second / ~67 % CPU for as long as "Who's playing?" waited — and carries on from the same moment on the next press.)
-    if (!HomeIdle.settled) LaunchedEffect(Unit) {
-        val from = t.floatValue
-        val first = withFrameNanos { it }
-        val start = first - (from * 1e9f).toLong()
-        while (true) withFrameNanos { now -> t.floatValue = (now - start) / 1e9f }
-    }
+    // (Sprint 527: and with the picker's own calm, at 30 steps a second - the sparks rise 13-35 px a second.)
+    val t = rememberAmbientClock(run && !HomeIdle.settled, 30)
     val seeds = remember { List(46) { i -> floatArrayOf(((i * 7919) % 1000) / 1000f, ((i * 104729) % 1000) / 1000f, 0.4f + ((i * 31) % 10) / 16f, ((i * 53) % 100) / 100f) } }
     Canvas(modifier) {
-        val time = t.floatValue
+        val time = t.value
         for (s in seeds) {
             val speed = 0.012f + 0.02f * s[3]
             val y = (s[1] - time * speed).let { it - kotlin.math.floor(it) }
@@ -259,6 +286,19 @@ internal object PickerGrid {
         val scroll = byW < a - 0.01f
         return Plan(1, n, a, a * 1.42f, a * 0.12f, scroll)
     }
+
+    /**
+     * Sprint 527: how visible a picture is in a scrolling row, from its centre [cx] and the visible band [left]..[right]:
+     * 1 from half a slot inside the band, fading (smoothstep) to 0 a quarter slot past its edge. Pure.
+     */
+    fun edgeFade(cx: Float, left: Float, right: Float, slot: Float): Float {
+        val inside = minOf(cx - left, right - cx)
+        val x = ((inside + 0.25f * slot) / (0.75f * slot)).coerceIn(0f, 1f)
+        return x * x * (3f - 2f * x)
+    }
+
+    /** Sprint 527: the B hint may carry the profile's name: its text fits a hint ([maxText]) and the whole row one line ([room]). Pure. */
+    fun hintFits(keepText: Float, row: Float, maxText: Float, room: Float): Boolean = keepText <= maxText && row <= room * 0.92f
 
     /** D-pad step inside the plan: index after pressing ◀ ▶ ▲ ▼ from [i] (clamped; ▲ ▼ keep the column as near as it can). */
     fun step(i: Int, count: Int, perRow: Int, dx: Int, dy: Int): Int {

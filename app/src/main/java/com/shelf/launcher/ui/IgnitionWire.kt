@@ -37,15 +37,32 @@ import kotlin.math.sqrt
  * layers; nothing redraws once settled (a press sends one short spark, then it is still again).
  */
 
-/** The continuation's times (ms) on the intro's own clock; it opens inside the final shine. */
+/**
+ * The continuation's times (ms) on the intro's own clock; it opens inside the final shine.
+ * Sprint 527 (owner: "the selected player should be the visual anchor"): the capsule's two ends run straight down into the
+ * profile that played last ([open] → [arrive]), trace its ring ([arrive] → [ringTo]) while it emerges, then the light spreads
+ * outward along the row from it ([spreadFrom] → [spreadTo]) and each neighbour appears as it passes, nearest first; the ring
+ * gets its pulse ([pulseFrom] → [pulseTo]) and everything has finished by [settled] (nothing is left half-faded).
+ */
 internal class IgnitionTiming(
-    val open: Float, val turn: Float, val rowEnd: Float, val recedeFrom: Float, val recedeTo: Float,
-    val titleFrom: Float, val titleTo: Float, val upperOutFrom: Float, val upperOutTo: Float, val ringDur: Float,
-    val focusTo: Float, val hintsFrom: Float, val hintsTo: Float, val settled: Float
+    val open: Float, val arrive: Float, val ringTo: Float, val liftTo: Float, val spreadFrom: Float, val spreadTo: Float,
+    val recedeFrom: Float, val recedeTo: Float, val tailFrom: Float, val tailTo: Float,
+    val titleFrom: Float, val titleTo: Float, val hintsFrom: Float, val hintsTo: Float,
+    val pulseFrom: Float, val pulseTo: Float, val wireOutFrom: Float, val settled: Float
 )
 
-internal val IG_FULL = IgnitionTiming(2080f, 2520f, 3140f, 2240f, 2860f, 2760f, 3160f, 2980f, 3480f, 240f, 3420f, 3260f, 3560f, 3600f)
-internal val IG_SHORT = IgnitionTiming(430f, 620f, 900f, 470f, 760f, 700f, 900f, 820f, 1060f, 150f, 1060f, 960f, 1120f, 1140f)
+internal val IG_FULL = IgnitionTiming(
+    open = 2080f, arrive = 2600f, ringTo = 2840f, liftTo = 3080f, spreadFrom = 2760f, spreadTo = 3300f,
+    recedeFrom = 2240f, recedeTo = 2860f, tailFrom = 2440f, tailTo = 2840f,
+    titleFrom = 2760f, titleTo = 3160f, hintsFrom = 3260f, hintsTo = 3560f,
+    pulseFrom = 3200f, pulseTo = 3660f, wireOutFrom = 3300f, settled = 3700f
+)
+internal val IG_SHORT = IgnitionTiming(
+    open = 430f, arrive = 600f, ringTo = 700f, liftTo = 800f, spreadFrom = 660f, spreadTo = 900f,
+    recedeFrom = 470f, recedeTo = 760f, tailFrom = 540f, tailTo = 700f,
+    titleFrom = 700f, titleTo = 900f, hintsFrom = 960f, hintsTo = 1120f,
+    pulseFrom = 880f, pulseTo = 1160f, wireOutFrom = 900f, settled = 1180f
+)
 
 internal object IgnK {
     val Orange = Color(0xFFF59A2C)
@@ -102,17 +119,29 @@ internal class WireGeo(val left: Float, val step: Float, val top: FloatArray, va
         }
 
         /**
-         * When profile at [x] appears while the row is traced inward from both ends ([leftEnd] / [rightEnd]) to the focused ring
-         * ([focusL] / [focusR] its edges): its share of that side's run, on [tm]'s turn → rowEnd. Pure.
+         * Sprint 527: when the profile centred at [x] appears. The focused one ([x] == [focusX]) emerges as the light reaches it
+         * ([IgnitionTiming.arrive]); the others as the light spreading outward from the focused ring's edge passes their near
+         * edge - nearest first, on both sides at the same speed, [reach] px (the visible run) in [spreadFrom] → [spreadTo]
+         * (ease-out). [focusR] the focused ring's radius, [rho] a resting ring's. Pure.
          */
-        fun appearAt(x: Float, focusX: Float, leftEnd: Float, rightEnd: Float, focusL: Float, focusR: Float, tm: IgnitionTiming): Float {
-            val f = when {
-                x < focusX - 0.5f -> ((x - leftEnd) / (focusL - leftEnd).coerceAtLeast(1f))
-                x > focusX + 0.5f -> ((rightEnd - x) / (rightEnd - focusR).coerceAtLeast(1f))
-                else -> 1f
-            }.coerceIn(0f, 1f)
-            return tm.turn + (tm.rowEnd - tm.turn) * f * 0.92f
+        fun appearAt(x: Float, focusX: Float, focusR: Float, rho: Float, reach: Float, tm: IgnitionTiming): Float {
+            if (abs(x - focusX) < 0.5f) return tm.arrive
+            val d = (abs(x - focusX) - focusR - rho).coerceAtLeast(0f)
+            val f = (d / reach.coerceAtLeast(1f)).coerceIn(0f, 1f)
+            // (the inverse of the spread's ease-out 1 - (1 - u)^3: the moment its tip is at d)
+            val u = 1f - Math.cbrt((1.0 - f)).toFloat()
+            return tm.spreadFrom + (tm.spreadTo - tm.spreadFrom) * u
         }
+
+        /** The wire's ends: just past the outer rings (it fades out there - no line runs on to the screen edges). Pure. */
+        fun ends(firstX: Float, lastX: Float, rho: Float, margin: Float): FloatArray = floatArrayOf(firstX - rho - margin, lastX + rho + margin)
+
+        /**
+         * How far the spread runs while it is seen: the longer of the two visible runs from the focused ring's edges
+         * ([focusL] / [focusR]) to the wire's ends, clipped to the screen ([width]); rows that scroll go on past it unseen. Pure.
+         */
+        fun reach(focusL: Float, focusR: Float, leftEnd: Float, rightEnd: Float, width: Float): Float =
+            max(focusL - max(leftEnd, 0f), min(rightEnd, width) - focusR).coerceAtLeast(1f)
     }
 }
 
@@ -161,34 +190,37 @@ internal fun IgnitionWireLayer(inp: WireInputs, reveal: IgnitionReveal?, modifie
         val tm = reveal?.tm
         val d = density
         val focus = inp.cursor.coerceIn(0, cs.size - 1)
-        val conv = if (tm != null) IgnK.eOut(IgnK.ph(t, tm.rowEnd, tm.focusTo)) else 1f
+        val conv = if (tm != null) IgnK.eOut(IgnK.ph(t, tm.arrive, tm.liftTo)) else 1f
         val pos = inp.focusPos()
         val lifts = FloatArray(cs.size) { IgnK.liftAt(pos, it) * conv }
         val cy = cs[focus].y // (the row's centre line at rest; a lifted ring is raised by WireGeo)
-        val leftEnd = min(24f * d + 6f * d, cs.first().x - inp.rho - 18f * d)
-        val rightEnd = max(size.width - 30f * d, cs.last().x + inp.rho + 18f * d)
+        // (Sprint 527: the wire ends just past the outer rings and fades there - no line runs on to the screen edges.)
+        val ends = WireGeo.ends(cs.first().x, cs.last().x, inp.rho, 30f * d)
+        val leftEnd = ends[0]; val rightEnd = ends[1]
         val geo = WireGeo.build(FloatArray(cs.size) { cs[it].x }, lifts, cy, inp.rho, inp.rise, leftEnd, rightEnd, max(1f, 1.2f * d))
         val last = geo.size - 1
-        val wireVis = if (inp.keep) 1f else if (tm != null) 1f - IgnK.eInOut(IgnK.ph(t, tm.titleTo, tm.settled + 200f)) else 0f
-        // ---- the opened outline (start-up only): from each capsule end out, round the capsule's own end, back along the row
-        if (tm != null) drawOpening(t, tm, cy, leftEnd, rightEnd, inp.lite)
-        if (wireVis <= 0.003f) return@Canvas
-        val rowU = if (tm != null) IgnK.eInOut(IgnK.ph(t, tm.turn, tm.rowEnd)) else 1f
+        val wireVis = if (inp.keep) 1f else if (tm != null) 1f - IgnK.eInOut(IgnK.ph(t, tm.wireOutFrom, tm.settled)) else 0f
         val rrF = inp.rho * (1f + 0.16f * lifts[focus])
+        // ---- the capsule's two ends running down into the focused ring (start-up only)
+        if (tm != null) drawDescent(t, tm, Offset(cs[focus].x - rrF, cy - inp.rise * lifts[focus]), Offset(cs[focus].x + rrF, cy - inp.rise * lifts[focus]), cy, inp.lite)
+        if (wireVis <= 0.003f) return@Canvas
         val iFL = geo.idx(cs[focus].x - rrF); val iFR = geo.idx(cs[focus].x + rrF)
-        val leftTo = (iFL * rowU).roundToInt(); val rightFrom = (last - (last - iFR) * rowU).roundToInt()
+        val mid = geo.idx(cs[focus].x)
+        // The focused ring traced from both sides as the light arrives, then the light spreading outward along the row.
+        val cc = if (tm != null) IgnK.eOut(IgnK.ph(t, tm.arrive, tm.ringTo)) else 1f
+        val spreadU = if (tm != null) IgnK.eOut(IgnK.ph(t, tm.spreadFrom, tm.spreadTo)) else 1f
+        val reach = WireGeo.reach(geo.x(iFL), geo.x(iFR), leftEnd, rightEnd, size.width)
+        val leftTo = if (spreadU >= 1f) 0 else geo.idx(geo.x(iFL) - reach * spreadU)
+        val rightTo = if (spreadU >= 1f) last else geo.idx(geo.x(iFR) + reach * spreadU)
         val drain = IgnK.eInOut(IgnK.ph(inp.exit(), 0f, 0.9f))
-        val l0 = (iFL * drain).roundToInt(); val r0 = (last - (last - iFR) * drain).roundToInt()
+        val l0 = max(leftTo, (iFL * drain).roundToInt()); val r0 = min(rightTo, (last - (last - iFR) * drain).roundToInt())
         val ranges = ArrayList<IntArray>(4)
-        ranges += intArrayOf(l0, leftTo); ranges += intArrayOf(rightFrom, r0)
-        if (rowU >= 1f) {
-            val cc = if (tm != null) IgnK.eOut(IgnK.ph(t, tm.rowEnd, tm.rowEnd + tm.ringDur)) else 1f
-            val mid = geo.idx(cs[focus].x)
-            ranges += intArrayOf(iFL, (iFL + (mid - iFL) * cc).roundToInt()); ranges += intArrayOf((iFR - (iFR - mid) * cc).roundToInt(), iFR)
-        }
+        if (spreadU > 0f) { ranges += intArrayOf(l0, iFL); ranges += intArrayOf(iFR, r0) }
+        if (cc > 0f) { ranges += intArrayOf(iFL, (iFL + (mid - iFL) * cc).roundToInt()); ranges += intArrayOf((iFR - (iFR - mid) * cc).roundToInt(), iFR) }
         val a = wireVis
+        val fadeK = (44f * d / (rightEnd - leftEnd).coerceAtLeast(1f)).coerceIn(0.02f, 0.3f)
         val grad = Brush.horizontalGradient(
-            0f to IgnK.Orange.copy(alpha = 0f), 0.07f to IgnK.Orange, 0.5f to IgnK.Yellow, 0.93f to IgnK.Orange, 1f to IgnK.Orange.copy(alpha = 0f),
+            0f to IgnK.Orange.copy(alpha = 0f), fadeK to IgnK.Orange, 0.5f to IgnK.Yellow, 1f - fadeK to IgnK.Orange, 1f to IgnK.Orange.copy(alpha = 0f),
             startX = leftEnd, endX = rightEnd
         )
         // The line between rings: warm gold, a narrow glow; resting rings a fine quiet socket line; the focused ring its colour.
@@ -210,22 +242,30 @@ internal fun IgnitionWireLayer(inp: WireInputs, reveal: IgnitionReveal?, modifie
         val line = paths[0]; build(line) { it < 0 }
         if (!inp.lite) drawPath(line, grad, alpha = 0.10f * a, style = Stroke(4.5f * d, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
         drawPath(line, grad, alpha = 0.66f * a, style = Stroke(1.3f * d, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-        val rest = paths[1]; build(rest) { it >= 0 && lifts[it] < 0.02f }
+        // (Sprint 527: the focused ring is drawn bright from the moment the light reaches it, before it lifts.)
+        val lit = FloatArray(cs.size) { if (it == focus && tm != null) max(lifts[it], 0.6f * cc) else lifts[it] }
+        val rest = paths[1]; build(rest) { it >= 0 && lit[it] < 0.02f }
         drawPath(rest, grad, alpha = 0.30f * a, style = Stroke(1f * d), blendMode = BlendMode.Plus)
         for (i in cs.indices) {
-            val lf = lifts[i]; if (lf < 0.02f) continue
+            val lf = lit[i]; if (lf < 0.02f) continue
             val p = paths[2]; build(p) { it == i }
             val col = lerp(IgnK.Yellow, inp.accents.getOrElse(i) { IgnK.Yellow }, 0.7f)
             if (!inp.lite) drawPath(p, col.copy(alpha = 0.16f * lf * a), style = Stroke(6f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
             drawPath(p, lerp(Color(0xFFFFECBE), col, 0.6f).copy(alpha = (0.30f + 0.65f * lf) * a), style = Stroke((1f + lf) * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
         }
-        // Sparks: tracing heads, the meeting hit, select drain heads, D-pad impulses.
-        if (tm != null && rowU > 0f && rowU < 1f) {
-            spark(Offset(geo.x(leftTo), geo.top[leftTo]), 12f * d); spark(Offset(geo.x(rightFrom), geo.top[rightFrom]), 12f * d)
-            if (abs(geo.top[leftTo] - geo.bottom[leftTo]) > 1f) { spark(Offset(geo.x(leftTo), geo.bottom[leftTo]), 10f * d); spark(Offset(geo.x(rightFrom), geo.bottom[rightFrom]), 10f * d) }
+        // Sparks: the ring's tracing heads, the spread's two tips, the pulse, select drain heads, D-pad impulses.
+        if (tm != null && cc > 0f && cc < 1f) {
+            val kl = (iFL + (mid - iFL) * cc).roundToInt().coerceIn(0, last); val kr = (iFR - (iFR - mid) * cc).roundToInt().coerceIn(0, last)
+            spark(Offset(geo.x(kl), geo.top[kl]), 11f * d); spark(Offset(geo.x(kr), geo.top[kr]), 11f * d)
+            spark(Offset(geo.x(kl), geo.bottom[kl]), 9f * d); spark(Offset(geo.x(kr), geo.bottom[kr]), 9f * d)
+        }
+        if (tm != null && spreadU > 0f && spreadU < 1f) {
+            val fadeTip = 1f - IgnK.ph(spreadU, 0.8f, 1f)
+            if (leftTo > 0) spark(Offset(geo.x(leftTo), geo.top[leftTo]), 12f * d, fadeTip)
+            if (rightTo < last) spark(Offset(geo.x(rightTo), geo.top[rightTo]), 12f * d, fadeTip)
         }
         if (tm != null) {
-            val u = IgnK.ph(t, tm.rowEnd + tm.ringDur * 0.7f, tm.rowEnd + tm.ringDur + 420f)
+            val u = IgnK.ph(t, tm.pulseFrom, tm.pulseTo)
             if (u > 0f && u < 1f) {
                 val c = Offset(cs[focus].x, cy - inp.rise * lifts[focus]); val k = (1f - u) * (1f - u)
                 drawCircle(Color(0xFFFFC86E).copy(alpha = 0.55f * k), inp.rho * (1.05f + 0.6f * IgnK.eOut(u)), c, style = Stroke((5f * (1f - u) + 0.6f) * d), blendMode = BlendMode.Plus)
@@ -265,39 +305,49 @@ private fun DrawScope.spark(c: Offset, r: Float, a: Float = 1f) {
 }
 
 /**
- * The outline opening at the capsule's ends (same capsule geometry as drawIntro: r = min(0.2 w, 0.26 h) at (w / 2, 0.43 h)):
- * each side runs out along the capsule's centre line, turns down round a half circle the height of the gap, and joins the row
- * at its end; its inner end lets go as the capsule recedes, so the light pours out and down into the row.
+ * Sprint 527: the capsule's outline opening at both ends (same capsule geometry as drawIntro: r = min(0.2 w, 0.26 h) at
+ * (w / 2, 0.43 h)) and each end running in one smooth curve down into the focused ring - out of the capsule's end, then
+ * arriving level with the ring at its left ([toL]) / right ([toR]) edge - so the light goes straight to the profile that played
+ * last. Its tail lets go as the capsule recedes ([IgnitionTiming.tailFrom] → [IgnitionTiming.tailTo]): the line drains into
+ * the ring and nothing is left hanging at the screen edges.
  */
-private fun DrawScope.drawOpening(t: Float, tm: IgnitionTiming, rowY: Float, leftEnd: Float, rightEnd: Float, lite: Boolean) {
-    val upperA = 1f - IgnK.ph(t, tm.upperOutFrom, tm.upperOutTo)
-    if (upperA <= 0f || t < tm.open) return
+private fun DrawScope.drawDescent(t: Float, tm: IgnitionTiming, toL: Offset, toR: Offset, rowY: Float, lite: Boolean) {
+    if (t < tm.open || t >= tm.tailTo) return
     val w = size.width; val h = size.height; val d = density
     val r = min(0.2f * w, 0.26f * h)
     val rec = IgnK.eInOut(IgnK.ph(t, tm.recedeFrom, tm.recedeTo))
     val capY = h * 0.43f - rec * r * 0.35f
-    val u = IgnK.eInOut(IgnK.ph(t, tm.open, tm.turn))
+    val u = IgnK.eInOut(IgnK.ph(t, tm.open, tm.arrive))
+    val tail = IgnK.eInOut(IgnK.ph(t, tm.tailFrom, tm.tailTo))
+    val dy = abs(rowY - capY)
     for (s in intArrayOf(-1, 1)) {
-        val capX = w / 2f + s * r * (1f - 0.32f * rec)
-        val endX = if (s < 0) leftEnd else rightEnd
-        val turnR = max(8f * d, (rowY - capY) / 2f)
-        val straight = (abs(endX - capX) - turnR).coerceAtLeast(0f)
-        val total = straight + PI.toFloat() * turnR
-        val len = total * u
-        val from = total * IgnK.eInOut(IgnK.ph(t, tm.recedeFrom + 260f, tm.upperOutTo))
-        if (from >= len) continue
-        val p = Path()
-        fun pt(dist: Float): Offset = if (dist <= straight) Offset(capX + s * dist, capY) else {
-            val ang = (dist - straight) / turnR
-            val ox = endX - s * turnR; val oy = capY + turnR
-            Offset(ox + s * turnR * sin(ang), oy - turnR * cos(ang))
-        }
-        val n = 48
-        for (k in 0..n) { val q = pt(from + (len - from) * k / n); if (k == 0) p.moveTo(q.x, q.y) else p.lineTo(q.x, q.y) }
-        val grad = Brush.horizontalGradient(listOf(IgnK.Orange, IgnK.Yellow), startX = w / 2f, endX = endX)
-        if (!lite) drawPath(p, grad, alpha = 0.07f * upperA, style = Stroke(9f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
-        drawPath(p, grad, alpha = 0.22f * upperA, style = Stroke(4f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
-        drawPath(p, grad, alpha = upperA, style = Stroke(1.6f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
-        if (u > 0f && u < 1f) spark(pt(len), 14f * d)
+        val p0 = Offset(w / 2f + s * r * (1f - 0.32f * rec), capY)
+        val p3 = if (s < 0) toL else toR
+        val a = max(36f * d, 0.55f * dy); val b = max(36f * d, 0.75f * dy)
+        val p1 = Offset(p0.x + s * a, p0.y)
+        val p2 = Offset(p3.x + s * b, p3.y)
+        val pts = descentPoints(p0, p1, p2, p3, 40)
+        val lens = FloatArray(pts.size); for (k in 1 until pts.size) lens[k] = lens[k - 1] + (pts[k] - pts[k - 1]).getDistance()
+        val total = lens.last()
+        val to = total * u; val from = total * tail
+        if (from >= to) continue
+        val path = Path()
+        var started = false
+        fun at(dist: Float): Offset { var k = 1; while (k < lens.size - 1 && lens[k] < dist) k++; val f = ((dist - lens[k - 1]) / (lens[k] - lens[k - 1]).coerceAtLeast(1e-3f)).coerceIn(0f, 1f); return pts[k - 1] + (pts[k] - pts[k - 1]) * f }
+        val head = at(to)
+        path.moveTo(at(from).x, at(from).y); started = true
+        for (k in pts.indices) if (lens[k] > from && lens[k] < to) path.lineTo(pts[k].x, pts[k].y)
+        if (started) path.lineTo(head.x, head.y)
+        val grad = Brush.linearGradient(listOf(IgnK.Orange, IgnK.Yellow), start = p0, end = p3)
+        if (!lite) drawPath(path, grad, alpha = 0.07f, style = Stroke(9f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+        drawPath(path, grad, alpha = 0.22f, style = Stroke(4f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+        drawPath(path, grad, style = Stroke(1.6f * d, cap = StrokeCap.Round), blendMode = BlendMode.Plus)
+        if (u > 0f && u < 1f) spark(head, 14f * d)
     }
+}
+
+/** A cubic curve sampled at [n] + 1 points. Pure. */
+internal fun descentPoints(p0: Offset, p1: Offset, p2: Offset, p3: Offset, n: Int): Array<Offset> = Array(n + 1) { k ->
+    val q = k / n.toFloat(); val m = 1f - q
+    Offset(m * m * m * p0.x + 3f * m * m * q * p1.x + 3f * m * q * q * p2.x + q * q * q * p3.x, m * m * m * p0.y + 3f * m * m * q * p1.y + 3f * m * q * q * p2.y + q * q * q * p3.y)
 }
