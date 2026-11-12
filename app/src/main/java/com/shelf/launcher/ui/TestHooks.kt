@@ -133,6 +133,12 @@ internal object TestHooks {
      * (1–8) instead of yours, as a preview: picking, editing, PIN and remove change nothing (ProfileSelectScreen demo).
      */
     val profilesDemo = mutableStateOf<List<com.shelf.launcher.data.Profiles.Profile>?>(null)
+    /**
+     * Sprint 526 (Connected Ignition visual QA, isolated QA app only): `--es voltcap_test_startprofiles "N[:long][:locked][:active=K]|off"`
+     * on a cold start's own intent - the start-up stage (IgnitionStage) shows N sample profiles (as [demoProfiles]) instead of the
+     * QA app's own; choosing one keeps the profile you already have (nothing switched or saved). Held in memory: gone with the process.
+     */
+    val startProfiles = mutableStateOf<Pair<List<com.shelf.launcher.data.Profiles.Profile>, Int>?>(null)
     val profilesDemoActive = mutableStateOf(0)
 
     /** The sample profiles for [profilesDemo] (pure, unit-tested): ids 900+, colours from the presets, real profiles untouched. */
@@ -467,6 +473,10 @@ internal object TestHooks {
                 }
                 android.util.Log.e("VoltcapQA", "intro_style=${p.getString("intro_style", null)}")
             }
+        }
+        intent?.getStringExtra("voltcap_test_startprofiles")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) startProfiles.value = if (v == "off") null else demoProfiles(v)
+            android.util.Log.e("VoltcapQA", "start profiles $v")
         }
         intent?.getStringExtra("voltcap_test_profiles")?.let { v ->
             if (enabled(context)) {

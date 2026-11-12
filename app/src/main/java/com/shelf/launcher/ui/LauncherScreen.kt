@@ -339,10 +339,12 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             if (!showIntro) PacksProgressPill(Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 14.dp))
             if (showIntro && stageOn) {
                 val startupMode = com.shelf.launcher.data.Features.startupMode
+                // (Sprint 526, QA app only: sample profiles for the start-up stage - TestHooks.startProfiles; a pick keeps yours.)
+                val qaStart = TestHooks.startProfiles.value
                 IgnitionStage(
                     style = appearance.introStyle,
-                    profiles = com.shelf.launcher.data.Profiles.list.value,
-                    activeId = com.shelf.launcher.data.Profiles.activeId.value,
+                    profiles = qaStart?.first ?: com.shelf.launcher.data.Profiles.list.value,
+                    activeId = qaStart?.second ?: com.shelf.launcher.data.Profiles.activeId.value,
                     raNames = viewModel.uiState.value.raAccounts,
                     steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value,
                     onBolt = {
@@ -358,7 +360,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                     onSettled = {},
                     // (The start-up picker's own choices, as its Dialog makes them below: the profile, then the start-up mode.)
                     onPick = { id ->
-                        viewModel.switchProfile(id)
+                        if (qaStart == null) viewModel.switchProfile(id)
                         when (startupMode.value) {
                             com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> viewModel.categoryScreenOpenState.value = true
                             com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
