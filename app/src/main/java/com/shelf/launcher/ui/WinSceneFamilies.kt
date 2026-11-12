@@ -334,7 +334,7 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
         // (Popup motion work: L1 / R1 walk Info, Details, Achievements, Options - as their keys open them.)
         if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
         val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
-        val to = pageStep(TILE_TABS, ctx.page, step)
+        val to = pageStep(TILE_TABS.filter { it in ctx.pages }, ctx.page, step)
         if (to != ctx.page) ctx.open(to)
         true
     }) {

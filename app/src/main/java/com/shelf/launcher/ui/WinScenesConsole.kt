@@ -140,7 +140,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             // (Popup motion work: L1 / R1 walk the game, Details, Achievements, Options - as their commands open them.)
             if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
             val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
-            val to = pageStep(BLADE_TABS, ctx.page, step)
+            val to = pageStep(BLADE_TABS.filter { it in ctx.pages }, ctx.page, step)
             if (to != ctx.page) ctx.open(to)
             true
         }

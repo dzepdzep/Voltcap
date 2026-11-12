@@ -40,6 +40,9 @@
   one-line label beside a fixed 70 dp bar was cut in narrow windows; it now takes the room the bar leaves, steps down to 9 sp
   and may use a second line; "141 / 160" never breaks. The audit's title-over-subtitle overlap is not reproduced here (needs a
   settled capture) — open.
+- **L1 / R1 walk only the pages a window has** (`WinSceneCtx.pages`): a game with no achievements page (or no options page)
+  is skipped over instead of a bumper opening the full achievements list / the game's menu mid-cycle (Storage did that in
+  v0.6.70 already; the new native windows inherited it). Tapping a tab still opens what its button opens. Test `BumpersWalkRealPagesTest`.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from

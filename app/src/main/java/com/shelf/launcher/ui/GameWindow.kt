@@ -2342,6 +2342,12 @@ private fun SceneBody(
                 WinPage.PERF -> WindowPerformance(look, lf, m)
             }
         },
+        pages = buildSet {
+            add(WinPage.MAIN); add(WinPage.DETAILS)
+            if (list.isNotEmpty() && LocalSceneLayout.current?.let { crossTrophiesOn(it) } != true) add(WinPage.TROPHIES)
+            if (options.isNotEmpty()) add(WinPage.OPTIONS)
+            if (perf) add(WinPage.PERF)
+        },
         open = { p ->
             when (p) {
                 WinPage.DETAILS -> opener(detailsF) { setPage(WinPage.DETAILS) }()

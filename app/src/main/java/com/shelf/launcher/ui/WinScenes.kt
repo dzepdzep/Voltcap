@@ -293,7 +293,9 @@ internal class WinSceneCtx(
     /** Popup motion work: any page's body; [live] false for a page on its way out (it gets no list focus). */
     val pageFor: @Composable (WinPage, Modifier, Boolean) -> Unit = { _, m, _ -> pageBody(m) },
     /** Popup motion work: open a page as its button does (B comes back onto that button). */
-    val open: (WinPage) -> Unit = setPage
+    val open: (WinPage) -> Unit = setPage,
+    /** Popup motion work: the pages this window has as pages (L1 / R1 walk only these; the others open a list or a menu). */
+    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS)
 ) {
     val played: String get() = stylePlaytime(playtime, lastPlayed != null)
     val last: String? get() = lastPlayed?.let { lastPlayedLabel(it) }
@@ -784,7 +786,7 @@ private fun StorageRecord(ctx: WinSceneCtx) {
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
-                openTab(pageStep(tabs, ctx.page, step))
+                openTab(pageStep(tabs.filter { it in ctx.pages }, ctx.page, step))
                 true
             }
     ) {
@@ -1799,7 +1801,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
-                val to = pageStep(tabs, ctx.page, step)
+                val to = pageStep(tabs.filter { it in ctx.pages }, ctx.page, step)
                 if (to != ctx.page) ctx.open(to)
                 true
             }

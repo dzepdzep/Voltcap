@@ -198,3 +198,24 @@ class WinAchievementsLineTest {
         assertFalse(row.contains("fontWeight = FontWeight.SemiBold, maxLines = 1, fontFamily = family"))
     }
 }
+
+/** Popup motion work: L1 / R1 walk only the pages a window has (no achievements list / game menu opened by a bumper). */
+class BumpersWalkRealPagesTest {
+    @Test fun unavailablePagesAreSkipped() {
+        val have = setOf(WinPage.MAIN, WinPage.DETAILS, WinPage.OPTIONS)   // no achievements page for this game
+        val t = STORAGE_TABS.filter { it in have }
+        assertEquals(WinPage.OPTIONS, pageStep(t, WinPage.DETAILS, 1))
+        assertEquals(WinPage.DETAILS, pageStep(t, WinPage.OPTIONS, -1))
+        assertEquals(WinPage.MAIN, pageStep(t, WinPage.OPTIONS, 1))
+    }
+
+    @Test fun everyNativeWindowFiltersItsTabs() {
+        fun src(n: String) = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/$n"), java.io.File("app/src/main/java/com/shelf/launcher/ui/$n")).first { it.exists() }.readText()
+        assertEquals(2, Regex("pageStep\\(tabs\\.filter \\{ it in ctx\\.pages \\}").findAll(src("WinScenes.kt")).count())     // Storage, Night
+        assertTrue(src("WinSceneFamilies.kt").contains("pageStep(TILE_TABS.filter { it in ctx.pages }"))
+        assertTrue(src("WinScenesConsole.kt").contains("pageStep(BLADE_TABS.filter { it in ctx.pages }"))
+        val gw = src("GameWindow.kt")
+        assertTrue(gw.contains("if (list.isNotEmpty() && LocalSceneLayout.current?.let { crossTrophiesOn(it) } != true) add(WinPage.TROPHIES)"))
+        assertTrue(gw.contains("if (options.isNotEmpty()) add(WinPage.OPTIONS)"))
+    }
+}
