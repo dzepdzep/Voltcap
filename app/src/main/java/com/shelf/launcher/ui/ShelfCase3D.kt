@@ -36,6 +36,12 @@ internal object Shelf3D {
         return x * x * (3f - 2f * x)
     }
 
+    /**
+     * The shelf's own spine under the 3D case: whole until the 3D case on top of it is whole, then gone (12 Nov: a cross-fade
+     * of two half-transparent layers let the dark background through - a dip in brightness mid-hand-over). Pure.
+     */
+    fun shelfSpineAlpha(turn: Float): Float = if (blendIn(turn) >= 1f) 0f else 1f
+
     /** The width / height each game's spine picture is drawn at on the shelf (SpineSlot), for the 3D case's thickness. */
     val drawnDepth = HashMap<String, Float>()
 

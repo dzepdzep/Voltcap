@@ -414,8 +414,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                             val frontW = s.h.toPx() * pulledAspect(g.platform, Features.shelfPulled.state.value == Features.ShelfPulled.SIDE)
                                             translationX += shelfBoxFaces(t, s.w.toPx(), frontW).first
                                             // (Shelf 3D work: while the 3D case has it, this spine - its picture, top and shading -
-                                            // fades into it over the first part of the turn: Shelf3D.blendIn.)
-                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) 1f - Shelf3D.blendIn(t) else 1f
+                                            // stays whole under the 3D case fading in on top, and goes once that is whole:
+                                            // Shelf3D.shelfSpineAlpha / blendIn. Two half-faded layers let the dark show through.)
+                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) Shelf3D.shelfSpineAlpha(t) else 1f
                                         } else {
                                             alpha = if (shelfTurn(pv) > 0f) 0f else 1f
                                         }

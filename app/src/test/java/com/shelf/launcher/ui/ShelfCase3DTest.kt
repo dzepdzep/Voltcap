@@ -154,5 +154,8 @@ class ShelfCase3DTest {
         for (i in 1..200) { val v = Shelf3D.blendIn(i / 1000f); assertTrue(v >= prev); assertTrue(v - prev < 0.02f); prev = v }
         // the slope starts and ends flat (smoothstep): no visible step in or out
         assertTrue(Shelf3D.blendIn(0.002f) < 0.001f)
+        // the shelf's spine stays whole under the fading-in 3D case, and goes only once that is whole
+        assertEquals(1f, Shelf3D.shelfSpineAlpha(0f), 0f); assertEquals(1f, Shelf3D.shelfSpineAlpha(Shelf3D.BLEND * 0.99f), 0f)
+        assertEquals(0f, Shelf3D.shelfSpineAlpha(Shelf3D.BLEND), 0f)
     }
 }

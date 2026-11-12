@@ -88,7 +88,7 @@ class ShelfHandOverFramesTest {
             Column(Modifier.testTag("sheet").background(androidx.compose.ui.graphics.Color(0xFF15100A))) {
                 for (row in 0..1) Row {
                     for (t in turns) Box(Modifier.size((cellW * S).dp, (cellH * S).dp)) {
-                        val shelfAlpha = if (row == 1) 1f else 1f - Shelf3D.blendIn(t)
+                        val shelfAlpha = if (row == 1) 1f else Shelf3D.shelfSpineAlpha(t)
                         // the shelf's own spine, as ShelfHome draws it (lifted, turning round its middle, beside the front)
                         if (shelfAlpha > 0f && t < 0.999f) Image(spine.asImageBitmap(), null, contentScale = ContentScale.FillBounds,
                             modifier = Modifier.offset(((cx - slotW / 2) * S).dp, ((bottom - slotH) * S).dp).size((slotW * S).dp, (slotH * S).dp)
@@ -117,19 +117,30 @@ class ShelfHandOverFramesTest {
         val b = compose.onNodeWithTag("sheet").fetchSemanticsNode().boundsInRoot
         val sheet = Bitmap.createBitmap(full, b.left.toInt(), b.top.toInt(), b.width.toInt().coerceAtMost(full.width - b.left.toInt()), b.height.toInt().coerceAtMost(full.height - b.top.toInt()))
         val lc = Canvas(sheet); val lp = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = 15f }
-        turns.forEachIndexed { i, t -> lc.drawText("new ${"%.2f".format(t)}", i * cellW * S + 8, cellH * S - 12, lp); lc.drawText("old ${"%.2f".format(t)}", i * cellW * S + 8, 2 * cellH * S - 12, lp) }
+        turns.forEachIndexed { i, t -> lc.drawText("new ${"%.2f".format(t)}", i * cellW * S + 8, cellH * S - 12, lp); lc.drawText("shelf spine alone ${"%.2f".format(t)}", i * cellW * S + 8, 2 * cellH * S - 12, lp) }
         val out = java.io.File("build/shelf3d"); out.mkdirs()
         java.io.FileOutputStream(java.io.File(out, "handover.png")).use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
         // The hand-over frame (turn 0): the new path is the shelf's spine, pixel for pixel.
         val cw = (cellW * S).toInt(); val ch = (cellH * S).toInt()
         var diff = 0
-        for (x in 0 until cw) for (y in 0 until ch - 40) if (sheet.getPixel(x, y) != sheet.getPixel(x, y + ch)) diff++
+        // (±2 levels a channel: gradients dither by screen row, the two rows sit at different heights)
+        fun near(a: Int, b: Int) = kotlin.math.abs(Color.red(a) - Color.red(b)) <= 2 && kotlin.math.abs(Color.green(a) - Color.green(b)) <= 2 && kotlin.math.abs(Color.blue(a) - Color.blue(b)) <= 2
+        for (x in 0 until cw) for (y in 0 until ch - 40) if (!near(sheet.getPixel(x, y), sheet.getPixel(x, y + ch))) diff++
         assertEquals("hand-over frame differs from the shelf's own spine in $diff px", 0, diff)
         // No frame emptier than the hand-over (no blank, no gap while it fades): drawn pixels per new cell.
         val bg = sheet.getPixel(2, 2)
         val drawn = turns.indices.map { i -> var n = 0; for (x in i * cw until (i + 1) * cw step 2) for (y in 0 until ch - 40 step 2) if (sheet.getPixel(x, y) != bg) n++; n }
         println("SHELF3D handover drawn px per frame: $drawn")
+        // No dip in brightness while it fades (the mean of the spine's own column, every frame up to the end of the blend)
+        val sx0 = (cellW / 2 - 2) * S; val sx1 = (cellW / 2 + 2) * S
+        val lum = turns.indices.map { i -> var sum = 0L; var n = 0
+            for (x in (i * cw + sx0.toInt()) until (i * cw + sx1.toInt())) for (y in ((cellH * 0.8f - slotH * 0.8f) * S).toInt() until ((cellH * 0.8f - slotH * 0.2f) * S).toInt()) {
+                val c = sheet.getPixel(x, y); sum += Color.red(c) + Color.green(c) + Color.blue(c); n++ }
+            (sum / n.coerceAtLeast(1)).toInt() }
+        println("SHELF3D handover spine brightness per frame: $lum")
+        val inBlend = turns.indices.filter { turns[it] <= Shelf3D.BLEND }
+        assertTrue("brightness dips during the hand-over: $lum", inBlend.all { lum[it] >= minOf(lum[0], lum[inBlend.last()]) * 0.85 })
         assertTrue("a frame of the hand-over is emptier than the spine alone: $drawn", drawn.all { it >= drawn[0] * 0.9 })
     }
 }
