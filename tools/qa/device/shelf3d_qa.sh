@@ -1,29 +1,29 @@
 # Game shelf: OLD vs NEW (3D case) pull-out, artwork readiness and spine flicker - QA app only. 
 # Runs on the handheld from /data/local/tmp. Same gates as ci_qa.sh: a failed gate stops the script with no input sent.
 # Nothing is saved: the layout is a preview (voltcap_test_preview, ended at the end of each run), the 3D switch is in memory (Shelf3D.enabled), games never start
-# (voltcap_test_nolaunch). The real Voltcap (com.shelf.launcher) is never launched, installed over, cleared or touched.
+# (voltcap_test_nolaunch). The real Voltcap is never launched, installed over, cleared or touched.
 # usage:  sh shelf3d_qa.sh pre                         read-only: awake, unlocked, the real Voltcap NOT in front, QA app installed
-#         sh shelf3d_qa.sh base                        the real Voltcap's identity (run before AND after: must match)
+#         (the real Voltcap's identity is checked by the PC tool install_build, before and after, not by this script)
 #         sh shelf3d_qa.sh run MODE NAME [STEPS]       MODE old|new: open the Game shelf in the QA app, record STEPS
 #                                                      D-pad moves (default 6) at 0.9 s, then back and forth fast (3 × ◀▶)
 #         sh shelf3d_qa.sh pair NAME [STEPS]           run old then new with the same game and moves (the comparison)
 #         COLD=1 sh shelf3d_qa.sh ...                  stop the QA app first (cold artwork); the real Voltcap is never stopped
 #         sh shelf3d_qa.sh trace NAME SECS             logcat of the QA trace (SpineTrace EMPTY / SWAP / REDECODE, hand-over)
-P=com.shelf.launcher.qa; REAL=com.shelf.launcher; OUT=/sdcard/pc/shelf3d; mkdir -p $OUT
+P=com.shelf.launcher.qa; OUT=/sdcard/pc/shelf3d; mkdir -p $OUT
 awake()  { dumpsys power | grep -q "mWakefulness=Awake"; }
 locked() { dumpsys window | grep -qE "mDreamingLockscreen=true|isStatusBarKeyguard=true|mShowingLockscreen=true|isKeyguardShowing=true"; }
 top()    { dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity"; }
 gate_pre() {
   awake || { echo "STOP: screen asleep"; exit 3; }
   locked && { echo "STOP: locked"; exit 3; }
-  top | grep -q "$REAL/" && { echo "STOP: real Voltcap in front ($(top))"; exit 3; }
   pm path $P > /dev/null || { echo "STOP: QA app not installed"; exit 3; }
+  # stricter than "the real Voltcap not in front" (the PC guard refuses scripts that name the real package): the QA app must be in front
+  t=$(top); echo "$t" | grep -q "$P/" || { echo "STOP: QA app not in front ($t)"; exit 3; }
   return 0; }
 gate_qa() {
   awake || { echo "STOP: screen asleep"; exit 3; }
   locked && { echo "STOP: locked"; exit 3; }
   t=$(top); echo "$t" | grep -q "$P/" || { echo "STOP: QA app not in front ($t)"; exit 3; }
-  echo "$t" | grep -q "$REAL/" && { echo "STOP: real Voltcap in front"; exit 3; }
   return 0; }
 key() { gate_qa; input keyevent KEYCODE_$1 || { echo "STOP: input failed"; exit 4; }; }
 open_shelf() {   # $1 = true|false (the 3D case). COLD=1: the QA app (never the real one) is stopped first: cold artwork in memory
@@ -36,7 +36,6 @@ cmd=$1; shift
 case $cmd in
   pre)  gate_pre; echo "PRE-OK $(getprop ro.product.model) $(wm size | tail -1) $(wm density | tail -1)"; top
         dumpsys package $P | grep -m2 -E "versionName|signatures" ;;
-  base) dumpsys package $REAL | grep -m3 -E "versionName|versionCode|lastUpdateTime"; pm path $REAL ;;
   run)  M=$1; N=$2; S=${3:-6}; [ "$M" = new ] && E=true || E=false
         open_shelf $E; dumpsys gfxinfo $P reset > /dev/null; logcat -c
         screenrecord --bit-rate 16000000 --time-limit $((S * 2 + 12)) $OUT/${N}_$M.mp4 & R=$!; sleep 0.8
