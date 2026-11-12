@@ -371,7 +371,8 @@ internal fun ProfileSelectScreen(
                 val hintMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
                 val keepName = profiles.firstOrNull { it.id == activeId }?.name ?: "last"
                 val keepHint = if (!atStart) "Keep" else {
-                    val hs = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    // (measured in the hint's own text style - the theme's font, at the current text size)
+                    val hs = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium))
                     fun w(t: String) = hintMeasurer.measure(t, hs, softWrap = false).size.width
                     val keyPx = with(density) { (22.dp + 6.dp).toPx() }
                     val full = w("Keep $keepName")

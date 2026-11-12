@@ -73,6 +73,14 @@ class ConnectedIgnitionTest {
         }
     }
 
+    @Test fun theLightComesInFromTheCapsuleEndNearestTheRing() {
+        // 1920 x 1080: capsule r = 216, receded ends at 960 -/+ 147.
+        assertEquals(WireGeo.ARRIVE_RIGHT, WireGeo.arrival(200f, 70f, 1920f, 1080f))
+        assertEquals(WireGeo.ARRIVE_LEFT, WireGeo.arrival(1700f, 70f, 1920f, 1080f))
+        assertEquals(WireGeo.ARRIVE_BOTH, WireGeo.arrival(960f, 70f, 1920f, 1080f))
+        assertEquals("a ring overlapping the capsule's end turns in from both", WireGeo.arrival(780f, 70f, 1920f, 1080f), WireGeo.ARRIVE_BOTH)
+    }
+
     @Test fun theWireEndsAtTheRowNotTheScreenEdges() {
         val e = WireGeo.ends(200f, 800f, 50f, 30f)
         assertEquals(120f, e[0], 0.01f); assertEquals(880f, e[1], 0.01f)
@@ -87,7 +95,8 @@ class ConnectedIgnitionTest {
         assertTrue(half > 0f && half < 1f)
         assertTrue(PickerGrid.hintFits(100f, 500f, 220f, 1000f))
         assertFalse("long name", PickerGrid.hintFits(260f, 600f, 220f, 1000f))
-        assertFalse("row too wide", PickerGrid.hintFits(200f, 960f, 220f, 1000f))
+        assertFalse("row too wide", PickerGrid.hintFits(150f, 900f, 220f, 1000f))
+        assertFalse("too close to the limit (wrapped on the Flip 2 at x1.3)", PickerGrid.hintFits(211f, 600f, 220f, 1000f))
     }
 
     @Test fun glowIsNeverCutByALayerAndTheIdleBackdropHolds() {

@@ -298,7 +298,8 @@ internal object PickerGrid {
     }
 
     /** Sprint 527: the B hint may carry the profile's name: its text fits a hint ([maxText]) and the whole row one line ([room]). Pure. */
-    fun hintFits(keepText: Float, row: Float, maxText: Float, room: Float): Boolean = keepText <= maxText && row <= room * 0.92f
+    // (a margin under each limit: Flip 2 at x1.3, "Keep Christopher Columbus" measured 211 of 220 dp and still wrapped)
+    fun hintFits(keepText: Float, row: Float, maxText: Float, room: Float): Boolean = keepText <= maxText * 0.85f && row <= room * 0.85f
 
     /** D-pad step inside the plan: index after pressing ◀ ▶ ▲ ▼ from [i] (clamped; ▲ ▼ keep the column as near as it can). */
     fun step(i: Int, count: Int, perRow: Int, dx: Int, dy: Int): Int {
