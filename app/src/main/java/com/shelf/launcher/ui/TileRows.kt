@@ -25,7 +25,8 @@ import kotlinx.coroutines.launch
 internal object TileRows {
     /**
      * Sprint 527: where a row's glide starts (root px) when its place changes from [heading] to [target] - where it is drawn
-     * now ([visual]) plus the finger's shift at a drop ([dropFromPx]) - or null when it isn't moving (under a pixel). Pure.
+     * now ([visual]) plus, at a drop, the distance to where the finger left it ([dropFromPx]) - or null when it isn't moving
+     * (under a pixel). Pure.
      */
     fun glideStart(visual: Float, heading: Float, target: Float, dropFromPx: Float): Float? =
         if (kotlin.math.abs(heading - target) <= 1f && dropFromPx == 0f) null else visual + dropFromPx
@@ -164,14 +165,16 @@ internal object TileRowEdit {
         val b = HomeEditState.bounds[partId]
         // (Flip 2 t527i: on the drop the row jumped back to its old place for a frame, then glided from there - it now
         // glides from where the finger left it: the up / down shift it had is handed to its placement.)
-        val dy = HomeEditState.liveShift[partId]?.second ?: 0f
-        if (row != null && dy != 0f) dropFrom[row] = dy * android.content.res.Resources.getSystem().displayMetrics.density
+        // (Flip 2 t527k: handing over the finger's shift was not enough - the stack itself is re-centred while a row is
+        // dragged - so the row's own drawn top at the drop, root px, is handed over: its glide starts exactly there.)
+        if (row != null && b != null) dropAt[row] = b.top
+        android.util.Log.i("VoltcapRows", "drop $partId row=$row top=${b?.top} shift=${HomeEditState.liveShift[partId]}")
         if (row != null && b != null) insert(row, b.center.y)
         HomeEditState.liveShift[partId]?.let { s -> HomeEditState.liveShift[partId] = s.first to 0f }
         dragging = null; rowDropLine = null
     }
-    /** A row just dropped: how far (px, down +) the finger had it from its old place - its glide starts there. Taken once. */
-    val dropFrom = java.util.concurrent.ConcurrentHashMap<String, Float>()
+    /** A row just dropped: where it was drawn (its top, root px) when the finger let go - its glide starts there. Taken once. */
+    val dropAt = java.util.concurrent.ConcurrentHashMap<String, Float>()
     /**
      * The round buttons let go in Edit Home: near Tile home's rows (and the home keeps a room for them in the stack) they
      * leave their free place and go into the order at the insertion line; anywhere else they stay where they were put.
@@ -305,8 +308,12 @@ internal fun androidx.compose.ui.Modifier.tileRowPlacement(row: String): android
                 if (!editing || target.isNaN()) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }
                 val heading = at[1]
                 if (heading.isNaN()) { at[1] = target; p.placeWithLayer(0, 0); return@layout }
+                // (the row under the finger follows the finger only - no glide of its own while it is dragged)
+                if (part != null && TileRowEdit.dragging == part) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }
                 val visual = if (at[2] == 1f) now else heading
-                val start = TileRows.glideStart(visual, heading, target, TileRowEdit.dropFrom.remove(row) ?: 0f)
+                val dropTop = TileRowEdit.dropAt.remove(row)
+                val start = TileRows.glideStart(visual, heading, target, if (dropTop != null) dropTop - visual else 0f)
+                if (start != null) android.util.Log.i("VoltcapRows", "glide $row from=$start to=$target was=$heading drop=$dropTop")
                 if (start != null) {
                     at[1] = target; at[2] = 1f
                     scope.launch {
