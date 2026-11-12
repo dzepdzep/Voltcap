@@ -1248,7 +1248,7 @@ internal object CaseLod {
     }
 }
 
-private object CaseDraw {
+internal object CaseDraw { // (internal: ShelfCompareRenderTest draws with it directly - 12 Nov)
     private val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val line = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE }
