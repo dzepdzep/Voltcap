@@ -170,11 +170,11 @@ internal fun StyleShelf(c: StyleCtx, modifier: Modifier) {
 
 @Composable
 private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
-    // (QA, 12 Nov: tell shelf3d_qa.sh the Game shelf is on screen - it records nothing and sends no move until it is; only with
-    // the test hooks / in the QA app: TestHooks.markScreen, QaTrace.event.)
-    val qaCtx = androidx.compose.ui.platform.LocalContext.current
+    // (QA, 12 Nov: tell shelf3d_qa.sh the Game shelf is composed - it records nothing and sends no move until it is AND the
+    // profile picker's own mark (voltcap_qa_screen) is not PICKER. Only a log line: the home is composed under the picker, so
+    // writing the mark here hid the picker on the Flip 2 - the mark stays the picker's.)
     androidx.compose.runtime.DisposableEffect(Unit) {
-        TestHooks.markScreen(qaCtx, "SHELF"); QaTrace.event("screen", "SHELF")
+        QaTrace.event("screen", "SHELF")
         onDispose { QaTrace.event("screen", "SHELF-gone") }
     }
     val real = Features.shelfRealSizes.state.value
