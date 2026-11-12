@@ -22,6 +22,12 @@
 - **Popup-first** (owner, 12 Nov; `data/Features.kt`): Card binder's `cards_a_plays` and Pocket Quest's `pq_a_plays` (the only
   layout switches that started a game on A) default to off — A opens the game's window. Same keys: a saved "on" is kept; no
   migration, no new setting. A double A inside the window is still covered by PLAY_GUARD_MS (450 ms). Test `PopupFirstDefaultsTest`.
+- **3D case spine kept by its picture's address** (custom-spine flicker investigation; `ui/Case3D.kt` `DerivedArt.putModel/peekModel`,
+  `rememberDerived(model = …)`): the upright and fitted spine (and the strip cut from a box scan) were cached only by the decoded
+  Bitmap's identity — a re-decode of the same file (left Coil's memory, case scrolled back in, slot reused) missed and the case
+  showed the dark WAITING strip until load → upright → fit ran again (two async hops for a custom spine). Now also kept by the
+  model string + size + kind (exact: a cut model carries its cut), counted at real size in the same bounded LruCache, and found
+  even before the picture is decoded again. Code-level root cause; the owner's live flicker is NOT confirmed fixed (hardware).
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from

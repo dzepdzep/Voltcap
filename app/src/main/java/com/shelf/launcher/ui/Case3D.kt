@@ -155,7 +155,9 @@ internal fun Case3D(
     // title down the middle reads as "both flaps side by side": its left half was kept and stretched to twice its width.
     // The twin flaps are a jewel case insert's (update 298), so only there — and never on your own cut.)
     val twinsPossible = spec?.shell == CaseShell.JEWEL && userSpine == null
-    val ownUpright = rememberDerived(ownBmp, if (twinsPossible) "spine|1" else "spine|0") { b ->
+    // (Spine flicker work: kept by the spine picture's address too - `own` at 600 - so a case back on screen has it at once.)
+    val ownKey = own?.let { "$it|600" }
+    val ownUpright = rememberDerived(ownBmp, if (twinsPossible) "spine|1" else "spine|0", model = ownKey) { b ->
         val up = orientSpine(b, landscape = false)
         if (twinsPossible) singleSpine(up) else up
     }
@@ -203,17 +205,17 @@ internal fun Case3D(
     // (Update 321: the game's own Spine fit — its menu — over the usual fitting.)
     val spineMode = com.shelf.launcher.data.SpineFits.of(g.stableKey)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth") { b ->
+        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b ->
             listOf(when (spineMode) {
                 com.shelf.launcher.data.SpineFits.Mode.FILL -> fillCrop(b, depth, 0.02f)
                 com.shelf.launcher.data.SpineFits.Mode.WHOLE -> fitSpineInside(b, depth, false)
                 else -> scaleAcross(b, depth)
             })
         }
-        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
-        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth") { b ->
+        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b ->
             // (Update 317: your own cut is the spine exactly — fitted to the side whole, scaled across, never cut.)
             // (A scraped spine that's wrong — Melee's is a slice with part of the back — can't be fitted right: set the cut on
             // the full case scan instead, Artwork & details › Full case scan › Adjust the cuts…, and that's used.)
@@ -223,8 +225,9 @@ internal fun Case3D(
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
     val cutBmp = cutLoad.bitmap
-    val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
-    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth") { b ->
+    val cutKey = if (cutWanted) cutModel?.let { "$it|600" } else null
+    val cutUpright = rememberDerived(cutBmp, "spine|1", model = cutKey) { b -> singleSpine(orientSpine(b, landscape = false)) }
+    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth", model = cutKey) { b ->
         val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
         if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
     }
@@ -755,6 +758,34 @@ internal object DerivedArt {
         return cache.get("n|$key")?.value?.takeUnless { it is android.graphics.Bitmap && it.isRecycled } as? T
     }
 
+    /**
+     * Spine flicker work (12 Nov): what was made from the picture at [model] under [kind], kept by the picture's address rather
+     * than by the decoded copy. The same file decoded again (it left Coil's memory, a case scrolled back in) found nothing by
+     * [peek] - keyed by that copy - and the case showed its dark spine strip / its colour front until it was made again.
+     * Counted at its real size (a list of pictures too). [model] must say everything the picture is made from: a scan's
+     * address, or a cut model ("voltcrop:spine@cut:platform:url") with the cut in it.
+     */
+    fun putModel(model: String, kind: String, value: Any) {
+        val bytes = when (value) {
+            is android.graphics.Bitmap -> runCatching { value.allocationByteCount }.getOrDefault(64)
+            is List<*> -> value.sumOf { (it as? android.graphics.Bitmap)?.let { b -> runCatching { b.allocationByteCount }.getOrDefault(64) } ?: 64 }
+            else -> 64
+        }.coerceAtLeast(64)
+        cache.put("m|$kind|$model", Entry(null, value, bytes))
+    }
+
+    /** [putModel]'s entry for [model] / [kind], or null; never a recycled picture. */
+    fun <T : Any> peekModel(model: String, kind: String): T? {
+        val v = cache.get("m|$kind|$model")?.value ?: return null
+        val gone = when (v) {
+            is android.graphics.Bitmap -> v.isRecycled
+            is List<*> -> v.any { (it as? android.graphics.Bitmap)?.isRecycled == true }
+            else -> false
+        }
+        @Suppress("UNCHECKED_CAST")
+        return if (gone) null else v as? T
+    }
+
     /** [make] for a [key] that says everything it's made from (a hue, a name). */
     fun <T : Any> named(key: String, make: () -> T): T {
         @Suppress("UNCHECKED_CAST")
@@ -778,9 +809,14 @@ internal fun <T : Any> rememberDerived(
     src: android.graphics.Bitmap?, kind: String,
     /** What's made is a picture [make] already keeps under its own kind: remembered here without counting it twice. */
     alias: Boolean = false,
+    /**
+     * Spine flicker work: the address of the picture [src] is made from (null: none, as before). With it, what was made is
+     * also kept by that address (DerivedArt.putModel) and found again at once - even before the picture is decoded again.
+     */
+    model: String? = null,
     make: (android.graphics.Bitmap) -> T?
 ): T? {
-    val known = remember(src, kind) { src?.let { DerivedArt.peek<T>(it, kind) } }
+    val known = remember(src, kind, model) { src?.let { DerivedArt.peek<T>(it, kind) } ?: model?.let { DerivedArt.peekModel<T>(it, kind) } }
     val made = remember(src, kind) { androidx.compose.runtime.mutableStateOf<T?>(null) }
     androidx.compose.runtime.LaunchedEffect(src, kind) {
         if (src == null || known != null) return@LaunchedEffect
@@ -789,6 +825,7 @@ internal fun <T : Any> rememberDerived(
                 make(src)?.let { m -> if (alias) { DerivedArt.alias(src, kind, m); m } else DerivedArt.of(src, kind) { m } }
             }.getOrNull()
         }
+        if (v != null && model != null) DerivedArt.putModel(model, kind, v)
         made.value = v
     }
     return known ?: made.value

@@ -128,3 +128,26 @@ class PopupFirstDefaultsTest {
         assertTrue(aPlays.map { it.value }.toString(), aPlays.isEmpty())
     }
 }
+
+/** Spine flicker work (12 Nov): a 3D case's spine is found again by its picture's address, not only by the decoded copy. */
+class SpineByAddressTest {
+    private fun src(): String = listOf(
+        java.io.File("../src_copy/ui/Case3D.kt"), java.io.File("src/main/java/com/shelf/launcher/ui/Case3D.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/Case3D.kt")
+    ).first { it.exists() }.readText()
+
+    @Test fun spineChainIsKeptByAddress() {
+        val s = src()
+        // found by address before the picture is decoded again
+        assertTrue(s.contains("src?.let { DerivedArt.peek<T>(it, kind) } ?: model?.let { DerivedArt.peekModel<T>(it, kind) }"))
+        assertTrue(s.contains("if (v != null && model != null) DerivedArt.putModel(model, kind, v)"))
+        // the upright spine and every fitting of it, and the strip cut from the box scan
+        assertTrue(s.contains("rememberDerived(ownBmp, if (twinsPossible) \"spine|1\" else \"spine|0\", model = ownKey)"))
+        assertEquals(3, Regex("rememberDerived\\(ownUpright, [^\\n]*model = ownKey\\?\\.let").findAll(s).count())
+        assertTrue(s.contains("rememberDerived(cutBmp, \"spine|1\", model = cutKey)"))
+        assertTrue(s.contains("rememberDerived(cutUpright, \"spineFit2|\$depth\", model = cutKey)"))
+        // never another game's: the address is the model itself (a cut model carries its cut), at the size it was decoded
+        assertTrue(s.contains("val ownKey = own?.let { \"\$it|600\" }"))
+        // a list of pictures is counted at its real size (the cache stays bounded)
+        assertTrue(s.contains("is List<*> -> value.sumOf"))
+    }
+}
