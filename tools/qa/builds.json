@@ -759,6 +759,17 @@
    "apk_sha256": "1b75be1cafbf4864685940553c04d194ce41ccdc811a241b2b71e90970fa1c43",
    "base_commit": "b018aca",
    "note": "v0.6.71 integration candidate RC3 (integration/0.6.71 = popup-native 8cb1ae8 + main 65f7cca; 3D Shelf off). Built 12 Nov 14:03 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). sha256 of the installed base.apk on the Flip 2 (55,375,174 bytes; the PC file is too deep to stage). testDebugUnitTest: Gradle build-cache hit of the identical inputs run at popup-native 96693b6 (app/ and tests byte-identical). lintRelease 49 E / 967 W / 109 H."
+  },
+  {
+   "version_name": "0.6.70-qa",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "same tree as feature/popup-native 07520c9",
+   "id": "qa-0.6.70-int-c827ff9",
+   "apk_sha256": "c3a458177b55a32b8f5d1d46216d989b4d4f144f9f9f6df24472859329c59f57",
+   "base_commit": "c827ff9",
+   "note": "v0.6.71 integration candidate RC4 (integration/0.6.71 = RC3 b018aca + popup-native 07520c9; 3D Shelf off). Built 12 Nov 15:04 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). testDebugUnitTest EXECUTED in int 14:55 (BUILD SUCCESSFUL; EndlessFillLitRoboTest 460/460, EndlessOnceRoboTest 279/279, WinFocusRoboTest 448 (51 skipped by design), ShelfTextRoboTest 144 (24 skipped by design)). sha256 = installed base.apk on the Flip 2 (55,375,174 bytes). App code = RC3 + a QA-trace-only rename (OldSpineTrace.Track); hardware runs were on RC3, RC4 smoke on the Flip 2 (starts, Shelf composes, 0 crashes)."
   }
  ]
 }

@@ -1,3 +1,20 @@
+# Sprint 525 — v0.6.71 RC4, Endless Fill versioned key, Tiles edges, Night ×1.3, Shelf slot / spine, QA recorder and push guard (12 Nov 2026)
+
+Branch `feature/popup-native` (pushed), candidate `integration/0.6.71` c827ff9 (local + PC worktree `int`), `feature/connected-ignition`
+48c546e (pushed). Full report: `docs/SPRINT525_20261112.md`; readiness: `docs/INTEGRATION_0.6.71.md`.
+- **Endless › Fill the row** stored under `endless_fill_v2` (no reset, the old key ignored and kept); one lit copy proven on PC
+  (EndlessFillLitRoboTest, QaClip.Lit marks, tests only) and on the Flip 2 (8 layouts × 1/2/3/25 games, Fill on / off).
+- **Tiles**: each game once at the screen edges with Fill off (tilesOnceFirst). **Night ×1.3**: stats panel grows before scrolling.
+- **Old Shelf**: slot of the game coming out glides (shelfClose), flat pulled case follows its slot (slotRoom); learnt spine shape
+  stable (RealSpineShape, SPINE_SHAPE_STEP), re-composed spines keep their shape (SpineGeom); QA trace `oldspine`.
+- **QA**: rec.sh / recheck.py (recordings graded by real frames), s525.sh, ci525.sh, home13.sh launch block kept; adb_mcp
+  push_guard.js (all APK-check secrets + signing / Worker, every pushed commit, no secret files). Connected Ignition:
+  `voltcap_test_intro` hook (QA app only) and a 12-cold-start hardware run.
+- Files (app): data/Features.kt, ui/QaClip.kt, ui/StyleHomes.kt, ui/FocusedCard.kt, ui/StyleNightMenu.kt, ui/StyleAiryHome.kt,
+  ui/StyleArtLibrary.kt, ui/StyleCaseFlow.kt, ui/StyleCardBinder.kt, ui/StylePocketQuest.kt, ui/TileHome.kt, ui/WinScenes.kt,
+  ui/ShelfHome.kt (+ tests). These were edited in the worktree's app/ directly (the branch workflow), not via src_copy.
+- Not tested: KONKR / small screen (asleep), reduced motion, several QA profiles, full-length cold-start recordings.
+
 # Popup native pages — sprint: PC build, real-window behaviour tests, three bugs fixed (12 Nov 2026, branch feature/popup-native @ c2a52d4, local, not pushed)
 
 - **Built and tested on the PC** (`gradle_start … worktree pnat`): `testDebugUnitTest` BUILD SUCCESSFUL (~1,495 tests, 0 failures);
