@@ -92,7 +92,7 @@ drag)
   shot d00_home
   E open; E select:part:TILES:row; shot d01_open
   . /data/local/tmp/rec.sh; REC_SEG=0; rec_start $O/d_rec_drag 8; sleep 0.8
-  gate; log "rec: swipe the game row down"; input swipe 1000 400 1000 700 1400; sleep 2.5; rec_stop
+  gate; log "rec: swipe the game row up above the chips"; input swipe 1000 470 1000 90 1400; sleep 2.5; rec_stop
   shot d02_after_drag
   E save; shot d03_saved 3
   E open; E select:shortcuts; gate; input keyevent KEYCODE_DPAD_UP; sleep 0.8; input keyevent KEYCODE_DPAD_UP; sleep 1; shot d04_buttons_moved
