@@ -5,7 +5,8 @@ made with tools/qa/device/rec.sh against their own log (NAME.rec.txt).
 For every recording NAME.mp4 (and its segments NAME_p2.mp4 ...):
   - the file's real duration and frame count (ffprobe), and a full decode (ffmpeg -f null) for corruption;
   - compared with the time the recorder really ran (start / end in the log) and why it ended.
-Grades: COMPLETE (one segment, ended by stop or its time, duration within 0.6 s of the run, decodes clean),
+Grades: COMPLETE (one segment, ended by stop or its time, duration within 0.6 s of the run - or shorter only because the
+        screen had settled: its last frame equals NAME.end.png, the screen at the stop - decodes clean),
         PARTIAL (the recorder stopped early and rec.sh continued in segments - covered, with gaps; the gaps are listed),
         TRUNCATED (a file shorter than the recorder ran), CORRUPT (decode errors / unreadable), UNVERIFIED (no log).
 Exit 0 only when every recording is COMPLETE.   usage: recheck.py DIR_OR_MP4... [--json out.json]
@@ -26,6 +27,23 @@ def probe(f):
     # (screenrecord writes variable frame timing: the null muxer's "non monotonically increasing dts" notes are not damage)
     errs = [l for l in dec.stderr.splitlines() if l.strip() and "non monotonically increasing dts" not in l and "Last message repeated" not in l]
     return dur, frames, dec.returncode == 0 and not errs
+
+def static_tail(mp4, png, thr=4.0):
+    """Whether the recording's last frame is the screen at the stop (rec.sh's NAME.end.png): mean difference < thr (0-255)
+    at 160 x 90, so the file only looks short because nothing changed after it. False when it can't be told."""
+    if not os.path.exists(png):
+        return False
+    try:
+        import numpy as np
+        from PIL import Image
+        import io
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-sseof", "-0.2", "-i", mp4, "-update", "1", "-frames:v", "1", "-f", "image2pipe",
+                              "-vcodec", "png", "-"], capture_output=True, timeout=60).stdout
+        a = np.asarray(Image.open(io.BytesIO(raw)).convert("L").resize((160, 90)), dtype=float)
+        b = np.asarray(Image.open(png).convert("L").resize((160, 90)), dtype=float)
+        return float(np.abs(a - b).mean()) < thr
+    except Exception:
+        return False
 
 def parse_log(path):
     segs = []
@@ -54,6 +72,8 @@ def grade(mp4):
             g = "CORRUPT"
         elif dur < ran - 0.6 - (0.6 if s["why"] == "stop" else 0):  # (a stop by SIGINT can lose the last fraction of a second)
             g = "TRUNCATED"
+        if g == "TRUNCATED" and static_tail(f, os.path.splitext(mp4)[0] + ".end.png"):
+            g = "OK-STATIC"   # the screen had settled: its last frame is what was on the screen at the stop
         res["segments"].append(dict(s, duration=dur, frames=frames, decodes=clean, ran=round(ran, 2), grade=g))
         if g in ("CORRUPT", "TRUNCATED"):
             worst = g if worst != "CORRUPT" else worst
