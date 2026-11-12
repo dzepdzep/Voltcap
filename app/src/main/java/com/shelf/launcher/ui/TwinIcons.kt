@@ -369,8 +369,11 @@ private fun IconsSlot(c: StyleCtx, slot: Dp) {
 @Composable
 private fun IconsNeighbour(c: StyleCtx, d: Int, size: Dp) {
     val n = c.games.size
-    val i = if (loopRowOn(c)) (c.focus + d).mod(n.coerceAtLeast(1)) else c.focus + d
-    val g = c.games.getOrNull(i)?.takeIf { i != c.focus }
+    val loop = loopRowOn(c)
+    val i = if (loop) (c.focus + d).mod(n.coerceAtLeast(1)) else c.focus + d
+    // (Batch 524, owner: "each unique library entry only once": going round with too few games, the game before and the
+    // game after are the same one - it shows on the right only, the left place stays empty.)
+    val g = c.games.getOrNull(i)?.takeIf { i != c.focus && !(loop && d < 0 && n <= -2 * d) }
     // (Update 307: the side games change with the same short crossfade as the big icon — they used to swap at once.)
     Crossfade(targetState = g, animationSpec = tween(160), label = "twinSide", modifier = Modifier.size(size)) { sg ->
         if (sg != null) {
