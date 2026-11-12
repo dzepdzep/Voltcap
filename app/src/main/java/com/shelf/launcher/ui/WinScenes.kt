@@ -1841,8 +1841,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                     }
                 }
                 // The stats panel.
+                // (Sprint 525, owner: at ×1.3 "the Saves line sits below the visible panel" - reachable by scrolling, but the
+                // settled panel should show it. The panel keeps its size while everything fits (×1.0 unchanged) and grows down
+                // to the cover frame's foot when the lines need it; only beyond that does it scroll.)
                 Box(
-                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).size(w * 0.38f, h * 0.56f).graphicsLayer { rotationZ = -2f }
+                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
                         .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {

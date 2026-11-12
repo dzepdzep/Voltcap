@@ -331,13 +331,24 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // front no longer hides the spines next to it; they close up again as it goes back.
         val sideOut = Features.shelfPulled.state.value == Features.ShelfPulled.SIDE
         // (Update 156: [r] / [fromRow] are the shelves counted on round the endless bookcase; without it, the shelves.)
-        fun makeRoom(i: Int, r: Int, from: Int, fromRow: Int, p: Float): Dp {
+        fun makeRoom(i: Int, r: Int, from: Int, fromRow: Int, p: Float, closing: Boolean = false): Dp {
             if (from !in games.indices || i == from || p <= 0f) return 0.dp
             val sf = plan.slots.getOrNull(from) ?: return 0.dp
             if (plan.slots.getOrNull(i) == null || r != fromRow) return 0.dp
             val bigW = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f) * pulledAspect(games[from].platform, sideOut)
-            val push = ((bigW - sf.w) / 2 + 6.dp).coerceAtLeast(0.dp) * shelfFront(p)
+            // (Sprint 525, the shared slot jump: the game coming out stood aside for the game going back and slid ~120-170 px
+            // into its own place in the fastest third of that game's way back. It now slides across the whole way back -
+            // shelfClose - while the rest of the shelf closes the gap as before.)
+            val k = if (closing && i == c.focus && r == focusVRow) shelfClose(p) else shelfFront(p)
+            val push = ((bigW - sf.w) / 2 + 6.dp).coerceAtLeast(0.dp) * k
             return if (i < from) -push else push
+        }
+        /** Sprint 525: where the shelf draws slot [i] on shelf [r] right now, sideways (the room it makes for games out). */
+        fun slotRoom(i: Int, r: Int): Dp {
+            var room = makeRoom(i, r, c.focus, focusVRow, focusPull())
+            for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value, closing = true)
+            pendingBack()?.let { pb -> room += makeRoom(i, r, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value, closing = true) }
+            return room
         }
 
         // (Update 229, #94: the shelves end above the footer — a shelf more than fit stood half behind the game's name and
@@ -405,10 +416,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
                                 .graphicsLayer {
                                     val pv = pulled(i, r)
-                                    var room = makeRoom(i, r, c.focus, focusVRow, focusPull())
-                                    for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
-                                    pendingBack()?.let { pb -> room += makeRoom(i, r, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value) }
-                                    translationX = room.toPx()
+                                    translationX = slotRoom(i, r).toPx()
                                     // (Update 501: turned round the spine's own middle, not the taller layer's.)
                                     if (cap > 0.dp) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, (cap.toPx() + s.h.toPx() / 2f) / size.height)
                                     if (pv > 0f) {
@@ -503,9 +511,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     // hidden behind that case and it was first seen half turned somewhere else. It now starts from the slot
                     // exactly where the shelf draws it - the same sum as the spine layer's translationX - and the shift eases out
                     // with the case going back, as the slot's own does.)
-                    var room3 = makeRoom(index, vrow, c.focus, focusVRow, focusPull())
-                    for (b in backs) room3 += makeRoom(index, vrow, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
-                    pendingBack()?.let { pb -> room3 += makeRoom(index, vrow, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value) }
+                    val room3 = slotRoom(index, vrow)
                     if (!shapeKnown3 || Shelf3D.shapeAgrees(shape3, caseAspect3)) if (ShelfPulled3D(c, g, p, resting,
                             slotCx = rowLeft3 + s.x + s.w / 2 + room3, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
                             bigCx = endX3 + bigW3 / 2, bigTop = endY3 + (bigH3 - frontH3) / 2, bigH = frontH3, shape = shape3,
@@ -524,7 +530,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // its front part) and ends a little above its shelf.
                 val startH = s.h
                 val startW = when (stand) { Features.ShelfStand.FRONTS -> s.w; else -> startH * frontAspect }
-                val startX = when (stand) {
+                // (Sprint 525, the shared slot jump: the flat case came out at its slot's place WITHOUT the room the shelf was
+                // still making there for the game going back - its spine stood up to ~170 px further along, so the case
+                // appeared beside it. It follows its slot now, as the spine layer draws it - slotRoom, as the 3D case does.)
+                val room = slotRoom(index, vrow)
+                val startX = room + when (stand) {
                     Features.ShelfStand.SPINES -> rowLeft + s.x + s.w / 2 - startW / 2
                     Features.ShelfStand.FRONTS -> rowLeft + s.x
                     Features.ShelfStand.ANGLED -> rowLeft + s.x + s.w - startW
@@ -532,7 +542,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // The angle it comes round from: edge-on for a spine, its turned angle for a turned case, none facing forward.
                 val fromAngle = when (stand) { Features.ShelfStand.SPINES -> -90f; Features.ShelfStand.FRONTS -> 0f; Features.ShelfStand.ANGLED -> ANGLE_FRONT_DEG }
                 val startY = rowTop + plan.rowH * 0.9f - s.h - s.h * PULL_LIFT
-                val endX = (rowLeft + s.x + s.w / 2 - bigW / 2).coerceIn(0.dp, (areaW - bigW).coerceAtLeast(0.dp))
+                val endX = (rowLeft + s.x + room + s.w / 2 - bigW / 2).coerceIn(0.dp, (areaW - bigW).coerceAtLeast(0.dp))
                 val endY = (rowTop + plan.rowH * 0.9f - bigH - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH).coerceAtLeast(0.dp))
                 val w = startW + (bigW - startW) * turn
                 val h = startH + (bigH - startH) * turn
@@ -774,6 +784,14 @@ internal const val TURN3D_TO = 0.80f
 internal fun shelfGrow(p: Float): Float = ease((p - 0.62f) / 0.38f)
 /** How far the neighbours have made room: along with the turn and the growth. */
 private fun shelfFront(p: Float): Float = ease((p - 0.3f) / 0.7f)
+/**
+ * Sprint 525: how much room a game going back (at pull [p], 1 = out) still leaves the slot of the game coming out - a
+ * smoothstep over the whole way back (at most ~1.5 x the average speed) instead of [shelfFront]'s fast middle third (~2.7 x
+ * over 70 % of it), so that slot glides into its place instead of jumping. 0 at 0, 1 at 1. Pure.
+ */
+internal fun shelfClose(p: Float): Float { val x = p.coerceIn(0f, 1f); return x * x * (3f - 2f * x) }
+/** Sprint 525: [shelfFront] for the motion tests. Pure. */
+internal fun shelfFrontFor(p: Float): Float = shelfFront(p)
 /** Which side of the front the spine is on as the box turns (-1: left, as a case's spine is). */
 private const val SPINE_SIDE = -1f
 
