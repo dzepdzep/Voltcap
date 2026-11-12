@@ -36,6 +36,10 @@
   loading. Now the window's case is the shelf's (same waiting rule); the home's copy hides in the frame the flying copy is
   placed and drawn, and the reveal waits for that hand-over (one frame when the scan is in memory; at most 250 ms, then the
   shelf's own plain case flies). Tests `ShelfCaseHandOverTest`. Hardware: NOT verified.
+- **Window's achievements line keeps its total** (physical-media audit 5a, "Achievements 141 /"; `ui/GameWindow.kt` `WinInfo`): the
+  one-line label beside a fixed 70 dp bar was cut in narrow windows; it now takes the room the bar leaves, steps down to 9 sp
+  and may use a second line; "141 / 160" never breaks. The audit's title-over-subtitle overlap is not reproduced here (needs a
+  settled capture) — open.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from

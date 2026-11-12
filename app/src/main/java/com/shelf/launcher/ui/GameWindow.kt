@@ -1752,9 +1752,13 @@ private fun WinInfo(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(5.dp))
+                    // (Shelf fitting work, physical-media audit 5a: "Achievements 141 /" - one line beside a fixed 70 dp bar, the
+                    // total was cut in a narrow window. The words take the room the bar leaves, a size step smaller, two lines.)
                     androidx.compose.material3.Text(
-                        (if (look.caps) "ACHIEVEMENTS" else "Achievements") + " $earned / $total", color = ink, fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold, maxLines = 1, fontFamily = family
+                        (if (look.caps) "ACHIEVEMENTS" else "Achievements") + " $earned\u00A0/\u00A0$total", color = ink, fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold, maxLines = 2, fontFamily = family,
+                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp),
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Spacer(Modifier.width(8.dp))
                     Box(Modifier.width(70.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.2f))) {

@@ -187,3 +187,14 @@ class ShelfCaseHandOverTest {
         assertTrue(cc.contains("onError = { onFail(); onShown?.invoke() }"))                  // a failing scan never holds it
     }
 }
+
+/** Shelf fitting work (physical-media audit 5a): the window's achievements line keeps its total. */
+class WinAchievementsLineTest {
+    @Test fun totalIsNeverCutByTheBar() {
+        val s = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/GameWindow.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/GameWindow.kt")).first { it.exists() }.readText()
+        val row = s.substringAfter("if (extras.at(WinPart.ACHIEVEMENTS, slot)) {").substringBefore("val summary = meta?.summary")
+        assertTrue(row.contains("\$earned\\u00A0/\\u00A0\$total"))                  // "141 / 160" never broken
+        assertTrue(row.contains("maxLines = 2") && row.contains("modifier = Modifier.weight(1f, fill = false)"))
+        assertFalse(row.contains("fontWeight = FontWeight.SemiBold, maxLines = 1, fontFamily = family"))
+    }
+}
