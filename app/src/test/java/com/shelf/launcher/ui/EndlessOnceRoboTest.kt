@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -64,7 +65,8 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 
-    private fun shownNames(): Map<String, Int> {
+    /** Each game name's count among the texts wholly on the screen; [edge] gets the names cut by a screen edge. */
+    private fun shownNames(edge: MutableMap<String, Int>? = null): Map<String, Int> {
         val roots = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
         val screen = roots.firstOrNull()?.boundsInRoot ?: Rect.Zero
         val out = mutableMapOf<String, Int>()
@@ -73,7 +75,11 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
             val t = s.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }
             val b = s.boundsInRoot
             if (t != null && b.width > 1f && b.height > 1f && b.overlaps(screen)) {
-                for (nm in NAMES) if (t.contains(nm)) out[nm] = (out[nm] ?: 0) + 1
+                // (the unclipped place: a text running past the screen's edge is a sliver at the edge)
+                val whole = runCatching { s.layoutInfo.coordinates.let { c -> val r = c.findRootCoordinates().localBoundingBoxOf(c, false); r.left >= screen.left - 1f && r.right <= screen.right + 1f && r.top >= screen.top - 1f && r.bottom <= screen.bottom + 1f } }.getOrDefault(true)
+                for (nm in NAMES) if (t.contains(nm)) {
+                    if (whole) out[nm] = (out[nm] ?: 0) + 1 else if (edge != null) edge[nm] = (edge[nm] ?: 0) + 1
+                }
             }
             if (s.config.isClearingSemantics) return
             s.children.forEach(::walk)
@@ -86,22 +92,34 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         RuntimeEnvironment.setFontScale(scale)
         Features.endlessFill.value = Features.endlessFill.default
         val games = NAMES.take(n).mapIndexed { i, nm -> Game(nm, "PS1", 1, SourceType.ROM, romPath = "/r/$i.chd") }
-        var state by mutableStateOf(LauncherUiState(games = games, appearance = AppearanceSettings(homeLayout = layout, loopRow = true)))
+        var state by mutableStateOf(LauncherUiState(games = games, appearance = AppearanceSettings(homeLayout = layout, loopRow = false)))
         val actions = StyleActions(select = { state = state.copy(focusedIndex = it) }, open = {}, play = {}, category = {}, achievements = {},
             needPhysical = {}, needMedia = {})
         compose.mainClock.autoAdvance = false
         compose.setContent {
             if (layout == HomeLayout.TILES) TileHomeRow(games = state.visibleGames, art = emptyMap(), artOverrides = emptyMap(), focusedIndex = state.focusedIndex,
                 raProgress = emptyMap(), favorites = emptySet(), cardArtType = state.appearance.cardArtFor(), cardSize = state.appearance.cardSize,
-                dimmed = false, onFocus = { state = state.copy(focusedIndex = it) }, onOpen = {}, loop = true, loopTick = state.loopTick, loopStep = state.loopStep)
+                dimmed = false, onFocus = { state = state.copy(focusedIndex = it) }, onOpen = {}, loop = state.appearance.loopRow, loopTick = state.loopTick, loopStep = state.loopStep)
             else StyleHome(layout, state, emptyMap(), emptyList(), actions)
         }
+        // The layout's own texts per game with Endless OFF (a card's name and its shadow, the game you're on in a header):
+        // going round may not add any - the copies are what Endless ON would add.
+        state = state.copy(appearance = state.appearance.copy(loopRow = false))
+        frames(120)
+        val off = shownNames()
+        val onName = games[0].name
+        val perGame = (off.filterKeys { it != onName }.values.maxOrNull() ?: 1).coerceAtLeast(1)
+        val perFocus = (off[onName] ?: 1).coerceAtLeast(1)
+        state = state.copy(appearance = state.appearance.copy(loopRow = true))
         frames(120)
         val problems = mutableListOf<String>()
+        val slivers = mutableListOf<String>()
         fun check(where: String) {
-            val seen = shownNames()
-            val on = games.getOrNull(state.focusedIndex)?.name
-            for ((nm, k) in seen) if (k > (if (nm == on) 2 else 1)) problems += "$where: '$nm' shown $k times (on '$on') $seen"
+            val edge = mutableMapOf<String, Int>()
+            val seen = shownNames(edge)
+            val on = state.visibleGames.getOrNull(state.focusedIndex)?.name
+            for ((nm, k) in seen) if (k > (if (nm == on) perFocus else perGame)) problems += "$where: '$nm' shown $k times (on '$on'; Endless off: $perGame, on: $perFocus) $seen"
+            for ((nm, k) in edge) if ((seen[nm] ?: 0) > 0 || k > 1) slivers += "$where: '$nm' whole ${seen[nm] ?: 0} + $k at an edge"
         }
         check("start")
         // forward past the last game, then back past the first: the view model's endless steps (loopTick / loopStep)
@@ -119,6 +137,7 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         // the list refreshed (a new list object, same games) and a game removed
         state = state.copy(games = games.toList()); frames(60); check("refresh")
         if (n > 1) { state = state.copy(games = games.drop(1), focusedIndex = 0); frames(90); check("removed") }
+        if (slivers.isNotEmpty()) println("EDGE-SLIVERS $layout n=$n x$scale:\n" + slivers.take(6).joinToString("\n"))
         assertTrue("$layout n=$n x$scale: ${problems.size} problem(s)\n" + problems.take(12).joinToString("\n"), problems.isEmpty())
     }
 }
