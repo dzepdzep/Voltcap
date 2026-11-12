@@ -4347,8 +4347,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val yFloor = if (tileOrderMoved) maxOf(TileRows.TOP_CLEAR_DP.dp.roundToPx(),
-                                if (TileSwitch.profiles) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0) else 0
+                            // (Sprint 527, KONKR 960 x 640 at x1.3: the centred group's first row - the "All" pill - ran under the
+                            // Switch-style profile pictures with the order your settings give too; the pictures' measured bottom
+                            // is a floor for every order now - only where it would collide does anything move.)
+                            val badgeFloor = if (TileSwitch.profiles && TileRowEdit.badgeBottomPx > 0f) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0
+                            val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor)
                             val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceAtLeast(yFloor).coerceIn(0, (h - p.height).coerceAtLeast(0))
                             // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
                             // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
