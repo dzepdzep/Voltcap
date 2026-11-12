@@ -68,7 +68,9 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun layouts(): List<Array<Any>> = listOf(HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES).map { arrayOf<Any>(it) }
+        // (Phase 3 / 9: every layout - B onto the opener, popup-first, no Play after B are shared rules; the bumper walk is the
+        // native-page layouts' own.)
+        fun layouts(): List<Array<Any>> = HomeLayout.values().map { arrayOf<Any>(it) }
     }
 
     private val compose = createComposeRule()
@@ -221,6 +223,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
     }
 
     @Test fun bumpersWalkThePagesAndFocusStaysOnAVisibleControl() {
+        org.junit.Assume.assumeTrue("L1 / R1 page walk: native-page layouts only", nativePages(winSceneFor(layout)))
         open()
         val play = playLabel()
         openOptions()
