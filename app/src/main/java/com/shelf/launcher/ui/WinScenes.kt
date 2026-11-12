@@ -1025,7 +1025,7 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                                 } else StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f))
                             }
                         } else
-                        primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.fillMaxWidth()) }
+                            primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.fillMaxWidth()) }
                         rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                 row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }

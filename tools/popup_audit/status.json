@@ -1,14 +1,101 @@
 {
-  "_default": {"status": ["INVESTIGATED"], "note": "Main page is the layout's own scene; Details / Achievements / Options open the shared readable page (sharedPageFor). No native pages yet; motion rules in UI_POLISH_COMPLETION.md. Owner approval needed before redesign."},
-  "STORAGE": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Record sheets file in from the D-pad side, tab paper slides. WinFocusRoboTest (real window, JVM)."},
-  "NIGHT": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Slanted panels sweep along the slant; banner wipe with a dark band. WinFocusRoboTest."},
-  "TILES": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Card writing turns over like tiles per page. WinFocusRoboTest."},
-  "BLADES": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Page blades slide in over / away; game blade keeps its full name on its edge. WinFocusRoboTest."},
-  "GRID": {"status": ["IMPLEMENTED", "HARDWARE PENDING"], "note": "Shares Tiles' window scene (TILE_CARD), so it gets the Tiles native pages too. Not separately reviewed or JVM-tested."},
-  "SHELF": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Pages: shared page. Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed."},
-  "STACKS": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "As Game shelf (INDEX_CARD case flight)."},
-  "CARDS": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Popup-first: A opens the window by default (cards_a_plays default off, same key)."},
-  "POCKET": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Popup-first: A opens the window by default (pq_a_plays default off, same key)."},
-  "CROSS": {"status": ["INVESTIGATED"], "note": "Keeps its own options list for Options; other pages shared."},
-  "TV": {"status": ["INVESTIGATED"], "note": "No scene: the TV room's own window on the TV's screen (TvWindowBody)."}
+ "_default": {
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner."
+ },
+ "STORAGE": {
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Record sheets file in from the D-pad side, tab paper slides. WinFocusRoboTest (real window, JVM). Also ShelfTextRoboTest (no cut / overlapping text, x1.0 / x1.3, 0 / 160 / 9999 achievements)."
+ },
+ "NIGHT": {
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Slanted panels sweep along the slant; banner wipe with a dark band. WinFocusRoboTest. Also ShelfTextRoboTest (no cut / overlapping text, x1.0 / x1.3, 0 / 160 / 9999 achievements). Fixed: ACHIEVEMENTS key cut at x1.3 (one fitting line now)."
+ },
+ "TILES": {
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Card writing turns over like tiles per page. WinFocusRoboTest. Also ShelfTextRoboTest."
+ },
+ "BLADES": {
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Page blades slide in over / away; game blade keeps its full name on its edge. WinFocusRoboTest. Also ShelfTextRoboTest (no cut / overlapping text, x1.0 / x1.3, 0 / 160 / 9999 achievements)."
+ },
+ "GRID": {
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Shares Tiles' window scene (TILE_CARD): gets the Tiles native pages; WinFocusRoboTest incl. the bumper walk passes. Not separately reviewed visually."
+ },
+ "SHELF": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Pages: shared page. Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed. ShelfTextRoboTest passes (Storage-style facts give way whole, by design)."
+ },
+ "STACKS": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "As Game shelf (INDEX_CARD case flight). ShelfTextRoboTest passes."
+ },
+ "CARDS": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Popup-first: A opens the window by default (cards_a_plays default off, same key)."
+ },
+ "POCKET": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "Popup-first: A opens the window by default (pq_a_plays default off, same key)."
+ },
+ "CROSS": {
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "note": "Keeps its own options list for Options; other pages shared."
+ },
+ "TV": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "note": "FIXED (WinFocusRoboTest): B from Game options came back onto Play and an A 100 ms later STARTED THE GAME. Details / Game options / Achievements now register as the page's opener (PageOpeners). Same fix for the plain window (layout windows off)."
+ }
 }

@@ -1,3 +1,28 @@
+# Popup native pages — sprint: PC build, real-window behaviour tests, three bugs fixed (12 Nov 2026, branch feature/popup-native @ c2a52d4, local, not pushed)
+
+- **Built and tested on the PC** (`gradle_start … worktree pnat`): `testDebugUnitTest` BUILD SUCCESSFUL (~1,495 tests, 0 failures);
+  `assembleDebug` SUCCESS (QA package, debug signer, secrets clean). `lintRelease` 75 errors (none new; `ci` baseline 76), +6 warnings
+  only on the test-only dependency lines (see docs/MORNING_20261112.md); `assembleCompat` not run (release key). static_checks PASS, identical to v0.6.70.
+- **Test-only infrastructure**: Robolectric 4.16 + Compose ui-test (`app/build.gradle.kts` testImplementation, unit tests include
+  resources, 2 GB heap, `app/src/test/resources/robolectric.properties` sdk=34). Nothing of it is in an APK.
+- **`WinFocusRoboTest`**: the real `GameWindow` of all 53 layouts (+3 plain windows) on the JVM, keys through the window's dialog,
+  focus checked every frame: opens on Play, B → opener (never Play), rapid B A, B mid-change, A soon after B, L1/R1.
+- **Fixed (found by it):** TV room / plain window: B from Game options came back onto Play and an A 100 ms later started the game —
+  Details / Game options / Achievements register as the page's opener (`PageOpeners`, `LocalPageOpeners`). Native pages: the 60 ms
+  focus wait after a page change left nothing focused for 4 frames, L1/R1 presses were lost — no wait on native pages.
+- **Fixed (found by `ShelfTextRoboTest`, native graphics):** Night menu commands at ×1.3: "ACHIEVEMENTS" wrapped and its second
+  line was cut by the 26 dp key — now one line that fits (`WinFullText`). 72 text cases pass (6 windows × titles × ×1.0/×1.3 × achievements).
+- **One presentation decision:** `winPresentation()` / `sharedPageFor()` (`WinPageFlow.kt`), read by `GameWindow`; `WinPresentationTest`
+  covers every layout × every combination of the 5 popup-style prefs.
+- **Shelf hand-over:** the flying case starts from the shelf's own bitmap (`ShownScans`, Coil placeholder key); gate owned per window
+  (`CaseFlightGate.hold/release`); wait 250 → 150 ms (cold scans only). Spine flicker: QA-trace diagnostics only (`SpineTrace`), not fixed.
+- **Docs / tools:** `docs/LAYOUT_MATRIX.md` (+ `tools/popup_audit/`), `docs/SETTINGS_USAGE.md` (+ `tools/settings_audit/usage.py`),
+  `docs/MORNING_20261112.md`.
+- Files: `ui/GameWindow.kt`, `ui/WinPageFlow.kt`, `ui/WinScenes.kt`, `ui/WinSceneFamilies.kt`, `ui/CoverCases.kt`, `ui/Case3D.kt`,
+  `app/build.gradle.kts`, tests `WinFocusRoboTest`, `ShelfTextRoboTest`, `WinPresentationTest`, `PopupNativeStorageTest` (+classes),
+  `Visual426Test`, `Batch507Test`, `Batch512Test`.
+- NOT TESTED: hardware (both devices ineligible all night); the 3D flip is not implemented (needs review on a handheld).
+
 # Popup native pages P1–P4 — Storage boxes, Night menu, Tiles, Blades (12 Nov 2026, branch feature/popup-native, local, not built on the PC yet)
 
 - **Storage boxes keeps its own Details / Achievements / Options** (owner-reported regression "Storage → unrelated Details"):
