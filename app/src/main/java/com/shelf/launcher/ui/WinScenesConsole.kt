@@ -287,7 +287,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
 internal val BLADE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
 
 /** A copy of an inert row (fresh object, no focus, does nothing): the game blade's commands while a page lies over them. */
-private fun WinAction.copyInert(): WinAction = WinAction(label, icon, {}, focus = null, primary = primary, back = back, urgent = urgent)
+private fun WinAction.copyInert(): WinAction = WinAction(label, icon, {}, focus = null, primary = primary, back = back, urgent = urgent, inert = true)
 
 /** One blade: a curved leading edge, its colour, a gloss and a lit rim (update 346), drawn in [modifier]'s box. */
 @Composable

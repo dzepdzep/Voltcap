@@ -219,3 +219,14 @@ class BumpersWalkRealPagesTest {
         assertTrue(gw.contains("if (options.isNotEmpty()) add(WinPage.OPTIONS)"))
     }
 }
+
+/** Popup motion work: a covered / leaving page's controls can't take the D-pad. */
+class InertControlsTest {
+    @Test fun inertIsNotFocusable() {
+        val a = WinAction("Play", androidx.compose.material.icons.Icons.Filled.PlayArrow, {}, focus = androidx.compose.ui.focus.FocusRequester(), primary = true)
+        assertTrue(a.inert().inert && !a.inert)
+        val s = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/WinScenes.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/WinScenes.kt")).first { it.exists() }.readText()
+        // every scene control goes through SceneControl; a disabled clickable is neither focusable nor clickable
+        assertTrue(s.contains(".clickable(enabled = !a.inert, interactionSource = source, indication = null)"))
+    }
+}

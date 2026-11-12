@@ -62,4 +62,4 @@ internal suspend fun focusWhenAttached(f: FocusRequester, frames: Int = 8): Bool
 }
 
 /** A copy of [a] with no focus requester: the leaving page of a native page change can't hold or take the focus. */
-internal fun WinAction.inert(): WinAction = WinAction(label, icon, onClick, focus = null, primary = primary, back = back, urgent = urgent)
+internal fun WinAction.inert(): WinAction = WinAction(label, icon, onClick, focus = null, primary = primary, back = back, urgent = urgent, inert = true)

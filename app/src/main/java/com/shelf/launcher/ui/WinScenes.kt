@@ -246,7 +246,12 @@ internal class WinAction(
     /** Closes the window / back to its first page. */
     val back: Boolean = false,
     /** Needs you (a save sync problem). */
-    val urgent: Boolean = false
+    val urgent: Boolean = false,
+    /**
+     * Popup motion work: drawn only - a page on its way out, the game blade under a page blade. Not focusable, not clickable:
+     * the D-pad can't wander onto something covered or leaving.
+     */
+    val inert: Boolean = false
 )
 
 /** Update 330: everything a layout's own window gets from GameWindow (see SceneBody there). */
@@ -366,7 +371,7 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
             .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
-            .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
+            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
 }

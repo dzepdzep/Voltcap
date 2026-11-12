@@ -43,6 +43,9 @@
 - **L1 / R1 walk only the pages a window has** (`WinSceneCtx.pages`): a game with no achievements page (or no options page)
   is skipped over instead of a bumper opening the full achievements list / the game's menu mid-cycle (Storage did that in
   v0.6.70 already; the new native windows inherited it). Tapping a tab still opens what its button opens. Test `BumpersWalkRealPagesTest`.
+- **Covered / leaving controls can't take the D-pad** (`WinAction.inert`, `SceneControl` clickable(enabled = !inert)): found in
+  self-review — the game blade's commands under a Blades page blade were still focusable (removing their focus requester
+  wasn't enough), so the D-pad could move under the blade; leaving sheets for ~280 ms likewise. Test `InertControlsTest`.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from
