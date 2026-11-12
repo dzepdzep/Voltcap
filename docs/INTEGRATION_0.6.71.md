@@ -25,11 +25,15 @@
 | Build ledger | `tools/qa/builds.json`: exp daef44e, 2ac8326, eb06ea7 with APK sha256 |
 | GitHub | `feature/popup-native`, `exp/shelf-3d-flip`, `feature/connected-ignition` pushed; remote tips matched; main / tags untouched |
 
-## Still blocking a safe merge and release
+## Still blocking a safe merge and release (item 2 done)
 1. **Build the exact candidate** (`integration/0.6.71`) and register its APK. The PC tool has a new `int` worktree for it, active after your next desktop app restart. Then: `assembleQa` / `assembleDebug` + `testDebugUnitTest` on `int`, plus a short re-run of the popup gate on that APK (with the ledger entry, so it grades strictly).
-2. **lintRelease against the correct baseline:**
-   - run on popup-native 8137aca (= candidate app); result in the sprint report.
-   - The v0.6.70 baseline must be measured on the published code. There is no worktree for main; the `ci` branch adds code, so it is not a clean baseline.
+2. ~~lintRelease against the baseline~~ **DONE (12 Nov).** popup-native 8137aca, the candidate's app code: 49 errors / 966 warnings / 109 hints, the same counts as before.
+   - **None of the 49 errors is on a line changed since v0.6.70** (lint locations compared with `git diff -U0 6c6c98c 8137aca -- app/src/main`). So there are no new findings.
+   - Release-critical review of the baseline:
+     - UnspecifiedRegisterReceiverFlag (MixerEffects) is a false positive: Android 13+ already passes RECEIVER_EXPORTED.
+     - 21 × NewApi affect only API 24–27 (Android 7–8.1) devices, guarded by feature use; none of the target handhelds.
+     - 3 × MissingPermission (Bluetooth accessory monitor) are unchanged since v0.6.70.
+   - Accept as documented baseline; nothing release-blocking found.
 3. **Update compatibility on a device:** install the candidate's QA APK over a QA app holding v0.6.70-era data (settings, profiles, categories) and compare. Not done; the production app is never used for this.
 4. **Remaining hardware-pending layouts:** TILES, NIGHT, STORAGE, BLADES are now done on the Flip 2. Still pending: GRID, TV, SHELF (flat path), STACKS, CARDS, POCKET. CARDS and POCKET carry the popup-first change, so they are release-relevant.
 5. **Real artwork:** the QA library on the Flip 2 has fixture art only. Final visual acceptance of the popups with real covers is yours (owner review).
