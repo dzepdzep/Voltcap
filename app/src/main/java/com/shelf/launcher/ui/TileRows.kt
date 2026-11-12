@@ -133,6 +133,33 @@ internal object TileRowEdit {
     val spans = java.util.concurrent.ConcurrentHashMap<String, Pair<Float, Float>>()
     /** The middle (root px) of the room the round buttons keep in the stack while they float in Edit Home, or null. Compose state. */
     var buttonsCentre by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Offset?>(null)
+    /** The row part a finger is dragging now (its shift follows the finger until the drop), or null. Compose state. */
+    var dragging by androidx.compose.runtime.mutableStateOf<String?>(null)
+    /** The insertion line while a row is dragged (root px), or null. Compose state. */
+    var rowDropLine by androidx.compose.runtime.mutableStateOf<Float?>(null)
+    /**
+     * A dragged row let go: it goes into the order where its middle is (between the rows there), its up / down shift is
+     * taken out and its left / right kept - the same place the insertion line showed. The drag's Undo step was taken at its start.
+     */
+    fun dropRow(partId: String) {
+        val row = rowOf(partId)
+        val b = HomeEditState.bounds[partId]
+        if (row != null && b != null) insert(row, b.center.y)
+        HomeEditState.liveShift[partId]?.let { s -> HomeEditState.liveShift[partId] = s.first to 0f }
+        dragging = null; rowDropLine = null
+    }
+    /**
+     * The round buttons let go in Edit Home: near Tile home's rows (and the home keeps a room for them in the stack) they
+     * leave their free place and go into the order at the insertion line; anywhere else they stay where they were put.
+     */
+    fun dropButtons() {
+        if (buttonsCentre == null) return
+        val b = HomeEditState.bounds[HomeWidgets.SHORTCUTS] ?: return
+        val slack = 120f * android.content.res.Resources.getSystem().displayMetrics.density
+        if (!nearRows(b.top, b.bottom, slack)) return
+        HomeEditState.live.remove(HomeWidgets.SHORTCUTS)
+        insert(TileRows.BUTTONS, b.center.y)
+    }
     /** The insertion line while the round buttons are dragged over the rows (root px), or null. Compose state. */
     var dropLine by androidx.compose.runtime.mutableStateOf<Float?>(null)
 

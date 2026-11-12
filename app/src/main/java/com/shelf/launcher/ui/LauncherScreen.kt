@@ -4313,7 +4313,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             val tileDropLine = shortcutsDragRect?.let { r ->
                 val dd = androidx.compose.ui.platform.LocalDensity.current.density
                 if (TileRowEdit.nearRows(r.top * dd, r.bottom * dd, 120f * dd)) TileRowEdit.lineFor(TileRows.BUTTONS, r.center.y * dd) else null
-            }
+            } ?: TileRowEdit.rowDropLine.takeIf { HomeEditState.active && TileRowEdit.dragging != null }
             val tileDropAccent = ShelfTheme.accent
             Column(
                 Modifier

@@ -91,6 +91,20 @@ class TileRowsTest {
         assertEquals(40, TileRows.TOP_CLEAR_DP)
     }
 
+    @Test fun aRowsHeightComesFromTheOrderOnly() {
+        // (Owner, Sprint 527: one section-ordering and positioning system, no arbitrary offsets.)
+        val edit = src("ui/HomeEdit.kt")
+        assertTrue(edit.contains("TileRowEdit.rowOf(id) != null && TileRowEdit.dragging != id) s.first to 0f else s"))
+        // A finger drag of a row ends in the order (the insertion line meanwhile); the buttons' drop joins it at once.
+        assertTrue(edit.contains("if (rowDrag && TileRowEdit.dragging == id) TileRowEdit.dropRow(id)"))
+        assertTrue(edit.contains("if (id == HomeWidgets.SHORTCUTS) TileRowEdit.dropButtons()"))
+        val rows = src("ui/TileRows.kt")
+        assertTrue(rows.contains("HomeEditState.live.remove(HomeWidgets.SHORTCUTS)"))
+        assertTrue(src("ui/LauncherScreen.kt").contains("TileRowEdit.rowDropLine.takeIf { HomeEditState.active && TileRowEdit.dragging != null }"))
+        // The Edit Home bar keeps clear of the selected part as it moves.
+        assertTrue(src("ui/HomeEditLegend.kt").contains("if (want != atTop) atTop = want"))
+    }
+
     @Test fun inEditHomeTheFloatingButtonsSitOnTheirRow() {
         // (Flip 2 t527e: the buttons moved to the top of the order still floated at the screen's bottom in Edit Home.)
         val ls = src("ui/LauncherScreen.kt")

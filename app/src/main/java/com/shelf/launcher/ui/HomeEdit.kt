@@ -685,6 +685,9 @@ internal fun BoxScope.MovableWidget(
                             // (Update 241, #06: let go with its middle in a hollow part's inner area: it goes in (moves with
                             // it from now on); anywhere else it comes out.)
                             HomeEditState.bounds[id]?.let { HomeNest.drop(id, it.center) }
+                            // (Sprint 527: Tile home's round buttons let go along the rows join the row order at once - the
+                            // Edit Home preview is then the home, not a floating bar that only snaps in at Done.)
+                            if (id == HomeWidgets.SHORTCUTS) TileRowEdit.dropButtons()
                             HomeNest.dragging = null; HomeNest.hover = null
                             HomeEditState.guideX = null; HomeEditState.guideY = null
                         }
@@ -1132,8 +1135,14 @@ internal object LayoutParts {
         !HomeEditState.active && HomeWidgets.hidden(id(layout, name))
 
     /** How far [id] is moved (dp); reads state. */
-    fun shift(id: String): Pair<Float, Float>? =
-        if (HomeEditState.active) HomeEditState.liveShift[id] else parse(Features.partShifts.state.value)[id]
+    fun shift(id: String): Pair<Float, Float>? {
+        val s = if (HomeEditState.active) HomeEditState.liveShift[id] else parse(Features.partShifts.state.value)[id]
+        // Sprint 527 (owner: "one consistent section-ordering and positioning system, without arbitrary offsets"): a Tile home
+        // row's height on the screen comes from the row order only. An up / down shift saved by an older Edit Home is kept in
+        // the settings (Reset part clears it) but no longer moves the row; left / right still does. While a finger drags the
+        // row it follows the finger, and the drop puts it into the order (TileRowEdit.dropRow).
+        return if (s != null && s.second != 0f && TileRowEdit.rowOf(id) != null && TileRowEdit.dragging != id) s.first to 0f else s
+    }
 }
 
 /** Makes a layout's own part movable / removable in Edit Home (see [LayoutParts]). */
@@ -1279,8 +1288,9 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     // Update 202: moved by the finger's place on the screen (a part made bigger or smaller used to move
                     // slower or faster than the finger), snapping back to its own place and to the safe zone's edges and
                     // middle (a guide line through it), and kept inside the safe zone (SnapPart below).
-                    var raw = HomeEditState.liveShift[id] ?: (0f to 0f)
+                    var raw = (HomeEditState.liveShift[id] ?: (0f to 0f)).let { if (TileRowEdit.rowOf(id) != null) it.first to 0f else it }
                     var last = coords[0]?.takeIf { it.isAttached }?.localToRoot(first.position)
+                    val rowDrag = TileRowEdit.rowOf(id) != null
                     // (Update 212: one step of Undo, taken when it really starts moving — a tap only selects.)
                     var pushed = false
                     while (true) {
@@ -1295,11 +1305,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         val here = lc?.localToRoot(ch.position)
                         val d = if (here != null && last != null) here - last!! else ch.position - ch.previousPosition
                         if (here != null) last = here
-                        if (!pushed && (d.x != 0f || d.y != 0f)) { HomeEditSession.push("drag:$id", force = true); pushed = true }
+                        if (!pushed && (d.x != 0f || d.y != 0f)) { HomeEditSession.push("drag:$id", force = true); pushed = true; if (rowDrag) TileRowEdit.dragging = id }
                         raw = (raw.first + d.x / density) to (raw.second + d.y / density)
                         HomeEditState.liveShift[id] = SnapPart.shift(id, raw, lc, zoneNow.value, density)
+                        // (Sprint 527: a Tile home row dragged up / down shows where it would land - the insertion line.)
+                        if (rowDrag) HomeEditState.bounds[id]?.let { b -> TileRowEdit.rowDropLine = TileRowEdit.lineFor(TileRowEdit.rowOf(id)!!, b.center.y) }
                     }
                     HomeEditState.guideX = null; HomeEditState.guideY = null
+                    if (rowDrag && TileRowEdit.dragging == id) TileRowEdit.dropRow(id)
                 }
             }
         }

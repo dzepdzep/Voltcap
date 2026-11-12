@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,9 +50,21 @@ internal fun BoxScope.HomeEditToolbar() {
         val narrow = maxWidth < TOOLBAR_ONE_LINE
         val dens = LocalDensity.current.density
         val sel = HomeEditState.selected
-        val b = HomeEditState.bounds[sel]
-        // Low on the screen (its middle below 62 %): the bar goes to the top.
-        val atTop = b != null && b.center.y / dens > maxHeight.value * 0.62f
+        // Low on the screen (its middle below 62 %): the bar goes to the top. (Sprint 527, Flip 2: read again as the selected
+        // part moves - a part moved under the bar by the D-pad / the row order stayed covered; the bounds are a plain map. Not
+        // while a finger drags, so the bar never jumps under the finger.)
+        val hMax = maxHeight.value
+        var atTop by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(HomeEditState.bounds[sel]?.let { it.center.y / dens > hMax * 0.62f } ?: false) }
+        androidx.compose.runtime.LaunchedEffect(sel, hMax) {
+            while (true) {
+                val b = HomeEditState.bounds[sel]
+                if (b != null && HomeNest.dragging == null && TileRowEdit.dragging == null) {
+                    val want = b.center.y / dens > hMax * 0.62f
+                    if (want != atTop) atTop = want
+                }
+                kotlinx.coroutines.delay(200)
+            }
+        }
         Column(
             Modifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter).safeZonePadding().widthIn(max = maxWidth - 8.dp)
                 .onGloballyPositioned { HomeEditState.chrome["bar"] = it.boundsInRoot() }
