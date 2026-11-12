@@ -105,3 +105,18 @@ private fun ownWindow(layout: com.shelf.launcher.data.HomeLayout): WinPresentati
  */
 internal fun sharedPageFor(scene: WinScene?, page: WinPage): Boolean =
     page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)
+
+/**
+ * The page openers of a window that is not a layout scene (the plain window, the TV room's), Phase 2 (12 Nov): its Details /
+ * Game options / Achievements buttons register here as they open a page, so B comes back onto them - not onto Play (found by
+ * WinFocusRoboTest: in the TV room an A 100 ms after B started the game). The scene windows keep their own (SceneBody.opener).
+ */
+internal class PageOpeners(private val slot: Array<FocusRequester?>) {
+    private val byName = HashMap<String, FocusRequester>()
+    /** The requester of the control called [name] (made once per window). */
+    fun requester(name: String): FocusRequester = byName.getOrPut(name) { FocusRequester() }
+    /** The control called [name] is opening a page: B comes back onto it. */
+    fun opened(name: String) { slot[0] = requester(name) }
+}
+
+internal val LocalPageOpeners = androidx.compose.runtime.staticCompositionLocalOf<PageOpeners?> { null }

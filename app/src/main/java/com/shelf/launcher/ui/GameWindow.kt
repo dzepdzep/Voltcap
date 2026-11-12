@@ -1255,6 +1255,7 @@ internal fun GameWindow(
         var page by remember { mutableStateOf(WinPage.MAIN) }
         // (Popup motion work: the control that opened the current page - B comes back onto it. Shared with SceneBody.)
         val pageOpener = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
+        val pageOpeners = remember(pageOpener) { PageOpeners(pageOpener) }
         val details = page != WinPage.MAIN
         val listFocus = remember { FocusRequester() }
         androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
@@ -1415,7 +1416,7 @@ internal fun GameWindow(
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                     ) {
-                        TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside)
+                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
                     }
                     if (outside) Box(
                         Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
@@ -1426,7 +1427,7 @@ internal fun GameWindow(
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                             .padding(8.dp)
                     ) {
-                        TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp)
+                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
                     }
                 }
             }
@@ -1470,7 +1471,7 @@ internal fun GameWindow(
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
                         if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { motion.closing }) { motion.lift.floatValue } }
-                        else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                        else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                     }
                 } else Box(
                     Modifier
@@ -1518,7 +1519,7 @@ internal fun GameWindow(
                     if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { shrinking }) { grow.value } }
                     }
-                    else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                    else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                 }
             }
           }
@@ -1534,6 +1535,11 @@ internal fun GameWindow(
 
 /** Update 347: how long after the window opens Play starts accepting a press (see GameWindow). */
 internal const val PLAY_GUARD_MS = 450L
+
+/** The plain / TV windows' opener names (PageOpeners). */
+internal const val OPENER_DETAILS = "details"
+internal const val OPENER_OPTIONS = "options"
+internal const val OPENER_TROPHIES = "trophies"
 
 internal fun playAllowed(sinceOpenMs: Long): Boolean = sinceOpenMs >= PLAY_GUARD_MS
 
@@ -1648,10 +1654,12 @@ private fun winButtonItems(
     look: WinLook, page: WinPage, setPage: (WinPage) -> Unit, onClose: () -> Unit, onPlay: () -> Unit,
     onFullDetails: () -> Unit, extras: WinExtras,
     /** Update 213: the Performance button after Play (null: none here — no tuner, or a narrow row that has its icon). */
-    onPerf: (() -> Unit)? = null
+    onPerf: (() -> Unit)? = null,
+    /** Phase 2: Details registers as the page's opener (B comes back onto it). */
+    openers: PageOpeners? = null
 ): List<Triple<String, () -> Unit, Boolean>> {
     val rest: List<Pair<String, () -> Unit>> = when (page) {
-        WinPage.MAIN -> listOfNotNull(onPerf?.let { PERF_LABEL to it }, look.details to { setPage(WinPage.DETAILS) }, look.back to onClose)
+        WinPage.MAIN -> listOfNotNull(onPerf?.let { PERF_LABEL to it }, look.details to { openers?.opened(OPENER_DETAILS); setPage(WinPage.DETAILS) }, look.back to onClose)
         WinPage.DETAILS -> listOf("Full details" to onFullDetails, "Back" to { setPage(WinPage.MAIN) })
         WinPage.TROPHIES -> listOf("Full list" to extras.onFullAchievements, "Back" to { setPage(WinPage.MAIN) })
         WinPage.OPTIONS, WinPage.PERF -> listOf("Back" to { setPage(WinPage.MAIN) })
@@ -1786,14 +1794,14 @@ private fun WinInfo(
 
 /** A small round button in the window's style: the game's options, its achievements, its save sync (update 119). */
 @Composable
-private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Dp, onClick: () -> Unit) {
+private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
     val shape: Shape = when (look.btn) { Btn.SQUARE -> RoundedCornerShape(0.dp); Btn.LCD -> RoundedCornerShape(6.dp); else -> CircleShape }
     Box(
-        Modifier.size(size)
+        modifier.size(size)
             .graphicsLayer { val k = if (focused) 1.08f else 1f; scaleX = k; scaleY = k }
             .clip(shape)
             .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.White.copy(alpha = 0.1f)) else look.btnFill)
@@ -1809,8 +1817,12 @@ private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vect
 private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: WinSlot = WinSlot.INFO) {
     if (!extras.at(WinPart.ICONS, slot)) return
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, extras.onOptions)
-        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, extras.onAchievements)
+        // (Phase 2: they register as the page's opener - B comes back onto them, never onto Play.)
+        val openers = LocalPageOpeners.current
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, { openers?.opened(OPENER_OPTIONS); extras.onOptions() },
+            if (openers != null) Modifier.focusRequester(openers.requester(OPENER_OPTIONS)) else Modifier)
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, { openers?.opened(OPENER_TROPHIES); extras.onAchievements() },
+            if (openers != null) Modifier.focusRequester(openers.requester(OPENER_TROPHIES)) else Modifier)
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.CloudSync, "Save sync", size, extras.onSync)
         // Update 202: the game's manual (downloaded the first time it's opened).
         extras.onManual?.let { WinIconButton(look, androidx.compose.material.icons.Icons.Filled.MenuBook, "Manual", size, it) }
@@ -1870,11 +1882,13 @@ private fun TvControls(
         }
         val status = LocalWinStatus.current
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
+            val openers = LocalPageOpeners.current
+            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, openers = openers)
             ButtonRow(tvItems.map { it.first }) { tvItems.forEach { (l, f, isPlay) ->
                 WinButton(
                     look, if (look.caps) l.uppercase() else l,
-                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
+                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus)
+                        else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier),
                     wideButton = false, stretch = true, compact = true, onClick = f
                 )
             } }
@@ -1966,9 +1980,11 @@ private fun WindowBody(
         // Update 213: Performance as a button after Play — or, where the buttons share a narrow row, as a round icon
         // at the row's end (the window's own action strip).
         val perfHere = status?.perf != null
-        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, if (perfHere && !fill) status!!.onPerf else null)
+        val openers = LocalPageOpeners.current
+        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, if (perfHere && !fill) status!!.onPerf else null, openers)
         fun btnMod(l: String, isPlay: Boolean): Modifier =
-            if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
+            if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus)
+            else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier
         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
             ButtonRow(all.map { it.first }) { all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) } }
             // (Update 119: the game's options, achievements and save sync under them.)
@@ -1981,7 +1997,7 @@ private fun WindowBody(
           // they go to a row under them.)
           fun est(items: List<Triple<String, () -> Unit, Boolean>>) = items.sumOf { (l, _, _) -> l.length * 9 + 60 } + (items.size - 1) * 12
           val share = fill || maxWidth.value < est(all)
-          val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null) else all
+          val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null, openers) else all
           val iconsBelow = !share && !details && maxWidth.value < est(all) + (3 + (if (extras.onManual != null) 1 else 0) + (if (extras.onInspect != null) 1 else 0)) * 52
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

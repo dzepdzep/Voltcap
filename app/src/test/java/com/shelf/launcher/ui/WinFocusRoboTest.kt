@@ -64,13 +64,15 @@ internal class RegisterComposeTestActivity : TestRule {
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
-class WinFocusRoboTest(private val layout: HomeLayout) {
+class WinFocusRoboTest(private val layout: HomeLayout, private val plain: Boolean) {
     companion object {
         @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0} plain={1}")
         // (Phase 3 / 9: every layout - B onto the opener, popup-first, no Play after B are shared rules; the bumper walk is the
         // native-page layouts' own.)
-        fun layouts(): List<Array<Any>> = HomeLayout.values().map { arrayOf<Any>(it) }
+        // (plain: Settings › Game window › the layouts' own windows off - the plain window every layout then shares.)
+        fun layouts(): List<Array<Any>> = HomeLayout.values().map { arrayOf<Any>(it, false) } +
+            listOf(HomeLayout.CLASSIC, HomeLayout.SHELF, HomeLayout.STORAGE).map { arrayOf<Any>(it, true) }
     }
 
     private val compose = createComposeRule()
@@ -81,7 +83,12 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
     private var optionHits = 0
     private val game = Game("Probe Quest", "SNES", 1, SourceType.ROM, romPath = "/r/p.sfc")
 
+    private var scenesBefore = true
+    @org.junit.After fun restoreScenes() { com.shelf.launcher.data.Features.winScenes.state.value = scenesBefore }
+
     private fun open() {
+        scenesBefore = com.shelf.launcher.data.Features.winScenes.state.value
+        com.shelf.launcher.data.Features.winScenes.state.value = !plain
         // (The window has endless motion - marquees, glows: an auto-advancing clock never goes idle. Frames are stepped here.)
         compose.mainClock.autoAdvance = false
         compose.setContent {
@@ -235,7 +242,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
     }
 
     @Test fun bumpersWalkThePagesAndFocusStaysOnAVisibleControl() {
-        org.junit.Assume.assumeTrue("L1 / R1 page walk: native-page layouts only", nativePages(winSceneFor(layout)))
+        org.junit.Assume.assumeTrue("L1 / R1 page walk: native-page layouts only", !plain && nativePages(winSceneFor(layout)))
         open()
         val play = playLabel()
         openOptions()
