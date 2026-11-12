@@ -54,6 +54,7 @@ class ClipLightTest {
         assertTrue(src("ui/HomeChrome.kt").contains("else if (ClipBackdrop.on) Color.Black.copy(alpha = 0.46f)"))
         assertTrue(src("ui/HomeChrome.kt").contains("then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
         assertTrue(src("ui/GameDock.kt").contains("return (if (clipScrim) this.videoTextScrim() else this).nameBackdropStyle(backdrop)"))
+        assertTrue(src("ui/TileHome.kt").contains(".then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
         // The old fog only as a QA before / after.
         assertEquals(0.97f, ClipLight.legacyStops(Color.Black).last().second.alpha, 0.005f)
         assertTrue(src("ui/TestHooks.kt").contains("ClipBackdrop.legacy = v == \"legacy\""))
