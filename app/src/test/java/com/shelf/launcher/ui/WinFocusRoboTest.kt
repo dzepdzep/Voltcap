@@ -130,7 +130,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
 
     private fun click(text: String) {
         val nodes = compose.onAllNodes(clickable(text)).fetchSemanticsNodes()
-        assertTrue("$layout: no '$text' control\n${tree()}", nodes.isNotEmpty())
+        assertTrue("$layout: no '$text' control; controls ${controls()}", nodes.isNotEmpty())
         // (the window's own action, not a tab of the same name: the last one drawn)
         compose.onAllNodes(clickable(text))[nodes.size - 1].performSemanticsAction(SemanticsActions.OnClick)
     }
@@ -141,7 +141,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
             // More: "More", or the dots (Tiles' "•••")
             val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) && (words(label(n)) == listOf("more") || label(n).trim() == "•••") }
             val ms = compose.onAllNodes(more).fetchSemanticsNodes()
-            assertTrue("$layout: no Options and no More\n${tree()}", ms.isNotEmpty())
+            assertTrue("$layout: no Options and no More; controls ${controls()}", ms.isNotEmpty())
             compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(12)
         }
@@ -150,7 +150,11 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
 
     private fun onOptionsButton(f: List<String>) = f.size == 1 && words(f[0]) == listOf("options")
 
-    private fun shows(text: String): Boolean = compose.onAllNodes(hasText(text, substring = true), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
+    /** [text] is on screen (case ignored: several looks write in capitals). */
+    private fun shows(text: String): Boolean = compose.onAllNodes(hasText(text, substring = true, ignoreCase = true), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
+
+    /** The labels of every control on screen (for failure messages). */
+    private fun controls(): List<String> = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)).fetchSemanticsNodes(atLeastOneRootRequired = false).map(::label)
 
     /** The Play control's label in this layout (look.play: "Play", "Start", "Load"...): the one focused right after opening. */
     private fun playLabel(): String {

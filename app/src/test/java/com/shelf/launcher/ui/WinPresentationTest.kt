@@ -88,4 +88,34 @@ class WinPresentationTest {
         assertTrue(src.contains("if (sharedPageFor(scene, page)) SceneExpandedPage("))
         assertEquals(1, Regex("SceneExpandedPage\\(look, ctx").findAll(src).count())
     }
+
+    /**
+     * Phase 10 (settings conflicts): the five prefs that decide what A opens (popup_style_by_layout, classic_window_layouts,
+     * win_banner, win_motion, win_scenes) in every combination, for every layout: one answer each, never a crash, and the
+     * documented precedence - the layout's own choice, then its Classic switch, then the global default; Inspect wins over all.
+     */
+    @Test fun everyCombinationOfThePopupPrefsHasOneAnswer() {
+        val own = listOf<PopupStyle?>(null) + PopupStyle.values()
+        var n = 0
+        for (l in HomeLayout.values()) for (choice in own) for (cl in listOf(false, true)) for (b in listOf(false, true))
+            for (m in Features.WinMotion.values()) for (sc in listOf(true, false)) {
+                Features.popupStyleByLayout.state.value = if (choice == null) emptySet() else setOf("${l.name}=${choice.name}")
+                Features.classicWindowLayouts.state.value = if (cl) setOf(l.name) else emptySet()
+                Features.winBanner.state.value = b; Features.winMotion.state.value = m; Features.winScenes.state.value = sc
+                val p = winPresentation(l, false, false)
+                val style = choice ?: if (cl) PopupStyle.CLASSIC else PopupStyle.globalDefault()
+                val ownWin = if (sc && winSceneFor(l) != null) WinPresentation.SCENE else WinPresentation.PLAIN
+                val want = when (style) {
+                    PopupStyle.CLASSIC -> WinPresentation.CLASSIC
+                    PopupStyle.SHARED -> WinPresentation.GLANCE
+                    PopupStyle.ROW_OPENS, PopupStyle.ROW_REVEAL -> WinPresentation.ROW_MOTION
+                    PopupStyle.BANNER -> WinPresentation.BANNER
+                    PopupStyle.OWN -> ownWin
+                }
+                assertEquals("$l choice=$choice classic=$cl banner=$b motion=$m scenes=$sc", want, p)
+                assertEquals("$l: Inspect opens the layout's own window", ownWin, winPresentation(l, true, false))
+                n++
+            }
+        assertEquals(HomeLayout.values().size * own.size * 2 * 2 * Features.WinMotion.values().size * 2, n)
+    }
 }
