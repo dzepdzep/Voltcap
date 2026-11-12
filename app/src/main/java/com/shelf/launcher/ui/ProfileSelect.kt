@@ -269,6 +269,7 @@ internal fun ProfileSelectScreen(
             val plan = PickerGrid.plan(count, maxWidth.value, maxHeight.value, compact)
             planPerRow[0] = plan.perRow
             val viewport = (maxWidth - (PickerGrid.SIDE * 2).dp)
+            val screenW = maxWidth
             val avatar = plan.avatar.dp
             while (centers.size < count) centers.add(androidx.compose.ui.geometry.Offset(Float.NaN, Float.NaN))
             while (centers.size > count) centers.removeAt(centers.size - 1)
@@ -323,7 +324,7 @@ internal fun ProfileSelectScreen(
                 fun edgeOf(i: Int): Float = if (!plan.scroll) 1f else PickerGrid.edgeFade(itemFirst + itemPitch * i - rowScroll.value, sidePx, sidePx + bandW, slotPx)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(plan.gap.dp), verticalAlignment = Alignment.Top,
-                    modifier = Modifier.then(if (plan.scroll) Modifier.glowRoom(glowRoom).width(maxWidth).horizontalScroll(rowScroll, enabled = !leaving)
+                    modifier = Modifier.then(if (plan.scroll) Modifier.glowRoom(glowRoom).width(screenW).horizontalScroll(rowScroll, enabled = !leaving)
                         .padding(horizontal = (PickerGrid.SIDE + edge).dp).padding(vertical = glowRoom) else Modifier)
                         .padding(vertical = avatar * 0.22f)
                 ) {
@@ -338,7 +339,7 @@ internal fun ProfileSelectScreen(
                                 if (i >= cs.size || cs[i].x.isNaN() || cs[f].x.isNaN() || cs.first().x.isNaN() || cs.last().x.isNaN()) 0f else { // (Sprint 526: the row can shrink under a frame still drawing it)
                                     // (Sprint 527: the focused one emerges as the light reaches it; the others nearest first as it spreads.)
                                     val ends = WireGeo.ends(cs.first().x, cs.last().x, rho, with(density) { 30.dp.toPx() })
-                                    val reach = WireGeo.reach(cs[f].x - rho, cs[f].x + rho, ends[0], ends[1], with(density) { maxWidth.toPx() })
+                                    val reach = WireGeo.reach(cs[f].x - rho, cs[f].x + rho, ends[0], ends[1], with(density) { screenW.toPx() })
                                     val at = WireGeo.appearAt(cs[i].x, cs[f].x, rho, rho, reach, stage.tm)
                                     IgnK.eOut(IgnK.ph(stageT(), at, at + 260f))
                                 }
