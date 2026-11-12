@@ -1056,7 +1056,7 @@ object Features {
      * past both edges with the games again (on), or shows each game once (off, update 226's way — the row stops short when
      * the category has few games). Hold the R1 Endless tile.
      */
-    val endlessFill = BoolPref("endless_fill", true)
+    val endlessFill = BoolPref("endless_fill", false)
     /** Update 321: how the one-colour icons are drawn — the app's drawing kept see-through (DETAIL), or one solid shape. */
     enum class MonoIconStyle(val label: String) { DETAIL("Detail"), SOLID("Solid"), ORIGINAL("Own colours") }
     val monoIconStyle = EnumPref("mono_icon_style", MonoIconStyle.DETAIL, arrayOf(MonoIconStyle.DETAIL, MonoIconStyle.SOLID))
