@@ -438,14 +438,16 @@ object HomeEditState {
 
     /** Update 212: moves [id] one step ([dx], [dy]: -1, 0 or 1) — the D-pad, and the inspector's Move. One step of Undo. */
     fun nudge(id: String, dx: Int, dy: Int, fast: Boolean = false) {
+        // Sprint 527: Tile home's rows move up / down in their order (the others make room) - one step of Undo per real move
+        // (TileRowEdit.move); a press at the top / bottom changes nothing and adds no step (Flip 2 t527e: Y after a press at
+        // the bottom "undid" that empty step and the row stayed).
+        if (dy != 0) TileRowEdit.movableRow(id)?.let { row -> TileRowEdit.move(row, dy); return }
         HomeEditSession.push("move:$id")
         // (Update 241, #05: on the 2 % grid — two steps at a time while the button is held — never pulled back to an
         // edge or the middle on the way (the step used to have to beat that pull); a part inside a hollow one moves
         // inside it, #06.)
         if (HomeNest.nudge(id, dx, dy, fast)) return
         val step = if (fast) HomeWidgets.GRID * 2 else HomeWidgets.GRID
-        // Sprint 527: Tile home's rows move up / down in their order (the others make room); left / right as before.
-        if (dy != 0) TileRowEdit.movableRow(id)?.let { row -> TileRowEdit.move(row, dy); return }
         if (id.startsWith(LayoutParts.PREFIX)) {
             // A layout's own part moves in 8 dp steps from its place.
             val s = liveShift[id] ?: (0f to 0f)

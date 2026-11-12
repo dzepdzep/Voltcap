@@ -70,6 +70,9 @@ class TileRowsTest {
         val rows = src("ui/TileRows.kt")
         assertTrue(rows.contains("HomeWidgets.position(HomeWidgets.SHORTCUTS) == null && HomeEditState.live[id] == null"))
         assertTrue(rows.contains("TileRows.BUTTONS -> HomeWidgets.SHORTCUTS"))
+        // A row's ▲ ▼ is handled before the widget's own Undo step: a press at the top / bottom adds no empty step.
+        val nudge = edit.substringAfter("fun nudge(id: String")
+        assertTrue(nudge.indexOf("TileRowEdit.movableRow(id)") < nudge.indexOf("HomeEditSession.push(\"move:\$id\")"))
         val session = src("ui/HomeEditSession.kt")
         assertTrue(session.contains("\"tileRows\" to Features.tileRowOrder.value"))
         assertTrue(session.contains("TileRowEdit.resetRow(id)"))
