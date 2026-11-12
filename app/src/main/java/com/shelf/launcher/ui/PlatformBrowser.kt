@@ -75,6 +75,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -402,10 +403,14 @@ fun PlatformBrowser(
                 }
             }
         } else Modifier
+        val pbBarBottomPx = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
         Box(Modifier.fillMaxSize().padding(top = topInset).then(swipe)) {
         when (view) {
             Features.PlatformView.SLIDES -> SlidesView(tiles, selectedIndex, state, onFocus, onPick)
-            Features.PlatformView.WALL -> WallView(tiles, selectedIndex, state.direction, Features.pbAnimate.value, onFocus, onPick, Modifier.fillMaxSize())
+            // (Sprint 528, owner: the header sat on the slices' cover titles - Flip 2 and KONKR. The slices start under the
+            // action bar's measured bottom; the black above them is the wall's own ground.)
+            Features.PlatformView.WALL -> WallView(tiles, selectedIndex, state.direction, Features.pbAnimate.value, onFocus, onPick,
+                Modifier.fillMaxSize().background(Color.Black).padding(top = with(LocalDensity.current) { pbBarBottomPx.floatValue.toDp() }))
             Features.PlatformView.GRID -> GridView(tiles, selectedIndex, state, onFocus, onPick, onReorder)
             // Pass 4 (CategoryLooks.kt).
             Features.PlatformView.STAGE -> StageLook(tiles, selectedIndex, Features.pbAnimate.value, onFocus, onPick)
@@ -430,7 +435,7 @@ fun PlatformBrowser(
                 (fadeIn(tween(220)) + slideInVertically(tween(220)) { -it / 2 }) togetherWith (fadeOut(tween(140)) + slideOutVertically(tween(140)) { -it / 2 })
             },
             label = "pbActionBar",
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { pbBarBottomPx.floatValue = it.height.toFloat() }
         ) { v ->
             PlatformActionBar(tile, selectedIndex, tiles.size, v, onRandom, onClose)
         }

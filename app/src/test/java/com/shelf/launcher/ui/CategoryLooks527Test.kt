@@ -43,11 +43,22 @@ class CategoryLooks527Test {
         // KONKR 960 x 640 (density 1.5): a drawer cell ~65 dp, its front 10 dp less. Two 11 sp lines (em-high), the card's
         // 3 + 2 dp insets, the tight margins (2 x 3 dp) and the 7 dp pull must fit; the old 8 dp margins + 12 dp pull + 12.5 sp
         // lines did not (that is why the names slid there).
+        assertTrue(src("ui/CategoryLooks.kt").contains("maxLines = if (tight) 3 else 2, reserve = !tight"))
         val front = 65f - 10f
-        val tightNeed = 2 * 11f * DRAWER_LINE_EM + 2 * (3f + 2f) + 2 * 3f + 7f
+        val tightNeed = 2 * 11f * DRAWER_LINE_EM + 2 * (3f + 2f) + 2 * 2f + 6f
+        // (Sprint 528: three lines at the readable minimum, 10 sp, fit a short drawer too - "Nintendo Entertainment System".)
+        val threeLines = 3 * 10f * DRAWER_LINE_EM + 2 * (3f + 2f) + 2 * 2f + 6f
+        assertTrue("three lines $threeLines <= $front", threeLines <= front)
         val oldNeed = 2 * 12.5f + 2 * (3f + 2f) + 2 * 8f + 12f
         assertTrue("tight $tightNeed <= $front", tightNeed <= front)
         assertTrue("old $oldNeed > $front", oldNeed > front)
         assertTrue(65 < DRAWER_TIGHT_DP)
+    }
+
+    @Test fun wallSlicesStartUnderTheHeader() {
+        // (Sprint 528: the header sat on the slices' cover titles; the slices start at the action bar's measured bottom.)
+        val pb = src("ui/PlatformBrowser.kt")
+        assertTrue(pb.contains("modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { pbBarBottomPx.floatValue = it.height.toFloat() }"))
+        assertTrue(pb.contains("Modifier.fillMaxSize().background(Color.Black).padding(top = with(LocalDensity.current) { pbBarBottomPx.floatValue.toDp() })"))
     }
 }
