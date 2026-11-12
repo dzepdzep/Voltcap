@@ -175,12 +175,27 @@ internal object TestHooks {
         }
     }
 
+    /**
+     * Sprint 528 (owner: verify with real photographs, not letters or test circles): `realphoto` in the start / demo profile
+     * spec copies the pictures QA pushed to the QA app's OWN external files/qa_avatars (fictional, generated portraits - never
+     * anyone's private photos) onto the demo profiles 900+, overwriting the drawn test pattern. Isolated QA app only.
+     */
+    private fun writeRealPhotos(context: android.content.Context): Int {
+        val src = context.getExternalFilesDir("qa_avatars")?.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedBy { it.name } ?: return 0
+        src.take(com.shelf.launcher.data.Profiles.MAX).forEachIndexed { i, f ->
+            runCatching { f.copyTo(com.shelf.launcher.data.Profiles.pictureFile(context, 900 + i), overwrite = true) }
+        }
+        return src.size
+    }
+
     fun demoProfiles(spec: String): Pair<List<com.shelf.launcher.data.Profiles.Profile>, Int> {
         val parts = spec.split(":")
         val n = parts[0].toIntOrNull()?.coerceIn(1, com.shelf.launcher.data.Profiles.MAX) ?: 3
         val long = "long" in parts
         val locked = "locked" in parts
         val photo = "photo" in parts
+        // (realphoto: every profile wears its portrait except the third, which keeps its letter - a mixed row, as people have)
+        val realPhoto = "realphoto" in parts
         val active = parts.firstOrNull { it.startsWith("active=") }?.substringAfter("=")?.toIntOrNull()?.coerceIn(0, n - 1) ?: 0
         val names = listOf("Toni", "Mia", "Alexander the Great Gamer", "Kai", "Speedrunner Supreme", "Lena", "Grandpa Joe", "Sam")
         val longNames = listOf("Maximilian-Alexander", "The Very Long Player Name", "Christopher Columbus", "Speedrunner Supreme 2000",
@@ -188,7 +203,7 @@ internal object TestHooks {
         val list = (0 until n).map { i ->
             com.shelf.launcher.data.Profiles.Profile(
                 900 + i, (if (long) longNames else names)[i],
-                if (photo && i % 2 == 1) com.shelf.launcher.data.Profiles.Picture.OWN else com.shelf.launcher.data.Profiles.Picture.INITIAL, null,
+                if ((photo && i % 2 == 1) || (realPhoto && i != 2)) com.shelf.launcher.data.Profiles.Picture.OWN else com.shelf.launcher.data.Profiles.Picture.INITIAL, null,
                 PickerGrid.PRESETS[(i * 5) % PickerGrid.PRESETS.size],
                 if (locked && i == 1) "demo" else null
             )
@@ -539,11 +554,13 @@ internal object TestHooks {
         }
         intent?.getStringExtra("voltcap_test_startprofiles")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("photo")) writeDemoPhotos(context)
+            if (com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("realphoto")) android.util.Log.e("VoltcapQA", "real photos ${writeRealPhotos(context)}")
             if (com.shelf.launcher.data.QaVariant.isolated(context)) startProfiles.value = if (v == "off") null else demoProfiles(v)
             android.util.Log.e("VoltcapQA", "start profiles $v")
         }
         intent?.getStringExtra("voltcap_test_profiles")?.let { v ->
             if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("photo")) writeDemoPhotos(context)
+            if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("realphoto")) android.util.Log.e("VoltcapQA", "real photos ${writeRealPhotos(context)}")
             if (enabled(context)) {
                 if (v == "off") profilesDemo.value = null
                 else demoProfiles(v).let { (l, a) -> profilesDemoActive.value = a; profilesDemo.value = l }
