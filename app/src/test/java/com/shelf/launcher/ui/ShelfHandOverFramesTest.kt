@@ -55,7 +55,7 @@ class ShelfHandOverFramesTest {
     private val S = 3f                                   // 3 × scale
     private val cellW = 140f; private val cellH = 200f
     private val slotH = 50f; private val slotW = 4.6f     // a KONKR shelf's spine, in dp
-    private val shape = 0.7f
+    private val caseShape = 0.7f
     private val turns = listOf(0f, 0.02f, 0.05f, 0.1f, 0.15f, 0.2f, 0.3f, 0.45f, 0.6f)
 
     private fun spineArt(): Bitmap {
@@ -97,13 +97,13 @@ class ShelfHandOverFramesTest {
                                 .graphicsLayer {
                                     alpha = shelfAlpha
                                     rotationY = 90f * t; cameraDistance = 14f * density
-                                    translationX = shelfBoxFaces(t, slotW * S * density, slotH * shape * S * density).first
+                                    translationX = shelfBoxFaces(t, slotW * S * density, slotH * caseShape * S * density).first
                                 })
                         // the 3D case (row 0 only)
                         if (row == 0) ComposeCanvas(Modifier.fillMaxSize().graphicsLayer { alpha = Shelf3D.blendIn(t) }) {
                             val yaw = 90f * (1f - t); val pitch = Shelf3D.TURN_PITCH * kotlin.math.sin(Math.PI * t).toFloat()
-                            val h = slotH * nearFaceCorrection(yaw, shape, depth) * S * density
-                            CaseDraw.draw(drawContext.canvas.nativeCanvas, cx * S * density, (bottom - slotH / 2) * S * density, h * shape, h, h * depth, yaw, pitch,
+                            val h = slotH * nearFaceCorrection(yaw, caseShape, depth) * S * density
+                            CaseDraw.draw(drawContext.canvas.nativeCanvas, cx * S * density, (bottom - slotH / 2) * S * density, h * caseShape, h, h * depth, yaw, pitch,
                                 front, spine, 1f, false, 0, 0f, back, look)
                         }
                     }
