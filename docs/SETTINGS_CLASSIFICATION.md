@@ -30,3 +30,22 @@ These are each settled by one function and tested:
 2. A pref read only in a comment.
 
 Both are listed here instead of special-cased in the generator, so the generated list stays a mechanical result.
+
+## Owner decisions, 12 Nov (after Sprint 3)
+- `model_name`, `model_reflect`: **no controls restored, no Save Vault option.** Marked `DEPRECATED CANDIDATE` in `Features.kt` (comments only). Keys and behaviour are unchanged, so old backups and presets still load.
+- `theme_colors_only`, `resume_swap`: internal, unchanged. A compatibility proposal follows; **nothing implemented yet.**
+- `box_sides_chosen`: unchanged.
+
+## How a hidden setting can get a non-default value
+1. **Backup restore** (`data/Backup.kt`): the whole `voltcap_features.xml` comes back, then `Features.reload` reads every key, these included. A backup from a version that had controls for them (before the git history) can bring back `true` / `JUMP`.
+2. **User layout presets** that carry `Features.snapshot()` values: applying one sets every key it has (`Features.restore`).
+3. R1 undo (`R1Undo`) and the QA hooks only put back values that were already there, or act in the QA app only.
+
+## Proposal (safe compatibility; for your approval, not implemented)
+**"Hidden settings in effect" notice:**
+- After a backup restore or a preset apply, Voltcap compares the internal keys that have no control (`theme_colors_only`, `resume_swap`, and later any key marked internal) against their defaults.
+- If any differs, a one-time notice lists them in plain words (e.g. "Game colours are switched off: only your theme's colours are used"), each with **Keep** or **Back to standard**.
+- Nothing changes until you choose. An intentional value stays; one you didn't know about can be undone.
+- No new toggle, no silent reset, no key renamed. The list of internal keys lives in one place (`SettingsScopes.kt`), so a future cleanup can reuse it.
+
+Alternative with no notice: a read-only "Hidden settings" line in Settings › About, shown only when one of them is non-default, with the same per-item "Back to standard".

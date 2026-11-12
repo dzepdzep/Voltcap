@@ -23,6 +23,22 @@ internal object Shelf3D {
 
     fun on(key: String?): Boolean = key != null && active[key] == true
 
+    /**
+     * Hand-over (12 Nov): the shelf's own spine (its picture, its drawn top and shading) stays on screen through the rise and
+     * cross-fades into the 3D case over the first [BLEND] of the turn, while the two still all but coincide - so the frame the
+     * 3D case takes over is exactly the shelf's picture (no pop of the top cap, the shading or the thickness).
+     */
+    const val BLEND = 0.2f
+
+    /** How much of the 3D case shows at [turn] (0 … 1 over the first [BLEND] of it). Pure. */
+    fun blendIn(turn: Float): Float {
+        val x = (turn / BLEND).coerceIn(0f, 1f)
+        return x * x * (3f - 2f * x)
+    }
+
+    /** The width / height each game's spine picture is drawn at on the shelf (SpineSlot), for the 3D case's thickness. */
+    val drawnDepth = HashMap<String, Float>()
+
     /** Camera of Case3D (CaseDraw.draw: focal = h × FOCAL). */
     const val FOCAL = 3.4f
 
@@ -44,6 +60,9 @@ internal object Shelf3D {
         else -> Mode.WAITING
     }
 }
+
+/** Set round a shelf spine while the 3D case is on: SpineSlot reports the width / height its picture is drawn at. */
+internal val LocalSpineDrawn = androidx.compose.runtime.staticCompositionLocalOf<((Float) -> Unit)?> { null }
 
 /** Where and how the pulled-out case stands at one moment (px and degrees). [h]: the height to draw the case at (Case3D). */
 internal data class ShelfCasePose(val yaw: Float, val pitch: Float, val h: Float, val cx: Float, val cy: Float, val apparentH: Float)

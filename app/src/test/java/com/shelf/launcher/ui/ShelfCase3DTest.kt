@@ -145,4 +145,14 @@ class ShelfCase3DTest {
 
     /** The pull at which the turn has reached [t]. */
     private fun pFor(t: Float): Float { var lo = 0.3f; var hi = 0.7f; repeat(40) { val m = (lo + hi) / 2; if (turn(m) < t) lo = m else hi = m }; return (lo + hi) / 2 }
+
+    @Test fun handOverBlendIsSmoothAndShort() {
+        assertEquals(0f, Shelf3D.blendIn(0f), 0f)                       // the hand-over frame: only the shelf's spine
+        assertEquals(1f, Shelf3D.blendIn(Shelf3D.BLEND), 0f)            // done early in the turn, while the two coincide
+        assertEquals(1f, Shelf3D.blendIn(0.9f), 0f)
+        var prev = 0f
+        for (i in 1..200) { val v = Shelf3D.blendIn(i / 1000f); assertTrue(v >= prev); assertTrue(v - prev < 0.02f); prev = v }
+        // the slope starts and ends flat (smoothstep): no visible step in or out
+        assertTrue(Shelf3D.blendIn(0.002f) < 0.001f)
+    }
 }

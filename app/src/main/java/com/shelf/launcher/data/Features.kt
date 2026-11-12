@@ -438,6 +438,7 @@ object Features {
     val modelFinishLast = EnumPref("model_finish_last", com.shelf.launcher.ui.ModelFinish.REAL, com.shelf.launcher.ui.ModelFinish.values())
     val modelAngle = EnumPref("model_angle", com.shelf.launcher.ui.ModelAngle.FACE_PICKED, com.shelf.launcher.ui.ModelAngle.values())
     /** Update 136: the game's name on a strip along the bottom of the 3D model's label (Settings › Game look › 3D models). */
+    /** DEPRECATED CANDIDATE (owner 12 Nov): no effect today (every live caller passes alwaysName); no control. Key kept for old backups / presets. */
     val modelName = BoolPref("model_name", false)
     // Update 158: off by default (the one you're on stands still, facing you); switched off once for existing installs too
     // ([migrate158]), and switching it back on sticks.
@@ -447,6 +448,7 @@ object Features {
      * faces you straight on (true) or stands turned like the others (PickedFacing.kt).
      */
     val pickedFaces = BoolPref("picked_faces", true)
+    /** DEPRECATED CANDIDATE (owner 12 Nov): read only by Model3DLive, which nothing calls; no control. Key kept for old backups / presets. */
     val modelReflect = BoolPref("model_reflect", false)
     /**
      * Update 136, Art drop (R1 › Art drop, Settings › Game look): how far the cover drops below the top of the window, 0–100,

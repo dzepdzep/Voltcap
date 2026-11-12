@@ -406,17 +406,16 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                     if (cap > 0.dp) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, (cap.toPx() + s.h.toPx() / 2f) / size.height)
                                     if (pv > 0f) {
                                         translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
-                                        if (stand == Features.ShelfStand.SPINES && Shelf3D.on(g.stableKey)) {
-                                            // (Shelf 3D work: the 3D case has taken over from this spine - ShelfPulled3D.)
-                                            alpha = 0f
-                                        } else if (stand == Features.ShelfStand.SPINES) {
+                                        if (stand == Features.ShelfStand.SPINES) {
                                             // (Batch 523: the box's spine face — turning with the front, beside it, never over it.)
                                             val t = shelfTurn(pv)
                                             rotationY = -SPINE_SIDE * 90f * t
                                             cameraDistance = 14f * density
                                             val frontW = s.h.toPx() * pulledAspect(g.platform, Features.shelfPulled.state.value == Features.ShelfPulled.SIDE)
                                             translationX += shelfBoxFaces(t, s.w.toPx(), frontW).first
-                                            alpha = if (t >= 0.999f) 0f else 1f
+                                            // (Shelf 3D work: while the 3D case has it, this spine - its picture, top and shading -
+                                            // fades into it over the first part of the turn: Shelf3D.blendIn.)
+                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) 1f - Shelf3D.blendIn(t) else 1f
                                         } else {
                                             alpha = if (shelfTurn(pv) > 0f) 0f else 1f
                                         }
@@ -430,7 +429,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                             when (stand) {
                                 Features.ShelfStand.SPINES -> Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(s.h)) {
                                     // (The top is drawn on the spine picture itself — SpineSlot — which can be narrower than its slot.)
-                                    androidx.compose.runtime.CompositionLocalProvider(LocalCaseTopVanish provides CaseTop(with(androidx.compose.ui.platform.LocalDensity.current) { vanish.toPx() }, cardboardBoxConsole(g.platform))) {
+                                    androidx.compose.runtime.CompositionLocalProvider(
+                                        LocalCaseTopVanish provides CaseTop(with(androidx.compose.ui.platform.LocalDensity.current) { vanish.toPx() }, cardboardBoxConsole(g.platform)),
+                                        // (Shelf 3D work: the drawn spine's width / height, for the 3D case's thickness.)
+                                        LocalSpineDrawn provides (if (Shelf3D.enabled) ({ r: Float -> Shelf3D.drawnDepth[g.stableKey] = r }) else null)
+                                    ) {
                                         Spine(c, g, Modifier.fillMaxSize())
                                     }
                                 }
@@ -652,7 +655,8 @@ private fun ShelfPulled3D(
     // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
     if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
     if (next == Shelf3D.Mode.FLAT) return false
-    val depth = (slotW / slotH).coerceIn(0.03f, 0.4f)
+    // (Its thickness: exactly the spine picture's as the shelf draws it - SpineSlot can draw it narrower than its slot.)
+    val depth = (Shelf3D.drawnDepth[key] ?: (slotW / slotH)).coerceIn(0.03f, 0.4f)
     val d = androidx.compose.ui.platform.LocalDensity.current
     val pose = with(d) {
         shelfCasePose(p, slotCx.toPx(), slotBottom.toPx(), slotH.toPx(), bigCx.toPx(), bigTop.toPx(), bigH.toPx(), shape, depth, PULL_LIFT,
@@ -669,7 +673,8 @@ private fun ShelfPulled3D(
             .offset { IntOffset((pose.cx - roomW.toPx() / 2f).roundToInt(), (pose.cy - pose.h / 2f).roundToInt()) }
             .size(roomW, roomH)
             .graphicsLayer {
-                alpha = if (on) 1f else 0f
+                // (Hand-over: invisible while the shelf's spine rises, then fading in over the turn's start - Shelf3D.blendIn.)
+                alpha = if (on) Shelf3D.blendIn(shelfTurn(p)) else 0f
                 translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
             }
     ) {
@@ -968,6 +973,7 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, seed: Int, content: @Co
             val inset = with(androidx.compose.ui.platform.LocalDensity.current) { ((maxWidth - w) / 2).toPx() }
             Modifier.drawBehind { drawCaseTop(Features.spineDepth.state.value, caseTop.vanish - inset, caseTop.cardboard) }
         }
+        LocalSpineDrawn.current?.let { report -> if (maxHeight > 0.dp && maxHeight != androidx.compose.ui.unit.Dp.Infinity) { val r = w / maxHeight; androidx.compose.runtime.SideEffect { report(r) } } }
         content(Modifier.width(w).fillMaxHeight().then(top).spineDepth(seed))
     }
 }
