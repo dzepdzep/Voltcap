@@ -137,6 +137,8 @@ internal fun ProfileSelectScreen(
     val canAdd = profiles.size < Profiles.MAX && !lookStrip
     val count = profiles.size + if (canAdd) 1 else 0
     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
+    // (Sprint 526: profiles can change while the picker is up - a sync, a restore: the cursor stays on the row.)
+    LaunchedEffect(count) { if (cursor > count - 1) cursor = (count - 1).coerceAtLeast(0) }
     var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
     var leaving by remember { mutableStateOf(false) }
     // (Update 334: a locked profile asks its PIN before it plays or is edited — then [afterPin] goes ahead.)
@@ -299,9 +301,9 @@ internal fun ProfileSelectScreen(
                         // When this profile appears as the start-up's trace passes it (immediately otherwise).
                         val appearOf: () -> Float = {
                             if (stage == null) 1f else {
-                                val cs = centers; val f = cursor.coerceIn(0, cs.size - 1)
+                                val cs = centers; val f = cursor.coerceIn(0, (cs.size - 1).coerceAtLeast(0))
                                 val rho = with(density) { (avatar / 2 + 6.dp).toPx() }
-                                if (cs.isEmpty() || cs[i].x.isNaN() || cs[f].x.isNaN()) 0f else {
+                                if (i >= cs.size || cs[i].x.isNaN() || cs[f].x.isNaN()) 0f else { // (Sprint 526: the row can shrink under a frame still drawing it)
                                     val at = WireGeo.appearAt(cs[i].x, cs[f].x, cs.first().x - rho, cs.last().x + rho, cs[f].x - rho, cs[f].x + rho, stage.tm)
                                     IgnK.eOut(IgnK.ph(stageT(), at, at + 260f))
                                 }
