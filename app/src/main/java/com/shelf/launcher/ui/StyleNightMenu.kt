@@ -237,11 +237,14 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             // (Pass 5, D57: derived, so a glide doesn't re-compose every tile each frame; the place is read in graphicsLayer.)
             val base by remember(scroll) { androidx.compose.runtime.derivedStateOf { scroll.value.roundToInt() } }
             // (Batch 523: each game once when the list is shorter than the bars on screen - loopSlots; no second highlight.)
-            for ((slot, i) in loopSlots(base, count, half, loop, com.shelf.launcher.data.Features.endlessFill.value)) {
+            // (Batch 524: one game, one lit bar - with Fill the row on, only the copy at the endless place is lit, and a
+            // short list keys its copies by place so two copies never share one bar's state.)
+            val fill = com.shelf.launcher.data.Features.endlessFill.value
+            for ((slot, i) in loopSlots(base, count, half, loop, fill)) {
                 val off = slot - base
                 val gg = c.games[i]
-                key(if (loop && count < 2 * half + 1) "g$i" else slot) {
-                    val on = i == focus
+                key(if (loop && !fill && count < 2 * half + 1) "g$i" else slot) {
+                    val on = loopLit(loop, fill, slot, target, i, focus)
                     val pull by animateFloatAsState(if (on) 1f else 0f, if (animate) spring(dampingRatio = 0.7f, stiffness = 500f) else tween(0), label = "nmPull")
                     Box(
                         Modifier.size(with(density) { (wPx - listLeft + rowH).toDp() }, with(density) { (rowH * 0.82f).toDp() })

@@ -236,6 +236,14 @@ internal fun loopSteps(from: Int, focus: Int, n: Int, step: Int, ticks: Int): In
 }
 
 /**
+ * Batch 524 (owner: "exactly one logical selected game and one visually selected game"): whether place [slot] (showing
+ * game [game]) is the lit one. Going round with Fill the row on, the same game can stand at several places: only the one
+ * at the endless place [target] is lit. Otherwise each game stands once, so the game you're on ([focus]) is the lit one.
+ */
+internal fun loopLit(loop: Boolean, fill: Boolean, slot: Int, target: Int, game: Int, focus: Int): Boolean =
+    if (loop && fill) slot == target else game == focus
+
+/**
  * Batch 523 (owner: Endless "the same game appears or is highlighted several times" with few games): the slots a
  * hand-drawn endless list draws around [base] (its rounded scroll place), [half] each side, as (virtual place, game index).
  * With more games than slots, every slot (games repeat only far apart, never on screen twice); with fewer, each game ONCE,

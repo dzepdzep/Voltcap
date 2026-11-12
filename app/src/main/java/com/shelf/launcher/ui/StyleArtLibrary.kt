@@ -413,7 +413,8 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
                                 .padding(horizontal = 12.dp),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            val sel = real == c.focus
+                            // (Batch 524: one lit row - going round with Fill the row on, only the copy at the endless place.)
+                            val sel = if (loop && com.shelf.launcher.data.Features.endlessFill.value) i == vFocus else real == c.focus
                             // Selected: the whole name, fitted (R18), on the highlight; the others stay readable.
                             Column(verticalArrangement = Arrangement.Center) {
                                 FitText(
