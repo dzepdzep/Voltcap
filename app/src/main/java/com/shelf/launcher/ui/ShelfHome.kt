@@ -423,7 +423,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                             // (Shelf 3D work: while the 3D case has it, this spine - its picture, top and shading -
                                             // stays whole under the 3D case fading in on top, and goes once that is whole:
                                             // Shelf3D.shelfSpineAlpha / blendIn. Two half-faded layers let the dark show through.)
-                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) Shelf3D.shelfSpineAlpha(t) else 1f
+                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) Shelf3D.shelfSpineAlpha(t, g.stableKey in Shelf3D.drawnWhole) else 1f
                                             // (QA trace only, hardware QA 12 Nov: this spine's own frames of a pull, beside shelf3dframe.)
                                             if (QaTrace.on && Shelf3D.enabled && pv < 1f) android.util.Log.e("VoltcapQA", "shelfspineframe ${g.stableKey} pv=${"%.3f".format(pv)} t=${"%.3f".format(t)} alpha=${"%.2f".format(alpha)} on=${Shelf3D.on(g.stableKey)}")
                                         } else {
@@ -692,7 +692,9 @@ private fun ShelfPulled3D(
     if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
     val on = next == Shelf3D.Mode.CASE_3D
     androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
-    androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key) } }
+    androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key); Shelf3D.drawnWhole.remove(key) } }
+    // (Back on the shelf, or its turn not begun: drawn whole has to happen again on the next pull.)
+    if (shelfTurn(p) <= 0f) Shelf3D.drawnWhole.remove(key)
     // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
     if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
     // (QA trace only, hardware QA 12 Nov: every frame of a 3D pull - the pull, its turn, the decision, what shows - to find a jump
@@ -719,10 +721,13 @@ private fun ShelfPulled3D(
             .offset { IntOffset((pose.cx - roomW.toPx() / 2f).roundToInt(), (pose.cy - pose.h / 2f).roundToInt()) }
             .size(roomW, roomH)
             .graphicsLayer {
-                // (Hand-over: invisible while the shelf's spine rises, then fading in over the turn's start - Shelf3D.blendIn.)
-                alpha = if (on) Shelf3D.blendIn(shelfTurn(p)) else 0f
+                // (Hand-over: drawn at ~1 level while the shelf's spine rises - its pictures ready on the GPU - then fading in
+                // over the turn's start - Shelf3D.caseAlpha.)
+                alpha = if (on) Shelf3D.caseAlpha(shelfTurn(p)) else 0f
                 translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
             }
+            // (Drawn whole at least once: from the next frame on the shelf's spine may go - Shelf3D.shelfSpineAlpha.)
+            .drawWithContent { drawContent(); if (on && Shelf3D.blendIn(shelfTurn(p)) >= 1f) Shelf3D.drawnWhole.add(key) }
     ) {
         // The front's own place (the window flies out of it; the focus ring is round it), centred like the case.
         if (on) Box(Modifier.align(Alignment.Center).size(frontH * shape, frontH)

@@ -190,4 +190,14 @@ class ShelfCase3DTest {
         assertEquals(slotW / slotH, depth, 1e-6f)                     // the thickness is the shelf's, unchanged
         assertEquals(0f, pose(0.0001f).pitch, 0.01f); assertEquals(0f, pose(1f).pitch, 0.01f)   // level at both ends
     }
+
+    /** Flip 2, 12 Nov: a dropped frame at the hand-over never shows neither the spine nor the 3D case. */
+    @Test fun spineStaysUntilTheCaseWasDrawnWhole() {
+        assertEquals(1f, Shelf3D.shelfSpineAlpha(0.5f, drawnWhole = false), 0f)   // past the blend by the clock, not yet drawn
+        assertEquals(0f, Shelf3D.shelfSpineAlpha(0.5f, drawnWhole = true), 0f)
+        assertEquals(1f, Shelf3D.shelfSpineAlpha(0.1f, drawnWhole = true), 0f)    // mid-blend (and on the way back): spine under it
+        // drawn but invisible while it rises (pictures ready), then the blend
+        assertTrue(Shelf3D.caseAlpha(0f) > 0f && Shelf3D.caseAlpha(0f) < 0.005f)
+        assertEquals(1f, Shelf3D.caseAlpha(Shelf3D.BLEND), 0f)
+    }
 }
