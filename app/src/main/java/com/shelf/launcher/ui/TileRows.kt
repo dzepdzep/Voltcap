@@ -234,7 +234,9 @@ internal object TileRowEdit {
 
     /** "Reset this part" on a row: it goes back to its default place in the order (the others keep theirs). */
     fun resetRow(partId: String) {
-        val row = rowOf(partId) ?: return
+        // (Flip 2 t527g: "Reset this part" on the round buttons put their free place back but left them where the order had
+        // them - on Tile home it puts them back in their default place in the order too.)
+        val row = rowOf(partId) ?: (if (partId == HomeWidgets.SHORTCUTS && HomeEditState.layout == com.shelf.launcher.data.HomeLayout.TILES) TileRows.BUTTONS else null) ?: return
         val saved = com.shelf.launcher.data.Features.tileRowOrder.value
         if (saved.isBlank()) return
         val without = TileRows.resolve(saved, default).filter { it != row }

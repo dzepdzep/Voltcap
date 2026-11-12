@@ -100,6 +100,7 @@ class TileRowsTest {
         assertTrue(edit.contains("if (id == HomeWidgets.SHORTCUTS) TileRowEdit.dropButtons()"))
         val rows = src("ui/TileRows.kt")
         assertTrue(rows.contains("HomeEditState.live.remove(HomeWidgets.SHORTCUTS)"))
+        assertTrue(rows.contains("if (partId == HomeWidgets.SHORTCUTS && HomeEditState.layout == com.shelf.launcher.data.HomeLayout.TILES) TileRows.BUTTONS else null"))
         assertTrue(src("ui/LauncherScreen.kt").contains("TileRowEdit.rowDropLine.takeIf { HomeEditState.active && TileRowEdit.dragging != null }"))
         // The Edit Home bar keeps clear of the selected part as it moves.
         assertTrue(src("ui/HomeEditLegend.kt").contains("if (want != atTop) atTop = want"))
