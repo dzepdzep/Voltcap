@@ -2655,11 +2655,16 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         val games = _uiState.value.games.filter { it.sourceType == SourceType.ROM }.sortedBy { it.stableKey }
         val add = HashMap<String, List<Pair<String, String>>>()
+        // (A box-front scan at its real case's shape - qa_art/box_<shape>_<n>.png, 058 / 071 / 100 / 113 - as a real scan is:
+        // the 3D case takes only scans its real case keeps whole, Shelf3D.shapeAgrees.)
+        val shapes = listOf(0.58f to "058", 0.71f to "071", 1.0f to "100", 1.13f to "113")
         games.forEachIndexed { i, g ->
             if (g.stableKey in _uiState.value.physicalMedia && g.stableKey !in qaScanKeys) return@forEachIndexed   // its own scans: left alone
+            val a = com.shelf.launcher.ui.CaseCatalog.forGame(g)?.aspect ?: 0.71f
+            val box = "$dir/box_${shapes.minBy { kotlin.math.abs(it.first - a) }.second}_${i % 3}.png"
             add[g.stableKey] = when (i % 3) {
-                0 -> listOf("Box" to "$dir/cover_${i % 6}.png", "Spine" to "$dir/spine_${i % 4}.png")
-                1 -> listOf("Box" to "$dir/cover_${i % 6}.png", "Spine" to "$dir/spine_custom.png")
+                0 -> listOf("Box" to box, "Spine" to "$dir/spine_${i % 4}.png")
+                1 -> listOf("Box" to box, "Spine" to "$dir/spine_custom.png")
                 else -> emptyList()
             }
         }
