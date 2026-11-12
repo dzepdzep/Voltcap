@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.snap
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.layout.requiredSize
@@ -147,7 +148,10 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
     ) {
         // The blade itself: a curved leading edge, its colour, a gloss and a lit rim.
         BladeBody(p, Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
+        // (Phase 6, 12 Nov: while a page blade lies over it, the game blade's words are hidden from accessibility services - a
+        // screen reader read the covered text - and from the QA text checks; nothing changes on screen, its keys are inert.)
+        Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)
+            .then(if (ctx.page != WinPage.MAIN) Modifier.clearAndSetSemantics { } else Modifier)) {
             // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
             // edge on the Odin with a long name, T3 o478D.)
             WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1)

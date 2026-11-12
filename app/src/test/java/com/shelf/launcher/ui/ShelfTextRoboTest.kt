@@ -113,7 +113,14 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         for (page in listOf(listOf("details", "summary", "info"), listOf("options", "config"))) {
             val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
                 (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
-            val found = compose.onAllNodes(m).fetchSemanticsNodes()
+            var found = compose.onAllNodes(m).fetchSemanticsNodes()
+            if (found.isEmpty()) {   // behind More ("•••" on Tiles)
+                val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) &&
+                    (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).trim().let { it == "•••" || it.equals("more", true) } }
+                val ms = compose.onAllNodes(more).fetchSemanticsNodes()
+                if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
+                found = compose.onAllNodes(m).fetchSemanticsNodes()
+            }
             if (found.isEmpty()) { problems += "no ${page[0]} control"; continue }
             compose.onAllNodes(m)[found.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(40)
@@ -155,10 +162,21 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         // two texts over each other where both are drawn (their visible, clipped bounds), beyond a 2 px touch
         for (i in all.indices) for (j in i + 1 until all.size) {
             val a = all[i].boundsInRoot; val b = all[j].boundsInRoot
-            val o: Rect = a.intersect(b)
+            // (in the frame of their nearest common layout: a slanted panel - Night's -2 / -6 degrees - widens the screen
+            // bounding boxes of its lines by width x sin(angle), which made neighbouring lines look as if they overlapped)
+            val o: Rect = localOverlap(all[i], all[j]) ?: a.intersect(b)
             if (o.width > 2f && o.height > 2f && !nested(all[i], all[j])) problems += "$where overlap: '${name(all[i])}' $a × '${name(all[j])}' $b"
         }
         return problems
+    }
+
+    /** The two texts' overlap in their nearest common layout's own (unturned) frame; null when they share none. */
+    private fun localOverlap(a: SemanticsNode, b: SemanticsNode): Rect? {
+        val upA = generateSequence(a.layoutInfo) { it.parentInfo }.toList()
+        val upB = generateSequence(b.layoutInfo) { it.parentInfo }.toSet()
+        val common = upA.firstOrNull { it in upB } ?: return null
+        val ca = common.coordinates
+        return runCatching { ca.localBoundingBoxOf(a.layoutInfo.coordinates, true).intersect(ca.localBoundingBoxOf(b.layoutInfo.coordinates, true)) }.getOrNull()
     }
 
     /** A text inside another text's node (a label and its own merged copy) is one text, not two. */

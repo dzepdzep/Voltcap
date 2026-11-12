@@ -2627,15 +2627,14 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                         opt.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk)
                         else -> look.btnInk
                     }
-                    androidx.compose.material3.Text(
+                    // (Phase 6, 12 Nov, rule 11 / static TRUNCATE: an option's long name ended in "…" (Night's Options page, the
+                    // ShelfTextRoboTest). Whole now: two lines, then a readable smaller size, then it slides.)
+                    WinFullText(
                         if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null
                     )
                     opt.sub?.let {
-                        androidx.compose.material3.Text(
-                            it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
-                        )
+                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1, fontFamily = if (look.mono) FontFamily.Monospace else null)
                     }
                 }
             }
