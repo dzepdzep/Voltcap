@@ -81,7 +81,7 @@ class ShelfCase3DTest {
 
     @Test fun topShowsOnlyWhileItTurns() {
         assertFalse(faces(pose(0.0001f))[F.TOP.ordinal].let { it.second && height(it.first) > 0.5f })
-        assertTrue(faces(pose(0.5f))[F.TOP.ordinal].second)                       // mid-turn: tipped toward you, its top lit
+        assertTrue(faces(pose(pFor(0.5f)))[F.TOP.ordinal].second)                 // mid-turn: tipped toward you, its top shows
         assertFalse(faces(pose(1f))[F.TOP.ordinal].let { it.second && height(it.first) > 0.5f })
     }
 

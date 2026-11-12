@@ -52,7 +52,6 @@ class ShelfCase3DRenderTest {
         val g = Game("Probe Quest", "PS2", 3, SourceType.ROM, romPath = "/r/p.iso")
         val slotH = 150f; val slotW = 13f; val bigH = 260f; val shape = 0.7f; val depth = slotW / slotH
         val poses = frames.map { p -> shelfCasePose(p, 0f, 0f, slotH, 0f, 0f, bigH, shape, depth, 0.42f, slide, turn, grow) }
-        compose.mainClock.autoAdvance = false
         compose.setContent {
             Row(Modifier.testTag("sheet").background(Color(0xFF15100A))) {
                 for (pp in poses) Box(Modifier.size(170.dp, 320.dp)) {
@@ -62,7 +61,8 @@ class ShelfCase3DRenderTest {
                 }
             }
         }
-        repeat(60) { compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
+        // (Case3D alone has no endless motion: the normal clock settles and the capture can redraw.)
+        compose.waitForIdle(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(200)); compose.waitForIdle()
         val bmp = compose.onNodeWithTag("sheet").captureToImage().asAndroidBitmap()
         val out = java.io.File("build/shelf3d"); out.mkdirs()
         java.io.FileOutputStream(java.io.File(out, "render.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
