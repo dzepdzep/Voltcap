@@ -91,7 +91,9 @@ internal object HomeEditSession {
         "art" to Features.artPosLooks.value,
         "artBox" to "${Features.artShiftCase.value},${Features.artDropCase.value},${Features.artZoomCase.value}",
         // (Update 241, #06: which parts are inside a hollow part — HomeNest.)
-        "nest" to HomeNest.raw
+        "nest" to HomeNest.raw,
+        // (Sprint 527: Tile home's row order - Undo / Discard put it back.)
+        "tileRows" to Features.tileRowOrder.value
     )
 
     private fun writePrefs(m: Map<String, String>) {
@@ -101,6 +103,7 @@ internal object HomeEditSession {
         m["backing"]?.toIntOrNull()?.let { if (Features.partBackingSolid.value != it) Features.partBackingSolid.value = it }
         m["art"]?.let { if (Features.artPosLooks.value != it) Features.artPosLooks.value = it }
         m["nest"]?.let { HomeNest.set(it) }
+        m["tileRows"]?.let { if (Features.tileRowOrder.value != it) Features.tileRowOrder.value = it }
         m["artBox"]?.split(',')?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == 3 }?.let { v ->
             if (Features.artShiftCase.value != v[0]) Features.artShiftCase.value = v[0]
             if (Features.artDropCase.value != v[1]) Features.artDropCase.value = v[1]
@@ -240,6 +243,7 @@ internal object HomeEditSession {
     fun resetSelected(id: String) {
         push("reset:$id", force = true)
         HomeEditState.resetOne(id)
+        TileRowEdit.resetRow(id) // (Sprint 527: a Tile home row back to its default place in the order)
         PartStyles.set(id, PartStyle())
         // (Update 241, #06: out of the hollow part it was in.)
         HomeNest.release(id)
@@ -257,6 +261,8 @@ internal object HomeEditSession {
         Features.partStyles.value = PartStyles.format(PartStyles.parse(Features.partStyles.value).filterKeys { !belongs(it, layout) })
         // (Update 241, #06: and its parts out of the hollow parts.)
         HomeNest.releaseLayout(layout)
+        // (Sprint 527: Tile home's rows back in the order the settings give)
+        if (layout == HomeLayout.TILES) Features.tileRowOrder.value = ""
     }
 
     /** [id] is shown on the home screen (not hidden, and — a part added to a layout — still added). */

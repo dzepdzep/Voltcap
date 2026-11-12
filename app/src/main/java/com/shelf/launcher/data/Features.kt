@@ -835,6 +835,8 @@ object Features {
     val hiddenParts = SetPref("hidden_parts")
     /** How far the layouts' own parts were moved in Edit Home (update 108): "part:LAYOUT:name=dx,dy;…" in dp. */
     val partShifts = StringPref("part_shifts", "")
+    /** Sprint 527: Tile home's rows top to bottom (ui/TileRows: buttons, cats, tiles, info); empty = the order the settings give. */
+    val tileRowOrder = StringPref("tile_row_order", "")
     /** The backing behind the floating game info parts (update 104). */
     enum class PartBacking(val label: String) {
         LAYOUT("Layout's colours"), THEME("Theme colours"), GLASS("Dark glass"), CAPSULE("Capsule"),
