@@ -8,6 +8,7 @@
 #                                                      D-pad moves (default 6) at 0.9 s, then back and forth fast (3 × ◀▶)
 #         sh shelf3d_qa.sh pair NAME [STEPS]           run old then new with the same game and moves (the comparison)
 #         COLD=1 sh shelf3d_qa.sh ...                  stop the QA app first (cold artwork); the real Voltcap is never stopped
+#         SCANS=1 / ART_DELAY=800 sh shelf3d_qa.sh ... session-only scanned spines / fronts (scan, custom, none); fixture art held back (ms)
 #         sh shelf3d_qa.sh trace NAME SECS             logcat of the QA trace (SpineTrace EMPTY / SWAP / REDECODE, hand-over)
 P=com.shelf.launcher.qa; OUT=/sdcard/pc/shelf3d; mkdir -p $OUT
 awake()  { dumpsys power | grep -q "mWakefulness=Awake"; }
@@ -29,8 +30,9 @@ key() { gate_qa; input keyevent KEYCODE_$1 || { echo "STOP: input failed"; exit 
 open_shelf() {   # $1 = true|false (the 3D case). COLD=1: the QA app (never the real one) is stopped first: cold artwork in memory
   gate_pre
   [ "$COLD" = 1 ] && { am force-stop $P; sleep 1; }
+  X=""; [ "$SCANS" = 1 ] && X="--es voltcap_test_scanfix on"; [ -n "$ART_DELAY" ] && X="$X --es voltcap_test_artfix delay=$ART_DELAY"
   am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_preview true --es voltcap_test_layout SHELF --ez voltcap_test_nolaunch true \
-    --ez voltcap_test_shelf3d $1 > /dev/null || { echo "STOP: start failed"; exit 4; }
+    --ez voltcap_test_shelf3d $1 $X > /dev/null || { echo "STOP: start failed"; exit 4; }
   sleep 3; gate_qa; }
 cmd=$1; shift
 case $cmd in
