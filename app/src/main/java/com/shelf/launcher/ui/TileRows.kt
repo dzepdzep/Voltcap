@@ -97,6 +97,14 @@ internal object TileRows {
     }
 
     /** The rows shown above the tiles and under them (the tiles' centring keeps the ones under them in the group). */
+    /** [row] back in its default place in [order]: before the first row that follows it in [default], else at the end. Pure. */
+    fun resetInOrder(order: List<String>, default: List<String>, row: String): List<String> {
+        val without = order.filter { it != row }
+        val followers = default.dropWhile { it != row }.drop(1).toSet()
+        val i = without.indexOfFirst { it in followers }
+        return if (i < 0) without + row else without.toMutableList().apply { add(i, row) }
+    }
+
     fun above(order: List<String>, shown: Set<String>): List<String> = order.takeWhile { it != TILES }.filter { it in shown }
     fun below(order: List<String>, shown: Set<String>): List<String> = order.dropWhile { it != TILES }.drop(1).filter { it in shown }
 
@@ -241,8 +249,9 @@ internal object TileRowEdit {
         val row = rowOf(partId) ?: (if (partId == HomeWidgets.SHORTCUTS && HomeEditState.layout == com.shelf.launcher.data.HomeLayout.TILES) TileRows.BUTTONS else null) ?: return
         val saved = com.shelf.launcher.data.Features.tileRowOrder.value
         if (saved.isBlank()) return
-        val without = TileRows.resolve(saved, default).filter { it != row }
-        com.shelf.launcher.data.Features.tileRowOrder.value = TileRows.format(TileRows.resolve(TileRows.format(without), default))
+        // (Flip 2 t527h: it went back "after the row it follows by default" - the game facts, which had moved above the tiles
+        // with it - so the bar stayed above the tiles. Now: before the first row that comes after it by default, else last.)
+        com.shelf.launcher.data.Features.tileRowOrder.value = TileRows.format(TileRows.resetInOrder(TileRows.resolve(saved, default), default, row))
     }
 }
 

@@ -92,6 +92,14 @@ class TileRowsTest {
         assertEquals(40, TileRows.TOP_CLEAR_DP)
     }
 
+    @Test fun resetPartPutsARowBackInItsDefaultPlace() {
+        val d = listOf("cats", "tiles", "info", "buttons")
+        // (Flip 2 t527h: buttons moved up twice, the facts stepped above the tiles with them; Reset this part on the buttons.)
+        assertEquals(listOf("cats", "info", "tiles", "buttons"), TileRows.resetInOrder(listOf("cats", "buttons", "info", "tiles"), d, "buttons"))
+        assertEquals(listOf("cats", "tiles", "info", "buttons"), TileRows.resetInOrder(listOf("tiles", "cats", "info", "buttons"), d, "cats"))
+        assertEquals(listOf("buttons", "cats", "tiles", "info"), TileRows.resetInOrder(listOf("buttons", "tiles", "info", "cats"), listOf("buttons", "cats", "tiles", "info"), "cats"))
+    }
+
     @Test fun aRowsHeightComesFromTheOrderOnly() {
         // (Owner, Sprint 527: one section-ordering and positioning system, no arbitrary offsets.)
         val edit = src("ui/HomeEdit.kt")
