@@ -917,7 +917,7 @@ private fun PqCollection(
                     key(if (loop) "${keys[real]}#${Math.floorDiv(i, n)}" else keys[real]) {
                         PqSlot(
                             c, i, real, i == vFocus, pos, flash, covers, pitchPx, centerPx, itemWPx, liftPx, halfW,
-                            Modifier.align(Alignment.BottomStart).padding(bottom = bottomPad).size(itemW, itemH)
+                            Modifier.align(Alignment.BottomStart).padding(bottom = bottomPad).size(itemW, itemH).qaLit(i == vFocus)
                         )
                     }
                 }
