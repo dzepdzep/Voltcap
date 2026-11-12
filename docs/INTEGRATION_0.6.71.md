@@ -8,6 +8,10 @@
 - Experimental code ships off: 3D Shelf (`Shelf3D.enabled = false`, hooks only in the QA app / debuggable builds). Connected
   Ignition and FW1 are not in it.
 
+## Build checks (RC4 c827ff9, worktree int)
+assembleDebug (QA app; isolation + secrets) SUCCESS, sha256 `c3a45817…`; testDebugUnitTest executed in `int`, BUILD SUCCESSFUL;
+lintRelease 49 E / 966 W / 109 H = baseline, no new findings; QA selftests 139/139. Ledger `qa-0.6.70-int-c827ff9`.
+
 ## Status per area (implemented / PC-tested / hardware functional / owner visual approval / release-ready)
 | Area | Impl. | PC | HW functional | Owner visual | Release-ready |
 |---|---|---|---|---|---|
