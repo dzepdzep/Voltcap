@@ -39,4 +39,21 @@ for n, (l, lab) in enumerate(layouts, 1):
     for x in e['status']: assert x in LABELS, (l, x)
     counts[e['status'][-1]] = counts.get(e['status'][-1], 0) + 1
     print('| %d | `%s` | %s | `%s` | %s | %s | %s | %s |' % (n, l, lab, sc, pages, 'yes' if sc in more else '', ' → '.join(e['status']), e.get('note', '')))
+# exact coverage, machine-readable (tools/popup_audit/coverage.json): which real-window tests cover each layout
+shelf_text = {'SHELF', 'STACKS', 'STORAGE', 'NIGHT', 'TILES', 'BLADES'}
+cov = {}
+for l, lab in layouts:
+    sc = scene.get(l, other)
+    tests = ['WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard', 'WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame',
+             'WinFocusRoboTest.rapidBThenANeverStartsTheGame', 'WinFocusRoboTest.bInTheMiddleOfAPageChange', 'WinFocusRoboTest.anASoonAfterBActsOnTheOpener',
+             'WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame', 'WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame',
+             'WinPresentationTest (all pref combinations)']
+    if sc in native: tests.append('WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl')
+    if l in shelf_text: tests.append('ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)')
+    if l in ('CLASSIC', 'SHELF', 'STORAGE'): tests.append('WinFocusRoboTest plain window (layout windows off)')
+    if l in ('SHELF', 'STACKS'): tests.append('ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)')
+    if l == 'SHELF': tests.append('ShelfCase3DTest / ShelfCase3DRenderTest (experimental 3D case, off by default)')
+    e = st.get(l, st['_default'])
+    cov[l] = dict(name=lab, scene=sc, pages=('native' if sc in native else 'shared'), status=e['status'], tests=tests, hardware='none')
+json.dump(cov, open(os.path.join(root, 'tools/popup_audit/coverage.json'), 'w'), indent=1, ensure_ascii=False)
 print('\nLatest status per layout: ' + ', '.join('%s %d' % (k2, v) for k2, v in sorted(counts.items(), key=lambda kv: LABELS.index(kv[0]))))

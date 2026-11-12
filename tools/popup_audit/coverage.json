@@ -1,0 +1,1094 @@
+{
+ "CLASSIC": {
+  "name": "Voltcap row",
+  "scene": "VOLT_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest plain window (layout windows off)"
+  ],
+  "hardware": "none"
+ },
+ "TILES": {
+  "name": "Tile home",
+  "scene": "TILE_CARD",
+  "pages": "native",
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
+  ],
+  "hardware": "none"
+ },
+ "HERO": {
+  "name": "Hero carousel",
+  "scene": "HERO_BANNER",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "GRID": {
+  "name": "Grid",
+  "scene": "TILE_CARD",
+  "pages": "native",
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
+  ],
+  "hardware": "none"
+ },
+ "TV": {
+  "name": "TV room",
+  "scene": "null",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "DASH": {
+  "name": "Dashboard",
+  "scene": "DASH_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "LIVE": {
+  "name": "Live tiles",
+  "scene": "LIVE_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "SIDE": {
+  "name": "Side menu",
+  "scene": "SIDE_DRAWER",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CROSS": {
+  "name": "Cross menu",
+  "scene": "CROSS_OPTIONS",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "SPOT": {
+  "name": "Spotlight",
+  "scene": "SPOT_POSTER",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "BAR": {
+  "name": "Icon bar",
+  "scene": "DOCK_FLYOUT",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "SHELF": {
+  "name": "Game shelf",
+  "scene": "INDEX_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
+   "WinFocusRoboTest plain window (layout windows off)",
+   "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)",
+   "ShelfCase3DTest / ShelfCase3DRenderTest (experimental 3D case, off by default)"
+  ],
+  "hardware": "none"
+ },
+ "HUB": {
+  "name": "Console hub",
+  "scene": "HUB_PLATE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "RESUME": {
+  "name": "Resume & discover",
+  "scene": "DISCOVER_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CHAN": {
+  "name": "Channel grid",
+  "scene": "WII_PREVIEW",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CIRCUIT": {
+  "name": "Circuit board",
+  "scene": "CHIP_SHEET",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "LIBRARY": {
+  "name": "Library panel",
+  "scene": "LIBRARY_PAGE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "STACKS": {
+  "name": "Case stacks",
+  "scene": "INDEX_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
+   "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)"
+  ],
+  "hardware": "none"
+ },
+ "TIMELINE": {
+  "name": "Timeline",
+  "scene": "TIMELINE_ENTRY",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "ARCADE": {
+  "name": "Arcade cabinets",
+  "scene": "ARCADE_MENU",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CONSOLES": {
+  "name": "Console stack",
+  "scene": "INDEX_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "DISCS": {
+  "name": "Disc station",
+  "scene": "DISC_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "HERO_TILES": {
+  "name": "Hero tiles",
+  "scene": "HERO_BANNER",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "TWIN_DESK": {
+  "name": "Twin desk",
+  "scene": "TWIN_HINGE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "TWIN_ICONS": {
+  "name": "Twin icons",
+  "scene": "TWIN_HINGE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "TWIN_SHOWCASE": {
+  "name": "Twin showcase",
+  "scene": "TWIN_HINGE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CRATE": {
+  "name": "Record crate",
+  "scene": "RECORD_SLEEVE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CARDS": {
+  "name": "Card binder",
+  "scene": "CARD_BACK",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CUSTOM": {
+  "name": "Layout Studio",
+  "scene": "STUDIO_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "POCKET_CLASSIC": {
+  "name": "Pocket classic",
+  "scene": "POCKET_LCD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "POCKET_RIBBON": {
+  "name": "Pocket ribbon",
+  "scene": "POCKET_LCD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "GREENCORE": {
+  "name": "Green Core (2001)",
+  "scene": "CORE_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "POCKET": {
+  "name": "Pocket Quest",
+  "scene": "POCKET_LCD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CUBE": {
+  "name": "Cube menu",
+  "scene": "CUBE_FACE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "MEMCARD": {
+  "name": "Memory card (2000)",
+  "scene": "MEMCARD_INFO",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CASEFLOW": {
+  "name": "Case flow",
+  "scene": "CASE_MEDIA",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "BOX": {
+  "name": "Cardboard box",
+  "scene": "BOX_SHEET",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "STORAGE": {
+  "name": "Storage boxes",
+  "scene": "STORAGE_RECORD",
+  "pages": "native",
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
+   "WinFocusRoboTest plain window (layout windows off)"
+  ],
+  "hardware": "none"
+ },
+ "FILESELECT": {
+  "name": "File select (1996)",
+  "scene": "FILE_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "ORBIT": {
+  "name": "Orbit deck (1995)",
+  "scene": "ORBIT_TERMINAL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "AIRY": {
+  "name": "Airy home (1999)",
+  "scene": "AIRY_PANEL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "NIGHT": {
+  "name": "Night menu (2006)",
+  "scene": "NIGHT_STATUS",
+  "pages": "native",
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
+  ],
+  "hardware": "none"
+ },
+ "BLADES": {
+  "name": "Blades (2005)",
+  "scene": "BLADE_GUIDE",
+  "pages": "native",
+  "status": [
+   "IMPLEMENTED",
+   "PC TESTED",
+   "HARDWARE PENDING"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
+   "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
+  ],
+  "hardware": "none"
+ },
+ "BUBBLES": {
+  "name": "Bubble home (2011)",
+  "scene": "BUBBLE_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CAMERA": {
+  "name": "Pocket camera (1998)",
+  "scene": "CAMERA_MENU",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "PANELS": {
+  "name": "Panel dashboard (2008)",
+  "scene": "PANEL_DETAIL",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "MAGAZINE": {
+  "name": "Game magazine",
+  "scene": "MAG_PAGE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "SHOP": {
+  "name": "Rental shop",
+  "scene": "SHOP_TAG",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "TERMINAL": {
+  "name": "Terminal",
+  "scene": "TERM_RUN",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "CINEMA": {
+  "name": "Cinema",
+  "scene": "CINEMA_PREMIERE",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "ARCTIC": {
+  "name": "Arctic hub",
+  "scene": "ARCTIC_DRAWER",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "COVERDETAILS": {
+  "name": "Coverflow details",
+  "scene": "INDEX_CARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ },
+ "ARTLIB": {
+  "name": "Artwork library",
+  "scene": "GALLERY_PLACARD",
+  "pages": "shared",
+  "status": [
+   "INVESTIGATED",
+   "PC TESTED"
+  ],
+  "tests": [
+   "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
+   "WinFocusRoboTest.backFromOptionsLandsOnTheOpenerOnEveryFrame",
+   "WinFocusRoboTest.rapidBThenANeverStartsTheGame",
+   "WinFocusRoboTest.bInTheMiddleOfAPageChange",
+   "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
+   "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
+   "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
+   "WinPresentationTest (all pref combinations)"
+  ],
+  "hardware": "none"
+ }
+}
