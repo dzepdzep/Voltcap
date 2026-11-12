@@ -89,13 +89,21 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         val all = texts().filter { n -> n.boundsInRoot.width > 0.5f && n.boundsInRoot.height > 0.5f }
         assertTrue("$layout: nothing drawn", all.isNotEmpty())
         val problems = mutableListOf<String>()
+        val notes = mutableListOf<String>()
         for (n in all) {
             val r = layoutOf(n) ?: continue
-            // (a scrolling title is laid out at its whole width on purpose: only a cut that isn't scrolled counts)
-            if (r.hasVisualOverflow && r.layoutInput.overflow != androidx.compose.ui.text.style.TextOverflow.Visible)
-                problems += "cut: '${name(n)}' (${r.lineCount} lines, ${r.size} in ${n.boundsInRoot})"
-            else if (r.didOverflowHeight) problems += "cut height: '${name(n)}' (${r.lineCount} lines, ${r.size} in ${n.boundsInRoot})"
+            val mp = r.multiParagraph
+            // cut: lines that don't fit the text's own height, a line running past its own width, or an ellipsis (rule 11)
+            val hiddenLines = mp.height - r.size.height > 1.5f && mp.lineCount > 1 || (mp.didExceedMaxLines && r.layoutInput.overflow != androidx.compose.ui.text.style.TextOverflow.Visible)
+            val wide = (0 until r.lineCount).any { i -> r.getLineRight(i) - r.size.width > 1.5f && r.layoutInput.softWrap }
+            val ellipsis = r.lineCount > 0 && r.isLineEllipsized(r.lineCount - 1)
+            if (hiddenLines || wide || ellipsis)
+                problems += "cut: '${name(n)}' (${r.lineCount} lines${if (ellipsis) ", ellipsis" else ""}, text ${r.size} in ${n.boundsInRoot})"
+            // wider than what is shown of it: a scrolling title (allowed, rule 11) or cut by a parent - for the device check
+            else if (r.size.width - n.boundsInRoot.width > 1.5f || r.size.height - n.boundsInRoot.height > 1.5f)
+                notes += "shown in part (scrolls, or cut by a parent): '${name(n).take(60)}' text ${r.size} shown ${n.boundsInRoot.size}"
         }
+        if (notes.isNotEmpty()) println("TEXT-NOTES $layout ×$scale ach=$ach '${title.take(20)}':\n" + notes.joinToString("\n"))
         // two texts over each other where both are drawn (their visible, clipped bounds), beyond a 2 px touch
         for (i in all.indices) for (j in i + 1 until all.size) {
             val a = all[i].boundsInRoot; val b = all[j].boundsInRoot
