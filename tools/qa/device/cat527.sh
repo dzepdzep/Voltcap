@@ -3,6 +3,7 @@
 # Never wakes / unlocks; keys only while the QA app is in front (else STOP). Preview on (nothing saved) and the settings snapshot
 # around it; the owner's QA snapshot files copied aside first and put back byte-for-byte.
 #   sh cat527.sh looks TAG [SCALE]   each of the 17 looks: open, settled shot, a move (mid-motion + settled), a short recording
+#   sh cat527.sh realart TAG [SCALE] [CAT]  the 17 looks with real artwork (shipped console photos, the QA app's covers)
 #   sh cat527.sh follow TAG          Follow home layout + the themed pickers: the look each home layout opens
 #   sh cat527.sh pills TAG           the Tile home category pill bar: x1.0 / x1.3, start / middle / end of the list
 #   sh cat527.sh restore TAG
@@ -20,8 +21,8 @@ setup() {
   A --ez voltcap_test_nolaunch true; sleep 3; picker
   A --es voltcap_test_snapshot save; sleep 2
   A --ez voltcap_test_preview true; sleep 1
-  A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
-  A --es voltcap_test_layout TILES --es voltcap_test_category ALL; sleep 3; picker
+  A --es voltcap_test_fixture "names=real,art=${ART:-portrait},meta=none"; sleep 1
+  A --es voltcap_test_layout TILES --es voltcap_test_category ${CAT:-ALL}; sleep 3; picker
   A --es voltcap_test_pref "pb_follow_home=false"; sleep 0.5
 }
 case $MODE in
@@ -34,6 +35,17 @@ looks)
     rec_start $O/${V}_rec 4; sleep 0.4; k DPAD_RIGHT; sleep 0.12; screencap -p $O/${V}_moving.png; sleep 1.0; k DPAD_RIGHT; sleep 1.6; rec_stop
     screencap -p $O/${V}_moved.png
     A --es voltcap_test_catscreen close; sleep 1.2; log "look $V"
+  done
+  A --es voltcap_test_scale off ;;
+realart)
+  # Owner: the audit again with real artwork - the console photos Voltcap ships (assets/console_hw), the QA app's own covers
+  # (fixture art=real: nothing copied from the real Voltcap), opened on a console category; a move to the next console.
+  ART=real; CAT=${4:-N64}; setup; SC=${3:-off}; A --es voltcap_test_scale "$SC"; sleep 1
+  for V in TILES SLIDES WALL GRID STAGE BLADES DRAWERS WORLDS ARCHIVE CHANNEL GENERATIONS CONSTELLATION VAULT DASHBOARD WIICHAN CINEMA ARCTIC; do
+    A --es voltcap_test_pref "pb_view=$V"; sleep 0.6
+    A --es voltcap_test_catscreen open; sleep 3; screencap -p $O/R_${V}_open.png
+    k DPAD_RIGHT; sleep 1.6; screencap -p $O/R_${V}_next.png
+    A --es voltcap_test_catscreen close; sleep 1.2; log "realart $V"
   done
   A --es voltcap_test_scale off ;;
 follow)
