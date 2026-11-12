@@ -40,7 +40,7 @@ looks)
 realart)
   # Owner: the audit again with real artwork - the console photos Voltcap ships (assets/console_hw), the QA app's own covers
   # (fixture art=real: nothing copied from the real Voltcap), opened on a console category; a move to the next console.
-  ART=real; CAT=${4:-N64}; setup; SC=${3:-off}; A --es voltcap_test_scale "$SC"; sleep 1
+  ART=${ART:-real}; CAT=${4:-N64}; setup; SC=${3:-off}; A --es voltcap_test_scale "$SC"; sleep 1
   for V in TILES SLIDES WALL GRID STAGE BLADES DRAWERS WORLDS ARCHIVE CHANNEL GENERATIONS CONSTELLATION VAULT DASHBOARD WIICHAN CINEMA ARCTIC; do
     A --es voltcap_test_pref "pb_view=$V"; sleep 0.6
     A --es voltcap_test_catscreen open; sleep 3; screencap -p $O/R_${V}_open.png
