@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import com.shelf.launcher.data.Game
@@ -38,7 +35,7 @@ import java.time.Duration
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w1400dp-h340dp-land-mdpi")
 class ShelfCase3DRenderTest {
-    private val compose = createComposeRule()
+    private val compose = androidx.compose.ui.test.junit4.createAndroidComposeRule<androidx.activity.ComponentActivity>()
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
 
     private fun ease(t: Float) = androidx.compose.animation.core.FastOutSlowInEasing.transform(t.coerceIn(0f, 1f))
@@ -52,6 +49,9 @@ class ShelfCase3DRenderTest {
         val g = Game("Probe Quest", "PS2", 3, SourceType.ROM, romPath = "/r/p.iso")
         val slotH = 150f; val slotW = 13f; val bigH = 260f; val shape = 0.7f; val depth = slotW / slotH
         val poses = frames.map { p -> shelfCasePose(p, 0f, 0f, slotH, 0f, 0f, bigH, shape, depth, 0.42f, slide, turn, grow) }
+        // (Case3D keeps its loading shimmer moving: frames are stepped, and the activity's view is drawn into a bitmap -
+        // captureToImage waits for an idle window that never comes.)
+        compose.mainClock.autoAdvance = false
         compose.setContent {
             Row(Modifier.testTag("sheet").background(Color(0xFF15100A))) {
                 for (pp in poses) Box(Modifier.size(170.dp, 320.dp)) {
@@ -61,9 +61,13 @@ class ShelfCase3DRenderTest {
                 }
             }
         }
-        // (Case3D alone has no endless motion: the normal clock settles and the capture can redraw.)
-        compose.waitForIdle(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(200)); compose.waitForIdle()
-        val bmp = compose.onNodeWithTag("sheet").captureToImage().asAndroidBitmap()
+        repeat(90) { compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
+        val root = compose.activity.window.decorView
+        val full = android.graphics.Bitmap.createBitmap(root.width, root.height, android.graphics.Bitmap.Config.ARGB_8888)
+        root.draw(android.graphics.Canvas(full))
+        val sheetBounds = compose.onNodeWithTag("sheet").fetchSemanticsNode().boundsInRoot
+        val bmp = android.graphics.Bitmap.createBitmap(full, sheetBounds.left.toInt(), sheetBounds.top.toInt(),
+            sheetBounds.width.toInt().coerceAtMost(full.width - sheetBounds.left.toInt()), sheetBounds.height.toInt().coerceAtMost(full.height - sheetBounds.top.toInt()))
         val out = java.io.File("build/shelf3d"); out.mkdirs()
         java.io.FileOutputStream(java.io.File(out, "render.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
         // drawn width of each cell (pixels that are not the background)

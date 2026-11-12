@@ -264,4 +264,31 @@ class WinFocusRoboTest(private val layout: HomeLayout, private val plain: Boolea
         key(KeyEvent.KEYCODE_BACK); frames(30)
         assertTrue("$layout: B after the bumpers lands on the opener, not '$play': ${focused()}", onOptionsButton(focused()))
     }
+
+    /** Phase 5: the window still opening - A (its press may be the one that opened it) never plays; B then A never plays. */
+    @Test fun aOrBWhileOpeningNeverStartsTheGame() {
+        compose.mainClock.autoAdvance = false
+        scenesBefore = com.shelf.launcher.data.Features.winScenes.state.value
+        com.shelf.launcher.data.Features.winScenes.state.value = !plain
+        compose.setContent {
+            GameWindow(layout, game, com.shelf.launcher.LauncherUiState(), emptyMap(), onClose = { closes++ }, onPlay = { plays++ }, onFullDetails = {}, onNeedMedia = {},
+                options = listOf(WinOption("Probe option") { optionHits++ }))
+        }
+        frames(3)
+        key(KeyEvent.KEYCODE_DPAD_CENTER)              // A while it grows in
+        frames(3)
+        key(KeyEvent.KEYCODE_BACK)                     // B while it grows in
+        frames(2)
+        key(KeyEvent.KEYCODE_DPAD_CENTER)              // A while it flies back
+        frames(90)
+        assertEquals("$layout: a press while opening / closing started the game", 0, plays)
+    }
+
+    /** Phase 5: rapid B A B A on the main page (B closes the window; the A's land on a closing window): never Play. */
+    @Test fun rapidBABAOnTheMainPageNeverStartsTheGame() {
+        open()
+        for (code in listOf(KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_DPAD_CENTER)) { key(code); frames(4) }
+        frames(90)
+        assertEquals("$layout: rapid B A B A started the game", 0, plays)
+    }
 }
