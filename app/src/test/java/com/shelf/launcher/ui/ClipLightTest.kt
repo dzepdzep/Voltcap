@@ -15,7 +15,7 @@ class ClipLightTest {
     @Test fun theToneIsAlwaysDeepWhateverTheColour() {
         for (c in listOf(Color.White, Color(1f, 0.95f, 0.7f), Color(0.2f, 0.6f, 1f), Color.Black, Color(0.9f, 0.1f, 0.1f))) {
             val t = ClipLight.tone(c)
-            assertTrue("$c -> $t", bright(t) <= 0.1401f && bright(t) >= 0.0399f)
+            assertTrue("$c -> $t", bright(t) <= 0.143f && bright(t) >= 0.039f) // (8-bit sRGB colour: within a step)
         }
         // The hue survives: a blue clip shades blue, a red one red.
         val blue = ClipLight.tone(Color(0.2f, 0.6f, 1f)); assertTrue(blue.blue > blue.red)
