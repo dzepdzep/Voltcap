@@ -59,11 +59,13 @@ class Batch513Test {
     /** "Who's playing?": the drifting light holds still with the home's idle settle and carries on from the same moment. */
     @Test fun pickerBackdropSettlesWithTheHome() {
         val p = src("ui/ProfileLooks.kt")
-        assertTrue(p.contains("if (moving && !HomeIdle.settled) LaunchedEffect(look) {"))
+        // (Sprint 527: one ambient clock for the light and Midnight blue's sparks - it holds with the home's idle settle and
+        // with the picker's own calm, and carries on from the same moment.)
+        assertTrue(p.contains("val t = rememberAmbientClock(moving && !hold && !HomeIdle.settled, 24)"))
+        assertTrue(p.contains("val t = rememberAmbientClock(run && !HomeIdle.settled, 30)"))
         assertTrue(p.contains("val start = first - (from * 1e9f).toLong()"))
-        // Midnight blue's sparks too, and the picker's own keys count as input (its window's keys never reach the activity).
-        assertTrue(p.contains("if (!HomeIdle.settled) LaunchedEffect(Unit) {"))
-        assertTrue(src("ui/ProfileSelect.kt").contains("if (e.type == KeyEventType.KeyDown) HomeIdle.poke()"))
+        // The picker's own keys count as input (its window's keys never reach the activity).
+        assertTrue(src("ui/ProfileSelect.kt").contains("if (e.type == KeyEventType.KeyDown) { HomeIdle.poke(); PickerCalm.poke() }"))
     }
 
     /**
@@ -78,7 +80,7 @@ class Batch513Test {
         assertEquals(2, Regex("Dialog\\(onDismissRequest").findAll(ps).count())
         assertTrue(src("ui/WhoIsPlaying.kt").contains("DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false, decorFitsSystemWindows = false)"))
         // The background still fills the window (each look) and the content stays centred in it.
-        assertTrue(ps.contains("PickerBackdrop(look, accentNow, animate = !lite)"))
+        assertTrue(ps.contains("PickerBackdrop(look, accentNow, animate = !lite, hold = stage != null && !stageSettled)"))
         assertTrue(ps.contains("contentAlignment = Alignment.Center"))
     }
 
