@@ -138,7 +138,7 @@ internal fun ProfileSelectScreen(
     val count = profiles.size + if (canAdd) 1 else 0
     var cursor by remember { mutableIntStateOf(profiles.indexOfFirst { it.id == activeId }.coerceAtLeast(0)) }
     // (Sprint 526: profiles can change while the picker is up - a sync, a restore: the cursor stays on the row.)
-    LaunchedEffect(count) { if (cursor > count - 1) cursor = (count - 1).coerceAtLeast(0) }
+    LaunchedEffect(count) { if (cursor > count - 1) cursor = profiles.indexOfFirst { it.id == activeId }.takeIf { it >= 0 } ?: (count - 1).coerceAtLeast(0) }
     var editing by remember { mutableStateOf<Profiles.Profile?>(null) }
     var leaving by remember { mutableStateOf(false) }
     // (Update 334: a locked profile asks its PIN before it plays or is edited — then [afterPin] goes ahead.)
@@ -218,6 +218,9 @@ internal fun ProfileSelectScreen(
                     if (editing != null || pinFor != null || e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     // (Connected Ignition: a press before the picker has settled jumps to the settled picker — never to the home.)
                     if (stage != null && stageT() < stage.tm.settled) { onStageSkip(); return@onPreviewKeyEvent true }
+                    // (Sprint 526: once a choice is made the picker is leaving - later presses (a fast double A, a D-pad press
+                    // right after A) no longer move the ring away from the one that was chosen.)
+                    if (leaving) return@onPreviewKeyEvent true
                     val per = planPerRow[0]
                     when (e.key) {
                         Key.DirectionLeft -> { moveTo(PickerGrid.step(cursor, count, per, -1, 0)); true }
