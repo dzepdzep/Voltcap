@@ -15,7 +15,7 @@ A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
 # (523p: a key or a tap only while a QA app window has the focus - a crash dialog's buttons lead into Settings' App info,
 # GT78 523. A dialog / other window: the QA app is stopped and the run ends; nothing else is pressed.)
-fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) input keyevent KEYCODE_WAKEUP;; esac; sleep 0.5; done
+fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) echo "ABORT no window has the focus (asleep?) - not woken (owner rule)" >> $OUT/log.txt 2>/dev/null; exit 2;; esac; sleep 0.5; done
   echo "ABORT focus=$f" >> $OUT/log.txt 2>/dev/null; am force-stop $P; exit 2; }
 # (523w, KONKR GT78 / Android 12 FUSE: a request file made by the shell stays unreadable to the QA app (owner shell, mode
 # 660) - every dump and launch check went unanswered, kp523u = 318 x INFRA. Each request file is made world-readable.)
@@ -39,7 +39,8 @@ tapat() {
   fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
 shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
-k WAKEUP 0.5
+# (Owner, 12 Nov: never wake a device - an asleep display stops the run instead.)
+dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep - not woken" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 3; }
 # (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
 # run logged "first A opened nothing". The picker is answered with B (keep the profile) first; the app's own mark says so.)
 # (Update 470: the mark is only trusted once it carries the running Voltcap's pid — just after an install it still held the
@@ -55,7 +56,7 @@ touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 1.5
 for lay in $LAYS; do
   # (Asleep = no focused window: every key would end in an ANR. Preview keeps the screen on; this is the backstop.)
-  dumpsys power | grep -q "mWakefulness=Awake" || { k WAKEUP 1.5; echo "woke the screen before $lay" >> $OUT/log.txt; }
+  dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep before $lay - not woken" >> $OUT/log.txt; break; }
   # (Update 470: preview asked again before every layout — a Voltcap restart (a crash, a font change) dropped it and the
   # next layouts were SAVED: the KONKR ended on File select, the Odin on Art library after the 469 runs.)
   A --ez voltcap_test_preview true
@@ -80,7 +81,7 @@ for lay in $LAYS; do
     A --es voltcap_test_pref "popup_style_by_layout=$lay=$st"; sleep 1.2
     # (Update 474, D242: the app's own answer that the style is set — a SKIP (style not offered) only counts with it.)
     ev_note $OUT "style_set $n $(logcat -d -s VoltcapTest | grep 'pref popup_style_by_layout' | grep -c "$lay=$st")"
-    k WAKEUP 0.3
+    dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep at $n - not woken" >> $OUT/log.txt; break 2; }
     # (Update 478: "Who's playing?" comes up again after an install / restart, between layouts too — the first A of the
     # first layout picked a profile there and the gate failed "open" (TV / Arcade / Classic, o478C / o478E). Closed with B
     # whenever the app's own mark says PICKER, right before the home shot, and logged.)
