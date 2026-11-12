@@ -57,7 +57,12 @@ internal fun Case3D(
     /** Update 414: false = the front and back pictures are not decoded yet (a case standing edge-on in a crowded box shows its spine only); true once it is wanted. */
     faces: Boolean = true,
     /** Update 424: the spine picture once it is made (the Cardboard box draws a resting case's top itself, through its own camera). */
-    onSpine: ((android.graphics.Bitmap) -> Unit)? = null
+    onSpine: ((android.graphics.Bitmap) -> Unit)? = null,
+    /**
+     * Shelf 3D work (12 Nov): the case's thickness against its height, when the caller's own place for it says it (the Game
+     * shelf's spine slot), so the 3D case's spine is exactly the spine it takes over from. Null: the case's own (below).
+     */
+    depthOverride: Float? = null
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -167,7 +172,8 @@ internal fun Case3D(
     // when the two are far apart — a scan of the long edge of a landscape box (N64 / SNES "box-2D-side"), or one cut a little
     // wide, made the box half as thick or a third too thick; within a quarter the scan's own shape still says (a release's
     // own box can differ). Up to 0.26 of its height: an N64 / SNES box is 32 mm deep on 127 (0.22 cut it to 28 mm).)
-    val depth = remember(ownUpright, tpl, ownCase, spec, g.platform) {
+    val depth = remember(ownUpright, tpl, ownCase, spec, g.platform, depthOverride) {
+        if (depthOverride != null) return@remember depthOverride.coerceIn(0.03f, 0.4f)
         // Update 171: Voltcap's own Steam / Android cases slim, like a game card's case (they were as thick as a DVD case).
         if (ownCase != null && ownUpright == null) return@remember OWN_CASE_DEPTH
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its

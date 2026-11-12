@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -405,7 +406,10 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                     if (cap > 0.dp) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, (cap.toPx() + s.h.toPx() / 2f) / size.height)
                                     if (pv > 0f) {
                                         translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
-                                        if (stand == Features.ShelfStand.SPINES) {
+                                        if (stand == Features.ShelfStand.SPINES && Shelf3D.on(g.stableKey)) {
+                                            // (Shelf 3D work: the 3D case has taken over from this spine - ShelfPulled3D.)
+                                            alpha = 0f
+                                        } else if (stand == Features.ShelfStand.SPINES) {
                                             // (Batch 523: the box's spine face — turning with the front, beside it, never over it.)
                                             val t = shelfTurn(pv)
                                             rotationY = -SPINE_SIDE * 90f * t
@@ -451,6 +455,20 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // (Batch 523: [spin] turns it round at the shelf's size, then [turn] brings it forward and up to size.)
                 val spin = shelfTurn(p)
                 val turn = shelfGrow(p)
+                // (Shelf 3D work: the pulled-out case as one rigid 3D case, when on - ShelfCase3D.kt. While it is still being
+                // made it is drawn invisibly and the flat path below carries on; it takes over only before the turn starts.)
+                if (Shelf3D.enabled && stand == Features.ShelfStand.SPINES && Features.shelfPulled.state.value != Features.ShelfPulled.SIDE && p > 0f) {
+                    val rowTop3 = top + plan.rowH * (vrow - scroll.value)
+                    val rowLeft3 = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
+                    val shape3 = pulledAspect(g.platform, false)
+                    val bigH3 = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f)
+                    val bigW3 = bigH3 * shape3
+                    val endX3 = (rowLeft3 + s.x + s.w / 2 - bigW3 / 2).coerceIn(0.dp, (areaW - bigW3).coerceAtLeast(0.dp))
+                    val endY3 = (rowTop3 + plan.rowH * 0.9f - bigH3 - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH3).coerceAtLeast(0.dp))
+                    if (ShelfPulled3D(c, g, p, resting,
+                            slotCx = rowLeft3 + s.x + s.w / 2, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
+                            bigCx = endX3 + bigW3 / 2, bigTop = endY3, bigH = bigH3, shape = shape3, open = { open() })) return
+                }
                 if (spin <= 0f) return
                 // (Update 156: [vrow] is its shelf counted on round the endless bookcase; without it, its own shelf.)
                 val rowTop = top + plan.rowH * (vrow - scroll.value)
@@ -610,6 +628,61 @@ private fun AngledCase(c: StyleCtx, g: Game, modifier: Modifier) {
             }
         ) { PulledCase(c, g, false, Modifier.fillMaxSize(), detail = 240) }
     }
+}
+
+/**
+ * Shelf 3D work (12 Nov): the pulled-out case as one rigid 3D case (Case3D), posed by [shelfCasePose]. True when it is the one
+ * drawn (the caller draws nothing else for this game); false while it is still being made (drawn invisibly) or when this pull
+ * keeps the flat path ([Shelf3D.decide]).
+ */
+@Composable
+private fun ShelfPulled3D(
+    c: StyleCtx, g: Game, p: Float, resting: Boolean,
+    slotCx: androidx.compose.ui.unit.Dp, slotBottom: androidx.compose.ui.unit.Dp, slotW: androidx.compose.ui.unit.Dp, slotH: androidx.compose.ui.unit.Dp,
+    bigCx: androidx.compose.ui.unit.Dp, bigTop: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, shape: Float, open: () -> Unit
+): Boolean {
+    val key = g.stableKey
+    var ready by remember(key) { mutableStateOf(false) }
+    var mode by remember(key) { mutableStateOf(Shelf3D.Mode.WAITING) }
+    val next = Shelf3D.decide(mode, ready, shelfTurn(p))
+    if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
+    val on = next == Shelf3D.Mode.CASE_3D
+    androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
+    androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key) } }
+    if (next == Shelf3D.Mode.FLAT) return false
+    val depth = (slotW / slotH).coerceIn(0.03f, 0.4f)
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val pose = with(d) {
+        shelfCasePose(p, slotCx.toPx(), slotBottom.toPx(), slotH.toPx(), bigCx.toPx(), bigTop.toPx(), bigH.toPx(), shape, depth, PULL_LIFT,
+            ::shelfSlide, ::shelfTurn, ::shelfGrow)
+    }
+    // (Resting: the gentle bob as before - here a real turn of the case and a small rise.)
+    val bob = if (resting && p >= 0.999f && Features.shelfBob.state.value) rememberShelfBob() else null
+    val roomH = with(d) { pose.h.toDp() }
+    val roomW = roomH * 2.2f
+    val frontH = with(d) { pose.apparentH.toDp() }
+    val original = Features.originalCases.state.value || Features.shelfPulled.state.value == Features.ShelfPulled.FRONT
+    Box(
+        Modifier
+            .offset { IntOffset((pose.cx - roomW.toPx() / 2f).roundToInt(), (pose.cy - pose.h / 2f).roundToInt()) }
+            .size(roomW, roomH)
+            .graphicsLayer {
+                alpha = if (on) 1f else 0f
+                translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
+            }
+    ) {
+        // The front's own place (the window flies out of it; the focus ring is round it), centred like the case.
+        if (on) Box(Modifier.align(Alignment.Center).size(frontH * shape, frontH)
+            .then(if (resting) Modifier.focusedCard() else Modifier)
+            .then(if (resting) Modifier.pointerInput(key) { detectTapGestures { open() } } else Modifier))
+        Case3D(
+            g, c.cover(g), c.state.physicalMedia[key], pose.yaw, shape, Modifier.fillMaxSize(),
+            pitch = pose.pitch, realFront = original, fill = 1f,
+            yawOf = { pose.yaw + (bob?.let { 14f * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f) },
+            onReady = { ready = true }, depthOverride = depth
+        )
+    }
+    return on
 }
 
 /** How far a pulled-out spine rises out of its gap, as a share of its height. */

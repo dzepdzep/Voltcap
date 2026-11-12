@@ -379,6 +379,8 @@ internal object TestHooks {
         // (not saved: the owner's own switch stays as it is).
         if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
         if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        // (Shelf 3D work, 12 Nov: `--ez voltcap_test_shelf3d true|false` - the Game shelf's pulled-out case as the 3D case; QA app only.)
+        if (intent?.hasExtra("voltcap_test_shelf3d") == true && enabled(context)) Shelf3D.enabled = intent.getBooleanExtra("voltcap_test_shelf3d", false)
         // Batch 523: `--es voltcap_test_popuplab "font=inter,weights=on,actions=on,storage=on"|off` - the popup design lab
         // (PopupLab), isolated QA app only, this run only.
         intent?.getStringExtra("voltcap_test_popuplab")?.let { v ->
