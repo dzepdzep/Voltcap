@@ -968,11 +968,20 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     val realSpine = if (forAll || matching) null else BoxTexture.userSpine(scans, g.platform) ?: scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
+    // (Sprint 525, the original Shelf's spine flicker - QA trace only: which picture this spine shows and how it changed,
+    // per game: EMPTY / SWAP / REDECODE as for the 3D cases' spines, and a spine composed again from nothing - ENTER.)
+    if (QaTrace.on) OldSpineTrace.note(g.stableKey, when {
+        own != null && !failed -> if (own == realSpine && realSpine == BoxTexture.userSpine(scans, g.platform)) "custom" else "real"
+        else -> "own-or-strip"
+    }, own)
     if (own != null && !failed) {
-        var lying by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
         // Update 147: the scan's own shape (width / height standing up), so a slot wider than the spine no longer
         // stretches it sideways; until it has loaded, the usual spine shape.
-        var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SPINE_ASPECT) }
+        // (Sprint 525: what this picture measured the last time it loaded - SpineGeom - so a spine composed again (a shelf
+        // coming back into view, a category, the layout reopened) stands at its own width and the right way up from its
+        // first frame, instead of a frame at the usual width and lying the wrong way while its picture comes back.)
+        var lying by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(SpineGeom.lying(own) ?: false) }
+        var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SpineGeom.shape(own) ?: SPINE_ASPECT) }
         SpineSlot(shape, modifier, g.stableKey.hashCode()) { inner ->
             Box(inner.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
                 // (Update 410, D97: [onTone] reports the scan's own colour — the Cardboard box paints a case's body in it — so the
@@ -990,10 +999,11 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
                         if (d.intrinsicWidth > 0 && d.intrinsicHeight > 0) {
                             val a = if (lying) d.intrinsicHeight.toFloat() / d.intrinsicWidth else d.intrinsicWidth.toFloat() / d.intrinsicHeight
                             shape = a.coerceIn(0.03f, 0.35f)
-                            RealSpineShape.note(g.platform, shape)
+                            SpineGeom.put(own, shape, lying)
+                            RealSpineShape.note(g.platform, shape, own)
                         }
                     },
-                    onError = { failed = true },
+                    onError = { failed = true; if (QaTrace.on) android.util.Log.e("VoltcapQA", "oldspine ${g.stableKey} ERROR") },
                     modifier = if (lying) Modifier.spineText().fillMaxSize() else Modifier.fillMaxSize()
                 )
             }
@@ -1268,21 +1278,83 @@ private class ShelfBack(
  * as wide again as the real ones). Null until three have loaded.
  */
 internal object RealSpineShape {
-    private val seen = java.util.concurrent.ConcurrentHashMap<String, MutableList<Float>>()
+    private val seen = java.util.concurrent.ConcurrentHashMap<String, MutableMap<String, Float>>()
     private val shape = androidx.compose.runtime.mutableStateMapOf<String, Float>()
 
-    fun note(platform: String, aspect: Float) {
+    /**
+     * (Sprint 525, the original Shelf's spine flicker: this shape sets every slot of the shelf (spineAspect), so each
+     * change re-lays the whole shelf - every spine moving at once. It changed whenever a spine loaded: the same spine
+     * counted again each time it came back into view, the median moving by a hair each time. Now each picture ([id]) counts
+     * once, and the shape only changes when it moves by more than [SPINE_SHAPE_STEP] - so the shelf settles after its
+     * first few real spines and stays put while you browse.)
+     */
+    fun note(platform: String, aspect: Float, id: String = "") {
         if (LookStyles.spineForAll()) return
-        val list = seen.getOrPut(platform) { java.util.Collections.synchronizedList(ArrayList()) }
-        if (list.size >= 40) return
-        list += aspect
-        if (list.size >= 3) {
-            val m = synchronized(list) { list.sorted()[list.size / 2] }
-            if (shape[platform]?.let { kotlin.math.abs(it - m) > 0.002f } != false) shape[platform] = m
+        val byId = seen.getOrPut(platform) { java.util.concurrent.ConcurrentHashMap() }
+        if (byId.size >= 40 || byId.containsKey(id)) return
+        byId[id.ifEmpty { "#" + byId.size }] = aspect
+        if (byId.size >= 3) {
+            val now = shape[platform]
+            val m = settledSpineShape(now, byId.values.toList()) ?: return
+            if (now != m) {
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "oldspine shape $platform ${now ?: "-"} -> $m (${byId.size} spines)")
+                shape[platform] = m
+            }
         }
     }
 
     fun of(platform: String?): Float? = platform?.let { shape[it] }
+}
+
+/** Sprint 525: how far (a share of it) the learnt spine shape must move before the shelf is laid out again. */
+internal const val SPINE_SHAPE_STEP = 0.04f
+
+/** Sprint 525: the shape to show - the median of [samples], or null to keep [now] when it is within [SPINE_SHAPE_STEP]. Pure. */
+internal fun settledSpineShape(now: Float?, samples: List<Float>): Float? {
+    if (samples.isEmpty()) return null
+    val m = samples.sorted()[samples.size / 2]
+    if (now != null && kotlin.math.abs(m - now) <= now * SPINE_SHAPE_STEP) return null
+    return m
+}
+
+/** Sprint 525: what a spine picture measured when it last loaded (its shape standing up, and whether it was lying), by address. */
+internal object SpineGeom {
+    private val map = object : LinkedHashMap<String, Pair<Float, Boolean>>(128, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Float, Boolean>>?) = size > 1024
+    }
+    @Synchronized fun put(id: String, shape: Float, lying: Boolean) { map[id] = shape to lying }
+    @Synchronized fun shape(id: String): Float? = map[id]?.first
+    @Synchronized fun lying(id: String): Boolean? = map[id]?.second
+}
+
+/**
+ * Sprint 525 (owner: "instrument the original Shelf spine-rendering path"; QA trace only, a few lines per change, nothing
+ * per frame): which picture each standing spine shows and how it changed, logged as `oldspine <game> <event>` -
+ * FIRST <kind>, SWAP a->b (another picture: generic for custom, a previous game's), REDECODE (the same picture again),
+ * ENTER (composed again from nothing). Kinds: custom (your own cut), real (its spine scan), own-or-strip (Voltcap's).
+ */
+internal object OldSpineTrace {
+    private val last = object : LinkedHashMap<String, Pair<String, String?>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<String, String?>>?) = size > 256
+    }
+    @Synchronized fun change(game: String, kind: String, id: String?): String? {
+        val before = last.put(game, kind to id)
+        return when {
+            before == null -> "FIRST $kind"
+            before.first == kind && before.second == id -> null
+            before.first != kind -> "SWAP ${before.first}->$kind"
+            else -> "REDECODE $kind"
+        }
+    }
+    @Composable fun note(game: String, kind: String, id: String?) {
+        androidx.compose.runtime.LaunchedEffect(kind, id) {
+            change(game, kind, id)?.let { android.util.Log.e("VoltcapQA", "oldspine $game $it") }
+        }
+        androidx.compose.runtime.DisposableEffect(game) {
+            if (synchronized(this@OldSpineTrace) { last.containsKey(game) }) android.util.Log.e("VoltcapQA", "oldspine $game ENTER")
+            onDispose { }
+        }
+    }
 }
 
 /** Update 505: the one style a spine's name is both measured and drawn in (size [s] sp, bold, centred, tight lines). */
