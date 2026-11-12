@@ -150,7 +150,12 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
         BladeBody(p, Modifier.fillMaxSize())
         // (Phase 6, 12 Nov: while a page blade lies over it, the game blade's words are hidden from accessibility services - a
         // screen reader read the covered text - and from the QA text checks; nothing changes on screen, its keys are inert.)
+        // (Hardware QA, Flip 2, 12 Nov - popup gate R26: under a page blade the first letters of the game blade's own name and
+        // console ("Cra", "Pla") showed in the strip beside the page's heading, over the standing name; they fade out as the page
+        // blade comes in - the strip shows the standing name alone - and back when it goes.)
+        val coveredText by animateFloatAsState(if (onMain) 0f else 1f, if (anim) tween(NATIVE_PAGE_MS) else snap(), label = "bladeText")
         Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)
+            .graphicsLayer { alpha = 1f - coveredText }
             .then(if (ctx.page != WinPage.MAIN) Modifier.clearAndSetSemantics { } else Modifier)) {
             // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
             // edge on the Odin with a long name, T3 o478D.)
