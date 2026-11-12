@@ -74,6 +74,8 @@ android {
         // (Popup native pages, 12 Nov: the Robolectric + Compose UI tests compose the real game windows and drive them with
         // key events; they need the app's resources. Test-only: nothing of this reaches an APK.)
         unitTests.isIncludeAndroidResources = true
+        // (Robolectric loads the whole app's classes; the default test heap ran out.)
+        unitTests.all { it.maxHeapSize = "2g" }
     }
     namespace = "com.shelf.launcher"
     compileSdk = 36

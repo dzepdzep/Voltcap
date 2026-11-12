@@ -53,10 +53,12 @@ class WinFocusRoboTest {
 
     @Test fun storageWindowComposes() {
         val g = Game("Probe Quest", "SNES", 1, SourceType.ROM, romPath = "/r/p.sfc")
+        // (The window has endless motion - marquees, glows: an auto-advancing clock never goes idle. Frames are stepped here.)
+        compose.mainClock.autoAdvance = false
         compose.setContent {
             GameWindow(HomeLayout.STORAGE, g, LauncherUiState(), emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {})
         }
-        compose.mainClock.advanceTimeBy(2000)
+        repeat(120) { compose.mainClock.advanceTimeByFrame() }
         val tree = compose.onRoot(useUnmergedTree = true).printToString(maxDepth = 60)
         println("WINTREE-BEGIN\n$tree\nWINTREE-END")
         assertTrue(tree, tree.contains("Probe Quest"))
