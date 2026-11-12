@@ -534,7 +534,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     val visibleGames = state.visibleGames
     // (Update 258: what an empty shelf says — StyleHomes.kt EmptyShelf.)
-    val emptyLine = EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
+    // (Sprint 528: nothing is said about an empty shelf until the saved library has been read - see libraryLoaded)
+    val emptyLine = if (!state.libraryLoaded && state.searchQuery.isBlank()) "" else
+        EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
     SideEffect { if (EmptyShelf.text != emptyLine) EmptyShelf.text = emptyLine }
     // 0.6.17: the Metacritic chip on the wide / row cards reads the details from here (GameCard).
     SideEffect { if (MetacriticCards.metadata !== state.metadata) MetacriticCards.metadata = state.metadata }
