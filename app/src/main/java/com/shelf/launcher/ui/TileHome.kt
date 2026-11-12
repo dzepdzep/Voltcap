@@ -564,7 +564,20 @@ internal fun TileHomeRow(
                 // than fit, once each couldn't fill both edges. Now once each only when the games don't fill the row at all;
                 // otherwise the slivers at the two edges may show the same game's two ends of the loop.)
                 val onceOnly = looping && n <= m.visible
-                for (i in (from..to).filter { i -> !(onceOnly && !drawnOnce(i - vFocus, n, loopBefore)) }) {
+                // (Sprint 525, owner: "a three-game collection visually looks like three games, including at viewport
+                // boundaries" - 317aq's slivers showed the same game at both edges with a few more games than fit. With Fill
+                // the row off, a row of fewer games than places can touch the screen now draws each game once: its copy
+                // nearest the screen's middle, as the row glides (so the game sliding off one edge leaves as its copy comes in
+                // at the other, at the end of the glide). Fill the row on keeps every copy.)
+                val rowW = (if (rowWidth > 0.dp) rowWidth else screenSizeDp().width).value
+                val edgeOnce = looping && !onceOnly && !com.shelf.launcher.data.Features.endlessFill.value &&
+                    n < tilesTouchingScreen(rowW, m.tile.value, strideDpValue)
+                val onceFirst by remember(edgeOnce, n, vFocus, rowW, strideDpValue) {
+                    androidx.compose.runtime.derivedStateOf {
+                        if (!edgeOnce) 0 else tilesOnceFirst(scroll.value / strideDpValue, tilesMiddle(rowW, m.start.value, m.tile.value, strideDpValue), n, vFocus)
+                    }
+                }
+                for (i in (from..to).filter { i -> !(onceOnly && !drawnOnce(i - vFocus, n, loopBefore)) && !(edgeOnce && i !in onceFirst until onceFirst + n) }) {
                     val game = games[if (looping) i.mod(n) else i]
                     key(game.stableKey, if (looping) i.floorDiv(n) else 0) {
                         // Update 203: a cartridge turns as a solid piece (its thickness showing) — the tile hands it the
@@ -1225,4 +1238,25 @@ internal fun TileInfoStrip(
             }
         }
     }
+}
+
+/** Sprint 525: the most tiles of [tile] dp, every [stride] dp, that can touch a row [width] dp wide at once. Pure. */
+internal fun tilesTouchingScreen(width: Float, tile: Float, stride: Float): Int =
+    if (stride <= 0f) Int.MAX_VALUE else kotlin.math.ceil((width + tile) / stride).toInt()
+
+/** Sprint 525: the place (in tiles from the row's scroll place) standing at the middle of a row [width] dp wide. Pure. */
+internal fun tilesMiddle(width: Float, start: Float, tile: Float, stride: Float): Float =
+    if (stride <= 0f) 0f else (width / 2f - start - tile / 2f) / stride
+
+/**
+ * Sprint 525: going round [n] games with fewer games than places on the screen (Fill the row off), the first of the [n]
+ * places drawn - each game's copy nearest the middle ([scrollPlace] + [middle]), always including the game you're on
+ * ([focus]). Pure.
+ */
+internal fun tilesOnceFirst(scrollPlace: Float, middle: Float, n: Int, focus: Int): Int {
+    if (n <= 0) return focus
+    var l = kotlin.math.floor(scrollPlace + middle - n / 2f).toInt() + 1
+    if (focus < l) l = focus
+    if (focus > l + n - 1) l = focus - n + 1
+    return l
 }

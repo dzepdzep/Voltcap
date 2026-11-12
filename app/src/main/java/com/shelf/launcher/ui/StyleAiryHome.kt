@@ -179,7 +179,7 @@ private fun AiryRow(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                 val lit by animateFloatAsState(if (on) 1f else 0f, if (animate) spring(dampingRatio = 0.6f) else tween(0), label = "ahLit")
                 Box(
                     Modifier.size(with(density) { tileW.toDp() }, with(density) { tileH.toDp() })
-                        .zIndex(if (on) 10f else 5f - abs(off) * 0.1f)
+                        .zIndex(if (on) 10f else 5f - abs(off) * 0.1f).qaLit(on)
                         .graphicsLayer {
                             val d = (base + off) - scroll.value
                             val s = 0.66f + 0.34f * (1f - (abs(d) / 1.2f).coerceIn(0f, 1f)) + 0.06f * lit

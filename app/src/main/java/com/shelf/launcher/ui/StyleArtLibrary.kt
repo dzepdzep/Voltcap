@@ -416,7 +416,7 @@ private fun ArtLibPanel(c: StyleCtx, accent: Color, compact: Boolean, modifier: 
                             // (Batch 524: one lit row - going round with Fill the row on, only the copy at the endless place.)
                             val sel = if (loop && com.shelf.launcher.data.Features.endlessFill.value) i == vFocus else real == c.focus
                             // Selected: the whole name, fitted (R18), on the highlight; the others stay readable.
-                            Column(verticalArrangement = Arrangement.Center) {
+                            Column(Modifier.qaLit(sel), verticalArrangement = Arrangement.Center) {
                                 FitText(
                                     titles.display(gm.name), if (sel) onAccent else Color.White.copy(alpha = 0.94f), maxSize = if (compact) 14.sp else 16.sp,
                                     minSize = 11.sp, maxLines = 2, fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium

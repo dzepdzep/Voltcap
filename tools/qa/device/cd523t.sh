@@ -14,7 +14,7 @@ A --es voltcap_test_snapshot save; sleep 2
 # (523t: covers, logos and details for the stand-in games - QaArtFixture, QA app only)
 A --es voltcap_test_artfix "delay=0"; sleep 4
 A --es voltcap_test_perf FULL; sleep 1
-A --ez voltcap_test_preview true; sleep 1; A --es voltcap_test_pref "endless_fill=true"; sleep 1
+A --ez voltcap_test_preview true; sleep 1; A --es voltcap_test_pref "endless_fill_v2=true"; sleep 1
 for LOOP in true false; do
  A --ez voltcap_test_preview true; sleep 0.5; A --es voltcap_test_loop $LOOP; sleep 1
  for CAT in GB N64 PS1 ALL; do

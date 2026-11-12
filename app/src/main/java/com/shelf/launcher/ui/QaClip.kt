@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.semantics.getAllSemanticsNodes
+import androidx.compose.ui.semantics.semantics
 
 /**
  * Update 467 (owner: "I don't want to discover clipped controls manually anymore"): QA only — every control and text on
@@ -33,6 +34,12 @@ internal object QaClip {
     /** Update 477: a text sliding sideways to show all of itself (FullText's marquee) — cut at rest by design, reachable as
      *  it slides (rule 11), like a scrolled one; geomcheck read it as cut (Airy's long name, k477i). */
     val Slides = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaSlides") { a, b -> a == true || b == true }
+
+    /** Sprint 525: on the game that wears the layout's selection highlight (styleFocus, focusedCard, the lit Night /
+     *  Airy / Art library row) - set only while [litMarks] is on (unit tests), so Endless › Fill the row can be checked
+     *  for exactly one lit copy. Nothing changes on screen. */
+    val Lit = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaLit") { a, b -> a == true || b == true }
+    @Volatile var litMarks = false
 
     /**
      * Update 467: a dump asked for by a file, not an intent — an `am start` reaches the activity and closes the popups that
@@ -233,3 +240,7 @@ internal object QaClip {
         return false
     }
 }
+
+/** Sprint 525: marks the lit game for the tests ([QaClip.Lit]); nothing while [QaClip.litMarks] is off. */
+internal fun androidx.compose.ui.Modifier.qaLit(on: Boolean): androidx.compose.ui.Modifier =
+    if (on && QaClip.litMarks) this.then(androidx.compose.ui.Modifier.semantics { this[QaClip.Lit] = true }) else this

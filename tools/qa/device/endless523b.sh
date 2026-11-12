@@ -13,7 +13,7 @@ input keyevent KEYCODE_WAKEUP; A --ez voltcap_test_nolaunch true; sleep 4; pk
 A --es voltcap_test_snapshot save; sleep 2; A --ez voltcap_test_preview true; sleep 2
 A --es voltcap_test_pref "loop_row3=true"; sleep 1
 for FILL in false true; do
- A --es voltcap_test_pref "endless_fill=$FILL"; sleep 1
+ A --es voltcap_test_pref "endless_fill_v2=$FILL"; sleep 1
  for LY in CASEFLOW NIGHT AIRY CLASSIC ORBIT; do
   case $LY in NIGHT) FW=DPAD_DOWN; BK=DPAD_UP;; *) FW=DPAD_RIGHT; BK=DPAD_LEFT;; esac
   for CAT in GB N64 GC PS1 ALL; do

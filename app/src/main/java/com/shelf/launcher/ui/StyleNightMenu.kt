@@ -254,7 +254,7 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                                 translationY = hPx / 2f + d * rowH - size.height / 2f
                                 alpha = (1f - ((abs(d) - rowsN / 2f) / 1.2f).coerceIn(0f, 1f))
                             }
-                            .zIndex(if (on) 2f else 1f)
+                            .zIndex(if (on) 2f else 1f).qaLit(on)
                             .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }
                     ) { NightBar(c, gg, on, pull, col, rowH) }
                 }
