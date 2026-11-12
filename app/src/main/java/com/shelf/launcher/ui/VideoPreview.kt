@@ -62,10 +62,25 @@ fun VideoBackdrop(
         hidden.value?.invoke()
     }
 
+    // Sprint 527 (owner: the clip behind Tile home washed out the lower half): the clip's light is measured from the clip
+    // itself - a 24 x 14 copy of its picture every 1.5 s while it plays (one tiny read-back, no decoding of our own) - so
+    // the shading under the dock follows the clip: a bright clip gets a little more, a dark one less, in the clip's own
+    // colour, never the theme's pale colour as a fog. Changes glide over ~1.2 s (a scene cut never flashes the light).
+    val viewRef = remember { arrayOfNulls<TextureView>(1) }
+    val sample = remember(url) { androidx.compose.runtime.mutableStateOf<ClipLight?>(null) }
+    if (shade) androidx.compose.runtime.LaunchedEffect(url, playing, hold) {
+        if (!playing || hold) return@LaunchedEffect
+        while (true) {
+            // Only a real change of light moves the shading (a still-similar picture keeps it, so nothing re-animates).
+            viewRef[0]?.let { v -> ClipLight.measure(v)?.let { if (ClipLight.moved(sample.value, it)) sample.value = it } }
+            kotlinx.coroutines.delay(1500)
+        }
+    }
     Box(modifier.graphicsLayer { this.alpha = alpha }) {
         AndroidView(
             factory = { context ->
                 val view = TextureView(context)
+                viewRef[0] = view
                 view.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                     // Released with the player (each one holds a native buffer queue).
                     var surface: Surface? = null
@@ -134,19 +149,70 @@ fun VideoBackdrop(
             },
             modifier = Modifier.fillMaxSize()
         )
-        // Same shading as the artwork backdrop, so the dock stays readable.
-        if (shade) Box(
-            Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        0.0f to ShelfTheme.background.copy(alpha = 0.55f),
-                        0.2f to Color.Transparent,
-                        0.55f to Color.Transparent,
-                        0.8f to ShelfTheme.background.copy(alpha = 0.85f),
-                        1.0f to ShelfTheme.background.copy(alpha = 0.97f)
-                    )
-                )
+        // The shading under the dock so it stays readable (Sprint 527): a deep tone of the clip's own colour (the theme's
+        // background before - pale when the theme took its colours from bright art, so the lower half went to a white fog),
+        // eased in from the middle, never a solid band: at most ~0.75 at the very bottom of a white clip, ~0.45 of a dark one.
+        if (shade) {
+            val light = sample.value
+            val tone = ClipLight.tone(light?.color ?: ShelfTheme.background)
+            val strength by animateFloatAsState(ClipLight.strength(light?.lowerLuma), tween(1200), label = "clipShade")
+            val toneNow by androidx.compose.animation.animateColorAsState(tone, tween(1200), label = "clipTone")
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(*ClipLight.stops(toneNow, strength)))
+            )
+        }
+    }
+}
+
+/**
+ * Sprint 527: what a background clip's picture is like now - its lower half's luminance (0..1) and its average colour -
+ * measured from a 24 x 14 copy of the view. Pure helpers ([tone], [strength], [stops]) are unit-tested (ClipLightTest).
+ */
+internal class ClipLight(val lowerLuma: Float, val color: Color) {
+    companion object {
+        fun measure(v: TextureView): ClipLight? = runCatching {
+            if (!v.isAvailable) return null
+            val b = v.getBitmap(24, 14) ?: return null
+            var lum = 0f; var r = 0f; var g = 0f; var bl = 0f; var n = 0
+            for (y in 7 until 14) for (x in 0 until 24) {
+                val c = b.getPixel(x, y)
+                val cr = ((c shr 16) and 0xFF) / 255f; val cg = ((c shr 8) and 0xFF) / 255f; val cb = (c and 0xFF) / 255f
+                lum += 0.2126f * cr + 0.7152f * cg + 0.0722f * cb; r += cr; g += cg; bl += cb; n++
+            }
+            b.recycle()
+            ClipLight(lum / n, Color(r / n, g / n, bl / n))
+        }.getOrNull()
+
+        /** Whether [now] differs enough from [was] to move the shading (lower-half light by 0.08, or its colour clearly). Pure. */
+        fun moved(was: ClipLight?, now: ClipLight): Boolean = was == null ||
+            kotlin.math.abs(was.lowerLuma - now.lowerLuma) > 0.08f ||
+            kotlin.math.abs(was.color.red - now.color.red) + kotlin.math.abs(was.color.green - now.color.green) +
+            kotlin.math.abs(was.color.blue - now.color.blue) > 0.18f
+
+        /** A deep tone of [c]: its hue, at most half saturated, at most 14 % bright (a shadow, never a fog). Pure. */
+        fun tone(c: Color): Color {
+            val mx = maxOf(c.red, c.green, c.blue); val mn = minOf(c.red, c.green, c.blue)
+            val v = mx.coerceIn(0.04f, 0.14f)
+            if (mx - mn < 1e-4f) return Color(v, v, v)
+            val sat = (mx - mn) / mx; val s2 = sat.coerceAtMost(0.5f)
+            fun ch(x: Float) = v * (1f - s2 * (mx - x) / (mx - mn))
+            return Color(ch(c.red), ch(c.green), ch(c.blue))
+        }
+
+        /** How strong the shading is at the very bottom for a clip whose lower half has luminance [l] (null: not measured yet). Pure. */
+        fun strength(l: Float?): Float = (0.45f + 0.35f * (l ?: 0.5f)).coerceIn(0.42f, 0.78f)
+
+        /** The shading's stops: a light band under the status bar, clear through the middle, eased in under the dock. Pure. */
+        fun stops(tone: Color, strength: Float): Array<Pair<Float, Color>> = arrayOf(
+            0.0f to tone.copy(alpha = 0.42f),
+            0.18f to tone.copy(alpha = 0f),
+            0.50f to tone.copy(alpha = 0f),
+            0.64f to tone.copy(alpha = strength * 0.18f),
+            0.76f to tone.copy(alpha = strength * 0.45f),
+            0.88f to tone.copy(alpha = strength * 0.78f),
+            1.0f to tone.copy(alpha = strength)
         )
     }
 }
