@@ -63,3 +63,45 @@ internal suspend fun focusWhenAttached(f: FocusRequester, frames: Int = 8): Bool
 
 /** A copy of [a] with no focus requester: the leaving page of a native page change can't hold or take the focus. */
 internal fun WinAction.inert(): WinAction = WinAction(label, icon, onClick, focus = null, primary = primary, back = back, urgent = urgent, inert = true)
+
+/** What opens for a game (popup infrastructure, 12 Nov): one decision for every opener, read by [GameWindow]. */
+internal enum class WinPresentation {
+    /** The classic details window (PopupStyle CLASSIC). */
+    CLASSIC,
+    /** Game Glance's shared move (GlanceWindow.kt). */
+    GLANCE,
+    /** The row opens / row reveal (RowMotionWindow); with no row drawn it falls back to the banner or the layout's own window. */
+    ROW_MOTION,
+    /** The banner page, the same for every layout. */
+    BANNER,
+    /** The layout's own window (WinScenes*.kt). */
+    SCENE,
+    /** The plain window (no scene for the layout, or Settings › Game window › the layouts' own windows off). */
+    PLAIN
+}
+
+/**
+ * The presentation [layout]'s game window uses. [inspect]: Inspect was pressed in this window; [inspectForced]: the menu's
+ * Inspect… / Game Glance asked for this game's piece (only Classic gives way to it, as before). Reads the popup style prefs.
+ */
+internal fun winPresentation(layout: com.shelf.launcher.data.HomeLayout, inspect: Boolean, inspectForced: Boolean): WinPresentation {
+    val motion = PopupStyle.motion(layout.name)
+    return when {
+        PopupStyle.opensClassic(layout.name) && !inspect && !inspectForced -> WinPresentation.CLASSIC
+        inspect -> ownWindow(layout)
+        motion == com.shelf.launcher.data.Features.WinMotion.SHARED -> WinPresentation.GLANCE
+        motion != com.shelf.launcher.data.Features.WinMotion.NONE -> WinPresentation.ROW_MOTION
+        PopupStyle.banner(layout.name) -> WinPresentation.BANNER
+        else -> ownWindow(layout)
+    }
+}
+
+private fun ownWindow(layout: com.shelf.launcher.data.HomeLayout): WinPresentation =
+    if (com.shelf.launcher.data.Features.winScenes.state.value && winSceneFor(layout) != null) WinPresentation.SCENE else WinPresentation.PLAIN
+
+/**
+ * True when [page] of [scene]'s window is drawn by the shared expanded page instead of the scene itself. The main page is
+ * always the scene's; Cross keeps its options list; the native-page scenes keep every page. Pure.
+ */
+internal fun sharedPageFor(scene: WinScene?, page: WinPage): Boolean =
+    page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)

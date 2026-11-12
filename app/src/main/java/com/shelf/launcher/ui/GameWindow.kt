@@ -1012,20 +1012,23 @@ internal fun GameWindow(
     }) else null
     // Update 421: Classic means the classic details window, whichever path set the game (second screen, reopen, a
     // layout's own button): never this layout's scene. An explicit Inspect (MediaInspect.force) still opens here.
-    if (PopupStyle.opensClassic(layout.name) && !askedInspect && MediaInspect.force != g.stableKey) {
+    // (Popup infrastructure, 12 Nov: which presentation opens is decided in one place, winPresentation (WinPageFlow.kt).)
+    val presentation = winPresentation(layout, askedInspect, MediaInspect.force == g.stableKey)
+    if (presentation == WinPresentation.CLASSIC) {
         val toDetails by rememberUpdatedState(onFullDetails)
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { toDetails() }
         return
     }
     // (Update 250, #119: the shared move — Game Glance's open, GlanceWindow.kt.)
-    if (rowMotion == Features.WinMotion.SHARED && !askedInspect) {
+    if (presentation == WinPresentation.GLANCE) {
         GlanceWindow(g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)
         return
     }
-    if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
+    if (presentation == WinPresentation.ROW_MOTION &&
         RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
-    if (PopupStyle.banner(layout.name) && !askedInspect) {
+    // (A row motion with no row to open falls back to the banner page where the banner is the default, else to the layout's own.)
+    if (presentation == WinPresentation.BANNER || (presentation == WinPresentation.ROW_MOTION && PopupStyle.banner(layout.name))) {
         BannerGameWindow(
             layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments,
             perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp,
@@ -2363,7 +2366,7 @@ private fun SceneBody(
     // own in the window's colours, the scene's quick window coming back on B / Back.
     // (Popup motion work: a layout that draws its own pages (WinPageFlow.NATIVE_PAGE_SCENES) keeps them - Storage's record
     // turning its tabs - instead of the shared page; that swap was the "Storage → unrelated Details" regression.)
-    if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    if (sharedPageFor(scene, page)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
     else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
