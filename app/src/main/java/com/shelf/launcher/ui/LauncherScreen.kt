@@ -4347,7 +4347,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val yFloor = if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0
+                            val yFloor = if (tileOrderMoved) maxOf(TileRows.TOP_CLEAR_DP.dp.roundToPx(),
+                                if (TileSwitch.profiles) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0) else 0
                             val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceAtLeast(yFloor).coerceIn(0, (h - p.height).coerceAtLeast(0))
                             // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
                             // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
@@ -4370,7 +4371,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
                         // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
-                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
+                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty())
+                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp) else 10.dp) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
@@ -4958,7 +4960,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
         if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active) {
-            Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)) {
+            Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)
+                // (Sprint 527: its real bottom, so the rows keep clear of it at any text size - it sat on the first pill at x1.3.)
+                .onGloballyPositioned { c -> val b = c.boundsInRoot().bottom; if (TileRowEdit.badgeBottomPx != b) TileRowEdit.badgeBottomPx = b }) {
                 TileSwitchProfiles(state.raAccounts, com.shelf.launcher.data.SteamAchievements.avatarUrl.value)
             }
         }

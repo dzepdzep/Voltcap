@@ -87,7 +87,8 @@ class TileRowsTest {
     @Test fun aMovedOrderStaysClearOfTheStatusBarInTheMiddle() {
         val ls = src("ui/LauncherScreen.kt")
         assertTrue(ls.contains("val tileOrderMoved = tileOrder != tileOrderDefault"))
-        assertTrue(ls.contains("val yFloor = if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0"))
+        assertTrue(ls.contains("val yFloor = if (tileOrderMoved) maxOf(TileRows.TOP_CLEAR_DP.dp.roundToPx(),"))
+        assertTrue(ls.contains("maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)"))
         assertEquals(40, TileRows.TOP_CLEAR_DP)
     }
 

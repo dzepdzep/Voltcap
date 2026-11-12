@@ -133,6 +133,8 @@ internal object TileRowEdit {
     val spans = java.util.concurrent.ConcurrentHashMap<String, Pair<Float, Float>>()
     /** The middle (root px) of the room the round buttons keep in the stack while they float in Edit Home, or null. Compose state. */
     var buttonsCentre by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Offset?>(null)
+    /** The bottom (root px) of Tile home's profile badge (Switch style, top left), 0 when it isn't shown. Compose state. */
+    var badgeBottomPx by androidx.compose.runtime.mutableFloatStateOf(0f)
     /** The row part a finger is dragging now (its shift follows the finger until the drop), or null. Compose state. */
     var dragging by androidx.compose.runtime.mutableStateOf<String?>(null)
     /** The insertion line while a row is dragged (root px), or null. Compose state. */

@@ -751,6 +751,19 @@ internal fun PlatformFilterRow(
  * more pills are past them — nothing is hidden behind "+N" or swapped a group at a time. When everything fits, the pills
  * sit at [align] as before.
  */
+/** Sprint 527: the pill row's pure placement (GlidingChipsTest). */
+internal object GlidingChips {
+    const val FADE_DP = 56
+    /** Where the selected pill's left edge goes: a third in ([anchor]); only a pill already in the steady zone stays put. Pure. */
+    fun target(left: Int, width: Int, viewW: Int, cur: Int, margin: Int, anchor: Float = 0.33f): Int {
+        val want = left - (viewW * anchor).toInt()
+        val onScreenL = left - cur; val onScreenR = onScreenL + width
+        // (in the steady zone - between the anchor and the middle, clear of the ends - nothing moves)
+        val steady = onScreenL >= margin && onScreenL <= (viewW * 0.5f).toInt() && onScreenR <= viewW - margin
+        return if (steady) cur else want
+    }
+}
+
 @Composable
 internal fun GlidingChipRow(
     count: Int, focused: Int, modifier: Modifier = Modifier, spacing: androidx.compose.ui.unit.Dp = 6.dp,
@@ -772,11 +785,9 @@ internal fun GlidingChipRow(
         androidx.compose.runtime.snapshotFlow { laidOut }.first { widths[focused] > 0 }
         val l = lefts[focused]; val r = l + widths[focused]
         val cur = scroll.value
-        val target = when {
-            l - margin < cur -> l - margin
-            r + margin > cur + viewW -> (r + margin - viewW)
-            else -> cur
-        }.coerceIn(0, scroll.maxValue)
+        // (Sprint 527, owner: the selected pill drifted to the right edge as you went on - it now sits at one steady place, a
+        // third in from the start, wherever the list allows; the ends of the list stop at their own edge.)
+        val target = GlidingChips.target(l, r - l, viewW, cur, margin).coerceIn(0, scroll.maxValue)
         if (target == cur) return@LaunchedEffect
         if (first[0]) scroll.scrollTo(target) else scroll.animateScrollTo(target, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
         first[0] = false
@@ -789,7 +800,7 @@ internal fun GlidingChipRow(
             .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                val fade = 28.dp.toPx()
+                val fade = GlidingChips.FADE_DP.dp.toPx() // (Sprint 527: wider - a pill past the end fades out, no cut word)
                 if (scroll.value > 0) drawRect(
                     Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
                     size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
@@ -839,6 +850,17 @@ internal fun SortChip(label: String, onClick: () -> Unit, modifier: Modifier = M
 /** Smaller category pills (Tile-style home, where the bar shares the screen with the music player). */
 internal val LocalCompactPills = androidx.compose.runtime.staticCompositionLocalOf { false }
 
+internal const val PILL_MAX_W_DP = 190
+
+/** Sprint 527: a pill's text size - the largest from [maxSp] down to [minSp] (0.5 sp steps) that fits one line, else [minSp] on two lines. Pure. */
+internal object PillFit {
+    fun fit(maxSp: Float, minSp: Float, fitsOneLine: (Float) -> Boolean): Pair<Float, Int> {
+        var s = maxSp
+        while (s > minSp && !fitsOneLine(s)) s = maxOf(minSp, s - 0.5f)
+        return if (fitsOneLine(s)) s to 1 else minSp to 2
+    }
+}
+
 @Composable
 internal fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit, logo: String? = null) {
     com.shelf.launcher.Breadcrumbs.mark("FilterPill")
@@ -859,11 +881,21 @@ internal fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit,
                 coil.compose.AsyncImage(logo, null, Modifier.size((if (compact) 14.dp else 15.dp) * ps).clip(RoundedCornerShape(3.dp)))
                 Spacer(Modifier.width(5.dp))
             }
+            // (Sprint 527, owner: long names took three to four pills' width - a long name shrinks a little (never below
+            // 10 sp) and then takes a second line; the whole name always shows, never "…".)
+            val size = (if (compact) 11.sp else 12.sp) * ps
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 4)
+            val maxW = with(androidx.compose.ui.platform.LocalDensity.current) { (PILL_MAX_W_DP.dp * ps).roundToPx() }
+            val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontWeight = FontWeight.SemiBold))
+            val fit = remember(label, size, maxW, style) {
+                PillFit.fit(size.value, 10f) { s -> measurer.measure(label, style.copy(fontSize = s.sp), softWrap = false).size.width <= maxW }
+            }
             Text(
                 label,
                 color = if (isSelected) onAccentColor() else Color.White,
-                fontSize = (if (compact) 11.sp else 12.sp) * ps,
-                fontWeight = FontWeight.SemiBold
+                fontSize = fit.first.sp, lineHeight = (fit.first * 1.08f).sp,
+                fontWeight = FontWeight.SemiBold, maxLines = fit.second, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = if (fit.second > 1) Modifier.widthIn(max = PILL_MAX_W_DP.dp * ps) else Modifier
             )
         }
     }
