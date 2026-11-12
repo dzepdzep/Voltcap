@@ -108,9 +108,11 @@ vidab)
   A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
   A --es voltcap_test_layout TILES --es voltcap_test_category ALL --es voltcap_test_game "Super Mario World"; sleep 4; picker
   A --es voltcap_test_pref "tile_row_order="; A --es voltcap_test_pref "tile_switch_plain=false"; A --es voltcap_test_bg ART; sleep 2
-  mkdir -p $F/qa_video; cp /data/local/tmp/v_*.mp4 $F/qa_video/ 2>/dev/null
-  for v in white bright dark; do
-    A --es voltcap_test_video file://$F/qa_video/v_$v.mp4; sleep 4
+  # (CL = the clip set: v = the moving test clips; vs = still clips - every frame the same, so before and after are the
+  # identical clip frame; owner, Sprint 527 review.)
+  CL=${3:-v}; mkdir -p $F/qa_video; cp /data/local/tmp/${CL}_*.mp4 $F/qa_video/ 2>/dev/null
+  for c in $F/qa_video/${CL}_*.mp4; do v=$(basename $c .mp4); v=${v#${CL}_}
+    A --es voltcap_test_video file://$c; sleep 4
     A --es voltcap_test_clipshade legacy; shot ab_${v}_before 2.5
     A --es voltcap_test_clipshade new; shot ab_${v}_after 3
   done

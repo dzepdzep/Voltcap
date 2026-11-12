@@ -1,3 +1,23 @@
+# Sprint 527 follow-up — owner review: drag / reset, same-frame video A/B, first category batch, KONKR compact (12 Nov 2026, `feature/popup-native`)
+
+- **Tile rows, finger drop** (`ui/TileRows.kt` `tileRowPlacement`): a dropped row glides from where the finger left it (its drawn top
+  handed over by `dropRow` → `dropAt`), the glide starts in the same layout pass (`onPlaced` + `placeWithLayer`, a layer shift so the
+  Middle centre line stays put; the last drawn place is used until the glide's coroutine has started), the row under the finger never
+  glides on its own, the selected / dragged row is drawn above the others. Was: the new order for one frame, then every row back at
+  its old place, the dropped row snapping from the finger (Flip 2 60 fps: largest frame change 31.7 / 43.2 → 10.3).
+  `VoltcapRows` log lines (Edit Home only) for QA.
+- **Badge floor for every order** (`ui/LauncherScreen.kt`): the Switch-style profile pictures' measured bottom keeps the centred group
+  clear in the order your settings give too (KONKR ×1.3: the All pill ran under them). Nothing moves where there is room.
+- **Tile name scrim** (`ui/TileHome.kt`): after the name's own placement (it sat ~70 px left of the name, Flip 2 still-clip A/B).
+- **Collector's Drawers, compact** (`ui/CategoryLooks.kt`): short drawers (cell < 84 dp, KONKR) get thinner margins and pull, em-high
+  card lines - "Sega Mega Drive / Genesis" whole on two lines at 960 × 640 (was sliding).
+- **QA**: `tile527.sh vidab TAG vs` (still clips `vs_*.mp4`: identical frame before / after), `cat527.sh pills` sets the test layout
+  again after a text-size change.
+- Tests: TileRowsTest (glideStart, same-pass glide, badge floor), ClipLightTest (scrim order), CategoryLooks527Test (short drawer fits).
+- Hardware: Flip 2 + KONKR, isolated QA app only; both left on the RC4 QA build (c3a45817), owner snapshot files identical.
+- Not done: third-priority look items (Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation); real cover art
+  (none available to the QA app); Intro OFF classic-picker jank (separate defect).
+
 # Sprint 527 — Tile Home rows, video background light, category-look audit (12 Nov 2026, `feature/popup-native`)
 
 - **Tile rows** (`ui/TileRows.kt`, `Features.tileRowOrder`): the Edit Home parts (round buttons, chips, game row, facts) are one ordered

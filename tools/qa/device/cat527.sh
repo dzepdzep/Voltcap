@@ -59,6 +59,8 @@ follow)
 pills)
   setup
   for SC in off font=1.3; do A --es voltcap_test_scale "$SC"; sleep 1.5
+    # (KONKR kp527: a text-size change can recreate the screen and drop the session's test layout - set it again.)
+    A --es voltcap_test_layout TILES; sleep 2; picker
     A --es voltcap_test_category ALL; sleep 2; screencap -p $O/pills_${SC}_start.png
     for i in 1 2 3 4 5 6; do k BUTTON_R2; sleep 0.5; done; sleep 1.5; screencap -p $O/pills_${SC}_mid.png
     for i in 1 2 3 4 5 6 7 8 9 10 11 12; do k BUTTON_R2; sleep 0.45; done; sleep 1.5; screencap -p $O/pills_${SC}_end.png
