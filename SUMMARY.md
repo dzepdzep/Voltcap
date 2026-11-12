@@ -1,3 +1,17 @@
+# Sprint 527 — Tile Home rows, video background light, category-look audit (12 Nov 2026, `feature/popup-native`)
+
+- **Tile rows** (`ui/TileRows.kt`, `Features.tileRowOrder`): the Edit Home parts (round buttons, chips, game row, facts) are one ordered
+  stack; ▲ ▼ moves the selected part (the round buttons too while they sit in the stack), neighbours slide, dashed insertion line;
+  Undo / Discard / Reset part / Reset layout; persisted across restart, category and layout switches. Flip 2 fixes: the floating
+  buttons sit on their row's room in Edit Home (MovableWidget `defaultCentre`), no empty Undo step at the ends, a moved order's
+  first row 40 dp below the top (Middle).
+- **Video light** (`ui/VideoPreview.kt`, `ClipLight`): the clip's shading is a deep tone of the clip's own colour (<= 14 % bright),
+  eased from mid-screen, 42-78 % at the bottom by the lower half's luminance, top band by the top's; a 24 x 14 read-back every
+  1.5 s while playing (none while held), 1.2 s glides. Was the theme background at 85-97 % (a fog; pale with art-derived themes).
+- **QA**: `voltcap_test_video`, `voltcap_test_edithome select:<part>`, `voltcap_test_catscreen open|close`; `tile527.sh`
+  (rows / edit / video / video2 / restore), `cat527.sh` (17 category looks, Follow home layout, pill bar).
+- Tests: TileRowsTest, ClipLightTest (PC: testDebugUnitTest 2471, 0 failed at 49a5ce7d). Not in RC4.
+
 # Sprint 525 — v0.6.71 RC4, Endless Fill versioned key, Tiles edges, Night ×1.3, Shelf slot / spine, QA recorder and push guard (12 Nov 2026)
 
 Branch `feature/popup-native` (pushed), candidate `integration/0.6.71` c827ff9 (local + PC worktree `int`), `feature/connected-ignition`
