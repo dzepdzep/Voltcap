@@ -970,7 +970,7 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
     // (Sprint 525, the original Shelf's spine flicker - QA trace only: which picture this spine shows and how it changed,
     // per game: EMPTY / SWAP / REDECODE as for the 3D cases' spines, and a spine composed again from nothing - ENTER.)
-    if (QaTrace.on) OldSpineTrace.note(g.stableKey, when {
+    if (QaTrace.on) OldSpineTrace.Track(g.stableKey, when {
         own != null && !failed -> if (own == realSpine && realSpine == BoxTexture.userSpine(scans, g.platform)) "custom" else "real"
         else -> "own-or-strip"
     }, own)
@@ -1346,7 +1346,7 @@ internal object OldSpineTrace {
             else -> "REDECODE $kind"
         }
     }
-    @Composable fun note(game: String, kind: String, id: String?) {
+    @Composable fun Track(game: String, kind: String, id: String?) {
         androidx.compose.runtime.LaunchedEffect(kind, id) {
             change(game, kind, id)?.let { android.util.Log.e("VoltcapQA", "oldspine $game $it") }
         }

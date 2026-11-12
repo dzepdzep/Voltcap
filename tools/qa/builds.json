@@ -748,6 +748,17 @@
    "apk_sha256": "3a31b5ab57cbd37407f4b0fb87d5793a0f91245c0c8c23cedc39b031711f311e",
    "base_commit": "eb06ea7",
    "note": "exp/shelf-3d-flip: + 3D warm draw / drawn-whole hand-over, Blades covered text not composed; Flip 2 runs fix2, blf10, blf13, popvid"
+  },
+  {
+   "version_name": "0.6.70-qa",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "same tree as feature/popup-native 8cb1ae8",
+   "id": "qa-0.6.70-int-b018aca",
+   "apk_sha256": "1b75be1cafbf4864685940553c04d194ce41ccdc811a241b2b71e90970fa1c43",
+   "base_commit": "b018aca",
+   "note": "v0.6.71 integration candidate RC3 (integration/0.6.71 = popup-native 8cb1ae8 + main 65f7cca; 3D Shelf off). Built 12 Nov 14:03 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). sha256 of the installed base.apk on the Flip 2 (55,375,174 bytes; the PC file is too deep to stage). testDebugUnitTest: Gradle build-cache hit of the identical inputs run at popup-native 96693b6 (app/ and tests byte-identical). lintRelease 49 E / 967 W / 109 H."
   }
  ]
 }

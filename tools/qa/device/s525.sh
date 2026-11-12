@@ -31,9 +31,9 @@ fill)
   A --ez voltcap_test_preview true; sleep 2; A --es voltcap_test_pref "loop_row3=true"; sleep 1
   for FILL in false true; do
     A --es voltcap_test_pref "endless_fill_v2=$FILL"; sleep 1
-    for LY in NIGHT AIRY ARTLIB TILES CUBE STACKS CASEFLOW COVERDETAILS; do
+    for LY in ${LAYS:-NIGHT AIRY ARTLIB TILES CUBE STACKS CASEFLOW COVERDETAILS}; do
       case $LY in NIGHT|ARTLIB) FW=DPAD_DOWN; BK=DPAD_UP;; *) FW=DPAD_RIGHT; BK=DPAD_LEFT;; esac
-      for CAT in GameCube N64 GB; do
+      for CAT in ${CATS:-GameCube N64 GB}; do
         N=${LY}_${CAT}_f$FILL
         A --ez voltcap_test_preview true --es voltcap_test_layout $LY --es voltcap_test_category "$CAT"; sleep 2.6; pk
         screencap -p $O/${N}_0.png
