@@ -1187,7 +1187,7 @@ internal fun GameWindow(
     androidx.compose.ui.window.Dialog(
         onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-    ) {
+    ) { WithTestScale {
         ImmersiveDialogWindow()
         // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
         androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
@@ -1530,7 +1530,7 @@ internal fun GameWindow(
         }
         }
     }
-    }
+    } }
 }
 
 /** Update 347: how long after the window opens Play starts accepting a press (see GameWindow). */
