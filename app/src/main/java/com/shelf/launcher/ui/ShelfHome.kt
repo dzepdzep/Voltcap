@@ -424,6 +424,8 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                             // stays whole under the 3D case fading in on top, and goes once that is whole:
                                             // Shelf3D.shelfSpineAlpha / blendIn. Two half-faded layers let the dark show through.)
                                             alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) Shelf3D.shelfSpineAlpha(t) else 1f
+                                            // (QA trace only, hardware QA 12 Nov: this spine's own frames of a pull, beside shelf3dframe.)
+                                            if (QaTrace.on && Shelf3D.enabled && pv < 1f) android.util.Log.e("VoltcapQA", "shelfspineframe ${g.stableKey} pv=${"%.3f".format(pv)} t=${"%.3f".format(t)} alpha=${"%.2f".format(alpha)} on=${Shelf3D.on(g.stableKey)}")
                                         } else {
                                             alpha = if (shelfTurn(pv) > 0f) 0f else 1f
                                         }
@@ -684,6 +686,11 @@ private fun ShelfPulled3D(
     androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key) } }
     // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
     if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
+    // (QA trace only, hardware QA 12 Nov: every frame of a 3D pull - the pull, its turn, the decision, what shows - to find a jump
+    // the Flip 2 recording showed: the case first seen ~40 degrees into its turn.)
+    if (QaTrace.on) androidx.compose.runtime.SideEffect {
+        android.util.Log.e("VoltcapQA", "shelf3dframe $key p=${"%.3f".format(p)} turn=${"%.3f".format(shelfTurn(p))} mode=${next.name} ready=$ready shape=$shapeKnown")
+    }
     if (next == Shelf3D.Mode.FLAT) return false
     // (Its thickness: exactly the spine picture's as the shelf draws it - SpineSlot can draw it narrower than its slot.)
     val depth = (Shelf3D.drawnDepth[key] ?: (slotW / slotH)).coerceIn(0.03f, 0.4f)
