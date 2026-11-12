@@ -16,6 +16,7 @@ import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.HomeLayout
 import com.shelf.launcher.data.SourceType
+import com.shelf.launcher.data.cardArtFor
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Rule
