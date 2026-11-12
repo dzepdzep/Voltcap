@@ -170,6 +170,13 @@ internal fun StyleShelf(c: StyleCtx, modifier: Modifier) {
 
 @Composable
 private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
+    // (QA, 12 Nov: tell shelf3d_qa.sh the Game shelf is on screen - it records nothing and sends no move until it is; only with
+    // the test hooks / in the QA app: TestHooks.markScreen, QaTrace.event.)
+    val qaCtx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        TestHooks.markScreen(qaCtx, "SHELF"); QaTrace.event("screen", "SHELF")
+        onDispose { QaTrace.event("screen", "SHELF-gone") }
+    }
     val real = Features.shelfRealSizes.state.value
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)

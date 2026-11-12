@@ -180,4 +180,14 @@ class ShelfCase3DTest {
         assertFalse(Shelf3D.shapeAgrees(0.75f, 1.12f))              // the Flip 2 case: a portrait scan on a jewel case
         assertFalse(Shelf3D.shapeAgrees(1.4f, 0.7f))
     }
+
+    /** Owner, 12 Nov: the depth a little more apparent through the tilt, not the thickness - the top shows clearly mid-turn. */
+    @Test fun topReadsMidTurnWithTheRealThickness() {
+        val pp = pose(pFor(0.5f))
+        val top = faces(pp)[F.TOP.ordinal]
+        assertTrue(top.second)
+        assertTrue("top ${height(top.first) / pp.h}", height(top.first) / pp.h > 0.04f)
+        assertEquals(slotW / slotH, depth, 1e-6f)                     // the thickness is the shelf's, unchanged
+        assertEquals(0f, pose(0.0001f).pitch, 0.01f); assertEquals(0f, pose(1f).pitch, 0.01f)   // level at both ends
+    }
 }
