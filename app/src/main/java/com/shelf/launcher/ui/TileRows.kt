@@ -152,6 +152,8 @@ internal object TileRowEdit {
     var buttonsCentre by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Offset?>(null)
     /** The bottom (root px) of Tile home's profile badge (Switch style, top left), 0 when it isn't shown. Compose state. */
     var badgeBottomPx by androidx.compose.runtime.mutableFloatStateOf(0f)
+    /** The bottom (root px) of the music player where Home shows it in a top corner it wasn't moved from, else 0. Compose state. */
+    var musicBottomPx by androidx.compose.runtime.mutableFloatStateOf(0f)
     /** The row part a finger is dragging now (its shift follows the finger until the drop), or null. Compose state. */
     var dragging by androidx.compose.runtime.mutableStateOf<String?>(null)
     /** The insertion line while a row is dragged (root px), or null. Compose state. */
