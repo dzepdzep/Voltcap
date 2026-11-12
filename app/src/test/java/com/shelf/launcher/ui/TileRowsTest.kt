@@ -87,7 +87,7 @@ class TileRowsTest {
     @Test fun aMovedOrderStaysClearOfTheStatusBarInTheMiddle() {
         val ls = src("ui/LauncherScreen.kt")
         assertTrue(ls.contains("val tileOrderMoved = tileOrder != tileOrderDefault"))
-        assertTrue(ls.contains("val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor)"))
+        assertTrue(ls.contains("badgeFloor, musicFloor)"))
         // (KONKR x1.3: the profile pictures' bottom is a floor for the order your settings give too.)
         assertTrue(ls.contains("val badgeFloor = if (TileSwitch.profiles && TileRowEdit.badgeBottomPx > 0f) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0"))
         assertTrue(ls.contains("maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)"))
@@ -143,5 +143,15 @@ class TileRowsTest {
         assertTrue("a second pass before the coroutine starts uses the drawn place", src.contains("val visual = when { at[4] == 1f -> at[3]; at[2] == 1f -> now; else -> heading }"))
         assertTrue(src.contains(".zIndex(if (onTop) 1f else 0f)"))
         assertTrue("no coroutine-late start from onGloballyPositioned", !src.contains(".onGloballyPositioned {"))
+    }
+
+    @Test fun theMusicPlayerNeverSitsOnTheRows() {
+        val ls = src("ui/LauncherScreen.kt")
+        // Edit Home's stand-in stays in the status bar's band where Home keeps the player there (Flip 2 t527o).
+        assertTrue(ls.contains("top = if (bottom) 0.dp else if (musicInStatus) 6.dp else 52.dp,"))
+        assertTrue(ls.contains("MusicPlayerPlaceholder(compact = musicInStatus)"))
+        // Where Home shows it in a top corner the rows' floor includes it; only then (preview = Home).
+        assertTrue(ls.contains("val musicTopCorner = !bottom && !statusHolds && HomeWidgets.position(HomeWidgets.MUSIC) == null && playerElsewhere != null"))
+        assertTrue(ls.contains("val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor, musicFloor)"))
     }
 }

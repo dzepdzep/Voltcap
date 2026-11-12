@@ -3761,6 +3761,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 pos == com.shelf.launcher.data.MusicPlayerPosition.BOTTOM_RIGHT
             val right = pos == com.shelf.launcher.data.MusicPlayerPosition.TOP_RIGHT ||
                 pos == com.shelf.launcher.data.MusicPlayerPosition.BOTTOM_RIGHT
+            // (Sprint 528, Flip 2 t527o: in Edit Home the stand-in sat 52 dp down on the left although Home keeps this player in
+            // the status bar - a row moved to the top ran under it. It now stands in the status bar's band, compact, as on Home.)
+            val statusHolds = pos == com.shelf.launcher.data.MusicPlayerPosition.TOP_LEFT && state.appearance.statusOn &&
+                HomeWidgets.position(HomeWidgets.MUSIC) == null
+            val musicInStatus = statusHolds && playerElsewhere == null
+            // (…and where Home does show it in a top corner, Tile home's rows keep clear of it - TileRowEdit.musicBottomPx.)
+            val musicTopCorner = !bottom && !statusHolds && HomeWidgets.position(HomeWidgets.MUSIC) == null && playerElsewhere != null
             // Movable in Edit Home; until moved it sits in the corner picked in Settings.
             MovableWidget(
                 HomeWidgets.MUSIC,
@@ -3773,11 +3780,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // Clear of the status bar at the top and the legend at the bottom.
                 defaultPadding = PaddingValues(
                     start = 14.dp, end = 14.dp,
-                    top = if (bottom) 0.dp else 52.dp,
+                    top = if (bottom) 0.dp else if (musicInStatus) 6.dp else 52.dp,
                     bottom = if (bottom) (if (state.appearance.legendOn) 36.dp else 10.dp) else 0.dp
                 )
             ) {
-                if (playerElsewhere == null) MusicPlayerPlaceholder() else MiniMusicPlayer(
+                androidx.compose.runtime.DisposableEffect(musicTopCorner) { onDispose { TileRowEdit.musicBottomPx = 0f } }
+                Box(Modifier.onGloballyPositioned { c ->
+                    val b = if (musicTopCorner) c.boundsInRoot().bottom else 0f
+                    if (TileRowEdit.musicBottomPx != b) TileRowEdit.musicBottomPx = b
+                }) {
+                if (playerElsewhere == null) MusicPlayerPlaceholder(compact = musicInStatus) else MiniMusicPlayer(
                     playerElsewhere,
                     onPlayPause = { viewModel.mediaPlayPause() },
                     onNext = { viewModel.mediaNext() },
@@ -3787,6 +3799,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     focusedSlot = miniFocus ?: HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.MUSIC },
                     onSeek = { viewModel.mediaSeekTo(it) }
                 )
+                }
             }
         }
 
@@ -4351,7 +4364,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             // Switch-style profile pictures with the order your settings give too; the pictures' measured bottom
                             // is a floor for every order now - only where it would collide does anything move.)
                             val badgeFloor = if (TileSwitch.profiles && TileRowEdit.badgeBottomPx > 0f) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0
-                            val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor)
+                            val musicFloor = if (TileRowEdit.musicBottomPx > 0f) (TileRowEdit.musicBottomPx + 8.dp.toPx()).toInt() else 0
+                            val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor, musicFloor)
                             val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceAtLeast(yFloor).coerceIn(0, (h - p.height).coerceAtLeast(0))
                             // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
                             // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
@@ -4375,7 +4389,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
                             (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty())
-                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp) else 10.dp) else 0.dp,
+                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)
+                            // (Sprint 528: and below a music player Home shows in a top corner)
+                            else maxOf(10.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.musicBottomPx.toDp() } + 8.dp)) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
