@@ -27,7 +27,8 @@
   "status": [
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -41,7 +42,7 @@
    "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, exp daef44e / 2ac8326 R26 8/8 x1.0 and x1.3 (12 Nov); RC3 Fill sweep): R26 all PASS, popvid 0 launches; Endless once / Fill: one lit tile. Visual approval: owner pending."
  },
  "HERO": {
   "name": "Hero carousel",
@@ -70,7 +71,8 @@
   "status": [
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -83,7 +85,7 @@
    "WinPresentationTest (all pref combinations)",
    "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 12 Nov 14:23): A opens the window, R1/L1 walk Details / Options (Tiles' native pages), B closes without a launch, fast A B A B: 0 launches; recording COMPLETE (recheck.py). Visual approval: owner pending."
  },
  "TV": {
   "name": "TV room",
@@ -93,7 +95,8 @@
    "INVESTIGATED",
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -105,7 +108,7 @@
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
    "WinPresentationTest (all pref combinations)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:23): A opens the TV-screen window, B closes, fast A B A B: 0 launches. R1/L1 change nothing (no pages by design: Info opens them). The home name plate shows the theme's faint 'IRON TIDE' word behind the game name (visual, owner). Visual approval: owner pending."
  },
  "DASH": {
   "name": "Dashboard",
@@ -235,7 +238,8 @@
    "INVESTIGATED",
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -251,7 +255,7 @@
    "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)",
    "ShelfCase3DTest / ShelfCase3DRenderTest (experimental 3D case, off by default)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24 + s525 spine / flash runs): A opens the index-card window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design; 10 fast steps each way: 0 one-frame flashes / dark dips (flash513 + brightness), no lost frames >25 ms. Visual approval: owner pending."
  },
  "HUB": {
   "name": "Console hub",
@@ -361,7 +365,8 @@
    "INVESTIGATED",
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -375,7 +380,7 @@
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
    "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24): A opens the window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design. Endless once / Fill the row: one lit case (s525 fill). Visual approval: owner pending."
  },
  "TIMELINE": {
   "name": "Timeline",
@@ -565,7 +570,8 @@
    "INVESTIGATED",
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -577,7 +583,7 @@
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
    "WinPresentationTest (all pref combinations)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:13 (x1.0) + 14:25 (x1.3)): popup-first default: A opens the window, B closes, fast A B A B: 0 launches; a saved cards_a_plays=true (v0.6.70 snapshot) is kept: A plays (launch blocked). R1/L1 no pages by design. Visual approval: owner pending."
  },
  "CUSTOM": {
   "name": "Layout Studio",
@@ -667,7 +673,8 @@
    "INVESTIGATED",
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -679,7 +686,7 @@
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
    "WinPresentationTest (all pref combinations)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:13 (x1.0) + 14:25 (x1.3)): popup-first default: A opens the window, B closes, fast A B A B: 0 launches; a saved pq_a_plays=true is kept: A plays (launch blocked). Visual approval: owner pending."
  },
  "CUBE": {
   "name": "Cube menu",
@@ -768,7 +775,8 @@
   "status": [
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -783,7 +791,7 @@
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
    "WinFocusRoboTest plain window (layout windows off)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, exp daef44e / 2ac8326 R26 8/8 x1.0 and x1.3 (12 Nov)): R26 all PASS, popvid 0 launches. Visual approval: owner pending."
  },
  "FILESELECT": {
   "name": "File select (1996)",
@@ -852,7 +860,8 @@
   "status": [
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -866,7 +875,7 @@
    "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, exp daef44e / 2ac8326 R26 8/8 at x1.0 and x1.3 (earlier, 12 Nov); RC3 popvid x1.3 14:25): R26 all PASS, popvid 0 launches; x1.3: the Saves line now inside the settled panel (Sprint 525). Endless once / Fill: one lit bar. Visual approval: owner pending."
  },
  "BLADES": {
   "name": "Blades (2005)",
@@ -875,7 +884,8 @@
   "status": [
    "IMPLEMENTED",
    "PC TESTED",
-   "HARDWARE PENDING"
+   "HARDWARE PENDING",
+   "HARDWARE VERIFIED"
   ],
   "tests": [
    "WinFocusRoboTest.opensOnPlayAndPlayWorksAfterTheGuard",
@@ -889,7 +899,7 @@
    "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)"
   ],
-  "hardware": "none"
+  "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, exp eb06ea7 R26 8/8 x1.0 and x1.3 (12 Nov)): R26 all PASS after the title-overlap fix, popvid 0 launches. Visual approval: owner pending."
  },
  "BUBBLES": {
   "name": "Bubble home (2011)",

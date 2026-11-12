@@ -70,5 +70,22 @@ spine)
   logcat -d -s VoltcapQA 2>/dev/null | grep -E "oldspine|spine " > $O/spine_trace.txt
   dumpsys gfxinfo $P | grep -E "Janky|50th|90th|99th" >> $L
   A --ez voltcap_test_preview false ;;
+cold)
+  # Phase 6 / 5: the Game shelf right after the QA app starts (cold: its process and picture caches new) or again (warm),
+  # with the fixture's scanned spines and fronts (scanfix, session only) and optionally late art (DELAY ms, artfix).
+  logcat -c
+  [ "$3" = cold ] && { am force-stop $P; sleep 1; }
+  A --ez voltcap_test_nolaunch true; sleep 3; pk; sleep 0.5; pk
+  A --es voltcap_test_scanfix on; sleep 0.5
+  [ -n "$DELAY" ] && { A --es voltcap_test_artfix "delay=$DELAY"; sleep 0.5; }
+  . /data/local/tmp/rec.sh; REC_BITRATE=16000000 rec_start $O/shelf_$3 24
+  A --ez voltcap_test_preview true --es voltcap_test_layout SHELF --es voltcap_test_category ALL; sleep 2.5
+  i=0; while [ $i -lt 8 ]; do k DPAD_RIGHT 0.12; i=$((i+1)); done; sleep 0.6
+  i=0; while [ $i -lt 8 ]; do k DPAD_LEFT 0.12; i=$((i+1)); done; sleep 0.6
+  i=0; while [ $i -lt 4 ]; do k DPAD_RIGHT 0.7; i=$((i+1)); done; sleep 1
+  rec_stop
+  logcat -d -s VoltcapQA 2>/dev/null | grep -E "oldspine|spine |art|LAUNCH" > $O/trace_$3.txt
+  [ -n "$DELAY" ] && A --es voltcap_test_artfix off
+  A --es voltcap_test_scanfix off; A --ez voltcap_test_preview false ;;
 esac
 echo "end $(date +%T) real=$(dumpsys package com.shelf.launcher | grep -m1 lastUpdateTime | tr -d ' ')" >> $L; echo DONE >> $L
