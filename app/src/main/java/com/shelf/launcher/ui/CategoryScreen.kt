@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
@@ -226,7 +227,22 @@ fun CategoryScreen(
             state = gridState,
             // (Update 208: while reordering, a drag moves the tile under your finger to where you drag it. Update 212: a
             // hold picks it up first — Reorder turns on — and the same touch drags it.)
-            modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+            modifier = Modifier.fillMaxSize()
+                // (Sprint 527, owner: a row of tiles was cut hard by the screen's bottom - it fades out softly there while more
+                // rows follow below.)
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    if (gridState.canScrollForward) {
+                        val f = 72.dp.toPx()
+                        drawRect(
+                            Brush.verticalGradient(listOf(Color.Black, Color.Transparent), startY = size.height - f, endY = size.height),
+                            topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - f), size = androidx.compose.ui.geometry.Size(size.width, f),
+                            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                        )
+                    }
+                }
+                .pointerInput(Unit) {
                 val slop = viewConfiguration.touchSlop
                 val holdMs = viewConfiguration.longPressTimeoutMillis
                 val edgePx = 56.dp.toPx()
@@ -605,13 +621,15 @@ private fun TileLookTile(
             else CategoryArt(tile, CardShape.SQUARE, Modifier.matchParentSize(), art)
         }
         Spacer(Modifier.height(6.dp))
+        // (Sprint 527, owner: the count sat a blank line below a one-line name - the name no longer reserves its second line
+        // here, so name and count read as one unit right under the tile; the grid's rows still line the tiles up.)
         FullText(
             tile.label,
             color = if (selected) ShelfTheme.accent else Color.White,
             fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, reserve = false
         )
-        tile.subtitle?.let { FullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp) }
+        tile.subtitle?.let { FullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
     }
 }
 

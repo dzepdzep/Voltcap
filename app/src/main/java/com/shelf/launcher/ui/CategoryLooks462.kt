@@ -104,6 +104,20 @@ internal fun WiiChannelLook(tiles: List<CategoryTile>, selected: Int, animate: B
     }
 }
 
+/**
+ * Sprint 527 (owner: Cinema's and Arctic Panes' big picture swapped with a hard cut): the lit category's picture and title
+ * cross-fade (200 ms) - the old one stays on screen until the new one covers it, so there is never a blank frame. With
+ * animations off it swaps at once.
+ */
+@Composable
+internal fun <T> LookCrossfade(target: T, animate: Boolean, content: @Composable (T) -> Unit) {
+    if (!animate) content(target)
+    else androidx.compose.animation.Crossfade(target, animationSpec = androidx.compose.animation.core.tween(200), label = "lookSwap") { content(it) }
+}
+
+/** Where Cinema's art starts under the screen's header (its title and count chips), dp. */
+internal const val CINEMA_ART_TOP_DP = 60
+
 /** Cinema: the dark theatre — the lit category big as a title card, the others as a row of posters along the bottom. */
 @Composable
 internal fun CinemaLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
@@ -114,14 +128,23 @@ internal fun CinemaLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
         val w = maxWidth
         // The title card: the art on the right, faded into the dark, the name and count on the left.
         Box(Modifier.fillMaxWidth().fillMaxHeight(0.62f).tapPick(selected, selected, onFocus, onPick)) {
-            CategoryArt(t0, CardShape.WIDE, Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(w * 0.62f))
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF0B0B0D), 0.42f to Color(0xFF0B0B0D).copy(alpha = 0.7f), 0.75f to Color.Transparent)))
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color(0xFF0B0B0D))))
-            Column(Modifier.align(Alignment.CenterStart).padding(start = 32.dp, top = 56.dp).width(w * 0.46f)) {
-                FullText("CATEGORY", color = red, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                FullText(t0.label, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black, maxLines = 2)
-                Spacer(Modifier.height(6.dp))
-                FullText(listOfNotNull(lookCount(t0), lookFacts(t0)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
+            LookCrossfade(t0, animate) { t ->
+                Box(Modifier.fillMaxSize()) {
+                    // (Sprint 527, owner: the game-count chip of the screen's header sat on the art - the art starts under the
+                    // header now, with a soft top edge.)
+                    Box(Modifier.align(Alignment.CenterEnd).padding(top = CINEMA_ART_TOP_DP.dp).fillMaxHeight().width(w * 0.62f)) {
+                        CategoryArt(t, CardShape.WIDE, Modifier.fillMaxSize())
+                        Box(Modifier.fillMaxWidth().height(28.dp).background(Brush.verticalGradient(listOf(Color(0xFF0B0B0D), Color.Transparent))))
+                    }
+                    Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF0B0B0D), 0.42f to Color(0xFF0B0B0D).copy(alpha = 0.7f), 0.75f to Color.Transparent)))
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color(0xFF0B0B0D))))
+                    Column(Modifier.align(Alignment.CenterStart).padding(start = 32.dp, top = 56.dp).width(w * 0.46f)) {
+                        FullText("CATEGORY", color = red, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                        FullText(t.label, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black, maxLines = 2)
+                        Spacer(Modifier.height(6.dp))
+                        FullText(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.72f), fontSize = 13.sp)
+                    }
+                }
             }
         }
         // The row: posters 2:3, the lit one outlined white and a little larger, gliding with the D-pad.
@@ -160,10 +183,14 @@ internal fun ArcticLook(tiles: List<CategoryTile>, selected: Int, animate: Boole
         Box(Modifier.align(Alignment.CenterEnd).padding(end = 28.dp, top = 66.dp, bottom = 50.dp).width(w * 0.5f).fillMaxHeight()
             .clip(RoundedCornerShape(16.dp)).background(Color(0xFF1B2633)).border(1.dp, ice.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
             .tapPick(selected, selected, onFocus, onPick)) {
-            CategoryArt(t0, CardShape.WIDE, Modifier.fillMaxSize())
-            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xE60A1018)))).padding(14.dp)) {
-                FullText(t0.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
-                FullText(listOfNotNull(lookCount(t0), lookFacts(t0)).joinToString("  ·  "), color = ice, fontSize = 12.sp)
+            LookCrossfade(t0, animate) { t ->
+                Box(Modifier.fillMaxSize()) {
+                    CategoryArt(t, CardShape.WIDE, Modifier.fillMaxSize())
+                    Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xE60A1018)))).padding(14.dp)) {
+                        FullText(t.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                        FullText(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = ice, fontSize = 12.sp)
+                    }
+                }
             }
         }
         // The panes: a column that glides, the lit one in the middle third.

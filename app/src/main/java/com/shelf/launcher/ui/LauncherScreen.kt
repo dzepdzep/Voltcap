@@ -4959,7 +4959,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
         }
         // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
-        if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active) {
+        // (Sprint 527, owner: on the category screen it sat on the screen's title - that screen has its own header.)
+        if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active && !viewModel.categoryScreenOpenState.value) {
             Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)
                 // (Sprint 527: its real bottom, so the rows keep clear of it at any text size - it sat on the first pill at x1.3.)
                 .onGloballyPositioned { c -> val b = c.boundsInRoot().bottom; if (TileRowEdit.badgeBottomPx != b) TileRowEdit.badgeBottomPx = b }) {
