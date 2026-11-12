@@ -121,7 +121,11 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
 
     private fun tree(): String = runCatching { compose.onAllNodes(isRoot()).let { r -> (0 until r.fetchSemanticsNodes().size).joinToString("\n") { r[it].printToString(80) } } }.getOrDefault("?")
 
-    private fun words(l: String) = l.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }
+    // (distinct: a control's text and its description often say the same word - "Options Options")
+    private fun words(l: String) = l.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }.distinct()
+
+    /** The game-options control in each layout's own words (TV room: "Game options", Channel grid: "Config"). */
+    private val OPTIONS_NAMES = listOf(listOf("options"), listOf("game", "options"), listOf("config"))
 
     /** A control whose label is [text] (case and the icon glyphs ignored: the layouts' looks write "OPTIONS", "▶, PLAY"). */
     private fun clickable(text: String): SemanticsMatcher = SemanticsMatcher("control '$text'") { n ->
@@ -136,8 +140,10 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
     }
 
     /** Options: on the window, or behind More (the compact windows, update 451). */
+    private val optionsControl = SemanticsMatcher("Options") { n -> n.config.contains(SemanticsActions.OnClick) && words(label(n)) in OPTIONS_NAMES }
+
     private fun openOptions() {
-        if (compose.onAllNodes(clickable("Options")).fetchSemanticsNodes().isEmpty()) {
+        if (compose.onAllNodes(optionsControl).fetchSemanticsNodes().isEmpty()) {
             // More: "More", or the dots (Tiles' "•••")
             val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) && (words(label(n)) == listOf("more") || label(n).trim() == "•••") }
             val ms = compose.onAllNodes(more).fetchSemanticsNodes()
@@ -145,10 +151,12 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
             compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(12)
         }
-        click("Options")
+        val os = compose.onAllNodes(optionsControl).fetchSemanticsNodes()
+        assertTrue("$layout: no Options control; controls ${controls()}", os.isNotEmpty())
+        compose.onAllNodes(optionsControl)[os.size - 1].performSemanticsAction(SemanticsActions.OnClick)
     }
 
-    private fun onOptionsButton(f: List<String>) = f.size == 1 && words(f[0]) == listOf("options")
+    private fun onOptionsButton(f: List<String>) = f.size == 1 && words(f[0]) in OPTIONS_NAMES
 
     /** [text] is on screen (case ignored: several looks write in capitals). */
     private fun shows(text: String): Boolean = compose.onAllNodes(hasText(text, substring = true, ignoreCase = true), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()

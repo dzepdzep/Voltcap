@@ -247,6 +247,21 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING
             else madeConsoleSpine ?: SpineCache.WAITING
     }
+    // (Phase 6, spine flicker diagnostics - QA trace only: which source drew this game's spine, and how it changed. Tells an
+    // empty texture (EMPTY), a different texture (SWAP) and a new copy of the same one (REDECODE) apart in a capture; a
+    // flicker with none of them logged is lighting / compositing, not the texture.)
+    if (QaTrace.on) {
+        val from = when {
+            spine === SpineCache.WAITING -> SpineTrace.WAITING
+            spine === ownFitted?.firstOrNull() -> "own"
+            spine === cutFitted?.firstOrNull() -> "cut"
+            spine === tplSpine.bitmap -> "template"
+            else -> "console"
+        }
+        androidx.compose.runtime.LaunchedEffect(spine) {
+            SpineTrace.note(g.stableKey, from, System.identityHashCode(spine))?.let { android.util.Log.e("VoltcapQA", "spine ${g.stableKey} $it") }
+        }
+    }
     if (onSpine != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) { onSpine(spine) }
     if (onReady != null) {
         val wholeNow = spine !== SpineCache.WAITING && (!readyNeedsFront || (cover == null && ownFront == null) || front != null)
@@ -695,6 +710,31 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
  * again on the screen's thread every time a case came into a row: scrolling a long row of cases, or switching to a
  * category of them, spent most of its frames copying pictures.
  */
+/**
+ * Phase 6 (12 Nov): classifies how a game's 3D spine texture changes (QA trace only). Pure and bounded; see Case3D's use.
+ * EMPTY: a real spine went back to the dark stand-in strip. SWAP: a different source's spine (own scan / your cut / template /
+ * console). REDECODE: the same source, a new bitmap (usually invisible). FIRST: the first one seen. Null: unchanged.
+ */
+internal object SpineTrace {
+    const val WAITING = "waiting"
+    private const val MAX = 256
+    private val last = object : LinkedHashMap<String, Pair<String, Int>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<String, Int>>?) = size > MAX
+    }
+    @Synchronized fun note(game: String, from: String, id: Int): String? {
+        val before = last.put(game, from to id)
+        return when {
+            before == null -> "FIRST $from"
+            before.second == id && before.first == from -> null
+            from == WAITING && before.first != WAITING -> "EMPTY ${before.first}->$from"
+            before.first == WAITING -> "FILLED $from"
+            before.first != from -> "SWAP ${before.first}->$from"
+            else -> "REDECODE $from"
+        }
+    }
+    @Synchronized fun reset() = last.clear()
+}
+
 internal object DerivedArt {
     private class Entry(val src: java.lang.ref.WeakReference<Any>?, val value: Any, val bytes: Int)
 

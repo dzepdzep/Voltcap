@@ -292,3 +292,30 @@ class ShelfHandOverRobustTest {
         assertTrue(scan.contains("r.result.memoryCacheKey?.let { ShownScans.note(shownKey, it) }"))
     }
 }
+
+/** Phase 6 (12 Nov): the spine flicker diagnostics tell an empty texture, another texture and a new copy apart. */
+class SpineTraceTest {
+    @org.junit.Before fun clear() = SpineTrace.reset()
+
+    @Test fun classifiesEveryKindOfChange() {
+        assertEquals("FIRST waiting", SpineTrace.note("g", SpineTrace.WAITING, 1))
+        assertEquals("FILLED own", SpineTrace.note("g", "own", 2))
+        assertEquals(null, SpineTrace.note("g", "own", 2))                       // the same frame again: nothing
+        assertEquals("REDECODE own", SpineTrace.note("g", "own", 3))            // a new copy of the same spine
+        assertEquals("EMPTY own->waiting", SpineTrace.note("g", SpineTrace.WAITING, 1))   // the dark strip came back: a flicker
+        assertEquals("FILLED console", SpineTrace.note("g", "console", 4))
+        assertEquals("SWAP console->own", SpineTrace.note("g", "own", 2))       // another texture
+        assertEquals("FIRST template", SpineTrace.note("h", "template", 9))     // per game
+    }
+
+    @Test fun bounded() {
+        for (i in 0 until 1000) SpineTrace.note("g$i", "own", i)
+        assertEquals("FIRST own", SpineTrace.note("g0", "own", 0))              // the eldest was let go
+    }
+
+    @Test fun onlyWithTheQaTrace() {
+        val c = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/Case3D.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/Case3D.kt")).first { it.exists() }.readText()
+        val at = c.indexOf("SpineTrace.note(g.stableKey")
+        assertTrue(at > 0 && c.lastIndexOf("if (QaTrace.on) {", at) > at - 900)
+    }
+}
