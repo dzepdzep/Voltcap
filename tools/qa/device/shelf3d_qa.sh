@@ -9,6 +9,8 @@
 #         sh shelf3d_qa.sh pair NAME [STEPS]           run old then new with the same game and moves (the comparison)
 #         COLD=1 sh shelf3d_qa.sh ...                  stop the QA app first (cold artwork); the real Voltcap is never stopped
 #         SCANS=1 / ART_DELAY=800 sh shelf3d_qa.sh ... session-only scanned spines / fronts (scan, custom, none); fixture art held back (ms)
+#         PICK_A=1 sh shelf3d_qa.sh ...                 answer the QA app's own profile picker with one A, only when its mark says PICKER
+#         Every run checks the Game shelf is on screen (its mark + log) before recording or sending a move; else it stops (exit 5).
 #         sh shelf3d_qa.sh trace NAME SECS             logcat of the QA trace (SpineTrace EMPTY / SWAP / REDECODE, hand-over)
 P=com.shelf.launcher.qa; OUT=/sdcard/pc/shelf3d; mkdir -p $OUT
 awake()  { dumpsys power | grep -q "mWakefulness=Awake"; }
@@ -27,13 +29,35 @@ gate_qa() {
   t=$(top); echo "$t" | grep -q "$P/" || { echo "STOP: QA app not in front ($t)"; exit 3; }
   return 0; }
 key() { gate_qa; input keyevent KEYCODE_$1 || { echo "STOP: input failed"; exit 4; }; }
+MARK=/sdcard/Android/data/$P/files/voltcap_qa_screen
+# Which screen the QA app says it shows (its own mark, written by its live process): SHELF, PICKER, HOME or UNKNOWN.
+screen() { pid=$(pidof $P 2>/dev/null | tr ' ' '\n' | head -1); [ -n "$pid" ] || { echo UNKNOWN; return; }
+  set -- $(cat $MARK 2>/dev/null); [ "$2" = "$pid" ] && echo "${1:-UNKNOWN}" || echo UNKNOWN; }
+# The Game shelf is on screen: the QA app logged "screen SHELF" since the start intent, and its mark is not the picker.
+shelf_ready() { gate_qa; [ "$(screen)" = PICKER ] && return 2
+  logcat -d -s VoltcapQA 2>/dev/null | grep -q " screen SHELF$" && return 0; return 1; }
 open_shelf() {   # $1 = true|false (the 3D case). COLD=1: the QA app (never the real one) is stopped first: cold artwork in memory
   gate_pre
   [ "$COLD" = 1 ] && { am force-stop $P; sleep 1; }
   X=""; [ "$SCANS" = 1 ] && X="--es voltcap_test_scanfix on"; [ -n "$ART_DELAY" ] && X="$X --es voltcap_test_artfix delay=$ART_DELAY"
+  logcat -c
   am start -n $P/com.shelf.launcher.MainActivity --ez voltcap_test_preview true --es voltcap_test_layout SHELF --ez voltcap_test_nolaunch true \
     --ez voltcap_test_shelf3d $1 $X > /dev/null || { echo "STOP: start failed"; exit 4; }
-  sleep 3; gate_qa; }
+  # Nothing is recorded and no move is sent until the shelf is verified on screen (12 Nov: after a cold start the QA app's
+  # "Who's playing?" came up and the D-pad moves went to it). The picker is answered only when PICK_A=1 and only while the QA
+  # app's own mark says PICKER: one A (Play, the highlighted QA profile), then checked again; else the run stops.
+  n=0; picked=0
+  while [ $n -lt 16 ]; do
+    sleep 0.5; shelf_ready; r=$?
+    [ $r = 0 ] && { echo "SHELF on screen"; return 0; }
+    if [ $r = 2 ]; then
+      [ "$PICK_A" = 1 ] && [ $picked = 0 ] || { echo "STOP: the QA app shows its profile picker (PICK_A=1 answers it with A once)"; exit 5; }
+      gate_qa; [ "$(screen)" = PICKER ] || continue
+      input keyevent KEYCODE_BUTTON_A || { echo "STOP: input failed"; exit 4; }; picked=1; echo "picker: A once"
+    fi
+    n=$((n + 1))
+  done
+  echo "STOP: the Game shelf was not seen on screen (mark $(screen))"; exit 5; }
 cmd=$1; shift
 case $cmd in
   pre)  gate_pre; echo "PRE-OK $(getprop ro.product.model) $(wm size | tail -1) $(wm density | tail -1)"; top
