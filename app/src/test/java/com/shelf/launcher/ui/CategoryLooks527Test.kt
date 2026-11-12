@@ -30,10 +30,24 @@ class CategoryLooks527Test {
     }
 
     @Test fun drawersShowWholeNamesAndTilesKeepNameAndCountTogether() {
-        assertTrue(src("ui/CategoryLooks.kt").contains("Box(Modifier.fillMaxWidth(0.88f).heightIn(min = cellH * 0.36f)"))
+        val looks = src("ui/CategoryLooks.kt")
+        assertTrue(looks.contains("Box(Modifier.fillMaxWidth(if (tight) 0.94f else 0.88f).heightIn(min = cellH * if (tight) 0.3f else 0.36f)"))
+        assertTrue(looks.contains("lineHeight = DRAWER_LINE_EM.em"))
         val cs = src("ui/CategoryScreen.kt")
         assertTrue(cs.contains("textAlign = androidx.compose.ui.text.style.TextAlign.Center, reserve = false"))
         assertTrue(cs.contains("if (gridState.canScrollForward) {"))
         assertTrue(src("ui/LauncherScreen.kt").contains("!HomeEditState.active && !viewModel.categoryScreenOpenState.value) {"))
+    }
+
+    @Test fun aShortDrawerStillHoldsTwoLinesAndItsPull() {
+        // KONKR 960 x 640 (density 1.5): a drawer cell ~65 dp, its front 10 dp less. Two 11 sp lines (em-high), the card's
+        // 3 + 2 dp insets, the tight margins (2 x 3 dp) and the 7 dp pull must fit; the old 8 dp margins + 12 dp pull + 12.5 sp
+        // lines did not (that is why the names slid there).
+        val front = 65f - 10f
+        val tightNeed = 2 * 11f * DRAWER_LINE_EM + 2 * (3f + 2f) + 2 * 3f + 7f
+        val oldNeed = 2 * 12.5f + 2 * (3f + 2f) + 2 * 8f + 12f
+        assertTrue("tight $tightNeed <= $front", tightNeed <= front)
+        assertTrue("old $oldNeed > $front", oldNeed > front)
+        assertTrue(65 < DRAWER_TIGHT_DP)
     }
 }

@@ -88,6 +88,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.shelf.launcher.data.ConsoleArt
@@ -581,19 +582,23 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                             }
                             .border(if (on) 2.dp else 0.dp, if (on) accent else Color.Transparent, RoundedCornerShape(4.dp))
                     ) {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+                        // (Sprint 527, KONKR 960 x 640: a drawer front is ~55 dp tall there - 8 dp margins, a 12 dp pull and two
+                        // 12.5 sp lines did not fit, so the long names slid on one line again. On a short drawer the margins and
+                        // the pull shrink, and the lines are em-high so they shrink with the type.)
+                        val tight = cellH < DRAWER_TIGHT_DP.dp
+                        Column(Modifier.fillMaxSize().padding(horizontal = if (tight) 5.dp else 10.dp, vertical = if (tight) 3.dp else 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
                             // (Sprint 527, owner: "Sega Mega Drive / Genesis" showed as "a Drive / Genesi" - the card was a fixed
                             // 36 % of the drawer, too short for two lines, so the name slid inside it. The card is now at least
                             // two lines tall and wider, the type a little smaller with tight lines: whole names on the card.)
-                            Box(Modifier.fillMaxWidth(0.88f).heightIn(min = cellH * 0.36f).clip(RoundedCornerShape(2.dp))
+                            Box(Modifier.fillMaxWidth(if (tight) 0.94f else 0.88f).heightIn(min = cellH * if (tight) 0.3f else 0.36f).clip(RoundedCornerShape(2.dp))
                                 .background(Brush.verticalGradient(listOf(Color(0xFFE8CF8E), brass, Color(0xFF8E6F33))))
                                 .padding(3.dp).background(Color(0xFFF2EAD6)).padding(horizontal = 4.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
                                 // (Two lines before it shrinks or slides: on a narrow screen every label slid at once.)
                                 FullText(tile.label, color = Color(0xFF2B2016), fontSize = 11.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
-                                    style = androidx.compose.ui.text.TextStyle(lineHeight = 12.5.sp, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
+                                    style = androidx.compose.ui.text.TextStyle(lineHeight = DRAWER_LINE_EM.em, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
                             }
                             // Cup pull: a half-round brass shell with its shadow.
-                            Canvas(Modifier.width(cellW * 0.26f).height(12.dp)) {
+                            Canvas(Modifier.width(cellW * 0.26f).height(if (tight) 7.dp else 12.dp)) {
                                 drawArc(Color.Black.copy(alpha = 0.35f), 0f, 180f, true, Offset(0f, -size.height * 0.2f), Size(size.width, size.height * 2.2f))
                                 drawArc(Brush.verticalGradient(listOf(Color(0xFFF1DDA5), brass, Color(0xFF7A5C26))), 0f, 180f, true, Offset(0f, -size.height * 0.6f), Size(size.width, size.height * 2f))
                             }
@@ -1523,3 +1528,8 @@ private fun DashboardLower(tiles: List<CategoryTile>, selected: Int, onFocus: (I
         }
     }
 }
+
+/** Sprint 527: a drawer shorter than this (cell, dp) gets the compact front - thinner margins and pull (KONKR 960 x 640). */
+internal const val DRAWER_TIGHT_DP = 84
+/** Sprint 527: the drawer card's line height, relative to its type, so it shrinks with the auto-fit size. */
+internal const val DRAWER_LINE_EM = 1.14f
