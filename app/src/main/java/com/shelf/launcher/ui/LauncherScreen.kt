@@ -4427,9 +4427,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         if (nameRoomHere) Spacer(Modifier.height(22.dp * tileScaleNow))
                         Box(Modifier.fillMaxWidth().tileRowPlacement(rowId)) {
                             when (rowId) {
-                                TileRows.BUTTONS -> if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { // (523y: fades under a row-style window)
-                                    HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight)
-                                } else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) }
+                                // (523y: the buttons fade under a row-style window)
+                                TileRows.BUTTONS -> if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) } else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) }
                                 TileRows.CATS -> Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, TileRowEdit.CATS_PART), "Categories")) {
                                     // Smaller here: on this layout the bar sits near the music player's lyrics.
                                     androidx.compose.runtime.CompositionLocalProvider(LocalCompactPills provides true) {
