@@ -56,7 +56,7 @@ class ShelfCase3DTest {
         for (i in 1..1000) {
             val pp = pose(i / 1000f)
             assertTrue("yaw jump at $i", abs(pp.yaw - prev.yaw) < 1.5f)
-            assertTrue("pitch jump at $i", abs(pp.pitch - prev.pitch) < 0.2f)
+            assertTrue("pitch jump at $i", abs(pp.pitch - prev.pitch) < 0.5f)
             assertTrue("size jump at $i", abs(pp.apparentH - prev.apparentH) < 2f)
             assertTrue("move jump at $i", hypot(pp.cx - prev.cx, pp.cy - prev.cy) < 3f)
             assertTrue("the turn never goes back", pp.yaw <= prev.yaw + 1e-4f)

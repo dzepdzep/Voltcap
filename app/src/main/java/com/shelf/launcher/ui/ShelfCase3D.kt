@@ -26,8 +26,8 @@ internal object Shelf3D {
     /** Camera of Case3D (CaseDraw.draw: focal = h × FOCAL). */
     const val FOCAL = 3.4f
 
-    /** Most the case tips toward you mid-turn (degrees); level at both ends. */
-    const val TURN_PITCH = 5f
+    /** Most the case tips toward you mid-turn (degrees); level at both ends. Over atan(1 / (2 × FOCAL)) ≈ 8.4°, so its top shows (the camera is level with its middle). */
+    const val TURN_PITCH = 11f
 
     /** Decision for one pull-out: undecided (3D case loading, invisible), the 3D case, or the flat path for this pull. */
     enum class Mode { WAITING, CASE_3D, FLAT }
