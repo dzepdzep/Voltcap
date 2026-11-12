@@ -76,4 +76,11 @@ class TileRowsTest {
         // Nothing animates outside Edit Home (rule 14).
         assertTrue(src("ui/TileRows.kt").contains("translationY = if (editing) anim.value else 0f"))
     }
+
+    @Test fun aMovedOrderStaysClearOfTheStatusBarInTheMiddle() {
+        val ls = src("ui/LauncherScreen.kt")
+        assertTrue(ls.contains("val tileOrderMoved = tileOrder != tileOrderDefault"))
+        assertTrue(ls.contains("val yFloor = if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0"))
+        assertEquals(40, TileRows.TOP_CLEAR_DP)
+    }
 }

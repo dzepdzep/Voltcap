@@ -4290,10 +4290,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 shortcutsFloating && tileShortcuts.isNotEmpty() && !HomeWidgets.hidden(HomeWidgets.SHORTCUTS)
             // Sprint 527: Tile home's rows are one ordered stack (TileRows; Features.tileRowOrder, empty = the order your settings
             // give). The buttons count as "under the tiles" (centred with them in the middle) only where the order puts them.
-            val tileOrder = TileRows.resolve(
-                com.shelf.launcher.data.Features.tileRowOrder.state.value,
-                TileRows.defaultOrder(dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW)
-            )
+            val tileOrderDefault = TileRows.defaultOrder(dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW)
+            val tileOrder = TileRows.resolve(com.shelf.launcher.data.Features.tileRowOrder.state.value, tileOrderDefault)
+            // (Sprint 527, Flip 2: the buttons moved above the tiles in the middle went up under the clock - a moved order keeps
+            // its first row clear of the status bar, like a moved tiles row; the order your settings give is placed as before.)
+            val tileOrderMoved = tileOrder != tileOrderDefault
             val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
                 state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && (!shortcutsFloating || tileBarReserved) && tileShortcuts.isNotEmpty() &&
                 tileOrder.indexOf(TileRows.BUTTONS) > tileOrder.indexOf(TileRows.TILES)
@@ -4342,7 +4343,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            val yFloor = if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0
+                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceAtLeast(yFloor).coerceIn(0, (h - p.height).coerceAtLeast(0))
                             // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
                             // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
                             val y = if (rowShiftPx == 0f || top == androidx.compose.ui.layout.AlignmentLine.Unspecified ||

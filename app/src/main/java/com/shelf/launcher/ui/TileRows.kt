@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
  * Pure (unit-tested): TileRowsTest.
  */
 internal object TileRows {
+    /** Sprint 527: how far a moved order's first row stays below the screen's top (the status bar and clock), in dp. */
+    const val TOP_CLEAR_DP = 40
+
     const val BUTTONS = "buttons"
     const val CATS = "cats"
     const val TILES = "tiles"
