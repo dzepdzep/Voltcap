@@ -805,3 +805,19 @@ internal fun cloudHold(context: android.content.Context, mode: String) {
     android.util.Log.e("VoltcapQA", "cloudhold $mode original=${f.readText()} now=${now()}")
 }
 
+/**
+ * Batch 521b's `voltcap_test_scale` (QA / debuggable builds only - TestHooks sets it): [content] drawn at that text size /
+ * display scale, without touching the system's settings. 12 Nov (Flip 2): used in the game window's own Dialog too - a Dialog
+ * is a window of its own whose root provides its view's density again, so the activity-level override never reached the
+ * popups' text (a x1.3 popup run measured x1.0).
+ */
+@androidx.compose.runtime.Composable
+internal fun WithTestScale(content: @androidx.compose.runtime.Composable () -> Unit) {
+    val s = TestHooks.scale.value
+    if (s == null) content() else {
+        val base = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * s.second, base.fontScale * s.first)
+        ) { content() }
+    }
+}
