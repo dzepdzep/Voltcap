@@ -1,3 +1,17 @@
+# Sprint 527 — Connected Ignition refinement (12 Nov 2026, `feature/connected-ignition`)
+
+- Reveal: the capsule opens, the light runs from its nearest end level with the row into the chosen ring, the chosen profile
+  emerges first, the others nearest-first, a final pulse, then the look (IgnitionTiming FULL / SHORT). Wire ends fade just past
+  the outer rings (no edge hooks). Glow: no offscreen layers (ModulateAlpha), `glowRoom` for the scrolling row.
+- **One centre per profile** (`ui/PickerGeom.kt`): both bubbles scale round the picture's centre (was the column's), the wire and
+  the row share one frame (and the opening slide), centres measured in it with layout rounding, the card no longer clips the glow.
+  QA overlay `voltcap_test_geom` + "VoltcapGeom" log; demo photos (`...:photo`). Flip 2: 533 samples, worst 0.86 px (tol 1.69).
+- Confirm -> Home: the home is built under the stage on accept; the armed roll-out now starts (Rollout.startedAt is Compose state:
+  the home stayed dim with its games hidden). Keys swallowed while the stage leaves (A, A, Right opened a game window).
+- Hint row: "Keep <name>" only when it fits, else "Keep". Idle: Aurora / Neon / Midnight step at 24 fps and stop 8 s after input.
+  Skip: 200 ms cross-fade.
+- Tests: ConnectedIgnitionTest, PickerGeomTest, Batch513Test. Not in RC4.
+
 # v0.6.70 published (11 Nov 2026)
 
 - Owner-approved release of the verified 523z3 candidate: main `aed4501` (RC) + `cc646b4` ("Voltcap 0.6.70", versionCode 77).
