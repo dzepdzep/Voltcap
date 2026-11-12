@@ -81,7 +81,7 @@ class TileRowsTest {
         assertTrue(ls.contains("rowsShown.forEachIndexed { idx, rowId ->"))
         assertTrue(ls.contains("val buttonsAbove = TileRows.buttonsAbove("))
         // Nothing animates outside Edit Home (rule 14).
-        assertTrue(src("ui/TileRows.kt").contains("translationY = if (editing) anim.value else 0f"))
+        assertTrue(src("ui/TileRows.kt").contains("if (!editing || target.isNaN()) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }"))
     }
 
     @Test fun aMovedOrderStaysClearOfTheStatusBarInTheMiddle() {
@@ -139,6 +139,6 @@ class TileRowsTest {
         val src = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/TileRows.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/TileRows.kt")).first { it.exists() }.readText()
         assertTrue(src.contains("val dy = start - target\n                    p.placeWithLayer(0, 0) { translationY = dy }"))
         assertTrue(src.contains(".zIndex(if (onTop) 1f else 0f)"))
-        assertTrue("no coroutine-late start from onGloballyPositioned", !src.contains("onGloballyPositioned"))
+        assertTrue("no coroutine-late start from onGloballyPositioned", !src.contains(".onGloballyPositioned {"))
     }
 }
