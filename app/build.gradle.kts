@@ -161,13 +161,13 @@ android {
             initWith(getByName("release"))
             matchingFallbacks += "release"
             applicationIdSuffix = ".qa"
-            versionNameSuffix = "-qa"
+            versionNameSuffix = "-qa-s3d" // (exp/shelf-3d-flip: told apart from the stable QA build; same QA package and debug key)
             // Batch 521: never the release key (see debugIsQa above).
             signingConfig = signingConfigs.getByName("debug")
         }
         if (debugIsQa) getByName("debug") {
             applicationIdSuffix = ".qa"
-            versionNameSuffix = "-qa"
+            versionNameSuffix = "-qa-s3d" // (exp/shelf-3d-flip: told apart from the stable QA build; same QA package and debug key)
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
             isMinifyEnabled = true
