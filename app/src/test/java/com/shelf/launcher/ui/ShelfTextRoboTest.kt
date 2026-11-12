@@ -63,7 +63,12 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
     private fun texts(): List<SemanticsNode> {
         val roots = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
         val out = mutableListOf<SemanticsNode>()
-        fun walk(n: SemanticsNode) { if (n.config.getOrNull(SemanticsProperties.Text) != null) out += n; n.children.forEach(::walk) }
+        // (only what is placed: a row a layout leaves out - WholeRows, "gives way" - stays in the tree at its parent's corner)
+        fun walk(n: SemanticsNode) {
+            if (!n.layoutInfo.isPlaced) return
+            if (n.config.getOrNull(SemanticsProperties.Text) != null) out += n
+            n.children.forEach(::walk)
+        }
         roots.forEach { r -> walk(r) }
         return out
     }

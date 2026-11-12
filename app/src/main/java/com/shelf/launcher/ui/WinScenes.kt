@@ -1919,9 +1919,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
                                 .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
                         ) {
-                            Text(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
-                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                maxLines = 2)
+                            // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
+                            // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
+                            WinFullText(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
+                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
+                                style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
                         }
                     }
                 }
