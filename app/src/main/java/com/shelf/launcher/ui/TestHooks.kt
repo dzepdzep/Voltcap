@@ -447,6 +447,27 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_pickerlook")?.let { v ->
             if (enabled(context)) pickerLook.value = com.shelf.launcher.data.Features.PickerLook.values().firstOrNull { it.name == v }
         }
+        // Sprint 525 (Connected Ignition hardware QA; the QA app isn't debuggable, so ci_qa.sh's run-as can't set it):
+        // `--es voltcap_test_intro FULL|SHORT|PIXEL|OFF|restore` - the intro the next cold start plays (the "appearance" prefs'
+        // intro_style, as Settings writes it), isolated QA app only. The value before the first change is kept in
+        // <external files>/voltcap_test_intro_prev.txt and `restore` puts it back.
+        intent?.getStringExtra("voltcap_test_intro")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) runCatching {
+                val p = context.applicationContext.getSharedPreferences("appearance", android.content.Context.MODE_PRIVATE)
+                val prev = java.io.File(context.getExternalFilesDir(null), "voltcap_test_intro_prev.txt")
+                if (v == "restore") {
+                    if (prev.exists()) {
+                        val o = prev.readText().trim()
+                        p.edit().apply { if (o == "-") remove("intro_style") else putString("intro_style", o) }.commit()
+                        prev.delete()
+                    }
+                } else if (com.shelf.launcher.data.IntroStyle.values().any { it.name == v }) {
+                    if (!prev.exists()) prev.writeText(p.getString("intro_style", null) ?: "-")
+                    p.edit().putString("intro_style", v).commit()
+                }
+                android.util.Log.e("VoltcapQA", "intro_style=${p.getString("intro_style", null)}")
+            }
+        }
         intent?.getStringExtra("voltcap_test_profiles")?.let { v ->
             if (enabled(context)) {
                 if (v == "off") profilesDemo.value = null
