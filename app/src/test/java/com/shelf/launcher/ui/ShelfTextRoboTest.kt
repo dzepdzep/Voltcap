@@ -68,6 +68,9 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         fun walk(n: SemanticsNode) {
             if (!n.layoutInfo.isPlaced) return
             if (n.config.getOrNull(SemanticsProperties.Text) != null) out += n
+            // (a node that clears its children's semantics - covered content, e.g. Blades' game blade under a page - is what
+            // accessibility services see: nothing below it; the unmerged tree still lists it)
+            if (n.config.isClearingSemantics) return
             n.children.forEach(::walk)
         }
         roots.forEach { r -> walk(r) }
