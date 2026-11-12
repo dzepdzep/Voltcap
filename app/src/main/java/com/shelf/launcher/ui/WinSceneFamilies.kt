@@ -1,5 +1,14 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -284,7 +293,19 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
     // down the card's side; a wide picture a lower one. The card is never shorter than the tile beside it.)
     val (tileW, tileH) = tileLiftSize(tile.value, CoverAspects.rawOf(ctx.cover ?: ctx.wide), ctx.maxH.value * (if (compact) 0.66f else 0.72f))
         .let { it.first.dp to it.second.dp }
-    Box(Modifier.width(w).heightIn(max = ctx.maxH)) {
+    val anim = rememberAnimationsEnabled()
+    // (Popup motion work: the page change's direction, for the tile turn - forward turns right to left, back left to right.)
+    val lastPage = remember { arrayOf(ctx.page) }
+    val turnDir = remember { intArrayOf(1) }
+    if (lastPage[0] != ctx.page) { turnDir[0] = pageDirection(TILE_TABS, lastPage[0], ctx.page); lastPage[0] = ctx.page }
+    Box(Modifier.width(w).heightIn(max = ctx.maxH).onPreviewKeyEvent { e ->
+        // (Popup motion work: L1 / R1 walk Info, Details, Achievements, Options - as their keys open them.)
+        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+        val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
+        val to = pageStep(TILE_TABS, ctx.page, step)
+        if (to != ctx.page) ctx.open(to)
+        true
+    }) {
         // The card behind: it unrolls downward from the tile's row.
         Row(Modifier.padding(top = lift).fillMaxWidth().heightIn(min = tileH - lift + 14.dp).graphicsLayer {
             val e = sceneEase(sceneStage(ctx.reveal(), 0.25f, 1f))
@@ -299,15 +320,47 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
                 drawRoundRect(a.copy(alpha = 0.07f + 0.03f * ((r + q) % 2)), Offset(x, y), androidx.compose.ui.geometry.Size(c, c), androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()))
             }
         }.border(1.dp, ink.copy(alpha = 0.1f), RoundedCornerShape(18.dp)).padding(start = tileW + 28.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
-            Column(Modifier.weight(1f)) {
-                StableFullText(ctx.name, color = ink, fontSize = (20f * type).sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
-                Text(ctx.console, color = a, fontSize = (12f * type).sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(8.dp))
-                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, upperLabels = false, omit = setOf("Console"), scale = type) }
-                Spacer(Modifier.height(10.dp))
-                KeyRow(sceneKeys(ctx), 6.dp) { k ->
-                    SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
-                        ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
+            // Popup motion work (Tiles, owner-approved direction): the card's writing turns over like a tile for each page - the
+            // old side turns away, the new one turns in, right to left going forward, left to right going back - while the lifted
+            // tile and the card stay. Details / Achievements / Options are the card's own pages (no other design).
+            androidx.compose.animation.AnimatedContent(
+                targetState = ctx.page,
+                transitionSpec = {
+                    if (!anim) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                    else androidx.compose.animation.fadeIn(tween(1, delayMillis = NATIVE_PAGE_MS / 2)) togetherWith
+                        androidx.compose.animation.fadeOut(tween(1, delayMillis = NATIVE_PAGE_MS / 2))
+                },
+                contentKey = { it },
+                modifier = Modifier.weight(1f),
+                label = "tilePage"
+            ) { p ->
+                val live = p == ctx.page
+                val turn by transition.animateFloat(
+                    transitionSpec = { if (!anim) snap() else tween(NATIVE_PAGE_MS / 2, delayMillis = if (targetState == androidx.compose.animation.EnterExitState.Visible) NATIVE_PAGE_MS / 2 else 0) },
+                    label = "tileTurn"
+                ) { st ->
+                    when (st) {
+                        androidx.compose.animation.EnterExitState.PreEnter -> -90f * turnDir[0]
+                        androidx.compose.animation.EnterExitState.Visible -> 0f
+                        androidx.compose.animation.EnterExitState.PostExit -> 90f * turnDir[0]
+                    }
+                }
+                Column(Modifier.graphicsLayer {
+                    rotationY = turn; cameraDistance = 12f * density
+                    alpha = if (kotlin.math.abs(turn) >= 89.5f) 0f else 1f
+                    flatTextFor3d()
+                }) {
+                    if (p == WinPage.MAIN) {
+                        StableFullText(ctx.name, color = ink, fontSize = (20f * type).sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
+                        Text(ctx.console, color = a, fontSize = (12f * type).sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(8.dp))
+                        Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, upperLabels = false, omit = setOf("Console"), scale = type) }
+                        Spacer(Modifier.height(10.dp))
+                        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+                            SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
+                                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
+                        }
+                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact, (ctx.maxH * 0.86f - lift).coerceAtLeast(tileH))
                 }
             }
         }
@@ -321,6 +374,30 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
             shadowElevation = 16.dp.toPx() * k
         }.border(3.dp, a, RoundedCornerShape(14.dp)).padding(3.dp).clip(RoundedCornerShape(11.dp))) {
             SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), lerp(surface, Color.Black, 0.3f))
+        }
+    }
+}
+
+/** Tiles' pages in key order (Info, Details, Achievements, Options). */
+internal val TILE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
+
+/**
+ * Tiles' Details / Achievements / Options (popup motion work): the card's other side - the page's name over the game's, the page
+ * in a soft tile of the card's ground, the page's keys as the card's round keys. Taller than Info so the page has room.
+ */
+@Composable
+private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp) {
+    Column(Modifier.height(height)) {
+        Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
+        StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(8.dp)) {
+            ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        }
+        Spacer(Modifier.height(10.dp))
+        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+            SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
+                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
         }
     }
 }

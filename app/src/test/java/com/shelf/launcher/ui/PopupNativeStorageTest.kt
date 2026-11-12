@@ -34,7 +34,7 @@ class PopupNativeStorageTest {
 
     @Test fun storageKeepsItsOwnPages() {
         assertTrue(nativePages(WinScene.STORAGE_RECORD))
-        assertFalse(nativePages(WinScene.BLADE_GUIDE))
+        assertFalse(nativePages(WinScene.CASE_MEDIA))
         assertFalse(nativePages(null))
         val gw = src("GameWindow.kt")
         assertTrue(gw.contains("scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage"))
@@ -84,5 +84,30 @@ class PopupNativeStorageTest {
         val wipe = src("WinScenes.kt").substringAfter("private fun NightBannerWipe(").substringBefore("private fun NightPagePanel(")
         assertTrue(wipe.contains("drawRect(Color(0xFF0B1424)"))                    // the dark band at the wipe's edge
         assertTrue(wipe.contains("if (!anim) { shown = page"))                     // animations off: the new words at once
+    }
+
+    @Test fun tilesTurnTheirCardForEachPage() {
+        assertTrue(nativePages(WinScene.TILE_CARD))
+        val t = src("WinSceneFamilies.kt").substringAfter("internal fun TileLiftCard(").substringBefore("internal val TILE_TABS")
+        assertTrue(t.contains("rotationY = turn"))                                   // the writing turns like a tile
+        assertTrue(t.contains("-90f * turnDir[0]") && t.contains("90f * turnDir[0]")) // forward and back turn opposite ways
+        assertTrue(t.contains("TileLiftPage(ctx, p, live"))
+        assertTrue(t.contains("Key.ButtonL1 -> -1; Key.ButtonR1 -> 1") && t.contains("ctx.open(to)"))
+        assertTrue(t.contains("if (!anim) snap()"))                                  // animations off: no turn
+    }
+
+    @Test fun bladesLayerAPageBladeAndKeepTheEdgeReadable() {
+        assertTrue(nativePages(WinScene.BLADE_GUIDE))
+        val b = src("WinScenesConsole.kt").substringAfter("internal fun BladeGuide(").substringBefore("internal val BLADE_TABS")
+        // forward: the new blade slides in on top; back: the blade you were on slides away on top of the one under it
+        assertTrue(b.contains("apply { targetContentZIndex = 1f }") && b.contains("apply { targetContentZIndex = -1f }"))
+        assertTrue(b.contains("BladePageBlade(ctx, pg, pg == ctx.page"))
+        assertTrue(b.contains("BladeEdgeName(ctx.name"))                              // the covered game blade keeps its name
+        assertFalse(b.contains("ctx.pageBody("))
+        // no state written while composing (the first page's commands are kept in a plain holder)
+        assertFalse(b.contains("mainRows.value ="))
+        val edge = src("WinScenesConsole.kt").substringAfter("private fun BladeEdgeName(").substringBefore("private fun BladePageBlade(")
+        assertTrue(edge.contains("maxLines = 2"))                                     // two lines across the strip, never cut
+        assertEquals(listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS), BLADE_TABS)
     }
 }

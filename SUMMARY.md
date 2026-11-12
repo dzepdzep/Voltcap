@@ -1,4 +1,4 @@
-# Popup native pages P1 — Storage boxes (12 Nov 2026, branch feature/popup-native, local, not built on the PC yet)
+# Popup native pages P1–P4 — Storage boxes, Night menu, Tiles, Blades (12 Nov 2026, branch feature/popup-native, local, not built on the PC yet)
 
 - **Storage boxes keeps its own Details / Achievements / Options** (owner-reported regression "Storage → unrelated Details"):
   - Cause: `SceneBody` replaced every layout window's non-main page with the shared `ExpandedWinPage` (update 426), so Storage's
@@ -9,13 +9,24 @@
     going back runs the other way; the open tab's paper slides from tab to tab. Animations off: instant, same end states.
   - Sub-pages fill the record under a slim name line (small sprite, whole-word name, console tag) with Play / page keys / Back.
   - The leaving sheet carries no focus requesters; focus moves into the new page after the change.
+- **Night menu** (`NightStatus`, `NightBannerWipe`, `NightPagePanel`): pages in one big slanted panel left of the commands
+  (they were squeezed into the stats panel, hence update 426); panels sweep in and out along the −6° slant in the D-pad's
+  direction, solid, under the banner; the banner shows the page's name with the game's under it and changes with a wipe whose
+  edge is a dark slanted band (never empty, the two titles never run together); L1 / R1.
+- **Tiles** (`TileLiftCard`, `TileLiftPage`): the lifted tile and the card stay; the card's writing turns over like a tile for each
+  page (right to left forward, left to right back); pages are the card's own side, taller than Info; L1 / R1.
+- **Blades** (`BladeGuide`, `BladeBody`, `BladePageBlade`, `BladeEdgeName`): each page is a blade of its own — forward it slides
+  in from the right over the current one, back (B / L1) the current one slides away on top and reveals the one under it; the
+  covered game blade keeps its curved edge with its name standing up in up to two lines (fixed edge width, no layout jump);
+  its first-page commands stay drawn but inert underneath; L1 / R1.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from
   another page keeps the first opener.
-- **Files:** `ui/WinPageFlow.kt` (new), `ui/GameWindow.kt`, `ui/WinScenes.kt`; tests `ui/PopupNativeStorageTest.kt` (new, 6),
+- **Files:** `ui/WinPageFlow.kt` (new), `ui/GameWindow.kt`, `ui/WinScenes.kt`, `ui/WinSceneFamilies.kt`, `ui/WinScenesConsole.kt`;
+  tests `ui/PopupNativeStorageTest.kt` (new, 9),
   `ui/Visual426Test.kt` + `ui/Batch523cTest.kt` (assertions updated to the new text, same intent).
-- **Checked (cloud):** Kotlin 2.2.10 + Compose type-check 0 errors; all 1061 unit tests run with real JUnit 4.13.2 — the same 134
+- **Checked (cloud):** Kotlin 2.2.10 + Compose type-check 0 errors; all 1064 unit tests run with real JUnit 4.13.2 — the same 134
   fail on unchanged v0.6.70 (Android stubs: no `isReturnDefaultValues` in this harness), no new failure; static_checks PASS
   (summary identical to v0.6.70).
 - **Not done:** PC Gradle build (the PC tool builds only the `fw1` / `ci` worktrees — needs an allow-list entry + restart);
