@@ -69,6 +69,14 @@ internal object Shelf3D {
         return shelfSpine != null && shelfSpine == caseSpine && shelfFront != null && shelfFront == caseFront
     }
 
+    /**
+     * Hardware QA, 12 Nov (Flip 2): Case3D gives the case its real shape (CaseCatalog) and cuts the front scan to it; the shelf
+     * shows the scan at its own shape. Within 8 % the cut is invisible; beyond (a portrait cover on a square jewel case) the
+     * front lost its title band - so the 3D case takes the pull only within that. Pure.
+     */
+    fun shapeAgrees(scanShape: Float, caseAspect: Float?): Boolean =
+        caseAspect == null || kotlin.math.abs(scanShape / caseAspect.coerceIn(0.55f, 1.85f) - 1f) <= 0.08f
+
     /** The width / height each game's spine picture is drawn at on the shelf (SpineSlot), for the 3D case's thickness. */
     val drawnDepth = HashMap<String, Float>()
 
