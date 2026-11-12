@@ -150,6 +150,9 @@ class TileRowsTest {
         // Edit Home's stand-in stays in the status bar's band where Home keeps the player there (Flip 2 t527o).
         assertTrue(ls.contains("top = if (bottom) 0.dp else if (musicInStatus) 6.dp else 52.dp,"))
         assertTrue(ls.contains("MusicPlayerPlaceholder(compact = musicInStatus)"))
+        assertTrue(ls.contains("defaultFrac = if (musicInStatus) 0f to 0f else null"))
+        // (its compact height + the safe zone's top margin (<= 20 dp... 12 dp on the Flip 2) stays above TOP_CLEAR_DP)
+        assertTrue(12 + 2 * 2 + 20 < TileRows.TOP_CLEAR_DP)
         // Where Home shows it in a top corner the rows' floor includes it; only then (preview = Home).
         assertTrue(ls.contains("val musicTopCorner = !bottom && !statusHolds && HomeWidgets.position(HomeWidgets.MUSIC) == null && playerElsewhere != null"))
         assertTrue(ls.contains("val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor, musicFloor)"))

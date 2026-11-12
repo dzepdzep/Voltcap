@@ -3845,7 +3845,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     start = 14.dp, end = 14.dp,
                     top = if (bottom) 0.dp else if (musicInStatus) 6.dp else 52.dp,
                     bottom = if (bottom) (if (state.appearance.legendOn) 36.dp else 10.dp) else 0.dp
-                )
+                ),
+                // (Edit Home places an unmoved part by fractions of the safe zone: the status-bar stand-in at its very top -
+                // KONKR k528 m_buttons_top: at 8 % down it still met the round buttons moved to the top.)
+                defaultFrac = if (musicInStatus) 0f to 0f else null
             ) {
                 androidx.compose.runtime.DisposableEffect(musicTopCorner) { onDispose { TileRowEdit.musicBottomPx = 0f } }
                 Box(Modifier.onGloballyPositioned { c ->
