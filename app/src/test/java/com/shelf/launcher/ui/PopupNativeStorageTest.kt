@@ -319,3 +319,15 @@ class SpineTraceTest {
         assertTrue(at > 0 && c.lastIndexOf("if (QaTrace.on) {", at) > at - 900)
     }
 }
+
+/** Lint baseline work (12 Nov): Bitmap.Config.HARDWARE read without an API 26 guard crashes Android 7 (minSdk 24). */
+class HardwareBitmapGuardTest {
+    @Test fun noUnguardedHardwareConfigChecks() {
+        val root = listOf(java.io.File("src/main/java/com/shelf/launcher"), java.io.File("app/src/main/java/com/shelf/launcher")).first { it.exists() }
+        val rx = Regex("""\.config == (android\.graphics\.)?Bitmap\.Config\.HARDWARE""")
+        val bad = root.walkTopDown().filter { it.extension == "kt" && it.name != "BitmapCompat.kt" }.flatMap { f ->
+            f.readLines().withIndex().filter { (_, l) -> rx.containsMatchIn(l) && !l.contains("ImageDecoder") }.map { "${f.name}:${it.index + 1}" }
+        }.toList()
+        assertTrue("use isHardwareBitmap(): $bad", bad.isEmpty())
+    }
+}

@@ -921,7 +921,7 @@ private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphi
 private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: Boolean = false): android.graphics.Bitmap? = runCatching {
     val w = src.width; val h = src.height
     if (w < 8 || h < 24) return@runCatching fillCrop(src, aspect, 0.1f)
-    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val soft = if (src.isHardwareBitmap()) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     val px = IntArray(w * h)
     soft.getPixels(px, 0, w, 0, 0, w, h)
     // How much of row y differs from the row above it (share of the columns, a little in from the edges).
@@ -987,7 +987,7 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
     val c = android.graphics.Canvas(out)
     // The scan's edge colour still reaches the box edges; a genuine printed
     // title/logo stays readable, with no top/bottom crop or substituted template.
-    val safe = if (src.config == android.graphics.Bitmap.Config.HARDWARE)
+    val safe = if (src.isHardwareBitmap())
         src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     c.drawColor(safe.getPixel(0, (safe.height / 2).coerceAtMost(safe.height - 1)))
     val scale = minOf(w.toFloat() / safe.width.coerceAtLeast(1), h.toFloat() / safe.height.coerceAtLeast(1))
@@ -1212,7 +1212,7 @@ internal object CaseLod {
      * down across only (to a half, quarter or eighth) and keeps its full height.
      */
     fun pick(full: android.graphics.Bitmap, quad: FloatArray): android.graphics.Bitmap {
-        if (full.width < 48 || full.height < 48 || full.isRecycled || full.config == android.graphics.Bitmap.Config.HARDWARE) return full
+        if (full.width < 48 || full.height < 48 || full.isRecycled || full.isHardwareBitmap()) return full
         fun len(a: Int, b: Int): Float = kotlin.math.hypot(quad[b * 2] - quad[a * 2], quad[b * 2 + 1] - quad[a * 2 + 1])
         val nx = steps(maxOf(len(0, 1), len(3, 2)) / full.width)
         val ny = steps(maxOf(len(0, 3), len(1, 2)) / full.height)
@@ -1670,7 +1670,7 @@ private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.
     return runCatching {
         val w: Int; val h: Int
         if (cur < aspect) { h = src.height; w = (h * aspect).toInt().coerceAtLeast(1) } else { w = src.width; h = (w / aspect).toInt().coerceAtLeast(1) }
-        val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+        val soft = if (src.isHardwareBitmap()) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
         val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
         val c = android.graphics.Canvas(out)
         c.drawColor(averageColor(soft) or (0xFF shl 24))

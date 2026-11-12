@@ -90,7 +90,7 @@ internal fun isTwinSpine(gray: IntArray): Boolean {
 /** Update 298: an upright spine scan that is two copies of the spine side by side ([isTwinSpine]) cut to one; else itself. */
 internal fun singleSpine(b: android.graphics.Bitmap): android.graphics.Bitmap = runCatching {
     if (b.width < 16 || b.height < 64 || b.width.toFloat() / b.height < 0.07f) return b
-    val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+    val soft = if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
     val g = IntArray(16 * 64)
     // (Each cell the average of 4 × 4 points in it — single points landed on or off thin lettering by chance.)
     for (y in 0 until 64) for (x in 0 until 16) {
