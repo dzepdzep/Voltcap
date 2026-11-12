@@ -1286,13 +1286,14 @@ internal fun GameWindow(
         var turned by remember { mutableStateOf(false) }
         // (Popup motion work: one rule, WinPageFlow.pageFocusTarget. Back on the first page the opener is asked first - it used to
         // be Play at 60 ms and the opener at 120 ms, so Play was lit for a moment and a quick A after B started the game. A layout
-        // window that draws its own pages moves the focus in once its page change has run, so the leaving page can't take it.)
+        // window that draws its own pages keeps the leaving page inert and without requesters, so the new page's focus is asked
+        // at once - no ignored first press while the pages move.)
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
             val opener = pageOpener[0]
             when (pageFocusTarget(page, fromPerf, opener != null)) {
                 PageFocus.LIST -> {
-                    kotlinx.coroutines.delay(if (nativePages(scene)) NATIVE_PAGE_MS.toLong() else 60L)
+                    kotlinx.coroutines.delay(60) // (a native page's leaving copy holds no requester and is inert: no wait for it)
                     if (!focusWhenAttached(listFocus)) runCatching { playFocus.requestFocus() }
                 }
                 PageFocus.PERF -> {
@@ -1305,7 +1306,7 @@ internal fun GameWindow(
                     if (!focusWhenAttached(opener!!)) runCatching { playFocus.requestFocus() }
                 }
                 PageFocus.PLAY -> {
-                    kotlinx.coroutines.delay(if (nativePages(scene)) NATIVE_PAGE_MS.toLong() else 60L)
+                    kotlinx.coroutines.delay(60) // (a native page's leaving copy holds no requester and is inert: no wait for it)
                     if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
                 }
             }

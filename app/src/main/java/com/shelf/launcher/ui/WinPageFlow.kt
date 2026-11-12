@@ -35,7 +35,7 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
-/** How long a native page change runs (ms); focus moves into the new page after it, so the leaving page can't take it. */
+/** How long a native page change runs (ms). Focus goes into the new page at once: the leaving copy is inert (WinAction.inert). */
 internal const val NATIVE_PAGE_MS = 280
 
 /** L1 / R1: the page [step] away from [at] in [tabs], wrapping. Pure. */

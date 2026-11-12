@@ -230,3 +230,12 @@ class InertControlsTest {
         assertTrue(s.contains(".clickable(enabled = !a.inert, interactionSource = source, indication = null)"))
     }
 }
+
+/** Popup motion work: no ignored first press while a native page change runs. */
+class NativePageFocusTimingTest {
+    @Test fun focusIsNotHeldBackForTheMotion() {
+        val gw = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/GameWindow.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/GameWindow.kt")).first { it.exists() }.readText()
+        val effect = gw.substringAfter("when (pageFocusTarget(page, fromPerf, opener != null)) {").substringBefore("var target by remember")
+        assertFalse(effect.contains("NATIVE_PAGE_MS"))
+    }
+}
