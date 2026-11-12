@@ -28,6 +28,11 @@ internal object TestHooks {
     val settingsSearch = mutableStateOf<String?>(null)
     /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
     val screensaver = mutableStateOf(false)
+    /**
+     * Sprint 527 (video ambient light, isolated QA app only): `--es voltcap_test_video <file:///…mp4>|off` — this clip plays as the
+     * focused game's background clip for this session (the QA handhelds have no scraped clips). Nothing saved.
+     */
+    val video = mutableStateOf<String?>(null)
     /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
     val bg = mutableStateOf<String?>(null)
     /**
@@ -364,6 +369,10 @@ internal object TestHooks {
         val pm = intent?.getStringExtra("voltcap_test_perf")
         intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
+        intent?.getStringExtra("voltcap_test_video")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) video.value = v.takeIf { it != "off" }
+            android.util.Log.e("VoltcapQA", "test video $v")
+        }
         // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
         // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
         intent?.getStringExtra("voltcap_test_tune")?.let { t ->

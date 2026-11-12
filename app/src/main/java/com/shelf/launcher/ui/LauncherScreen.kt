@@ -3438,7 +3438,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             kotlinx.coroutines.delay(1600)
             videoReadyFor = game.stableKey
         }
-        val videoUrl = focusedGame?.stableKey?.let { key -> state.videoUrls[key]?.takeIf { videoReadyFor == key } }
+        val videoUrl = TestHooks.video.value?.takeIf { focusedGame != null } ?: focusedGame?.stableKey?.let { key -> state.videoUrls[key]?.takeIf { videoReadyFor == key } }
         // The Gaming room plays the clip on its monitor instead of across the whole screen.
         val roomClip = backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED &&
             (pickedScene?.motif ?: state.appTheme.motif) == com.shelf.launcher.ui.theme.ThemeMotif.GAMING_ROOM &&
