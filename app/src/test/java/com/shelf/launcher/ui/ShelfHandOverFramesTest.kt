@@ -47,13 +47,13 @@ import java.time.Duration
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w1400dp-h420dp-land-mdpi")
+@Config(qualifiers = "w1700dp-h620dp-land-mdpi")
 class ShelfHandOverFramesTest {
     private val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
 
     private val S = 3f                                   // 3 × scale
-    private val cellW = 140f; private val cellH = 200f
+    private val cellW = 60f; private val cellH = 100f
     private val slotH = 50f; private val slotW = 4.6f     // a KONKR shelf's spine, in dp
     private val caseShape = 0.7f
     private val turns = listOf(0f, 0.02f, 0.05f, 0.1f, 0.15f, 0.2f, 0.3f, 0.45f, 0.6f)
@@ -116,8 +116,8 @@ class ShelfHandOverFramesTest {
         root.draw(Canvas(full))
         val b = compose.onNodeWithTag("sheet").fetchSemanticsNode().boundsInRoot
         val sheet = Bitmap.createBitmap(full, b.left.toInt(), b.top.toInt(), b.width.toInt().coerceAtMost(full.width - b.left.toInt()), b.height.toInt().coerceAtMost(full.height - b.top.toInt()))
-        val lc = Canvas(sheet); val lp = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = 22f }
-        turns.forEachIndexed { i, t -> lc.drawText("new turn ${"%.2f".format(t)}", i * cellW * S + 8, cellH * S - 12, lp); lc.drawText("old turn ${"%.2f".format(t)}", i * cellW * S + 8, 2 * cellH * S - 12, lp) }
+        val lc = Canvas(sheet); val lp = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = 15f }
+        turns.forEachIndexed { i, t -> lc.drawText("new ${"%.2f".format(t)}", i * cellW * S + 8, cellH * S - 12, lp); lc.drawText("old ${"%.2f".format(t)}", i * cellW * S + 8, 2 * cellH * S - 12, lp) }
         val out = java.io.File("build/shelf3d"); out.mkdirs()
         java.io.FileOutputStream(java.io.File(out, "handover.png")).use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
