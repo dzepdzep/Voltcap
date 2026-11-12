@@ -24,7 +24,7 @@ def probe(f):
         return None, 0, False
     dec = subprocess.run(["ffmpeg", "-v", "error", "-i", f, "-f", "null", "-"], capture_output=True, text=True, timeout=300)
     # (screenrecord writes variable frame timing: the null muxer's "non monotonically increasing dts" notes are not damage)
-    errs = [l for l in dec.stderr.splitlines() if l.strip() and "non monotonically increasing dts" not in l]
+    errs = [l for l in dec.stderr.splitlines() if l.strip() and "non monotonically increasing dts" not in l and "Last message repeated" not in l]
     return dur, frames, dec.returncode == 0 and not errs
 
 def parse_log(path):
