@@ -15,6 +15,8 @@
 #                                                                idle frames (the backdrop's calm) - no recording (it would draw)
 #   sh ci527.sh reentry NAME                                     mid-intro Home intent (interruption), then the in-app picker
 #                                                                (sample profiles, the same picker as R1 / Settings) with Right, A, A, Right: the destination must not move
+#   sh ci527.sh geom NAME LOOK SPEC SCALE [INTRO] [MID]               alignment overlay on a cold start (Phase 1), then clean
+#   sh ci527.sh geomapp NAME LOOK SPEC SCALE                     alignment overlay on the in-app picker, then clean
 #   sh ci527.sh restore                                          intro_style / picker_look back (as ci525.sh)
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=/sdcard/pc/ci527; mkdir -p $O; MODE=$1
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -83,6 +85,27 @@ reentry)
   A --es voltcap_test_profiles 4:active=1; sleep 2.5; screencap -p $O/${N}_open.png
   k DPAD_RIGHT; sleep 0.8; k BUTTON_A+BUTTON_A+DPAD_RIGHT; sleep 0.25; screencap -p $O/${N}_leaving.png; sleep 3; screencap -p $O/${N}_end.png; rec_stop
   echo "$N re-entry (in-app picker, Right then A A Right): mark=$(mark)" >> $O/log.txt ;;
+geom)
+  # Sprint 527 Phase 1: a cold start with the alignment overlay (voltcap_test_geom: every centre drawn + "VoltcapGeom" log 4x a
+  # second, the reveal included), shots mid-reveal / settled / mid-move / after the move, then the same screen clean.
+  N=$2; L=$3; SPEC=$4; SC=$5; I=${6:-FULL}; MID=${7:-2.7}
+  A --es voltcap_test_intro $I --es voltcap_test_pref "picker_look=$L"; sleep 1.2; am force-stop $P; sleep 1; logcat -c
+  am start -n $P/com.shelf.launcher.MainActivity --es voltcap_test_startprofiles "$SPEC" --es voltcap_test_scale "$SC" --ez voltcap_test_geom true >/dev/null 2>&1
+  sleep $MID; screencap -p $O/${N}_reveal.png; sleep 3; screencap -p $O/${N}_settled.png
+  k DPAD_RIGHT; sleep 0.12; screencap -p $O/${N}_moving.png; sleep 1.2; screencap -p $O/${N}_moved.png
+  logcat -d -s VoltcapGeom:I > $O/$N.geom.txt
+  A --ez voltcap_test_geom false; sleep 1; screencap -p $O/${N}_clean.png
+  echo "$N geom look=$L spec=$SPEC scale=$SC intro=$I worst=$(grep -o 'worst=[0-9.]*' $O/$N.geom.txt | sort -t= -k2 -n | tail -1) fails=$(grep -c 'pass=false leaving=false' $O/$N.geom.txt) lines=$(grep -c worst= $O/$N.geom.txt) mark=$(mark)" >> $O/log.txt ;;
+geomapp)
+  # The in-app picker (R1 / Settings path, no intro) with the overlay: each look's own bubbles.
+  N=$2; L=$3; SPEC=$4; SC=$5; gate; logcat -c
+  A --ez voltcap_test_geom true --es voltcap_test_pref "picker_look=$L" --es voltcap_test_scale "$SC"; sleep 1
+  A --es voltcap_test_profiles "$SPEC"; sleep 2.5; screencap -p $O/${N}_open.png
+  k DPAD_RIGHT; sleep 0.12; screencap -p $O/${N}_moving.png; sleep 1.2; screencap -p $O/${N}_moved.png
+  logcat -d -s VoltcapGeom:I > $O/$N.geom.txt
+  A --ez voltcap_test_geom false; sleep 1; screencap -p $O/${N}_clean.png
+  k BUTTON_B; sleep 1.2; A --es voltcap_test_profiles off --es voltcap_test_scale off
+  echo "$N geomapp look=$L spec=$SPEC scale=$SC worst=$(grep -o 'worst=[0-9.]*' $O/$N.geom.txt | sort -t= -k2 -n | tail -1) fails=$(grep -c 'pass=false leaving=false' $O/$N.geom.txt) lines=$(grep -c worst= $O/$N.geom.txt) mark=$(mark)" >> $O/log.txt ;;
 restore)
   L=$(sed 's/.*:"\([A-Z]*\)".*/\1/' /sdcard/pc/ci525/look_before.txt 2>/dev/null); [ -z "$L" ] && L=AURORA
   A --es voltcap_test_intro restore --es voltcap_test_pref "picker_look=$L" --es voltcap_test_startprofiles off --es voltcap_test_scale off
