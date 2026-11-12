@@ -496,8 +496,17 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     val frontH3 = if (shape3 <= box3) bigH3 else bigH3 * box3 / shape3
                     // (A scan far from the real case's shape would be cut by Case3D: the shelf's own path for it.)
                     val caseAspect3 = remember(g.stableKey, g.platform, Features.caseRegion.state.value, LookStyles.casePlatform(g.platform)) { CaseCatalog.forGame(g)?.aspect }
+                    // (Hardware QA, Flip 2, 12 Nov - the "40 degree pop": while the game you left goes back, the shelf moves this
+                    // game's slot aside to make room for it (makeRoom - the spine layer above draws it there). The 3D case took
+                    // the slot's place without that shift, ~170 px to the left over the case going back, so its first frames were
+                    // hidden behind that case and it was first seen half turned somewhere else. It now starts from the slot
+                    // exactly where the shelf draws it - the same sum as the spine layer's translationX - and the shift eases out
+                    // with the case going back, as the slot's own does.)
+                    var room3 = makeRoom(index, vrow, c.focus, focusVRow, focusPull())
+                    for (b in backs) room3 += makeRoom(index, vrow, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
+                    pendingBack()?.let { pb -> room3 += makeRoom(index, vrow, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value) }
                     if (!shapeKnown3 || Shelf3D.shapeAgrees(shape3, caseAspect3)) if (ShelfPulled3D(c, g, p, resting,
-                            slotCx = rowLeft3 + s.x + s.w / 2, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
+                            slotCx = rowLeft3 + s.x + s.w / 2 + room3, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
                             bigCx = endX3 + bigW3 / 2, bigTop = endY3 + (bigH3 - frontH3) / 2, bigH = frontH3, shape = shape3,
                             shapeKnown = shapeKnown3, open = { open() })) return
                 }
