@@ -2639,6 +2639,35 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             metadata = it.metadata + meta) }
     }
 
+    /**
+     * Hardware QA, 12 Nov (QA app only - returns at once in the ordinary Voltcap): scanned pictures for the fixture games, in
+     * this session's state only (nothing saved, no scraper asked), so the Game shelf's 3D case can be checked on a handheld
+     * (QaArtFixture.scans). [on] false takes back exactly what it put in.
+     */
+    fun qaScanFixture(on: Boolean) {
+        val app = getApplication<android.app.Application>()
+        if (!com.shelf.launcher.data.QaVariant.isolated(app)) return
+        val dir = app.getExternalFilesDir("qa_art")?.absolutePath ?: return
+        if (!on) {
+            val gone = qaScanKeys.toSet(); qaScanKeys.clear()
+            _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia - gone) }
+            return
+        }
+        val games = _uiState.value.games.filter { it.sourceType == SourceType.ROM }.sortedBy { it.stableKey }
+        val add = HashMap<String, List<Pair<String, String>>>()
+        games.forEachIndexed { i, g ->
+            if (g.stableKey in _uiState.value.physicalMedia && g.stableKey !in qaScanKeys) return@forEachIndexed   // its own scans: left alone
+            add[g.stableKey] = when (i % 3) {
+                0 -> listOf("Box" to "$dir/cover_${i % 6}.png", "Spine" to "$dir/spine_${i % 4}.png")
+                1 -> listOf("Box" to "$dir/cover_${i % 6}.png", "Spine" to "$dir/spine_custom.png")
+                else -> emptyList()
+            }
+        }
+        qaScanKeys.addAll(add.keys)
+        _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + add) }
+    }
+    private val qaScanKeys = HashSet<String>()
+
     /** Background upscaling for one game: null = automatic, 1 = off, 2/4/6/8 = times. */
     fun setHeroUpscale(game: Game, factor: Int?) {
         heroUpscaleStore.set(game.stableKey, factor)

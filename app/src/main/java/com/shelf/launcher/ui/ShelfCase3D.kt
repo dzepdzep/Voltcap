@@ -42,6 +42,33 @@ internal object Shelf3D {
      */
     fun shelfSpineAlpha(turn: Float): Float = if (blendIn(turn) >= 1f) 0f else 1f
 
+    /**
+     * Hardware QA, 12 Nov (Flip 2): the 3D case draws its pictures by Case3D's own rules, the shelf by its own. For a game
+     * without scans the shelf shows a strip of its cover with the name up it and pulls out the console's case art, while
+     * Case3D drew the console's coloured spine and the bare cover in a plain shell: a different spine and a different front
+     * from the hand-over on (an artwork substitution). So the 3D case takes a pull only where both draw the same pictures:
+     * the game's own spine (your cut, its spine scan, or the strip from its box scan with Original cases on) and its own
+     * scanned front with Real case + Original cases on, no case or spine picked for all, no Matching spines. Anywhere else
+     * the shelf's own path runs for that pull, unchanged. Pure apart from the settings it reads.
+     */
+    fun sameArtSources(platform: String?, physical: List<Pair<String, String>>?): Boolean {
+        if (physical == null) return false                                       // scans not known yet: the shelf's own path
+        if (!com.shelf.launcher.data.Features.originalCases.state.value) return false
+        if (com.shelf.launcher.data.Features.shelfPulled.state.value != com.shelf.launcher.data.Features.ShelfPulled.FRONT) return false
+        if (com.shelf.launcher.data.Features.spinesOwn.state.value || LookStyles.spineForAll() || LookStyles.caseForAll()) return false
+        if (androidOwnCase(platform)) return false
+        return artSourcesAgree(physical, physical.withoutFlat(), platform)
+    }
+
+    /** The shelf's spine and front (from [shelf], its scans as they are) against Case3D's (from [case3d], without flat stand-ins). */
+    internal fun artSourcesAgree(shelf: List<Pair<String, String>>?, case3d: List<Pair<String, String>>?, platform: String?): Boolean {
+        val shelfSpine = BoxTexture.userSpine(shelf, platform) ?: shelf?.firstOrNull { it.first == "Spine" }?.second ?: BoxTexture.spine(shelf, platform)
+        val caseSpine = BoxTexture.userSpine(case3d, platform) ?: case3d?.firstOrNull { it.first == "Spine" }?.second ?: BoxTexture.spine(case3d, platform)
+        val shelfFront = BoxTexture.front(shelf, platform)
+        val caseFront = BoxTexture.front(case3d, platform)
+        return shelfSpine != null && shelfSpine == caseSpine && shelfFront != null && shelfFront == caseFront
+    }
+
     /** The width / height each game's spine picture is drawn at on the shelf (SpineSlot), for the 3D case's thickness. */
     val drawnDepth = HashMap<String, Float>()
 
