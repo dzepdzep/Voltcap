@@ -107,7 +107,7 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         state = state.copy(appearance = state.appearance.copy(loopRow = false))
         frames(120)
         val off = shownNames()
-        val onName = games[0].name
+        val onName = state.visibleGames.getOrNull(state.focusedIndex)?.name
         val perGame = (off.filterKeys { it != onName }.values.maxOrNull() ?: 1).coerceAtLeast(1)
         val perFocus = (off[onName] ?: 1).coerceAtLeast(1)
         state = state.copy(appearance = state.appearance.copy(loopRow = true))
