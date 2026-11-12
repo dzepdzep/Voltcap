@@ -1,3 +1,19 @@
+# Sprint 528 — overnight QA and polish: overlaps, Connected Ignition with photos, real covers, category looks (12 Nov 2026, `feature/popup-native`)
+
+- **Profile pictures vs the first pill** (`ui/LauncherScreen.kt`): the Switch-style pictures' measured bottom is a floor for every row
+  order and the Top dock (d03d077f); the music player shown in a top corner is a floor too (98027061). Checked Top / Middle / Bottom,
+  x1.0 / x1.3, pill row start / end, two themes, Flip 2 + KONKR (QaClip overlap PASS in every dump).
+- **Edit Home music stand-in** (`ui/HomeEdit.kt`, `LauncherScreen.kt`): where Home keeps the player in the status bar the stand-in sits in
+  that band, compact, at the safe zone's top (98027061, d125a5ec) - rows / buttons moved to the top no longer run under it.
+- **Category looks**: Wall slices under the action bar (ec656b35); Drawers on short drawers allow a third line (ec656b35); Slides / Wall
+  don't repeat the name without a logo picture; Stage plate wraps (30498094); look counts keep together (5aeb212f).
+- **Cold start** (`LauncherUiState.libraryLoaded`, e480758f): no "No games yet" line while the saved library is still being read.
+- **QA**: `art=covers` fixture (QaFixture: pictures QA pushes to the QA app's own files/qa_covers, matched by name), `sp528.sh`
+  (badge / covers / music), `cat527.sh realart` with ART from the environment. Connected Ignition branch: `realphoto` demo profiles.
+- Not changed (checked): Tile cover crop (placeholder title band removed by the deliberate upward bias; real covers fine).
+- Tests: TileRowsTest, Batch521Test, CategoryLooks527Test, QaFixture528Test, EmptyLibraryFlash528Test; PC testDebugUnitTest green.
+  EndlessOnceRoboTest PANELS n=5: 1 failure in 7 runs (timing; see docs). Not in RC4; no release published.
+
 # Sprint 527 follow-up — owner review: drag / reset, same-frame video A/B, first category batch, KONKR compact (12 Nov 2026, `feature/popup-native`)
 
 - **Tile rows, finger drop** (`ui/TileRows.kt` `tileRowPlacement`): a dropped row glides from where the finger left it (its drawn top
