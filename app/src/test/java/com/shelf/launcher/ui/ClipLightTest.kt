@@ -54,7 +54,11 @@ class ClipLightTest {
         assertTrue(src("ui/HomeChrome.kt").contains("else if (ClipBackdrop.on) Color.Black.copy(alpha = 0.46f)"))
         assertTrue(src("ui/HomeChrome.kt").contains("then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
         assertTrue(src("ui/GameDock.kt").contains("return (if (clipScrim) this.videoTextScrim() else this).nameBackdropStyle(backdrop)"))
-        assertTrue(src("ui/TileHome.kt").contains(".then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
+        val tile = src("ui/TileHome.kt")
+        assertTrue(tile.contains(".then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
+        // (Flip 2 t527l: before the name's own placement the scrim sat beside the name - it comes after it.)
+        assertTrue(tile.indexOf(".then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)") >
+            tile.indexOf("p.place(x.coerceIn(8.dp.toPx(), maxOf(8.dp.toPx(), screenW - p.width - 8.dp.toPx())).toInt(), 0)"))
         // The old fog only as a QA before / after.
         assertEquals(0.97f, ClipLight.legacyStops(Color.Black).last().second.alpha, 0.005f)
         assertTrue(src("ui/TestHooks.kt").contains("ClipBackdrop.legacy = v == \"legacy\""))

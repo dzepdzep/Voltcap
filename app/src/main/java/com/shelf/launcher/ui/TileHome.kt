@@ -444,9 +444,6 @@ internal fun TileHomeRow(
                     style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
                     modifier = Modifier
                         .align(if (nameBelow) Alignment.TopStart else Alignment.BottomStart)
-                        // (Sprint 527, owner's same-frame comparison: the name was still faint on a near-white clip - over a
-                        // background clip it takes the same soft local scrim as the pills and the status bar.)
-                        .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)
                         // The next game's name rises into place (update 108).
                         // (Update 362, Thor: "game names spawn in when moving" — it faded from nothing over 320 ms while the row
                         // slid, so it looked blank and then popped in. Now it never drops below half and settles in 180 ms.)
@@ -467,6 +464,10 @@ internal fun TileHomeRow(
                                 p.place(x.coerceIn(8.dp.toPx(), maxOf(8.dp.toPx(), screenW - p.width - 8.dp.toPx())).toInt(), 0)
                             }
                         }
+                        // (Sprint 527, owner's same-frame comparison: the name was still faint on a near-white clip - over a
+                        // background clip it takes the same soft local scrim as the pills and the status bar. After the
+                        // placement above: Flip 2 t527l, drawn before it the scrim sat ~70 px left of the name it was for.)
+                        .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)
                         .drawBehind {
                             val barW = (size.width * 0.4f).coerceIn(28.dp.toPx(), size.width)
                             val barH = 2.5.dp.toPx()
