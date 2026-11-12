@@ -16,7 +16,7 @@ package com.shelf.launcher.ui
  */
 internal object Shelf3D {
     /** On: the Game shelf's pulled-out case is the 3D case. */
-    @Volatile var enabled = false
+    @Volatile var enabled = true // (exp/shelf-3d-flip: on by default for review; feature/popup-native keeps it off)
 
     /** Games whose pulled-out case is the 3D one right now (the shelf hides their own spine meanwhile). Read while drawing. */
     val active = androidx.compose.runtime.mutableStateMapOf<String, Boolean>()
