@@ -8,6 +8,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import com.shelf.launcher.LauncherUiState
@@ -91,9 +92,51 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         compose.mainClock.autoAdvance = false
         compose.setContent { GameWindow(layout, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}) }
         frames(180)                                       // settled: open motion, focus asks, marquee pauses
-        val all = texts().filter { n -> n.boundsInRoot.width > 0.5f && n.boundsInRoot.height > 0.5f }
-        assertTrue("$layout: nothing drawn", all.isNotEmpty())
+        val problems = check("main page")
+        assertTrue("$layout ×$scale ach=$ach '${title.take(20)}': ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
+    }
+
+    /**
+     * Phase 6: the four native layouts' own pages (Details, Options) - where the Blades edge label, the Night panel titles, the
+     * Storage sheets and the Tiles writing are - with the same checks as the main page.
+     */
+    @Test fun nativePagesNoCutTextNoOverlap() {
+        org.junit.Assume.assumeTrue(nativePages(winSceneFor(layout)))
+        RuntimeEnvironment.setFontScale(scale)
+        val g = Game(title, "SNES", 1, SourceType.ROM, romPath = "/r/p.sfc")
+        val state = LauncherUiState().let { s -> if (ach == null) s else s.copy(raProgress = mapOf(g.stableKey to RaGameProgress(NumPossibleAchievements = ach, NumAchieved = ach * 7 / 8))) }
+        compose.mainClock.autoAdvance = false
+        compose.setContent { GameWindow(layout, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {},
+            options = listOf(WinOption("Probe option") {}, WinOption("Another probe option with a longer name") {})) }
+        frames(180)
         val problems = mutableListOf<String>()
+        for (page in listOf(listOf("details", "summary", "info"), listOf("options", "config"))) {
+            val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
+                (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
+            val found = compose.onAllNodes(m).fetchSemanticsNodes()
+            if (found.isEmpty()) { problems += "no ${page[0]} control"; continue }
+            compose.onAllNodes(m)[found.size - 1].performSemanticsAction(SemanticsActions.OnClick)
+            frames(40)
+            problems += check("${page[0]} page")
+            // back to the main page for the next one
+            compose.onAllNodes(isRoot()).fetchSemanticsNodes()
+            ShadowDialogBack()
+            frames(40)
+        }
+        assertTrue("$layout ×$scale ach=$ach '${title.take(20)}' pages: ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
+    }
+
+    private fun ShadowDialogBack() {
+        val d = org.robolectric.shadows.ShadowDialog.getLatestDialog() ?: return
+        d.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_BACK)); frames(1)
+        d.dispatchKeyEvent(android.view.KeyEvent(android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_BACK))
+    }
+
+    /** Cut text (hidden lines, an over-wide line, an ellipsis) and overlapping placed texts on screen now; notes printed. */
+    private fun check(where: String): List<String> {
+        val all = texts().filter { n -> n.boundsInRoot.width > 0.5f && n.boundsInRoot.height > 0.5f }
+        val problems = mutableListOf<String>()
+        if (all.isEmpty()) problems += "$where: nothing drawn"
         val notes = mutableListOf<String>()
         for (n in all) {
             val r = layoutOf(n) ?: continue
@@ -103,19 +146,19 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
             val wide = (0 until r.lineCount).any { i -> r.getLineRight(i) - r.size.width > 1.5f && r.layoutInput.softWrap }
             val ellipsis = r.lineCount > 0 && r.isLineEllipsized(r.lineCount - 1)
             if (hiddenLines || wide || ellipsis)
-                problems += "cut: '${name(n)}' (${r.lineCount} lines${if (ellipsis) ", ellipsis" else ""}, text ${r.size} in ${n.boundsInRoot})"
+                problems += "$where cut: '${name(n)}' (${r.lineCount} lines${if (ellipsis) ", ellipsis" else ""}, text ${r.size} in ${n.boundsInRoot})"
             // wider than what is shown of it: a scrolling title (allowed, rule 11) or cut by a parent - for the device check
             else if (r.size.width - n.boundsInRoot.width > 1.5f || r.size.height - n.boundsInRoot.height > 1.5f)
                 notes += "shown in part (scrolls, or cut by a parent): '${name(n).take(60)}' text ${r.size} shown ${n.boundsInRoot.size}"
         }
-        if (notes.isNotEmpty()) println("TEXT-NOTES $layout ×$scale ach=$ach '${title.take(20)}':\n" + notes.joinToString("\n"))
+        if (notes.isNotEmpty()) println("TEXT-NOTES $where $layout ×$scale ach=$ach '${title.take(20)}':\n" + notes.joinToString("\n"))
         // two texts over each other where both are drawn (their visible, clipped bounds), beyond a 2 px touch
         for (i in all.indices) for (j in i + 1 until all.size) {
             val a = all[i].boundsInRoot; val b = all[j].boundsInRoot
             val o: Rect = a.intersect(b)
-            if (o.width > 2f && o.height > 2f && !nested(all[i], all[j])) problems += "overlap: '${name(all[i])}' $a × '${name(all[j])}' $b"
+            if (o.width > 2f && o.height > 2f && !nested(all[i], all[j])) problems += "$where overlap: '${name(all[i])}' $a × '${name(all[j])}' $b"
         }
-        assertTrue("$layout ×$scale ach=$ach '${title.take(20)}': ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
+        return problems
     }
 
     /** A text inside another text's node (a label and its own merged copy) is one text, not two. */
