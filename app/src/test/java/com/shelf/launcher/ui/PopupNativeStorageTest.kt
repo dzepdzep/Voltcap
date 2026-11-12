@@ -34,7 +34,7 @@ class PopupNativeStorageTest {
 
     @Test fun storageKeepsItsOwnPages() {
         assertTrue(nativePages(WinScene.STORAGE_RECORD))
-        assertFalse(nativePages(WinScene.NIGHT_STATUS))
+        assertFalse(nativePages(WinScene.BLADE_GUIDE))
         assertFalse(nativePages(null))
         val gw = src("GameWindow.kt")
         assertTrue(gw.contains("scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage"))
@@ -68,5 +68,21 @@ class PopupNativeStorageTest {
         val a = WinAction("Play", androidx.compose.material.icons.Icons.Filled.PlayArrow, {}, focus = androidx.compose.ui.focus.FocusRequester(), primary = true)
         val i = a.inert()
         assertTrue(i.focus == null && i.primary && i.label == "Play")
+    }
+
+    @Test fun nightDrawsItsOwnPagesAlongTheSlant() {
+        assertTrue(nativePages(WinScene.NIGHT_STATUS))
+        assertEquals(listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS), NIGHT_TABS)
+        val n = src("WinScenes.kt").substringAfter("private fun NightStatus(").substringBefore("internal val NIGHT_TABS")
+        assertTrue(n.contains("NightPagePanel(ctx, p, live"))                     // the page in the menu's own big slanted panel
+        assertTrue(n.contains("Key.ButtonL1 -> -1; Key.ButtonR1 -> 1"))           // L1 / R1 walk the pages
+        assertTrue(n.contains("ctx.open(to)"))                                     // ... through their commands (B returns there)
+        assertTrue(n.contains("kotlin.math.tan(slant)"))                           // panels move along the slant
+        assertFalse(n.contains("ctx.pageBody("))                                   // no page squeezed into the stats panel
+        // the banner is drawn after the panels (a panel sweeping up the slant passes under it)
+        assertTrue(n.indexOf("NightBannerWipe(") > n.indexOf("AnimatedContent("))
+        val wipe = src("WinScenes.kt").substringAfter("private fun NightBannerWipe(").substringBefore("private fun NightPagePanel(")
+        assertTrue(wipe.contains("drawRect(Color(0xFF0B1424)"))                    // the dark band at the wipe's edge
+        assertTrue(wipe.contains("if (!anim) { shown = page"))                     // animations off: the new words at once
     }
 }
