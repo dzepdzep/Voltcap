@@ -65,7 +65,11 @@ class TileRowsTest {
 
     @Test fun editHomeMovesRowsInTheOrderAndKeepsItInTheSession() {
         val edit = src("ui/HomeEdit.kt")
-        assertTrue(edit.contains("if (dy != 0 && TileRowEdit.rowOf(id) != null) { TileRowEdit.move(TileRowEdit.rowOf(id)!!, dy); return }"))
+        assertTrue(edit.contains("if (dy != 0) TileRowEdit.movableRow(id)?.let { row -> TileRowEdit.move(row, dy); return }"))
+        // The round buttons in the stack move the same way; floating ones (a place of their own) don't.
+        val rows = src("ui/TileRows.kt")
+        assertTrue(rows.contains("HomeWidgets.position(HomeWidgets.SHORTCUTS) == null && HomeEditState.live[id] == null"))
+        assertTrue(rows.contains("TileRows.BUTTONS -> HomeWidgets.SHORTCUTS"))
         val session = src("ui/HomeEditSession.kt")
         assertTrue(session.contains("\"tileRows\" to Features.tileRowOrder.value"))
         assertTrue(session.contains("TileRowEdit.resetRow(id)"))

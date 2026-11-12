@@ -146,6 +146,16 @@ internal object TileRowEdit {
         else -> null
     }
 
+    /**
+     * The row ▲ / ▼ moves for the selected part [id]: Tile home's own rows, and (owner, Sprint 527: "simple with a controller")
+     * the round buttons while they sit in the stack - not put somewhere of their own (saved or in this session's moves);
+     * once moved freely (◀ ▶, or a drag away from the rows) they float as before.
+     */
+    fun movableRow(id: String): String? = rowOf(id) ?: if (
+        id == HomeWidgets.SHORTCUTS && TileRows.BUTTONS in shown && HomeEditState.layout == com.shelf.launcher.data.HomeLayout.TILES &&
+        HomeWidgets.position(HomeWidgets.SHORTCUTS) == null && HomeEditState.live[id] == null
+    ) TileRows.BUTTONS else null
+
     /** [row] one place up / down among the shown rows. False at the top / bottom (nothing changes). */
     fun move(row: String, dir: Int): Boolean {
         val now = order()
@@ -189,6 +199,7 @@ internal object TileRowEdit {
         TileRows.TILES -> LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row")
         TileRows.CATS -> LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, CATS_PART)
         TileRows.INFO -> LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, INFO_PART)
+        TileRows.BUTTONS -> HomeWidgets.SHORTCUTS
         else -> null
     }
 

@@ -445,7 +445,7 @@ object HomeEditState {
         if (HomeNest.nudge(id, dx, dy, fast)) return
         val step = if (fast) HomeWidgets.GRID * 2 else HomeWidgets.GRID
         // Sprint 527: Tile home's rows move up / down in their order (the others make room); left / right as before.
-        if (dy != 0 && TileRowEdit.rowOf(id) != null) { TileRowEdit.move(TileRowEdit.rowOf(id)!!, dy); return }
+        if (dy != 0) TileRowEdit.movableRow(id)?.let { row -> TileRowEdit.move(row, dy); return }
         if (id.startsWith(LayoutParts.PREFIX)) {
             // A layout's own part moves in 8 dp steps from its place.
             val s = liveShift[id] ?: (0f to 0f)
