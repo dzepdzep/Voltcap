@@ -118,6 +118,10 @@ class ConnectedIgnitionTest {
         // (Flip 2: a second A's release reached the home built under the stage and opened a game window.)
         assertTrue(ls.contains("showIntro && stageOn && stageLeaving -> true"))
         assertTrue(src("ui/IgnitionStage.kt").contains("skipFade.animateTo(1f, tween(SKIP_FADE_MS"))
+        // (Flip 2 h09: the armed roll-out must see start() - its start time is Compose state, so Run's clock restarts;
+        // a plain var left the home dim with its games hidden after a choice.)
+        assertTrue(ps.contains("private var startedAt by androidx.compose.runtime.mutableLongStateOf(0L)"))
+        assertTrue(ps.contains("LaunchedEffect(startedAt)"))
     }
 
     @Test fun startUpUsesOneWindowAndTheOtherPickersStayDialogs() {

@@ -659,7 +659,9 @@ internal fun ProfileColourRow(hue: Float, onPick: (Float) -> Unit) {
  * A layout whose games are drawn otherwise comes in as a whole ([rolloutLayer]).
  */
 internal object Rollout {
-    private var startedAt = 0L
+    // (Sprint 527, Flip 2 h09: Compose state - [Run] restarts its clock when [start] follows [arm]. As a plain var the armed
+    // roll-out never saw the start: after a choice on the start-up picker the home stayed dim with its games hidden.)
+    private var startedAt by androidx.compose.runtime.mutableLongStateOf(0L)
     var active by mutableStateOf(false)
         private set
     val clockMs = mutableFloatStateOf(0f)
