@@ -111,3 +111,20 @@ class PopupNativeStorageTest {
         assertEquals(listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS), BLADE_TABS)
     }
 }
+
+/** Popup-first (owner, 12 Nov): A opens the game's window on every layout that has one, unless someone saved "A plays". */
+class PopupFirstDefaultsTest {
+    private fun src(name: String): String = listOf(
+        java.io.File("../src_copy/data/$name"), java.io.File("src/main/java/com/shelf/launcher/data/$name"), java.io.File("app/src/main/java/com/shelf/launcher/data/$name")
+    ).first { it.exists() }.readText()
+
+    @Test fun aPlaysIsOffUnlessSaved() {
+        val f = src("Features.kt")
+        // same keys (a saved "on" is still read), new defaults
+        assertTrue(f.contains("val cardsAPlays = BoolPref(\"cards_a_plays\", false)"))
+        assertTrue(f.contains("val pqAPlays = BoolPref(\"pq_a_plays\", false)"))
+        // no other layout switch starts a game on A
+        val aPlays = Regex("BoolPref\\(\"[a-z_]*a_plays[0-9]*\", true\\)").findAll(f).toList()
+        assertTrue(aPlays.map { it.value }.toString(), aPlays.isEmpty())
+    }
+}

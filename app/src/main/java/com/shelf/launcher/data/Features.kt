@@ -2450,8 +2450,12 @@ object Features {
     /** Update 158, Card binder: where a card's frame colour comes from (mastered games are always gold). */
     enum class CardFrame(val label: String) { CONSOLE("Console"), ART("Game's art") }
     val cardsFrame = EnumPref("cards_frame", CardFrame.CONSOLE, CardFrame.values())
-    /** Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts). */
-    val cardsAPlays = BoolPref("cards_a_plays", true)
+    /**
+     * Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts).
+     * Popup-first (owner, 12 Nov): off by default - A opens the game's window on every layout that has one. Same key: a choice
+     * someone saved (on) is kept; only the unset default changes.
+     */
+    val cardsAPlays = BoolPref("cards_a_plays", false)
 
     // ---- Update 202: Pocket Quest (StylePocketQuest.kt, PocketQuestScenery.kt, PocketQuestSettings.kt) ----
     // Update 202: declared here (not in the layout's own files) because only prefs declared in Features are read by init().
@@ -2494,8 +2498,11 @@ object Features {
      * everyone gets the new default once; turning it on again is kept.
      */
     val pqBumpers = BoolPref("pq_bumpers2", false)
-    /** Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts). */
-    val pqAPlays = BoolPref("pq_a_plays", true)
+    /**
+     * Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts).
+     * Popup-first (owner, 12 Nov): off by default; same key, so a saved choice is kept.
+     */
+    val pqAPlays = BoolPref("pq_a_plays", false)
 
     // ---- Quick Menu while in a game ----
     val quickMenuInGame = BoolPref("quick_menu_in_game", true)

@@ -19,6 +19,9 @@
   in from the right over the current one, back (B / L1) the current one slides away on top and reveals the one under it; the
   covered game blade keeps its curved edge with its name standing up in up to two lines (fixed edge width, no layout jump);
   its first-page commands stay drawn but inert underneath; L1 / R1.
+- **Popup-first** (owner, 12 Nov; `data/Features.kt`): Card binder's `cards_a_plays` and Pocket Quest's `pq_a_plays` (the only
+  layout switches that started a game on A) default to off — A opens the game's window. Same keys: a saved "on" is kept; no
+  migration, no new setting. A double A inside the window is still covered by PLAY_GUARD_MS (450 ms). Test `PopupFirstDefaultsTest`.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from
