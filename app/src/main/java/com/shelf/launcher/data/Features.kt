@@ -108,6 +108,7 @@ object Features {
         val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs = p
         all.forEach { pref -> @Suppress("UNCHECKED_CAST") (pref as Pref<Any?>).state.value = pref.read(p) }
+        migrate524(p) // (a settings file from before 524 brings the old saved Fill back)
     }
 
     fun init(context: Context) {
@@ -127,6 +128,7 @@ object Features {
         migrate158(p) // Update 158
         migrate166(p) // Update 166
         migrate467(p, FirstRun.isDone(context.applicationContext)) // Update 467 (replaces 466's)
+        migrate524(p) // Batch 524
         // Update 243 (#55): Twin desk's extras start off on a new setup; an install that already had them keeps them.
         run {
             val existing = FirstRun.isDone(context.applicationContext)
@@ -193,6 +195,22 @@ object Features {
         if (existingInstall && !p.contains("box_sides")) {
             e.putString("box_sides", BoxSides.FILL.name)
             boxSides.state.value = BoxSides.FILL
+        }
+        e.apply()
+    }
+
+    /**
+     * Batch 524 (owner, 12 Nov: "three games should look like three games"; approved: "Reset once to Each game once"):
+     * Endless › Fill the row is off by default now. A saved "on" can't be told from the old default - the settings
+     * snapshot and backup restore write every setting - so it is turned off once; picking Fill the row again in the R1
+     * Endless menu after this is kept.
+     */
+    internal fun migrate524(p: android.content.SharedPreferences) {
+        if (p.getBoolean("m524_endless_fill_done", false)) return
+        val e = p.edit().putBoolean("m524_endless_fill_done", true)
+        if (p.getBoolean("endless_fill", false)) {
+            e.putBoolean("endless_fill", false)
+            endlessFill.state.value = false
         }
         e.apply()
     }
