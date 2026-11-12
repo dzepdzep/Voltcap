@@ -33,6 +33,8 @@ internal object TestHooks {
      * focused game's background clip for this session (the QA handhelds have no scraped clips). Nothing saved.
      */
     val video = mutableStateOf<String?>(null)
+    /** Sprint 527 (category-look audit): `--es voltcap_test_catscreen open|close` - the category screen (n: request number, open?). */
+    val catScreen = mutableStateOf(0 to false)
     /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
     val bg = mutableStateOf<String?>(null)
     /**
@@ -371,6 +373,10 @@ internal object TestHooks {
         val pm = intent?.getStringExtra("voltcap_test_perf")
         intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
+        intent?.getStringExtra("voltcap_test_catscreen")?.let { v ->
+            if (enabled(context)) catScreen.value = (catScreen.value.first + 1) to (v == "open")
+            android.util.Log.e("VoltcapQA", "catscreen $v")
+        }
         intent?.getStringExtra("voltcap_test_video")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) video.value = v.takeIf { it != "off" }
             android.util.Log.e("VoltcapQA", "test video $v")

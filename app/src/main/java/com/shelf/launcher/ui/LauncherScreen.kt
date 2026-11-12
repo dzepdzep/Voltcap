@@ -1543,6 +1543,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         categoryScreenOpen = true
         sounds?.play(UiSound.OPEN)
     }
+    // (Sprint 527 QA: the category-look audit opens / closes the category screen - voltcap_test_catscreen.)
+    val catReq = TestHooks.catScreen.value
+    LaunchedEffect(catReq) { if (catReq.first > 0) { if (catReq.second) openCategoryScreen() else categoryScreenOpen = false } }
     // Shows a category (from the category screen, or the second screen's Wall).
     fun applyCategory(tile: CategoryTile) {
         when {
