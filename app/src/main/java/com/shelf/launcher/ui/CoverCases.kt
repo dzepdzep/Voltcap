@@ -877,6 +877,26 @@ internal fun CoverCase(
     }
 }
 
+
+/**
+ * ScanCase's picture and shape for a front [scan] (pulled out of ScanCase, Hardware QA 12 Nov, so the Game shelf's 3D case
+ * takes exactly the shape the shelf shows the scan at - it cropped a portrait scan to the console's case shape and lost its
+ * title band): the scan's own shape once known (CoverAspects), kept near the real case's / template's [aspect]; the front cut
+ * from a whole unfolded box scan. Before the shape is known: [aspect].
+ */
+internal fun scanShown(scan: Any, aspect: Float, platform: String?, cutLeft: Float = 0f): Pair<Any, Float> {
+    val raw = CoverAspects.rawOf(scan.toString())
+    val real = if (cutLeft > 0f) null else CaseCatalog.frontAspect(platform)
+    // (A jewel case's front scan, or a PlayStation one cut at its band, keeps the old leeway: a booklet or the whole case.)
+    val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
+    val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
+    val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
+        raw != null && looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)
+    val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    val own = (if (unfolded) CoverAspects.rawOf(shown.toString()) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
+    return shown to (own ?: aspect)
+}
+
 /**
  * The game's own scanned case seen from the front (update 101): the scan itself is the case (its printed banner and all),
  * at [aspect] (the console's real case proportions), with the plastic sheen and a shadow. [onFail] is called when the
@@ -900,19 +920,11 @@ internal fun ScanCase(
     // A scan far wider than the case — the whole unfolded box, back | spine | front — has its front cut out (BoxTexture).)
     val key = scan.toString()
     val raw = CoverAspects.rawOf(key)
-    val real = if (cutLeft > 0f) null else CaseCatalog.frontAspect(platform)
-    // (A jewel case's front scan, or a PlayStation one cut at its band, keeps the old leeway: a booklet or the whole case.)
-    val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
-    val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
-    val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
-        raw != null && looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)
-    val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    val (shown, shape) = scanShown(scan, aspect, platform, cutLeft)
     // Batch 520: a scan whose shape isn't known yet may be the whole unfolded box (back | spine | front): until it is
     // measured it loads invisibly (the cover / plate shows), so its middle — the spine — never flashes before the front cut.
     val probing = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null && raw == null
     val shownKey = shown.toString()
-    val own = (if (unfolded) CoverAspects.rawOf(shownKey) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
-    val shape = own ?: aspect
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape

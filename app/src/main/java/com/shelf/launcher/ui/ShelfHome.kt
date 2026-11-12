@@ -466,14 +466,29 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     Shelf3D.sameArtSources(g.platform, c.state.physicalMedia[g.stableKey])) {
                     val rowTop3 = top + plan.rowH * (vrow - scroll.value)
                     val rowLeft3 = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
-                    val shape3 = pulledAspect(g.platform, false)
+                    // (Hardware QA, 12 Nov: the case's place at rest is the flat path's - a box bigH tall at the console's front
+                    // shape - and its front is the scan at the very shape the shelf shows it in that box (ScanCase: scanShown),
+                    // never cut to the console's case shape: on the Flip 2 a portrait scan lost its title band.)
+                    val box3 = pulledAspect(g.platform, false)
                     val bigH3 = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f)
-                    val bigW3 = bigH3 * shape3
+                    val bigW3 = bigH3 * box3
                     val endX3 = (rowLeft3 + s.x + s.w / 2 - bigW3 / 2).coerceIn(0.dp, (areaW - bigW3).coerceAtLeast(0.dp))
                     val endY3 = (rowTop3 + plan.rowH * 0.9f - bigH3 - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH3).coerceAtLeast(0.dp))
+                    val cp3 = LookStyles.casePlatform(g.platform) ?: g.platform
+                    val scan3 = BoxTexture.front(c.state.physicalMedia[g.stableKey], g.platform)
+                    val scanAspect3 = MediaCovers.used(cp3)?.frontAspect ?: realCaseMm(cp3)?.let { it.first / it.second } ?: 0.7f
+                    // (Its shape measured before it takes over - a shape learnt mid-pull would change the case's size.)
+                    val shapeKnown3 = scan3 != null && CoverAspects.rawOf(scan3) != null
+                    if (scan3 != null && !shapeKnown3) {
+                        val probe = rememberSoftBitmap(scan3, 256, trim = false)
+                        androidx.compose.runtime.LaunchedEffect(probe) { probe?.let { CoverAspects.note(scan3, it.width.toFloat(), it.height.toFloat()) } }
+                    }
+                    val shape3 = if (scan3 != null) scanShown(scan3, scanAspect3, null).second else box3
+                    val frontH3 = if (shape3 <= box3) bigH3 else bigH3 * box3 / shape3
                     if (ShelfPulled3D(c, g, p, resting,
                             slotCx = rowLeft3 + s.x + s.w / 2, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
-                            bigCx = endX3 + bigW3 / 2, bigTop = endY3, bigH = bigH3, shape = shape3, open = { open() })) return
+                            bigCx = endX3 + bigW3 / 2, bigTop = endY3 + (bigH3 - frontH3) / 2, bigH = frontH3, shape = shape3,
+                            shapeKnown = shapeKnown3, open = { open() })) return
                 }
                 if (spin <= 0f) return
                 // (Update 156: [vrow] is its shelf counted on round the endless bookcase; without it, its own shelf.)
@@ -645,14 +660,15 @@ private fun AngledCase(c: StyleCtx, g: Game, modifier: Modifier) {
 private fun ShelfPulled3D(
     c: StyleCtx, g: Game, p: Float, resting: Boolean,
     slotCx: androidx.compose.ui.unit.Dp, slotBottom: androidx.compose.ui.unit.Dp, slotW: androidx.compose.ui.unit.Dp, slotH: androidx.compose.ui.unit.Dp,
-    bigCx: androidx.compose.ui.unit.Dp, bigTop: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, shape: Float, open: () -> Unit
+    bigCx: androidx.compose.ui.unit.Dp, bigTop: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, shape: Float,
+    shapeKnown: Boolean = true, open: () -> Unit
 ): Boolean {
     val key = g.stableKey
     var ready by remember(key) { mutableStateOf(false) }
     var mode by remember(key) { mutableStateOf(Shelf3D.Mode.WAITING) }
     // (Hardware QA, 12 Nov: the spine Case3D made is not the game's own - a stand-in the shelf doesn't show: the shelf's path.)
     var foreignSpine by remember(key) { mutableStateOf(false) }
-    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready, shelfTurn(p))
+    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready && shapeKnown, shelfTurn(p))
     if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
     val on = next == Shelf3D.Mode.CASE_3D
     androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
