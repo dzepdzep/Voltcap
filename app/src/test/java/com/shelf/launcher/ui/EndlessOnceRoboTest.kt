@@ -66,7 +66,9 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
     }
 
     /** Each game name's count among the texts wholly on the screen; [edge] gets the names cut by a screen edge. */
+    private val where = mutableMapOf<String, MutableList<String>>()
     private fun shownNames(edge: MutableMap<String, Int>? = null): Map<String, Int> {
+        where.clear()
         val roots = compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes()
         val screen = roots.firstOrNull()?.boundsInRoot ?: Rect.Zero
         val out = mutableMapOf<String, Int>()
@@ -78,7 +80,8 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
                 // (the unclipped place: a text running past the screen's edge is a sliver at the edge)
                 val whole = runCatching { s.layoutInfo.coordinates.let { c -> val r = c.findRootCoordinates().localBoundingBoxOf(c, false); r.left >= screen.left - 1f && r.right <= screen.right + 1f && r.top >= screen.top - 1f && r.bottom <= screen.bottom + 1f } }.getOrDefault(true)
                 for (nm in NAMES) if (t.contains(nm)) {
-                    if (whole) out[nm] = (out[nm] ?: 0) + 1 else if (edge != null) edge[nm] = (edge[nm] ?: 0) + 1
+                    if (whole) { out[nm] = (out[nm] ?: 0) + 1; where.getOrPut(nm) { mutableListOf() } += "'${t.take(24)}'@${b.left.toInt()},${b.top.toInt()}" }
+                    else if (edge != null) edge[nm] = (edge[nm] ?: 0) + 1
                 }
             }
             if (s.config.isClearingSemantics) return
@@ -106,10 +109,20 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
         // going round may not add any - the copies are what Endless ON would add.
         state = state.copy(appearance = state.appearance.copy(loopRow = false))
         frames(120)
-        val off = shownNames()
-        val onName = state.visibleGames.getOrNull(state.focusedIndex)?.name
-        val perGame = (off.filterKeys { it != onName }.values.maxOrNull() ?: 1).coerceAtLeast(1)
-        val perFocus = (off[onName] ?: 1).coerceAtLeast(1)
+        var perGame = 1
+        var perFocus = 1
+        fun baseline() {
+            val off = shownNames()
+            val onName = state.visibleGames.getOrNull(state.focusedIndex)?.name
+            perGame = maxOf(perGame, off.filterKeys { it != onName }.values.maxOrNull() ?: 1)
+            perFocus = maxOf(perFocus, off[onName] ?: 1)
+        }
+        baseline()
+        // (and a step in and back, Endless off: what a move itself shows - a page turning, a name sliding in)
+        if (n > 1) {
+            state = state.copy(focusedIndex = 1, loopTick = 1, loopStep = 1); frames(30); baseline(); frames(30)
+            state = state.copy(focusedIndex = 0, loopTick = 2, loopStep = -1); frames(30); baseline(); frames(30)
+        }
         state = state.copy(appearance = state.appearance.copy(loopRow = true))
         frames(120)
         val problems = mutableListOf<String>()
@@ -118,12 +131,12 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
             val edge = mutableMapOf<String, Int>()
             val seen = shownNames(edge)
             val on = state.visibleGames.getOrNull(state.focusedIndex)?.name
-            for ((nm, k) in seen) if (k > (if (nm == on) perFocus else perGame)) problems += "$where: '$nm' shown $k times (on '$on'; Endless off: $perGame, on: $perFocus) $seen"
+            for ((nm, k) in seen) if (k > (if (nm == on) perFocus else perGame)) problems += "$where: '$nm' shown $k times (on '$on'; Endless off: $perGame, on: $perFocus) $seen ${this.where[nm]}"
             for ((nm, k) in edge) if ((seen[nm] ?: 0) > 0 || k > 1) slivers += "$where: '$nm' whole ${seen[nm] ?: 0} + $k at an edge"
         }
         check("start")
         // forward past the last game, then back past the first: the view model's endless steps (loopTick / loopStep)
-        var tick = 0
+        var tick = 2
         fun step(d: Int) {
             tick++
             state = state.copy(focusedIndex = (state.focusedIndex + d).mod(n), loopTick = tick, loopStep = d)
