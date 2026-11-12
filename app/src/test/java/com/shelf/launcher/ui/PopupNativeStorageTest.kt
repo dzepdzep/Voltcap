@@ -151,3 +151,39 @@ class SpineByAddressTest {
         assertTrue(s.contains("is List<*> -> value.sumOf"))
     }
 }
+
+/** Shelf flash work (12 Nov): the case flight's hand-over and the window's copy of the case. */
+class ShelfCaseHandOverTest {
+    private fun src(name: String): String = listOf(
+        java.io.File("../src_copy/ui/$name"), java.io.File("src/main/java/com/shelf/launcher/ui/$name"), java.io.File("app/src/main/java/com/shelf/launcher/ui/$name")
+    ).first { it.exists() }.readText()
+
+    @Test fun theHomeCopyStaysUntilTheFlyingCopyIsDrawn() {
+        // before the hand-over the home's case shows, whatever the reveal
+        assertEquals(0f, caseHomeHiddenGated(0.3f, ready = false))
+        // after it, as before (hidden for the whole flight)
+        assertEquals(1f, caseHomeHiddenGated(0.3f, ready = true))
+        assertEquals(0f, caseHomeHiddenGated(0f, ready = true))
+    }
+
+    @Test fun theRevealWaitsForTheHandOver() {
+        // the window opens (the flight starts) only once the flying case is drawn, at most MAX_WAIT_MS
+        val gw = src("GameWindow.kt")
+        val open = gw.substringAfter("LaunchedEffect(target != null) {").substringBefore("// Update 506 (motion polish")
+        assertTrue(open.contains("if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }"))
+        assertTrue(open.indexOf("CaseFlightGate.ready.value }.first") < open.indexOf("grow.animateTo(1f"))
+        assertTrue(gw.contains("kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.ready.value = true"))
+        assertTrue(CaseFlightGate.MAX_WAIT_MS in 1..300)
+    }
+
+    @Test fun theWindowsCaseIsTheShelfsCase() {
+        val f = src("WinSceneFamilies.kt")
+        assertTrue(f.contains("PulledOutCase(ctx.g, ctx.cover, ctx.state.physicalMedia[ctx.g.stableKey], false, modifier, waitForCase = true, onArtReady = onArtReady)"))
+        assertTrue(f.contains("if (gated) { alpha = 0f; return@graphicsLayer }"))
+        val gw = src("GameWindow.kt")
+        assertTrue(gw.contains("caseHomeHiddenGated(gv, ready)"))
+        assertTrue(gw.contains("CaseFlightGate.ready.value = true; if (MediaInspect.key"))   // released on dispose
+        val cc = src("CoverCases.kt")
+        assertTrue(cc.contains("onError = { onFail(); onShown?.invoke() }"))                  // a failing scan never holds it
+    }
+}

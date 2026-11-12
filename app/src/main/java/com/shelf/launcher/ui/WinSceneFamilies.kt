@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.snap
@@ -77,10 +78,32 @@ internal fun sceneCaseAspect(platform: String): Float {
     return (MediaCovers.used(cp)?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f).coerceIn(0.5f, 1.6f)
 }
 
-/** The game's own case, exactly as the shelf shows it pulled out (its scan, the console's cover frame, or the cover). */
+/**
+ * The game's own case, exactly as the shelf shows it pulled out (its scan, the console's cover frame, or the cover).
+ * Shelf flash work (12 Nov): with the shelf's own waiting rule (waitForCase) - without it the window's copy drew the flat cover
+ * until the scan came in, so the case that flew out showed another picture for a moment.
+ */
 @Composable
-internal fun SceneCase(ctx: WinSceneCtx, modifier: Modifier) =
-    PulledOutCase(ctx.g, ctx.cover, ctx.state.physicalMedia[ctx.g.stableKey], false, modifier)
+internal fun SceneCase(ctx: WinSceneCtx, modifier: Modifier, onArtReady: (() -> Unit)? = null) =
+    PulledOutCase(ctx.g, ctx.cover, ctx.state.physicalMedia[ctx.g.stableKey], false, modifier, waitForCase = true, onArtReady = onArtReady)
+
+/**
+ * Shelf flash work (12 Nov): the case flight's hand-over. The home's copy of the case is hidden only once the flying copy is
+ * placed and its picture drawn - in the same frame - so the first frame of the flight is the case itself, where it was. It
+ * was hidden from the reveal's first frame, while the flying copy was not placed yet (one frame) and still loading its scan.
+ */
+internal object CaseFlightGate {
+    /** The flying case is drawn (placed, its picture in) - or there is no case flight. */
+    val ready = androidx.compose.runtime.mutableStateOf(true)
+    /** The longest the home's copy waits for the flying one's scan; then it flies with the shelf's plain case. */
+    const val MAX_WAIT_MS = 250L
+}
+
+/**
+ * How hidden the home's copy of the case is: hidden for the whole flight (as update 507's caseHomeHidden) once the flying copy
+ * is [ready], else not at all. Pure.
+ */
+internal fun caseHomeHiddenGated(grow: Float, ready: Boolean): Float = if (ready && grow > 0.001f) 1f else 0f
 
 /**
  * The case flying out of the home into its place in the window — from the very picture it was on the home ([LocalSceneOrigin],
@@ -92,12 +115,21 @@ internal fun SceneCase(ctx: WinSceneCtx, modifier: Modifier) =
 internal fun SceneFlyingCase(ctx: WinSceneCtx, modifier: Modifier, turnFrom: Float = 0f, until: Float = 0.86f) {
     val origin = LocalSceneOrigin.current
     var to by remember { mutableStateOf<Rect?>(null) }
+    // (Shelf flash work: the flight starts once this copy is placed and its picture drawn - CaseFlightGate.)
+    // (GameWindow's reveal waits for the hand-over too, so the flight always starts where the case was.)
+    var artReady by remember { mutableStateOf(false) }
+    val gated = !CaseFlightGate.ready.value
+    LaunchedEffect(to != null, artReady) {
+        if (to != null && artReady && !CaseFlightGate.ready.value) CaseFlightGate.ready.value = true
+    }
     Box(modifier.onGloballyPositioned { to = it.boundsInWindow() }.graphicsLayer {
         // (Update 508, owner on the GT78: "arrives in about 0.1 s" — the reveal's own easing already slows its end, a second
         // ease-out on a short stage put the whole trip in its first frames. The trip now spans most of a longer reveal on the
         // reveal's own curve, and the case comes toward you on the way: a little larger mid-flight, lifted, its shadow longest.)
         val k = caseFlightCurve(sceneStage(ctx.reveal(), 0f, until))
         val t = to
+        // (Not drawn until the hand-over: the home's copy is still showing.)
+        if (gated) { alpha = 0f; return@graphicsLayer }
         if (origin != null && origin.top != Float.MAX_VALUE && t != null && t.height > 0f) {
             val s0 = (origin.height / t.height).coerceIn(0.05f, 3f)
             val arc = kotlin.math.sin(k * Math.PI).toFloat()
@@ -118,7 +150,7 @@ internal fun SceneFlyingCase(ctx: WinSceneCtx, modifier: Modifier, turnFrom: Flo
             scaleX = s; scaleY = s; alpha = k
             shadowElevation = 6.dp.toPx() * k
         }
-    }) { SceneCase(ctx, Modifier.fillMaxSize()) }
+    }) { SceneCase(ctx, Modifier.fillMaxSize(), onArtReady = { artReady = true }) }
 }
 
 /**

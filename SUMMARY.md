@@ -28,6 +28,14 @@
   showed the dark WAITING strip until load → upright → fit ran again (two async hops for a custom spine). Now also kept by the
   model string + size + kind (exact: a cut model carries its cut), counted at real size in the same bounded LruCache, and found
   even before the picture is decoded again. Code-level root cause; the owner's live flicker is NOT confirmed fixed (hardware).
+- **Game shelf / Case stacks: no picture flash as the case comes out** (owner footage; `ui/WinSceneFamilies.kt` `SceneCase`,
+  `SceneFlyingCase`, `CaseFlightGate`; `ui/ShelfHome.kt` `PulledOutCase(onArtReady)`; `ui/CoverCases.kt` `ScanCase(onShown)`;
+  `ui/GameWindow.kt`): root causes — (1) the window's flying copy called `PulledOutCase` without the shelf's `waitForCase`, so
+  `ScanCase` drew the flat cover until its scan's onSuccess: the case that flew out showed another picture for a moment;
+  (2) the home's copy was hidden from the reveal's first frame while the flying copy was not placed yet (one frame) and still
+  loading. Now the window's case is the shelf's (same waiting rule); the home's copy hides in the frame the flying copy is
+  placed and drawn, and the reveal waits for that hand-over (one frame when the scan is in memory; at most 250 ms, then the
+  shelf's own plain case flies). Tests `ShelfCaseHandOverTest`. Hardware: NOT verified.
 - **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
   120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
   asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from

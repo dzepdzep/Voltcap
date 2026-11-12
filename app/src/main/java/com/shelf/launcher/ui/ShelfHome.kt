@@ -696,7 +696,12 @@ internal fun PulledOutCase(
      * in over that plain case, not over the cover. (Moving along the shelf showed the cover, or a wide picture, first
      * and only then the real case.)
      */
-    waitForCase: Boolean = false
+    waitForCase: Boolean = false,
+    /**
+     * Shelf flash work (12 Nov): called once what this draws is complete - the scan drawn, else at once (the plain case, the
+     * cover case, the 3D box draw their own stand-ins as the shelf does). The window's flying case waits for it.
+     */
+    onArtReady: (() -> Unit)? = null
 ) {
     val mode = Features.shelfPulled.state.value
     // Update 228 (#18): R1 › Case (one console's case for every game) did nothing here — the shelf drew each game in its
@@ -712,6 +717,9 @@ internal fun PulledOutCase(
     val ownSpine = if (original) BoxTexture.spine(phys, g.platform) else null
     // Update 151: not known yet → the plain case shape (only where a scan would win over the cover).
     val waiting = waitForCase && phys == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
+    // (Everything but the scan is complete as drawn: the plain case while scans are looked up is the shelf's own too.)
+    val scanPath = !waiting && !(side && box != null) && mode == Features.ShelfPulled.FRONT && scan != null && !androidOwnCase(g.platform)
+    if (onArtReady != null && !scanPath) androidx.compose.runtime.LaunchedEffect(Unit) { onArtReady() }
     if (waiting) {
         val aspect = if (side && box != null) box.aspect * 1.12f
             else MediaCovers.used(cp)?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f
@@ -731,7 +739,8 @@ internal fun PulledOutCase(
     // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase.)
     if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed && !androidOwnCase(g.platform)) {
         // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
-        ScanCase(scan, cov?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
+        ScanCase(scan, cov?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover,
+            onShown = onArtReady)
         return
     }
     // (Update 173: an app without art: its icon in the case's window.)

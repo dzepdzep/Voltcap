@@ -888,7 +888,9 @@ internal fun ScanCase(
     /** Update 143: this share of the scan's width is cut off its left side (a PlayStation cover's band, see [PS1_BAND]). */
     cutLeft: Float = 0f,
     /** (Update 240, #27/#58: the game's console, for its real case's shape (CaseCatalog.frontAspect) and the full-scan cut.) */
-    platform: String? = null
+    platform: String? = null,
+    /** Shelf flash work (12 Nov): called once the scan is drawn (or can't be) - the window's flying case waits for it. */
+    onShown: (() -> Unit)? = null
 ) {
     // Update 186: the scan's own shape once it's known (CoverAspects), so nothing of it is cut off — a GoldenEye box lost
     // the "G" when drawn at the template's shape. Kept near the template's (a wrong scan can't make a strange case).
@@ -917,6 +919,7 @@ internal fun ScanCase(
         // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
         var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
         val scanIn = loaded && !probing
+        if (onShown != null) androidx.compose.runtime.LaunchedEffect(scanIn) { if (scanIn) onShown() }
         // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
         // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
@@ -925,7 +928,7 @@ internal fun ScanCase(
                 cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
                 // (Update 240: the front cut's own shape under its own address — the scan's stays the whole scan's.)
                 onSuccess = { r -> loaded = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
-                onError = { onFail() },
+                onError = { onFail(); onShown?.invoke() },
                 modifier = (if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()).graphicsLayer { alpha = if (probing) 0f else 1f }
             )

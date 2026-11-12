@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
@@ -1326,14 +1327,25 @@ internal fun GameWindow(
         if (discFlight || cardFlight || caseFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
-                // (Update 507: the flying case IS the home's case — its copy at home is gone from the first frame and back only once
-                // the case has landed; a cross-fade showed two cases on the way.)
-                androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = if (caseFlight) caseHomeHidden(it) else it.coerceIn(0f, 1f) }
+                // (Update 507: the flying case IS the home's case — its copy at home is gone and back only once the case has
+                // landed; a cross-fade showed two cases on the way.)
+                // (Shelf flash work, 12 Nov: gone from the frame the flying copy is drawn - placed, its scan in - not from the
+                // reveal's first frame: CaseFlightGate. At most MAX_WAIT_MS, then it flies with the shelf's plain case.)
+                if (caseFlight) {
+                    CaseFlightGate.ready.value = false
+                    launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.ready.value = true }
+                }
+                androidx.compose.runtime.snapshotFlow { grow.value to CaseFlightGate.ready.value }.collect { (gv, ready) ->
+                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)
+                }
             }
-            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
+            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.ready.value = true; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
         }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
+            // (Shelf flash work: a case flight opens once the flying case is drawn - CaseFlightGate, at most its MAX_WAIT_MS -
+            // so its first frame is the case where it was, not a jump along its way.)
+            if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }
             if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else caseFlightMs(sceneOpenMs(scene), caseFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
                 else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing))
         }
