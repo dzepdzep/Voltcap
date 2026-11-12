@@ -70,4 +70,10 @@ class CategoryLooks527Test {
         assertTrue(pb.contains("val on = SlideLayout.shown(el.name) && !(el == SlideEl.NAME && nameTwice)"))
         assertTrue(pb.contains("if (art.logo != null || editing) Box(Modifier.offset(boxW * name.x, boxH * name.y)"))
     }
+
+    @Test fun aCountNeverSplitsOverTwoLines() {
+        // (KONKR System Stage: the wrapped plate split "2 / games")
+        val t = CategoryTile(key = "k", label = "Nintendo 64", subtitle = null, covers = emptyList(), hue = 0, count = 2)
+        assertTrue(lookCount(t) == "2\u00A0games")
+    }
 }

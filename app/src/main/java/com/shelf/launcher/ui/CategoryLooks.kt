@@ -144,7 +144,8 @@ internal fun lookFacts(tile: CategoryTile): String? = tile.platform?.let { p ->
     listOfNotNull(PlatformInfo.maker(p), PlatformInfo.year(p)?.toString()).joinToString(" · ").takeIf { it.isNotBlank() }
 }
 
-internal fun lookCount(tile: CategoryTile): String = if (tile.count == 1) "1 game" else "${tile.count} games"
+// (Sprint 528, KONKR System Stage: a wrapped plate split "2 / games" over two lines - the count keeps together: a no-break space.)
+internal fun lookCount(tile: CategoryTile): String = if (tile.count == 1) "1\u00A0game" else "${tile.count}\u00A0games"
 
 /**
  * Where a picture's visible part is (its non-transparent pixels), as fractions of the picture — left, top, right, bottom —
