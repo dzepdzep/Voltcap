@@ -89,8 +89,35 @@ object StartupGate {
     }
 }
 
+/**
+ * The intro's mark, shared with the second screen's start-up welcome (StartWelcome.kt) so both screens draw the very same
+ * capsule, bolt, colours and outline path — one source of truth for the Voltcap logo drawn in light.
+ */
+internal object VoltMark {
+    val orange get() = Orange
+    val yellow get() = Yellow
+    val cream get() = Cream
+    val ember get() = Ember
+    val stage get() = Stage
+    /** Half height of the capsule (half width 1). */
+    const val HALF_HEIGHT = R
+    const val WORDMARK = WORD
+    /** The capsule and the bolt in unit space (half width 1), made once per call site. */
+    fun pill(): Path = Path().apply { addRoundRect(RoundRect(-1f, -R, 1f, R, CornerRadius(R, R))) }
+    fun bolt(): Path = Path().apply {
+        moveTo(BOLT[0], BOLT[1])
+        for (i in 1 until BOLT.size / 2) lineTo(BOLT[i * 2], BOLT[i * 2 + 1])
+        close()
+    }
+    /** A point on the outline: top (side = -1) or bottom (side = 1) half, [s] 0..1 from the left end. */
+    fun outline(side: Float, s: Float): Offset = halfPoint(side, s)
+    fun easeOut(x: Float) = easeOut3(x)
+    fun easeInOut(x: Float) = easeInOut3(x)
+    fun easeBackOut(x: Float) = easeBack(x)
+}
+
 /** Times in ms. The sound's hit lands at [hit]. */
-private class IntroTiming(
+internal class IntroTiming(
     val total: Float,
     val bgIn: Float,
     /** When the sparks start tracing the outline; < 0: the outline is simply there. */
@@ -108,12 +135,12 @@ private class IntroTiming(
     val reveal: Float
 )
 
-private val FULL_TIMING = IntroTiming(
+internal val FULL_TIMING = IntroTiming(
     total = 2700f, bgIn = 350f, traceFrom = 180f, hit = 1050f, boltDraw = 190f, fillEnd = 1650f,
     lettersFrom = 1280f, letterStep = 55f, letterDur = 420f, tagFrom = 1750f, tagTo = 2150f,
     shineFrom = 1900f, shineTo = 2400f, reveal = 2300f
 )
-private val SHORT_TIMING = IntroTiming(
+internal val SHORT_TIMING = IntroTiming(
     total = 950f, bgIn = 60f, traceFrom = -1f, hit = 90f, boltDraw = 120f, fillEnd = 450f,
     lettersFrom = 160f, letterStep = 28f, letterDur = 260f, tagFrom = 330f, tagTo = 560f,
     shineFrom = 420f, shineTo = 720f, reveal = 650f
@@ -132,12 +159,12 @@ private val BOLT = floatArrayOf(
     0.13f, -0.33f, -0.17f, 0.045f, -0.015f, 0.045f, -0.11f, 0.33f, 0.19f, -0.055f, 0.035f, -0.055f
 )
 
-private class Spark(val s: Float, val side: Float, val delay: Float, val life: Float, val drift: Float,
+internal class IntroSpark(val s: Float, val side: Float, val delay: Float, val life: Float, val drift: Float,
                     val rise: Float, val size: Float, val tw: Float)
-private class Trail(val k: Float, val off: Float, val life: Float, val size: Float)
+internal class IntroTrail(val k: Float, val off: Float, val life: Float, val size: Float)
 
 /** Shapes and random bits, made once (seeded, so it looks the same every time). */
-private class IntroGeo {
+internal class IntroGeo {
     private var seed = 20260930L
     private fun rnd(): Float {
         seed = (seed * 1664525L + 1013904223L) and 0xFFFFFFFFL
@@ -159,17 +186,17 @@ private class IntroGeo {
         l
     }
     val embers = List(26) {
-        Spark(rnd(), if (rnd() < 0.5f) -1f else 1f, rnd() * 700f, 1100f + rnd() * 900f, (rnd() - 0.5f) * 0.5f,
+        IntroSpark(rnd(), if (rnd() < 0.5f) -1f else 1f, rnd() * 700f, 1100f + rnd() * 900f, (rnd() - 0.5f) * 0.5f,
             0.35f + rnd() * 0.6f, 0.010f + rnd() * 0.018f, rnd() * 6.28f)
     }
-    val trail = List(28) { Trail(rnd(), (rnd() - 0.5f) * 0.08f, 260f + rnd() * 300f, 0.008f + rnd() * 0.012f) }
+    val trail = List(28) { IntroTrail(rnd(), (rnd() - 0.5f) * 0.08f, 260f + rnd() * 300f, 0.008f + rnd() * 0.012f) }
     // Reused every frame.
     val scratch = Path()
     val scratch2 = Path()
 }
 
 /** The measured letters of the wordmark at one size. */
-private class Wordmark(val letters: List<TextLayoutResult>, val tracking: Float, val tagline: TextLayoutResult) {
+internal class Wordmark(val letters: List<TextLayoutResult>, val tracking: Float, val tagline: TextLayoutResult) {
     val width: Float = letters.sumOf { it.size.width.toDouble() }.toFloat() + tracking * (letters.size - 1)
 }
 
@@ -211,14 +238,7 @@ fun VoltcapIntro(
         // Weak devices, especially right after a reboot: the first frames come in bursts while the
         // system (and Voltcap) start up. Hold the dark stage until frames arrive steadily (at most
         // 0.7 s) so the animation doesn't start already behind and stutter through its opening.
-        var last = withFrameNanos { it }
-        val warmFrom = last
-        var steady = 0
-        while (steady < 3 && last - warmFrom < 700_000_000L) {
-            val now = withFrameNanos { it }
-            steady = if (now - last < 40_000_000L) steady + 1 else 0
-            last = now
-        }
+        var last = introWarmUp()
         // The full intro has its own music cue, timed to the hit at 1.05 s; the
         // short one uses the brief launch sound so audio never outlasts it.
         sounds?.playWhenReady(if (timing.total >= 1500f) UiSound.INTRO else UiSound.LAUNCH)
@@ -305,7 +325,7 @@ private fun DrawScope.drawPixelIntro(tm: IntroTiming, t: Float, r: Float, word: 
     }
 }
 
-private fun measureWordmark(measurer: TextMeasurer, density: Density, fsPx: Float, pixel: Boolean = false): Wordmark {
+internal fun measureWordmark(measurer: TextMeasurer, density: Density, fsPx: Float, pixel: Boolean = false): Wordmark {
     val size = with(density) { fsPx.toSp() }
     val style = TextStyle(fontSize = size, fontWeight = FontWeight.Black, fontFamily = if (pixel) androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.shelf.launcher.R.font.volt_pixel)) else null)
     val letters = WORD.map { measurer.measure(AnnotatedString(it.toString()), style) }
@@ -340,12 +360,35 @@ private fun halfPoint(side: Float, s: Float): Offset {
     return Offset((1f - R) + R * cos(a), side * R * sin(a))
 }
 
-private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float, word: Wordmark, lite: Boolean) {
+/**
+ * Weak devices, especially right after a reboot: the first frames come in bursts while the system (and Voltcap) start up.
+ * Holds the dark stage until frames arrive steadily (at most 0.7 s); returns the last frame's time. Shared with IgnitionStage.
+ */
+internal suspend fun introWarmUp(): Long {
+    var last = withFrameNanos { it }
+    val warmFrom = last
+    var steady = 0
+    while (steady < 3 && last - warmFrom < 700_000_000L) {
+        val now = withFrameNanos { it }
+        steady = if (now - last < 40_000_000L) steady + 1 else 0
+        last = now
+    }
+    return last
+}
+
+/**
+ * [keep]: Connected Ignition — the start-up continues into "Who's playing?" on the same stage, so the intro never fades out
+ * (IgnitionStage). [rec] 0..1: how far the capsule has receded (it shrinks and rises, its glass, bolt, embers and rim fade,
+ * the wordmark falls back) while its opened outline carries on as the picker's wire (IgnitionWire.kt).
+ */
+internal fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float, word: Wordmark, lite: Boolean, keep: Boolean = false, rec: Float = 0f) {
     val w = size.width
     val h = size.height
     val cx = w / 2f
     val cy = h * 0.43f
-    val out = phase(t, tm.reveal, tm.total)
+    val out = if (keep) 0f else phase(t, tm.reveal, tm.total)
+    val recE = easeInOut3(rec.coerceIn(0f, 1f))
+    val bodyK = 1f - recE
     val zoom = 1f + 0.05f * easeOut3(out)
     val bgIn = phase(t, 0f, tm.bgIn)
     val struck = t >= tm.hit
@@ -365,7 +408,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
         val bx = cx + cos(ang) * r * 1.6f * (if (i == 1) 1f else -1f)
         val by = cy + sin(ang * 0.8f) * r * 0.7f
         val c = if (i == 1) Yellow else Color(0xFFFF6E28)
-        drawRect(Brush.radialGradient(listOf(c.copy(alpha = 0.045f * bgIn), Color.Transparent), center = Offset(bx, by), radius = 2.6f * r))
+        drawRect(Brush.radialGradient(listOf(c.copy(alpha = 0.045f * bgIn * bodyK), Color.Transparent), center = Offset(bx, by), radius = 2.6f * r))
     }
     drawRect(
         Brush.radialGradient(
@@ -375,30 +418,30 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
     )
 
     withTransform({
-        translate(cx, cy)
-        scale(r * zoom, r * zoom, Offset.Zero)
+        translate(cx, cy - recE * r * 0.35f)
+        scale(r * zoom * (1f - 0.32f * recE), r * zoom * (1f - 0.32f * recE), Offset.Zero)
     }) {
         // ---- the capsule: dark glass ----
         val bodyA = if (tm.traceFrom < 0f) phase(t, 0f, 120f) else phase(t, tm.traceFrom, tm.traceFrom + 500f)
-        drawPath(g.pill, Color(0xFF160F0A).copy(alpha = 0.92f * bodyA))
-        if (struck) {
+        drawPath(g.pill, Color(0xFF160F0A).copy(alpha = 0.92f * bodyA * bodyK))
+        if (struck && bodyK > 0f) {
             clipPath(g.pill) {
                 // Warm energy from the middle, then a soft gloss on the top half.
                 drawRect(
                     Brush.radialGradient(
-                        0f to Color(0xFFFFBE5A).copy(alpha = (0.5f * charge + 0.35f * hitK).coerceAtMost(1f)),
-                        0.45f to Color(0xFFE66E1E).copy(alpha = 0.3f * charge),
+                        0f to Color(0xFFFFBE5A).copy(alpha = (0.5f * charge + 0.35f * hitK).coerceAtMost(1f) * bodyK),
+                        0.45f to Color(0xFFE66E1E).copy(alpha = 0.3f * charge * bodyK),
                         1f to Color(0xFF78280A).copy(alpha = 0f),
                         center = Offset.Zero, radius = 0.25f + 1.35f * charge
                     ),
                     topLeft = Offset(-1f, -R), size = Size(2f, 2f * R), blendMode = BlendMode.Plus
                 )
                 drawRect(
-                    Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f * charge), Color.Transparent), startY = -R, endY = 0.05f),
+                    Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f * charge * bodyK), Color.Transparent), startY = -R, endY = 0.05f),
                     topLeft = Offset(-1f, -R), size = Size(2f, R)
                 )
             }
-            drawLine(Cream.copy(alpha = 0.35f * charge), Offset(0f, -R), Offset(0f, R), strokeWidth = 0.012f)
+            drawLine(Cream.copy(alpha = 0.35f * charge * bodyK), Offset(0f, -R), Offset(0f, R), strokeWidth = 0.012f)
         }
 
         // ---- the outline, traced by two sparks ----
@@ -406,8 +449,10 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
         val appear = if (tm.traceFrom < 0f) phase(t, 0f, 140f) else 1f
         val rim = Brush.horizontalGradient(listOf(Orange, Yellow), startX = -1f, endX = 1f)
         val pulse = 1f + 0.6f * hitK
+        // (Connected Ignition: the capsule's own rim fades as its opened outline takes over as the wire.)
+        val rimK = bodyK
         for (side in floatArrayOf(-1f, 1f)) {
-            if (p > 0f) {
+            if (p > 0f && rimK > 0f) {
                 val path = g.scratch
                 path.reset()
                 val n = if (lite) 32 else 64
@@ -415,9 +460,9 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                     val q = halfPoint(side, p * i / n)
                     if (i == 0) path.moveTo(q.x, q.y) else path.lineTo(q.x, q.y)
                 }
-                if (!lite) drawPath(path, rim, alpha = (0.06f * pulse * appear).coerceAtMost(1f), style = Stroke(0.12f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-                drawPath(path, rim, alpha = (0.22f * pulse * appear).coerceAtMost(1f), style = Stroke(0.05f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
-                drawPath(path, rim, alpha = appear, style = Stroke(0.018f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+                if (!lite) drawPath(path, rim, alpha = (0.06f * pulse * appear).coerceAtMost(1f) * rimK, style = Stroke(0.12f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+                drawPath(path, rim, alpha = (0.22f * pulse * appear).coerceAtMost(1f) * rimK, style = Stroke(0.05f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+                drawPath(path, rim, alpha = appear * rimK, style = Stroke(0.018f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
             }
             if (p > 0f && p < 1f) {
                 // The spark's head, and sparkles shed behind it.
@@ -446,13 +491,13 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
         }
 
         // ---- the bolt: drawn in light, then filled, with a small pop ----
-        if (struck) {
+        if (struck && bodyK > 0f) {
             val drawn = easeOut3(phase(t, tm.hit, tm.hit + tm.boltDraw))
             val pop = easeBack(phase(t, tm.hit, tm.hit + 380f))
             val bs = 1.22f * (0.7f + 0.3f * pop)
             val fillA = phase(t, tm.hit + tm.boltDraw * 0.6f, tm.hit + tm.boltDraw + 120f)
             withTransform({ scale(bs, bs, Offset.Zero) }) {
-                val glowK = fillA * (0.9f + 0.8f * hitK)
+                val glowK = fillA * (0.9f + 0.8f * hitK) * bodyK
                 if (!lite) drawPath(g.bolt, Color(0xFFFFAA3C).copy(alpha = (0.07f * glowK).coerceAtMost(1f)), style = Stroke(0.20f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
                 drawPath(g.bolt, Color(0xFFFFAA3C).copy(alpha = (0.14f * glowK).coerceAtMost(1f)), style = Stroke(0.11f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
                 drawPath(g.bolt, Color(0xFFFFAA3C).copy(alpha = (0.25f * glowK).coerceAtMost(1f)), style = Stroke(0.05f, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
@@ -462,7 +507,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                         0f to Color.White, 0.45f to Color(0xFFFFF0A8), 1f to Color(0xFFFFC23A),
                         startY = -0.33f, endY = 0.33f
                     ),
-                    alpha = fillA
+                    alpha = fillA * bodyK
                 )
                 // The line that draws the bolt.
                 val path = g.scratch2
@@ -481,7 +526,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                         break
                     }
                 }
-                drawPath(path, Cream.copy(alpha = 1f - fillA * 0.7f), style = Stroke(0.022f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
+                drawPath(path, Cream.copy(alpha = (1f - fillA * 0.7f) * bodyK), style = Stroke(0.022f, cap = StrokeCap.Round, join = StrokeJoin.Round), blendMode = BlendMode.Plus)
             }
         }
 
@@ -516,7 +561,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                 val y = b.y - e.rise * easeOut3(f)
                 val twinkle = 0.6f + 0.4f * sin(age / 90f + e.tw)
                 drawCircle(
-                    (if (e.side < 0f) Yellow else Orange).copy(alpha = ((1f - f) * twinkle).coerceIn(0f, 1f)),
+                    (if (e.side < 0f) Yellow else Orange).copy(alpha = ((1f - f) * twinkle).coerceIn(0f, 1f) * bodyK),
                     radius = e.size * (1f - 0.5f * f), center = Offset(x, y), blendMode = BlendMode.Plus
                 )
             }
@@ -526,7 +571,9 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
     // ---- the wordmark: letters rise in one by one, then a light sweeps across ----
     val fs = 0.40f * r * zoom
     val base = cy + (R + 0.62f) * r * zoom + fs * 0.35f
-    withTransform({ scale(zoom, zoom, Offset(cx, base)) }) {
+    // (Connected Ignition: the wordmark falls back and fades a little ahead of the capsule.)
+    val wA = 1f - easeInOut3((rec * 1.25f).coerceIn(0f, 1f))
+    if (wA > 0f) withTransform({ scale(zoom * (1f - 0.06f * recE), zoom * (1f - 0.06f * recE), Offset(cx, base)); translate(0f, recE * r * 0.12f) }) {
         // Laid out at the un-zoomed size; the scale above grows it with the logo.
         val lw = word.width
         var x = cx - lw / 2f
@@ -541,7 +588,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                         startX = (cx - lw / 2f) - x, endX = (cx + lw / 2f) - x
                     ),
                     topLeft = Offset(x, top),
-                    alpha = a,
+                    alpha = a * wA,
                     // The blurred glow is the costliest bit of text drawing; the lighter version keeps a tight one.
                     shadow = Shadow(Color(0xFFFF8C28).copy(alpha = 0.55f), Offset.Zero, 0.40f * r * (if (lite) 0.12f else 0.35f))
                 )
@@ -558,7 +605,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                 drawText(
                     layout,
                     brush = Brush.horizontalGradient(
-                        0f to Color.Transparent, 0.5f to Color.White.copy(alpha = 0.85f), 1f to Color.Transparent,
+                        0f to Color.Transparent, 0.5f to Color.White.copy(alpha = 0.85f * wA), 1f to Color.Transparent,
                         startX = band - fs0 * 0.8f - sx, endX = band + fs0 * 0.8f - sx
                     ),
                     topLeft = Offset(sx, base - layout.firstBaseline),
@@ -576,7 +623,7 @@ private fun DrawScope.drawIntro(g: IntroGeo, tm: IntroTiming, t: Float, r: Float
                 tag,
                 color = Color(0xFFE9D9BF),
                 topLeft = Offset(cx - tag.size.width / 2f, base + fs0 * 0.72f - tag.firstBaseline + (1f - easeOut3(ta)) * fs0 * 0.125f),
-                alpha = 0.72f * ta
+                alpha = 0.72f * ta * wA
             )
         }
     }

@@ -140,21 +140,55 @@ internal object TestHooks {
      * (1–8) instead of yours, as a preview: picking, editing, PIN and remove change nothing (ProfileSelectScreen demo).
      */
     val profilesDemo = mutableStateOf<List<com.shelf.launcher.data.Profiles.Profile>?>(null)
+    /**
+     * Sprint 526 (Connected Ignition visual QA, isolated QA app only): `--es voltcap_test_startprofiles "N[:long][:locked][:active=K]|off"`
+     * on a cold start's own intent - the start-up stage (IgnitionStage) shows N sample profiles (as [demoProfiles]) instead of the
+     * QA app's own; choosing one keeps the profile you already have (nothing switched or saved). Held in memory: gone with the process.
+     */
+    val startProfiles = mutableStateOf<Pair<List<com.shelf.launcher.data.Profiles.Profile>, Int>?>(null)
     val profilesDemoActive = mutableStateOf(0)
 
     /** The sample profiles for [profilesDemo] (pure, unit-tested): ids 900+, colours from the presets, real profiles untouched. */
+    /**
+     * Sprint 527: sample "photos" for the demo profiles (`...:photo` in the spec - the odd ones get one): wide (16:10) test
+     * pictures with a centred target, so a crop that isn't centred or a corner that isn't clipped shows. QA app only; files
+     * for the demo ids (900+), never a real profile's.
+     */
+    private fun writeDemoPhotos(context: android.content.Context) {
+        for (i in 0 until com.shelf.launcher.data.Profiles.MAX) {
+            if (i % 2 == 0) continue
+            val f = com.shelf.launcher.data.Profiles.pictureFile(context, 900 + i)
+            if (f.isFile) continue
+            runCatching {
+                val w = 640; val h = 400
+                val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+                val c = android.graphics.Canvas(bmp)
+                c.drawColor(android.graphics.Color.HSVToColor(floatArrayOf((i * 47f) % 360f, 0.55f, 0.75f)))
+                val pt = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE; strokeWidth = 6f; color = android.graphics.Color.WHITE }
+                for (r in listOf(40f, 90f, 140f, 190f)) c.drawCircle(w / 2f, h / 2f, r, pt)
+                c.drawLine(w / 2f, 0f, w / 2f, h.toFloat(), pt); c.drawLine(0f, h / 2f, w.toFloat(), h / 2f, pt)
+                pt.style = android.graphics.Paint.Style.FILL; pt.color = android.graphics.Color.RED
+                c.drawRect(0f, 0f, 60f, 60f, pt); c.drawRect(w - 60f, h - 60f, w.toFloat(), h.toFloat(), pt) // (corners: never visible)
+                f.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                bmp.recycle()
+            }
+        }
+    }
+
     fun demoProfiles(spec: String): Pair<List<com.shelf.launcher.data.Profiles.Profile>, Int> {
         val parts = spec.split(":")
         val n = parts[0].toIntOrNull()?.coerceIn(1, com.shelf.launcher.data.Profiles.MAX) ?: 3
         val long = "long" in parts
         val locked = "locked" in parts
+        val photo = "photo" in parts
         val active = parts.firstOrNull { it.startsWith("active=") }?.substringAfter("=")?.toIntOrNull()?.coerceIn(0, n - 1) ?: 0
         val names = listOf("Toni", "Mia", "Alexander the Great Gamer", "Kai", "Speedrunner Supreme", "Lena", "Grandpa Joe", "Sam")
         val longNames = listOf("Maximilian-Alexander", "The Very Long Player Name", "Christopher Columbus", "Speedrunner Supreme 2000",
             "Anastasia-Katharina", "Grandmaster Flash Gordon", "Bartholomew", "Wolfgang Amadeus")
         val list = (0 until n).map { i ->
             com.shelf.launcher.data.Profiles.Profile(
-                900 + i, (if (long) longNames else names)[i], com.shelf.launcher.data.Profiles.Picture.INITIAL, null,
+                900 + i, (if (long) longNames else names)[i],
+                if (photo && i % 2 == 1) com.shelf.launcher.data.Profiles.Picture.OWN else com.shelf.launcher.data.Profiles.Picture.INITIAL, null,
                 PickerGrid.PRESETS[(i * 5) % PickerGrid.PRESETS.size],
                 if (locked && i == 1) "demo" else null
             )
@@ -476,7 +510,40 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_pickerlook")?.let { v ->
             if (enabled(context)) pickerLook.value = com.shelf.launcher.data.Features.PickerLook.values().firstOrNull { it.name == v }
         }
+        // Sprint 525 (Connected Ignition hardware QA; the QA app isn't debuggable, so ci_qa.sh's run-as can't set it):
+        // `--es voltcap_test_intro FULL|SHORT|PIXEL|OFF|restore` - the intro the next cold start plays (the "appearance" prefs'
+        // intro_style, as Settings writes it), isolated QA app only. The value before the first change is kept in
+        // <external files>/voltcap_test_intro_prev.txt and `restore` puts it back.
+        intent?.getStringExtra("voltcap_test_intro")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) runCatching {
+                val p = context.applicationContext.getSharedPreferences("appearance", android.content.Context.MODE_PRIVATE)
+                val prev = java.io.File(context.getExternalFilesDir(null), "voltcap_test_intro_prev.txt")
+                if (v == "restore") {
+                    if (prev.exists()) {
+                        val o = prev.readText().trim()
+                        p.edit().apply { if (o == "-") remove("intro_style") else putString("intro_style", o) }.commit()
+                        prev.delete()
+                    }
+                } else if (com.shelf.launcher.data.IntroStyle.values().any { it.name == v }) {
+                    if (!prev.exists()) prev.writeText(p.getString("intro_style", null) ?: "-")
+                    p.edit().putString("intro_style", v).commit()
+                }
+                android.util.Log.e("VoltcapQA", "intro_style=${p.getString("intro_style", null)}")
+            }
+        }
+        // Sprint 527: `--ez voltcap_test_geom true|false` - the profile picker's alignment overlay + "VoltcapGeom" log (PickerGeom.kt).
+        if (intent?.hasExtra("voltcap_test_geom") == true && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            PickerGeomQa.on.value = intent.getBooleanExtra("voltcap_test_geom", false)
+            if (!PickerGeomQa.on.value) PickerGeomQa.nodes.clear()
+            android.util.Log.e("VoltcapQA", "geom=${PickerGeomQa.on.value}")
+        }
+        intent?.getStringExtra("voltcap_test_startprofiles")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("photo")) writeDemoPhotos(context)
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) startProfiles.value = if (v == "off") null else demoProfiles(v)
+            android.util.Log.e("VoltcapQA", "start profiles $v")
+        }
         intent?.getStringExtra("voltcap_test_profiles")?.let { v ->
+            if (enabled(context) && com.shelf.launcher.data.QaVariant.isolated(context) && v.split(":").contains("photo")) writeDemoPhotos(context)
             if (enabled(context)) {
                 if (v == "off") profilesDemo.value = null
                 else demoProfiles(v).let { (l, a) -> profilesDemoActive.value = a; profilesDemo.value = l }

@@ -281,6 +281,19 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         // it — and none of its pop-ups, which open in their own windows above
         // everything — can show through. It appears as the intro fades out.
         var contentVisible by remember { mutableStateOf(!showIntro) }
+        // Connected Ignition (IgnitionStage.kt): this start-up asks "Who's playing?" and the intro is Full / Short with system
+        // animations on — the intro flows straight into the picker on the same stage. Decided in the first frame with the same
+        // rule the start-up picker uses below (it then sees WhoPlaying.asked and stays away); otherwise nothing changes.
+        var stageOn by remember {
+            mutableStateOf(showIntro && ignitionIntro(appearance.introStyle,
+                runCatching { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) }.getOrDefault(1f)) && run {
+                com.shelf.launcher.data.Profiles.ensure(context)
+                val mode = com.shelf.launcher.data.Features.startupMode.value
+                val asks = mode != com.shelf.launcher.data.Features.StartupMode.CATEGORIES ||
+                    (com.shelf.launcher.data.Features.whoPlays.value && com.shelf.launcher.data.Profiles.list.value.size >= 2)
+                asks && !WhoPlaying.asked && com.shelf.launcher.data.FirstRun.isDone(context) && viewModel.takeStartupSlot()
+            }.also { if (it) WhoPlaying.asked = true })
+        }
         // Start-up work held back for the intro (StartupGate) goes ahead once it ends, is skipped, or never plays.
         LaunchedEffect(showIntro) { if (!showIntro) StartupGate.release() }
         val introScope = rememberCoroutineScope()
@@ -288,6 +301,9 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         // button's release is swallowed afterwards, so skipping never also
         // opens / plays something on the home screen.
         var introEndedAt by remember { mutableStateOf(0L) }
+        // Sprint 527 (Flip 2, A A Right: the home is built under the stage once a profile is chosen, and the second A's release
+        // reached it - its game window opened): from the choice until the stage has gone, no key reaches anything else.
+        var stageLeaving by remember { mutableStateOf(false) }
         val introFocus = remember { androidx.compose.ui.focus.FocusRequester() }
         LaunchedEffect(Unit) { if (showIntro) runCatching { introFocus.requestFocus() } }
         Box(
@@ -298,7 +314,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                 .focusable()
                 .onPreviewKeyEvent { event ->
                     when {
-                        showIntro && !isSystemKey(event.nativeKeyEvent.keyCode) -> {
+                        showIntro && !stageOn && !isSystemKey(event.nativeKeyEvent.keyCode) -> {
                             if (event.type == KeyEventType.KeyDown) {
                                 introEndedAt = android.os.SystemClock.uptimeMillis()
                                 showIntro = false
@@ -306,6 +322,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                             }
                             true
                         }
+                        showIntro && stageOn && stageLeaving -> true
                         event.type == KeyEventType.KeyUp && event.nativeKeyEvent.downTime <= introEndedAt -> true
                         else -> false
                     }
@@ -325,7 +342,53 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
             )
             // Update 169: the extra art packs' download, wherever you are (it showed only in its Settings card).
             if (!showIntro) PacksProgressPill(Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 14.dp))
-            if (showIntro) {
+            if (showIntro && stageOn) {
+                val startupMode = com.shelf.launcher.data.Features.startupMode
+                // (Sprint 526, QA app only: sample profiles for the start-up stage - TestHooks.startProfiles; a pick keeps yours.)
+                val qaStart = TestHooks.startProfiles.value
+                IgnitionStage(
+                    style = appearance.introStyle,
+                    profiles = qaStart?.first ?: com.shelf.launcher.data.Profiles.list.value,
+                    activeId = qaStart?.second ?: com.shelf.launcher.data.Profiles.activeId.value,
+                    raNames = viewModel.uiState.value.raAccounts,
+                    steamAvatar = com.shelf.launcher.data.SteamAchievements.avatarUrl.value,
+                    onBolt = {
+                        val a = viewModel.uiState.value.appearance
+                        if (a.lightsEnabled) introScope.launch {
+                            com.shelf.launcher.data.ControllerLights.flash(
+                                context, 0xFFFFD84A.toInt(), times = 1,
+                                restoreColor = com.shelf.launcher.data.LightsTheme.resolve(a.lightsColor), restoreBrightness = a.lightsBrightness,
+                                onMs = 260
+                            )
+                        }
+                    },
+                    onSettled = {},
+                    // (The start-up picker's own choices, as its Dialog makes them below: the profile, then the start-up mode.)
+                    // (Sprint 527: the home is built under the stage the moment the choice is accepted - while the chosen picture's
+                    // light runs - so the stage fades straight into it: no dim wait, no first-frame hitch in the fade.)
+                    onAccept = { id ->
+                        stageLeaving = true
+                        if (qaStart == null) viewModel.switchProfile(id)
+                        when (startupMode.value) {
+                            com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> viewModel.categoryScreenOpenState.value = true
+                            // (the layout's roll-out waits at its start under the stage and plays from the hand-over)
+                            com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT -> { viewModel.categoryScreenOpenState.value = false; Rollout.arm() }
+                            else -> Unit
+                        }
+                        contentVisible = true
+                    },
+                    onPick = { _ ->
+                        if (startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) Rollout.start()
+                        contentVisible = true
+                    },
+                    onKeep = {
+                        stageLeaving = true
+                        if (startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
+                        contentVisible = true
+                    },
+                    onGone = { introEndedAt = android.os.SystemClock.uptimeMillis(); showIntro = false; stageOn = false; contentVisible = true }
+                )
+            } else if (showIntro) {
                 VoltcapIntro(
                     style = appearance.introStyle,
                     onBolt = {

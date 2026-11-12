@@ -56,8 +56,9 @@ class ProfilePicker445Test {
     }
 
     @Test fun sixLooksIncludingTodaysMidnightBlue() {
+        // (Connected Ignition, owner-approved: Ignition is the 7th look, added at the end so every saved look keeps its name.)
         val names = Features.PickerLook.values().map { it.name }
-        assertEquals(listOf("AURORA", "CONSOLE", "NEON", "OLED", "THEME", "MIDNIGHT"), names)
+        assertEquals(listOf("AURORA", "CONSOLE", "NEON", "OLED", "THEME", "MIDNIGHT", "IGNITION"), names)
         assertEquals("picker_look", Features.pickerLook.key)
     }
 
