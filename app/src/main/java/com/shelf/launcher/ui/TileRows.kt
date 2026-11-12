@@ -287,8 +287,9 @@ internal fun androidx.compose.ui.Modifier.tileRowPlacement(row: String): android
     val editing = HomeEditState.active
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val anim = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
-    // [0] where the layout puts it now (root px), [1] where the glide is heading, [2] 1 while a glide is set up
-    val at = androidx.compose.runtime.remember { floatArrayOf(Float.NaN, Float.NaN, 0f) }
+    // [0] where the layout puts it now (root px), [1] where the glide is heading, [2] 1 while a glide runs, [3] where it was
+    // drawn last (root px), [4] 1 while a glide is set up but its coroutine hasn't started (the Animatable is stale then)
+    val at = androidx.compose.runtime.remember { floatArrayOf(Float.NaN, Float.NaN, 0f, Float.NaN, 0f) }
     val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
     val part = TileRowEdit.partOf(row)
     val selectedHere = editing && part?.let { it == HomeEditState.selected } == true
@@ -305,28 +306,30 @@ internal fun androidx.compose.ui.Modifier.tileRowPlacement(row: String): android
             layout(p.width, p.height) {
                 val target = at[0]
                 val now = anim.value // (read every pass: the glide's frames re-place it)
-                if (!editing || target.isNaN()) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }
+                fun put(dy: Float) { at[3] = target + dy; if (dy == 0f) p.placeWithLayer(0, 0) else p.placeWithLayer(0, 0) { translationY = dy } }
+                if (!editing || target.isNaN()) { at[1] = target; at[2] = 0f; at[4] = 0f; put(0f); return@layout }
                 val heading = at[1]
-                if (heading.isNaN()) { at[1] = target; p.placeWithLayer(0, 0); return@layout }
+                if (heading.isNaN()) { at[1] = target; put(0f); return@layout }
                 // (the row under the finger follows the finger only - no glide of its own while it is dragged)
-                if (part != null && TileRowEdit.dragging == part) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }
-                val visual = if (at[2] == 1f) now else heading
+                if (part != null && TileRowEdit.dragging == part) { at[1] = target; at[2] = 0f; at[4] = 0f; put(0f); return@layout }
+                // Where it is drawn now: the last pass's place - also right when a second pass of the same frame comes before
+                // the glide's coroutine has started (Flip 2 t527m: the dropped row went to the top for a frame).
+                val visual = when { at[4] == 1f -> at[3]; at[2] == 1f -> now; else -> heading }
                 val dropTop = TileRowEdit.dropAt.remove(row)
                 val start = TileRows.glideStart(visual, heading, target, if (dropTop != null) dropTop - visual else 0f)
                 if (start != null) android.util.Log.i("VoltcapRows", "glide $row from=$start to=$target was=$heading drop=$dropTop")
                 if (start != null) {
-                    at[1] = target; at[2] = 1f
+                    at[1] = target; at[2] = 1f; at[4] = 1f
                     scope.launch {
-                        anim.snapTo(start)
+                        anim.snapTo(start); at[4] = 0f
                         anim.animateTo(target, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing))
                         at[2] = 0f
                     }
                     val dy = start - target
-                    p.placeWithLayer(0, 0) { translationY = dy }
+                    put(dy)
                 } else {
                     // (a layer's shift, not a placement offset: the tiles' centre line the Middle layout centres on stays put)
-                    val dy = if (at[2] == 1f) now - target else 0f
-                    p.placeWithLayer(0, 0) { translationY = dy }
+                    put(when { at[4] == 1f -> at[3] - target; at[2] == 1f -> now - target; else -> 0f })
                 }
             }
         }
