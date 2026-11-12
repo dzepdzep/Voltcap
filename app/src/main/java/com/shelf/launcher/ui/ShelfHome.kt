@@ -415,7 +415,8 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                         translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
                                             // (Batch 523: the box's spine face — turning with the front, beside it, never over it.)
-                                            val t = shelfTurn(pv)
+                                            // (With the 3D case on, the 3D case's own turn - the two coincide through the hand-over.)
+                                            val t = if (Shelf3D.on(g.stableKey)) shelfTurn3D(pv) else shelfTurn(pv)
                                             rotationY = -SPINE_SIDE * 90f * t
                                             cameraDistance = 14f * density
                                             val frontW = s.h.toPx() * pulledAspect(g.platform, Features.shelfPulled.state.value == Features.ShelfPulled.SIDE)
@@ -688,19 +689,19 @@ private fun ShelfPulled3D(
     var mode by remember(key) { mutableStateOf(Shelf3D.Mode.WAITING) }
     // (Hardware QA, 12 Nov: the spine Case3D made is not the game's own - a stand-in the shelf doesn't show: the shelf's path.)
     var foreignSpine by remember(key) { mutableStateOf(false) }
-    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready && shapeKnown, shelfTurn(p))
+    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready && shapeKnown, shelfTurn3D(p))
     if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
     val on = next == Shelf3D.Mode.CASE_3D
     androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
     androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key); Shelf3D.drawnWhole.remove(key) } }
     // (Back on the shelf, or its turn not begun: drawn whole has to happen again on the next pull.)
-    if (shelfTurn(p) <= 0f) Shelf3D.drawnWhole.remove(key)
+    if (shelfTurn3D(p) <= 0f) Shelf3D.drawnWhole.remove(key)
     // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
     if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
     // (QA trace only, hardware QA 12 Nov: every frame of a 3D pull - the pull, its turn, the decision, what shows - to find a jump
     // the Flip 2 recording showed: the case first seen ~40 degrees into its turn.)
     if (QaTrace.on) androidx.compose.runtime.SideEffect {
-        android.util.Log.e("VoltcapQA", "shelf3dframe $key p=${"%.3f".format(p)} turn=${"%.3f".format(shelfTurn(p))} mode=${next.name} ready=$ready shape=$shapeKnown")
+        android.util.Log.e("VoltcapQA", "shelf3dframe $key p=${"%.3f".format(p)} turn=${"%.3f".format(shelfTurn3D(p))} mode=${next.name} ready=$ready shape=$shapeKnown")
     }
     if (next == Shelf3D.Mode.FLAT) return false
     // (Its thickness: exactly the spine picture's as the shelf draws it - SpineSlot can draw it narrower than its slot.)
@@ -708,7 +709,7 @@ private fun ShelfPulled3D(
     val d = androidx.compose.ui.platform.LocalDensity.current
     val pose = with(d) {
         shelfCasePose(p, slotCx.toPx(), slotBottom.toPx(), slotH.toPx(), bigCx.toPx(), bigTop.toPx(), bigH.toPx(), shape, depth, PULL_LIFT,
-            ::shelfSlide, ::shelfTurn, ::shelfGrow)
+            ::shelfSlide, ::shelfTurn3D, ::shelfGrow)
     }
     // (Resting: the gentle bob as before - here a real turn of the case and a small rise.)
     val bob = if (resting && p >= 0.999f && Features.shelfBob.state.value) rememberShelfBob() else null
@@ -723,11 +724,11 @@ private fun ShelfPulled3D(
             .graphicsLayer {
                 // (Hand-over: drawn at ~1 level while the shelf's spine rises - its pictures ready on the GPU - then fading in
                 // over the turn's start - Shelf3D.caseAlpha.)
-                alpha = if (on) Shelf3D.caseAlpha(shelfTurn(p)) else 0f
+                alpha = if (on) Shelf3D.caseAlpha(shelfTurn3D(p)) else 0f
                 translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
             }
             // (Drawn whole at least once: from the next frame on the shelf's spine may go - Shelf3D.shelfSpineAlpha.)
-            .drawWithContent { drawContent(); if (on && Shelf3D.blendIn(shelfTurn(p)) >= 1f) Shelf3D.drawnWhole.add(key) }
+            .drawWithContent { drawContent(); if (on && Shelf3D.blendIn(shelfTurn3D(p)) >= 1f) Shelf3D.drawnWhole.add(key) }
     ) {
         // The front's own place (the window flies out of it; the focus ring is round it), centred like the case.
         if (on) Box(Modifier.align(Alignment.Center).size(frontH * shape, frontH)
@@ -758,6 +759,18 @@ private fun ease(t: Float): Float = FastOutSlowInEasing.transform(t.coerceIn(0f,
  */
 private fun shelfSlide(p: Float): Float = ease(p / 0.3f)
 internal fun shelfTurn(p: Float): Float = ease((p - 0.3f) / 0.4f)
+/**
+ * The 3D case's turn (owner, 12 Nov: "rotation begins while the case is already visibly moving ... reaches its full position
+ * naturally"). The flat path's FastOutSlowIn over 30-70 % turned up to ~15 degrees in one 120 Hz frame on the Flip 2 - fine
+ * for a flat card coming round edge-on, a snap for a rigid case. Here a symmetric smoothstep over 22-80 %: it starts while the
+ * case is still rising and is at most ~3.6 % of the turn (~3 degrees) per 120 Hz frame of a 620 ms pull. Pure.
+ */
+internal fun shelfTurn3D(p: Float): Float {
+    val x = ((p - TURN3D_FROM) / (TURN3D_TO - TURN3D_FROM)).coerceIn(0f, 1f)
+    return x * x * (3f - 2f * x)
+}
+internal const val TURN3D_FROM = 0.22f
+internal const val TURN3D_TO = 0.80f
 internal fun shelfGrow(p: Float): Float = ease((p - 0.62f) / 0.38f)
 /** How far the neighbours have made room: along with the turn and the growth. */
 private fun shelfFront(p: Float): Float = ease((p - 0.3f) / 0.7f)

@@ -200,4 +200,19 @@ class ShelfCase3DTest {
         assertTrue(Shelf3D.caseAlpha(0f) > 0f && Shelf3D.caseAlpha(0f) < 0.005f)
         assertEquals(1f, Shelf3D.caseAlpha(Shelf3D.BLEND), 0f)
     }
+
+    /** Owner, 12 Nov / Flip 2 trace: the 3D turn never jumps - at most ~4 % of the turn per 120 Hz frame of a 620 ms pull,
+     *  starts while the case is still rising (slide not yet done) and ends before the case is fully out. */
+    @Test fun threeDTurnIsGentleAndOverlapsTheRise() {
+        val frame = 1f / (0.62f * 120f)
+        var p = 0f; var prev = shelfTurn3D(0f); var maxStep = 0f
+        while (p <= 1f) { val t = shelfTurn3D(p); maxStep = maxOf(maxStep, t - prev); assertTrue(t >= prev); prev = t; p += frame }
+        assertTrue("max step $maxStep", maxStep < 0.04f)
+        assertEquals(0f, shelfTurn3D(TURN3D_FROM), 0f); assertEquals(1f, shelfTurn3D(TURN3D_TO), 0f)
+        assertTrue(TURN3D_FROM < 0.3f)                                  // the rise (0-30 %) is still going when it starts
+        // the flat path's own turn is far steeper - kept for the stable release
+        var fp = 0f; var fprev = shelfTurn(0f); var fmax = 0f
+        while (fp <= 1f) { val t = shelfTurn(fp); fmax = maxOf(fmax, t - fprev); fprev = t; fp += frame }
+        assertTrue(fmax > maxStep * 1.5f)
+    }
 }
