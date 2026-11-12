@@ -115,6 +115,8 @@ class ConnectedIgnitionTest {
         assertTrue(ps.contains("onAccept(id)"))
         val ls = src("ui/LauncherScreen.kt")
         assertTrue(ls.contains("Rollout.arm()"))
+        // (Flip 2: a second A's release reached the home built under the stage and opened a game window.)
+        assertTrue(ls.contains("showIntro && stageOn && stageLeaving -> true"))
         assertTrue(src("ui/IgnitionStage.kt").contains("skipFade.animateTo(1f, tween(SKIP_FADE_MS"))
     }
 

@@ -300,6 +300,9 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
         // button's release is swallowed afterwards, so skipping never also
         // opens / plays something on the home screen.
         var introEndedAt by remember { mutableStateOf(0L) }
+        // Sprint 527 (Flip 2, A A Right: the home is built under the stage once a profile is chosen, and the second A's release
+        // reached it - its game window opened): from the choice until the stage has gone, no key reaches anything else.
+        var stageLeaving by remember { mutableStateOf(false) }
         val introFocus = remember { androidx.compose.ui.focus.FocusRequester() }
         LaunchedEffect(Unit) { if (showIntro) runCatching { introFocus.requestFocus() } }
         Box(
@@ -318,6 +321,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                             }
                             true
                         }
+                        showIntro && stageOn && stageLeaving -> true
                         event.type == KeyEventType.KeyUp && event.nativeKeyEvent.downTime <= introEndedAt -> true
                         else -> false
                     }
@@ -362,6 +366,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                     // (Sprint 527: the home is built under the stage the moment the choice is accepted - while the chosen picture's
                     // light runs - so the stage fades straight into it: no dim wait, no first-frame hitch in the fade.)
                     onAccept = { id ->
+                        stageLeaving = true
                         if (qaStart == null) viewModel.switchProfile(id)
                         when (startupMode.value) {
                             com.shelf.launcher.data.Features.StartupMode.PROFILES_CATEGORIES -> viewModel.categoryScreenOpenState.value = true
@@ -376,6 +381,7 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
                         contentVisible = true
                     },
                     onKeep = {
+                        stageLeaving = true
                         if (startupMode.value == com.shelf.launcher.data.Features.StartupMode.PROFILES_LAYOUT) { viewModel.categoryScreenOpenState.value = false; Rollout.start() }
                         contentVisible = true
                     },
