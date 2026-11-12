@@ -37,7 +37,9 @@ class PopupNativeStorageTest {
         assertFalse(nativePages(WinScene.CASE_MEDIA))
         assertFalse(nativePages(null))
         val gw = src("GameWindow.kt")
-        assertTrue(gw.contains("scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage"))
+        // (Phase 3: the condition lives in sharedPageFor, WinPageFlow.kt - one decision for every scene.)
+        assertTrue(gw.contains("if (sharedPageFor(scene, page)) SceneExpandedPage("))
+        assertTrue(src("WinPageFlow.kt").contains("page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)"))
         val st = src("WinScenes.kt").substringAfter("private fun StorageRecord(").substringBefore("internal val STORAGE_TABS")
         assertTrue("Storage draws every page inside its record", st.contains("StorageRecordPage(ctx, p, red, live)"))
         assertFalse(st.contains("SceneExpandedPage"))
@@ -172,8 +174,9 @@ class ShelfCaseHandOverTest {
         val open = gw.substringAfter("LaunchedEffect(target != null) {").substringBefore("// Update 506 (motion polish")
         assertTrue(open.contains("if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }"))
         assertTrue(open.indexOf("CaseFlightGate.ready.value }.first") < open.indexOf("grow.animateTo(1f"))
-        assertTrue(gw.contains("kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.ready.value = true"))
-        assertTrue(CaseFlightGate.MAX_WAIT_MS in 1..300)
+        assertTrue(gw.contains("kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken)"))
+        // (Phase 4: no visible pause - a scan the shelf drew is complete at once (ShownScans); the wait is for a cold scan only.)
+        assertTrue(CaseFlightGate.MAX_WAIT_MS in 1..160)
     }
 
     @Test fun theWindowsCaseIsTheShelfsCase() {
@@ -182,7 +185,7 @@ class ShelfCaseHandOverTest {
         assertTrue(f.contains("if (gated) { alpha = 0f; return@graphicsLayer }"))
         val gw = src("GameWindow.kt")
         assertTrue(gw.contains("caseHomeHiddenGated(gv, ready)"))
-        assertTrue(gw.contains("CaseFlightGate.ready.value = true; if (MediaInspect.key"))   // released on dispose
+        assertTrue(gw.contains("CaseFlightGate.release(winToken); if (MediaInspect.key"))   // released on dispose
         val cc = src("CoverCases.kt")
         assertTrue(cc.contains("onError = { onFail(); onShown?.invoke() }"))                  // a failing scan never holds it
     }
@@ -237,5 +240,55 @@ class NativePageFocusTimingTest {
         val gw = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/GameWindow.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/GameWindow.kt")).first { it.exists() }.readText()
         val effect = gw.substringAfter("when (pageFocusTarget(page, fromPerf, opener != null)) {").substringBefore("var target by remember")
         assertFalse(effect.contains("NATIVE_PAGE_MS"))
+    }
+}
+
+/** Phase 4 (12 Nov): the Shelf hand-over gate under rapid opens / closes, and the shared scan bitmap. */
+class ShelfHandOverRobustTest {
+    private fun src(name: String): String = listOf(
+        java.io.File("src/main/java/com/shelf/launcher/ui/$name"), java.io.File("app/src/main/java/com/shelf/launcher/ui/$name")
+    ).first { it.exists() }.readText()
+
+    @org.junit.After fun reset() { CaseFlightGate.drawn() }
+
+    @Test fun aClosingWindowNeverReleasesTheNextOnesGate() {
+        val first = Any(); val second = Any()
+        CaseFlightGate.hold(first)
+        assertFalse(CaseFlightGate.ready.value)
+        // rapid B, A: the next window holds the gate before the first one's dispose / timer runs
+        CaseFlightGate.hold(second)
+        CaseFlightGate.release(first)                     // first's dispose or its late timer
+        assertFalse(CaseFlightGate.ready.value)           // second still waits for its own flying copy
+        CaseFlightGate.release(second)                    // its timer / dispose
+        assertTrue(CaseFlightGate.ready.value)
+    }
+
+    @Test fun drawnAlwaysReleasesAndAReleaseTwiceIsHarmless() {
+        val w = Any()
+        CaseFlightGate.hold(w); CaseFlightGate.drawn()
+        assertTrue(CaseFlightGate.ready.value)
+        CaseFlightGate.release(w); CaseFlightGate.release(w)
+        assertTrue(CaseFlightGate.ready.value)
+        // a window that was never holding (a non-case window) never closes the gate
+        CaseFlightGate.release(Any()); assertTrue(CaseFlightGate.ready.value)
+    }
+
+    @Test fun shownScansIsBoundedAndLatestWins() {
+        for (i in 0 until ShownScans.MAX + 40) ShownScans.note("scan$i", coil.memory.MemoryCache.Key("k$i"))
+        assertTrue(ShownScans.size() <= ShownScans.MAX)
+        assertEquals(null, ShownScans.keyFor("scan0"))                         // the eldest went
+        assertEquals(coil.memory.MemoryCache.Key("k${ShownScans.MAX + 39}"), ShownScans.keyFor("scan${ShownScans.MAX + 39}"))
+        ShownScans.note("scan5x", coil.memory.MemoryCache.Key("a")); ShownScans.note("scan5x", coil.memory.MemoryCache.Key("b"))
+        assertEquals(coil.memory.MemoryCache.Key("b"), ShownScans.keyFor("scan5x"))
+    }
+
+    @Test fun theWindowsCopyStartsFromTheShelfsBitmap() {
+        val cc = src("CoverCases.kt")
+        val scan = cc.substringAfter("internal fun ScanCase(").substringBefore("internal object ShownScans")
+        // only the window's copy (onShown) borrows; never a probing (unmeasured, maybe unfolded) scan
+        assertTrue(scan.contains("val heldKey = if (onShown != null && !probing) ShownScans.inMemory(ctxNow, shownKey) else null"))
+        assertTrue(scan.contains("mutableStateOf(heldKey != null)"))
+        assertTrue(scan.contains("placeholderMemoryCacheKey(heldKey)"))
+        assertTrue(scan.contains("r.result.memoryCacheKey?.let { ShownScans.note(shownKey, it) }"))
     }
 }

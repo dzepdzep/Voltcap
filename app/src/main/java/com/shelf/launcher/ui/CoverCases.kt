@@ -917,17 +917,23 @@ internal fun ScanCase(
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape
         // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
-        var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+        // (Phase 4, 12 Nov: the window's flying copy - onShown - starts from the very bitmap the shelf already drew for this scan
+        // (ShownScans), as its placeholder, so it is complete in its first frame even when its own decode size differs and
+        // Coil has to decode again: no wait for the hand-over, no picture change mid-flight.)
+        val ctxNow = androidx.compose.ui.platform.LocalContext.current
+        val heldKey = if (onShown != null && !probing) ShownScans.inMemory(ctxNow, shownKey) else null
+        var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(heldKey != null) }
         val scanIn = loaded && !probing
         if (onShown != null) androidx.compose.runtime.LaunchedEffect(scanIn) { if (scanIn) onShown() }
         // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
         // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            val model = cardArtModel(shown).let { m -> if (heldKey != null && m is coil.request.ImageRequest) m.newBuilder().placeholderMemoryCacheKey(heldKey).build() else m }
             AsyncImage(
-                cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
+                model, null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
                 // (Update 240: the front cut's own shape under its own address — the scan's stays the whole scan's.)
-                onSuccess = { r -> loaded = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
+                onSuccess = { r -> loaded = true; r.result.memoryCacheKey?.let { ShownScans.note(shownKey, it) }; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
                 onError = { onFail(); onShown?.invoke() },
                 modifier = (if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()).graphicsLayer { alpha = if (probing) 0f else 1f }
@@ -935,6 +941,24 @@ internal fun ScanCase(
             CaseSheen(Modifier.fillMaxSize())
         }
     }
+}
+
+/**
+ * Phase 4 (12 Nov): the memory-cache key of the bitmap last drawn for each case scan address (ScanCase), so another view of
+ * the same scan - the window's flying case - can show that very bitmap at once while its own decode runs. Bounded; only
+ * keys, the bitmaps stay Coil's.
+ */
+internal object ShownScans {
+    const val MAX = 96
+    private val keys = object : LinkedHashMap<String, coil.memory.MemoryCache.Key>(MAX, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, coil.memory.MemoryCache.Key>?) = size > MAX
+    }
+    @Synchronized fun note(address: String, key: coil.memory.MemoryCache.Key) { keys[address] = key }
+    @Synchronized fun keyFor(address: String): coil.memory.MemoryCache.Key? = keys[address]
+    @Synchronized fun size(): Int = keys.size
+    /** The key for [address] when its bitmap is still in memory, else null. */
+    fun inMemory(context: android.content.Context, address: String): coil.memory.MemoryCache.Key? =
+        keyFor(address)?.takeIf { k -> runCatching { coil.Coil.imageLoader(context).memoryCache?.get(k) != null }.getOrDefault(false) }
 }
 
 /** Update 143: how much of a PlayStation (PS1) cover scan's width its black "PlayStation" band down the left takes; cut off. */

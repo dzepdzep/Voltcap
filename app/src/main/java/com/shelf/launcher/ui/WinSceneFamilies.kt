@@ -96,7 +96,17 @@ internal object CaseFlightGate {
     /** The flying case is drawn (placed, its picture in) - or there is no case flight. */
     val ready = androidx.compose.runtime.mutableStateOf(true)
     /** The longest the home's copy waits for the flying one's scan; then it flies with the shelf's plain case. */
-    const val MAX_WAIT_MS = 250L
+    // (Phase 4, 12 Nov: 250 -> 150. A scan the shelf has drawn is complete in the window's first frame (ShownScans), so the
+    // wait only covers a scan neither has yet - where the shelf shows the same plain case the flight starts with.)
+    const val MAX_WAIT_MS = 150L
+    /** The window whose flight holds the gate (Phase 4: a window that is going away never releases another one's). */
+    private var owner: Any? = null
+    /** [token]'s case flight starts: the home's copy stays until its flying copy is drawn. */
+    fun hold(token: Any) { owner = token; ready.value = false }
+    /** [token]'s flying copy is drawn, its wait ran out, or it went away: released - only if it still holds the gate. */
+    fun release(token: Any) { if (owner === token) { owner = null; ready.value = true } }
+    /** The flying copy on screen is drawn (it belongs to the window holding the gate). */
+    fun drawn() { owner = null; ready.value = true }
 }
 
 /**
@@ -120,7 +130,7 @@ internal fun SceneFlyingCase(ctx: WinSceneCtx, modifier: Modifier, turnFrom: Flo
     var artReady by remember { mutableStateOf(false) }
     val gated = !CaseFlightGate.ready.value
     LaunchedEffect(to != null, artReady) {
-        if (to != null && artReady && !CaseFlightGate.ready.value) CaseFlightGate.ready.value = true
+        if (to != null && artReady && !CaseFlightGate.ready.value) CaseFlightGate.drawn()
     }
     Box(modifier.onGloballyPositioned { to = it.boundsInWindow() }.graphicsLayer {
         // (Update 508, owner on the GT78: "arrives in about 0.1 s" — the reveal's own easing already slows its end, a second

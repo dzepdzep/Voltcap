@@ -25,7 +25,8 @@ class Visual426Test {
         val s = src("GameWindow.kt")
         // (Popup motion work: every layout window still opens its pages as the readable shared page, except the scenes that
         // draw readable pages of their own - WinPageFlow.NATIVE_PAGE_SCENES, Storage boxes first.)
-        assertTrue(s.contains("if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)) SceneExpandedPage("))
+        assertTrue(s.contains("if (sharedPageFor(scene, page)) SceneExpandedPage("))
+        assertTrue(src("WinPageFlow.kt").contains("page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS && !nativePages(scene)"))
         assertTrue(s.contains("if (details) ExpandedWinPage("))
     }
 

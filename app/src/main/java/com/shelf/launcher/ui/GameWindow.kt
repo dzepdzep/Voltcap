@@ -1336,14 +1336,14 @@ internal fun GameWindow(
                 // (Shelf flash work, 12 Nov: gone from the frame the flying copy is drawn - placed, its scan in - not from the
                 // reveal's first frame: CaseFlightGate. At most MAX_WAIT_MS, then it flies with the shelf's plain case.)
                 if (caseFlight) {
-                    CaseFlightGate.ready.value = false
-                    launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.ready.value = true }
+                    CaseFlightGate.hold(winToken)
+                    launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken) }
                 }
                 androidx.compose.runtime.snapshotFlow { grow.value to CaseFlightGate.ready.value }.collect { (gv, ready) ->
                     MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)
                 }
             }
-            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.ready.value = true; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
+            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.release(winToken); if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
         }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
