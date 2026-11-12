@@ -50,6 +50,15 @@ class ClipLightTest {
         assertTrue(ClipLight.moved(a, ClipLight(0.5f, Color(0.5f, 0.5f, 0.5f), upperLuma = 0.95f)))
     }
 
+    @Test fun textOverAClipGetsALocalScrimNotADarkerVideo() {
+        assertTrue(src("ui/HomeChrome.kt").contains("else if (ClipBackdrop.on) Color.Black.copy(alpha = 0.46f)"))
+        assertTrue(src("ui/HomeChrome.kt").contains("then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier)"))
+        assertTrue(src("ui/GameDock.kt").contains("return (if (clipScrim) this.videoTextScrim() else this).nameBackdropStyle(backdrop)"))
+        // The old fog only as a QA before / after.
+        assertEquals(0.97f, ClipLight.legacyStops(Color.Black).last().second.alpha, 0.001f)
+        assertTrue(src("ui/TestHooks.kt").contains("ClipBackdrop.legacy = v == \"legacy\""))
+    }
+
     @Test fun theClipNoLongerUsesTheThemeBackgroundAsAFog() {
         val v = src("ui/VideoPreview.kt")
         assertFalse(v.contains("0.8f to ShelfTheme.background.copy(alpha = 0.85f)"))

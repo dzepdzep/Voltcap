@@ -17,6 +17,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -75,6 +77,13 @@ fun VideoBackdrop(
             viewRef[0]?.let { v -> ClipLight.measure(v)?.let { if (ClipLight.moved(sample.value, it)) sample.value = it } }
             kotlinx.coroutines.delay(1500)
         }
+    }
+    // (Sprint 527, owner: chips, names and status icons hard to read on a near-white clip - the home's own text over the
+    // clip takes a local scrim while one plays (ClipBackdrop.on), instead of a darker video.)
+    if (shade) androidx.compose.runtime.DisposableEffect(playing && show) {
+        val counted = playing && show
+        if (counted) ClipBackdrop.showing++
+        onDispose { if (counted) ClipBackdrop.showing-- }
     }
     Box(modifier.graphicsLayer { this.alpha = alpha }) {
         AndroidView(
@@ -161,10 +170,37 @@ fun VideoBackdrop(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(*ClipLight.stops(toneNow, strength, topNow)))
+                    .background(
+                        // (QA only - voltcap_test_clipshade legacy: the old theme-background ramp, for a same-frame before / after.)
+                        if (ClipBackdrop.legacy) Brush.verticalGradient(*ClipLight.legacyStops(ShelfTheme.background))
+                        else Brush.verticalGradient(*ClipLight.stops(toneNow, strength, topNow))
+                    )
             )
         }
     }
+}
+
+/**
+ * Sprint 527: whether a background clip is showing behind the home now ([on]) - the home's text over it (category pills,
+ * the game's name, the status bar) then takes a small local scrim of its own. [legacy] (QA only) draws the old shading.
+ */
+internal fun Modifier.videoTextScrim(): Modifier = this.drawBehind {
+    // A soft dark capsule just round the text (two layers: a wider faint one so it has no hard edge) - local, the clip stays.
+    val padX = 10.dp.toPx(); val padY = 4.dp.toPx()
+    for ((grow, a) in listOf(1.6f to 0.16f, 1f to 0.30f)) {
+        val px = padX * grow; val py = padY * grow
+        drawRoundRect(
+            Color.Black.copy(alpha = a), topLeft = androidx.compose.ui.geometry.Offset(-px, -py),
+            size = androidx.compose.ui.geometry.Size(size.width + 2 * px, size.height + 2 * py),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius((size.height + 2 * py) / 2f)
+        )
+    }
+}
+
+internal object ClipBackdrop {
+    var showing by androidx.compose.runtime.mutableIntStateOf(0)
+    val on: Boolean get() = showing > 0 && !legacy
+    var legacy by mutableStateOf(false)
 }
 
 /**
@@ -209,6 +245,12 @@ internal class ClipLight(val lowerLuma: Float, val color: Color, val upperLuma: 
 
         /** How strong the shading is at the very bottom for a clip whose lower half has luminance [l] (null: not measured yet). Pure. */
         fun strength(l: Float?): Float = (0.45f + 0.35f * (l ?: 0.5f)).coerceIn(0.42f, 0.78f)
+
+        /** The shading before Sprint 527 (the theme's background, a fog at the bottom) - only for the QA before / after. Pure. */
+        fun legacyStops(bg: Color): Array<Pair<Float, Color>> = arrayOf(
+            0.0f to bg.copy(alpha = 0.55f), 0.2f to Color.Transparent, 0.55f to Color.Transparent,
+            0.8f to bg.copy(alpha = 0.85f), 1.0f to bg.copy(alpha = 0.97f)
+        )
 
         /** How strong the band under the status bar is for a clip whose top has luminance [l]: light on a dark clip, enough on a white one. Pure. */
         fun topStrength(l: Float?): Float = (0.30f + 0.45f * (l ?: 0.4f)).coerceIn(0.30f, 0.75f)

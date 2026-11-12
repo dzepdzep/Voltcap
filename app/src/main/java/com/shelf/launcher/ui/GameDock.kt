@@ -759,6 +759,14 @@ internal fun dockTextStart(): Dp {
  */
 @Composable
 internal fun Modifier.nameBackdrop(backdrop: com.shelf.launcher.data.NameBackdrop): Modifier {
+    // (Sprint 527: over a background clip, the light styles - nothing, a rule, glass - get a soft local scrim of their own.)
+    val clipScrim = ClipBackdrop.on && (backdrop == com.shelf.launcher.data.NameBackdrop.NONE ||
+        backdrop == com.shelf.launcher.data.NameBackdrop.RULE || backdrop == com.shelf.launcher.data.NameBackdrop.GLASS)
+    return (if (clipScrim) this.videoTextScrim() else this).nameBackdropStyle(backdrop)
+}
+
+@Composable
+private fun Modifier.nameBackdropStyle(backdrop: com.shelf.launcher.data.NameBackdrop): Modifier {
     val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
     val look = LocalCardLook.current
     val pill = androidx.compose.foundation.shape.RoundedCornerShape(50)

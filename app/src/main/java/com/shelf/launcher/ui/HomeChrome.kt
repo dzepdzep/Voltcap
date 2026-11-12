@@ -219,7 +219,8 @@ internal fun StatusBar(
                 Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
             }
             Row(
-                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusContainer(look).then(pieceH)
+                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons")
+                    .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look).then(pieceH)
                     .onGloballyPositioned { onCluster(it.boundsInRoot()) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -847,7 +848,8 @@ internal fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit,
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (isSelected) ShelfTheme.accent else Color.White.copy(alpha = 0.08f))
+            // (Sprint 527: over a background clip the other pills take a dark backing - a local scrim, the clip stays as it is.)
+            .background(if (isSelected) ShelfTheme.accent else if (ClipBackdrop.on) Color.Black.copy(alpha = 0.46f) else Color.White.copy(alpha = 0.08f))
             .tapOnly(onClick)
             // (Update 308: a little smaller — 12 / 5 dp padding, 12 sp, a 15 dp logo; were 14 / 7, 13 sp, 17 dp.)
             .padding(horizontal = (if (compact) 10.dp else 12.dp) * ps, vertical = (if (compact) 4.dp else 5.dp) * ps)

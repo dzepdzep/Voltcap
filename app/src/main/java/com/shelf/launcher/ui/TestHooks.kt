@@ -373,6 +373,12 @@ internal object TestHooks {
         val pm = intent?.getStringExtra("voltcap_test_perf")
         intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
+        // Sprint 527: `--es voltcap_test_clipshade legacy|new` - the background clip's old (theme fog) or new shading, for a
+        // same-frame before / after (isolated QA app only, session only).
+        intent?.getStringExtra("voltcap_test_clipshade")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
+            android.util.Log.e("VoltcapQA", "clipshade $v")
+        }
         intent?.getStringExtra("voltcap_test_catscreen")?.let { v ->
             if (enabled(context)) catScreen.value = (catScreen.value.first + 1) to (v == "open")
             android.util.Log.e("VoltcapQA", "catscreen $v")
