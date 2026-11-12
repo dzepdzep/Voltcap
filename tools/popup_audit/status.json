@@ -1,0 +1,14 @@
+{
+  "_default": {"status": ["INVESTIGATED"], "note": "Main page is the layout's own scene; Details / Achievements / Options open the shared readable page (sharedPageFor). No native pages yet; motion rules in UI_POLISH_COMPLETION.md. Owner approval needed before redesign."},
+  "STORAGE": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Record sheets file in from the D-pad side, tab paper slides. WinFocusRoboTest (real window, JVM)."},
+  "NIGHT": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Slanted panels sweep along the slant; banner wipe with a dark band. WinFocusRoboTest."},
+  "TILES": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Card writing turns over like tiles per page. WinFocusRoboTest."},
+  "BLADES": {"status": ["IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Page blades slide in over / away; game blade keeps its full name on its edge. WinFocusRoboTest."},
+  "GRID": {"status": ["IMPLEMENTED", "HARDWARE PENDING"], "note": "Shares Tiles' window scene (TILE_CARD), so it gets the Tiles native pages too. Not separately reviewed or JVM-tested."},
+  "SHELF": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Pages: shared page. Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed."},
+  "STACKS": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "As Game shelf (INDEX_CARD case flight)."},
+  "CARDS": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Popup-first: A opens the window by default (cards_a_plays default off, same key)."},
+  "POCKET": {"status": ["INVESTIGATED", "IMPLEMENTED", "PC TESTED", "HARDWARE PENDING"], "note": "Popup-first: A opens the window by default (pq_a_plays default off, same key)."},
+  "CROSS": {"status": ["INVESTIGATED"], "note": "Keeps its own options list for Options; other pages shared."},
+  "TV": {"status": ["INVESTIGATED"], "note": "No scene: the TV room's own window on the TV's screen (TvWindowBody)."}
+}

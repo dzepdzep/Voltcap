@@ -212,7 +212,7 @@ dependencies {
     // Update 245 (#79): plain JVM unit tests for the parsers and matchers (app/src/test, gradlew testDebugUnitTest).
     testImplementation("junit:junit:4.13.2")
     // (12 Nov: real focus / key behaviour of the game windows on the JVM - Robolectric + Compose UI test. Test-only.)
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("org.robolectric:robolectric:4.16")
     testImplementation(platform("androidx.compose:compose-bom:2026.02.01"))
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("androidx.compose.ui:ui-test-manifest")

@@ -119,12 +119,18 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
 
     private fun tree(): String = runCatching { compose.onAllNodes(isRoot()).let { r -> (0 until r.fetchSemanticsNodes().size).joinToString("\n") { r[it].printToString(80) } } }.getOrDefault("?")
 
-    private fun clickable(text: String): SemanticsMatcher = hasText(text, substring = false) and SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)
+    private fun words(l: String) = l.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.isNotEmpty() }
+
+    /** A control whose label is [text] (case and the icon glyphs ignored: the layouts' looks write "OPTIONS", "▶, PLAY"). */
+    private fun clickable(text: String): SemanticsMatcher = SemanticsMatcher("control '$text'") { n ->
+        n.config.contains(SemanticsActions.OnClick) && words(label(n)) == words(text)
+    }
 
     private fun click(text: String) {
         val nodes = compose.onAllNodes(clickable(text)).fetchSemanticsNodes()
         assertTrue("$layout: no '$text' control\n${tree()}", nodes.isNotEmpty())
-        compose.onAllNodes(clickable(text))[0].performSemanticsAction(SemanticsActions.OnClick)
+        // (the window's own action, not a tab of the same name: the last one drawn)
+        compose.onAllNodes(clickable(text))[nodes.size - 1].performSemanticsAction(SemanticsActions.OnClick)
     }
 
     /** Options: on the window, or behind More (the compact windows, update 451). */
@@ -133,7 +139,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
         click("Options")
     }
 
-    private fun onOptionsButton(f: List<String>) = f.size == 1 && f[0].split(' ').contains("Options")
+    private fun onOptionsButton(f: List<String>) = f.size == 1 && words(f[0]) == listOf("options")
 
     private fun shows(text: String): Boolean = compose.onAllNodes(hasText(text, substring = true), useUnmergedTree = true).fetchSemanticsNodes(atLeastOneRootRequired = false).isNotEmpty()
 
@@ -163,6 +169,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
         key(KeyEvent.KEYCODE_BACK)
         frames(30) { lit += focused() }
         assertFalse("$layout: Play was lit during B's page change: $lit", lit.any { play in it })
+        assertTrue("$layout: frames with nothing lit after B: ${lit.count { it.isEmpty() }} of ${lit.size}: $lit", lit.count { it.isEmpty() } <= 2)
         assertTrue("$layout: B settles on the control that opened the page, lit ${focused()}\n${tree()}", onOptionsButton(focused()))
         assertEquals(0, plays); assertEquals("$layout: B on a page goes back to the main page, not out", 0, closes)
     }
@@ -176,7 +183,20 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
         key(KeyEvent.KEYCODE_DPAD_CENTER)            // A one frame after B
         frames(30)
         assertEquals("$layout: a quick A after B started the game", 0, plays)
-        assertTrue("$layout: that A reopens the page the D-pad was on\n${tree()}", shows("Probe option"))
+        assertEquals(0, closes)
+    }
+
+    /** One-press rule (R23): an A ~100 ms after B is the opener's - it opens that page again, never ignored, never Play. */
+    @Test fun anASoonAfterBActsOnTheOpener() {
+        open()
+        openOptions()
+        frames(30)
+        key(KeyEvent.KEYCODE_BACK)
+        frames(6)
+        key(KeyEvent.KEYCODE_DPAD_CENTER)
+        frames(30)
+        assertEquals("$layout: an A after B started the game", 0, plays)
+        assertTrue("$layout: an A 100 ms after B was ignored (Options not reopened), lit ${focused()}\n${tree()}", shows("Probe option"))
     }
 
     @Test fun bInTheMiddleOfAPageChange() {
