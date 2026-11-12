@@ -7333,7 +7333,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // Read on a background thread (a big library's list takes a moment to parse) while the intro
         // plays, instead of holding up the first frame. A scan that finishes first wins.
         val romCacheLoad = viewModelScope.launch {
-            val cached = withContext(Dispatchers.IO) { loadRomCache() }
+            val cached = try { withContext(Dispatchers.IO) { loadRomCache() } } finally { _uiState.update { it.copy(libraryLoaded = true) } }
             if (!romScanApplied && currentRomGames.isEmpty() && cached.isNotEmpty()) {
                 currentRomGames = cached
                 recombineGames()
