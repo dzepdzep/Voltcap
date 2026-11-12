@@ -61,4 +61,13 @@ class CategoryLooks527Test {
         assertTrue(pb.contains("modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { pbBarBottomPx.floatValue = it.height.toFloat() }"))
         assertTrue(pb.contains("Modifier.fillMaxSize().background(Color.Black).padding(top = with(LocalDensity.current) { pbBarBottomPx.floatValue.toDp() })"))
     }
+
+    @Test fun stagePlateWrapsAndNamesAreNotSaidTwice() {
+        val looks = src("ui/CategoryLooks.kt")
+        assertTrue(looks.contains("letterSpacing = 1.sp,\n                        maxLines = 2, reserve = false"))
+        val pb = src("ui/PlatformBrowser.kt")
+        // (no logo picture: the logo box writes the name - the name line isn't repeated, Slides and Wall)
+        assertTrue(pb.contains("val on = SlideLayout.shown(el.name) && !(el == SlideEl.NAME && nameTwice)"))
+        assertTrue(pb.contains("if (art.logo != null || editing) Box(Modifier.offset(boxW * name.x, boxH * name.y)"))
+    }
 }
