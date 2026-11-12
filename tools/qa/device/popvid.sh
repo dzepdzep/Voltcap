@@ -14,12 +14,13 @@ gate; touch $F/qa_nolaunch
 A --ez voltcap_test_preview true --ez voltcap_test_nolaunch true --es voltcap_test_scale "font=$S"; sleep 1
 A --es voltcap_test_layout $L; sleep 3; A --es voltcap_test_game "$G"; sleep 2; gate
 N=${L}_x$S; logcat -c
-screenrecord --bit-rate 12000000 --time-limit 22 $OUT/$N.mp4 & R=$!; sleep 0.8
+. "$(dirname "$0")/rec.sh" 2>/dev/null || . /data/local/tmp/rec.sh
+rec_start $OUT/$N 24  # (Sprint 525: segments + an early-stop log - tools/qa/tools/recheck.py)
 k BUTTON_A 1.6; k BUTTON_R1 1.2; k BUTTON_R1 1.2; k BUTTON_R1 1.2; k BUTTON_L1 1.0; k BUTTON_L1 1.0; k BUTTON_L1 1.2
 k BUTTON_B 1.4
 k BUTTON_A 0.15; k BUTTON_B 0.15; k BUTTON_A 0.15; k BUTTON_B 1.5
 dumpsys window 2>/dev/null | grep -q mCurrentFocus.*$P || true
-kill -INT $R 2>/dev/null; sleep 1
+rec_stop; sleep 0.5
 echo "$N launches=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" | tee $OUT/$N.txt
 logcat -d -s VoltcapQA | grep -E "LAUNCH|winkey|focus" | tail -40 >> $OUT/$N.txt
 A --ez voltcap_test_preview false --es voltcap_test_scale off
