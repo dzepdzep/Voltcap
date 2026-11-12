@@ -19,6 +19,15 @@ internal object QaArtFixture {
     @Volatile var delayMs = 0L
     val spec = mutableStateOf<Long?>(null)
 
+    /**
+     * Hardware QA, 12 Nov (`--es voltcap_test_scanfix on|off`, QA app only): the fixture games get scanned pictures for this
+     * session only (never saved) - a box-front scan and a spine scan (qa_art/spine_<n>.png) for one game in three, the same
+     * front with a custom spine (qa_art/spine_custom.png) for the next, none for the third (missing art). The Game shelf's 3D
+     * case takes only games with their own spine and front (Shelf3D.sameArtSources), so without these it can't be seen on a
+     * handheld whose QA library has no scans. Null: not asked.
+     */
+    val scans = mutableStateOf<Boolean?>(null)
+
     fun parse(v: String): Long? = if (v == "off") null
         else v.split(',').firstNotNullOfOrNull { p -> p.trim().removePrefix("delay=").toLongOrNull() }?.coerceIn(0, 5000) ?: 0L
 

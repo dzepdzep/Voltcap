@@ -62,7 +62,12 @@ internal fun Case3D(
      * Shelf 3D work (12 Nov): the case's thickness against its height, when the caller's own place for it says it (the Game
      * shelf's spine slot), so the 3D case's spine is exactly the spine it takes over from. Null: the case's own (below).
      */
-    depthOverride: Float? = null
+    depthOverride: Float? = null,
+    /**
+     * Hardware QA, 12 Nov: which source the spine picture came from once it is made ("own": the game's own spine; "cut",
+     * "template", "console": stand-ins of Voltcap's). The Game shelf's 3D case takes over only with "own" (Shelf3D.sameArtSources).
+     */
+    onSpineSource: ((String) -> Unit)? = null
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -269,6 +274,14 @@ internal fun Case3D(
         }
     }
     if (onSpine != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) { onSpine(spine) }
+    if (onSpineSource != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) {
+        onSpineSource(when {
+            spine === ownFitted?.firstOrNull() -> "own"
+            spine === cutFitted?.firstOrNull() -> "cut"
+            spine === tplSpine.bitmap -> "template"
+            else -> "console"
+        })
+    }
     if (onReady != null) {
         val wholeNow = spine !== SpineCache.WAITING && (!readyNeedsFront || (cover == null && ownFront == null) || front != null)
         androidx.compose.runtime.LaunchedEffect(wholeNow) { if (wholeNow) onReady() }

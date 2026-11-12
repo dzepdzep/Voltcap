@@ -1112,6 +1112,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
     // (Update 503: the fixture library's late-arriving art + achievements, QA app only — QaArtFixture.kt.)
     QaArtFixture.spec.value?.let { d -> LaunchedEffect(d, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaArtFixture() } }
+    QaArtFixture.scans.value?.let { on -> LaunchedEffect(on, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaScanFixture(on) } }
     // (0.6.15: the Sort window for a test run.)
     if (TestHooks.sort.value) LaunchedEffect(Unit) { closeAllDialogs(); showSortDialog = true; TestHooks.sort.value = false }
     // (Update 330, phase 4: the game window of the game you're on, for the window review — as A opens it, but never the game.)

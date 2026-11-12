@@ -461,7 +461,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 val turn = shelfGrow(p)
                 // (Shelf 3D work: the pulled-out case as one rigid 3D case, when on - ShelfCase3D.kt. While it is still being
                 // made it is drawn invisibly and the flat path below carries on; it takes over only before the turn starts.)
-                if (Shelf3D.enabled && stand == Features.ShelfStand.SPINES && Features.shelfPulled.state.value != Features.ShelfPulled.SIDE && p > 0f) {
+                // (Hardware QA, 12 Nov: only where the 3D case draws the shelf's own pictures - Shelf3D.sameArtSources.)
+                if (Shelf3D.enabled && stand == Features.ShelfStand.SPINES && Features.shelfPulled.state.value != Features.ShelfPulled.SIDE && p > 0f &&
+                    Shelf3D.sameArtSources(g.platform, c.state.physicalMedia[g.stableKey])) {
                     val rowTop3 = top + plan.rowH * (vrow - scroll.value)
                     val rowLeft3 = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
                     val shape3 = pulledAspect(g.platform, false)
@@ -648,7 +650,9 @@ private fun ShelfPulled3D(
     val key = g.stableKey
     var ready by remember(key) { mutableStateOf(false) }
     var mode by remember(key) { mutableStateOf(Shelf3D.Mode.WAITING) }
-    val next = Shelf3D.decide(mode, ready, shelfTurn(p))
+    // (Hardware QA, 12 Nov: the spine Case3D made is not the game's own - a stand-in the shelf doesn't show: the shelf's path.)
+    var foreignSpine by remember(key) { mutableStateOf(false) }
+    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready, shelfTurn(p))
     if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
     val on = next == Shelf3D.Mode.CASE_3D
     androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
@@ -687,7 +691,8 @@ private fun ShelfPulled3D(
             g, c.cover(g), c.state.physicalMedia[key], pose.yaw, shape, Modifier.fillMaxSize(),
             pitch = pose.pitch, realFront = original, fill = 1f,
             yawOf = { pose.yaw + (bob?.let { 14f * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f) },
-            onReady = { ready = true }, depthOverride = depth
+            onReady = { ready = true }, depthOverride = depth,
+            onSpineSource = { from -> if (from != "own") foreignSpine = true }
         )
     }
     return on

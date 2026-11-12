@@ -158,4 +158,18 @@ class ShelfCase3DTest {
         assertEquals(1f, Shelf3D.shelfSpineAlpha(0f), 0f); assertEquals(1f, Shelf3D.shelfSpineAlpha(Shelf3D.BLEND * 0.99f), 0f)
         assertEquals(0f, Shelf3D.shelfSpineAlpha(Shelf3D.BLEND), 0f)
     }
+
+    /** Hardware QA, 12 Nov (Flip 2): the 3D case only where it draws the shelf's own spine and front - no artwork substitution. */
+    @Test fun threeDOnlyWithTheShelfsOwnPictures() {
+        val scans = listOf("Box" to "front.jpg", "Spine" to "spine.jpg")
+        assertTrue(Shelf3D.artSourcesAgree(scans, scans, "PS1"))
+        // no scans (the QA library on the Flip 2: cover strips and the console's case art on the shelf): the shelf's path
+        assertFalse(Shelf3D.artSourcesAgree(emptyList(), emptyList(), "PS1"))
+        assertFalse(Shelf3D.artSourcesAgree(listOf("Box" to "front.jpg"), listOf("Box" to "front.jpg"), "PS1"))       // no spine of its own
+        assertFalse(Shelf3D.artSourcesAgree(listOf("Spine" to "spine.jpg"), listOf("Spine" to "spine.jpg"), "PS1"))   // no scanned front
+        // a picture one side leaves out (a flat stand-in) gives a different picture: the shelf's path
+        assertFalse(Shelf3D.artSourcesAgree(scans, listOf("Box" to "front.jpg"), "PS1"))
+        assertFalse(Shelf3D.sameArtSources("PS1", null))                           // scans not known yet
+        assertFalse(Shelf3D.sameArtSources("Android", scans))                     // Voltcap's own Android case
+    }
 }

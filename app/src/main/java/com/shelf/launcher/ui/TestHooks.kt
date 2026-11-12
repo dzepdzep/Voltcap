@@ -339,6 +339,10 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
         intent?.getStringExtra("voltcap_test_badgewarm")?.let { v -> if (enabled(context)) BadgeWarm.enabled = v != "off" }
         // Update 503: `--es voltcap_test_artfix "delay=800"|off` — late-arriving fixture art + achievements, QA app only (QaArtFixture.kt).
+        // Hardware QA, 12 Nov: `--es voltcap_test_scanfix on|off` - session-only scanned spines / fronts for the fixture games (QaArtFixture.scans).
+        intent?.getStringExtra("voltcap_test_scanfix")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) QaArtFixture.scans.value = v == "on"
+        }
         intent?.getStringExtra("voltcap_test_artfix")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) QaArtFixture.parse(v).let { d -> QaArtFixture.delayMs = d ?: 0L; QaArtFixture.spec.value = d }
         }
