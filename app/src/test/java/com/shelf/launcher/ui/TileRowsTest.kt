@@ -122,4 +122,23 @@ class TileRowsTest {
         assertTrue(ls.contains("if (TileRowEdit.buttonsCentre != it) TileRowEdit.buttonsCentre = it"))
         assertTrue(src("ui/HomeEdit.kt").contains("val f = stored ?: clearOf ?: centreFrac ?: defaultFrac ?: defaultFractions(defaultAlign)"))
     }
+
+    @Test fun aDroppedRowGlidesFromWhereTheFingerLeftIt() {
+        // Old place 300, new place 100: it starts where it is drawn now (300), plus the finger's shift at a drop (-180 px).
+        assertEquals(300f, TileRows.glideStart(300f, 300f, 100f, 0f)!!, 0.001f)
+        assertEquals(120f, TileRows.glideStart(300f, 300f, 100f, -180f)!!, 0.001f)
+        // Dropped back in its own place: it still glides home from the finger.
+        assertEquals(260f, TileRows.glideStart(300f, 300f, 300f, -40f)!!, 0.001f)
+        // Nothing moved: no glide.
+        assertNull(TileRows.glideStart(300f, 300f, 300.5f, 0f))
+        // Mid-glide (drawn at 220 on the way to 100) and the place changes again: from 220, no jump.
+        assertEquals(220f, TileRows.glideStart(220f, 100f, 400f, 0f)!!, 0.001f)
+    }
+
+    @Test fun theGlideStartsInTheSameLayoutPassAndTheMovingRowIsOnTop() {
+        val src = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/TileRows.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/TileRows.kt")).first { it.exists() }.readText()
+        assertTrue(src.contains("val dy = start - target\n                    p.placeWithLayer(0, 0) { translationY = dy }"))
+        assertTrue(src.contains(".zIndex(if (onTop) 1f else 0f)"))
+        assertTrue("no coroutine-late start from onGloballyPositioned", !src.contains("onGloballyPositioned"))
+    }
 }

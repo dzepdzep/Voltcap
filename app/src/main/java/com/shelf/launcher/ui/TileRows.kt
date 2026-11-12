@@ -3,8 +3,9 @@ package com.shelf.launcher.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -22,6 +23,13 @@ import kotlinx.coroutines.launch
  * Pure (unit-tested): TileRowsTest.
  */
 internal object TileRows {
+    /**
+     * Sprint 527: where a row's glide starts (root px) when its place changes from [heading] to [target] - where it is drawn
+     * now ([visual]) plus the finger's shift at a drop ([dropFromPx]) - or null when it isn't moving (under a pixel). Pure.
+     */
+    fun glideStart(visual: Float, heading: Float, target: Float, dropFromPx: Float): Float? =
+        if (kotlin.math.abs(heading - target) <= 1f && dropFromPx == 0f) null else visual + dropFromPx
+
     /** Sprint 527: how far a moved order's first row stays below the screen's top (the status bar and clock), in dp. */
     const val TOP_CLEAR_DP = 40
 
@@ -154,10 +162,16 @@ internal object TileRowEdit {
     fun dropRow(partId: String) {
         val row = rowOf(partId)
         val b = HomeEditState.bounds[partId]
+        // (Flip 2 t527i: on the drop the row jumped back to its old place for a frame, then glided from there - it now
+        // glides from where the finger left it: the up / down shift it had is handed to its placement.)
+        val dy = HomeEditState.liveShift[partId]?.second ?: 0f
+        if (row != null && dy != 0f) dropFrom[row] = dy * android.content.res.Resources.getSystem().displayMetrics.density
         if (row != null && b != null) insert(row, b.center.y)
         HomeEditState.liveShift[partId]?.let { s -> HomeEditState.liveShift[partId] = s.first to 0f }
         dragging = null; rowDropLine = null
     }
+    /** A row just dropped: how far (px, down +) the finger had it from its old place - its glide starts there. Taken once. */
+    val dropFrom = java.util.concurrent.ConcurrentHashMap<String, Float>()
     /**
      * The round buttons let go in Edit Home: near Tile home's rows (and the home keeps a room for them in the stack) they
      * leave their free place and go into the order at the insertion line; anywhere else they stay where they were put.
@@ -259,29 +273,56 @@ internal object TileRowEdit {
  * Sprint 527: one of Tile home's rows in the stack - its place recorded (TileRowEdit.spans); while Edit Home is open it
  * glides to a new place when the order changes (the others make room), and the selected row shows where ▲ / ▼ would put it.
  * Outside Edit Home nothing animates (a category change never moves the shell - rule 14).
+ *
+ * (Flip 2 t527i, a finger drop recorded at 60 fps: the new order was drawn for one frame, then every row jumped back to its old
+ * place and only then glided - the glide was started from onGloballyPositioned in a coroutine, a frame late - and a row moving
+ * down slid across the game tiles. Now the new place is read in onPlaced and the row is placed at its old place in the SAME
+ * layout pass ([TileRows.glideStart]), and the selected / dragged row is drawn above the others while they make room.)
  */
 @androidx.compose.runtime.Composable
 internal fun androidx.compose.ui.Modifier.tileRowPlacement(row: String): androidx.compose.ui.Modifier {
     val editing = HomeEditState.active
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val anim = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
-    val last = androidx.compose.runtime.remember { floatArrayOf(Float.NaN) }
+    // [0] where the layout puts it now (root px), [1] where the glide is heading, [2] 1 while a glide is set up
+    val at = androidx.compose.runtime.remember { floatArrayOf(Float.NaN, Float.NaN, 0f) }
     val accent = com.shelf.launcher.ui.theme.ShelfTheme.accent
-    val selectedHere = editing && TileRowEdit.partOf(row)?.let { it == HomeEditState.selected } == true
+    val part = TileRowEdit.partOf(row)
+    val selectedHere = editing && part?.let { it == HomeEditState.selected } == true
+    val onTop = editing && (selectedHere || (part != null && TileRowEdit.dragging == part))
     return this
-        .onGloballyPositioned { c ->
+        .zIndex(if (onTop) 1f else 0f)
+        .onPlaced { c ->
             val y = c.positionInRoot().y
+            at[0] = y
             TileRowEdit.spans[row] = y to (y + c.size.height)
-            val was = last[0]; last[0] = y
-            if (editing && !was.isNaN() && kotlin.math.abs(was - y) > 1f) {
-                // (it was drawn at [was]: start there and glide to the new place)
-                scope.launch {
-                    anim.snapTo(anim.value + (was - y))
-                    anim.animateTo(0f, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        }
+        .layout { m, cons ->
+            val p = m.measure(cons)
+            layout(p.width, p.height) {
+                val target = at[0]
+                val now = anim.value // (read every pass: the glide's frames re-place it)
+                if (!editing || target.isNaN()) { at[1] = target; at[2] = 0f; p.placeWithLayer(0, 0); return@layout }
+                val heading = at[1]
+                if (heading.isNaN()) { at[1] = target; p.placeWithLayer(0, 0); return@layout }
+                val visual = if (at[2] == 1f) now else heading
+                val start = TileRows.glideStart(visual, heading, target, TileRowEdit.dropFrom.remove(row) ?: 0f)
+                if (start != null) {
+                    at[1] = target; at[2] = 1f
+                    scope.launch {
+                        anim.snapTo(start)
+                        anim.animateTo(target, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+                        at[2] = 0f
+                    }
+                    val dy = start - target
+                    p.placeWithLayer(0, 0) { translationY = dy }
+                } else {
+                    // (a layer's shift, not a placement offset: the tiles' centre line the Middle layout centres on stays put)
+                    val dy = if (at[2] == 1f) now - target else 0f
+                    p.placeWithLayer(0, 0) { translationY = dy }
                 }
             }
         }
-        .graphicsLayer { translationY = if (editing) anim.value else 0f }
         .drawWithContent {
             drawContent()
             if (!selectedHere || HomeEditState.preview) return@drawWithContent
