@@ -4,6 +4,8 @@
 # first and put back byte-for-byte at the end (the snapshot hook overwrites them).
 #   sh tile527.sh rows TAG      orders x QaClip dump + screenshot; a saved order across a restart, a category switch, a layout switch
 #   sh tile527.sh video TAG     the synthetic clips (white / bright / dark / cuts) behind Tile home (ART background, session only)
+#   sh tile527.sh video2 TAG    the same after the clip-light change, settings saved first, plus a recorded start / R2 / L2 / next
+#                               game / game window / off flow and the cuts clip
 #   sh tile527.sh restore TAG   settings back (snapshot), owner's snapshot files back, compared
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -38,6 +40,27 @@ video)
   shot vid_none 3
   for v in white bright dark cuts; do A --es voltcap_test_video file://$F/qa_video/v_$v.mp4; shot vid_$v 5; done
   A --es voltcap_test_video file://$F/qa_video/v_cuts.mp4; sleep 2; . /data/local/tmp/rec.sh; REC_SEG=6; rec_start $O/vid_cuts_rec 8; sleep 7.5; rec_stop
+  A --es voltcap_test_video off; shot vid_off 3 ;;
+video2)
+  # After the clip-light change: the same clips, then one recording through start, category switch, next game, the game
+  # window open / closed, clip off / on (the light must glide, never flash). Settings saved first (restore puts them back).
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept: $(ls $O/snapbak | tr '\n' ' ')"; }
+  A --ez voltcap_test_nolaunch true; sleep 3; picker
+  A --es voltcap_test_snapshot save; sleep 2
+  A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
+  A --es voltcap_test_layout TILES --es voltcap_test_category ALL --es voltcap_test_game "Super Mario World"; sleep 4; picker
+  A --es voltcap_test_dock MIDDLE; A --es voltcap_test_pref "tile_row_order="
+  mkdir -p $F/qa_video; cp /data/local/tmp/v_*.mp4 $F/qa_video/ 2>/dev/null; ls $F/qa_video >> $L
+  A --es voltcap_test_pref "tile_switch_plain=false"; A --es voltcap_test_bg ART; A --es voltcap_test_video off; sleep 3
+  shot vid_none 3
+  for v in white bright dark cuts; do A --es voltcap_test_video file://$F/qa_video/v_$v.mp4; shot vid_$v 5; done
+  A --es voltcap_test_video off; sleep 2; . /data/local/tmp/rec.sh; REC_SEG=8; rec_start $O/vid_flow_rec 16
+  sleep 1; log "rec: clip on (white)"; A --es voltcap_test_video file://$F/qa_video/v_white.mp4; sleep 3.5
+  log "rec: R2"; k BUTTON_R2; sleep 2; log "rec: L2"; k BUTTON_L2; sleep 1.5
+  log "rec: right"; k DPAD_RIGHT; sleep 1.5
+  log "rec: A (game window)"; k BUTTON_A; sleep 2; log "rec: B"; k BUTTON_B; sleep 2
+  log "rec: clip off"; A --es voltcap_test_video off; sleep 2; rec_stop
+  A --es voltcap_test_video file://$F/qa_video/v_cuts.mp4; sleep 2; REC_SEG=8; rec_start $O/vid_cuts_rec 9; sleep 8.5; rec_stop
   A --es voltcap_test_video off; shot vid_off 3 ;;
 restore)
   A --es voltcap_test_video off --es voltcap_test_bg off; sleep 1
