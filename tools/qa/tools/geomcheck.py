@@ -200,6 +200,10 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         miss = max(s_[0] - f[0], s_[1] - f[1], (f[0] + f[2]) - (s_[0] + s_[2]), (f[1] + f[3]) - (s_[1] + s_[3]), 0)
         if s_[2] <= 0 or s_[3] <= 0:
             miss = max(f[2], f[3])  # wholly cut away
+        # (12 Nov, Blades on the Flip 2: a text turned a quarter round - the blade's standing name - reports its layout box
+        # [w, h] and is shown as [h, w]; that is the turn, not a cut. Whole when the shown box is the layout box swapped.)
+        elif abs(s_[2] - f[3]) <= 2 and abs(s_[3] - f[2]) <= 2 and f[2] != f[3]:
+            miss = 0
         # (A tilted scene — the rental tag — reports straight boxes round turned content: a few % of the width either way.)
         tilt_px = (f[2] * 0.06 + 4) if n.get("tilt") else 0
         if miss > lim["clip_px"] + tilt_px:

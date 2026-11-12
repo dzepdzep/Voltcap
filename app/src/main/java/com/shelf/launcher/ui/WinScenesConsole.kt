@@ -154,7 +154,9 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
         // console ("Cra", "Pla") showed in the strip beside the page's heading, over the standing name; they fade out as the page
         // blade comes in - the strip shows the standing name alone - and back when it goes.)
         val coveredText by animateFloatAsState(if (onMain) 0f else 1f, if (anim) tween(NATIVE_PAGE_MS) else snap(), label = "bladeText")
-        Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)
+        // (…and once wholly covered it isn't composed at all: invisible texts still laid out under the page were measured as
+        // drawn over the page's own heading by the popup gate. It comes back, fading in, as the page blade leaves.)
+        if (coveredText < 0.999f) Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)
             .graphicsLayer { alpha = 1f - coveredText }
             .then(if (ctx.page != WinPage.MAIN) Modifier.clearAndSetSemantics { } else Modifier)) {
             // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
