@@ -70,8 +70,11 @@ edit)
   E open; E select:part:TILES:info; k DPAD_UP; sleep 1; k DPAD_UP; sleep 1; shot e07_info_moved; E discard; shot e08_discarded 3
   E open; E select:part:TILES:cats; k BUTTON_SELECT; sleep 1; E select:part:TILES:row; k DPAD_UP; sleep 1; shot e09_hidden_cats_row_up
   E discard; sleep 1
-  for D in TOP BOTTOM; do A --es voltcap_test_dock $D; shot e10_${D}_saved; done
-  A --es voltcap_test_dock MIDDLE; E open; E reset:part:TILES:row; E reset:shortcuts; E save; shot e11_reset_parts
+  # (the Row tile's Top / Middle / Bottom applies only in a preview - nothing saved - as R1 sets it)
+  A --ez voltcap_test_preview true; sleep 1
+  for D in TOP MIDDLE BOTTOM; do A --es voltcap_test_dock $D; shot e10_${D}_saved; done
+  A --ez voltcap_test_preview false; sleep 1.5
+  E open; E reset:part:TILES:row; E reset:shortcuts; E save; shot e11_reset_parts
   E open; E resetlayout:TILES; E save; shot e12_reset_layout
   log "order after reset: $(run-as $P sh -c 'grep -o "tile_row_order\">[^<]*" shared_prefs/voltcap_features.xml' 2>/dev/null)" ;;
 video2)
