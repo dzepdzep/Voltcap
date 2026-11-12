@@ -17,7 +17,7 @@ A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 stop() { echo "STOP $1" >> $O/log.txt; exit 3; }
 gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
-  dumpsys activity activities | grep -m1 topResumedActivity | grep -q "$P/" || stop "QA app not in front"; }
+  dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 # (KEY or KEY+KEY+... - several keys in one `input` call, ~10 ms apart: rapid controller input during a transition.)
 k() { gate; input keyevent $(echo "$1" | tr '+' '\n' | sed 's/^/KEYCODE_/' | tr '\n' ' '); }
 . /data/local/tmp/rec.sh; REC_SEG=${REC_SEG:-6}; REC_BITRATE=${REC_BITRATE:-16000000}  # (6 s: the whole hand-off - capsule to settled picker, ~0.5-4.5 s in - inside the first segment)
