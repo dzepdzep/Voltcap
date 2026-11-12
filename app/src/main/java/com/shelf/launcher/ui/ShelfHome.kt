@@ -485,7 +485,9 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                     }
                     val shape3 = if (scan3 != null) scanShown(scan3, scanAspect3, null).second else box3
                     val frontH3 = if (shape3 <= box3) bigH3 else bigH3 * box3 / shape3
-                    if (ShelfPulled3D(c, g, p, resting,
+                    // (A scan far from the real case's shape would be cut by Case3D: the shelf's own path for it.)
+                    val caseAspect3 = remember(g.stableKey, g.platform, Features.caseRegion.state.value, LookStyles.casePlatform(g.platform)) { CaseCatalog.forGame(g)?.aspect }
+                    if (!shapeKnown3 || Shelf3D.shapeAgrees(shape3, caseAspect3)) if (ShelfPulled3D(c, g, p, resting,
                             slotCx = rowLeft3 + s.x + s.w / 2, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
                             bigCx = endX3 + bigW3 / 2, bigTop = endY3 + (bigH3 - frontH3) / 2, bigH = frontH3, shape = shape3,
                             shapeKnown = shapeKnown3, open = { open() })) return

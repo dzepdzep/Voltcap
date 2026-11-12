@@ -172,4 +172,12 @@ class ShelfCase3DTest {
         assertFalse(Shelf3D.sameArtSources("PS1", null))                           // scans not known yet
         assertFalse(Shelf3D.sameArtSources("Android", scans))                     // Voltcap's own Android case
     }
+
+    /** Hardware QA, 12 Nov: a scan Case3D would visibly cut to the real case's shape keeps the shelf's path. */
+    @Test fun threeDOnlyWhereTheScanFitsTheRealCase() {
+        assertTrue(Shelf3D.shapeAgrees(1.0f, 1.05f))
+        assertTrue(Shelf3D.shapeAgrees(0.7f, null))                 // no real case known: Case3D keeps the given shape
+        assertFalse(Shelf3D.shapeAgrees(0.75f, 1.12f))              // the Flip 2 case: a portrait scan on a jewel case
+        assertFalse(Shelf3D.shapeAgrees(1.4f, 0.7f))
+    }
 }
