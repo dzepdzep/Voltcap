@@ -1296,7 +1296,9 @@ internal fun GameWindow(
             val opener = pageOpener[0]
             when (pageFocusTarget(page, fromPerf, opener != null)) {
                 PageFocus.LIST -> {
-                    kotlinx.coroutines.delay(60) // (a native page's leaving copy holds no requester and is inert: no wait for it)
+                    // (A native page's leaving copy holds no requester and is inert: no wait for it - Phase 2, WinFocusRoboTest: the
+                    // 60 ms left nothing lit for 4 frames and an L1 / R1 in them was lost. The shared page still waits for its own.)
+                    if (!nativePages(scene)) kotlinx.coroutines.delay(60)
                     if (!focusWhenAttached(listFocus)) runCatching { playFocus.requestFocus() }
                 }
                 PageFocus.PERF -> {
@@ -1309,7 +1311,7 @@ internal fun GameWindow(
                     if (!focusWhenAttached(opener!!)) runCatching { playFocus.requestFocus() }
                 }
                 PageFocus.PLAY -> {
-                    kotlinx.coroutines.delay(60) // (a native page's leaving copy holds no requester and is inert: no wait for it)
+                    if (!nativePages(scene)) kotlinx.coroutines.delay(60) // (as LIST: no wait on a native page)
                     if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
                 }
             }

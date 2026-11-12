@@ -135,7 +135,14 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
 
     /** Options: on the window, or behind More (the compact windows, update 451). */
     private fun openOptions() {
-        if (compose.onAllNodes(clickable("Options")).fetchSemanticsNodes().isEmpty()) { click("More"); frames(12) }
+        if (compose.onAllNodes(clickable("Options")).fetchSemanticsNodes().isEmpty()) {
+            // More: "More", or the dots (Tiles' "•••")
+            val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) && (words(label(n)) == listOf("more") || label(n).trim() == "•••") }
+            val ms = compose.onAllNodes(more).fetchSemanticsNodes()
+            assertTrue("$layout: no Options and no More\n${tree()}", ms.isNotEmpty())
+            compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick)
+            frames(12)
+        }
         click("Options")
     }
 
@@ -221,7 +228,9 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
         val lit = mutableListOf<List<String>>()
         // R1 / L1 quickly, twice each, then settle: never two lit controls, never Play on a page that isn't Details,
         // the game never starts, the window never closes.
+        val trace = StringBuilder()
         for (code in listOf(KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_L1)) {
+            trace.append(if (code == KeyEvent.KEYCODE_BUTTON_R1) " R1@" else " L1@").append(focused())
             key(code); frames(3) { lit += focused() }
         }
         frames(40) { lit += focused() }
@@ -229,7 +238,7 @@ class WinFocusRoboTest(private val layout: HomeLayout) {
         assertEquals(0, plays); assertEquals(0, closes)
         assertEquals("$layout: settled with one control lit\n${tree()}", 1, focused().size)
         // R1 R1 L1 L1 from Options is back on Options
-        assertTrue("$layout: back on the Options page after R1 R1 L1 L1\n${tree()}", shows("Probe option"))
+        assertTrue("$layout: back on the Options page after R1 R1 L1 L1 (lit before each press:$trace)\n${tree()}", shows("Probe option"))
         key(KeyEvent.KEYCODE_BACK); frames(30)
         assertTrue("$layout: B after the bumpers lands on the opener, not '$play': ${focused()}", onOptionsButton(focused()))
     }
