@@ -203,6 +203,10 @@ internal fun ProfileSelectScreen(
             leaving = true
             onAccept(id)
             scope.launch {
+                // (Sprint 527, owner's final clean recording: the home's first composition under the stage is one long frame
+                // (60-110 ms on the Flip 2); with the light already running it jumped that far in one frame - a visible step at
+                // the start of the hand-over. The light now starts on the frame after that one, from 0, so it runs evenly.)
+                if (stage != null) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { } }
                 // (Sprint 527: on the start-up stage the hand-over starts at 70 % of the chosen picture's light - the stage fades
                 // into the home built under it meanwhile - instead of after it, with a dim stage in between.)
                 var handed = false

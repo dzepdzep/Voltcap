@@ -122,6 +122,10 @@ class ConnectedIgnitionTest {
         // a plain var left the home dim with its games hidden after a choice.)
         assertTrue(ps.contains("private var startedAt by androidx.compose.runtime.mutableLongStateOf(0L)"))
         assertTrue(ps.contains("LaunchedEffect(startedAt)"))
+        // (Final recording: the light starts after the home's first long frame, so the hand-over has no step.)
+        val pk = ps.substringAfter("fun pick(i: Int)")
+        assertTrue(pk.indexOf("onAccept(id)") < pk.indexOf("if (stage != null) { androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { } }"))
+        assertTrue(pk.indexOf("withFrameNanos { } }") < pk.indexOf("exit.animateTo(1f"))
     }
 
     @Test fun startUpUsesOneWindowAndTheOtherPickersStayDialogs() {
