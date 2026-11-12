@@ -263,8 +263,10 @@ internal fun ProfileSelectScreen(
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (stage == null) 1f else IgnK.eInOut(IgnK.ph(stageT(), stage.tm.titleFrom, stage.tm.settled)) }) {
                 PickerBackdrop(look, accentNow, animate = !lite, hold = stage != null && !stageSettled)
             }
-            val rootPos = remember { floatArrayOf(0f, 0f) }
-            Box(Modifier.matchParentSize().onPlaced { c -> val q = c.positionInRoot(); rootPos[0] = q.x; rootPos[1] = q.y })
+            // Sprint 527 (owner: the profile circles, rings, halo and the line must share one centre): the wire and the row are
+            // drawn in one frame - this Box, which also carries the opening's slide - and every centre is measured in it
+            // (localPositionOf), never in root coordinates of a different layer.
+            val frame = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
             val compact = maxHeight < 360.dp || maxWidth < 520.dp
             val plan = PickerGrid.plan(count, maxWidth.value, maxHeight.value, compact)
             planPerRow[0] = plan.perRow
@@ -274,6 +276,10 @@ internal fun ProfileSelectScreen(
             while (centers.size < count) centers.add(androidx.compose.ui.geometry.Offset(Float.NaN, Float.NaN))
             while (centers.size > count) centers.removeAt(centers.size - 1)
             val density0 = LocalDensity.current
+            // One lift for the picture and the wire's ring around it (the wire raises a lifted ring by the same [rise]).
+            fun liftFor(i: Int): Float = IgnK.liftAt(if (ignition) focusPos.value else cursor.toFloat(), i) *
+                (if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.arrive, stage.tm.liftTo)))
+            Box(Modifier.fillMaxSize().graphicsLayer { translationY = (1f - enter.value) * 40f }.onPlaced { frame[0] = it }, contentAlignment = Alignment.Center) {
             if (wireOn) IgnitionWireLayer(
                 WireInputs(
                     centers, List(count) { i -> style.accent(profiles.getOrNull(i)?.hue ?: 210f) },
@@ -282,9 +288,7 @@ internal fun ProfileSelectScreen(
                 ),
                 stage, Modifier.fillMaxSize()
             )
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer {
-                translationY = (1f - enter.value) * 40f
-            }) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (lookStrip) {
                     LookStrip(style, look, onStep = { stepLook(it) })
                     Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
@@ -330,7 +334,10 @@ internal fun ProfileSelectScreen(
                 ) {
                     for (i in 0 until count) {
                         val p = profiles.getOrNull(i)
-                        val report: (androidx.compose.ui.geometry.Offset) -> Unit = { c -> if (i < centers.size) centers[i] = androidx.compose.ui.geometry.Offset(c.x - rootPos[0], c.y - rootPos[1]) }
+                        val report: (androidx.compose.ui.layout.LayoutCoordinates, androidx.compose.ui.geometry.Offset) -> Unit = { c, local ->
+                            val f = frame[0]
+                            if (i < centers.size && f != null && f.isAttached && c.isAttached) centers[i] = f.localPositionOf(c, local)
+                        }
                         // When this profile appears as the start-up's trace passes it (immediately otherwise).
                         val appearOf: () -> Float = {
                             if (stage == null) 1f else {
@@ -348,15 +355,15 @@ internal fun ProfileSelectScreen(
                         if (ignition || stage != null) IgnitionBubble(
                             p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
                             leaving = leaving, exitOf = { exit.value },
-                            liftOf = { IgnK.liftAt(if (ignition) focusPos.value else cursor.toFloat(), i) * (if (stage == null) 1f else IgnK.eOut(IgnK.ph(stageT(), stage.tm.arrive, stage.tm.liftTo))) },
-                            appearOf = appearOf, edgeOf = { edgeOf(i) }, onCenter = report,
+                            liftOf = { liftFor(i) },
+                            appearOf = appearOf, edgeOf = { edgeOf(i) }, onCenter = report, qaIndex = i,
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
                             playing = p?.id == activeId, ra = p?.raSlot?.let { raNames.getOrNull(it) },
                             onTap = { if (stageSettled) { moveTo(i); pick(i) } else onStageSkip() },
                             onLong = { if (p != null && !lookStrip && stageSettled) { moveTo(i); unlockThen(p) { editing = p } } }
                         ) else ProfileBubble(
                             p, style = style, on = i == cursor, size = avatar, slot = plan.slot.dp, compact = compact, lite = lite,
-                            leaving = leaving, exit = exit.value, edgeOf = { edgeOf(i) },
+                            leaving = leaving, exit = exit.value, edgeOf = { edgeOf(i) }, qaIndex = i,
                             model = p?.let { Profiles.pictureModel(context, it, raNames, steamAvatar) },
                             playing = p?.id == activeId,
                             ra = p?.raSlot?.let { raNames.getOrNull(it) },
@@ -386,6 +393,12 @@ internal fun ProfileSelectScreen(
                     PickerHint(style, "B", if (atStart) keepHint else "Close")
                     if (lookStrip) PickerHint(style, "L1 R1", "Look")
                 }
+            }
+            // QA only (voltcap_test_geom): every profile's centres drawn and measured in this frame (PickerGeomQa).
+            if (PickerGeomQa.on.value) PickerGeomOverlay(
+                frame, centers, count, cursor, rise = with(density0) { (avatar * 0.08f).toPx() }, wire = wireOn,
+                liftFor = { liftFor(it) }, tick = { stageT() + focusPos.value + exit.value + enter.value }, leaving = leaving
+            )
             }
         }
     }
@@ -440,7 +453,7 @@ private fun PickerHint(style: PickerStyle, key: String, what: String) {
 @Composable
 private fun ProfileBubble(
     p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean, exit: Float,
-    edgeOf: () -> Float, model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
+    edgeOf: () -> Float, model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit, qaIndex: Int = -1
 ) {
     val lift by animateFloatAsState(if (on) 1f else 0f, tween(if (lite) 120 else 260, easing = FastOutSlowInEasing), label = "bubbleLift")
     val hue = p?.hue ?: 210f
@@ -454,6 +467,8 @@ private fun ProfileBubble(
             val pickedOut = if (leaving && !on) exit else 0f
             val k = 1f + (if (lite) 0.08f else 0.14f) * lift + (if (leaving && on) 0.24f * exit else 0f)
             scaleX = k; scaleY = k
+            // (Sprint 527: round the picture's centre - see IgnitionBubble.)
+            transformOrigin = PickerGeom.pivot((size * (if (style.card != null) 0.09f else 0.06f)).roundToPx(), size.roundToPx(), this.size.height)
             translationY = -size.toPx() * 0.07f * lift + pickedOut * size.toPx() * 0.25f
             alpha = (style.dimOthers + (1f - style.dimOthers) * lift) * (1f - pickedOut) * edgeOf()
             // (Sprint 527: alpha on each drawing, no offscreen layer the size of the column - that cut the glow into a box.)
@@ -461,23 +476,24 @@ private fun ProfileBubble(
         }.pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
     ) {
         Box(
-            Modifier.then(if (style.card != null) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
+            // (Sprint 527: the light is drawn before the card's clip - inside it, the card's rounded box cut the glow into a
+            // rectangle on Aurora / Theme.)
+            Modifier.qaGeom(qaIndex, PickerGeomQa.HALO).drawBehind {
+                if (style.glow > 0f && lift > 0.01f) {
+                    val r = this.size.minDimension * 0.82f
+                    drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = style.glow * lift), Color.Transparent), radius = r), radius = r)
+                }
+            }.then(if (style.card != null) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
                 .background(if (on) style.card.copy(alpha = style.card.alpha * 2.2f) else style.card)
                 .border(1.dp, if (on) accent.copy(alpha = 0.55f) else (style.cardEdge ?: Color.Transparent), androidx.compose.foundation.shape.RoundedCornerShape(26.dp))
-                .padding(size * 0.09f) else Modifier.padding(size * 0.06f))
-                .drawBehind {
-                    if (style.glow > 0f && lift > 0.01f) {
-                        val r = this.size.minDimension * 0.82f
-                        drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = style.glow * lift), Color.Transparent), radius = r), radius = r)
-                    }
-                },
+                .padding(size * 0.09f) else Modifier.padding(size * 0.06f)),
             contentAlignment = Alignment.Center
         ) {
             Box(contentAlignment = Alignment.Center) {
                 // The ring in the profile's own colour (two outlines for Neon arcade).
                 val ring = if (on) style.ringOn else 1.5.dp
                 Box(
-                    Modifier.size(size).clip(shape)
+                    Modifier.size(size).qaGeom(qaIndex, PickerGeomQa.AVATAR).clip(shape)
                         .background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
                         .border(ring, if (on) accent else style.ringOff, shape)
                         .then(if (on && style.doubleRing) Modifier.padding(ring + 3.dp).border(1.dp, accent.copy(alpha = 0.6f), shape) else Modifier),
@@ -488,7 +504,7 @@ private fun ProfileBubble(
                         model != null -> AsyncImage(
                             coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
                                 .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
-                            p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(ring).clip(shape)
+                            p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(ring).clip(shape).qaGeom(qaIndex, PickerGeomQa.IMAGE)
                         )
                         else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold, fontFamily = style.titleFont)
                     }
@@ -867,8 +883,9 @@ internal fun PinPad(title: String, check: ((String) -> Boolean)?, onDone: (Strin
 @Composable
 private fun IgnitionBubble(
     p: Profiles.Profile?, style: PickerStyle, on: Boolean, size: Dp, slot: Dp, compact: Boolean, lite: Boolean, leaving: Boolean,
-    exitOf: () -> Float, liftOf: () -> Float, appearOf: () -> Float, edgeOf: () -> Float, onCenter: (androidx.compose.ui.geometry.Offset) -> Unit,
-    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit
+    exitOf: () -> Float, liftOf: () -> Float, appearOf: () -> Float, edgeOf: () -> Float,
+    onCenter: (androidx.compose.ui.layout.LayoutCoordinates, androidx.compose.ui.geometry.Offset) -> Unit,
+    model: Any?, playing: Boolean, ra: String?, onTap: () -> Unit, onLong: () -> Unit, qaIndex: Int = -1
 ) {
     val hue = p?.hue ?: 210f
     val accent = style.accent(hue)
@@ -880,9 +897,14 @@ private fun IgnitionBubble(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(slot)
-            .onGloballyPositioned { c -> val pos = c.positionInRoot(); with(density) { onCenter(androidx.compose.ui.geometry.Offset(pos.x + c.size.width / 2f, pos.y + (pad + size / 2).toPx())) } }
+            // (Sprint 527: the picture's centre exactly as laid out - the padding and the picture rounded to whole pixels as the
+            // layout rounds them - in the column's own coordinates; the frame converts it.)
+            .onGloballyPositioned { c -> with(density) { onCenter(c, androidx.compose.ui.geometry.Offset(c.size.width / 2f, PickerGeom.centreY(pad.roundToPx(), size.roundToPx()))) } }
             .graphicsLayer {
                 val l = liftOf(); val ap = appearOf(); val ex = exitOf()
+                // (Sprint 527: grow / shrink round the picture's centre, not the column's - the column's middle is lower (name,
+                // badge), so the picture drifted off the wire's ring and its halo as it lifted or appeared.)
+                transformOrigin = PickerGeom.pivot(pad.roundToPx(), size.roundToPx(), this.size.height)
                 val out = if (leaving && !on) ex else 0f
                 val k = (1f + 0.16f * l + (if (leaving && on) 0.22f * ex else 0f)) * (0.86f + 0.14f * ap)
                 scaleX = k; scaleY = k
@@ -893,7 +915,7 @@ private fun IgnitionBubble(
             }
             .pointerInput(p?.id) { detectTapGestures(onTap = { onTap() }, onLongPress = { onLong() }) }
     ) {
-        Box(Modifier.padding(pad).drawBehind {
+        Box(Modifier.padding(pad).qaGeom(qaIndex, PickerGeomQa.HALO).drawBehind {
             val l = liftOf()
             if (l > 0.01f && style.glow > 0f) {
                 val r = this.size.minDimension * 1.0f
@@ -901,7 +923,7 @@ private fun IgnitionBubble(
             }
         }, contentAlignment = Alignment.Center) {
             Box(
-                Modifier.size(size).clip(CircleShape).background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
+                Modifier.size(size).qaGeom(qaIndex, PickerGeomQa.AVATAR).clip(CircleShape).background(if (p == null) Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.03f))) else style.initialFill(hue))
                     .drawWithContent {
                         drawContent()
                         val l = liftOf()
@@ -916,13 +938,13 @@ private fun IgnitionBubble(
                     model != null -> AsyncImage(
                         coil.request.ImageRequest.Builder(LocalContext.current).data(model).memoryCacheKey("profile:${p.id}:$stamp:$model")
                             .diskCacheKey("profile:${p.id}:$stamp:$model").build(),
-                        p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
+                        p.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().qaGeom(qaIndex, PickerGeomQa.IMAGE)
                     )
                     else -> Text(p.name.take(1).uppercase(), color = Color.White, fontSize = (size.value * 0.42f).sp, fontWeight = FontWeight.Bold)
                 }
             }
             // The rings, drawn over the picture's edge.
-            Box(Modifier.size(size).drawBehind {
+            Box(Modifier.size(size).qaGeom(qaIndex, PickerGeomQa.RING).drawBehind {
                 val l = liftOf()
                 val r = this.size.minDimension / 2f
                 drawCircle(cream.copy(alpha = 0.16f * (1f - l)), r, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
