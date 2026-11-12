@@ -575,9 +575,12 @@ internal fun PlatformSlide(
                 }
             }
         }
+        // (Sprint 528, owner's audit "Slides: duplicate names": without a logo picture the logo part writes the name in big
+        // letters - the name line under it said it again. The name line stays out then; the editor still shows it.)
+        val nameTwice = art.logo == null && SlideLayout.shown(SlideEl.LOGO.name)
         SlideEl.values().filter { it != SlideEl.ICON }.forEach { el ->
             val r = layout[el.name]
-            val on = SlideLayout.shown(el.name)
+            val on = SlideLayout.shown(el.name) && !(el == SlideEl.NAME && nameTwice)
             // In the editor a switched-off part stays visible, faint, so it can still be found and switched on.
             if (r != null && (on || editing)) {
                 val selectedEl = editing && state.editEl == el.name
@@ -831,7 +834,8 @@ internal fun WallView(
                         if (logo != null) AsyncImage(model = logo, contentDescription = t.label, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().padding(14.dp))
                         else Text(t.label, color = Color.White, fontSize = 30.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(30.sp), maxFontSize = 30.sp), fontWeight = FontWeight.Black, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(14.dp))
                     }
-                    Box(Modifier.offset(boxW * name.x, boxH * name.y).size(boxW * name.w, boxH * name.h).then(edit("NAME")), contentAlignment = Alignment.Center) {
+                    // (Sprint 528: no logo picture - the logo box already writes the name; the small name line only in the editor)
+                    if (art.logo != null || editing) Box(Modifier.offset(boxW * name.x, boxH * name.y).size(boxW * name.w, boxH * name.h).then(edit("NAME")), contentAlignment = Alignment.Center) {
                         Text(t.label, color = Color.White, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Box(Modifier.offset(boxW * countRect.x, boxH * countRect.y).size(boxW * countRect.w, boxH * countRect.h).then(edit("COUNT")), contentAlignment = Alignment.Center) {

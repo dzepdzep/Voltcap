@@ -387,10 +387,13 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                         .clip(RoundedCornerShape(3.dp)).background(Color(0xFF0B0B0D)).border(0.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    // (Sprint 528, KONKR: on the narrow plate the facts slid on one line - a still showed "O · 1996"; the name and
+                    // the facts wrap onto a second line first.)
+                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
                     Spacer(Modifier.height(3.dp))
                     FullText(
-                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp
+                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp,
+                        maxLines = 2, reserve = false
                     )
                 }
                 // The object, standing on the plinth's top.
