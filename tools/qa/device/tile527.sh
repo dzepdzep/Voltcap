@@ -7,6 +7,8 @@
 #   sh tile527.sh edit TAG      Edit Home with real D-pad moves (recorded), undo / save / discard / restart / reset
 #   sh tile527.sh video2 TAG    the same after the clip-light change, settings saved first, plus a recorded start / R2 / L2 / next
 #                               game / game window / off flow and the cuts clip
+#   sh tile527.sh drag TAG      finger drag of the game row + Reset part on the round buttons (recorded)
+#   sh tile527.sh vidab TAG     same frame before / after: old shading vs new (still clips)
 #   sh tile527.sh restore TAG   settings back (snapshot), owner's snapshot files back, compared
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -77,6 +79,42 @@ edit)
   E open; E reset:part:TILES:row; E reset:shortcuts; E save; shot e11_reset_parts
   E open; E resetlayout:TILES; E save; shot e12_reset_layout
   log "order after reset: $(run-as $P sh -c 'grep -o "tile_row_order\">[^<]*" shared_prefs/voltcap_features.xml' 2>/dev/null)" ;;
+drag)
+  # Owner's remaining checks: a finger drag of the game row in Edit Home (it drops into the order at the insertion line), the
+  # round buttons moved by the D-pad then "Reset this part" (back to their default place in the order), recorded.
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  A --ez voltcap_test_nolaunch true; sleep 3; picker
+  A --es voltcap_test_snapshot save; sleep 2
+  A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
+  A --es voltcap_test_layout TILES --es voltcap_test_category ALL --es voltcap_test_game "Super Mario World"; sleep 4; picker
+  A --es voltcap_test_pref "part_shifts="; A --es voltcap_test_pref "widget_positions="; A --es voltcap_test_pref "tile_row_order="; sleep 1
+  E() { A --es voltcap_test_edithome "$1"; sleep 1.2; }
+  shot d00_home
+  E open; E select:part:TILES:row; shot d01_open
+  . /data/local/tmp/rec.sh; REC_SEG=0; rec_start $O/d_rec_drag 8; sleep 0.8
+  gate; log "rec: swipe the game row down"; input swipe 1000 400 1000 700 1400; sleep 2.5; rec_stop
+  shot d02_after_drag
+  E save; shot d03_saved 3
+  E open; E select:shortcuts; gate; input keyevent KEYCODE_DPAD_UP; sleep 0.8; input keyevent KEYCODE_DPAD_UP; sleep 1; shot d04_buttons_moved
+  E reset:shortcuts; sleep 1; shot d05_buttons_reset
+  E save; shot d06_saved 3
+  E open; E resetlayout:TILES; E save; shot d07_layout_reset ;;
+vidab)
+  # Owner: a controlled before / after - the same game, category, theme and clip frame (a still clip), the old shading
+  # (voltcap_test_clipshade legacy) and the new one back to back.
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  A --ez voltcap_test_nolaunch true; sleep 3; picker
+  A --es voltcap_test_snapshot save; sleep 2
+  A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
+  A --es voltcap_test_layout TILES --es voltcap_test_category ALL --es voltcap_test_game "Super Mario World"; sleep 4; picker
+  A --es voltcap_test_pref "tile_row_order="; A --es voltcap_test_pref "tile_switch_plain=false"; A --es voltcap_test_bg ART; sleep 2
+  mkdir -p $F/qa_video; cp /data/local/tmp/v_*.mp4 $F/qa_video/ 2>/dev/null
+  for v in white bright dark; do
+    A --es voltcap_test_video file://$F/qa_video/v_$v.mp4; sleep 4
+    A --es voltcap_test_clipshade legacy; shot ab_${v}_before 2.5
+    A --es voltcap_test_clipshade new; shot ab_${v}_after 3
+  done
+  A --es voltcap_test_video off --es voltcap_test_clipshade new; sleep 2 ;;
 video2)
   # After the clip-light change: the same clips, then one recording through start, category switch, next game, the game
   # window open / closed, clip off / on (the light must glide, never flash). Settings saved first (restore puts them back).
@@ -99,7 +137,7 @@ video2)
   A --es voltcap_test_video file://$F/qa_video/v_cuts.mp4; sleep 2; REC_SEG=8; rec_start $O/vid_cuts_rec 9; sleep 8.5; rec_stop
   A --es voltcap_test_video off; shot vid_off 3 ;;
 restore)
-  A --es voltcap_test_video off --es voltcap_test_bg off; sleep 1
+  A --es voltcap_test_video off --es voltcap_test_bg off --es voltcap_test_clipshade new; sleep 1
   A --es voltcap_test_snapshot restore; sleep 3; log "restore verify: $(cut -c1-60 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)"
   if [ -d $O/snapbak ]; then cp $O/snapbak/* $F/; n=0; for f in $O/snapbak/*; do cmp -s $f $F/$(basename $f) || n=1; done; log "owner snapshot files back: diff=$n"; fi
   rm -rf $F/qa_video; log "fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')" ;;
