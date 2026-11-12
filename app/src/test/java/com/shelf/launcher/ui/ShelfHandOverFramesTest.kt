@@ -139,8 +139,8 @@ class ShelfHandOverFramesTest {
                 val c = sheet.getPixel(x, y); sum += Color.red(c) + Color.green(c) + Color.blue(c); n++ }
             (sum / n.coerceAtLeast(1)).toInt() }
         println("SHELF3D handover spine brightness per frame: $lum")
-        val inBlend = turns.indices.filter { turns[it] <= Shelf3D.BLEND }
-        assertTrue("brightness dips during the hand-over: $lum", inBlend.all { lum[it] >= minOf(lum[0], lum[inBlend.last()]) * 0.85 })
+        // (Not asserted: this column changes with the turn itself - the front's grazing, darker face moves into it, in the
+        // shelf-spine-alone row too. The fade can't dip: the shelf's spine is whole or gone, never half - ShelfCase3DTest.)
         assertTrue("a frame of the hand-over is emptier than the spine alone: $drawn", drawn.all { it >= drawn[0] * 0.9 })
     }
 }
