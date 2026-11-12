@@ -30,11 +30,12 @@ gate_qa() {
   return 0; }
 key() { gate_qa; input keyevent KEYCODE_$1 || { echo "STOP: input failed"; exit 4; }; }
 MARK=/sdcard/Android/data/$P/files/voltcap_qa_screen
-# Which screen the QA app says it shows (its own mark, written by its live process): SHELF, PICKER, HOME or UNKNOWN.
+# The QA app's own picker mark (written by its live process): PICKER while "Who's playing?" is up, HOME after; else UNKNOWN.
 screen() { pid=$(pidof $P 2>/dev/null | tr ' ' '\n' | head -1); [ -n "$pid" ] || { echo UNKNOWN; return; }
   set -- $(cat $MARK 2>/dev/null); [ "$2" = "$pid" ] && echo "${1:-UNKNOWN}" || echo UNKNOWN; }
-# The Game shelf is on screen: the QA app logged "screen SHELF" since the start intent, and its mark is not the picker.
-shelf_ready() { gate_qa; [ "$(screen)" = PICKER ] && return 2
+# The Game shelf is on screen: the QA app logged "screen SHELF" since the start intent AND its picker mark is HOME (not PICKER,
+# not unknown: a missing / stale mark is never trusted).
+shelf_ready() { gate_qa; m=$(screen); [ "$m" = PICKER ] && return 2; [ "$m" = HOME ] || return 1
   logcat -d -s VoltcapQA 2>/dev/null | grep -q " screen SHELF$" && return 0; return 1; }
 open_shelf() {   # $1 = true|false (the 3D case). COLD=1: the QA app (never the real one) is stopped first: cold artwork in memory
   gate_pre
