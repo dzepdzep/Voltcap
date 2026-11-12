@@ -157,10 +157,11 @@ fun VideoBackdrop(
             val tone = ClipLight.tone(light?.color ?: ShelfTheme.background)
             val strength by animateFloatAsState(ClipLight.strength(light?.lowerLuma), tween(1200), label = "clipShade")
             val toneNow by androidx.compose.animation.animateColorAsState(tone, tween(1200), label = "clipTone")
+            val topNow by animateFloatAsState(ClipLight.topStrength(light?.upperLuma), tween(1200), label = "clipTop")
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Brush.verticalGradient(*ClipLight.stops(toneNow, strength)))
+                    .background(Brush.verticalGradient(*ClipLight.stops(toneNow, strength, topNow)))
             )
         }
     }
@@ -170,24 +171,29 @@ fun VideoBackdrop(
  * Sprint 527: what a background clip's picture is like now - its lower half's luminance (0..1) and its average colour -
  * measured from a 24 x 14 copy of the view. Pure helpers ([tone], [strength], [stops]) are unit-tested (ClipLightTest).
  */
-internal class ClipLight(val lowerLuma: Float, val color: Color) {
+internal class ClipLight(val lowerLuma: Float, val color: Color, val upperLuma: Float = 0.5f) {
     companion object {
         fun measure(v: TextureView): ClipLight? = runCatching {
             if (!v.isAvailable) return null
             val b = v.getBitmap(24, 14) ?: return null
-            var lum = 0f; var r = 0f; var g = 0f; var bl = 0f; var n = 0
+            var lum = 0f; var r = 0f; var g = 0f; var bl = 0f; var n = 0; var up = 0f
+            // (The top band too - the category chips and the name sit on it: Flip 2 t527e, a white clip under them.)
+            for (y in 0 until 3) for (x in 0 until 24) {
+                val c = b.getPixel(x, y)
+                up += 0.2126f * ((c shr 16) and 0xFF) / 255f + 0.7152f * ((c shr 8) and 0xFF) / 255f + 0.0722f * (c and 0xFF) / 255f
+            }
             for (y in 7 until 14) for (x in 0 until 24) {
                 val c = b.getPixel(x, y)
                 val cr = ((c shr 16) and 0xFF) / 255f; val cg = ((c shr 8) and 0xFF) / 255f; val cb = (c and 0xFF) / 255f
                 lum += 0.2126f * cr + 0.7152f * cg + 0.0722f * cb; r += cr; g += cg; bl += cb; n++
             }
             b.recycle()
-            ClipLight(lum / n, Color(r / n, g / n, bl / n))
+            ClipLight(lum / n, Color(r / n, g / n, bl / n), up / 72f)
         }.getOrNull()
 
         /** Whether [now] differs enough from [was] to move the shading (lower-half light by 0.08, or its colour clearly). Pure. */
         fun moved(was: ClipLight?, now: ClipLight): Boolean = was == null ||
-            kotlin.math.abs(was.lowerLuma - now.lowerLuma) > 0.08f ||
+            kotlin.math.abs(was.lowerLuma - now.lowerLuma) > 0.08f || kotlin.math.abs(was.upperLuma - now.upperLuma) > 0.08f ||
             kotlin.math.abs(was.color.red - now.color.red) + kotlin.math.abs(was.color.green - now.color.green) +
             kotlin.math.abs(was.color.blue - now.color.blue) > 0.18f
 
@@ -204,10 +210,14 @@ internal class ClipLight(val lowerLuma: Float, val color: Color) {
         /** How strong the shading is at the very bottom for a clip whose lower half has luminance [l] (null: not measured yet). Pure. */
         fun strength(l: Float?): Float = (0.45f + 0.35f * (l ?: 0.5f)).coerceIn(0.42f, 0.78f)
 
-        /** The shading's stops: a light band under the status bar, clear through the middle, eased in under the dock. Pure. */
-        fun stops(tone: Color, strength: Float): Array<Pair<Float, Color>> = arrayOf(
-            0.0f to tone.copy(alpha = 0.42f),
-            0.18f to tone.copy(alpha = 0f),
+        /** How strong the band under the status bar is for a clip whose top has luminance [l]: light on a dark clip, enough on a white one. Pure. */
+        fun topStrength(l: Float?): Float = (0.30f + 0.45f * (l ?: 0.4f)).coerceIn(0.30f, 0.75f)
+
+        /** The shading's stops: a band under the status bar ([top]), clear through the middle, eased in under the dock. Pure. */
+        fun stops(tone: Color, strength: Float, top: Float = 0.42f): Array<Pair<Float, Color>> = arrayOf(
+            0.0f to tone.copy(alpha = top),
+            0.09f to tone.copy(alpha = top * 0.7f),
+            0.20f to tone.copy(alpha = 0f),
             0.50f to tone.copy(alpha = 0f),
             0.64f to tone.copy(alpha = strength * 0.18f),
             0.76f to tone.copy(alpha = strength * 0.45f),

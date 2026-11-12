@@ -34,6 +34,10 @@ class ClipLightTest {
         val lower = st.filter { it.first >= 0.5f }.map { it.second.alpha }
         assertEquals(lower, lower.sorted())
         assertTrue(st.first().second.alpha < 0.55f)
+        // The top band follows the clip's top: light on a dark clip (more video), firm on a white one (the chips stay readable).
+        assertTrue(ClipLight.topStrength(0f) < 0.35f)
+        assertTrue(ClipLight.topStrength(1f) >= 0.7f && ClipLight.topStrength(1f) <= 0.75f)
+        assertEquals(0.7f, ClipLight.stops(Color.Black, 0.5f, 0.7f).first().second.alpha, 0.01f)
         assertTrue(st.last().second.alpha < 0.8f)
     }
 
@@ -43,12 +47,13 @@ class ClipLightTest {
         assertFalse(ClipLight.moved(a, ClipLight(0.53f, Color(0.52f, 0.5f, 0.49f))))
         assertTrue(ClipLight.moved(a, ClipLight(0.9f, Color(0.5f, 0.5f, 0.5f))))
         assertTrue(ClipLight.moved(a, ClipLight(0.5f, Color(0.2f, 0.4f, 0.8f))))
+        assertTrue(ClipLight.moved(a, ClipLight(0.5f, Color(0.5f, 0.5f, 0.5f), upperLuma = 0.95f)))
     }
 
     @Test fun theClipNoLongerUsesTheThemeBackgroundAsAFog() {
         val v = src("ui/VideoPreview.kt")
         assertFalse(v.contains("0.8f to ShelfTheme.background.copy(alpha = 0.85f)"))
-        assertTrue(v.contains("Brush.verticalGradient(*ClipLight.stops(toneNow, strength))"))
+        assertTrue(v.contains("Brush.verticalGradient(*ClipLight.stops(toneNow, strength, topNow))"))
         // Sampled rarely and only while playing, never while held.
         assertTrue(v.contains("if (!playing || hold) return@LaunchedEffect"))
         assertTrue(v.contains("kotlinx.coroutines.delay(1500)"))
