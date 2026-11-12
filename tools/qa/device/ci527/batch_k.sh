@@ -1,7 +1,7 @@
 # Sprint 527 KONKR batch k (960x640, QA app only): the owner's compact-screen checks - alignment overlay (x1.0 / x1.3, 8 profiles
 # scrolled, long names, photos), the hint row, glow, navigation, confirmation, idle; one clean recording; then restore.
 S=/data/local/tmp/ci527.sh; O=/sdcard/pc/ci527
-run1() { sh $S "$@"; c=$?; [ $c = 3 ] && { echo "BATCH STOPPED at $2" >> $O/log.txt; exit 3; }; }
+run1() { dumpsys power | grep -q "mWakefulness=Awake" || { input keyevent KEYCODE_WAKEUP; sleep 1.5; echo "woke the handheld before $2 (owner authorization 12 Nov)" >> $O/log.txt; }; sh $S "$@"; c=$?; [ $c = 3 ] && { echo "BATCH STOPPED at $2" >> $O/log.txt; exit 3; }; }
 mkdir -p $O; echo "batch k start $(date +%T) real=$(dumpsys package com.shelf.launcher | grep -m1 lastUpdateTime | tr -d ' ')" >> $O/log.txt
 export REC_BITRATE=8000000
 run1 geom k01_aur_5        AURORA   5:photo:active=2       off
