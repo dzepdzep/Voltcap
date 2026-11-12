@@ -4,6 +4,7 @@
 # first and put back byte-for-byte at the end (the snapshot hook overwrites them).
 #   sh tile527.sh rows TAG      orders x QaClip dump + screenshot; a saved order across a restart, a category switch, a layout switch
 #   sh tile527.sh video TAG     the synthetic clips (white / bright / dark / cuts) behind Tile home (ART background, session only)
+#   sh tile527.sh edit TAG      Edit Home with real D-pad moves (recorded), undo / save / discard / restart / reset
 #   sh tile527.sh video2 TAG    the same after the clip-light change, settings saved first, plus a recorded start / R2 / L2 / next
 #                               game / game window / off flow and the cuts clip
 #   sh tile527.sh restore TAG   settings back (snapshot), owner's snapshot files back, compared
@@ -41,6 +42,38 @@ video)
   for v in white bright dark cuts; do A --es voltcap_test_video file://$F/qa_video/v_$v.mp4; shot vid_$v 5; done
   A --es voltcap_test_video file://$F/qa_video/v_cuts.mp4; sleep 2; . /data/local/tmp/rec.sh; REC_SEG=6; rec_start $O/vid_cuts_rec 8; sleep 7.5; rec_stop
   A --es voltcap_test_video off; shot vid_off 3 ;;
+edit)
+  # Edit Home with the controller: pick a row (select: hook), then real D-pad presses move it - one recording per move set,
+  # a QaClip dump + screenshot after each step (the Edit Home preview and the saved home must match). Undo (Y), Reset (X),
+  # Discard, Save, a restart, a category switch, Top / Bottom, a hidden row stepped over.
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept: $(ls $O/snapbak | tr '\n' ' ')"; }
+  A --ez voltcap_test_nolaunch true; sleep 3; picker
+  A --es voltcap_test_snapshot save; sleep 2
+  A --es voltcap_test_fixture "names=real,art=portrait,meta=none"; sleep 1
+  A --es voltcap_test_layout TILES --es voltcap_test_category ALL --es voltcap_test_game "Super Mario World"; sleep 4; picker
+  A --es voltcap_test_dock MIDDLE; A --es voltcap_test_pref "part_shifts="; A --es voltcap_test_pref "widget_positions="; A --es voltcap_test_pref "tile_row_order="; sleep 1
+  shot e00_home
+  E() { A --es voltcap_test_edithome "$1"; sleep 1.2; }
+  . /data/local/tmp/rec.sh; REC_SEG=10
+  E open; E select:part:TILES:row; shot e01_open_row
+  rec_start $O/e_rec_row 14; sleep 1
+  log "rec: up"; k DPAD_UP; sleep 1.6; log "rec: down"; k DPAD_DOWN; sleep 1.6; log "rec: down"; k DPAD_DOWN; sleep 1.6
+  log "rec: down"; k DPAD_DOWN; sleep 1.6; log "rec: Y undo"; k BUTTON_Y; sleep 1.6; log "rec: up"; k DPAD_UP; sleep 2; rec_stop
+  shot e02_row_moves
+  E select:shortcuts; rec_start $O/e_rec_buttons 12; sleep 1
+  for i in 1 2 3; do log "rec: buttons up $i"; k DPAD_UP; sleep 1.6; done; sleep 1; rec_stop
+  shot e03_buttons_top
+  E save; shot e04_saved 3
+  log "order saved: $(run-as $P sh -c 'grep -o "tile_row_order\">[^<]*" shared_prefs/voltcap_features.xml' 2>/dev/null)"
+  am force-stop $P; sleep 1; A; sleep 5; picker; shot e05_after_restart
+  gate; k BUTTON_R2; shot e06_after_R2; gate; k BUTTON_L2; sleep 1
+  E open; E select:part:TILES:info; k DPAD_UP; sleep 1; k DPAD_UP; sleep 1; shot e07_info_moved; E discard; shot e08_discarded 3
+  E open; E select:part:TILES:cats; k BUTTON_SELECT; sleep 1; E select:part:TILES:row; k DPAD_UP; sleep 1; shot e09_hidden_cats_row_up
+  E discard; sleep 1
+  for D in TOP BOTTOM; do A --es voltcap_test_dock $D; shot e10_${D}_saved; done
+  A --es voltcap_test_dock MIDDLE; E open; E reset:part:TILES:row; E reset:shortcuts; E save; shot e11_reset_parts
+  E open; E resetlayout:TILES; E save; shot e12_reset_layout
+  log "order after reset: $(run-as $P sh -c 'grep -o "tile_row_order\">[^<]*" shared_prefs/voltcap_features.xml' 2>/dev/null)" ;;
 video2)
   # After the clip-light change: the same clips, then one recording through start, category switch, next game, the game
   # window open / closed, clip off / on (the light must glide, never flash). Settings saved first (restore puts them back).

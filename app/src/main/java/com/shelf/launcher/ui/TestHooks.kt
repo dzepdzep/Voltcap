@@ -318,6 +318,8 @@ internal object TestHooks {
                     v == "save" -> HomeEditSession.save()
                     v == "discard" -> HomeEditSession.discard()
                     v.startsWith("reset:") -> HomeEditSession.resetSelected(v.removePrefix("reset:"))
+                    // Sprint 527: pick the part Edit Home's D-pad moves (then real ▲ ▼ presses move it), for the row-order run.
+                    v.startsWith("select:") -> HomeEditState.selected = v.removePrefix("select:")
                     v.startsWith("resetlayout:") -> com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == v.removePrefix("resetlayout:") }
                         ?.let { HomeEditSession.resetLayout(it) }
                 }
