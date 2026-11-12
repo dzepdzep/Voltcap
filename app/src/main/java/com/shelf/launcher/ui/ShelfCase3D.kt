@@ -43,6 +43,25 @@ internal object Shelf3D {
     fun shelfSpineAlpha(turn: Float): Float = if (blendIn(turn) >= 1f) 0f else 1f
 
     /**
+     * Hardware QA, Flip 2, 12 Nov: the shelf's spine of a game whose 3D case has it - whole until the 3D case is whole by the
+     * clock AND has really been drawn whole in an earlier frame ([drawnWhole]). The 3D case's first drawing cost the Flip 2 a
+     * 40 ms frame; the clock had passed the blend, the spine went, and that frame showed neither. Pure.
+     */
+    fun shelfSpineAlpha(turn: Float, drawnWhole: Boolean): Float = if (blendIn(turn) >= 1f && drawnWhole) 0f else 1f
+
+    /** Games whose 3D case has been drawn whole since it last stood on the shelf (written while drawing, main thread). */
+    val drawnWhole = HashSet<String>()
+
+    /**
+     * The 3D case's opacity while it rises with the shelf's spine before its turn: drawn, but at ~1 level - invisible on top of
+     * the same spine - so its pictures are already on the GPU when the turn starts (at 0 Android skips drawing it entirely).
+     */
+    const val WARM = 0.004f
+
+    /** The 3D case's opacity at [turn] once it has the pull: [WARM] before the turn, then [blendIn]. Pure. */
+    fun caseAlpha(turn: Float): Float = maxOf(WARM, blendIn(turn))
+
+    /**
      * Hardware QA, 12 Nov (Flip 2): the 3D case draws its pictures by Case3D's own rules, the shelf by its own. For a game
      * without scans the shelf shows a strip of its cover with the name up it and pulls out the console's case art, while
      * Case3D drew the console's coloured spine and the bare cover in a plain shell: a different spine and a different front
