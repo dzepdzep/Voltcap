@@ -87,4 +87,12 @@ class TileRowsTest {
         assertTrue(ls.contains("val yFloor = if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0"))
         assertEquals(40, TileRows.TOP_CLEAR_DP)
     }
+
+    @Test fun inEditHomeTheFloatingButtonsSitOnTheirRow() {
+        // (Flip 2 t527e: the buttons moved to the top of the order still floated at the screen's bottom in Edit Home.)
+        val ls = src("ui/LauncherScreen.kt")
+        assertTrue(ls.contains("defaultCentre = if (tileLayout && HomeEditState.active) TileRowEdit.buttonsCentre else null"))
+        assertTrue(ls.contains("if (TileRowEdit.buttonsCentre != it) TileRowEdit.buttonsCentre = it"))
+        assertTrue(src("ui/HomeEdit.kt").contains("val f = stored ?: clearOf ?: centreFrac ?: defaultFrac ?: defaultFractions(defaultAlign)"))
+    }
 }

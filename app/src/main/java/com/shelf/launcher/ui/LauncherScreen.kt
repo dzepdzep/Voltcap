@@ -3611,7 +3611,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             MovableWidget(
                 HomeWidgets.SHORTCUTS,
                 defaultAlign = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter,
-                defaultPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                defaultPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                defaultCentre = if (tileLayout && HomeEditState.active) TileRowEdit.buttonsCentre else null
             ) {
                 HomeShortcutBar(
                     tileShortcuts, tileBarFocus ?: HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.SHORTCUTS },
@@ -4430,7 +4431,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         Box(Modifier.fillMaxWidth().tileRowPlacement(rowId)) {
                             when (rowId) {
                                 // (523y: the buttons fade under a row-style window)
-                                TileRows.BUTTONS -> if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) } else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) }
+                                TileRows.BUTTONS -> if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) } else Box(
+                                    // (Sprint 527: the floating buttons sit on this room in Edit Home - the preview is the home.)
+                                    Modifier.onGloballyPositioned { c -> c.boundsInRoot().center.let { if (TileRowEdit.buttonsCentre != it) TileRowEdit.buttonsCentre = it } }
+                                ) {
+                                    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { TileRowEdit.buttonsCentre = null } }
+                                    ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) }
+                                }
                                 TileRows.CATS -> Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, TileRowEdit.CATS_PART), "Categories")) {
                                     // Smaller here: on this layout the bar sits near the music player's lyrics.
                                     androidx.compose.runtime.CompositionLocalProvider(LocalCompactPills provides true) {

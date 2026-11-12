@@ -562,6 +562,11 @@ internal fun BoxScope.MovableWidget(
      * its top where it was, so it ends just above the row (down to half its size). Not in Edit Home: there it shows as it is.
      */
     clearOfDock: Boolean = false,
+    /**
+     * Sprint 527 (owner: "the Edit Home preview matches the final Home"): the root point its middle sits on while it hasn't
+     * been moved - Tile home's round buttons in their row of the stack (the room they keep there), not the screen's bottom.
+     */
+    defaultCentre: androidx.compose.ui.geometry.Offset? = null,
     content: @Composable () -> Unit
 ) {
     val editing = HomeEditState.active
@@ -579,7 +584,7 @@ internal fun BoxScope.MovableWidget(
     val nestedAt = if (HomeNest.dragging != id) HomeNest.centreOf(id) else null
     // Where the layer it's drawn in starts on the screen (root px), to put a nested part at a screen place.
     var origin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    if (stored == null && !editing && defaultFrac == null && nestedAt == null) {
+    if (stored == null && !editing && defaultFrac == null && defaultCentre == null && nestedAt == null) {
         // (Update 125: the parts you add are always drawn over the games, never under them.)
         Box(Modifier.align(defaultAlign).zIndex(PartsLayer.z).padding(defaultPadding).onSizeChanged { size = it; HomeEditState.sizes[id] = it }.rowRevealFade()) {
             Box(Modifier.stretched(sx, sy)) { ScaledWidget(scale) { StyledPart(id, content) } }
@@ -592,7 +597,11 @@ internal fun BoxScope.MovableWidget(
     val clearOf = if (keepClearOf.isEmpty() || stored != null || nestedAt != null || size == IntSize.Zero) null
         else PartRects.clearSpot(defaultFrac ?: defaultFractions(defaultAlign), zone, w, h, keepClearOf.mapNotNull { PartRects.at[it] })
     // Where it is now: the stored fractions, or (first time in edit mode) its normal corner.
-    val f = stored ?: clearOf ?: defaultFrac ?: defaultFractions(defaultAlign)
+    val centreFrac = if (defaultCentre != null && stored == null && size != IntSize.Zero) with(density) {
+        val o = origin ?: androidx.compose.ui.geometry.Offset.Zero
+        zone.fractionOf((defaultCentre.x - o.x).toDp() - w / 2, (defaultCentre.y - o.y).toDp() - h / 2, w, h)
+    } else null
+    val f = stored ?: clearOf ?: centreFrac ?: defaultFrac ?: defaultFractions(defaultAlign)
     val placed = zone.place(f.first, f.second, w, h)
     val pos = if (nestedAt != null) with(density) {
         val o = origin ?: androidx.compose.ui.geometry.Offset.Zero

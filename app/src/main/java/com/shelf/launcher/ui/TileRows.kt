@@ -131,6 +131,8 @@ internal object TileRowEdit {
     @Volatile private var default: List<String> = TileRows.defaultOrder(buttonsAbove = false, catsBelow = false)
     /** Each row's place on the screen now (root px: top, bottom), for drops and the insertion line. */
     val spans = java.util.concurrent.ConcurrentHashMap<String, Pair<Float, Float>>()
+    /** The middle (root px) of the room the round buttons keep in the stack while they float in Edit Home, or null. Compose state. */
+    var buttonsCentre by androidx.compose.runtime.mutableStateOf<androidx.compose.ui.geometry.Offset?>(null)
     /** The insertion line while the round buttons are dragged over the rows (root px), or null. Compose state. */
     var dropLine by androidx.compose.runtime.mutableStateOf<Float?>(null)
 
