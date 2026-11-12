@@ -888,10 +888,10 @@ internal fun MusicPlayerPlaceholder(compact: Boolean = false) {
     // (compact: Home keeps this player in the status bar - the stand-in stays inside that band, Sprint 528)
     Row(
         Modifier.width(240.dp).clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surface.copy(alpha = 0.85f))
-            .padding(horizontal = 12.dp, vertical = if (compact) 4.dp else 12.dp),
+            .padding(horizontal = 12.dp, vertical = if (compact) 2.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Filled.MusicNote, null, tint = ShelfTheme.accent, modifier = Modifier.size(if (compact) 22.dp else 28.dp))
+        Icon(Icons.Filled.MusicNote, null, tint = ShelfTheme.accent, modifier = Modifier.size(if (compact) 20.dp else 28.dp))
         Spacer(Modifier.width(10.dp))
         Text("Music player", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
