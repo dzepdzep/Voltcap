@@ -880,6 +880,17 @@
    "apk_sha256": "91083e40aa3067e34de1e8439c2f39c28403ce2fd9f93903557a3062a7528b60",
    "base_commit": "c1bde53c",
    "note": "529l: Coverflow details compact panel (x1.3 More open), native page scenes keep one composition across pages (Info -> page moves), page cross-fade without double text, Options sub-lines wrap, Twin family native pages (TwinTouchPages). assembleQa 13 Nov 21:37 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets); testDebugUnitTest 2698 tests, 0 failures, 44 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair b14d4021 + 529m working tree (owner visual correction #15 6865249152) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529m",
+   "apk_sha256": "ef935a157f7082bc55f9b4304fd95831ddc25b79ddca248dfb4f8b06178280da",
+   "base_commit": "b14d4021",
+   "note": "529m: Cover details actions as full-width bars + save status line (owner #15), home title block room at large text, leaving page copy draws its own page / keys, Back hint kept on native pages, window keeps focus through a touch. assembleQa 13 Nov 22:04 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets). apksigner CN=Android Debug a48b27ed."
   }
  ]
 }

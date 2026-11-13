@@ -57,9 +57,9 @@ class TwinHinge142Test {
 
     @Test fun hingeReservesTheKeysAndSnapsTheFacts() {
         val s = src("WinSceneTwin.kt")
-        // (529l: the keys of the Info screen - TwinTouchPages - are inert on the copy that is leaving.)
+        // (529l / 529m: the keys of the Info screen - TwinTouchPages - are each page's own, inert on the copy that is leaving.)
         assertTrue("facts take what the keys leave", s.contains("Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {") &&
-            s.contains("KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() })"))
+            s.contains("KeyRow(keys) { k -> twinKey(k) }") && s.contains("val keysOf = rememberPageKeys(ctx)"))
         // (Update 487, D265: whole rows of facts that stay, the story in whole-line pages.)
         assertTrue("whole rows", s.contains("WholeRows(Modifier.fillMaxWidth())") && s.contains("PagedStory("))
         assertTrue("touch half keeps its room", s.contains("coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))"))

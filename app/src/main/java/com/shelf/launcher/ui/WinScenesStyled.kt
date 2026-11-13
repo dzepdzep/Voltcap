@@ -253,7 +253,7 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
             val moduleKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
             }
-            ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), moduleKey) { live ->
+            ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), moduleKey) { live, keys ->
                 // (529k, KONKR x1.3 k529k2: the name kept room for three lines and the facts took their full height - with More open
                 // the keys ran out of the module and the Saves line and ••• got no room. The name keeps only what it needs; the facts
                 // give way to the keys, as in the other shelf-family cards.)
@@ -263,7 +263,7 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
                 // (Update 507: the console is on the module's label already — not twice.)
                 Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console")) }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> moduleKey(k) }
+                KeyRow(keys, 6.dp) { k -> moduleKey(k) }
             }
         }
     }
@@ -277,16 +277,7 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
     val a = ctx.accent; val ink = Color.White; val muted = Color.White.copy(alpha = 0.62f)
     val shortPanel = ctx.maxH < 420.dp
     val moreOpen = ctx.tools.any { it.label == "Less" }
-    val compact = shortPanel && moreOpen
-    // (529l, KONKR x1.3 k529k3: with More open on the short panel the keys took six rows and the two info lines got no height.
-    // The panel takes a little more of the free middle while More is open - the big case on the left stays clear of it - so
-    // the keys pair up into fewer rows; it eases back when More closes, at once with animations off.)
-    val anim = rememberAnimationsEnabled()
-    val panelW by androidx.compose.animation.core.animateDpAsState(
-        if (compact) minOf(ctx.maxW * 0.56f, 600.dp) else minOf(ctx.maxW * 0.5f, 560.dp),
-        if (anim) androidx.compose.animation.core.tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-        else androidx.compose.animation.core.snap(), label = "coverPanelW"
-    )
+    val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
             // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
@@ -296,48 +287,135 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             .padding(start = 20.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
             // (Update 469, D215: the panel was 86 % opaque — the home screen's own title and facts, right under it, showed through
             // as a second faded title behind the keys (worst with More open at 1.3×). It hides what it covers now.)
-            // (Update 469, display size larger — KONKR at 280 dpi: with More open the keys ran past the panel's foot. A weighted name
-            // fixed that but took the whole free height — a big gap under the title, the facts (Year) squeezed out, and the title's
-            // re-fit drew a faded second copy. Now the name is simply smaller on a short panel and the facts give way first.)
-            // The keys are measured first (the block above them is the weighted one); inside it the name and console keep their
-            // natural height and the facts give way.
-            // (529l: compact keys also get a line of their own size - the theme's 24 sp line made each one 54 px tall at x1.3.)
-            val coverKey: @Composable (WinAction) -> Unit = { k ->
+            // (The pages' own keys - Play, Full list, Back - stay a row under the page.)
+            val pageKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
-                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp,
-                    lineHeight = if (compact) 13.sp else TextUnit.Unspecified)
+                    size = 12.sp, pad = 10.dp, height = 30.dp, lineHeight = 15.sp)
             }
             // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
-            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), coverKey) { live ->
-            Column(Modifier.weight(1f, fill = false)) {
-                // (529l: on the compact panel the two lines below are measured first and the name takes what is left - it fits
-                // itself to that room; before, the name took the room and the lines got none.)
-                if (compact) StableFullText(ctx.name, color = ink, fontSize = 20.sp, modifier = Modifier.weight(1f, fill = false), maxLines = 2,
-                    fontWeight = FontWeight.Bold, reserve = false)
-                else StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
-                // (The year beside the console: with More open the facts give way to the keys and the year went with them.)
-                // (Update 471: console and year are on this line — not repeated in the facts. With More open every fact moves up
-                // into two plain lines — console · year · maker · genre, then what you've played — so all of them stay in view over
-                // the extra keys, also with large text and display size larger (KONKR at 280 dpi left the label rows no room).)
-                Text(if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                    lineHeight = if (compact) 16.sp else TextUnit.Unspecified)
-                if (moreOpen) Text(coverPlayedLine(ctx), color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp),
-                    lineHeight = if (compact) 15.sp else TextUnit.Unspecified)
-                // (Update 471: the facts / story under the lines are what gives way — never the lines themselves. 529l: on the
-                // compact panel they give way wholly - the story is one key away on Details - instead of being laid out at no height.)
-                if (!compact) {
-                    Spacer(Modifier.height(if (moreOpen) 6.dp else 10.dp))
-                    Column(Modifier.weight(1f, fill = false)) {
-                        SceneFactsBody(ctx, muted, ink, null, omit = if (moreOpen) COVER_DETAIL_OMIT_MORE else COVER_DETAIL_OMIT, inline = moreOpen)
-                    }
-                }
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), pageKey) { _, keys ->
+                CoverMainBody(ctx, keys, a, ink, muted, shortPanel, moreOpen)
             }
-            Spacer(Modifier.height(8.dp))
-            // (Update 471, D244: KONKR at 280 dpi with More open — nine keys in six rows left the two lines above them 40 px short:
-            // the second line was cut and "Never played · 0 / 109 trophies" got no height. On a short panel with More open the
-            // keys are a little more compact — 26 dp tall (touch stays >= 24 dp), 4 dp apart — so both lines stay whole.)
-            KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, if (compact) 4.dp else 6.dp) { k -> coverKey(k) }
+        }
+    }
+}
+
+/**
+ * 529m (owner, #15 6865249152 - visual correction): Cover details' Info panel. The actions are ONE column of full-width bars -
+ * Play, Details, then with More: Options, Achievements, Save sync, Inspect - each as wide as the panel, the same height, the
+ * icons in one column; never two short keys packed in a row beside a long one alone. The save status is a full-width line of
+ * its own under them (not a key); the round ••• is last. The actions are measured first and are never cut or scrolled; the
+ * game's lines get the room above them, in this order of giving way:
+ *  1. name, lines (console · year, or with More every fact in two plain lines) and, More closed, the facts and story;
+ *  2. the lines without the name - the home screen shows the name in large type beside the case, uncovered;
+ *  3. with More open at large text on a short screen nothing above the actions: More is then the panel's list of actions
+ *     (the deliberate More mechanism); the facts are on Details, one bar away. Nothing is laid out at no height.
+ */
+@Composable
+private fun CoverMainBody(ctx: WinSceneCtx, keys: List<WinAction>, a: Color, ink: Color, muted: Color, shortPanel: Boolean, moreOpen: Boolean) {
+    val compact = shortPanel && moreOpen
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+    val base = androidx.compose.material3.LocalTextStyle.current
+    val nameSize = if (shortPanel) 20.sp else 24.sp
+    val nameLines = if (shortPanel) 2 else 3
+    val info = if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: "")
+    val played = if (moreOpen) coverPlayedLine(ctx) else null
+    androidx.compose.ui.layout.SubcomposeLayout(Modifier.fillMaxWidth()) { c ->
+        val w = c.maxWidth
+        val loose = androidx.compose.ui.unit.Constraints(maxWidth = w)
+        val gap = 10.dp.roundToPx()
+        val act = subcompose("actions") { CoverActionColumn(ctx, keys, a, ink, muted, compact) }.map { it.measure(loose) }
+        val actH = act.sumOf { it.height }
+        val bounded = c.hasBoundedHeight
+        val room = if (bounded) c.maxHeight - actH - gap else Int.MAX_VALUE
+        fun h(t: String, size: androidx.compose.ui.unit.TextUnit, lh: androidx.compose.ui.unit.TextUnit, weight: FontWeight, lines: Int = Int.MAX_VALUE) =
+            measurer.measure(t, base.merge(androidx.compose.ui.text.TextStyle(fontSize = size, lineHeight = lh, fontWeight = weight)),
+                maxLines = lines, constraints = androidx.compose.ui.unit.Constraints(maxWidth = w)).size.height
+        val linesH = h(info, 13.sp, 17.sp, FontWeight.SemiBold) + (played?.let { h(it, 12.sp, 16.sp, FontWeight.SemiBold) + 2.dp.roundToPx() } ?: 0)
+        // The name at its readable minimum on one line (StableFullText fits itself into what it gets, then slides).
+        val nameMin = h(ctx.name.take(1), fitMin(nameSize), fitMin(nameSize) * 1.2f, FontWeight.Bold, 1)
+        val variant = when {
+            linesH + nameMin <= room -> 0
+            linesH <= room -> 1
+            else -> 2
+        }
+        val head = if (variant == 2) emptyList() else subcompose("head$variant") {
+            CoverHeadLines(ctx, variant == 0, info, played, nameSize, nameLines, a, ink, muted)
+        }.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = w, maxHeight = if (bounded) room.coerceAtLeast(0) else androidx.compose.ui.unit.Constraints.Infinity)) }
+        val headH = head.sumOf { it.height }
+        // More closed: the facts and story under the lines, in what is left (they give way, as before - update 471).
+        val factsRoom = if (bounded) room - headH - 10.dp.roundToPx() else androidx.compose.ui.unit.Constraints.Infinity
+        val facts = if (!moreOpen && variant == 0 && factsRoom >= 28.dp.roundToPx()) subcompose("facts") {
+            Column(Modifier.fillMaxWidth()) { SceneFactsBody(ctx, muted, ink, null, omit = COVER_DETAIL_OMIT) }
+        }.map { it.measure(androidx.compose.ui.unit.Constraints(maxWidth = w, maxHeight = factsRoom)) } else emptyList()
+        val factsH = facts.sumOf { it.height }
+        val topH = headH + (if (factsH > 0) 10.dp.roundToPx() + factsH else 0)
+        val total = topH + (if (topH > 0) gap else 0) + actH
+        layout(w, if (bounded) minOf(total, c.maxHeight) else total) {
+            var y = 0
+            head.forEach { it.place(0, y); y += it.height }
+            if (factsH > 0) { y += 10.dp.roundToPx(); facts.forEach { it.place(0, y); y += it.height } }
+            if (topH > 0) y += gap
+            act.forEach { it.place(0, y); y += it.height }
+        }
+    }
+}
+
+/** 529m: the name (when [name]) and the panel's plain lines - console · year, or with More every fact and what you've played. */
+@Composable
+private fun CoverHeadLines(ctx: WinSceneCtx, name: Boolean, info: String, played: String?, nameSize: androidx.compose.ui.unit.TextUnit, nameLines: Int,
+    a: Color, ink: Color, muted: Color) {
+    Column(Modifier.fillMaxWidth()) {
+        if (name) StableFullText(ctx.name, color = ink, fontSize = nameSize, modifier = Modifier.weight(1f, fill = false), maxLines = nameLines,
+            fontWeight = FontWeight.Bold, lineHeight = nameSize * 1.2f, reserve = false)
+        // (Update 471: with More open every fact moves up into two plain lines - console · year · maker · genre, then what you've
+        // played. 529m: words kept together where a line can break evenly - no lone last word.)
+        Text(info, color = a, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold,
+            style = androidx.compose.material3.LocalTextStyle.current.copy(lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph))
+        if (played != null) Text(played, color = muted, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
+/**
+ * 529m (owner, #15): the panel's actions - full-width bars of one height, one action a bar, in the window's order; then the
+ * save status as a full-width line (its icon level with its first line, the words kept whole); the round ••• last.
+ */
+@Composable
+private fun CoverActionColumn(ctx: WinSceneCtx, keys: List<WinAction>, a: Color, ink: Color, muted: Color, compact: Boolean) {
+    val more = keys.filter(PopupLab::isMore)
+    val status = keys.filter { k -> k !in more && ctx.chips.any { it.label == k.label } }
+    val bars = keys.filter { it !in more && it !in status }
+    val barH = if (compact) 28.dp else 32.dp
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 6.dp)) {
+        bars.forEach { k ->
+            SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
+                size = 12.sp, pad = 12.dp, height = barH, lineHeight = 15.sp, wide = true)
+        }
+        status.forEach { k -> CoverStatusLine(k, a, ink, muted) }
+        more.forEach { k ->
+            SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
+                size = 12.sp, pad = 10.dp, height = barH, lineHeight = 15.sp)
+        }
+    }
+}
+
+/** 529m: the save status as information - a quiet full-width line, not a key-shaped label; still a stop for A / a tap (it opens sync). */
+@Composable
+private fun CoverStatusLine(k: WinAction, a: Color, ink: Color, muted: Color) {
+    SceneControl(k, Modifier.fillMaxWidth()) { on ->
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (on) a.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.035f))
+                .border(if (on) 2.dp else 0.dp, if (on) a else Color.Transparent, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(Modifier.width(18.dp).padding(top = 1.dp), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.Icon(k.icon, null, tint = if (k.urgent) Color(0xFFFF8A3D) else muted, modifier = Modifier.size(14.dp))
             }
+            Spacer(Modifier.width(10.dp))
+            Text(k.label, color = if (k.urgent) Color(0xFFFF8A3D) else if (on) ink else muted, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+                style = androidx.compose.material3.LocalTextStyle.current.copy(lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph))
         }
     }
 }

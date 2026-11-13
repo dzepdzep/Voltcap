@@ -63,10 +63,11 @@ internal fun ShelfFamilyPages(
     ink: Color,
     well: Color,
     key: @Composable (WinAction) -> Unit,
-    main: @Composable ColumnScope.(live: Boolean) -> Unit
+    main: @Composable ColumnScope.(live: Boolean, keys: List<WinAction>) -> Unit
 ) {
     val anim = rememberAnimationsEnabled()
     val tabs = SHELF_TABS.filter { it in ctx.pages }
+    val keysOf = rememberPageKeys(ctx)
     AnimatedContent(
         targetState = ctx.page,
         transitionSpec = {
@@ -91,7 +92,8 @@ internal fun ShelfFamilyPages(
         label = "shelfPage"
     ) { p ->
         val live = p == ctx.page
-        if (p == WinPage.MAIN) Column { main(live) }
+        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
+        if (p == WinPage.MAIN) Column { main(live, keysOf(p, live)) }
         else Column(Modifier.height(shelfPageHeight(ctx.maxH))) {
             Text(winPageTitle(p).uppercase(), color = label, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
             StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
@@ -103,7 +105,27 @@ internal fun ShelfFamilyPages(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { key(it) }
+            KeyRow(keysOf(p, live), 6.dp) { key(it) }
+        }
         }
     }
+}
+
+/**
+ * 529m (KONKR frame review k529l2): the page a native page scene's copy is drawing - the leaving copy of a page change draws
+ * its own page, not the one that is opening (Game shelf's leaving Info card showed the Details body with a second cover for
+ * the whole change). Null outside a page change: [WinSceneCtx.page].
+ */
+internal val LocalShownPage = androidx.compose.runtime.compositionLocalOf<WinPage?> { null }
+
+/**
+ * 529m: each page's own keys as they last were while it was open, for the copy that is leaving (its keys were the opening
+ * page's: Details' card showed "Full list"). Inert for a copy that is not live (WinAction.inert).
+ */
+@Composable
+internal fun rememberPageKeys(ctx: WinSceneCtx): (WinPage, Boolean) -> List<WinAction> {
+    val seen = androidx.compose.runtime.remember { HashMap<WinPage, List<WinAction>>() }
+    val now = sceneKeys(ctx)
+    seen[ctx.page] = now
+    return { p, live -> (if (p == ctx.page) now else seen[p] ?: now).map { if (live) it else it.inert() } }
 }

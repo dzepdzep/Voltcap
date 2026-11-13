@@ -247,7 +247,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
                 SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
             }
             ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp), Color(0xFFE6C891), cream,
-                Color.Black.copy(alpha = 0.22f), shelfKey) { live ->
+                Color.Black.copy(alpha = 0.22f), shelfKey) { live, keys ->
                 // The console on the shelf's brass label holder.
                 Text(ctx.console.uppercase(), color = Color(0xFF2A1E12), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.clip(RoundedCornerShape(2.dp)).background(Brush.verticalGradient(listOf(Color(0xFFE6C891), Color(0xFFB08A50))))
@@ -257,7 +257,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(8.dp))
                 Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, label, cream, null, omit = setOf("Console")) }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> shelfKey(k) }
+                KeyRow(keys, 6.dp) { k -> shelfKey(k) }
             }
         }
     }
@@ -292,14 +292,14 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
             val stackKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
             }
-            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), stackKey) { live ->
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), stackKey) { live, keys ->
                 Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(2.dp))
                 StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                 Spacer(Modifier.height(8.dp))
                 Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console", "Year")) }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> stackKey(k) }
+                KeyRow(keys, 6.dp) { k -> stackKey(k) }
             }
         }
     }
@@ -372,6 +372,7 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
             // Popup motion work (Tiles, owner-approved direction): the card's writing turns over like a tile for each page - the
             // old side turns away, the new one turns in, right to left going forward, left to right going back - while the lifted
             // tile and the card stay. Details / Achievements / Options are the card's own pages (no other design).
+            val tileKeys = rememberPageKeys(ctx)
             androidx.compose.animation.AnimatedContent(
                 targetState = ctx.page,
                 transitionSpec = {
@@ -399,17 +400,20 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
                     alpha = if (kotlin.math.abs(turn) >= 89.5f) 0f else 1f
                     flatTextFor3d()
                 }) {
+                    // (529m: the side that is turning away draws its own page and keys - LocalShownPage, rememberPageKeys.)
+                    androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
                     if (p == WinPage.MAIN) {
                         StableFullText(ctx.name, color = ink, fontSize = (20f * type).sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                         Text(ctx.console, color = a, fontSize = (12f * type).sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(8.dp))
                         Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, upperLabels = false, omit = setOf("Console"), scale = type) }
                         Spacer(Modifier.height(10.dp))
-                        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+                        KeyRow(tileKeys(p, live), 6.dp) { k ->
                             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
                         }
-                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact, (ctx.maxH * 0.86f - lift).coerceAtLeast(tileH))
+                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact, (ctx.maxH * 0.86f - lift).coerceAtLeast(tileH), tileKeys(p, live))
+                    }
                 }
             }
         }
@@ -435,7 +439,8 @@ internal val TILE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES,
  * in a soft tile of the card's ground, the page's keys as the card's round keys. Taller than Info so the page has room.
  */
 @Composable
-private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp) {
+private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp,
+    keys: List<WinAction> = sceneKeys(ctx).map { if (live) it else it.inert() }) {
     Column(Modifier.height(height)) {
         Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
         StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
@@ -444,7 +449,7 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
             ctx.pageFor(p, Modifier.fillMaxSize(), live)
         }
         Spacer(Modifier.height(10.dp))
-        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+        KeyRow(keys, 6.dp) { k ->
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
         }

@@ -292,7 +292,8 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
     }
     val unsent = (probe?.first ?: 0) > 0
     val sending = if (com.shelf.launcher.data.SaveObserver.watchingKey() == g.stableKey) " · sending soon" else ""
-    if (!s.connected) return GameSyncView("Save sync isn't set up", SyncLook.OFF, setUp = true)
+    // (529m, owner #15: "Save sync is not set up" - complete and plain; the line no longer repeats "Saves:" before it.)
+    if (!s.connected) return GameSyncView("Save sync is not set up", SyncLook.OFF, setUp = true)
     if (!s.syncSaves) return GameSyncView("Save sync is off", SyncLook.OFF, setUp = true)
     if (g.sourceType != SourceType.ROM) return GameSyncView("No save sync for apps", SyncLook.OFF, inert = true)
     if (syncOn == false) return GameSyncView("Save sync off for this game", SyncLook.OFF)
@@ -329,4 +330,7 @@ internal fun rememberGameSyncView(g: Game, syncOn: Boolean?): GameSyncView {
  * Update 469: the save line's words without "Saves: Saves up to date" — the status already starts with "Saves"; shorter, so it
  * wraps less often in a narrow window (Cover details at 1.3×).
  */
-internal fun savesLabel(t: String): String = "Saves: " + if (t.startsWith("Saves ")) t.removePrefix("Saves ") else t
+internal fun savesLabel(t: String): String =
+    // (529m, owner #15 6865249152: "Saves: Save sync isn't set up" said it twice. A status that already names the saves or
+    // the sync stands as it is; only one that doesn't ("Not checked yet", "Offline · will retry") gets "Saves:" before it.)
+    if (Regex("\\b(saves?|sync)\\b", RegexOption.IGNORE_CASE).containsMatchIn(t)) t else "Saves: $t"

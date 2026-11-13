@@ -9,6 +9,6 @@
   "AIRY": "FAIL readability x1.0 (q0672k2, q0672k3) - fixed in code ff043d51, rerun pending",
   "STACKS": "PASS x1.0 (k529k1); PASS x1.3 (k529k2)",
   "CONSOLES": "PASS x1.0 (k529k1); x1.3 FAIL More open (k529k2) - fixed c1bde53c, PASS x1.3 (k529k3)",
-  "COVERDETAILS": "PASS x1.0 (k529k1); x1.3 FAIL More open: info lines no height (k529k2, k529k3) - fixed in code 529l, rerun pending"},
+  "COVERDETAILS": "529m full-width action bars (owner #15): PASS x1.3 (k529m1), PASS x1.0 (k529m2); before: x1.3 FAIL (k529k3). Open: touch then L1 / R1, pages at x1.3 (docs/qa-evidence/529m)"},
  "owner_visual": {}
 }

@@ -168,11 +168,11 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
                 else SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
                     Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp)
             }
-            TwinTouchPages(ctx, desk, Modifier.weight(1f, fill = false), twinKey) { live ->
+            TwinTouchPages(ctx, desk, Modifier.weight(1f, fill = false), twinKey) { live, keys ->
                 // (The keys are measured first — not weighted — so their wrapped lines are always whole; the facts get the rest.)
                 Column(Modifier.heightIn(min = 130.dp), verticalArrangement = Arrangement.SpaceBetween) {
                     Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) { HingeFacts(ctx, muted, ink) }
-                    KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }) { k -> twinKey(k) }
+                    KeyRow(keys) { k -> twinKey(k) }
                 }
             }
         }
@@ -191,10 +191,11 @@ internal fun twinTopPageHeight(h: Dp, topMain: Dp): Dp = (h * 0.22f).coerceIn(76
 @Composable
 internal fun TwinTouchPages(
     ctx: WinSceneCtx, desk: Boolean, modifier: Modifier, key: @Composable (WinAction) -> Unit,
-    main: @Composable (live: Boolean) -> Unit
+    main: @Composable (live: Boolean, keys: List<WinAction>) -> Unit
 ) {
     val anim = rememberAnimationsEnabled()
     val tabs = SHELF_TABS.filter { it in ctx.pages }
+    val keysOf = rememberPageKeys(ctx)
     androidx.compose.animation.AnimatedContent(
         targetState = ctx.page,
         transitionSpec = {
@@ -216,7 +217,8 @@ internal fun TwinTouchPages(
         label = "twinPage"
     ) { p ->
         val live = p == ctx.page
-        if (p == WinPage.MAIN) main(live)
+        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
+        if (p == WinPage.MAIN) main(live, keysOf(p, live))
         else Column(Modifier.fillMaxSize()) {
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(10.dp))
                 .background(if (desk) Color(0xFFF2F5F8) else Color.White.copy(alpha = 0.05f))
@@ -226,7 +228,8 @@ internal fun TwinTouchPages(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }) { k -> key(k) }
+            KeyRow(keysOf(p, live)) { k -> key(k) }
+        }
         }
     }
 }

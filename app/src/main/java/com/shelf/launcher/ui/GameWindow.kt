@@ -1222,6 +1222,15 @@ internal fun GameWindow(
         // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
         val keyView = androidx.compose.ui.platform.LocalView.current
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(20); KeyInput.leaveTouchMode(keyView) }
+        // (529m, KONKR k529l3 with the QA trace: after a tap on an Achievements row, R1 / L1 / A reached nothing - no "winkey"
+        // at all - until B closed the window. Android's touch mode took the focus from the window's view, which is not focusable
+        // in touch mode, so the controller's buttons had nowhere to go. The window's view keeps its focus through a touch now;
+        // touch itself is unchanged.)
+        androidx.compose.runtime.DisposableEffect(keyView) {
+            val was = keyView.isFocusableInTouchMode
+            keyView.isFocusableInTouchMode = true
+            onDispose { keyView.isFocusableInTouchMode = was }
+        }
         // Update 122: always opens on Play / Continue. The window can take a moment to get the focus
         // (from a touch, or picked on the second screen): ask again until something in it has the focus.
         var focusInside by remember { mutableStateOf(false) }
@@ -2346,7 +2355,7 @@ private fun SceneBody(
         earned = earned, total = total,
         page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
         buttons = buttons, tools = tools, chips = chips, close = onClose,
-        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
+        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && (page == WinPage.MAIN || nativePages(scene))) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
         closing = closing,
         pageBody = { m ->
             when (page) {
@@ -2394,12 +2403,14 @@ private fun SceneBody(
     // (529l, KONKR page walk k529s1, frame by frame: Info -> Details changed in one frame in all four shelf layouts while the
     // later page changes moved. Leaving the main page moved the scene from this branch to the plain one below - a new
     // composition, so the scene's own page motion started from nothing. A layout that draws its own pages stays in this
-    // branch on every page; the hint shows on the main page only, as before.)
+    // branch on every page.)
     else if (labActions && (page == WinPage.MAIN || nativePages(scene))) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
         // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
         // The hint is measured first; the scene gets the rest.)
         Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
-        if (page == WinPage.MAIN) LabBackHint(onClose, Modifier.padding(top = 4.dp))
+        // (529m, frame review k529l2: on a page the hint's room went to the scene, so the case and card jumped at the first
+        // frame of Info -> Details. A layout with its own pages keeps the hint - and its room - on every page.)
+        LabBackHint(onClose, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)
 }

@@ -123,7 +123,7 @@ hardware on both handhelds, and your visual approval. Facts in `tools/popup_audi
 | 49 | `TERMINAL` Terminal | own (`TERM_RUN`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
 | 50 | `CINEMA` Cinema | own (`CINEMA_PREMIERE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
 | 51 | `ARCTIC` Arctic hub | own (`ARCTIC_DRAWER`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
-| 52 | `COVERDETAILS` Coverflow details | own (`INDEX_CARD`) | NATIVE | PICKUP: piece flight (the cases piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | PASS x1.0 (k529k1); x1.3 FAIL More open: info lines no height (k529k2, k529k3) - fixed in code 529l, rerun pending | none | pending | no |
+| 52 | `COVERDETAILS` Coverflow details | own (`INDEX_CARD`) | NATIVE | PICKUP: piece flight (the cases piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | 529m full-width action bars (owner #15): PASS x1.3 (k529m1), PASS x1.0 (k529m2); before: x1.3 FAIL (k529k3). Open: touch then L1 / R1, pages at x1.3 (docs/qa-evidence/529m) | none | pending | no |
 | 53 | `ARTLIB` Artwork library | own (`GALLERY_PLACARD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
 
-Counts: own window 52 / 53; native pages 12 / 53; physical homes with a real pickup 11 / 14; KONKR small-screen pass 12 / 53; hardware (Flip 2) 10 / 53; your visual approval 0 / 53; COMPLETE 0 / 53.
+Counts: own window 52 / 53; native pages 12 / 53; physical homes with a real pickup 11 / 14; KONKR small-screen pass 11 / 53; hardware (Flip 2) 10 / 53; your visual approval 0 / 53; COMPLETE 0 / 53.
