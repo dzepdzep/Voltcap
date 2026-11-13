@@ -2604,6 +2604,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         games.forEachIndexed { i, g ->
             artOverridesStore.set(g.stableKey, ArtSlot.COVER, if (i % 3 == 2) null else "$dir/cover_${i % 6}.png")
             artOverridesStore.set(g.stableKey, ArtSlot.LOGO, if (i % 2 == 0) (if (i % 6 == 4) "$dir/logo_missing.png" else "$dir/logo_${i % 4}.png") else null)
+            if (i % 4 == 3) android.util.Log.e("VoltcapQA", "achfix n=0 game=${g.name}")
             if (i % 4 != 3) {
                 overridesStore.setRaId(g.stableKey, 990000 + i)
                 // (Achievements compact hotfix, update 529: sets of 1, 10 and 120 achievements - one game in eight has one, one in
@@ -2624,6 +2625,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
                 progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = n, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
+                android.util.Log.e("VoltcapQA", "achfix n=$n game=${g.name}") // (QA scripts pick a game per set size)
             }
         }
         // (Batch 523t: and, three games in four, details as a scraper gives them - year, studio, genre, a story of a few
