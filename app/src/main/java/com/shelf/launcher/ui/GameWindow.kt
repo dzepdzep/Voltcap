@@ -2772,9 +2772,9 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
                 (if (look.caps) "COMMENTS" else "Comments") + (comments?.let { "  ${it.size}" } ?: ""), color = rowInk, fontSize = 12.sp,
                 fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
             )
-            androidx.compose.material3.Text(if (commentsOpen) "▴" else "▾", color = rowInk, fontSize = 12.sp)
+            AchChevron(commentsOpen, rowInk)
         }
-        if (commentsOpen) when {
+        AchPanelBody(commentsOpen) { Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { when {
             comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close Comments and open them again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
@@ -2787,7 +2787,7 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
                     androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
-        }
+        } } }
     }
 }
 

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -35,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -520,7 +523,11 @@ internal fun AchPanelBody(open: Boolean, content: @Composable () -> Unit) {
         exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.tween(ACH_FOLD_MS - 30), shrinkTowards = Alignment.Top) +
             androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(ACH_FOLD_MS - 60))
     ) {
-        Column(Modifier.fillMaxWidth().padding(top = 6.dp)) { content() }
+        // (What opens is brought into view once it has grown - details under the last row, comments under a detail - so the
+        // list scrolls to it instead of opening it off screen.)
+        val bring = androidx.compose.runtime.remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(ACH_FOLD_MS + 30L); runCatching { bring.bringIntoView() } }
+        Column(Modifier.fillMaxWidth().bringIntoViewRequester(bring).padding(top = 6.dp)) { content() }
     }
 }
 
@@ -542,9 +549,18 @@ internal fun AchFoldHeader(title: String, open: Boolean, count: String? = null, 
         Text(title.uppercase(), color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         if (count != null) { Spacer(Modifier.width(6.dp)); Text(count, color = ShelfTheme.textMuted, fontSize = 10.sp) }
         Spacer(Modifier.weight(1f))
-        Text(if (open) "▴" else "▾", color = ShelfTheme.textMuted, fontSize = 12.sp)
+        AchChevron(open, ShelfTheme.textMuted)
     }
 }
+
+/** The fold's chevron (as FoldGroup draws it): down when closed, up when open. */
+@Composable
+internal fun AchChevron(open: Boolean, tint: Color) {
+    Icon(androidx.compose.material.icons.Icons.Filled.ExpandMore, if (open) "Close" else "Open", tint = tint,
+        modifier = Modifier.size(20.dp).graphicsLayerRotate(if (open) 180f else 0f))
+}
+
+private fun Modifier.graphicsLayerRotate(deg: Float) = this.then(Modifier.graphicsLayer { rotationZ = deg })
 
 private enum class RaritySort(val label: String, val needsRarity: Boolean = false) {
     UNLOCKED_FIRST("Unlocked first"), TIMELINE("Timeline"), SET("Set order"),
