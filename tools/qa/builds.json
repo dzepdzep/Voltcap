@@ -803,6 +803,17 @@
    "apk_sha256": "c4f1be8761518575a42ac0b1b383272e92ff27196a88e85e01355081fedf1031",
    "base_commit": "fd7bcc52",
    "note": "Update 529b: ••• after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 8b18aaaf (worktree int; integration/0.6.72 1983ac72 + 3 repair commits)",
+   "id": "qa-0.6.72-repair-8b18aaaf",
+   "apk_sha256": "facac8dc0a9452617b67f2ef83b614deb68973ee232fce936e1818b0223dcfff",
+   "base_commit": "8b18aaaf",
+   "note": "Update 529h: assembleQa in worktree int 13 Nov 16:30Z (BUILD SUCCESSFUL 2m 42s, verifyQaIsolation + verifyNoEmbeddedSecrets); testDebugUnitTest on 8b18aaaf 2568 tests, 0 failures, 75 skipped. apksigner: CN=Android Debug, SHA-256 a48b27ed. sha256 = installed base.apk on the Flip 2 and KONKR (install_build 13 Nov 17:31 device time)."
   }
  ]
 }

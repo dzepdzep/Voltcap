@@ -1703,12 +1703,18 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         AiryLcd(ctx.cover, if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
                     }
                     Spacer(Modifier.height(10.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        listOfNotNull(ctx.year, ctx.developer, ctx.genres, "Played " + ctx.played, if (ctx.total > 0) "★ ${ctx.earned} / ${ctx.total}" else null).forEach {
+                    // (Update 529i, KONKR q0672k2: a long maker and genre took the chips to a third row, which the FlowRow never
+                    // placed - "★ 8 / 10" was gone, and with More open "Played" too. Played and ★ now share one chip, and with
+                    // More open the facts are two plain lines (as Cover details' window), so every fact stays in view.)
+                    val facts = airyFacts(ctx.year, ctx.developer, ctx.genres, ctx.played, ctx.earned, ctx.total)
+                    if (secondary.isEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        facts.forEach {
                             Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFE9EFF6)).padding(horizontal = 12.dp, vertical = 4.dp)) {
                                 Text(it, color = Color(0xFF55606F), fontSize = 12.sp, maxLines = 1)
                             }
                         }
+                    } else Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), 12.sp, maxLines = 1, reserve = false) }
                     }
                     // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
                     // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)
@@ -1739,6 +1745,14 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         }
     }
 }
+
+/** Update 529i: Airy's facts - year, maker, genre, then what you've played with the trophies in the same fact. */
+internal fun airyFacts(year: String?, developer: String?, genres: String?, played: String, earned: Int, total: Int): List<String> =
+    listOfNotNull(year, developer, genres, "Played " + played + (if (total > 0) " · ★ $earned / $total" else ""))
+
+/** Update 529i: with More open, the facts as two plain lines - everything but the last joined, then the last (played, ★). */
+internal fun airyFactLines(facts: List<String>): List<String> =
+    if (facts.size <= 1) facts else listOf(facts.dropLast(1).joinToString(" · "), facts.last())
 
 /** Update 477 (D266): Airy's bottom-row tools (Inspect, More / Less) and the ones More shows (the pill row). */
 internal fun airySplit(tools: List<WinAction>): Pair<List<WinAction>, List<WinAction>> {
