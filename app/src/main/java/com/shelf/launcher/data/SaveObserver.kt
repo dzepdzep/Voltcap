@@ -94,8 +94,49 @@ object SaveObserver {
         val started = SystemClock.elapsedRealtime()
         job = scope.launch {
             runCatching { CloudSync.watchDirs(app, g) }.getOrDefault(emptyList()).forEach { dir -> observe(dir) }
-            watch(app, g, started)
+            watch(app, g.key, started, Probe(
+                changed = { CloudSync.changedSaves(app, g) },
+                active = { CloudSync.isActive(app) },
+                send = { SaveNowWorker.enqueue(app, g) },
+                remote = { CloudSync.probeRemote(app, g).let { o -> if (o.remoteNewer > 0) o.remoteFrom ?: "" else null } },
+                name = g.name
+            ))
         }
+    }
+
+    /** What the watch loop looks at and does - Drive's saves, or (isolated QA app) the dry run in [QaSaveDryRun]. */
+    internal class Probe(
+        val changed: suspend () -> List<CloudSync.ChangedSave>,
+        val active: () -> Boolean,
+        val send: suspend () -> Unit,
+        /** Another handheld's newer save on Drive: its device (blank when unknown), else null. */
+        val remote: (suspend () -> String?)?,
+        val name: String
+    )
+
+    /**
+     * Mid-game sync, update 529 - isolated QA app only: the same watch loop (file events, polling, settling, the restart after the
+     * process was ended) on a synthetic save folder, with the upload replaced by a local copy that is checked the way Drive's
+     * checksum is ([QaSaveDryRun]). It measures what can be measured without your Google account: write -> found -> settled ->
+     * snapshot verified.
+     */
+    @Synchronized
+    fun startDry(context: Context, dir: File): Boolean {
+        val app = context.applicationContext
+        if (!QaVariant.isolated(app)) return false
+        if (watching == QaSaveDryRun.KEY && job?.isActive == true) return true
+        stop()
+        dir.mkdirs()
+        watching = QaSaveDryRun.KEY
+        until = Long.MAX_VALUE
+        val started = SystemClock.elapsedRealtime()
+        job = scope.launch {
+            observe(dir)
+            watch(app, QaSaveDryRun.KEY, started, Probe(
+                changed = { QaSaveDryRun.changed(dir) }, active = { true }, send = { QaSaveDryRun.upload(dir) }, remote = null, name = "QA dry run"
+            ))
+        }
+        return true
     }
 
     internal const val NOT_WRITTEN_YET = "No new save written to disk since the game started"
@@ -130,7 +171,7 @@ object SaveObserver {
         runCatching { o.startWatching(); synchronized(this) { observers += o } }
     }
 
-    private suspend fun watch(app: Context, g: CloudSync.ScopedGame, started: Long) {
+    private suspend fun watch(app: Context, key: String, started: Long, p: Probe) {
         var lastSig: String? = null
         var sentSig: String? = null
         var remoteAt = SystemClock.elapsedRealtime()
@@ -144,17 +185,17 @@ object SaveObserver {
             val woke = withTimeoutOrNull(wait) { wake.receive() } != null
             // A burst of events (one save written in several steps): wait for it to go quiet first.
             if (woke) while (withTimeoutOrNull(SETTLE_MS) { wake.receive() } != null) Unit
-            if (!CloudSync.isActive(app)) continue
-            val changed = runCatching { CloudSync.changedSaves(app, g) }.getOrDefault(emptyList())
+            if (!p.active()) continue
+            val changed = runCatching { p.changed() }.getOrDefault(emptyList())
             if (changed.isEmpty()) {
                 lastSig = null
                 // (Mid-game sync, update 529: now and then, with nothing of ours pending, look whether another handheld put a newer
                 // save of this game on Drive. Never applied while the game runs (upload-only); a discreet note once, and the
                 // after-game sync / Play's check bring it in when the emulator has closed.)
-                if (awake && SystemClock.elapsedRealtime() - remoteAt >= REMOTE_MS) {
+                if (p.remote != null && awake && SystemClock.elapsedRealtime() - remoteAt >= REMOTE_MS) {
                     remoteAt = SystemClock.elapsedRealtime()
-                    val o = runCatching { CloudSync.probeRemote(app, g) }.getOrNull()
-                    if (o != null && o.remoteNewer > 0 && !told) { told = true; SyncNotifier.remoteNewer(app, g.key, g.name, o.remoteFrom) }
+                    val from = runCatching { p.remote.invoke() }.getOrNull()
+                    if (from != null && !told) { told = true; SyncNotifier.remoteNewer(app, key, p.name, from.ifBlank { null }) }
                 }
                 continue
             }
@@ -163,18 +204,18 @@ object SaveObserver {
             val newest = changed.maxOf { it.modified }
             val settled = sig == lastSig && System.currentTimeMillis() - newest >= SETTLE_MS
             if (!settled && sig != lastSig && sig != sentSig) {
-                SaveSyncTrace.mark(g.key, "detected", newest)
-                SyncStatusStore.update(app, g.key) { it.copy(state = SyncState.PENDING, message = "New save found — waiting for the file to settle", updatedAt = System.currentTimeMillis()) }
+                SaveSyncTrace.mark(key, "detected", newest)
+                SyncStatusStore.update(app, key) { it.copy(state = SyncState.PENDING, message = "New save found — waiting for the file to settle", updatedAt = System.currentTimeMillis()) }
             }
             lastSig = sig
             if (!settled || sig == sentSig) continue
             sentSig = sig
-            SaveSyncTrace.mark(g.key, "settled", newest)
-            SyncStatusStore.update(app, g.key) { it.copy(state = SyncState.PENDING, message = "New save — waiting to upload", updatedAt = System.currentTimeMillis()) }
-            SaveNowWorker.enqueue(app, g)
+            SaveSyncTrace.mark(key, "settled", newest)
+            SyncStatusStore.update(app, key) { it.copy(state = SyncState.PENDING, message = "New save — waiting to upload", updatedAt = System.currentTimeMillis()) }
+            p.send()
         }
         synchronized(this) {
-            if (watching == g.key) { observers.forEach { runCatching { it.stopWatching() } }; observers.clear(); watching = null }
+            if (watching == key) { observers.forEach { runCatching { it.stopWatching() } }; observers.clear(); watching = null }
         }
     }
 }
