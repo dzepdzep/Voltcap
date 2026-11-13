@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
+Last reconciled **13 Nov 2026 (update 529c: section 0 and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -12,6 +12,20 @@ Statuses:
 - **OPEN**: reproducible and not fixed.
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
+
+## 0. Update 529 / 529b / 529c (13 Nov 2026) - newest; the full per-request view is docs/REQUEST_COVERAGE_529.md
+
+| Item | Status | Evidence / next |
+|---|---|---|
+| Save sync P0 + mid-game uploads (`fix/save-sync`) | IMPL + PC TESTED; **not released** | PC testDebugUnitTest green; Flip 2 dry run (8.2 s, 30.5 s after process death). Real Drive E2E: BLOCKED-OWNER (QA app OAuth client + sign-in, SAVE_SYNC_529 §8) |
+| 529c: last-moment upload race, multi-file manifest, Google-clock "Newest", Earlier versions restore, restart-safe sessions, QaDriveTest | IMPL, JVM-tested (35 tests incl. 2 new simulation scenarios, mutation-checked); **not compiled for Android** | PC build + tests when the PC link is back |
+| ••• last in every popup (529b) | DONE on Flip 2 (popclip 10 + 6 + 4 layouts PASS), owner-approved | KONKR sweep: BLOCKED-HW |
+| Moonlight motion (529b) | DONE on Flip 2, owner keeps it | KONKR: BLOCKED-HW |
+| Compact Achievements (529b) | DONE on Flip 2 (ach_after4), owner-approved | KONKR ×1.0 / ×1.3: BLOCKED-HW; Steam page: BLOCKED-OWNER (no Steam data in the QA app) |
+| Storage "INFO before PLAY" (popclip hierarchy) | CLOSED: checker false positive (page tabs); gate fixed 04abd6a2, selftest | mlast529c PASS |
+| Spotlight SELECT glyph "40 px off centre" | CLOSED: checker false positive (see-through pill); glyphcheck fixed 04abd6a2, selftest | Pocket ribbon START 3 px still to re-grade |
+| D298 Airy no-art title white on white | IMPL (e68e300d), not built | PC build + Flip 2 screenshot |
+| integration/0.6.72 (popup-native + save sync + blur) | PREPARED in cloud (f52f21e9) | PC build, CI; push needs the push tool allow-list (PC) or the owner |
 
 ## Protected baselines (regression only, never redo)
 

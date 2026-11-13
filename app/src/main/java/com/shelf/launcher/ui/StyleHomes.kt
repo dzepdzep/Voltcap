@@ -1200,10 +1200,10 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
-internal fun StyleNamePlate(name: String) {
+internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f)) {
     Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
         FullText(
-            name, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+            name, color = color, fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
             textAlign = TextAlign.Center, maxLines = 4
         )
     }
