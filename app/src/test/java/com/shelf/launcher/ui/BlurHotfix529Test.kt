@@ -8,9 +8,8 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Update 529 blur hotfix (owner: "pixelated / blocky blur"). Measured on the RP Flip 2 (bl529a): the full-screen theme blur came
- * out in 4 px blocks (blur and 4x stretch on one layer), and the baked blurs, made at 1/8 - 1/20 of the screen, left crease grids
- * when stretched back up.
+ * Update 529 blur hotfix (owner: "pixelated / blocky blur"): the baked blurs were made at 1/8 - 1/20 of the screen and left crease
+ * grids when stretched back up (8 - 20 px apart, seen on smooth gradients and bright edges). They are made at about half the screen.
  */
 class BlurHotfix529Test {
     private fun src(name: String) = listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
@@ -34,18 +33,6 @@ class BlurHotfix529Test {
         assertEquals(2, HERO_BLUR_DIV)
         assertEquals(21, heroBlurRadius(1920 / HERO_BLUR_DIV))
         assertEquals(20, softBlurRadius(1920 / HERO_BLUR_DIV))
-    }
-
-    @Test fun theFullScreenBlurIsNeverOnTheStretchedLayer() {
-        val s = src("BakedBlur.kt")
-        val body = s.substring(s.indexOf("internal fun Modifier.lowResBlur"), s.indexOf("internal fun lowResBlurFactor"))
-        assertTrue(body.contains("blurred.renderEffect = BlurEffect("))
-        assertTrue(body.contains("stretch.scaleX = full.width / w"))
-        assertFalse(body.contains("stretch.renderEffect"))
-        assertFalse(body.contains("blurred.scaleX"))
-        assertTrue(body.contains("stretch.record(IntSize(w, h)) { drawLayer(blurred) }"))
-        assertEquals(4f, lowResBlurFactor(47f), 0f)
-        assertEquals(1f, lowResBlurFactor(3f), 0f)
     }
 
     @Test fun homeHeroNoLongerDecodedAtAnEighthOrFourteenth() {

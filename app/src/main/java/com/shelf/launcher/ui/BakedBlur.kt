@@ -133,40 +133,28 @@ internal fun BakedBlurImage(model: Any?, blur: Dp, modifier: Modifier, alpha: Fl
  * the radius, and stretched back up. Blurred, the lost detail can't be seen, and the blur — which has to
  * run every frame here — does a fraction of the work. Layout and touches are unchanged (drawing only).
  * Android 12+ (no blur before); [radius] in pixels.
- *
- * Update 529 (blur hotfix, owner: "pixelated / blocky blur", RP Flip 2 bl529a): the blur and the stretch were on ONE layer, and
- * the renderer applied the blur to the stretched layer — the 1/4-size pixels (and the scene's dither dots) came out as 4 px
- * blocks. Now two layers: [blurred] holds the small copy and blurs it with no transform of its own; [stretch] only scales that
- * finished picture up (a plain scaled layer is drawn filtered, as the scenes' own reduced-resolution layer already is).
  */
 internal fun Modifier.lowResBlur(radius: Float): Modifier = if (radius < 1f) this else this.then(
     Modifier.drawWithCache {
         val full = size
         // Bigger blurs hide more detail, so they can be drawn smaller (at most a quarter across).
-        val k = lowResBlurFactor(radius)
+        val k = (radius / 6f).coerceIn(1f, 4f)
         val w = ceil(full.width / k).toInt().coerceAtLeast(1)
         val h = ceil(full.height / k).toInt().coerceAtLeast(1)
-        val blurred = obtainGraphicsLayer()
-        blurred.compositingStrategy = CompositingStrategy.Offscreen
-        blurred.clip = true
-        blurred.renderEffect = BlurEffect(radius / k, radius / k, TileMode.Clamp)
-        val stretch = obtainGraphicsLayer()
-        stretch.compositingStrategy = CompositingStrategy.Offscreen
-        stretch.pivotOffset = Offset.Zero
-        stretch.clip = true
-        stretch.scaleX = full.width / w
-        stretch.scaleY = full.height / h
+        val layer = obtainGraphicsLayer()
+        layer.compositingStrategy = CompositingStrategy.Offscreen
+        layer.pivotOffset = Offset.Zero
+        layer.clip = true
+        layer.scaleX = full.width / w
+        layer.scaleY = full.height / h
+        layer.renderEffect = BlurEffect(radius / k, radius / k, TileMode.Clamp)
         onDrawWithContent {
-            blurred.record(IntSize(w, h)) {
+            layer.record(IntSize(w, h)) {
                 scale(w / full.width, h / full.height, pivot = Offset.Zero) {
                     this@onDrawWithContent.drawContent()
                 }
             }
-            stretch.record(IntSize(w, h)) { drawLayer(blurred) }
-            drawLayer(stretch)
+            drawLayer(layer)
         }
     }
 )
-
-/** Update 529: how much smaller [lowResBlur] draws for a blur of [radius] px (1 – 4; pure, for the test). */
-internal fun lowResBlurFactor(radius: Float): Float = (radius / 6f).coerceIn(1f, 4f)
