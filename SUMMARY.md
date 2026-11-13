@@ -1,3 +1,16 @@
+# Save sync P0 (update 529, 13 Nov 2026) - on branch `fix/save-sync`, NOT merged, NOT released
+- Audit of review findings 1-8 against v0.6.71: 1, 2, 3, 4, 5, 6, 7 confirmed, 8 partly; two dismissed. Three new: twin lineage (9),
+  multi-file saves not a transaction (10), "keep this device's" parked Drive's copy unchecked (11). Record: `docs/SAVE_SYNC_529.md`.
+- New `data/SyncDecision.kt` (decision table, + lineage rule), `data/SaveUnitTransaction.kt` (all-or-none multi-file writes),
+  `data/SaveBackups.kt` (verified backups + sidecar, keep >= 10 / 30 days), `data/SaveChangeDetect.kt` (racy-clean hash trust),
+  `data/PrelaunchCheck.kt` (Play waits <= 10 s; Play anyway / Retry). Changed: CloudSync, SaveWatchWorker, SaveObserver,
+  SyncStatusStore, SyncNotifier, DriveOnlySaves, ui/SaveSyncUi, ui/SaveExplorer, LauncherViewModel (`src_copy` mirrors identical).
+- Tests: `SaveSync529Test` (18), `SaveSyncSim529Test` (12; two/three handhelds on a fake Drive, random runs, invariants);
+  every fix mutation-checked. Full `testDebugUnitTest` green on the PC.
+- Devices: read-only only (Flip 2: no emulators; GT78: RetroArch cloud sync off, Syncthing markers in saves/, Pokemon Silver live save
+  is the furthest-along copy). Not proven: real Drive two-device QA (QA app never syncs; OAuth is the owner's), KONKR not connected.
+- Base: `hotfix/0.6.72-blur` (smooth blur, also unreleased). PC main tree holds both as UNCOMMITTED changes - do not
+  `git_commit_push` them to main until approved. Bundle `Claude outputs\backups\fix-save-sync.bundle` (prereq 558cb1f7).
 # Update 529b — More last, Moonlight motion, achievements compact hotfix (13 Nov 2026, `feature/popup-native`, not released)
 
 - **More last** (c819139a): the round ••• is the last key of every window that has it (after Inspect; after Start on the Channel grid;

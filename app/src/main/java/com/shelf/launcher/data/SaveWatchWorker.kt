@@ -39,11 +39,26 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
         // Session over (Voltcap resumed and closed it, or another game started), or too old: stop the chain.
         if (openSessionStart(app, game.key) != started || now - started > MAX_SESSION_MS) return Result.success()
         if (!CloudSync.isActive(app) || com.shelf.launcher.CrashGuard.safeMode) return Result.success()
+        // (Update 529c: the handheld restarted since this session began - the game isn't running any more. Its saves get the normal
+        // after-game sync (per game, kept by WorkManager until it succeeds, offline included) and the watch chain ends.)
+        if (BootSession.startedBeforeBoot(started, now, android.os.SystemClock.elapsedRealtime())) {
+            PostGameSyncWorker.enqueue(app, game)
+            return Result.success()
+        }
+
+        // (Mid-game sync, update 529: the save watcher lives in Voltcap's process, and Android ends that process when a game
+        // needs the memory - GT78's log, 12 Nov: "Process com.shelf.launcher has died" while in the background. Its saves then
+        // waited for this chain's next look, 3 -> 10 -> 20 -> 60 minutes away, or for the game's end. Now each link (every
+        // minute while the screen is on) starts the watcher again if it is gone - WorkManager has just started the process for
+        // this job - so a save written mid-game is sent within about a minute even after the process was ended.)
+        val asleep = !com.shelf.launcher.ui.ScreenState.isInteractive(app)
+        if (SaveObserver.resume(app, game)) {
+            return next(app, inputData, step + 1, if (asleep) TimeUnit.MINUTES.toMillis(10) else WATCH_MS)
+        }
 
         val changed = CloudSync.changedSaves(app, game)
         if (changed.isEmpty()) {
             // Asleep / locked (the game is paused too): nothing will change soon, so the next look is an hour away.
-            val asleep = !com.shelf.launcher.ui.ScreenState.isInteractive(app)
             return next(app, inputData, step + 1, if (asleep) TimeUnit.MINUTES.toMillis(60) else delayFor(step + 1))
         }
 
@@ -84,6 +99,8 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val K_STEP = "step"
         private const val NOTIFICATION_ID = 0x5A_4FFC // not SyncNotifier's summary id (0x5A_4FFE)
 
+        /** Update 529: while a game is played with the screen on, the watcher is checked (and restarted) this often. */
+        const val WATCH_MS = 60_000L
         /** Files must have sat untouched this long before they're uploaded. */
         const val STABLE_MS = 90_000L
         /** Look again this soon when the newest change is still too fresh. */
@@ -91,7 +108,8 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
         /** The watcher gives up after this long. */
         const val MAX_SESSION_MS = 12L * 60 * 60 * 1000
         // (Update 222: first look after 3 min — SaveObserver sends saves within seconds; this chain is the safety net when the process dies.)
-        private val STEPS_MIN = longArrayOf(3, 10, 20, 40, 60)
+        // (Update 529: the first look a minute in - it also brings the watcher back if the process was ended.)
+        private val STEPS_MIN = longArrayOf(1, 10, 20, 40, 60)
 
         /** Minutes between checks grow 10 → 20 → 40 → 60 (cap). */
         private fun delayFor(step: Int): Long = TimeUnit.MINUTES.toMillis(STEPS_MIN[step.coerceIn(0, STEPS_MIN.size - 1)])
@@ -118,7 +136,7 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
             val start = current.getLong(K_START, 0L)
             val request = OneTimeWorkRequestBuilder<SaveWatchWorker>()
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                // (Update 529: no network needed to look at the files and bring the watcher back; the uploads it queues wait for one.)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
                 .setInputData(dataFor(game, start, step))
                 .addTag(TAG)
@@ -181,6 +199,13 @@ class PostGameSyncWorker(context: Context, params: WorkerParameters) : Coroutine
     companion object {
         private const val NAME = "voltcap-post-game-sync"
 
+        /** Update 529: the unique work name for [key]'s after-game sync (its own queue); null = the full sync alone. Pure. */
+        internal fun workName(key: String?): String = if (key == null) "$NAME-full" else "$NAME-" + stableId(key)
+
+        /** A short, stable id for a game key (the same on every run and device; unlike String.hashCode, wide enough). */
+        internal fun stableId(key: String): String =
+            java.security.MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
+
         /** [game] null: only the full sync. */
         fun enqueue(context: Context, game: CloudSync.ScopedGame?) {
             val data = Data.Builder().apply {
@@ -195,9 +220,12 @@ class PostGameSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
                 .setInputData(data)
                 .build()
-            // REPLACE: the newest game's job wins; an older one that already ran is just done.
+            // Update 529 (save sync P0, finding 1): one queue PER GAME, appended to. It was a single name for every game with
+            // REPLACE: ending game B cancelled game A's after-game upload while it still waited for a network or a retry, and
+            // A's new save then waited for the periodic sync (hours, deferred by Android). Now a later job for the same game runs
+            // after the one in flight (never cuts it off), and another game's job never touches it.
             WorkManager.getInstance(context.applicationContext)
-                .enqueueUniqueWork(NAME, ExistingWorkPolicy.REPLACE, request)
+                .enqueueUniqueWork(workName(game?.key), ExistingWorkPolicy.APPEND_OR_REPLACE, request)
         }
     }
 }

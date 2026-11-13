@@ -341,6 +341,11 @@ internal object TestHooks {
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
         if (intent?.getBooleanExtra("voltcap_test_achlist", false) == true && enabled(context)) achList.value = true
+        // Update 529 (mid-game sync, isolated QA app only): `--es voltcap_test_savewatch on|off` - the save watcher's dry run on
+        // synthetic saves (data/QaSaveDryRun.kt; tools/qa/device/midsave529.sh).
+        intent?.getStringExtra("voltcap_test_savewatch")?.let { v -> if (enabled(context)) {
+            if (v == "off") com.shelf.launcher.data.QaSaveDryRun.stop(context) else com.shelf.launcher.data.QaSaveDryRun.start(context)
+        } }
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }

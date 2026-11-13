@@ -75,7 +75,7 @@ data class CloudSyncSettings(
     val backgroundHours: Int = 0,
     val lastSyncAt: Long = 0L,
     val lastResult: String? = null,
-    /** "Saves safe on Google Drive" notifications after background syncs are on unless this is set
+    /** "Saves uploaded and confirmed" notifications after background syncs are on unless this is set
      * (negated so settings saved before it existed read as "on"). */
     val syncNotificationsOff: Boolean = false
 ) {
@@ -109,9 +109,16 @@ data class SyncConflict(
     val remoteId: String,
     val remoteModified: Long,
     /** Which device uploaded Drive's version, when known. */
-    val remoteDevice: String?
+    val remoteDevice: String?,
+    /** Update 529c ([ConflictClock]): each side's clock error against Google's; null = unknown (older uploads). */
+    val remoteSkew: Long? = null,
+    val localSkew: Long? = DriveClient.lastSkew
 ) {
-    val localNewer: Boolean get() = localModified >= remoteModified
+    /** Which side is newer once both dates are corrected to Google's clock - or UNSURE: too close to tell, never a guess. */
+    internal val newer: ConflictClock.Pick
+        get() = ConflictClock.newest(localModified, localSkew, remoteModified, remoteSkew, System.currentTimeMillis(), localSkew)
+    val localNewer: Boolean get() = newer == ConflictClock.Pick.LOCAL
+    val remoteNewer: Boolean get() = newer == ConflictClock.Pick.DRIVE
 }
 
 enum class ConflictChoice { USE_DRIVE, KEEP_LOCAL, NEWEST }
@@ -129,7 +136,16 @@ data class SyncOutcome(
     /** Failed because of the connection or a Google hiccup: trying again later can work. */
     val retry: Boolean = false,
     /** Google wants the sign-in confirmed again; retrying can't help until then. */
-    val needsSignIn: Boolean = false
+    val needsSignIn: Boolean = false,
+    /** Update 529: Drive's side was NOT applied here (an emulator still holds the save): only uploads ran. */
+    val heldBack: Boolean = false,
+    /** Mid-game sync (update 529): files Drive has newer that an upload-only run left alone, and which device sent them. */
+    val remoteNewer: Int = 0,
+    val remoteFrom: String? = null,
+    /** Files that were being written while this run read them (nothing sent for them - see CloudSync.StillWriting). */
+    val stillWriting: Int = 0,
+    /** Update 529c: multi-file saves another handheld was still sending (held, not applied - [UnitManifest]). */
+    val unitsHeld: Int = 0
 )
 
 /**
@@ -254,6 +270,9 @@ object CloudSync {
      * changes; without the hooks file every sync runs as before.
      */
     fun qaPaused(context: Context): Boolean =
+        // (Update 529c: except the owner-authorised real-Drive test - [QaDriveTest]: the isolated QA app, its own synthetic save folders
+        // only, saves only, never Voltcap's own data, and only while its flag file is present.)
+        !(QaVariant.isolated(context) && QaDriveTest.allowed(context, run { load(context); _state.value.settings })) &&
         // (Update 500: the isolated QA app never syncs, hooks file or not.)
         (QaVariant.isolated(context) || runCatching { com.shelf.launcher.ui.TestHooks.enabled(context.applicationContext) }.getOrDefault(false)).also {
             if (it) android.util.Log.e("VoltcapQA", "sync paused (QA session)")
@@ -748,7 +767,8 @@ object CloudSync {
     }
 
     /** One save file that differs from what the last sync recorded. */
-    data class ChangedSave(val folder: String, val path: String, val size: Long, val modified: Long)
+    /** [md5]: the content as it is now (update 529: the watcher compares content, not only size and date). */
+    data class ChangedSave(val folder: String, val path: String, val size: Long, val modified: Long, val md5: String = "")
 
     /**
      * Cheap probe (no hashing, no network): this game's save files whose size/date no longer match
@@ -770,13 +790,69 @@ object CloudSync {
             tree.list().forEach { (rel, entry) ->
                 if (!kind.accepts(rel) || !only(rel)) return@forEach
                 val base = state.base[rel]
-                val hashed = state.hashes[rel]
-                val unchanged = base != null && hashed != null && hashed.size == entry.size &&
-                    hashed.modified == entry.modified && hashed.md5 == base.md5
-                if (!unchanged) out += ChangedSave(folder.name, rel, entry.size, entry.modified)
+                // (Update 529, findings 3 / 4: a save is only taken as unchanged when its CONTENT matches what was last
+                // synced. A remembered hash counts only when the file's date can be trusted (SaveChangeDetect); otherwise the
+                // file is read again - a same-size save rewritten within one date step, or in a folder that reports no date,
+                // was invisible here before. This look runs while a game is open and keeps its own hashes in memory: it never
+                // writes the folder state a running sync is using.)
+                val md5 = runCatching { watchHash(folder.name, tree, rel, entry, state) }.getOrNull()
+                val unchanged = base != null && md5 != null && md5.equals(base.md5, ignoreCase = true)
+                if (!unchanged) out += ChangedSave(folder.name, rel, entry.size, entry.modified, md5 ?: "")
             }
         }
         return out
+    }
+
+    /** Update 529c: one kept earlier version of one of a game's save files (Voltcap/Sync backups), for "Earlier versions". */
+    internal data class EarlierVersion(val folder: SyncFolder, val rel: String, val version: SaveBackups.Version)
+
+    /** Every kept earlier version of [game]'s save files, newest first. Reads only. */
+    internal fun earlierVersions(context: Context, game: ScopedGame): List<EarlierVersion> {
+        load(context)
+        val settings = _state.value.settings
+        val base = backupsBase(context)
+        val out = mutableListOf<EarlierVersion>()
+        scopeFor(settings, game).forEach { (folder, only) ->
+            if (isStateFolder(folder.path)) return@forEach
+            val tree = treeFor(context, folder)
+            if (!tree.exists()) return@forEach
+            val kind = folder.saveKind
+            tree.list().keys.filter { kind.accepts(it) && only(it) }.forEach { rel ->
+                SaveBackups.versions(base, folder.name, rel).forEach { out += EarlierVersion(folder, rel, it) }
+            }
+        }
+        return out.sortedByDescending { it.version.createdAt }
+    }
+
+    /**
+     * Update 529c (risk 5): puts an earlier version back, only on the player's explicit choice (confirmed in the UI). Refused while the
+     * game or its emulator may be running - an emulator holding the save would write its own back over it. The save live now is
+     * backed up first (verified), the restored bytes are read back, and the game's next sync sends the restored save to Drive (the
+     * other handheld gets it like any newer save, with its own backup). Returns a message for the player.
+     */
+    internal suspend fun restoreEarlierVersion(context: Context, game: ScopedGame, v: EarlierVersion): SyncOutcome = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (PlaySession.isOpen(context)) return@withContext SyncOutcome(false, "Close the game first - its emulator could write over a restored save.")
+            EmulatorGuard.downloadsBlocked(context)?.let { return@withContext SyncOutcome(false, "$it - close it fully, then restore.") }
+            val tree = treeFor(context, v.folder)
+            val entry = tree.entry(v.rel)
+            try {
+                SaveBackups.restore(
+                    backupsBase(context), v.folder.name, v.rel, v.version,
+                    live = entry?.let { { tree.open(v.rel) } }, liveModified = entry?.modified ?: 0L, device = Build.MODEL ?: "this device",
+                    write = { f -> tree.write(v.rel, f, System.currentTimeMillis()) },
+                    readBack = { runCatching { tree.open(v.rel).use { md5(it) } }.getOrNull() }
+                )
+                runCatching { SyncLog.add(context, "Restored an earlier version of ${v.rel} (${game.name}); the save it replaced is in Voltcap/Sync backups.") }
+                SyncStatusStore.update(context, game.key) { it.copy(state = SyncState.PENDING, message = "Earlier version restored — sent to Google Drive at the next sync") }
+                if (isActive(context)) PostGameSyncWorker.enqueue(context, game)
+                SyncOutcome(true, "Restored. The save it replaced is kept in Voltcap/Sync backups.")
+            } catch (e: SaveBackups.RestoreFailed) {
+                SyncOutcome(false, e.message ?: "Couldn't restore - nothing was changed.")
+            } catch (e: SaveBackups.BackupFailed) {
+                SyncOutcome(false, "Couldn't keep a copy of the current save first - nothing was changed. (${e.message})")
+            }
+        }
     }
 
     /**
@@ -792,10 +868,18 @@ object CloudSync {
         val held = withContext(Dispatchers.IO) { EmulatorGuard.downloadsBlocked(context) }
             ?: return syncScopedLocked(context, game, false)
         val out = syncScopedLocked(context, game, true)
-        return out.copy(summary = "$held — saves on this device weren't replaced. Close it fully to get Drive's newest save.")
+        return out.copy(summary = "$held — saves on this device weren't replaced. Close it fully to get Drive's newest save.", heldBack = true)
     }
 
-    private suspend fun syncScopedLocked(context: Context, game: ScopedGame, uploadOnly: Boolean): SyncOutcome = mutex.withLock {
+    /**
+     * Mid-game sync, update 529: a quiet look at a running game's saves on Drive - upload-only (nothing local is touched),
+     * no "Sending…" status or progress while it looks; the game's status changes only when something moved, a conflict was
+     * found, or another handheld has a newer save ([SyncOutcome.remoteNewer]).
+     */
+    internal suspend fun probeRemote(context: Context, game: ScopedGame): SyncOutcome =
+        if (qaPaused(context)) SyncOutcome(true, QA_PAUSED) else syncScopedLocked(context, game, uploadOnly = true, quiet = true)
+
+    private suspend fun syncScopedLocked(context: Context, game: ScopedGame, uploadOnly: Boolean, quiet: Boolean = false): SyncOutcome = mutex.withLock {
         load(context)
         val settings = _state.value.settings
         if (!settings.connected) return@withLock SyncOutcome(false, "Google Drive isn't connected.")
@@ -806,10 +890,12 @@ object CloudSync {
         // A game that never had saves gets no status entry just because it was looked at (resting on a
         // game or opening its details fetches early): the entry only stays when files really moved.
         val hadStatus = SyncStatusStore.get(context, game.key) != null
-        SyncStatusStore.update(context, game.key) {
-            it.copy(state = if (uploadOnly) SyncState.UPLOADING else SyncState.DOWNLOADING, message = null)
+        if (!quiet) {
+            SyncStatusStore.update(context, game.key) {
+                it.copy(state = if (uploadOnly) SyncState.UPLOADING else SyncState.DOWNLOADING, message = if (uploadOnly) "Uploading…" else null)
+            }
+            _state.update { it.copy(running = true, progress = if (uploadOnly) "Sending saves to Google Drive…" else "Checking Google Drive for newer saves…") }
         }
-        _state.update { it.copy(running = true, progress = if (uploadOnly) "Sending saves to Google Drive…" else "Checking Google Drive for newer saves…") }
         var cancelled = false
         val outcome = try {
             withContext(Dispatchers.IO) {
@@ -827,12 +913,15 @@ object CloudSync {
                 }
                 SyncOutcome(
                     !stopRequested && report.failed == 0, report.summary(), report.conflictList.size,
-                    uploaded = report.uploaded, downloaded = report.downloaded
+                    uploaded = report.uploaded, downloaded = report.downloaded,
+                    remoteNewer = report.remoteNewer, remoteFrom = report.remoteFrom, stillWriting = report.stillWriting,
+                    unitsHeld = report.unitsHeld
                 )
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             cancelled = true
-            if (hadStatus) SyncStatusStore.update(context, game.key) { it.copy(state = SyncState.PENDING, message = null) }
+            if (quiet) Unit
+            else if (hadStatus) SyncStatusStore.update(context, game.key) { it.copy(state = SyncState.PENDING, message = null) }
             else SyncStatusStore.remove(context, game.key)
             SyncOutcome(false, "Sync stopped.")
         } catch (e: DriveSignInNeeded) {
@@ -847,17 +936,37 @@ object CloudSync {
         _state.update { it.copy(running = false, progress = null, needsSignIn = DriveAuth.needsSignIn(context), authProblem = DriveAuth.problem(context)) }
         // Stopped: the status was already put back above; don't turn it into an error (update 91).
         if (cancelled) return@withLock outcome
+        // (A quiet look that found nothing to tell leaves the status as it was - offline included: it was only a look.)
+        if (quiet && outcome.remoteNewer == 0 && outcome.uploaded == 0 && outcome.conflicts == 0 && outcome.unitsHeld == 0) return@withLock outcome
         val now = System.currentTimeMillis()
         SyncStatusStore.update(context, game.key) { old ->
             when {
                 outcome.needsSignIn -> old.copy(state = SyncState.NEEDS_SIGN_IN, message = "Sign in to Google Drive again", updatedAt = now)
                 outcome.retry -> old.copy(state = SyncState.OFFLINE, message = "Offline — will retry automatically", updatedAt = now)
                 outcome.conflicts > 0 -> old.copy(state = SyncState.CONFLICT, message = "Conflict — open Voltcap to choose", updatedAt = now)
+                // (Mid-game sync, update 529: a save caught mid-write is not an error - it is sent once it has settled.)
+                !outcome.ok && outcome.stillWriting > 0 && !outcome.summary.startsWith("Sync stopped") ->
+                    old.copy(state = SyncState.PENDING, message = "Save being written — sent once it settles", updatedAt = now)
                 !outcome.ok -> old.copy(state = SyncState.ERROR, message = outcome.summary, updatedAt = now)
+                // (Update 529c: a multi-file save on Drive is half-sent by another handheld - not applied, not "Synced".)
+                outcome.unitsHeld > 0 -> old.copy(
+                    state = SyncState.PENDING, updatedAt = now,
+                    message = "Another handheld is still sending this save to Google Drive — applied once it is complete"
+                )
+                // (Mid-game sync: our side is on Drive, but Drive also has a newer save from another handheld - not "Synced".)
+                outcome.remoteNewer > 0 -> old.copy(
+                    state = SyncState.PENDING, updatedAt = now,
+                    message = "Newer save on Google Drive" + (outcome.remoteFrom?.let { " from $it" } ?: "") + " — applied after you close the game",
+                    lastSuccessAt = if (outcome.uploaded > 0) now else old.lastSuccessAt,
+                    lastDirection = if (outcome.uploaded > 0) SyncDirection.UPLOAD else old.lastDirection,
+                    lastTransferAt = if (outcome.uploaded > 0) now else old.lastTransferAt
+                )
                 else -> {
                     val moved = outcome.uploaded + outcome.downloaded
                     old.copy(
                         state = SyncState.SYNCED, message = null, updatedAt = now, lastSuccessAt = now,
+                        // (Update 529: only a both-ways check - Drive's side looked at AND applied - says "matches Drive" for Play.)
+                        checkedAt = if (!uploadOnly) now else old.checkedAt,
                         lastDirection = when {
                             outcome.downloaded > 0 -> SyncDirection.DOWNLOAD
                             outcome.uploaded > 0 -> SyncDirection.UPLOAD
@@ -1035,6 +1144,8 @@ object CloudSync {
         if (open.isEmpty()) return@withLock SyncOutcome(true, "Nothing to decide.")
         _state.update { it.copy(running = true, progress = "Sorting out saves…") }
         var done = 0
+        var unsure = 0
+        var raced = 0
         // Settled in folder order, not list order: remember which ones, so the rest stay open (update 91).
         val settled = mutableSetOf<SyncConflict>()
         val outcome = try {
@@ -1051,16 +1162,31 @@ object CloudSync {
                     // (Update 241, #73: the same for a 3DS / Wii title folder or a PSP save folder.)
                     val unitKind = items.first().folder.saveKind
                     fun unitOf(rel: String) = folderCardOf(rel) ?: SaveLayouts.unitOf(unitKind, rel)
-                    val cardUsesDrive = items.groupBy { unitOf(it.relativePath) }
+                    // (Update 529c, risk 4: "Newest" no longer trusts two clocks blindly - [ConflictClock] corrects both dates to
+                    // Google's clock and decides only when they are clearly apart. Too close: that save is left for the player.)
+                    val unitPick = items.groupBy { unitOf(it.relativePath) }
                         .filterKeys { it != null }
-                        .mapValues { (_, cs) -> cs.maxOf { it.remoteModified } > cs.maxOf { it.localModified } }
+                        .mapValues { (_, cs) ->
+                            val l = cs.maxBy { it.localModified }
+                            val r = cs.maxBy { it.remoteModified }
+                            ConflictClock.newest(l.localModified, l.localSkew, r.remoteModified, r.remoteSkew, System.currentTimeMillis(), l.localSkew)
+                        }
+                    // (Update 529: the files of one multi-file save that come from Drive are fetched, checked and written as one -
+                    // all or none ([pullUnit]) - never one by one, which could leave the save half from each device.)
+                    val fromDrive = linkedMapOf<String, MutableList<SyncConflict>>()
+                    val keptUnits = mutableSetOf<String>()
                     items.forEach { c ->
                         val rel = c.relativePath
                         val entry = local[rel]
                         val useDrive = when (choice) {
                             ConflictChoice.USE_DRIVE -> true
                             ConflictChoice.KEEP_LOCAL -> false
-                            ConflictChoice.NEWEST -> cardUsesDrive[unitOf(rel)] ?: !c.localNewer
+                            ConflictChoice.NEWEST -> when (unitOf(rel)?.let { unitPick[it] } ?: c.newer) {
+                                ConflictClock.Pick.DRIVE -> true
+                                ConflictClock.Pick.LOCAL -> false
+                                // Too close to tell: this one stays open for "Use Drive's" / "Keep this device's".
+                                ConflictClock.Pick.UNSURE -> { unsure++; return@forEach }
+                            }
                         }
                         if (useDrive || entry == null) {
                             // Park this device's version first.
@@ -1069,19 +1195,45 @@ object CloudSync {
                                 copy.parentFile?.mkdirs()
                                 tree.open(rel).use { input -> copy.outputStream().use { input.copyTo(it) } }
                             }
-                            pull(context, drive, tree, rel, c.remoteId, c.remoteModified, null, state, c.remoteDevice)
+                            fromDrive.getOrPut(unitOf(rel) ?: "file:$rel") { mutableListOf() } += c
                         } else {
-                            // Park Drive's version first.
+                            // Park Drive's version first - checked against Drive's checksum (update 529: it was kept unchecked,
+                            // so a broken transfer left no good copy of the version about to be replaced).
                             val tag = c.remoteDevice?.replace(Regex("[^A-Za-z0-9]+"), "-") ?: "drive"
-                            drive.download(c.remoteId, conflictCopy(context, folderName, rel, tag), c.remoteModified)
-                            push(context, drive, tree, rel, entry, localHash(state, tree, rel, entry), remoteDir, c.remoteId, state)
+                            val now = drive.file(c.remoteId)
+                            if (now != null) {
+                                val park = conflictCopy(context, folderName, rel, tag)
+                                park.parentFile?.mkdirs()
+                                drive.download(c.remoteId, park, c.remoteModified)
+                                if (now.md5 != null && !now.md5.equals(md5(park), ignoreCase = true)) {
+                                    park.delete()
+                                    error("Couldn't keep a copy of Drive's version of $rel - nothing was replaced.")
+                                }
+                            }
+                            // (Update 529: and Drive's file must still be that version when it is replaced.)
+                            raced += push(context, drive, tree, rel, entry, localHash(state, tree, rel, entry), remoteDir, c.remoteId, state, expectRemoteMd5 = now?.md5, folderName = folderName)
+                            unitOf(rel)?.let { keptUnits += it }
+                            done++
+                            settled += c
                         }
-                        done++
-                        settled += c
                     }
+                    fromDrive.values.forEach { group ->
+                        val files = group.map { c ->
+                            val f = drive.file(c.remoteId) ?: error("Drive's version of ${c.relativePath} is gone - nothing was replaced.")
+                            if (f.md5 == null) error("Drive didn't report the checksum of ${c.relativePath} - nothing was replaced.")
+                            c.relativePath to f
+                        }
+                        if (!pullUnit(context, drive, tree, files, state, folderName, null)) error("A save changed meanwhile - nothing was replaced.")
+                        done += group.size
+                        settled += group
+                    }
+                    // (Update 529c, risk 3: a multi-file save kept from this device gets its manifest once all its files are up.)
+                    keptUnits.forEach { unit -> writeUnitManifest(drive, remoteDir, unit, state, kindUnitOf = ::unitOf) }
                     saveFolderState(context, folderName, state)
                 }
-                SyncOutcome(true, "Sorted out $done save${if (done == 1) "" else "s"}. The other versions are in Voltcap/Sync conflicts.")
+                SyncOutcome(true, "Sorted out $done save${if (done == 1) "" else "s"}. The other versions are in Voltcap/Sync conflicts." +
+                    (if (unsure > 0) " $unsure left for you: their dates are too close to tell which is newer (the two handhelds' clocks can differ) - pick \"Use Drive's\" or \"Keep this device's\"." else "") +
+                    (if (raced > 0) " " + racedNote(raced) else ""))
             }
         } catch (e: DriveSignInNeeded) {
             _state.update { it.copy(needsSignIn = true) }
@@ -1093,7 +1245,8 @@ object CloudSync {
         _state.update {
             it.copy(
                 running = false, progress = null,
-                conflicts = if (outcome.ok) emptyList() else it.conflicts.filterNot { c -> c in settled },
+                // (Update 529c: only what was settled goes - a "Newest" left undecided stays open, even when the run went fine.)
+                conflicts = it.conflicts.filterNot { c -> c in settled },
                 conflictsSnoozed = false
             )
         }
@@ -1234,6 +1387,13 @@ object CloudSync {
         var uploaded = 0
         var downloaded = 0
         var failed = 0
+        /** Update 529 (mid-game sync): newer on Drive but left alone (upload-only), and by which device; files mid-write. */
+        var remoteNewer = 0
+        var remoteFrom: String? = null
+        var stillWriting = 0
+        /** Update 529c: versions another handheld sent at the same moment, kept ([UploadRace]); multi-file saves held ([UnitManifest]). */
+        var raced = 0
+        var unitsHeld = 0
         var launcherChanged = false
         /** Update 208: saves are on but no save folder is set up — nothing of the saves was looked at. */
         var noFolders = false
@@ -1247,6 +1407,8 @@ object CloudSync {
             if (downloaded > 0) parts += "$downloaded downloaded"
             if (conflictList.isNotEmpty()) parts += "${conflictList.size} save${if (conflictList.size == 1) "" else "s"} changed on two devices — pick which to keep"
             if (failed > 0) parts += "$failed failed"
+            if (unitsHeld > 0) parts += "$unitsHeld multi-file save${if (unitsHeld == 1) " is" else "s are"} still being sent by another handheld - applied once complete"
+            if (raced > 0) parts += racedNote(raced).removeSuffix(".")
             // (Update 208: never "Everything up to date" when no saves were looked at — it said so for days after a
             // reinstall had left the save folders list empty, while nothing went up to Drive.)
             if (noFolders) return (if (parts.isEmpty()) "" else parts.joinToString(", ") + ". ") +
@@ -1261,8 +1423,8 @@ object CloudSync {
     /** [at]: when this device last synced the file; [from]: the device whose
      * version it is now (for "Saves synced 5 min ago · from AYN Odin 2"). */
     private data class Base(val md5: String, val remoteId: String, val at: Long = 0L, val from: String? = null)
-    /** A file's hash, reused while its size and date stay the same. */
-    private data class Hashed(val size: Long, val modified: Long, val md5: String)
+    /** A file's hash; [at]: when it was taken (update 529 - reused only under [SaveChangeDetect.trusted]; 0 in older records). */
+    private data class Hashed(val size: Long, val modified: Long, val md5: String, val at: Long = 0L)
     private data class FolderState(
         val base: MutableMap<String, Base> = mutableMapOf(),
         val hashes: MutableMap<String, Hashed> = mutableMapOf()
@@ -1314,9 +1476,23 @@ object CloudSync {
     private fun md5(file: File): String = md5(file.inputStream())
 
     private fun localHash(state: FolderState, tree: SyncTree, rel: String, entry: LocalEntry): String {
-        state.hashes[rel]?.let { if (it.size == entry.size && it.modified == entry.modified) return it.md5 }
+        state.hashes[rel]?.let { if (SaveChangeDetect.trusted(it.size, it.modified, it.at, entry.size, entry.modified)) return it.md5 }
+        val at = System.currentTimeMillis()
         val hash = md5(tree.open(rel))
-        state.hashes[rel] = Hashed(entry.size, entry.modified, hash)
+        state.hashes[rel] = Hashed(entry.size, entry.modified, hash, at)
+        return hash
+    }
+
+    /** The watcher's own remembered hashes ("folder/rel" -> hash), kept in memory only (see [changedSaves]). */
+    private val watchHashes = java.util.concurrent.ConcurrentHashMap<String, Hashed>()
+
+    private fun watchHash(folder: String, tree: SyncTree, rel: String, entry: LocalEntry, state: FolderState): String {
+        val key = "$folder/$rel"
+        for (h in listOfNotNull(watchHashes[key], state.hashes[rel]))
+            if (SaveChangeDetect.trusted(h.size, h.modified, h.at, entry.size, entry.modified)) return h.md5
+        val at = System.currentTimeMillis()
+        val hash = md5(tree.open(rel))
+        watchHashes[key] = Hashed(entry.size, entry.modified, hash, at)
         return hash
     }
 
@@ -1335,16 +1511,67 @@ object CloudSync {
             if (md5Hint != null && !md5Hint.equals(md5, ignoreCase = true)) {
                 error("Download of $rel was incomplete — the save on this device was left untouched.")
             }
-            // The version about to be replaced goes to Voltcap/Sync backups first (last 3 kept).
-            backupFolder?.let { backupBeforeOverwrite(context, tree, rel, it) }
+            // The version about to be replaced goes to Voltcap/Sync backups first - verified, or nothing is replaced (update 529).
+            backupFolder?.let { backupBeforeOverwrite(context, tree, rel, it, replacedBy = md5) }
             tree.write(rel, tmp, modified)
-            tree.entry(rel)?.let { state.hashes[rel] = Hashed(it.size, it.modified, md5) }
+            tree.entry(rel)?.let { state.hashes[rel] = Hashed(it.size, it.modified, md5, System.currentTimeMillis()) }
             state.base[rel] = Base(md5, id, System.currentTimeMillis(), from)
             return md5
         } finally {
             tmp.delete()
         }
     }
+
+    /**
+     * Update 529 (save sync P0, multi-file saves as one): Drive's version of every file of ONE save (a PS2 folder card, a 3DS /
+     * Wii title folder, a PSP save folder) - all of them or none. Before, they came one by one: a download that failed halfway
+     * (offline, a bad checksum, storage full) left the save made of two devices' files, which the emulator then read.
+     * Now: 1. every file is fetched and its checksum checked, before anything here changes; 2. every file about to be replaced is
+     * backed up (verified, [SaveBackups]); 3. the files are written; if a write fails, the ones already written are put back from
+     * those backups, and the save is reported as not synced. Returns false (nothing changed) when a file of the save appeared on
+     * this device while the folder was compared - the next sync looks at it properly.
+     */
+    private fun pullUnit(
+        context: Context, drive: DriveClient, tree: SyncTree, files: List<Pair<String, DriveFile>>, state: FolderState,
+        folderName: String, prefetch: Prefetch?
+    ): Boolean {
+        val byRel = files.toMap()
+        val sums = SaveUnitTransaction.run(
+            files.map { (rel, r) -> SaveUnitTransaction.Item(rel, r.md5, r.modifiedTime) },
+            fetch = { item ->
+                val pre = prefetch?.take(item.rel)
+                if (pre != null && tree.entry(item.rel) != null) { pre.delete(); null }
+                else pre ?: tempFile(context).also { tmp ->
+                    try { drive.download(byRel.getValue(item.rel).id, tmp, item.modified) } catch (e: Exception) { tmp.delete(); throw e }
+                }
+            },
+            md5 = { md5(it) },
+            backup = { item ->
+                tree.entry(item.rel)?.let { entry ->
+                    SaveBackups.backup(
+                        backupsBase(context), folderName, item.rel, { tree.open(item.rel) }, entry.modified,
+                        device = Build.MODEL ?: "this device", reason = "replaced by Google Drive's version", replacedBy = item.expectMd5
+                    ) to entry.modified
+                }
+            },
+            restore = { item, (copy, modified) -> tree.write(item.rel, copy, modified) },
+            write = { item, f -> tree.write(item.rel, f, item.modified) }
+        ) ?: return false
+        val now = System.currentTimeMillis()
+        for ((rel, r) in files) {
+            val md5 = sums.getValue(rel)
+            tree.entry(rel)?.let { state.hashes[rel] = Hashed(it.size, it.modified, md5, now) }
+            state.base[rel] = Base(md5, r.id, now, r.device)
+        }
+        return true
+    }
+
+    /** Update 529: which of several Drive files with one name counts - the newest, ties broken by id (the same on every device). Pure. */
+    internal fun pickTwin(same: List<DriveFile>): DriveFile =
+        same.sortedWith(compareByDescending<DriveFile> { it.modifiedTime }.thenBy { it.id }).first()
+
+    /** Update 529: the save changed between the decision and the snapshot (being written now) - nothing was uploaded. */
+    internal class StillWriting(rel: String) : Exception("$rel is being written - sent once it has settled")
 
     /** Update 222: Drive's copy of the file changed after the folder was listed — nothing was uploaded. */
     private class RemoteMoved : Exception("Changed on Drive meanwhile")
@@ -1361,51 +1588,119 @@ object CloudSync {
      *   both kept). Before, the folder list could be minutes old and the newer save was replaced.
      * - Drive's md5 of what arrived must equal the snapshot's, or the base isn't moved (the next sync tries again).
      */
-    private fun push(context: Context, drive: DriveClient, tree: SyncTree, rel: String, entry: LocalEntry, md5: String, remoteDir: String, existingId: String?, state: FolderState, expectRemoteMd5: String? = null) {
+    private fun push(context: Context, drive: DriveClient, tree: SyncTree, rel: String, entry: LocalEntry, md5: String, remoteDir: String, existingId: String?, state: FolderState, expectRemoteMd5: String? = null, folderName: String): Int {
         val snap = tempFile(context)
         try {
             tree.open(rel).use { input -> snap.outputStream().use { input.copyTo(it) } }
             snap.setLastModified(entry.modified)
             val sent = md5(snap)
+            // (Mid-game sync hotfix, update 529: the bytes about to go up must be the ones the decision was made on - read twice,
+            // once for the decision and once for this snapshot. Different means the emulator is writing the file right now:
+            // nothing is sent (a half-written save or memory card never reaches Drive); the watcher sends it once it has settled.
+            // It used to be sent anyway, with only the recorded hash dropped.)
+            if (!sent.equals(md5, ignoreCase = true)) { state.hashes.remove(rel); throw StillWriting(rel) }
             if (existingId != null && expectRemoteMd5 != null) {
                 val now = drive.file(existingId)
                 if (now?.md5 != null && !now.md5.equals(expectRemoteMd5, ignoreCase = true)) throw RemoteMoved()
             }
             val up = drive.upload(snap.asRequestBody("application/octet-stream".toMediaType()), rel, remoteDir, existingId, entry.modified)
-            if (up.md5 != null && !up.md5.equals(sent, ignoreCase = true)) error("Drive didn't get all of $rel — it stays marked as not synced.")
+            // (Update 529: verified, never assumed. A reply without Drive's checksum used to count as a good upload; now
+            // Drive's file is read back, and only its checksum equal to the bytes sent marks this revision as synced.)
+            val got = up.md5 ?: drive.file(up.id)?.md5
+            if (got == null || !got.equals(sent, ignoreCase = true)) error("Drive didn't confirm $rel — it stays marked as not synced.")
             state.base[rel] = Base(sent, up.id, System.currentTimeMillis(), Build.MODEL)
-            // Written again while it was read: the recorded hash belongs to the old bytes, so it's looked at afresh next time.
-            if (!sent.equals(md5, ignoreCase = true)) state.hashes.remove(rel)
+            // (Update 529c, risk 2: Drive has no conditional replace. Another handheld's upload that landed between the check above
+            // and ours is now a revision under ours - found from the revision list, kept, and reported. Never silent.)
+            return if (existingId != null && expectRemoteMd5 != null) keepRacedRevisions(context, drive, up.id, rel, folderName, expectRemoteMd5, sent) else 0
         } finally {
             snap.delete()
         }
     }
 
     /**
-     * Copies the local [rel] (if any) to Voltcap/Sync backups/<folder>/ before Drive's version replaces it,
-     * keeping the newest [BACKUPS_KEPT] per file. Best effort: a failed backup never blocks the sync, but
-     * a save is never replaced by an unverified download (see [pull]).
+     * Update 529c ([UploadRace]): every revision another device uploaded between the version we meant to replace and ours is
+     * fetched into Voltcap/Sync conflicts (checked against its md5) and pinned on Drive (keepForever). Returns how many. A failure
+     * here never undoes the upload; the revision simply stays in Drive's history (logged).
      */
-    private fun backupBeforeOverwrite(context: Context, tree: SyncTree, rel: String, folderName: String) {
-        runCatching {
-            if (tree.entry(rel) == null) return
-            val base = File(Environment.getExternalStorageDirectory(), "Voltcap/Sync backups")
-                .takeIf { it.mkdirs() || it.isDirectory }
-                ?: File(context.getExternalFilesDir(null) ?: context.filesDir, "Sync backups")
-            val dir = File(File(base, folderName), rel).parentFile ?: return
-            dir.mkdirs()
-            val name = rel.substringAfterLast('/')
-            val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-            val out = File(dir, "$name.$stamp")
-            tree.open(rel).use { input -> out.outputStream().use { input.copyTo(it) } }
-            dir.listFiles { f -> f.isFile && f.name.startsWith("$name.") }
-                ?.sortedByDescending { it.name }
-                ?.drop(BACKUPS_KEPT)
-                ?.forEach { it.delete() }
+    private fun keepRacedRevisions(context: Context, drive: DriveClient, fileId: String, rel: String, folderName: String, expectMd5: String, sentMd5: String): Int {
+        val lost = runCatching { UploadRace.replacedUnseen(drive.revisions(fileId), expectMd5, sentMd5) }.getOrNull().orEmpty()
+        lost.forEach { rev ->
+            runCatching {
+                val park = conflictCopy(context, folderName, rel, "drive-same-moment")
+                drive.downloadRevision(fileId, rev.id, park)
+                if (rev.md5 != null && !rev.md5.equals(md5(park), ignoreCase = true)) { park.delete(); error("checksum") }
+                drive.keepRevision(fileId, rev.id)
+                SyncLog.add(context, "Another handheld sent $rel at the same moment - its version is kept in Voltcap/Sync conflicts/$folderName (${park.name}) and on Drive.")
+            }.onFailure {
+                runCatching { drive.keepRevision(fileId, rev.id) }
+                runCatching { SyncLog.add(context, "Another handheld sent $rel at the same moment - its version stays in Drive's version history (Manage versions).") }
+            }
         }
+        return lost.size
     }
 
-    private const val BACKUPS_KEPT = 3
+    internal enum class UnitGate { APPLY, HOLD, ASK }
+
+    /**
+     * Update 529c ([UnitManifest]): may Drive's multi-file save [unit] be applied here now? APPLY: no manifest (as before) or Drive's
+     * files match it. HOLD: an upload is in progress or broke off - looked at again next sync; held since when is kept with this
+     * device's own clock. ASK: held longer than [UnitManifest.HELD_LIMIT_MS] and this device has files of the save - the player
+     * decides (conflicts); with no local files there is nothing to lose here, so it is applied.
+     */
+    private fun unitGate(
+        context: Context, drive: DriveClient, folderName: String, unit: String, manifest: DriveFile?,
+        driveFiles: Map<String, DriveFile>, hasLocal: Boolean
+    ): UnitGate {
+        val prefs = context.getSharedPreferences("cloud_sync_unit_held", Context.MODE_PRIVATE)
+        val key = "$folderName|$unit"
+        val decoded = manifest?.let { m -> runCatching { UnitManifest.decode(String(drive.downloadBytes(m.id, 1L shl 20))) }.getOrNull() }
+        val verdict = UnitManifest.check(decoded, driveFiles.mapValues { (_, f) -> UnitManifest.OnDrive(f.md5, f.marked) })
+        if (verdict != UnitManifest.Verdict.INCOMPLETE) { prefs.edit().remove(key).apply(); return UnitGate.APPLY }
+        val now = System.currentTimeMillis()
+        val since = prefs.getLong(key, 0L).takeIf { it in 1..now } ?: now.also { prefs.edit().putLong(key, it).apply() }
+        if (!UnitManifest.heldTooLong(since, now)) return UnitGate.HOLD
+        prefs.edit().remove(key).apply()
+        return if (hasLocal) UnitGate.ASK else UnitGate.APPLY
+    }
+
+    private fun racedNote(n: Int) =
+        "$n save${if (n == 1) "" else "s"} another handheld sent at the same moment ${if (n == 1) "was" else "were"} kept in Voltcap/Sync conflicts (and on Drive) - nothing was lost."
+
+    /**
+     * Update 529c ([UnitManifest]): the manifest of multi-file save [unit] - every file's md5 as both sides last agreed - written
+     * last, once all its files are on Drive. Skipped when a file of the save has no agreed version yet.
+     */
+    private fun writeUnitManifest(
+        drive: DriveClient, remoteDir: String, unit: String, state: FolderState, kindUnitOf: (String) -> String?, known: DriveFile? = null
+    ) {
+        val rels = state.base.keys.filter { kindUnitOf(it) == unit }
+        if (rels.isEmpty()) return
+        val bytes = UnitManifest.encode(unit, rels.associateWith { state.base.getValue(it).md5 }).toByteArray()
+        val name = UnitManifest.nameFor(unit)
+        val existing = known ?: drive.list(remoteDir).filter { it.name == name }.let { if (it.isEmpty()) null else pickTwin(it) }
+        if (existing?.md5 != null && existing.md5.equals(md5(bytes.inputStream()), ignoreCase = true)) return // already says this
+        drive.uploadBytes(bytes, name, remoteDir, existing?.id)
+    }
+
+    /**
+     * Copies the local [rel] (if any) to Voltcap/Sync backups/<folder>/ before Drive's version replaces it ([SaveBackups]).
+     * Update 529 (save sync P0): no longer best effort. The copy is verified (hash and size read back) and must exist before the
+     * save is replaced; if it can't be made, this throws and [pull] leaves the save on this device untouched (the file is
+     * reported as not synced and tried again next time). Retention: [SaveBackups.KEEP_NEWEST] per file, never younger than
+     * [SaveBackups.KEEP_DAYS] days.
+     */
+    private fun backupBeforeOverwrite(context: Context, tree: SyncTree, rel: String, folderName: String, replacedBy: String? = null) {
+        val entry = tree.entry(rel) ?: return
+        SaveBackups.backup(
+            backupsBase(context), folderName, rel, { tree.open(rel) }, entry.modified,
+            device = Build.MODEL ?: "this device", reason = "replaced by Google Drive's version", replacedBy = replacedBy
+        )
+    }
+
+    /** Voltcap/Sync backups on shared storage, or the app's own folder when that can't be written. */
+    internal fun backupsBase(context: Context): File =
+        File(Environment.getExternalStorageDirectory(), "Voltcap/Sync backups").takeIf { it.mkdirs() || it.isDirectory && it.canWrite() }
+            ?: File(context.getExternalFilesDir(null) ?: context.filesDir, "Sync backups")
 
     private fun conflictsDir(context: Context, folder: String): File {
         val base = File(Environment.getExternalStorageDirectory(), "Voltcap/Sync conflicts")
@@ -1437,8 +1732,18 @@ object CloudSync {
         val kind = folder.saveKind
         // Only real saves, both ways: anything else an older version uploaded
         // is simply ignored (left in Drive, never downloaded).
-        val remote = drive.list(remoteDir).filter { !it.isFolder && kind.accepts(it.name) }
-            .groupBy { it.name }.mapValues { (_, same) -> same.maxByOrNull { it.modifiedTime }!! }
+        // (Update 529: twins - the same name twice in a Drive folder - are picked deterministically: the newest, ties by id - so
+        // two devices always agree which one counts. The newest is kept as before: it is the one another device may have just
+        // uploaded, and the base comparison below then sees its change. Nothing is deleted.)
+        val listing = drive.list(remoteDir).filter { !it.isFolder }
+        // (Update 529c: multi-file save manifests ([UnitManifest]) are never saves - kept apart, read only to check a download.)
+        val manifests = listing.filter { UnitManifest.isManifest(it.name) }.groupBy { it.name }.mapValues { (_, same) -> pickTwin(same) }
+        val remote = listing.filter { !UnitManifest.isManifest(it.name) && kind.accepts(it.name) }
+            .groupBy { it.name }.mapValues { (_, same) -> pickTwin(same) }
+        fun unitKeyOf(rel: String): String? = folderCardOf(rel) ?: SaveLayouts.unitOf(kind, rel)
+        val unitUploads = mutableSetOf<String>()
+        val unitTrouble = mutableSetOf<String>()
+        val unitInSync = mutableSetOf<String>()
         val local = tree.list().filterKeys { kind.accepts(it) }
         val all = (local.keys + remote.keys).filter { only == null || only(it) }.sorted()
         // PS2 folder memory cards (ARMSX2 / NetherSX2 "Mcd001.ps2/…") are one save made of many files:
@@ -1455,6 +1760,7 @@ object CloudSync {
         val prefetch = if (uploadOnly) null else Prefetch(context, drive, all.filter { rel ->
             rel !in local && remote[rel] != null && folderCardOf(rel).let { it == null || it !in mixedCards }
         }.map { it to remote.getValue(it) })
+        val unitDownloads = linkedMapOf<String, MutableList<String>>()
         try {
         all.forEachIndexed { index, rel ->
             if (stopRequested) return@forEachIndexed
@@ -1466,7 +1772,8 @@ object CloudSync {
                 val b = state.base[rel]
 
                 fun upload() {
-                    push(context, drive, tree, rel, entry!!, l!!, remoteDir, r?.id, state, expectRemoteMd5 = r?.md5)
+                    report.raced += push(context, drive, tree, rel, entry!!, l!!, remoteDir, r?.id, state, expectRemoteMd5 = r?.md5, folderName = folder.name)
+                    unitKeyOf(rel)?.let { unitUploads += it }
                     report.uploaded++
                     report.changedPaths.getOrPut(folder.name) { mutableListOf() } += rel
                 }
@@ -1489,32 +1796,34 @@ object CloudSync {
                         localModified = entry!!.modified,
                         remoteId = r!!.id,
                         remoteModified = r.modifiedTime,
-                        remoteDevice = r.device
+                        remoteDevice = r.device,
+                        remoteSkew = r.skew
                     )
                 }
 
                 val card = folderCardOf(rel)
                 val unit = if (card == null) SaveLayouts.unitOf(kind, rel) else null
-                when {
-                    card != null && card in mixedCards -> if (l != r?.md5) {
-                        if (l != null && r != null) conflict()
-                        // A file only one side has inside a mixed card: left alone until the card is settled.
-                    }
-                    // (Update 241, #73) Both sides have it, it differs, and its save was changed on both devices.
-                    unit != null && unit in mixedUnits && l != null && r != null && l != r.md5 -> conflict()
-                    l != null && r == null -> upload()
-                    l == null && r != null -> if (!uploadOnly) download() // new elsewhere, or deleted here: never deleted everywhere
-                    l != null && r != null -> when {
+                // (Update 529: the decision table now lives in [SyncDecision] - unit-tested, with two-device runs.)
+                val action = SyncDecision.decide(SyncDecision.Input(
+                    local = l, remote = r?.md5, base = b?.md5, remoteId = r?.id, baseRemoteId = b?.remoteId,
+                    uploadOnly = uploadOnly, inMixedCard = card != null && card in mixedCards,
+                    inMixedUnit = unit != null && unit in mixedUnits
+                ))
+                when (action) {
+                    SyncDecision.Action.NOTHING -> Unit
+                    SyncDecision.Action.IN_SYNC -> {
+                        unitKeyOf(rel)?.let { unitInSync += it }
                         // Same on both sides: keep when/where it was last synced.
-                        l == r.md5 -> {
-                            state.base[rel] = b?.takeIf { it.md5 == l && it.remoteId == r.id && it.at > 0L }
-                                ?: Base(l, r.id, System.currentTimeMillis(), r.device)
-                        }
-                        b == null -> conflict()                  // both have it, never synced before
-                        r.md5 == b.md5 -> upload()               // only changed here
-                        l == b.md5 -> if (!uploadOnly) download() // only changed on the other device
-                        else -> conflict()                       // changed on both
+                        state.base[rel] = b?.takeIf { it.md5.equals(l, ignoreCase = true) && it.remoteId == r!!.id && it.at > 0L }
+                            ?: Base(l!!, r!!.id, System.currentTimeMillis(), r.device)
                     }
+                    SyncDecision.Action.UPLOAD -> upload()
+                    // (Update 529: a multi-file save is downloaded as one - all its files or none, below.)
+                    SyncDecision.Action.DOWNLOAD -> (card ?: unit)?.let { unitDownloads.getOrPut(it) { mutableListOf() } += rel; unitTrouble += it } ?: download()
+                    SyncDecision.Action.CONFLICT -> { conflict(); unitKeyOf(rel)?.let { unitTrouble += it } }
+                    // (Mid-game sync, update 529: newer on Drive - never applied while a game may be running; reported, so the
+                    // player sees it and the after-game sync / Play's check brings it in once the emulator has closed.)
+                    SyncDecision.Action.HELD -> { report.remoteNewer++; if (report.remoteFrom == null) report.remoteFrom = r?.device; unitKeyOf(rel)?.let { unitTrouble += it } }
                 }
             } catch (e: DriveSignInNeeded) {
                 saveFolderState(context, folder.name, state)
@@ -1523,7 +1832,11 @@ object CloudSync {
                 // No point trying the remaining files: the worker retries the whole sync later.
                 saveFolderState(context, folder.name, state)
                 throw e
+            } catch (e: StillWriting) {
+                unitKeyOf(rel)?.let { unitTrouble += it }
+                report.stillWriting++; report.failed++
             } catch (e: RemoteMoved) {
+                unitKeyOf(rel)?.let { unitTrouble += it }
                 // (Update 222: another handheld uploaded this save while we compared — both versions stay; the player chooses.)
                 val entry = local[rel]
                 val r = remote[rel]
@@ -1532,11 +1845,52 @@ object CloudSync {
                     remoteId = r.id, remoteModified = System.currentTimeMillis(), remoteDevice = null
                 )
             } catch (e: Exception) {
+                unitKeyOf(rel)?.let { unitTrouble += it }
                 report.failed++
             }
             // Saved as it goes, so an interrupted sync doesn't redo (or
             // misjudge) what's already done.
             if (index % 25 == 24) saveFolderState(context, folder.name, state)
+        }
+        unitDownloads.forEach { (unitKey, rels) ->
+            if (stopRequested) return@forEach
+            try {
+                // (Update 529c, risk 3: Drive's copy of this save must be complete - every file as its manifest lists it - before it
+                // is applied. Otherwise another handheld is still sending it (or broke off): held, never applied as a mix.)
+                when (unitGate(context, drive, folder.name, unitKey, manifests[UnitManifest.nameFor(unitKey)],
+                    remote.filterKeys { unitKeyOf(it) == unitKey }, local.keys.any { unitKeyOf(it) == unitKey })) {
+                    UnitGate.APPLY -> Unit
+                    UnitGate.HOLD -> { report.unitsHeld++; return@forEach }
+                    UnitGate.ASK -> {
+                        rels.filter { local[it] != null }.forEach { rel ->
+                            val e = local.getValue(rel); val r = remote.getValue(rel)
+                            report.conflictList += SyncConflict(folder.name, folder, rel, e.modified, r.id, r.modifiedTime, r.device, r.skew)
+                        }
+                        return@forEach
+                    }
+                }
+                val pulled = pullUnit(context, drive, tree, rels.map { it to remote.getValue(it) }, state, folder.name, prefetch)
+                if (pulled) {
+                    report.downloaded += rels.size
+                    report.changedPaths.getOrPut(folder.name) { mutableListOf() } += rels
+                    report.downloadedPaths.getOrPut(folder.name) { mutableListOf() } += rels
+                }
+            } catch (e: DriveSignInNeeded) {
+                saveFolderState(context, folder.name, state); throw e
+            } catch (e: DriveOffline) {
+                saveFolderState(context, folder.name, state); throw e
+            } catch (e: Exception) {
+                android.util.Log.w("CloudSync", "Save $unitKey left as it was: ${e.message}")
+                report.failed += rels.size
+            }
+        }
+        // (Update 529c, risk 3: every multi-file save this run sent completely gets its manifest - written last. So does a save that is
+        // the same here and on Drive, file for file, whose manifest is missing or says otherwise - a whole save a device has is a
+        // coherent one (after a conflict choice, say); only its md5 is compared, nothing is downloaded, nothing written when it matches.)
+        ((unitUploads + unitInSync) - unitTrouble).forEach { unit ->
+            if (stopRequested) return@forEach
+            runCatching { writeUnitManifest(drive, remoteDir, unit, state, ::unitKeyOf, manifests[UnitManifest.nameFor(unit)]) }
+                .onFailure { if (it is DriveSignInNeeded || it is DriveOffline) { saveFolderState(context, folder.name, state); throw it } }
         }
         } finally {
             prefetch?.close()

@@ -159,7 +159,7 @@ internal object DriveOnlySaves {
         if (saves != null) {
             drive.list(saves.id, "mimeType='$FOLDER_MIME'").filter { it.isFolder }.forEach { dir ->
                 drive.list(dir.id).filter { !it.isFolder && !isSaveState(it.name) }
-                    .groupBy { it.name }.values.mapNotNull { same -> same.maxByOrNull { it.modifiedTime } }
+                    .groupBy { it.name }.values.map { same -> CloudSync.pickTwin(same) } // (update 529: the same pick as the sync)
                     .forEach { f -> out += Entry(dir.name, f.name, f.id, f.md5, f.size, f.modifiedTime, f.device) }
             }
         }

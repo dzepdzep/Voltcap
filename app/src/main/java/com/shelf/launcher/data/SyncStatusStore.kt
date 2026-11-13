@@ -23,7 +23,12 @@ data class GameSyncStatus(
      * Update 493 (D292): when files last actually moved (0 = not recorded: entries from before 493, or never). A check that
      * moves nothing updates [lastSuccessAt] only, so the two tell "checked" from "uploaded / downloaded".
      */
-    val lastTransferAt: Long = 0L
+    val lastTransferAt: Long = 0L,
+    /**
+     * Update 529: when a both-ways check (Drive's newer saves looked for and applied, nothing left to send) last ended cleanly.
+     * Upload-only runs never set it. [PrelaunchCheck] trusts the save before Play only from this.
+     */
+    val checkedAt: Long = 0L
 )
 
 /** Update 493 (D292): what Save Vault says about a game's last sync — from the recorded events only, nothing guessed. */

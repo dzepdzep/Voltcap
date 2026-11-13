@@ -165,9 +165,11 @@ object SyncNotifier {
         outcome.needsSignIn -> "Sign in to Google Drive again — saves can't be backed up until you do"
         outcome.retry -> "Saves not backed up yet — offline, Voltcap will try again"
         outcome.conflicts > 0 -> "Save conflict — $name · open its sync to choose"
-        !outcome.ok -> null
+        // (Update 529: a sync that didn't finish is said, not skipped - "nothing said" read as "all fine".)
+        outcome.heldBack -> outcome.summary
+        !outcome.ok -> if (outcome.summary == "Sync stopped.") null else "Saves not synced yet — $name · Voltcap will try again"
         outcome.downloaded > 0 -> "Saves restored — $name"
-        outcome.uploaded > 0 -> "Saves safe on Google Drive — $name · ${files(outcome.uploaded)}"
+        outcome.uploaded > 0 -> "Saves uploaded and confirmed on Google Drive — $name · ${files(outcome.uploaded)}"
         else -> null
     }
 
@@ -175,13 +177,18 @@ object SyncNotifier {
      * Posts the result of a background scoped sync. [firstAttempt]: false on WorkManager retries, so an
      * offline/failed note isn't re-posted every time.
      */
-    fun afterBackgroundSync(context: Context, key: String, name: String, outcome: SyncOutcome, firstAttempt: Boolean = true) {
+    fun afterBackgroundSync(context: Context, key: String, name: String, outcome: SyncOutcome, firstAttempt: Boolean = true, midGame: Boolean = false) {
         val app = context.applicationContext
         if (outcome.ok && outcome.conflicts == 0 && !outcome.needsSignIn) {
             // A good sync means any earlier sign-in complaint is over; a new one may notify again.
             app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_SIGN_IN_POSTED, false).apply()
         }
         if (appInForeground || !enabled(app)) return
+        // (Mid-game sync, update 529, owner: "keep notifications minimal and unobtrusive during gaming". While a game is being
+        // played a confirmed upload says nothing - the game's sync status shows it - and a save caught mid-write is not a
+        // problem (it is sent once it settles). Problems still show, once.)
+        if (midGame && outcome.ok && outcome.conflicts == 0) return
+        if (outcome.stillWriting > 0 && outcome.conflicts == 0 && !outcome.retry && !outcome.needsSignIn) return
         when {
             outcome.needsSignIn -> signInNeeded(app)
             outcome.retry -> if (firstAttempt) post(app, idFor(key), build(app, SyncNoticeKind.PROBLEM, "Saves not backed up yet", "$name · Offline — Voltcap will try again by itself"))
@@ -192,12 +199,40 @@ object SyncNotifier {
             )
             outcome.ok && outcome.uploaded > 0 -> post(
                 app, idFor(key),
-                build(app, SyncNoticeKind.DONE, "Saves safe on Google Drive", "$name · ${files(outcome.uploaded)} backed up")
+                build(app, SyncNoticeKind.DONE, "Saves uploaded and confirmed", "$name · ${files(outcome.uploaded)} on Google Drive")
+            )
+            // (Update 529: a failed upload is shown once - not on every retry; the status in Save Vault stays until it is sent.)
+            !outcome.ok && firstAttempt && outcome.summary != "Sync stopped." -> post(
+                app, idFor(key), build(app, SyncNoticeKind.PROBLEM, "Saves not synced yet", "$name · Voltcap will try again by itself")
             )
         }
     }
 
     private fun files(n: Int) = "$n file${if (n == 1) "" else "s"}"
+
+    /**
+     * Mid-game sync, update 529: another handheld put a newer save of the game being played on Drive. Silent and low-key
+     * (the quiet channel, no sound, once per session); nothing is replaced while the game runs.
+     */
+    fun remoteNewer(context: Context, key: String, name: String, from: String?) {
+        val app = context.applicationContext
+        if (!enabled(app)) return
+        ensureChannels(app)
+        val n = NotificationCompat.Builder(app, CHANNEL_WORKING)
+            .setSmallIcon(com.shelf.launcher.R.drawable.ic_stat_sync_down)
+            .setColor(VOLTCAP_ORANGE)
+            .setContentTitle("Newer save on Google Drive")
+            .setContentText("$name" + (from?.let { " · from $it" } ?: "") + " · kept for after this game")
+            .setSubText("Google Drive")
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(openApp(app))
+            .setAutoCancel(true).setOnlyAlertOnce(true).setSilent(true)
+            .build()
+        // (Not through post(): no group summary, which sits on the sounding channel.)
+        if (!UnlockNotifier.canNotify(app)) return
+        runCatching { NotificationManagerCompat.from(app).notify(idFor(key) + 1, n) }
+    }
 
     /** "Sign in to Google Drive again" — once, until a sync works again. */
     fun signInNeeded(context: Context) {

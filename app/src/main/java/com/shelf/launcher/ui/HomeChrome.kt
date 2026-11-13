@@ -1655,7 +1655,10 @@ private fun BackdropArtLayer(
             // Blurred: decoded at a quarter size and blurred smoothly in the bitmap itself (SmoothBlur),
             // then stretched with bilinear filtering — clean on every device, no blocky pixels.
             // (An eighth of the size: the blur hides the detail, and the decode + blur is four times cheaper than at a quarter.)
-            val heroDiv = if (blurred) 8 else 1
+            // Update 529 (blur hotfix, owner: "pixelated / blocky blur"): stretched 8x, the eighth left a grid of creases every
+            // 8 px on smooth, dark gradients (measured on the RP Flip 2). Half the size now - stretched 2x, no grid - and the
+            // blur radius grows with it ([heroBlurRadius]), so the picture is as soft as before. Decoded and blurred once.
+            val heroDiv = if (blurred) HERO_BLUR_DIV else 1
             // A load that failed (Wi-Fi still waking after the screen was off — Sleep mode turns it off — or a
             // hiccup) is tried again a few times, and once more whenever the home screen comes back, instead
             // of the old picture staying up for good.
@@ -1679,7 +1682,7 @@ private fun BackdropArtLayer(
                     // Small heroes are upscaled crisply (see SharpUpscale) —
                     // Settings › Appearance › "Upscale small backgrounds".
                     .apply {
-                        if (blurred) transformations(SmoothBlur(radius = (heroW / heroDiv / 45).coerceIn(3, 10)))
+                        if (blurred) transformations(SmoothBlur(radius = heroBlurRadius(heroW / heroDiv)))
                         else if (sharpen) transformations(SharpUpscale(factor = perGame?.takeIf { it > 1 }))
                     }
                     .crossfade(false)
@@ -1690,13 +1693,15 @@ private fun BackdropArtLayer(
             val softRequest = remember(heroUrl, heroW, heroH, lite) {
                 coil.request.ImageRequest.Builder(heroContext)
                     .data(heroUrl)
-                    .size((heroW / 14).coerceAtLeast(1), (heroH / 14).coerceAtLeast(1))
+                    // (Update 529, blur hotfix: a fourteenth of the screen stretched 14x showed a 14 px crease grid. Half the size,
+                    // its blur scaled up with it (3 px at a fourteenth = 21 px at a half): as soft, no grid.)
+                    .size((heroW / HERO_BLUR_DIV).coerceAtLeast(1), (heroH / HERO_BLUR_DIV).coerceAtLeast(1))
                     .scale(coil.size.Scale.FILL)
                     .precision(coil.size.Precision.INEXACT)
-                    .memoryCacheKey("$heroUrl|soft|${heroW / 14}x${heroH / 14}|$lite")
+                    .memoryCacheKey("$heroUrl|soft2|${heroW / HERO_BLUR_DIV}x${heroH / HERO_BLUR_DIV}|$lite")
                     // (Update 130: blurred in Lite too — unblurred, the tiny copy stretched over the screen was blocky.
                     // The blur is done once, on the small picture, so it costs nothing per frame.)
-                    .transformations(SmoothBlur(radius = 3))
+                    .transformations(SmoothBlur(radius = softBlurRadius(heroW / HERO_BLUR_DIV)))
                     .crossfade(false)
                     .build()
             }
@@ -1921,3 +1926,15 @@ private fun ReturnTrophy(count: Int, onClick: () -> Unit) {
         )
     }
 }
+
+/** Update 529 (blur hotfix): the blurred hero copies are decoded at 1 / this of the screen (was 8 and 14: visible crease grids). */
+internal const val HERO_BLUR_DIV = 2
+
+/**
+ * Update 529: the blurred hero's radius at [w] px wide - the old strength (1/45 of an eighth-size copy: 5 px there = ~40 px on a
+ * 1920 px screen) kept at the new size. Pure, for the test.
+ */
+internal fun heroBlurRadius(w: Int): Int = (w / 45).coerceIn(3, 48)
+
+/** Update 529: the soft copy behind "Whole picture" - 3 px at a fourteenth (~42 px on the screen) kept at [w] px wide. */
+internal fun softBlurRadius(w: Int): Int = (w / 46).coerceIn(3, 48)
