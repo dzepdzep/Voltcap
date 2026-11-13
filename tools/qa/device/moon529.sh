@@ -21,9 +21,10 @@ clip() { REC_SEG=9 rec_start $O/$1 ${2:-9}; sleep 0.6; }
 endclip() { rec_stop; sleep 0.4; log "clip done"; }
 case $MODE in
 run)
-  gate
+  dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
   [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
-  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; picker
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate; picker
   A --es voltcap_test_snapshot save; sleep 2
   A --es voltcap_test_artfix "delay=0"; sleep 1.5
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
