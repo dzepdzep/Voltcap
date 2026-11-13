@@ -84,6 +84,69 @@ internal object SaveBackups {
         }
     }
 
+    /** Update 529c: one earlier version of a save, for "Earlier versions" (newest first). [meta] null: no readable sidecar. */
+    data class Version(val file: File, val meta: Meta?) {
+        val md5: String? get() = meta?.md5
+        val createdAt: Long get() = meta?.createdAt ?: file.lastModified()
+    }
+
+    /** Every kept version of [path] in [folder] under [base], newest first. */
+    fun versions(base: File, folder: String, path: String): List<Version> {
+        val dir = File(File(base, safeSegment(folder)), path).parentFile ?: return emptyList()
+        return revisions(dir, path.substringAfterLast('/')).map { Version(it, readMeta(File(dir, it.name + META))) }
+    }
+
+    class RestoreFailed(message: String) : Exception(message)
+
+    /**
+     * Update 529c (risk 5: rollback was manual): puts [version] back as the live save, the player's explicit choice. In order:
+     * 1. the version itself is checked (its bytes against its sidecar md5) - a damaged copy is never restored;
+     * 2. the live save, if there is one, is backed up first (verified, like any backup) - a restore never loses the current save;
+     * 3. [write] puts the bytes in place; 4. [readBack] must return exactly the restored md5, or the backup from step 2 goes back.
+     * Returns the md5 now live. Pure (I/O through the lambdas), unit-tested.
+     */
+    fun restore(
+        base: File, folder: String, path: String, version: Version,
+        live: (() -> InputStream)?, liveModified: Long, device: String,
+        write: (File) -> Unit, readBack: () -> String?, now: Long = System.currentTimeMillis()
+    ): String {
+        val want = md5(version.file)
+        version.meta?.md5?.let { if (!it.equals(want, ignoreCase = true)) throw RestoreFailed("That earlier version of $path is damaged - nothing was changed.") }
+        val current = live?.let {
+            backup(base, folder, path, it, liveModified, device, reason = "replaced by an earlier version (restored)", replacedBy = want, now = now)
+        }
+        try {
+            write(version.file)
+        } catch (e: Exception) {
+            current?.let { runCatching { write(it) } }
+            throw RestoreFailed("Couldn't put the earlier version of $path back: ${e.message ?: e.javaClass.simpleName}")
+        }
+        val got = readBack()
+        if (got == null || !got.equals(want, ignoreCase = true)) {
+            current?.let { runCatching { write(it) } }
+            throw RestoreFailed("The restored $path didn't read back correctly - the save you had is back in place.")
+        }
+        return want
+    }
+
+    private fun unescape(v: String): String = buildString {
+        var i = 0
+        while (i < v.length) {
+            val c = v[i]
+            if (c == '\\' && i + 1 < v.length) { append(if (v[i + 1] == 'n') '\n' else v[i + 1]); i += 2 } else { append(c); i++ }
+        }
+    }
+
+    /** Reads a sidecar written by [writeMeta]; null when missing or unreadable. */
+    internal fun readMeta(f: File): Meta? = runCatching {
+        if (!f.isFile) return null
+        val t = f.readText()
+        fun str(k: String) = Regex("\"" + Regex.escape(k) + "\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").find(t)?.groupValues?.get(1)?.let(::unescape)
+        fun num(k: String) = Regex("\"" + Regex.escape(k) + "\":\\s*(-?\\d+)").find(t)?.groupValues?.get(1)?.toLong()
+        Meta(str("folder") ?: return null, str("path") ?: return null, str("device") ?: "", str("md5") ?: return null,
+            num("size") ?: 0L, num("sourceModified") ?: 0L, num("createdAt") ?: 0L, str("reason") ?: "", str("replacedBy"))
+    }.getOrNull()
+
     /** The backups of [name] in [dir], newest first (sidecars and partial files left out). */
     fun revisions(dir: File, name: String): List<File> =
         dir.listFiles { f -> f.isFile && isRevisionOf(f.name, name) }?.sortedByDescending { it.name }.orEmpty()

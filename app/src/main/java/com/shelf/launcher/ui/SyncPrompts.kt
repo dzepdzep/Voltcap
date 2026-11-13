@@ -61,8 +61,10 @@ fun SyncConflictDialog(
     onLater: () -> Unit
 ) {
     val thisDevice = android.os.Build.MODEL
+    // (Update 529c: "newer" only when the dates, corrected to Google's clock, are clearly apart - [ConflictClock]; never a guess.)
     val allNewerHere = conflicts.all { it.localNewer }
-    val allNewerThere = conflicts.none { it.localNewer }
+    val allNewerThere = conflicts.all { it.remoteNewer }
+    val unsure = conflicts.count { it.newer == com.shelf.launcher.data.ConflictClock.Pick.UNSURE }
     ShelfDialog(
         icon = Icons.Filled.SyncProblem,
         title = if (conflicts.size == 1) "This save changed on two devices" else "${conflicts.size} saves changed on two devices",
@@ -89,6 +91,13 @@ fun SyncConflictDialog(
                     "and both devices already had saves. The version you don't keep is saved in " +
                     "Voltcap/Sync conflicts — nothing gets lost."
             )
+            if (unsure > 0) {
+                Spacer(Modifier.height(6.dp))
+                MutedNote(
+                    (if (unsure == conflicts.size) "These dates are" else "$unsure of these dates are") + " too close to tell which save is newer " +
+                        "(two handhelds' clocks can differ). \"Newest of each\" leaves those for you to choose."
+                )
+            }
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 conflicts.take(6).forEach { c ->
@@ -101,7 +110,8 @@ fun SyncConflictDialog(
                             "${c.folderName} · here: ${whenText(c.localModified)}" +
                                 (if (c.localNewer) " (newer)" else "") +
                                 " · Drive${c.remoteDevice?.let { " (from $it)" } ?: ""}: ${whenText(c.remoteModified)}" +
-                                (if (!c.localNewer) " (newer)" else ""),
+                                (if (c.remoteNewer) " (newer)" else "") +
+                                (if (c.newer == com.shelf.launcher.data.ConflictClock.Pick.UNSURE) " · too close to tell which is newer" else ""),
                             color = ShelfTheme.textMuted, fontSize = 12.sp
                         )
                     }

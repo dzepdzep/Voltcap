@@ -272,7 +272,11 @@ data class DriveFile(
     val modifiedTime: Long,
     val size: Long,
     /** The device that uploaded this version (set by Voltcap on upload). */
-    val device: String? = null
+    val device: String? = null,
+    /** Update 529c: the uploading device's clock minus Google's at upload time (ms); null = not recorded (older uploads). */
+    val skew: Long? = null,
+    /** Update 529c: sent by a Voltcap that writes multi-file save manifests ([UnitManifest]). */
+    val marked: Boolean = false
 )
 
 /**
@@ -315,9 +319,17 @@ class DriveClient(private val context: Context) {
      * retried later instead of failing file after file (update 91).
      */
     private fun call(request: Request): Response = try {
-        http.newCall(request).execute()
+        val sent = System.currentTimeMillis()
+        http.newCall(request).execute().also { r -> noteClock(r.header("Date"), sent, System.currentTimeMillis()) }
     } catch (e: java.io.IOException) {
         throw DriveOffline(e)
+    }
+
+    /** Update 529c ([ConflictClock]): this device's clock error against Google's, from a reply's `Date` (1 s resolution). */
+    private fun noteClock(date: String?, sent: Long, got: Long) {
+        val google = date?.let { runCatching { httpDate().parse(it)?.time }.getOrNull() } ?: return
+        // The reply was dated somewhere between sending and receiving: the middle, +0.5 s for the whole-second header.
+        lastSkew = (sent + got) / 2 - (google + 500)
     }
 
     private fun json(build: () -> Request.Builder): JSONObject =
@@ -386,7 +398,10 @@ class DriveClient(private val context: Context) {
     fun upload(content: RequestBody, name: String, parentId: String, existingId: String?, modifiedTime: Long): DriveFile {
         val meta = JSONObject()
             .put("modifiedTime", formatTime(modifiedTime))
-            .put("appProperties", JSONObject().put("device", android.os.Build.MODEL).put("install", installId(context)))
+            .put("appProperties", JSONObject().put("device", android.os.Build.MODEL).put("install", installId(context))
+                // (Update 529c: this device's clock error against Google's - "Newest" corrects the dates with it - and the mark
+                // that this Voltcap writes multi-file save manifests.)
+                .apply { lastSkew?.let { put("skew", it.toString()) } }.put("unit", "1"))
         if (existingId == null) meta.put("name", name).put("parents", JSONArray().put(parentId))
         val start = if (existingId == null) "$UPLOAD/files?uploadType=resumable&fields=$FIELDS"
         else "$UPLOAD/files/$existingId?uploadType=resumable&fields=$FIELDS"
@@ -431,6 +446,48 @@ class DriveClient(private val context: Context) {
             }
         }
         modifiedTime?.let { target.setLastModified(it) }
+    }
+
+    /**
+     * Update 529c ([UploadRace]): [id]'s revisions, oldest first. Drive keeps a binary file's revisions (30 days or 100); the list is
+     * read right after replacing a save, to find versions another handheld uploaded in the same moment.
+     */
+    internal fun revisions(id: String): List<UploadRace.Revision> {
+        val out = mutableListOf<UploadRace.Revision>()
+        var page: String? = null
+        do {
+            val o = json {
+                val url = "$API/files/$id/revisions".toHttpUrl().newBuilder()
+                    .addQueryParameter("fields", "nextPageToken,revisions(id,md5Checksum)")
+                    .addQueryParameter("pageSize", "200")
+                page?.let { url.addQueryParameter("pageToken", it) }
+                Request.Builder().url(url.build()).get()
+            }
+            val arr = o.optJSONArray("revisions")
+            for (i in 0 until (arr?.length() ?: 0)) {
+                val r = arr!!.getJSONObject(i)
+                out += UploadRace.Revision(r.optString("id"), r.optString("md5Checksum").takeIf { it.isNotEmpty() })
+            }
+            page = o.optString("nextPageToken").takeIf { it.isNotEmpty() }
+        } while (page != null)
+        return out
+    }
+
+    /** One earlier revision of [id] into [target] (through a temporary file, like [download]). */
+    fun downloadRevision(id: String, revisionId: String, target: File) {
+        target.parentFile?.mkdirs()
+        val part = File(target.parentFile, ".${target.name}.voltcap-part")
+        execute { Request.Builder().url("$API/files/$id/revisions/$revisionId?alt=media").get() }.use { response ->
+            val body = response.body ?: error("Empty download.")
+            part.outputStream().use { out -> body.byteStream().use { it.copyTo(out) } }
+        }
+        if (!part.renameTo(target)) { part.copyTo(target, overwrite = true); part.delete() }
+    }
+
+    /** Keeps a revision on Drive for good (never pruned after 30 days / 100 revisions). */
+    fun keepRevision(id: String, revisionId: String) {
+        val body = JSONObject().put("keepForever", true).toString().toRequestBody(JSON_TYPE)
+        execute { Request.Builder().url("$API/files/$id/revisions/$revisionId?fields=id").patch(body) }.close()
     }
 
     /** To Drive's bin (recoverable for 30 days), not deleted outright. */
@@ -497,7 +554,9 @@ class DriveClient(private val context: Context) {
         md5 = o.optString("md5Checksum").takeIf { it.isNotEmpty() },
         modifiedTime = parseTime(o.optString("modifiedTime")),
         size = o.optString("size").toLongOrNull() ?: 0L,
-        device = o.optJSONObject("appProperties")?.optString("device")?.takeIf { it.isNotEmpty() }
+        device = o.optJSONObject("appProperties")?.optString("device")?.takeIf { it.isNotEmpty() },
+        skew = o.optJSONObject("appProperties")?.optString("skew")?.toLongOrNull(),
+        marked = o.optJSONObject("appProperties")?.optString("unit") == "1"
     )
 
     companion object {
@@ -542,6 +601,11 @@ class DriveClient(private val context: Context) {
             .apply { timeZone = TimeZone.getTimeZone("UTC") }
 
         fun formatTime(ms: Long): String = format().format(java.util.Date(ms))
+
+        /** Update 529c: this device's clock minus Google's, from the latest Drive reply (null until one arrived). */
+        @Volatile var lastSkew: Long? = null
+
+        private fun httpDate() = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US).apply { timeZone = TimeZone.getTimeZone("GMT") }
 
         fun parseTime(s: String): Long {
             if (s.isEmpty()) return 0L

@@ -32,6 +32,8 @@ internal object PrelaunchCheck {
         outcome.conflicts > 0 -> Next.CONFLICT
         // (An emulator still held the save: Drive's side was not applied here, so it is not known to be current.)
         outcome.heldBack -> Next.ASK
+        // (Update 529c: another handheld was still sending a multi-file save of this game - Drive's newest wasn't applied yet.)
+        outcome.unitsHeld > 0 -> Next.ASK
         outcome.ok -> Next.PLAY
         else -> Next.ASK
     }

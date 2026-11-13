@@ -39,6 +39,12 @@ class SaveWatchWorker(context: Context, params: WorkerParameters) : CoroutineWor
         // Session over (Voltcap resumed and closed it, or another game started), or too old: stop the chain.
         if (openSessionStart(app, game.key) != started || now - started > MAX_SESSION_MS) return Result.success()
         if (!CloudSync.isActive(app) || com.shelf.launcher.CrashGuard.safeMode) return Result.success()
+        // (Update 529c: the handheld restarted since this session began - the game isn't running any more. Its saves get the normal
+        // after-game sync (per game, kept by WorkManager until it succeeds, offline included) and the watch chain ends.)
+        if (BootSession.startedBeforeBoot(started, now, android.os.SystemClock.elapsedRealtime())) {
+            PostGameSyncWorker.enqueue(app, game)
+            return Result.success()
+        }
 
         // (Mid-game sync, update 529: the save watcher lives in Voltcap's process, and Android ends that process when a game
         // needs the memory - GT78's log, 12 Nov: "Process com.shelf.launcher has died" while in the background. Its saves then

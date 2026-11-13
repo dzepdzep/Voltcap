@@ -35,7 +35,9 @@ class SaveSyncSim529Test {
     private fun tick() = (clock + 1_000).also { clock = it }
 
     private inner class DFile(val id: String, val name: String, var bytes: ByteArray, var modified: Long, var device: String) {
-        fun meta() = DriveFile(id = id, name = name, isFolder = false, md5 = md5(bytes), modifiedTime = modified, size = bytes.size.toLong(), device = device)
+        fun meta() = DriveFile(id = id, name = name, isFolder = false, md5 = md5(bytes), modifiedTime = modified, size = bytes.size.toLong(), device = device, marked = true)
+        /** Update 529c: every version this file had, oldest first (Drive's revision list). */
+        val revisions = mutableListOf(bytes.copyOf())
     }
 
     private inner class Drive {
@@ -62,9 +64,11 @@ class SaveSyncSim529Test {
             beforeUpload.remove(name)?.invoke()
             val f = existingId?.let { file(it) }
             everHeld += md5(bytes)
-            return if (f != null) f.also { it.bytes = bytes.copyOf(); it.modified = modified; it.device = device }
+            return if (f != null) f.also { it.bytes = bytes.copyOf(); it.modified = modified; it.device = device; it.revisions += bytes.copyOf() }
             else DFile("id${next++}", name, bytes.copyOf(), modified, device).also { files += it }
         }
+        /** Update 529c: multi-file save manifests (unit -> rel -> md5), written last by the uploader. */
+        val manifests = mutableMapOf<String, Map<String, String>>()
     }
 
     private data class Base(val md5: String, val remoteId: String)
@@ -81,6 +85,9 @@ class SaveSyncSim529Test {
         /** The emulator writes this file while the sync reads it (once, for the next push of it). */
         val whileReading = mutableMapOf<String, () -> Unit>()
         var stillWriting = 0
+        /** Update 529c: other devices' versions found under ours after an upload ([UploadRace]) and kept; saves held ([UnitManifest]). */
+        var racedKept = 0
+        var unitsHeld = 0
         /** Writes into the save folder that fail (storage full / card removed): the n-th write from now. */
         var failWriteAt = -1
         /** The storage's date step: 2000 for a FAT / exFAT card (dates in 2 s steps). */
@@ -140,22 +147,40 @@ class SaveSyncSim529Test {
         }
         val mixed = here intersect there
         val unitDownloads = linkedMapOf<String, MutableList<String>>()
+        val unitUploads = mutableSetOf<String>(); val unitTrouble = mutableSetOf<String>(); val unitInSync = mutableSetOf<String>()
         for (rel in all) {
             val l = lh(rel); val r = remote[rel]; val b = d.base[rel]; val u = unitOf(rel)
             val action = SyncDecision.decide(SyncDecision.Input(l, r?.md5, b?.md5, r?.id, b?.remoteId, uploadOnly = uploadOnly, inMixedUnit = u != null && u in mixed))
             when (action) {
                 SyncDecision.Action.NOTHING -> Unit
-                SyncDecision.Action.IN_SYNC -> d.base[rel] = Base(l!!, r!!.id)
-                SyncDecision.Action.UPLOAD -> push(d, drive, rel, r?.id, r?.md5, l)
-                SyncDecision.Action.DOWNLOAD -> unitDownloads.getOrPut(u ?: "file:$rel") { mutableListOf() } += rel
-                SyncDecision.Action.CONFLICT -> d.conflicts += rel
-                SyncDecision.Action.HELD -> d.held += rel
+                SyncDecision.Action.IN_SYNC -> { d.base[rel] = Base(l!!, r!!.id); u?.let { unitInSync += it } }
+                SyncDecision.Action.UPLOAD -> try {
+                    val before = d.base[rel]
+                    push(d, drive, rel, r?.id, r?.md5, l)
+                    if (u != null) { if (d.base[rel] != before) unitUploads += u else unitTrouble += u }
+                } catch (e: Exception) { u?.let { unitTrouble += it } }
+                SyncDecision.Action.DOWNLOAD -> { unitDownloads.getOrPut(u ?: "file:$rel") { mutableListOf() } += rel; u?.let { unitTrouble += it } }
+                SyncDecision.Action.CONFLICT -> { d.conflicts += rel; u?.let { unitTrouble += it } }
+                SyncDecision.Action.HELD -> { d.held += rel; u?.let { unitTrouble += it } }
             }
             check()
         }
-        unitDownloads.values.forEach { rels ->
+        unitDownloads.forEach { (key, rels) ->
+            // (CloudSync.unitGate, update 529c: a multi-file save is applied only when Drive's files match its manifest.)
+            if (!key.startsWith("file:")) {
+                val verdict = UnitManifest.check(drive.manifests[key],
+                    remote.filterKeys { unitOf(it) == key }.mapValues { (_, f) -> UnitManifest.OnDrive(f.md5, f.marked) })
+                if (verdict == UnitManifest.Verdict.INCOMPLETE) { d.unitsHeld++; return@forEach }
+            }
             try { pullUnit(d, drive, rels.map { it to remote.getValue(it) }) } catch (e: Exception) { /* reported as not synced */ }
             check()
+        }
+        // (Manifests last, for every save this run sent completely.)
+        // (And for every save that is the same here and on Drive, file for file, when its manifest says otherwise or is missing: a whole
+        // save a device has is a coherent one - after a conflict choice, say. CloudSync compares the manifest's md5, no download.)
+        ((unitUploads + unitInSync) - unitTrouble).forEach { u ->
+            val want = d.base.filterKeys { unitOf(it) == u }.mapValues { it.value.md5 }
+            if (drive.manifests[u] != want) drive.manifests[u] = want
         }
     }
 
@@ -174,6 +199,11 @@ class SaveSyncSim529Test {
         // (The race hook runs inside upload: another device that uploads "meanwhile" without listing first is the twin case.)
         val up = drive.upload(rel, snap, existingId, d.modified[rel] ?: tick(), d.name)
         if (md5(up.bytes) == sent) d.base[rel] = Base(sent, up.id)
+        // (CloudSync.keepRacedRevisions, update 529c: what another device uploaded between our check and our upload is kept.)
+        if (existingId != null && expect != null) {
+            val revs = up.revisions.mapIndexed { i, b -> UploadRace.Revision("r$i", md5(b)) }
+            UploadRace.replacedUnseen(revs, expect, sent)?.forEach { rev -> d.parked += up.revisions[rev.id.drop(1).toInt()].copyOf(); d.racedKept++ }
+        }
     }
 
     private fun pullUnit(d: Device, drive: Drive, files: List<Pair<String, DriveFile>>, byChoice: Boolean = false) {
@@ -480,6 +510,51 @@ class SaveSyncSim529Test {
     }
 
     // ---------- the table itself ----------
+
+    /**
+     * Update 529c, risk 2: a third handheld's upload lands between B's "still that version?" check and B's upload (Drive has no
+     * conditional replace). Before: it only sat in Drive's history, unannounced; once C then took B's save (backup aside) nothing on any
+     * device showed it. Now B finds it in the revision list and keeps it.
+     */
+    @Test fun anUploadInTheLastMomentIsKeptAndAnnounced() {
+        devices = world("A", "B", "C"); val (a, b, c) = devices
+        play(a, "game.srm", bytes("a1")); sync(a, drive); sync(b, drive); sync(c, drive)
+        play(b, "game.srm", bytes("b2"))
+        play(c, "game.srm", bytes("c2"))
+        // C uploads in the gap: B's check already passed, B's bytes not yet accepted.
+        drive.beforeUpload["game.srm"] = {
+            val f = drive.files.first { it.name == "game.srm" }
+            f.bytes = c.local.getValue("game.srm").copyOf(); f.revisions += f.bytes.copyOf(); f.device = "C"; drive.everHeld += md5(f.bytes)
+        }
+        sync(b, drive)
+        assertEquals(1, b.racedKept)
+        assertTrue("C's version is kept on B", b.parked.any { md5(it) == latest["C" to "game.srm"] })
+        // C later takes Drive's (B's) save: its own is backed up there too - and B parked it, so it never depends on Drive's history alone.
+        check()
+    }
+
+    /**
+     * Update 529c, risk 3: A sends a two-file save but goes offline after the first file. Before: B saw "Drive changed file 1, not file 2"
+     * and applied that mix (A's new file 1 + the old file 2) as one save. Now B holds it until A's manifest says the save is complete.
+     */
+    @Test fun aMultiFileSaveHalfSentIsNeverAppliedAsAMix() {
+        devices = world("A", "B"); val (a, b) = devices
+        play(a, "PSP/SAVEDATA/ULUS1/DATA.BIN", bytes("d1")); play(a, "PSP/SAVEDATA/ULUS1/PARAM.SFO", bytes("p1"))
+        sync(a, drive, ::psp); sync(b, drive, ::psp)
+        assertEquals(md5(bytes("d1")), md5(b.local.getValue("PSP/SAVEDATA/ULUS1/DATA.BIN")))
+        play(a, "PSP/SAVEDATA/ULUS1/DATA.BIN", bytes("d2")); play(a, "PSP/SAVEDATA/ULUS1/PARAM.SFO", bytes("p2"))
+        drive.beforeUpload["PSP/SAVEDATA/ULUS1/PARAM.SFO"] = { error("offline") }
+        sync(a, drive, ::psp)
+        sync(b, drive, ::psp)
+        assertEquals("held, not applied", 1, b.unitsHeld)
+        assertEquals(md5(bytes("d1")), md5(b.local.getValue("PSP/SAVEDATA/ULUS1/DATA.BIN")))
+        assertEquals(md5(bytes("p1")), md5(b.local.getValue("PSP/SAVEDATA/ULUS1/PARAM.SFO")))
+        // A is back online: the rest goes up, the manifest last; B then gets the whole save.
+        sync(a, drive, ::psp); sync(b, drive, ::psp)
+        assertEquals(md5(bytes("d2")), md5(b.local.getValue("PSP/SAVEDATA/ULUS1/DATA.BIN")))
+        assertEquals(md5(bytes("p2")), md5(b.local.getValue("PSP/SAVEDATA/ULUS1/PARAM.SFO")))
+        check()
+    }
 
     @Test fun theDecisionTable() {
         fun d(l: String?, r: String?, b: String?, rid: String? = "x", bid: String? = "x", uploadOnly: Boolean = false) =

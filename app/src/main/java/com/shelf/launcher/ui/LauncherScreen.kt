@@ -6392,7 +6392,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 saveSyncForGame = null
             },
             onOpenSettings = { saveSyncForGame = null; GamePopup.game = null; menuStartCategory = "Sync"; showMenu = true },
-            onDismiss = { saveSyncForGame = null }
+            onDismiss = { saveSyncForGame = null },
+            scoped = com.shelf.launcher.data.CloudSync.ScopedGame.of(game)
         )
     }
     val gameWaitingOnSaves = uiState.gameWaitingOnConflicts
