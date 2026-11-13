@@ -85,8 +85,8 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 77
-        versionName = "0.6.70"
+        versionCode = 78
+        versionName = "0.6.71"
 
         // (Batch 517: no credential is built in any more — see above. Only these two non-secret values.)
         buildConfigField("String", "SS_SOFT_NAME", buildConfigString(screenScraperProps.getProperty("softName")))
