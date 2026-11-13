@@ -19,7 +19,7 @@ for line in f.split('\n')[1:]:
     if m.group(1).strip() == 'else': other = rhs
     for l in re.findall(r'HomeLayout\.([A-Z_0-9]+)', m.group(1)): scene[l] = rhs
 pf = read(os.path.join(ui, 'WinPageFlow.kt'))
-native = set(re.findall(r'WinScene\.([A-Z_]+)', pf[pf.index('NATIVE_PAGE_SCENES'):pf.index('\n', pf.index('NATIVE_PAGE_SCENES'))]))
+_np = pf.index('internal val NATIVE_PAGE_SCENES'); native = set(re.findall(r'WinScene\.([A-Z_]+)', pf[_np:pf.index('\n\n', _np)]))  # (529k: the set spans lines)
 gw = read(os.path.join(ui, 'GameWindow.kt'))
 k = gw.index('internal val MORE_SCENES = setOf('); more = set(re.findall(r'WinScene\.([A-Z_]+)', gw[k:gw.index('\n)\n', k)]))
 st = json.load(open(os.path.join(root, 'tools/popup_audit/status.json'), encoding='utf-8'))

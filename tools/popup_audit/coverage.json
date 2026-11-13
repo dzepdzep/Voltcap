@@ -233,7 +233,7 @@
  "SHELF": {
   "name": "Game shelf",
   "scene": "INDEX_CARD",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
    "IMPLEMENTED",
@@ -250,6 +250,7 @@
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
    "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
    "WinFocusRoboTest plain window (layout windows off)",
    "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)",
@@ -360,7 +361,7 @@
  "STACKS": {
   "name": "Case stacks",
   "scene": "INDEX_CARD",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
    "IMPLEMENTED",
@@ -377,6 +378,7 @@
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
    "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl",
    "ShelfTextRoboTest (x1.0/x1.3, short/long title, 0/160/9999 achievements)",
    "ShelfHandOverRobustTest / ShelfCaseHandOverTest (case flight gate)"
   ],
@@ -425,9 +427,10 @@
  "CONSOLES": {
   "name": "Console stack",
   "scene": "INDEX_CARD",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
+   "IMPLEMENTED",
    "PC TESTED"
   ],
   "tests": [
@@ -438,7 +441,8 @@
    "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
-   "WinPresentationTest (all pref combinations)"
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
   "hardware": "none"
  },
@@ -1064,9 +1068,10 @@
  "COVERDETAILS": {
   "name": "Coverflow details",
   "scene": "INDEX_CARD",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
+   "IMPLEMENTED",
    "PC TESTED"
   ],
   "tests": [
@@ -1077,7 +1082,8 @@
    "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
-   "WinPresentationTest (all pref combinations)"
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
   "hardware": "none"
  },
