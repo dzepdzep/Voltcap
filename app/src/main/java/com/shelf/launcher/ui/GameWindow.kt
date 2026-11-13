@@ -2398,8 +2398,8 @@ private fun SceneBody(
 
 /**
  * v0.6.67 (update 451): the layout windows that get More (they showed all nine actions and two status lines at once). The others
- * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Airy, Arctic's drawer,
- * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
+ * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Arctic's drawer;
+ * Airy and the Discover card joined the list below) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
  * Storage, Box, Orbit, Blades).
  */
 /** 523x: the height the Back hint takes under a scene (hint 28 dp + 4 dp gap). */
@@ -2412,7 +2412,11 @@ internal val MORE_SCENES = setOf(
     WinScene.CASE_MEDIA, WinScene.FILE_CARD, WinScene.STUDIO_PANEL,
     // (Update 477, D266: Airy's eight round keys took two rows on the KONKR and the chips' second line — Played, ★ — was not
     // drawn. Play, Details, Back, Inspect and More in one row; the rest opens in the panel's well with More.)
-    WinScene.AIRY_PANEL
+    WinScene.AIRY_PANEL,
+    // (Update 529, master sprint Phase 3, Flip 2 f529a: Resume's discover card showed all seven actions as chips — Play, Details,
+    // Options, Achievements, Save sync, Inspect and the save line. It draws its keys with SceneKey, so it takes the approved row:
+    // Play, Details, ••• and Inspect in view, the rest behind More in the same card.)
+    WinScene.DISCOVER_CARD
 )
 
 /** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */

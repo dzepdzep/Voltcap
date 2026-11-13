@@ -8,7 +8,8 @@ import java.io.File
 /** v0.6.67 (update 451): More in the layout windows that showed every action at once — nothing removed, Play never hidden. */
 class PopupMore451Test {
     @Test fun moreOnlyWhereTheWindowWasAChipWall() {
-        for (s in listOf(WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.POCKET_LCD, WinScene.TILE_CARD, WinScene.HERO_BANNER))
+        // (Update 529: Resume's discover card too - it showed seven chips on the Flip 2.)
+        for (s in listOf(WinScene.VOLT_PANEL, WinScene.INDEX_CARD, WinScene.TWIN_HINGE, WinScene.POCKET_LCD, WinScene.TILE_CARD, WinScene.HERO_BANNER, WinScene.DISCOVER_CARD))
             assertTrue("$s gets More", s in MORE_SCENES)
         // Their own compact designs / menu lists stay as they are.
         for (s in listOf(WinScene.WII_PREVIEW, WinScene.CINEMA_PREMIERE, WinScene.ARCTIC_DRAWER, WinScene.BUBBLE_CARD, WinScene.CARD_BACK,
