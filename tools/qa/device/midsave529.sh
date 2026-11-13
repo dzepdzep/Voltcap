@@ -42,4 +42,7 @@ wait_md game.srm $(md $S/game.srm) 120
 log "4 qa pid now: $(pidof $P || echo none)"
 logcat -d -s VoltcapSync > $O/trace.txt; cp $D/log.txt $O/drive_log.txt 2>/dev/null
 # off, files removed, back to the QA app (over the info screen) then stopped (the handheld's own home comes back)
-A; sleep 2; A --es voltcap_test_savewatch off; sleep 2; rm -rf $S $D; am force-stop $P; log "done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"
+A; sleep 2; A --es voltcap_test_savewatch off; sleep 2; rm -rf $S $D; am force-stop $P; sleep 1
+# (the read-only info screen this script opened, if it is what came back to the front: one Back closes it)
+dumpsys window | grep mCurrentFocus | tail -1 | grep -q "MyDeviceInfoActivity" && input keyevent KEYCODE_BACK
+log "done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION') front=$(dumpsys window | grep mCurrentFocus | tail -1 | sed 's/.* //')"
