@@ -1088,7 +1088,7 @@ private fun SaveDetail(
                     SyncState.NEEDS_SIGN_IN -> "Google wants you to sign in again"
                     SyncState.OFFLINE -> "Offline"
                     SyncState.ERROR -> st.message ?: "Last sync failed"
-                    SyncState.PENDING -> "Waiting to sync"
+                    SyncState.PENDING -> st.message ?: "Waiting to sync" // (update 529: the step it is at)
                 })
                 }
                 // The saves inside (all slots of every memory card for this game, in one capsule).

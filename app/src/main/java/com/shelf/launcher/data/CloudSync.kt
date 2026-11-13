@@ -131,7 +131,12 @@ data class SyncOutcome(
     /** Google wants the sign-in confirmed again; retrying can't help until then. */
     val needsSignIn: Boolean = false,
     /** Update 529: Drive's side was NOT applied here (an emulator still holds the save): only uploads ran. */
-    val heldBack: Boolean = false
+    val heldBack: Boolean = false,
+    /** Mid-game sync (update 529): files Drive has newer that an upload-only run left alone, and which device sent them. */
+    val remoteNewer: Int = 0,
+    val remoteFrom: String? = null,
+    /** Files that were being written while this run read them (nothing sent for them - see CloudSync.StillWriting). */
+    val stillWriting: Int = 0
 )
 
 /**
@@ -802,7 +807,15 @@ object CloudSync {
         return out.copy(summary = "$held — saves on this device weren't replaced. Close it fully to get Drive's newest save.", heldBack = true)
     }
 
-    private suspend fun syncScopedLocked(context: Context, game: ScopedGame, uploadOnly: Boolean): SyncOutcome = mutex.withLock {
+    /**
+     * Mid-game sync, update 529: a quiet look at a running game's saves on Drive - upload-only (nothing local is touched),
+     * no "Sending…" status or progress while it looks; the game's status changes only when something moved, a conflict was
+     * found, or another handheld has a newer save ([SyncOutcome.remoteNewer]).
+     */
+    internal suspend fun probeRemote(context: Context, game: ScopedGame): SyncOutcome =
+        if (qaPaused(context)) SyncOutcome(true, QA_PAUSED) else syncScopedLocked(context, game, uploadOnly = true, quiet = true)
+
+    private suspend fun syncScopedLocked(context: Context, game: ScopedGame, uploadOnly: Boolean, quiet: Boolean = false): SyncOutcome = mutex.withLock {
         load(context)
         val settings = _state.value.settings
         if (!settings.connected) return@withLock SyncOutcome(false, "Google Drive isn't connected.")
@@ -813,10 +826,12 @@ object CloudSync {
         // A game that never had saves gets no status entry just because it was looked at (resting on a
         // game or opening its details fetches early): the entry only stays when files really moved.
         val hadStatus = SyncStatusStore.get(context, game.key) != null
-        SyncStatusStore.update(context, game.key) {
-            it.copy(state = if (uploadOnly) SyncState.UPLOADING else SyncState.DOWNLOADING, message = null)
+        if (!quiet) {
+            SyncStatusStore.update(context, game.key) {
+                it.copy(state = if (uploadOnly) SyncState.UPLOADING else SyncState.DOWNLOADING, message = if (uploadOnly) "Uploading…" else null)
+            }
+            _state.update { it.copy(running = true, progress = if (uploadOnly) "Sending saves to Google Drive…" else "Checking Google Drive for newer saves…") }
         }
-        _state.update { it.copy(running = true, progress = if (uploadOnly) "Sending saves to Google Drive…" else "Checking Google Drive for newer saves…") }
         var cancelled = false
         val outcome = try {
             withContext(Dispatchers.IO) {
@@ -834,12 +849,14 @@ object CloudSync {
                 }
                 SyncOutcome(
                     !stopRequested && report.failed == 0, report.summary(), report.conflictList.size,
-                    uploaded = report.uploaded, downloaded = report.downloaded
+                    uploaded = report.uploaded, downloaded = report.downloaded,
+                    remoteNewer = report.remoteNewer, remoteFrom = report.remoteFrom, stillWriting = report.stillWriting
                 )
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             cancelled = true
-            if (hadStatus) SyncStatusStore.update(context, game.key) { it.copy(state = SyncState.PENDING, message = null) }
+            if (quiet) Unit
+            else if (hadStatus) SyncStatusStore.update(context, game.key) { it.copy(state = SyncState.PENDING, message = null) }
             else SyncStatusStore.remove(context, game.key)
             SyncOutcome(false, "Sync stopped.")
         } catch (e: DriveSignInNeeded) {
@@ -854,13 +871,26 @@ object CloudSync {
         _state.update { it.copy(running = false, progress = null, needsSignIn = DriveAuth.needsSignIn(context), authProblem = DriveAuth.problem(context)) }
         // Stopped: the status was already put back above; don't turn it into an error (update 91).
         if (cancelled) return@withLock outcome
+        // (A quiet look that found nothing to tell leaves the status as it was - offline included: it was only a look.)
+        if (quiet && outcome.remoteNewer == 0 && outcome.uploaded == 0 && outcome.conflicts == 0) return@withLock outcome
         val now = System.currentTimeMillis()
         SyncStatusStore.update(context, game.key) { old ->
             when {
                 outcome.needsSignIn -> old.copy(state = SyncState.NEEDS_SIGN_IN, message = "Sign in to Google Drive again", updatedAt = now)
                 outcome.retry -> old.copy(state = SyncState.OFFLINE, message = "Offline — will retry automatically", updatedAt = now)
                 outcome.conflicts > 0 -> old.copy(state = SyncState.CONFLICT, message = "Conflict — open Voltcap to choose", updatedAt = now)
+                // (Mid-game sync, update 529: a save caught mid-write is not an error - it is sent once it has settled.)
+                !outcome.ok && outcome.stillWriting > 0 && !outcome.summary.startsWith("Sync stopped") ->
+                    old.copy(state = SyncState.PENDING, message = "Save being written — sent once it settles", updatedAt = now)
                 !outcome.ok -> old.copy(state = SyncState.ERROR, message = outcome.summary, updatedAt = now)
+                // (Mid-game sync: our side is on Drive, but Drive also has a newer save from another handheld - not "Synced".)
+                outcome.remoteNewer > 0 -> old.copy(
+                    state = SyncState.PENDING, updatedAt = now,
+                    message = "Newer save on Google Drive" + (outcome.remoteFrom?.let { " from $it" } ?: "") + " — applied after you close the game",
+                    lastSuccessAt = if (outcome.uploaded > 0) now else old.lastSuccessAt,
+                    lastDirection = if (outcome.uploaded > 0) SyncDirection.UPLOAD else old.lastDirection,
+                    lastTransferAt = if (outcome.uploaded > 0) now else old.lastTransferAt
+                )
                 else -> {
                     val moved = outcome.uploaded + outcome.downloaded
                     old.copy(
@@ -1267,6 +1297,10 @@ object CloudSync {
         var uploaded = 0
         var downloaded = 0
         var failed = 0
+        /** Update 529 (mid-game sync): newer on Drive but left alone (upload-only), and by which device; files mid-write. */
+        var remoteNewer = 0
+        var remoteFrom: String? = null
+        var stillWriting = 0
         var launcherChanged = false
         /** Update 208: saves are on but no save folder is set up — nothing of the saves was looked at. */
         var noFolders = false
@@ -1441,6 +1475,9 @@ object CloudSync {
     internal fun pickTwin(same: List<DriveFile>): DriveFile =
         same.sortedWith(compareByDescending<DriveFile> { it.modifiedTime }.thenBy { it.id }).first()
 
+    /** Update 529: the save changed between the decision and the snapshot (being written now) - nothing was uploaded. */
+    internal class StillWriting(rel: String) : Exception("$rel is being written - sent once it has settled")
+
     /** Update 222: Drive's copy of the file changed after the folder was listed — nothing was uploaded. */
     private class RemoteMoved : Exception("Changed on Drive meanwhile")
 
@@ -1462,6 +1499,11 @@ object CloudSync {
             tree.open(rel).use { input -> snap.outputStream().use { input.copyTo(it) } }
             snap.setLastModified(entry.modified)
             val sent = md5(snap)
+            // (Mid-game sync hotfix, update 529: the bytes about to go up must be the ones the decision was made on - read twice,
+            // once for the decision and once for this snapshot. Different means the emulator is writing the file right now:
+            // nothing is sent (a half-written save or memory card never reaches Drive); the watcher sends it once it has settled.
+            // It used to be sent anyway, with only the recorded hash dropped.)
+            if (!sent.equals(md5, ignoreCase = true)) { state.hashes.remove(rel); throw StillWriting(rel) }
             if (existingId != null && expectRemoteMd5 != null) {
                 val now = drive.file(existingId)
                 if (now?.md5 != null && !now.md5.equals(expectRemoteMd5, ignoreCase = true)) throw RemoteMoved()
@@ -1472,8 +1514,6 @@ object CloudSync {
             val got = up.md5 ?: drive.file(up.id)?.md5
             if (got == null || !got.equals(sent, ignoreCase = true)) error("Drive didn't confirm $rel — it stays marked as not synced.")
             state.base[rel] = Base(sent, up.id, System.currentTimeMillis(), Build.MODEL)
-            // Written again while it was read: the recorded hash belongs to the old bytes, so it's looked at afresh next time.
-            if (!sent.equals(md5, ignoreCase = true)) state.hashes.remove(rel)
         } finally {
             snap.delete()
         }
@@ -1608,6 +1648,9 @@ object CloudSync {
                     // (Update 529: a multi-file save is downloaded as one - all its files or none, below.)
                     SyncDecision.Action.DOWNLOAD -> (card ?: unit)?.let { unitDownloads.getOrPut(it) { mutableListOf() } += rel } ?: download()
                     SyncDecision.Action.CONFLICT -> conflict()
+                    // (Mid-game sync, update 529: newer on Drive - never applied while a game may be running; reported, so the
+                    // player sees it and the after-game sync / Play's check brings it in once the emulator has closed.)
+                    SyncDecision.Action.HELD -> { report.remoteNewer++; if (report.remoteFrom == null) report.remoteFrom = r?.device }
                 }
             } catch (e: DriveSignInNeeded) {
                 saveFolderState(context, folder.name, state)
@@ -1616,6 +1659,8 @@ object CloudSync {
                 // No point trying the remaining files: the worker retries the whole sync later.
                 saveFolderState(context, folder.name, state)
                 throw e
+            } catch (e: StillWriting) {
+                report.stillWriting++; report.failed++
             } catch (e: RemoteMoved) {
                 // (Update 222: another handheld uploaded this save while we compared — both versions stay; the player chooses.)
                 val entry = local[rel]

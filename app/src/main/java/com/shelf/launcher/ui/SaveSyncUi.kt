@@ -145,7 +145,10 @@ fun SaveSyncDialog(
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stateTitle(status), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     status?.message?.takeIf {
-                        status.state in setOf(SyncState.ERROR, SyncState.OFFLINE, SyncState.CONFLICT, SyncState.NEEDS_SIGN_IN)
+                        // (Mid-game sync, update 529: the step a save is at - found, settling, waiting to upload, newer on Drive, not
+                        // written to disk yet - shows under the title too.)
+                        status.state in setOf(SyncState.ERROR, SyncState.OFFLINE, SyncState.CONFLICT, SyncState.NEEDS_SIGN_IN, SyncState.PENDING, SyncState.UPLOADING) ||
+                            it == com.shelf.launcher.data.SaveObserver.NOT_WRITTEN_YET
                     }?.let { MutedNote(it) }
                 }
             }

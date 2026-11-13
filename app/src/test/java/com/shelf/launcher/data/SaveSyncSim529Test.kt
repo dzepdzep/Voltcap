@@ -76,6 +76,11 @@ class SaveSyncSim529Test {
         val backupsDir = File(root, "backups-$name").apply { mkdirs() }
         val parked = mutableListOf<ByteArray>()
         val conflicts = mutableListOf<String>()
+        /** Mid-game: newer on Drive, left for after the game. */
+        val held = mutableListOf<String>()
+        /** The emulator writes this file while the sync reads it (once, for the next push of it). */
+        val whileReading = mutableMapOf<String, () -> Unit>()
+        var stillWriting = 0
         /** Writes into the save folder that fail (storage full / card removed): the n-th write from now. */
         var failWriteAt = -1
         /** The storage's date step: 2000 for a FAT / exFAT card (dates in 2 s steps). */
@@ -118,7 +123,7 @@ class SaveSyncSim529Test {
     }
 
     /** CloudSync.syncFolder, step by step, for one save folder. */
-    private fun sync(d: Device, drive: Drive, unitOf: (String) -> String? = { null }) {
+    private fun sync(d: Device, drive: Drive, unitOf: (String) -> String? = { null }, uploadOnly: Boolean = false) {
         val remote = drive.files.groupBy { it.name }.mapValues { (_, same) -> CloudSync.pickTwin(same.map { it.meta() }) }
         val all = (d.local.keys + remote.keys).sorted()
         val lh = { rel: String -> d.localHash(rel) }
@@ -137,13 +142,14 @@ class SaveSyncSim529Test {
         val unitDownloads = linkedMapOf<String, MutableList<String>>()
         for (rel in all) {
             val l = lh(rel); val r = remote[rel]; val b = d.base[rel]; val u = unitOf(rel)
-            val action = SyncDecision.decide(SyncDecision.Input(l, r?.md5, b?.md5, r?.id, b?.remoteId, inMixedUnit = u != null && u in mixed))
+            val action = SyncDecision.decide(SyncDecision.Input(l, r?.md5, b?.md5, r?.id, b?.remoteId, uploadOnly = uploadOnly, inMixedUnit = u != null && u in mixed))
             when (action) {
                 SyncDecision.Action.NOTHING -> Unit
                 SyncDecision.Action.IN_SYNC -> d.base[rel] = Base(l!!, r!!.id)
-                SyncDecision.Action.UPLOAD -> push(d, drive, rel, r?.id, r?.md5)
+                SyncDecision.Action.UPLOAD -> push(d, drive, rel, r?.id, r?.md5, l)
                 SyncDecision.Action.DOWNLOAD -> unitDownloads.getOrPut(u ?: "file:$rel") { mutableListOf() } += rel
                 SyncDecision.Action.CONFLICT -> d.conflicts += rel
+                SyncDecision.Action.HELD -> d.held += rel
             }
             check()
         }
@@ -154,9 +160,12 @@ class SaveSyncSim529Test {
     }
 
     /** CloudSync.push: snapshot, "Drive still has what we decided on", upload, Drive's checksum must equal what was sent. */
-    private fun push(d: Device, drive: Drive, rel: String, existingId: String?, expect: String?) {
+    private fun push(d: Device, drive: Drive, rel: String, existingId: String?, expect: String?, decided: String? = null) {
         drive.beforePush.remove(rel)?.invoke()
+        d.whileReading.remove(rel)?.invoke()
         val snap = d.local.getValue(rel).copyOf()
+        // (CloudSync.push, update 529: the snapshot must be the bytes the decision was made on - else it is being written: not sent.)
+        if (decided != null && md5(snap) != decided) { d.stillWriting++; return }
         val sent = md5(snap)
         if (existingId != null && expect != null) {
             val now = drive.file(existingId)
@@ -415,6 +424,61 @@ class SaveSyncSim529Test {
         assertEquals(md5(bytes("k2")), md5(konkr.local.getValue("gba/Zelda.sav")))
     }
 
+    // ---------- mid-game (update 529) ----------
+
+    @Test fun severalSavesDuringOneGameAreAllUploadedWithoutExiting() {
+        val (flip, konkr) = world("Flip2", "KONKR")
+        play(konkr, "gba/Zelda.sav", bytes("k0")); sync(konkr, drive); sync(flip, drive)
+        // The KONKR plays; every save written mid-game goes up at once (upload-only: nothing here is replaced).
+        for (n in 1..4) {
+            play(konkr, "gba/Zelda.sav", bytes("k$n"))
+            sync(konkr, drive, uploadOnly = true)
+            assertEquals("save $n on Drive", md5(bytes("k$n")), md5(drive.files.single().bytes))
+        }
+        sync(flip, drive)
+        assertEquals(md5(bytes("k4")), md5(flip.local.getValue("gba/Zelda.sav")))
+    }
+
+    @Test fun aSaveBeingWrittenIsNotSentHalfWritten() {
+        val (konkr) = world("KONKR")
+        play(konkr, "ps2/Mcd001.ps2", bytes("card-1", 64 * 1024)); sync(konkr, drive)
+        play(konkr, "ps2/Mcd001.ps2", bytes("card-2", 64 * 1024))
+        // The emulator writes again between the decision and the snapshot: nothing is uploaded this time...
+        konkr.whileReading["ps2/Mcd001.ps2"] = { play(konkr, "ps2/Mcd001.ps2", bytes("card-3", 64 * 1024)) }
+        sync(konkr, drive, uploadOnly = true)
+        assertEquals(1, konkr.stillWriting)
+        assertEquals(md5(bytes("card-1", 64 * 1024)), md5(drive.files.single().bytes))
+        // ...and the settled card on the next look.
+        sync(konkr, drive, uploadOnly = true)
+        assertEquals(md5(bytes("card-3", 64 * 1024)), md5(drive.files.single().bytes))
+    }
+
+    @Test fun anotherHandheldsNewerSaveIsNeverAppliedWhileTheGameRuns() {
+        val (flip, konkr) = world("Flip2", "KONKR")
+        play(flip, "gb/Pokemon.srm", bytes("v1")); sync(flip, drive); sync(konkr, drive)
+        // The KONKR is playing (not saved yet); the Flip uploads a newer save meanwhile.
+        play(flip, "gb/Pokemon.srm", bytes("flip-2")); sync(flip, drive)
+        sync(konkr, drive, uploadOnly = true)
+        assertEquals(listOf("gb/Pokemon.srm"), konkr.held)
+        assertEquals(md5(bytes("v1")), md5(konkr.local.getValue("gb/Pokemon.srm")))
+        // The KONKR saves mid-game after all: both changed - a conflict, nothing replaced, both kept.
+        play(konkr, "gb/Pokemon.srm", bytes("konkr-2"))
+        sync(konkr, drive, uploadOnly = true)
+        assertEquals(listOf("gb/Pokemon.srm"), konkr.conflicts.distinct())
+        assertEquals(md5(bytes("konkr-2")), md5(konkr.local.getValue("gb/Pokemon.srm")))
+        assertEquals(md5(bytes("flip-2")), md5(drive.files.single().bytes))
+    }
+
+    @Test fun afterTheGameTheNewerDriveSaveComesInWithABackup() {
+        val (flip, konkr) = world("Flip2", "KONKR")
+        play(flip, "gb/Pokemon.srm", bytes("v1")); sync(flip, drive); sync(konkr, drive)
+        play(flip, "gb/Pokemon.srm", bytes("flip-2")); sync(flip, drive)
+        sync(konkr, drive, uploadOnly = true)   // during the KONKR's game: held
+        sync(konkr, drive)                      // after it: applied, the old one backed up
+        assertEquals(md5(bytes("flip-2")), md5(konkr.local.getValue("gb/Pokemon.srm")))
+        assertTrue(konkr.backupBytes().any { md5(it) == md5(bytes("v1")) })
+    }
+
     // ---------- the table itself ----------
 
     @Test fun theDecisionTable() {
@@ -423,13 +487,14 @@ class SaveSyncSim529Test {
         assertEquals(SyncDecision.Action.NOTHING, d(null, null, null))
         assertEquals(SyncDecision.Action.UPLOAD, d("1", null, null))
         assertEquals(SyncDecision.Action.DOWNLOAD, d(null, "1", null))
-        assertEquals(SyncDecision.Action.NOTHING, d(null, "1", null, uploadOnly = true))
+        // (Mid-game sync: newer on Drive while a game may run - held and reported, never applied.)
+        assertEquals(SyncDecision.Action.HELD, d(null, "1", null, uploadOnly = true))
         assertEquals(SyncDecision.Action.IN_SYNC, d("1", "1", null))
         assertEquals(SyncDecision.Action.IN_SYNC, d("AB", "ab", "0"))
         assertEquals(SyncDecision.Action.CONFLICT, d("1", "2", null))
         assertEquals(SyncDecision.Action.UPLOAD, d("2", "1", "1"))
         assertEquals(SyncDecision.Action.DOWNLOAD, d("1", "2", "1"))
-        assertEquals(SyncDecision.Action.NOTHING, d("1", "2", "1", uploadOnly = true))
+        assertEquals(SyncDecision.Action.HELD, d("1", "2", "1", uploadOnly = true))
         assertEquals(SyncDecision.Action.CONFLICT, d("2", "3", "1"))
         // Finding 9: Drive's file is another file than the base came from.
         assertEquals(SyncDecision.Action.CONFLICT, d("1", "2", "1", rid = "y", bid = "x"))

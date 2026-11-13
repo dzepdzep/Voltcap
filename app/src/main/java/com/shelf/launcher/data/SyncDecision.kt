@@ -20,7 +20,9 @@ package com.shelf.launcher.data
  * line of progress, and downloading it silently replaced this device's save. Now that case is a conflict.
  */
 internal object SyncDecision {
-    enum class Action { NOTHING, IN_SYNC, UPLOAD, DOWNLOAD, CONFLICT }
+    /** [HELD] (update 529, mid-game sync): Drive has a newer version, but this run may not touch local files (a game may be
+     *  running) - it is reported, and applied by the next sync that may (after the game). */
+    enum class Action { NOTHING, IN_SYNC, UPLOAD, DOWNLOAD, CONFLICT, HELD }
 
     data class Input(
         val local: String?,
@@ -45,13 +47,13 @@ internal object SyncDecision {
         return when {
             l == null && r == null -> Action.NOTHING
             r == null -> Action.UPLOAD
-            l == null -> if (i.uploadOnly) Action.NOTHING else Action.DOWNLOAD
+            l == null -> if (i.uploadOnly) Action.HELD else Action.DOWNLOAD
             same(l, r) -> Action.IN_SYNC
             b == null -> Action.CONFLICT
             same(r, b) -> Action.UPLOAD
             same(l, b) -> when {
                 otherLineage(i) -> Action.CONFLICT
-                i.uploadOnly -> Action.NOTHING
+                i.uploadOnly -> Action.HELD
                 else -> Action.DOWNLOAD
             }
             else -> Action.CONFLICT

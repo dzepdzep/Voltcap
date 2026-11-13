@@ -205,6 +205,35 @@ class SaveSync529Test {
         assertEquals(1, Regex("launchNow\\(game\\)").findAll(f).count())
     }
 
+    // ---- Mid-game sync (update 529, priority hotfix) ----
+
+    @Test fun theWatcherComesBackWhenTheProcessWasEndedMidGame() {
+        val w = src("SaveWatchWorker.kt")
+        assertTrue(w.contains("if (SaveObserver.resume(app, game)) {"))
+        assertTrue(w.contains("const val WATCH_MS = 60_000L"))
+        assertTrue(w.contains("private val STEPS_MIN = longArrayOf(1, 10, 20, 40, 60)"))
+        val o = src("SaveObserver.kt")
+        assertTrue(o.contains("fun resume(context: Context, g: CloudSync.ScopedGame): Boolean"))
+    }
+
+    @Test fun aSaveBeingWrittenIsNeverUploaded() {
+        val s = src("CloudSync.kt")
+        val push = s.substring(s.indexOf("private fun push("), s.indexOf("private fun backupBeforeOverwrite"))
+        // Checked before anything is sent.
+        assertTrue(push.indexOf("throw StillWriting(rel)") in 1 until push.indexOf("drive.upload("))
+    }
+
+    @Test fun nothingIsAppliedWhileAGameRunsAndPlayersAreToldQuietly() {
+        val s = src("CloudSync.kt")
+        assertTrue(s.contains("SyncDecision.Action.HELD -> { report.remoteNewer++"))
+        assertTrue(s.contains("internal suspend fun probeRemote("))
+        val n = src("SyncNotifier.kt")
+        assertTrue(n.contains("if (midGame && outcome.ok && outcome.conflicts == 0) return"))
+        assertTrue(n.contains("fun remoteNewer(") && n.contains(".setSilent(true)"))
+        // "Synced" never stands for a save Drive has a newer version of.
+        assertTrue(s.contains("outcome.remoteNewer > 0 -> old.copy(\n                    state = SyncState.PENDING"))
+    }
+
     // ---- Duplicate files on Drive ----
 
     @Test fun twinsArePickedTheSameWayOnEveryDevice() {

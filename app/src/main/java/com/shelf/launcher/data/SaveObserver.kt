@@ -69,7 +69,26 @@ object SaveObserver {
         if (com.shelf.launcher.CrashGuard.safeMode) return
         val app = context.applicationContext
         if (!CloudSync.canWatchSaves(app, game)) return
-        val g = CloudSync.ScopedGame.of(game)
+        begin(app, CloudSync.ScopedGame.of(game))
+        // (Mid-game sync, update 529: until the emulator writes a save to disk there is nothing to send - said so, not "Synced".)
+        SyncStatusStore.update(app, game.stableKey) { if (it.state == SyncState.SYNCED) it.copy(message = NOT_WRITTEN_YET) else it }
+    }
+
+    /**
+     * Mid-game sync, update 529: picks the watch up again for the game still being played - Voltcap's process was ended while
+     * the emulator was in front (low memory: GT78's log shows Voltcap's process killed in the background), and with it the
+     * watcher; WorkManager starts the process again for [SaveWatchWorker], which calls this. No-op when already watching it.
+     */
+    @Synchronized
+    fun resume(context: Context, g: CloudSync.ScopedGame): Boolean {
+        if (watching == g.key && job?.isActive == true) return true
+        if (com.shelf.launcher.CrashGuard.safeMode) return false
+        stop()
+        begin(context.applicationContext, g)
+        return true
+    }
+
+    private fun begin(app: Context, g: CloudSync.ScopedGame) {
         watching = g.key
         until = Long.MAX_VALUE
         val started = SystemClock.elapsedRealtime()
@@ -78,6 +97,10 @@ object SaveObserver {
             watch(app, g, started)
         }
     }
+
+    internal const val NOT_WRITTEN_YET = "No new save written to disk since the game started"
+    /** How often a running game's Drive copy is looked at for another handheld's newer save (screen on, nothing pending). */
+    private const val REMOTE_MS = 3 * 60_000L
 
     /** Voltcap is back from the game: keep watching a while (the emulator may write as it closes), then stop. */
     fun gameEnded() {
@@ -110,6 +133,8 @@ object SaveObserver {
     private suspend fun watch(app: Context, g: CloudSync.ScopedGame, started: Long) {
         var lastSig: String? = null
         var sentSig: String? = null
+        var remoteAt = SystemClock.elapsedRealtime()
+        var told = false
         while (kotlinx.coroutines.currentCoroutineContext().isActive) {
             val now = SystemClock.elapsedRealtime()
             if (now > until || now - started > MAX_MS) break
@@ -121,15 +146,31 @@ object SaveObserver {
             if (woke) while (withTimeoutOrNull(SETTLE_MS) { wake.receive() } != null) Unit
             if (!CloudSync.isActive(app)) continue
             val changed = runCatching { CloudSync.changedSaves(app, g) }.getOrDefault(emptyList())
-            if (changed.isEmpty()) { lastSig = null; continue }
+            if (changed.isEmpty()) {
+                lastSig = null
+                // (Mid-game sync, update 529: now and then, with nothing of ours pending, look whether another handheld put a newer
+                // save of this game on Drive. Never applied while the game runs (upload-only); a discreet note once, and the
+                // after-game sync / Play's check bring it in when the emulator has closed.)
+                if (awake && SystemClock.elapsedRealtime() - remoteAt >= REMOTE_MS) {
+                    remoteAt = SystemClock.elapsedRealtime()
+                    val o = runCatching { CloudSync.probeRemote(app, g) }.getOrNull()
+                    if (o != null && o.remoteNewer > 0 && !told) { told = true; SyncNotifier.remoteNewer(app, g.key, g.name, o.remoteFrom) }
+                }
+                continue
+            }
             // (Update 529: the content hash is part of it - a same-size save rewritten within one date step is a new state.)
             val sig = changed.sortedBy { it.folder + "/" + it.path }.joinToString("|") { SaveChangeDetect.signature(it.folder, it.path, it.size, it.modified, it.md5) }
             val newest = changed.maxOf { it.modified }
             val settled = sig == lastSig && System.currentTimeMillis() - newest >= SETTLE_MS
+            if (!settled && sig != lastSig && sig != sentSig) {
+                SaveSyncTrace.mark(g.key, "detected", newest)
+                SyncStatusStore.update(app, g.key) { it.copy(state = SyncState.PENDING, message = "New save found — waiting for the file to settle", updatedAt = System.currentTimeMillis()) }
+            }
             lastSig = sig
             if (!settled || sig == sentSig) continue
             sentSig = sig
-            SyncStatusStore.update(app, g.key) { it.copy(state = SyncState.PENDING, message = "New save — sending to Google Drive", updatedAt = System.currentTimeMillis()) }
+            SaveSyncTrace.mark(g.key, "settled", newest)
+            SyncStatusStore.update(app, g.key) { it.copy(state = SyncState.PENDING, message = "New save — waiting to upload", updatedAt = System.currentTimeMillis()) }
             SaveNowWorker.enqueue(app, g)
         }
         synchronized(this) {
@@ -151,6 +192,7 @@ class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val game = CloudSync.ScopedGame(key, inputData.getString("name") ?: key, inputData.getString("rom"), inputData.getString("platform") ?: "")
         // Already sent by an earlier job (or the after-game sync): nothing to do.
         if (CloudSync.changedSaves(app, game).isEmpty()) return Result.success()
+        SaveSyncTrace.mark(game.key, "upload-start", 0L)
         var outcome = CloudSync.syncScoped(app, game, uploadOnly = true)
         // Saved again while this one was uploading (the queue keeps one job per game): settle, then send that too.
         var round = 1
@@ -159,7 +201,8 @@ class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             outcome = CloudSync.syncScoped(app, game, uploadOnly = true)
             round++
         }
-        SyncNotifier.afterBackgroundSync(app, game.key, game.name, outcome, firstAttempt = runAttemptCount == 0)
+        SaveSyncTrace.mark(game.key, if (outcome.ok && outcome.uploaded > 0) "verified" else "upload-ended ok=${outcome.ok} up=${outcome.uploaded} writing=${outcome.stillWriting}", 0L)
+        SyncNotifier.afterBackgroundSync(app, game.key, game.name, outcome, firstAttempt = runAttemptCount == 0, midGame = SaveObserver.watchingKey() == game.key)
         // (Update 529, finding 2: a change still unsent when this job ends is never dropped - it used to end in success after
         // three rounds, and the watcher had already counted that change as sent. Retried with backoff until it is on Drive;
         // a change that is blocked (sign-in) stays PENDING in the status and is sent by the next sync that can.)
