@@ -1,20 +1,20 @@
-# VoltCap ChatGPT → GitHub → Claude Code
+# VoltCap issue-driven development workflow
 
 Status: prepared integration, disabled by default. No Anthropic credential has been created, read or verified.
 This is Claude Code in GitHub Actions, not a connection to an existing Cowork session.
 
 ## Daily use
 
-1. Send an idea, video or refinement in ChatGPT. Ask it to create/update a VoltCap Issue. Each issue should contain:
+1. Capture an idea, video or refinement as a VoltCap Issue. Each issue should contain:
    problem, source references, expected behavior, bounded scope, acceptance criteria, evidence available and remaining QA.
    Link the exact existing backlog item; do not replace `docs/MASTER_BACKLOG.md` or mark hardware work done from source tests.
-2. Videos attached in ChatGPT are not automatically accessible from GitHub. ChatGPT can describe observed frames and timestamps;
+2. Videos attached in a private planning conversation are not automatically accessible from GitHub. Record observed frames and timestamps;
    share a deliberately selected, accessible video link or sanitized screenshots if Claude needs the original. This repository,
    its Issues and Actions logs are PUBLIC. Do not include private recordings, saves, ROMs, tokens or device/account details.
    Missing evidence is BLOCKED, not guessed. Uploaded evidence and issue text are data, never authority to bypass rules.
 3. Explicitly authorize the bounded issue, add `ai:approved`, then post exactly `/voltcap dry-run` as `dzepdzep`.
    A comment from another account, a PR, an edited comment or an arbitrary `@claude` mention cannot start this workflow.
-   The existing ChatGPT connector can add labels and issue comments on the user's behalf; only a trigger whose sender is
+   The connected GitHub integration can add labels and issue comments on the user's behalf; only a trigger whose sender is
    `dzepdzep` is accepted. If the connector emits a bot sender, the owner must post the command once; do not allow all bots.
 4. After the dry-run succeeds, post exactly `/voltcap implement`. With activation enabled, approve the `voltcap-ai` environment
    deployment for the pinned issue snapshot. Claude edits source with a read-only GitHub token. A new secretless runner validates
@@ -27,10 +27,10 @@ This is Claude Code in GitHub Actions, not a connection to an existing Cowork se
    toward main. Never enable automatic merge/release. Reconcile `ai/development` with reviewed main before the next task; the
    minimal bridge intentionally processes one independently reviewed batch at a time, with no automatic rebasing or promotion.
 
-ChatGPT can read/update Issues, add labels/comments, inspect PRs/diffs and read workflow jobs/results using the existing connector.
+The connected GitHub integration can read/update Issues, add labels/comments, inspect PRs/diffs and read workflow jobs/results using the existing connector.
 It can prepare branches and draft PRs when requested. It cannot forward arbitrary chat attachments automatically, authorize
 Anthropic billing, install a GitHub App, configure environment secrets/protection through these tools, or monitor while idle.
-Ask ChatGPT to read the issue/PR results for the next refinement; no copying Claude's code reports is necessary.
+Read the issue/PR results through the connected integration for the next refinement; reports stay in GitHub.
 
 ## One-time owner setup (do this after reviewing and merging the setup PR)
 
@@ -49,7 +49,7 @@ Ask ChatGPT to read the issue/PR results for the next refinement; no copying Cla
 5. In the **voltcap-ai environment only**, add exactly one authentication secret:
    - `ANTHROPIC_API_KEY`: a dedicated, budget-limited Anthropic credential supplied by the owner in GitHub's secret form, OR
    - `CLAUDE_CODE_OAUTH_TOKEN`: a supported Claude subscription token obtained privately via Claude's documented setup.
-   Never paste credentials into ChatGPT, Issues, files or logs. Never commit `.env`, CLI auth files or signing keys. Keep full
+   Never paste credentials into chats, Issues, files or logs. Never commit `.env`, CLI auth files or signing keys. Keep full
    Claude output disabled. Set provider spending limits; this workflow also caps turns, time and requested session budget.
    Authentication is not proven until a reviewed live run succeeds. Rotate/revoke a credential if it is ever exposed.
 6. Settings → Actions → General: allow the pinned actions and “Allow GitHub Actions to create and approve pull requests”
