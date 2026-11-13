@@ -9,7 +9,7 @@ import java.io.File
 class Batch480Test {
     private fun src(name: String): String = listOf(
         File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // A5: a colour logo tinted one colour became its silhouette (GBA a blob, Sega CD a bar) — the plain icon is used instead.
     @Test fun oneColourLogosUseThePlainIcon() {
@@ -43,7 +43,7 @@ class Batch480Test {
 
     private fun data(name: String): String = listOf(
         File("../src_copy/data/$name"), File("src/main/java/com/shelf/launcher/data/$name"), File("app/src/main/java/com/shelf/launcher/data/$name"),
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // B4: one motion level (Off / Subtle / Normal / Expressive) as the root recomposer's MotionDurationScale; Normal default.
     @Test fun motionLevelScalesEveryTransition() {
@@ -56,7 +56,7 @@ class Batch480Test {
 
     private fun theme(name: String): String = listOf(
         File("../src_copy/ui/theme/$name"), File("src/main/java/com/shelf/launcher/ui/theme/$name"), File("app/src/main/java/com/shelf/launcher/ui/theme/$name"),
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // C2: per-layout colours (palettes / yours) over the theme's, inherited when unset; readability guard on own backgrounds.
     @Test fun layoutColoursInheritAndStayReadable() {

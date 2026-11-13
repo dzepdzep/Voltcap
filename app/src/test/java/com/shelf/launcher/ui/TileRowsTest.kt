@@ -9,7 +9,7 @@ import org.junit.Test
 
 /** Sprint 527: Tile home's rows as one ordered stack (TileRows). */
 class TileRowsTest {
-    private fun src(p: String): String = listOf("src/main/java/com/shelf/launcher/$p", "app/src/main/java/com/shelf/launcher/$p").map(::File).first { it.exists() }.readText()
+    private fun src(p: String): String = listOf("src/main/java/com/shelf/launcher/$p", "app/src/main/java/com/shelf/launcher/$p").map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
     private val all = TileRows.ALL.toSet()
 
     @Test fun anUntouchedHomeKeepsTheOrderItsSettingsGive() {
@@ -138,7 +138,7 @@ class TileRowsTest {
     }
 
     @Test fun theGlideStartsInTheSameLayoutPassAndTheMovingRowIsOnTop() {
-        val src = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/TileRows.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/TileRows.kt")).first { it.exists() }.readText()
+        val src = listOf(java.io.File("src/main/java/com/shelf/launcher/ui/TileRows.kt"), java.io.File("app/src/main/java/com/shelf/launcher/ui/TileRows.kt")).first { it.exists() }.readText().replace("\r\n", "\n")
         assertTrue(src.contains("val dy = start - target\n                    put(dy)"))
         assertTrue("a second pass before the coroutine starts uses the drawn place", src.contains("val visual = when { at[4] == 1f -> at[3]; at[2] == 1f -> now; else -> heading }"))
         assertTrue(src.contains(".zIndex(if (onTop) 1f else 0f)"))

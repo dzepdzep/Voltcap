@@ -95,7 +95,7 @@ class ThemedIcons371Test {
     private fun src(name: String): String {
         val roots = listOf("src/main/java/com/shelf/launcher/ui/", "app/src/main/java/com/shelf/launcher/ui/")
         val f = roots.map { File(it + name) }.first { it.exists() }
-        return f.readText()
+        return f.readText().replace("\r\n", "\n")
     }
 
     private fun body(text: String, fn: String): String {

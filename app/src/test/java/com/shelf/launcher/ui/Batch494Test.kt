@@ -16,7 +16,7 @@ import java.io.File
 class Batch494Test {
     private fun src(rel: String): String = listOf(
         File("src/main/java/com/shelf/launcher/$rel"), File("app/src/main/java/com/shelf/launcher/$rel")
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     @Test fun carouselBoxReadsGlidingColoursOnlyWhenDrawing() {
         val c = src("ui/Carousel.kt")

@@ -7,7 +7,7 @@ import org.junit.Test
 
 /** Sprint 527: the owner's first category-look corrections (Tiles, Drawers, Cinema, Channel Surf, Arctic Panes). */
 class CategoryLooks527Test {
-    private fun src(p: String): String = listOf("src/main/java/com/shelf/launcher/$p", "app/src/main/java/com/shelf/launcher/$p").map(::File).first { it.exists() }.readText()
+    private fun src(p: String): String = listOf("src/main/java/com/shelf/launcher/$p", "app/src/main/java/com/shelf/launcher/$p").map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
 
     @Test fun channelSurfLeavesTheOldChannelAndRollsInTheNewOneSoftly() {
         assertEquals(1f, ChannelChange.pictureAlpha(0f), 0f)

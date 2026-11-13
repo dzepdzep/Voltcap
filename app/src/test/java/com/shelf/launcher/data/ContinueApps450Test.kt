@@ -109,7 +109,7 @@ class ContinueApps450Test {
     /** Launching an opted-in app records only the time: no session, play time, save sync, tuning or a second instance. */
     @Test fun launchPathStaysLight() {
         val src = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
-            .map(::File).first { it.exists() }.readText()
+            .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
         val start = src.indexOf("fun launchApp(app: Game")
         val body = src.substring(start, src.indexOf("// ---- Live app list ----", start))
         assertTrue(body.contains("pkg !in state.emulatorPackages && !inContinue"))
@@ -136,7 +136,7 @@ class ContinueApps451Test {
     }
 
     private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
-        .map(::File).first { it.exists() }.readText()
+        .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
 
     @Test fun usageGoesToTheProfileThatWasPlaying() {
         val vm = src("LauncherViewModel.kt")
@@ -157,7 +157,7 @@ class ContinueApps451Test {
 /** Update 451 (D152): a Continue-playing app opened from a tile takes the light app path; Clear survives last-played sync. */
 class ContinueApps451LaunchTest {
     private fun src(rel: String) = listOf("src/main/java/com/shelf/launcher/$rel", "app/src/main/java/com/shelf/launcher/$rel")
-        .map(::File).first { it.exists() }.readText()
+        .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
 
     @Test fun tileLaunchOfAContinueAppSkipsTheGamePath() {
         val vm = src("LauncherViewModel.kt")
@@ -177,7 +177,7 @@ class ContinueApps451LaunchTest {
 class ContinueApps451OpenGamesTest {
     @Test fun anOpenStreamingAppIsNeverAGameToQuitFirst() {
         val vm = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
-            .map(::File).first { it.exists() }.readText()
+            .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
         val o = vm.substring(vm.indexOf("fun otherOpenGames(game: Game)"))
         assertTrue(o.substring(0, 1400).contains("it.stableKey in others && !_uiState.value.isContinueApp(it)"))
     }
@@ -200,7 +200,7 @@ class ContinueApps452SyncTest {
 
     @Test fun clearNeverRewritesPlayTime() {
         val vm = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt")
-            .map(::File).first { it.exists() }.readText()
+            .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
         val c = vm.substring(vm.indexOf("fun clearContinueHistory(")).let { it.substring(0, it.indexOf("\n    }\n")) }
         assertFalse(c.contains("playtime"))
         assertTrue(c.contains("recentlyPlayedStore.forget(packageName)"))
