@@ -1553,6 +1553,8 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
     WinScene.CAMERA_MENU -> 420
     WinScene.MAG_PAGE, WinScene.BUBBLE_CARD, WinScene.CARD_BACK, WinScene.CUBE_FACE -> 400
     WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 380
+    // (Update 529: Night menu's panels come in layer after layer - the last command settles at the end of the reveal.)
+    WinScene.NIGHT_STATUS -> 400
     else -> 320
 }
 
@@ -1571,6 +1573,7 @@ internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.ARCADE_MENU -> 340
     WinScene.CAMERA_MENU, WinScene.BUBBLE_CARD -> 340
     WinScene.MAG_PAGE, WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 300
+    WinScene.NIGHT_STATUS -> 320
     else -> 260
 }
 

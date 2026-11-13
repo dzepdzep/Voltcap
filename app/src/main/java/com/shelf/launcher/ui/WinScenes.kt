@@ -1798,12 +1798,23 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val w = ctx.maxW; val h = ctx.maxH
     val anim = rememberAnimationsEnabled()
     val tabs = NIGHT_TABS
+    // Update 529 (owner: Persona 3 Reload-like motion): the panels come in along the menu's slant, layer after layer (banner,
+    // cover, stats, commands - 70 ms apart), each easing out with a small turn that settles; closing runs the same way back,
+    // the last in leaving first. A light edge crosses the window as it opens and closes, over slanted ribbons of the night at
+    // three depths (Full only). All of it is read from the window's own reveal: nothing runs once it is open.
+    val lite = LocalLiteEffects.current && !com.shelf.launcher.data.Features.motionOnLite.state.value
     fun slide(order: Int): Modifier = Modifier.graphicsLayer {
-        val k = ((ctx.reveal() - order * 0.12f) / 0.6f).coerceIn(0f, 1f)
-        val e = 1f - (1f - k) * (1f - k) * (1f - k)
-        translationX = (1f - e) * size.width * (if (order % 2 == 0) -0.6f else 0.6f)
+        val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), order.toFloat(), 0.1f, 0.58f))
+        val side = if (order % 2 == 0) -1f else 1f
+        val dx = (1f - e) * size.width * 0.45f * side
+        translationX = dx
+        translationY = -dx * 0.12f
+        rotationZ = (1f - e) * 3f * side
         alpha = e
     }
+    // The list on the home screen steps back while this is open (StyleNightMenu: NightMotion.window).
+    LaunchedEffect(Unit) { androidx.compose.runtime.snapshotFlow { ctx.reveal() }.collect { NightMotion.window.floatValue = it.coerceIn(0f, 1f) } }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { NightMotion.window.floatValue = 0f } }
     Box(
         Modifier.size(w, h)
             // (Popup motion work: L1 / R1 walk Status, Details, Achievements, Options - as their commands open them.)
@@ -1819,6 +1830,27 @@ private fun NightStatus(ctx: WinSceneCtx) {
         // A page change sweeps the old panels out along the slant the way the D-pad went and the new ones in after them, solid,
         // over them; back runs the other way. The commands stay on the right.
         val slant = 0.105f
+        if (!lite) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+            val r = ctx.reveal().coerceIn(0f, 1f)
+            // Three slanted ribbons of the night, the farther ones arriving later and from farther off (depth).
+            for (i in 0 until 3) {
+                val e = NightMotion.ease(NightMotion.layer(r, i.toFloat(), 0.12f, 0.6f))
+                if (e <= 0f) continue
+                val y0 = size.height * (0.18f + i * 0.27f)
+                val bandH = size.height * (0.16f - i * 0.03f)
+                val shift = (1f - e) * size.width * (0.35f + i * 0.2f) * (if (i % 2 == 0) -1f else 1f)
+                val lean = size.width * 0.18f
+                val p = Path().apply { moveTo(shift, y0 + lean * 0.3f); lineTo(size.width + shift, y0 - lean * 0.3f); lineTo(size.width + shift, y0 - lean * 0.3f + bandH); lineTo(shift, y0 + lean * 0.3f + bandH); close() }
+                drawPath(p, hi.copy(alpha = 0.06f * e * (1f - i * 0.25f)))
+            }
+            // The light edge crossing the window once while it opens or closes.
+            if (r in 0.01f..0.99f) {
+                val x = -size.width * 0.2f + size.width * 1.4f * NightMotion.ease(r)
+                val lean = size.height * 0.3f
+                drawLine(Color.White.copy(alpha = 0.55f * (1f - r)), Offset(x + lean, 0f), Offset(x, size.height), 3f)
+                drawLine(hi.copy(alpha = 0.35f * (1f - r)), Offset(x + lean - 14f, 0f), Offset(x - 14f, size.height), 8f)
+            }
+        }
         androidx.compose.animation.AnimatedContent(
             targetState = ctx.page,
             transitionSpec = {
@@ -1854,11 +1886,17 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
                     Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                        val statIdx = intArrayOf(0)
                         @Composable
                         fun stat(label: String, value: String?) {
                             // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
                             // column is at most 40 % of the panel now and the value keeps whole words, stepping its size down if it must.)
-                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            // (Update 529: the lines come in one after another, a short slide along the slant.)
+                            val idx = statIdx[0]++
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().graphicsLayer {
+                                val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 5.7f + idx, 0.035f, 0.4f))
+                                translationX = (1f - e) * 36.dp.toPx(); alpha = e
+                            }) {
                             val labelW = minOf(96.dp, maxWidth * 0.4f)
                             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
@@ -1912,17 +1950,28 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->
+            (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEachIndexed { ci, a ->
                 SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                    val pull by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 600f), label = "nmCmd")
-                    Row(Modifier.fillMaxWidth().graphicsLayer { translationX = -pull * 24.dp.toPx() }, verticalAlignment = Alignment.CenterVertically) {
+                    // (Update 529: no bounce - the pointer and the white sweep in and settle; each command arrives just after the one above.)
+                    val pull by animateFloatAsState(if (on) 1f else 0f, if (anim) spring(dampingRatio = 0.86f, stiffness = 700f) else tween(0), label = "nmCmd")
+                    Row(Modifier.fillMaxWidth().graphicsLayer {
+                        val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 2.8f + minOf(ci, 10) * 0.3f, 0.1f, 0.4f))
+                        translationX = -pull * 24.dp.toPx() + (1f - e) * 70.dp.toPx(); alpha = e
+                    }, verticalAlignment = Alignment.CenterVertically) {
                         Canvas(Modifier.size(14.dp).graphicsLayer { alpha = pull }) {
                             drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, size.height / 2f); lineTo(0f, size.height); close() }, hi)
                         }
                         Spacer(Modifier.width(4.dp))
                         Box(
                             Modifier.weight(1f).height(if (a.primary) 32.dp else 26.dp).clip(slantShape(0.5f))
-                                .background(if (on) Color.White else Color(col.top).copy(alpha = 0.85f))
+                                .background(Color(col.top).copy(alpha = 0.85f))
+                                .drawBehind {
+                                    if (pull > 0.001f) {
+                                        val sl = size.height * 0.5f
+                                        val r = -sl + (size.width + sl) * pull
+                                        drawPath(Path().apply { moveTo(0f, 0f); lineTo(r + sl, 0f); lineTo(r, size.height); lineTo(0f, size.height); close() }, Color.White)
+                                    }
+                                }
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
                                 .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
                         ) {
