@@ -814,6 +814,17 @@
    "apk_sha256": "facac8dc0a9452617b67f2ef83b614deb68973ee232fce936e1818b0223dcfff",
    "base_commit": "8b18aaaf",
    "note": "Update 529h: assembleQa in worktree int 13 Nov 16:30Z (BUILD SUCCESSFUL 2m 42s, verifyQaIsolation + verifyNoEmbeddedSecrets); testDebugUnitTest on 8b18aaaf 2568 tests, 0 failures, 75 skipped. apksigner: CN=Android Debug, SHA-256 a48b27ed. sha256 = installed base.apk on the Flip 2 and KONKR (install_build 13 Nov 17:31 device time)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c4ba1760 (worktree int)",
+   "id": "qa-0.6.72-repair-c4ba1760",
+   "apk_sha256": "315842e7ae321a383db1d92a2fb254af910cda582a77df993e6e87636220b7de",
+   "base_commit": "c4ba1760",
+   "note": "Update 529i: Airy facts fix (KONKR q0672k2). assembleQa in worktree int 13 Nov 17:20Z (BUILD SUCCESSFUL 1m 19s, verifyQaIsolation); testDebugUnitTest 2570 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
   }
  ]
 }

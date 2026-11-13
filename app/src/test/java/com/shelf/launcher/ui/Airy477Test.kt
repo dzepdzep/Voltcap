@@ -56,18 +56,20 @@ class Airy477Test {
     // 529i (KONKR q0672k2): a long maker and genre took the chips to a third row that was never placed ("★ 8 / 10" gone; with
     // More open "Played" too). Played and ★ are one fact, and with More open the facts are two plain lines.
     @Test fun playedAndTrophiesShareOneFact() {
-        assertEquals(listOf("2003", "Test Pattern Games", "Role-playing, Action", "Played Never played · ★ 8 / 10"),
+        assertEquals(listOf("2003", "Test Pattern Games", "Role-playing, Action", "Never played · ★ 8 / 10"),
             airyFacts("2003", "Test Pattern Games", "Role-playing, Action", "Never played", 8, 10))
         assertEquals(listOf("Played 3 h"), airyFacts(null, null, null, "3 h", 0, 0))
     }
 
     @Test fun moreOpenShowsEveryFactInTwoLines() {
         val f = airyFacts("2003", "Test Pattern Games", "Role-playing, Action", "Never played", 8, 10)
-        assertEquals(listOf("2003 · Test Pattern Games · Role-playing, Action", "Played Never played · ★ 8 / 10"), airyFactLines(f))
+        assertEquals(listOf("2003 · Test Pattern Games · Role-playing, Action", "Never played · ★ 8 / 10"), airyFactLines(f))
         assertEquals(listOf("Played 1 h"), airyFactLines(listOf("Played 1 h")))
         val s = src("WinScenes.kt").replace("\r\n", "\n")
         val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
         assertTrue(airy.contains("airyFactLines(facts).forEach { FullText(it"))
+        // q0672k3: no chips row left that a two-line name can push a fact out of.
+        assertTrue(!airy.contains("facts.forEach {"))
     }
 
     @Test fun airyIsACompactMoreWindow() {
