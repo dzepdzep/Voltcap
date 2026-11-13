@@ -163,7 +163,11 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
             }
             // Update 426: no strip of tiny keys any more (an action was cut at the right edge on the user's Thor): one
             // readable "More" key opens the secondary actions as a page of big Wii keys in the preview well (above).
-            if (small.isNotEmpty()) {
+            // (Update 529, master sprint Phase 3, Flip 2 f529b: with Back a hint under the window (the approved action row) the
+            // "Channels" key had gone, Start filled the bottom row alone and More sat above it as a full-width bar - before Play.
+            // There the pair is now Wii-like again: a round ••• key on the left, a filled Start on the right; the bar is only kept
+            // where Back is still a key.)
+            if (small.isNotEmpty() && back != null) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     WiiMidKey(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, Modifier.widthIn(min = 150.dp), compact)
                 }
@@ -171,9 +175,10 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
             }
             // Two prominent keys along the bottom: Channels (back to the tile) and Start.
             // (Update 507: the key named the console maker's own menu; "Channels" says where B goes.)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Channels", pal, Modifier.weight(1f), compact)
-                if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact)
+                else if (small.isNotEmpty()) WiiRoundMore(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, compact)
+                if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact, primary = back == null)
             }
         } else {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -217,19 +222,37 @@ private fun WiiMidKey(a: WinAction, pal: WiiPalette, modifier: Modifier, compact
     }
 }
 
+/**
+ * Update 529: [primary] - Start drawn filled (the lit key's fill, also when another key is lit) so it reads as the first action.
+ */
 @Composable
-private fun WiiBigKey(a: WinAction, label: String, pal: WiiPalette, modifier: Modifier, compact: Boolean) {
+private fun WiiBigKey(a: WinAction, label: String, pal: WiiPalette, modifier: Modifier, compact: Boolean, primary: Boolean = false) {
     SceneControl(a, modifier) { on ->
         val s = RoundedCornerShape(50)
         Box(
             Modifier.fillMaxWidth().clip(s)
-                .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
+                .background(Brush.verticalGradient(if (on || primary) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
                 .border(if (on) 3.dp else 1.5.dp, if (on) LocalWiiRim.current else pal.edge, s)
                 .padding(vertical = if (compact) 6.dp else 9.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(label, color = pal.ink, fontSize = if (compact) 14.sp else 16.sp, fontWeight = FontWeight.Bold, softWrap = false)
         }
+    }
+}
+
+/** Update 529: the round ••• More / Less key beside Start (the approved action row, in the Wii key colours). */
+@Composable
+private fun WiiRoundMore(a: WinAction, pal: WiiPalette, compact: Boolean) {
+    val d = if (compact) 34.dp else 42.dp
+    SceneControl(a, Modifier) { on ->
+        Box(
+            Modifier.size(d).clip(androidx.compose.foundation.shape.CircleShape)
+                .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
+                .border(if (on || a.label == "Less") 3.dp else 1.5.dp, if (on) LocalWiiRim.current else if (a.urgent) LocalWiiRim.current.copy(alpha = 0.7f) else pal.edge,
+                    androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center
+        ) { Text("•••", color = pal.ink, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
     }
 }
 
