@@ -847,6 +847,28 @@
    "apk_sha256": "2e8ba9bfcc02e393f1f0f1cf0675976eda7c78c226369b6c3ff3a34b380f89bb",
    "base_commit": "dc9d1191",
    "note": "Update 529j: category strips glide (WholeChipRow / Live words / Pocket Quest plate / bar fades), Night bars ModulateAlpha in motion, QA A/B hooks voltcap_test_chipglide / voltcap_test_nmlayers. assembleQa in worktree int 13 Nov 18:30Z (BUILD SUCCESSFUL 1m 42s, verifyQaIsolation); testDebugUnitTest 2576 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed. Not installed (KONKR owner-blocked this round)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair a966964d (worktree int)",
+   "id": "qa-0.6.72-repair-a966964d",
+   "apk_sha256": "c0b640c3e6e94ca3f87ede41bb46a9e3832e5fbfe1f168b20b350523c04e51c0",
+   "base_commit": "a966964d",
+   "note": "529k: shelf family native pages (ShelfFamilyPages). assembleQa in worktree int 13 Nov 20:36 (BUILD SUCCESSFUL 3m 31s, verifyQaIsolation); testDebugUnitTest 2625 tests, 0 failures, 47 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair a966964d + 529k2 working tree (NativePageHost, Console stack card fit) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529k2",
+   "apk_sha256": "22c7858453a5730caee560a6c1eac73241da88dd101d6abfa76c11ee7e4d5e7a",
+   "base_commit": "a966964d",
+   "note": "529k2: shelf pages without a second cover / name (NativePageHost), Console stack name / facts give way to the keys. assembleQa 13 Nov 20:48 (BUILD SUCCESSFUL, verifyQaIsolation). apksigner CN=Android Debug a48b27ed."
   }
  ]
 }

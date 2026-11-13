@@ -94,7 +94,10 @@ internal fun ShelfFamilyPages(
             StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
             Spacer(Modifier.height(8.dp))
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(well).padding(8.dp)) {
-                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+                // (The page draws on this card's well, without the case and name the card already shows.)
+                androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
+                    ctx.pageFor(p, Modifier.fillMaxSize(), live)
+                }
             }
             Spacer(Modifier.height(8.dp))
             KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { key(it) }

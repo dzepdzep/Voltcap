@@ -252,11 +252,14 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
                 SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
             }
             ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), moduleKey) { live ->
-                StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold)
+                // (529k, KONKR x1.3 k529k2: the name kept room for three lines and the facts took their full height - with More open
+                // the keys ran out of the module and the Saves line and ••• got no room. The name keeps only what it needs; the facts
+                // give way to the keys, as in the other shelf-family cards.)
+                StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                 Text(ctx.console.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(6.dp))
                 // (Update 507: the console is on the module's label already — not twice.)
-                SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console"))
+                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console")) }
                 Spacer(Modifier.height(8.dp))
                 KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> moduleKey(k) }
             }

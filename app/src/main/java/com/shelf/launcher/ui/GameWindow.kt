@@ -2557,8 +2557,8 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
 private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier: Modifier) {
     val st = LocalWinStatus.current
     val s = st?.perf
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     Column(
         modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
@@ -2622,7 +2622,7 @@ private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> 
 /** Update 125: the game's options as a page of the window (they used to open a separate menu over it). */
 @Composable
 private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: FocusRequester, modifier: Modifier) {
-    val paper = look.paper ?: Color(0xFF15181E)
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
     Column(
         modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -2661,8 +2661,8 @@ private val LockedGrey = androidx.compose.ui.graphics.ColorFilter.colorMatrix(an
  */
 @Composable
 private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listFocus: FocusRequester, modifier: Modifier, onLoadComments: (Int) -> Unit = {}) {
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     val order = Features.winTrophyOrder.state.value
     val details = state.raAchievementDetails[g.stableKey]
@@ -2899,11 +2899,19 @@ private fun ButtonRow(key: Any, content: @Composable () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(LocalButtonRowSize provides size) { content() }
 }
 
+/**
+ * 529k: a page drawn inside a layout's own card (ShelfFamilyPages and the next families): its paper (the card's well shows
+ * through: transparent), whether that card is dark, and what the card already shows beside the page - the case / cover, the
+ * game's name - so Details does not repeat them.
+ */
+internal class NativePageHost(val paper: Color, val dark: Boolean, val showsCover: Boolean, val showsName: Boolean)
+internal val LocalNativePageHost = androidx.compose.runtime.staticCompositionLocalOf<NativePageHost?> { null }
+
 /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
 @Composable
 private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
     val meta = state.metadata[g.stableKey]
@@ -2913,7 +2921,9 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     // DETAILS_MIN_TEXT; the cover shrinks first (top-aligned, its shape kept), and when even a small cover doesn't fit beside
     // the text it goes above it. Nothing is hidden: every fact and the whole story stay on the page.)
     BoxWithConstraints(modifier.background(paper).padding(16.dp)) {
-    val fit = detailsCoverFit(maxWidth.value, maxHeight.value)
+    val host = LocalNativePageHost.current
+    // (529k: on a native page the card shows the case beside it already - no second cover.)
+    val fit = if (host?.showsCover == true) null else detailsCoverFit(maxWidth.value, maxHeight.value)
     val stackedCoverH = minOf(maxHeight * 0.45f, 160.dp)
     val coverBox: @Composable (Modifier) -> Unit = { m ->
         Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
@@ -2921,7 +2931,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             if (cover != null) SmartArt(cover, null, Modifier.fillMaxSize(), request = rememberCoverRequest(cover))
         }
     }
-    val stacked = fit == null
+    val stacked = fit == null && host?.showsCover != true
     Row(Modifier.fillMaxSize()) {
         if (fit != null) {
             coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
@@ -2935,7 +2945,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
             // scrolls, so the name and the facts wrap in full.)
             // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
-            WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
+            if (host?.showsName != true) WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
                 modifier = Modifier.fillMaxWidth())
             val facts = listOfNotNull(
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
