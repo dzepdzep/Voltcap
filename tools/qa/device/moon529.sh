@@ -50,6 +50,9 @@ run)
   k DPAD_CENTER 1.2; k BUTTON_B 1.2; k DPAD_CENTER 1.2; k BUTTON_B 1.2
   perf full_busy
   sleep 2; dumpsys gfxinfo $P reset >/dev/null 2>&1; sleep 8; perf full_idle
+  # (what draws while nothing moves: the same with the water's ripple off - put back right after)
+  A --es voltcap_test_pref "nm_water=false"; sleep 2; dumpsys gfxinfo $P reset >/dev/null 2>&1; sleep 8; perf full_idle_nowater
+  A --es voltcap_test_pref "nm_water=true"; sleep 1.5
   # 6. Lite
   A --es voltcap_test_perf LITE; sleep 2; dumpsys gfxinfo $P reset >/dev/null 2>&1
   for i in 1 2 3 4 5 6 7 8 9 10 11 12; do k DPAD_DOWN 0.15; done
