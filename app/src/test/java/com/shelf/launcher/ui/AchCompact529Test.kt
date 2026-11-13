@@ -43,7 +43,7 @@ class AchCompact529Test {
         assertFalse(s.contains("Text(\"LAST SESSION\""))
         assertFalse(s.contains("Chip(if (autoComments) \"✓ Comments\" else \"Comments\""))
         // The list opens on its first achievement.
-        assertTrue(s.contains("Modifier.initialFocus()"))
+        assertTrue(s.contains("val firstFocus = Modifier.initialFocus()"))
     }
 
     @Test fun bClosesTheInnerThingFirst() {

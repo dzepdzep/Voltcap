@@ -301,6 +301,8 @@ fun AchievementListDialog(
                 } else {
                     // The badges get their own area (the achievement theme's backdrop), with room for the
                     // unlock and pick animations to rise out of their slots.
+                    // (The list opens on its first achievement - not on a control.)
+                    val firstFocus = Modifier.initialFocus()
                     if (wall) AchievementArea {
                         BadgeWall(
                             items = visible.map { a ->
@@ -318,7 +320,7 @@ fun AchievementListDialog(
                                 detailId = if (detailId == id) null else id
                             },
                             modifierFor = { item -> Modifier.focusRequester(rowFocus.getOrPut(item.key as Int) { FocusRequester() })
-                                .then(if (item.key == visible.firstOrNull()?.id) Modifier.initialFocus() else Modifier) },
+                                .then(if (item.key == visible.firstOrNull()?.id) firstFocus else Modifier) },
                             below = { item ->
                                 val a = visible.first { it.id == item.key }
                                 AchievementInlineDetail(
@@ -345,11 +347,11 @@ fun AchievementListDialog(
                                 if (view == com.shelf.launcher.data.Features.AchView.POWER) PowerCell(
                                     a, showRarity = hasRarity, missable = a.isMissable,
                                     markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED, expanded = detailId == a.id,
-                                    modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) Modifier.initialFocus() else Modifier), onClick = toggle
+                                    modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) firstFocus else Modifier), onClick = toggle
                                 ) else TrophyRow(
                                     a, showRarity = hasRarity, missable = a.isMissable,
                                     markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED, expanded = detailId == a.id,
-                                    modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) Modifier.initialFocus() else Modifier), onClick = toggle
+                                    modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) firstFocus else Modifier), onClick = toggle
                                 )
                                 AchDetailReveal(detailId == a.id) { AchievementInlineDetail(
                                     raGameId = game.raGameId,
@@ -374,7 +376,7 @@ fun AchievementListDialog(
                             AchievementRow(
                                 a, showRarity = hasRarity, easiestNext = a.id == easiestNext,
                                 markedMissed = a.missableState(missedMarks) == MissableState.MARKED_MISSED,
-                                modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) Modifier.initialFocus() else Modifier),
+                                modifier = Modifier.focusRequester(requester).then(if (a.id == visible.firstOrNull()?.id) firstFocus else Modifier),
                                 expanded = detailId == a.id
                             ) {
                                 // A (or tap) opens its details right under it; again closes them.

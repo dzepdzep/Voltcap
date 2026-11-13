@@ -2606,16 +2606,24 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             artOverridesStore.set(g.stableKey, ArtSlot.LOGO, if (i % 2 == 0) (if (i % 6 == 4) "$dir/logo_missing.png" else "$dir/logo_${i % 4}.png") else null)
             if (i % 4 != 3) {
                 overridesStore.setRaId(g.stableKey, 990000 + i)
-                val earned = (i % 5) * 2
-                details[g.stableKey] = (0 until 10).map { k ->
+                // (Achievements compact hotfix, update 529: sets of 1, 10 and 120 achievements - one game in eight has one, one in
+                // eight has 120 - with a long title and description now and then and a few missables, for the list's QA.)
+                val n = when (i % 8) { 0 -> 1; 1 -> 120; else -> 10 }
+                val earned = if (n == 1) 0 else (i % 5) * 2 * n / 10
+                details[g.stableKey] = (0 until n).map { k ->
+                    val long = k % 7 == 3
                     RaAchievementDetail(
-                        id = 990000 + i * 10 + k, title = "QA achievement ${k + 1} of game ${i + 1}", description = "Synthetic fixture (QA app).",
-                        points = 5 + k, badgeName = "qa_${(i * 10 + k) % 12}", type = null,
+                        id = 990000 + i * 200 + k,
+                        title = if (long) "QA achievement ${k + 1} of game ${i + 1}: a deliberately long achievement title that has to wrap onto a second line"
+                            else "QA achievement ${k + 1} of game ${i + 1}",
+                        description = if (long) "Synthetic fixture (QA app). A long description of the kind real sets have: beat the second boss without taking damage, on the hardest difficulty, after collecting every hidden emblem in the first three stages."
+                            else "Synthetic fixture (QA app).",
+                        points = 5 + k % 20, badgeName = "qa_${(i * 10 + k) % 12}", type = if (k % 9 == 5) "missable" else null,
                         dateEarned = if (k < earned) "2026-11-01 10:00:00" else null, dateEarnedHardcore = null,
-                        unlockPercent = 10f + k * 7, displayOrder = k
+                        unlockPercent = 10f + (k * 7) % 85, displayOrder = k
                     )
                 }
-                progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = 10, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
+                progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = n, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
             }
         }
         // (Batch 523t: and, three games in four, details as a scraper gives them - year, studio, genre, a story of a few
@@ -4510,6 +4518,26 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun loadAchievementComments(achievementId: Int) {
         val s = _uiState.value
         if (achievementId in s.raComments || achievementId in s.raCommentsLoading) return
+        // (Achievements compact hotfix, update 529, QA app only: the fixture's achievements get synthetic comments - none, a few
+        // or many, the third kind "offline" (an error) - after a short wait, so folded comments can be checked without an account.)
+        if (achievementId >= 990000 && com.shelf.launcher.data.QaVariant.isolated(getApplication())) {
+            _uiState.update { it.copy(raCommentsLoading = it.raCommentsLoading + achievementId) }
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(400)
+                val kind = achievementId % 4
+                _uiState.update {
+                    if (kind == 3) it.copy(raCommentsError = it.raCommentsError + (achievementId to com.shelf.launcher.data.ra.RaError(com.shelf.launcher.data.ra.RaErrorKind.NETWORK, "QA fixture: offline")),
+                        raCommentsLoading = it.raCommentsLoading - achievementId)
+                    else it.copy(
+                        raComments = it.raComments + (achievementId to (0 until listOf(0, 3, 40)[kind]).map { c ->
+                            com.shelf.launcher.data.RaComment("qa_player_${c % 7}", "2026-10-${10 + c % 18} 12:00:00",
+                                if (c % 5 == 2) "A longer QA comment: the route that worked for me was to save before the bridge, take the left path and keep the shield for the last phase. Took three tries." else "QA comment ${c + 1}.")
+                        }),
+                        raCommentsLoading = it.raCommentsLoading - achievementId)
+                }
+            }
+            return
+        }
         val creds = raCredentialsStore.load() ?: return
         _uiState.update { it.copy(raCommentsLoading = it.raCommentsLoading + achievementId) }
         viewModelScope.launch {
