@@ -45,7 +45,8 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} {2} ach={3} {1}")
         fun cases(): List<Array<Any?>> {
-            val layouts = listOf(HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES)
+            val layouts = listOf(HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES,
+                HomeLayout.CONSOLES, HomeLayout.COVERDETAILS) // (529k: the rest of the shelf family has native pages now)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)
@@ -113,7 +114,8 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
             options = listOf(WinOption("Probe option") {}, WinOption("Another probe option with a longer name") {})) }
         frames(180)
         val problems = mutableListOf<String>()
-        for (page in listOf(listOf("details", "summary", "info"), listOf("options", "config"))) {
+        // (529k: Game shelf's Details key is "Turn over" - the index card turns.)
+        for (page in listOf(listOf("details", "summary", "info", "turn", "over"), listOf("options", "config"))) {
             val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
                 (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
             var found = compose.onAllNodes(m).fetchSemanticsNodes()

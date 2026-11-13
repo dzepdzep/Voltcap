@@ -31,7 +31,9 @@ internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolea
  * their motion) instead of the shared expanded page (update 426). A scene joins only once its pages are readable at
  * 640 × 427 dp and ×1.3 text (popup motion review).
  */
-internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, WinScene.NIGHT_STATUS, WinScene.TILE_CARD, WinScene.BLADE_GUIDE)
+internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, WinScene.NIGHT_STATUS, WinScene.TILE_CARD, WinScene.BLADE_GUIDE,
+    // (529k: the shelf family - Game shelf, Case stacks, Console stack, Coverflow details - ShelfFamilyPages.)
+    WinScene.INDEX_CARD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

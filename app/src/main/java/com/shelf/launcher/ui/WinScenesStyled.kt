@@ -247,16 +247,18 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
             val cw = minOf(w * 0.25f, 130.dp)
             SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+            // (529k: Details / Achievements / Options show on the module's own screen beside the bay - ShelfFamilyPages.)
+            val moduleKey: @Composable (WinAction) -> Unit = { k ->
+                SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
+            }
+            ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), moduleKey) { live ->
                 StableFullText(ctx.name, color = ink, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold)
                 Text(ctx.console.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(6.dp))
                 // (Update 507: the console is on the module's label already — not twice.)
                 SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console"))
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx), 6.dp) { k ->
-                    SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
-                }
+                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> moduleKey(k) }
             }
         }
     }
@@ -284,6 +286,13 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             // The keys are measured first (the block above them is the weighted one); inside it the name and console keep their
             // natural height and the facts give way.
             val shortPanel = ctx.maxH < 420.dp
+            val compact = shortPanel && ctx.tools.any { it.label == "Less" }
+            val coverKey: @Composable (WinAction) -> Unit = { k ->
+                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
+                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp)
+            }
+            // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), coverKey) { live ->
             Column(Modifier.weight(1f, fill = false)) {
                 StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
                 // (The year beside the console: with More open the facts give way to the keys and the year went with them.)
@@ -303,10 +312,7 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             // (Update 471, D244: KONKR at 280 dpi with More open — nine keys in six rows left the two lines above them 40 px short:
             // the second line was cut and "Never played · 0 / 109 trophies" got no height. On a short panel with More open the
             // keys are a little more compact — 26 dp tall (touch stays >= 24 dp), 4 dp apart — so both lines stay whole.)
-            val compact = shortPanel && ctx.tools.any { it.label == "Less" }
-            KeyRow(sceneKeys(ctx), if (compact) 4.dp else 6.dp) { k ->
-                SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
-                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp)
+            KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, if (compact) 4.dp else 6.dp) { k -> coverKey(k) }
             }
         }
     }

@@ -242,7 +242,12 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
         }.border(1.dp, Color(0xFF6B5039).copy(alpha = 0.7f), RoundedCornerShape(6.dp))) {
             // The shelf's lip.
             Box(Modifier.fillMaxWidth().height(6.dp).background(Brush.verticalGradient(listOf(Color(0xFF7A5A3E), Color(0xFF3E2E21)))))
-            Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp)) {
+            // (529k: Details / Achievements / Options are further cards of this shelf - ShelfFamilyPages.)
+            val shelfKey: @Composable (WinAction) -> Unit = { k ->
+                SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
+            }
+            ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp), Color(0xFFE6C891), cream,
+                Color.Black.copy(alpha = 0.22f), shelfKey) { live ->
                 // The console on the shelf's brass label holder.
                 Text(ctx.console.uppercase(), color = Color(0xFF2A1E12), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.clip(RoundedCornerShape(2.dp)).background(Brush.verticalGradient(listOf(Color(0xFFE6C891), Color(0xFFB08A50))))
@@ -252,9 +257,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(8.dp))
                 Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, label, cream, null, omit = setOf("Console")) }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx), 6.dp) { k ->
-                    SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
-                }
+                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> shelfKey(k) }
             }
         }
     }
@@ -285,14 +288,18 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
             // The case's spine down the card's edge, in the stack's lit colour.
             .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.25f))), size = androidx.compose.ui.geometry.Size(5.dp.toPx(), size.height)) }
             .border(1.dp, Color.White.copy(alpha = 0.08f), stackShape).padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
-            Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-            Spacer(Modifier.height(2.dp))
-            StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console", "Year")) }
-            Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx), 6.dp) { k ->
+            // (529k: Details / Achievements / Options are further cards of the stack - ShelfFamilyPages.)
+            val stackKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
+            }
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), stackKey) { live ->
+                Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                Spacer(Modifier.height(2.dp))
+                StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
+                Spacer(Modifier.height(8.dp))
+                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console", "Year")) }
+                Spacer(Modifier.height(8.dp))
+                KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k -> stackKey(k) }
             }
         }
     }
