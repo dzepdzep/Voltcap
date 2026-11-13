@@ -2712,16 +2712,16 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
+                            // (Rule 11, achievements hotfix 529: no "…" - the name wraps whole; the description is whole once the row is
+                            // open (A), and while it's closed it fits two lines by shrinking readably, then slides.)
                             androidx.compose.material3.Text(
                                 a.title ?: "Achievement", color = rowInk.copy(alpha = if (a.isUnlocked) 1f else 0.62f), fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                fontFamily = if (look.mono) FontFamily.Monospace else null
+                                fontWeight = FontWeight.SemiBold, fontFamily = if (look.mono) FontFamily.Monospace else null
                             )
                             a.description?.let {
-                                androidx.compose.material3.Text(
-                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = if (opened) 6 else 2,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
+                                if (opened) androidx.compose.material3.Text(
+                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp
+                                ) else WinFullText(it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = 2)
                             }
                         }
                         a.points?.let {
@@ -2778,14 +2778,20 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
             comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close Comments and open them again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-            else -> comments.take(8).forEach { cm ->
-                Column {
-                    androidx.compose.material3.Text(
-                        (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
-                        color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
-                    )
-                    androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            else -> {
+                comments.take(8).forEach { cm ->
+                    Column {
+                        WinFullText(
+                            (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
+                            color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                        )
+                        androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp)  // (whole, rule 11)
+                    }
                 }
+                // (The page shows the newest 8; the rest are never hidden silently - Full list has them all, with Load older.)
+                if (comments.size > 8) androidx.compose.material3.Text(
+                    "8 of ${comments.size} comments here - Full list shows them all.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp
+                )
             }
         } } }
     }

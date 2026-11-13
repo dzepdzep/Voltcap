@@ -110,15 +110,14 @@ internal val GreyMatrix = ColorFilter.colorMatrix(ColorMatrix().apply { setToSat
 
 // ---------------------------------------------------------------- per game: headers
 
-/** Power cells: the set as a battery charging up — the percentage, earned / total, points and how many rare ones. */
+/** Power cells: the set as a battery charging up — the percentage, earned / total, points and how many rare ones.
+ *  [showStats] false (the achievement list, compact hotfix 529): the battery and its percentage only; the three stat tiles open
+ *  from the list's Stats panel ([PowerStats]). */
 @Composable
-internal fun PowerHeader(list: List<RaAchievementDetail>) {
+internal fun PowerHeader(list: List<RaAchievementDetail>, showStats: Boolean = true) {
     val total = list.size.coerceAtLeast(1)
     val unlocked = list.count { it.isUnlocked }
     val frac = unlocked.toFloat() / total
-    val pts = list.filter { it.isUnlocked }.sumOf { it.points ?: 0 }
-    val allPts = list.sumOf { it.points ?: 0 }
-    val rare = list.count { it.isUnlocked && (it.unlockPercent ?: 100f) < 10f }
     val accent = ShelfTheme.accent
     val full = unlocked >= list.size && list.isNotEmpty()
     val charge = if (full) Ds.gold else accent
@@ -149,12 +148,21 @@ internal fun PowerHeader(list: List<RaAchievementDetail>) {
             Spacer(Modifier.width(12.dp))
             Text("${(frac * 100).toInt()}%", color = charge, fontSize = 26.sp, fontWeight = FontWeight.Black)
         }
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PowerStat("Unlocked", "$unlocked / ${list.size}", Modifier.weight(1f))
-            PowerStat("Points", "$pts / $allPts", Modifier.weight(1f))
-            PowerStat("Rare", rare.toString(), Modifier.weight(1f))
-        }
+        if (showStats) { Spacer(Modifier.height(10.dp)); PowerStats(list) }
+    }
+}
+
+/** The Power cells header's three tiles: earned / total, points and how many rare ones. */
+@Composable
+internal fun PowerStats(list: List<RaAchievementDetail>) {
+    val unlocked = list.count { it.isUnlocked }
+    val pts = list.filter { it.isUnlocked }.sumOf { it.points ?: 0 }
+    val allPts = list.sumOf { it.points ?: 0 }
+    val rare = list.count { it.isUnlocked && (it.unlockPercent ?: 100f) < 10f }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PowerStat("Unlocked", "$unlocked / ${list.size}", Modifier.weight(1f))
+        PowerStat("Points", "$pts / $allPts", Modifier.weight(1f))
+        PowerStat("Rare", rare.toString(), Modifier.weight(1f))
     }
 }
 

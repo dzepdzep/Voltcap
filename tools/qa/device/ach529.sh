@@ -3,8 +3,8 @@
 # (com.shelf.launcher.qa), fixture library with synthetic sets (QaArtFixture; the new build: sets of 0 / 1 / 10 / 120 and synthetic
 # comments). Never wakes / unlocks: a key only while the QA app is in front, awake and unlocked. Owner settings: snapshot saved
 # first, restored by `restore`.
-#   sh ach529.sh run TAG ["GAME" ...]   per game: the window, More, Achievements; the list as it opens; resting on a row 2 s; A on
-#                                        it; its Comments; B, B; the control bar's first panel; B, B. Then the same list at x1.3, and
+#   sh ach529.sh run TAG ["GAME" ...]   per game: the list as it opens; resting on a row 2 s; A on it; its Comments; B (comments
+#                                        close), B (details close, list stays); the list again, Up, its first panel; B, B. Then x1.3, and
 #                                        a recording of fast moves + open / close. Without games: one per set size from the fixture log.
 #   sh ach529.sh restore TAG
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
@@ -34,11 +34,14 @@ page() { # GAME NAME
 one() { # GAME NAME
   log "game $1 ($2)"
   openList "$1" "$2"; shot $2_1open 0.3
-  k DPAD_DOWN 0.4; k DPAD_DOWN 2.2; shot $2_2rest 0.1
+  # (a set of 1 has no third row: Down would leave the list for its footer)
+  if [ "$2" != n1 ]; then k DPAD_DOWN 0.4; k DPAD_DOWN 2.2; else sleep 2.2; fi; shot $2_2rest 0.1
   k DPAD_CENTER 1.0; shot $2_3rowA 0.1
-  k DPAD_DOWN 0.5; shot $2_3b 0.1; k DPAD_DOWN 0.5; shot $2_3c 0.1; k DPAD_CENTER 1.4; shot $2_4comments 0.1
+  k DPAD_DOWN 0.5; shot $2_3b 0.1; k DPAD_CENTER 1.4; shot $2_4comments 0.1
+  # B closes the comments, B the details - the list stays open
   k BUTTON_B 0.8; shot $2_5b1 0.1; k BUTTON_B 0.8; shot $2_6b2 0.1
-  for i in 1 2 3 4 5 6; do k DPAD_UP 0.25; done; k DPAD_CENTER 0.9; shot $2_7panel 0.1
+  # the control bar: freshly opened list, one Up from the first row, its first panel; B closes the panel, B the list
+  k BUTTON_B 1.2; openList "$1" "$2"; k DPAD_UP 0.5; k DPAD_CENTER 0.9; shot $2_7panel 0.1
   k BUTTON_B 0.8; shot $2_8b3 0.1; k BUTTON_B 1.2; shot $2_9closed 0.1
   dumpsys window | grep mCurrentFocus | tail -1 >> $L
 }
@@ -65,8 +68,8 @@ run)
   # x1.3 on the first game with a set of 10 (or the first one)
   g=$(grep -m1 "^10|" $O/games.txt | cut -d'|' -f2); [ -z "$g" ] && g=$(head -1 $O/games.txt | cut -d'|' -f2)
   A --es voltcap_test_scale "font=1.3"; sleep 2; openList "$g" s13; shot s13_1open 0.3; k DPAD_CENTER 1.0; shot s13_3rowA 0.1
-  for i in 1 2 3 4 5 6; do k DPAD_UP 0.25; done; k DPAD_CENTER 0.9; shot s13_7panel 0.1
-  k BUTTON_B 0.8; k BUTTON_B 0.8; k BUTTON_B 1.2; A --es voltcap_test_scale off; sleep 1.5
+  k BUTTON_B 0.8; k DPAD_UP 0.5; k DPAD_CENTER 0.9; shot s13_7panel 0.1
+  k BUTTON_B 0.8; k BUTTON_B 1.2; shot s13_9closed 0.1; A --es voltcap_test_scale off; sleep 1.5
   # fast moves, open / close, recorded
   openList "$g" rec; REC_SEG=9 rec_start $O/v_fast 9; sleep 0.6
   for i in 1 2 3 4 5 6 7 8; do gate; input keyevent KEYCODE_DPAD_DOWN; sleep 0.09; done; sleep 0.8

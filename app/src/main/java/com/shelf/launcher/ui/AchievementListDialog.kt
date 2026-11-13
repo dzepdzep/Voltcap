@@ -111,9 +111,8 @@ fun AchievementListDialog(
     // the rest-to-open of update 151 is gone - A (or a tap) opens one achievement's details, A again closes them, B closes them
     // first. Comments load only when you open them. The old switch (Features.achCommentsAuto) is kept, unread.)
     // B closes what is open inside the list before it closes the list: the open details, then the open control panel.
-    androidx.activity.compose.BackHandler(enabled = detailId != null) {
-        val id = detailId; detailId = null; returnFocusId = id
-    }
+    // (The handler sits INSIDE the dialog's content (below): the dialog window takes Back first, so one registered out here never
+    // ran and B closed the whole list - Flip 2, 13 Nov, ach_after3.)
     val hasRarity = showRarity && achievements.any { it.unlockPercent != null }
     // Order: unlocked first then the locked ones (greyed), the set's own, unlock order (timeline),
     // or most-unlocked first (easiest) / least (rarest).
@@ -145,6 +144,8 @@ fun AchievementListDialog(
     // Power cells, trophy list, badge wall or list (Settings › Achievements; the chips here change it too).
     val view = com.shelf.launcher.data.Features.achView.state.value
     val wall = view == com.shelf.launcher.data.Features.AchView.BADGES
+    // (Stats belongs to Power cells: another view closes it, so B never spends a press on a panel that isn't there.)
+    LaunchedEffect(view) { if (panel == AchPanel.STATS && view != com.shelf.launcher.data.Features.AchView.POWER) panel = null }
     val visible = achievements.filter(filter.test)
         .filter { filter != AchievementFilter.MISSABLE_LEFT || it.missableState(missedMarks) == MissableState.OPEN }
         .let { list ->
@@ -179,6 +180,9 @@ fun AchievementListDialog(
             Chip("Close", onClick = onDismiss)
         }
     ) {
+        androidx.activity.compose.BackHandler(enabled = detailId != null) {
+            val id = detailId; detailId = null; returnFocusId = id
+        }
         if (!refreshNote.isNullOrBlank()) {
             MutedNote(refreshNote)
             Spacer(Modifier.height(6.dp))
@@ -214,7 +218,7 @@ fun AchievementListDialog(
                     )
                 }
                 when (view) {
-                    com.shelf.launcher.data.Features.AchView.POWER -> PowerHeader(achievements)
+                    com.shelf.launcher.data.Features.AchView.POWER -> PowerHeader(achievements, showStats = false)
                     com.shelf.launcher.data.Features.AchView.TROPHY -> TrophyHeader(
                         icon = gameIcon, title = gameDisplayName(game.name), list = achievements
                     )
@@ -261,6 +265,7 @@ fun AchievementListDialog(
                     filterLabel = "${filter.label} ${filterCount(filter)}",
                     sortLabel = RaritySort.values().filter { hasRarity || !it.needsRarity }.let { opts -> (if (sort in opts) sort else opts.first()).label },
                     hasSession = !richPresence.isNullOrBlank(),
+                    hasStats = view == com.shelf.launcher.data.Features.AchView.POWER,
                     focus = panelFocus,
                     onToggle = { p -> panel = if (panel == p) null else p }
                 )
@@ -294,6 +299,8 @@ fun AchievementListDialog(
                     MutedNote("A (or tap) on an achievement opens its details under ${if (wall) "its row" else "it"}; A again or B closes them. Comments open from there.")
                     if (achievements.any { it.isMissable }) { Spacer(Modifier.height(4.dp)); MissableLegend() }
                 }
+                // Power cells' stat tiles (earned, points, rare), folded with the other panels (owner: stats collapsed by default).
+                if (view == com.shelf.launcher.data.Features.AchView.POWER) AchPanelBody(panel == AchPanel.STATS) { PowerStats(achievements) }
                 // The game's own status line from your last session (where progress like "50/151 Pokémon caught" shows).
                 if (!richPresence.isNullOrBlank()) AchPanelBody(panel == AchPanel.SESSION) {
                     Text(richPresence, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, lineHeight = 17.sp)
@@ -490,7 +497,7 @@ private fun AchievementRow(
 }
 
 /** Achievements compact hotfix (update 529): the list's folded panels - one open at a time. */
-internal enum class AchPanel { FILTER, SORT, VIEW, SESSION }
+internal enum class AchPanel { FILTER, SORT, VIEW, STATS, SESSION }
 
 /** How long a section takes to open or close (owner: about 150-220 ms); reduced motion / Motion off shorten it (MotionLevel). */
 internal const val ACH_FOLD_MS = 180
@@ -501,7 +508,7 @@ internal const val ACH_FOLD_MS = 180
  */
 @Composable
 private fun AchControlBar(
-    open: AchPanel?, filterLabel: String, sortLabel: String, hasSession: Boolean, focus: Map<AchPanel, FocusRequester>,
+    open: AchPanel?, filterLabel: String, sortLabel: String, hasSession: Boolean, hasStats: Boolean, focus: Map<AchPanel, FocusRequester>,
     onToggle: (AchPanel) -> Unit
 ) {
     fun chev(p: AchPanel) = if (open == p) " ▴" else " ▾"
@@ -509,6 +516,7 @@ private fun AchControlBar(
         Chip("Show: $filterLabel" + chev(AchPanel.FILTER), accent = open == AchPanel.FILTER, modifier = Modifier.focusRequester(focus.getValue(AchPanel.FILTER))) { onToggle(AchPanel.FILTER) }
         Chip("Order: $sortLabel" + chev(AchPanel.SORT), accent = open == AchPanel.SORT, modifier = Modifier.focusRequester(focus.getValue(AchPanel.SORT))) { onToggle(AchPanel.SORT) }
         Chip("View" + chev(AchPanel.VIEW), accent = open == AchPanel.VIEW, modifier = Modifier.focusRequester(focus.getValue(AchPanel.VIEW))) { onToggle(AchPanel.VIEW) }
+        if (hasStats) Chip("Stats" + chev(AchPanel.STATS), accent = open == AchPanel.STATS, modifier = Modifier.focusRequester(focus.getValue(AchPanel.STATS))) { onToggle(AchPanel.STATS) }
         if (hasSession) Chip("Last session" + chev(AchPanel.SESSION), accent = open == AchPanel.SESSION, modifier = Modifier.focusRequester(focus.getValue(AchPanel.SESSION))) { onToggle(AchPanel.SESSION) }
     }
 }

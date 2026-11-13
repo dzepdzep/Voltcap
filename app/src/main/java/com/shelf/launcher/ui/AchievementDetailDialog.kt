@@ -134,8 +134,6 @@ fun AchievementDetailDialog(
     com.shelf.launcher.Breadcrumbs.mark("AchievementDetailDialog")
     var detailsOpen by remember(achievement.id) { mutableStateOf(false) }
     var commentsOpen by remember(achievement.id) { mutableStateOf(false) }
-    // B folds an open section before it closes the window.
-    androidx.activity.compose.BackHandler(enabled = detailsOpen || commentsOpen) { if (commentsOpen) commentsOpen = false else detailsOpen = false }
     ShelfDialog(
         icon = Icons.Filled.EmojiEvents,
         title = achievement.title ?: "Unknown achievement",
@@ -144,6 +142,8 @@ fun AchievementDetailDialog(
         maxContentHeightFraction = 0.75f,
         layoutAware = true // (Update 497, 1C: the detail / comments window follows the home layout like the list)
     ) {
+        // B folds an open section before it closes the window (inside the dialog: its window takes Back before the activity).
+        androidx.activity.compose.BackHandler(enabled = detailsOpen || commentsOpen) { if (commentsOpen) commentsOpen = false else detailsOpen = false }
         ShelfCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val badgeUrl = RaBadges.url(achievement.badgeName)

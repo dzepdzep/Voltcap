@@ -56,6 +56,32 @@ class AchCompact529Test {
         assertTrue(src("GameWindow.kt").contains("BackHandler(enabled = commentsOpen) { commentsOpen = false }"))
     }
 
+    /** Flip 2, 13 Nov (ach_after3): B closed the whole list with a row open - the handler was registered outside the dialog,
+     *  whose own window takes Back first. Every inner handler now sits inside its ShelfDialog's content. */
+    @Test fun innerBackHandlersAreInsideTheDialog() {
+        val l = src("AchievementListDialog.kt")
+        assertTrue(l.indexOf("BackHandler(enabled = detailId != null)") > l.indexOf("ShelfDialog("))
+        assertTrue(l.indexOf("BackHandler(enabled = panel != null)") > l.indexOf("ShelfDialog("))
+        val d = src("AchievementDetailDialog.kt")
+        assertTrue(d.indexOf("BackHandler(enabled = detailsOpen || commentsOpen)") > d.indexOf("ShelfDialog("))
+    }
+
+    /** Stats folded by default (owner): Power cells' tiles open from the bar's Stats panel. */
+    @Test fun statsAreAPanel() {
+        val l = src("AchievementListDialog.kt")
+        assertTrue(l.contains("PowerHeader(achievements, showStats = false)"))
+        assertTrue(l.contains("AchPanelBody(panel == AchPanel.STATS) { PowerStats(achievements) }"))
+    }
+
+    /** Rule 11 on the window's Achievements page: no "…" on names, descriptions or comments. */
+    @Test fun windowPageCutsNoText() {
+        val w = src("GameWindow.kt")
+        val from = w.indexOf("private fun WindowTrophies(")
+        val more = w.indexOf("private fun TrophyMore(")
+        val page = w.substring(from, w.indexOf("\nprivate fun ", more + 10).let { if (it < 0) w.length else it })
+        assertFalse(page.contains("TextOverflow.Ellipsis"))
+    }
+
     @Test fun foldsAreQuick() {
         assertTrue(ACH_FOLD_MS in 150..220)
     }
