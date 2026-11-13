@@ -975,6 +975,11 @@ class TestPopupGate(unittest.TestCase):
         for n in small["windows"][0]["nodes"]:
             if n["label"] == "Play": n["shown"] = [434, 512, 60, 40]
         st, why = popclip.hierarchy(small, None)
+        # (a narrower Play of the same height - a longer Details word - is not demoted: Game shelf's "Turn over", f529a)
+        narrow = json.loads(json.dumps(d))
+        for n in narrow["windows"][0]["nodes"]:
+            if n["label"] == "Play": n["shown"] = [434, 516, 88, 58]
+        self.assertEqual(popclip.hierarchy(narrow, None)[0], "PASS")
         self.assertEqual(st, "FAIL"); self.assertIn("smaller than Details", why)
         late = json.loads(json.dumps(d))
         for n in late["windows"][0]["nodes"]:

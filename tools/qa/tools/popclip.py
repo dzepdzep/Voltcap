@@ -123,8 +123,11 @@ def hierarchy(main, home):
     if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
     det = [(l, b) for l, b in ctl if DET_RE.match(l)]
     if det:
-        da, pa = det[0][1][2] * det[0][1][3], pb[2] * pb[3]
-        if pa < 0.85 * da: probs.append(f"{pl} ({pb[2]}x{pb[3]}) smaller than {det[0][0]} ({det[0][1][2]}x{det[0][1][3]})")
+        # (A key's width follows its word - "Turn over" is wider than "Play" on the Game shelf (f529a): only a Play drawn
+        # lower than Details, or at most 60 % of its area, is a demoted Play.)
+        db = det[0][1]
+        da, pa = db[2] * db[3], pb[2] * pb[3]
+        if pb[3] < 0.9 * db[3] or pa < 0.6 * da: probs.append(f"{pl} ({pb[2]}x{pb[3]}) smaller than {det[0][0]} ({db[2]}x{db[3]})")
         else: notes.append(f"{pl} {pb[2]}x{pb[3]} >= {det[0][0]} {det[0][1][2]}x{det[0][1][3]}")
     more = [(l, b) for l, b in ctl if re.search(r"(?i)(^more$|^less$|\u22ef|\u2022\u2022\u2022)", l)]
     if more:
