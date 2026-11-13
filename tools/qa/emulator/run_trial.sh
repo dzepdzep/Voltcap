@@ -33,6 +33,9 @@ aapt=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | tail -1)
 [ -n "$aapt" ] && note "apk package: $("$aapt" dump badging "$APK" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
 if ! adb install -r -g "$APK" > "$OUT/install.txt" 2>&1; then note "INSTALL: FAILED ($(tail -1 "$OUT/install.txt")) - every check BLOCKED"; exit 0; fi
 note "INSTALL: OK; primaryCpuAbi=$(adb shell dumpsys package $P | sed -n 's/.*primaryCpuAbi=//p' | head -1 | tr -d '\r')"
+# (The handhelds' QA app has all-files access from its first setup; a fresh emulator install does not - the QA fixture
+# library lives under shared storage. Granted to the isolated QA app on this throwaway emulator only.)
+adb shell appops set $P MANAGE_EXTERNAL_STORAGE allow > /dev/null 2>&1
 adb logcat -c
 A; sleep 12
 adb exec-out screencap -p > "$OUT/launch.png"
