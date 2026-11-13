@@ -81,9 +81,13 @@ internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNo
 internal fun shownFacts(ctx: WinSceneCtx, omit: Set<String>): List<Pair<String, String>> = shownFacts(sceneFacts(ctx), omit)
 internal fun shownFacts(facts: List<Pair<String, String>>, omit: Set<String>): List<Pair<String, String>> = facts.filter { it.first !in omit }
 
-/** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips. */
+/** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips.
+ *  (Update 529b, owner: "the last thing that's shown from the options should be the 3 dots, not anything else beside it" - the
+ *  round ••• More / Less goes after the chips too: Game shelf's flowing row put "Saves: …" beside it, Flip 2 mlast529b.) */
 internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
-    ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())
+    (ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())).let { all ->
+        all.filterNot(PopupLab::isMore) + all.filter(PopupLab::isMore)
+    }
 
 /** A row of keys that wraps onto more lines when it doesn't fit (never squeezed, never cut). */
 @Composable

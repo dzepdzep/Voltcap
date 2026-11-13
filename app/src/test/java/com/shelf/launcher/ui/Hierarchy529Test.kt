@@ -37,4 +37,10 @@ class Hierarchy529Test {
         val w = src("WinScenes.kt")
         assertTrue(w.contains("ctx.tools.filter(PopupLab::isMore) else emptyList()"))
     }
+
+    /** Flip 2 mlast529b: Game shelf's flowing key row put "Saves: …" beside •••, after it. sceneKeys ends on More. */
+    @Test fun sceneKeysEndOnMore() {
+        val m = src("WinScenesMore.kt")
+        assertTrue(m.contains("all.filterNot(PopupLab::isMore) + all.filter(PopupLab::isMore)"))
+    }
 }
