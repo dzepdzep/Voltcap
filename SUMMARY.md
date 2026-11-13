@@ -1,3 +1,16 @@
+# Save sync 529c (13 Nov 2026) - branch `fix/save-sync`, NOT merged into a release, NOT compiled for Android yet
+- Last-moment upload race (`UploadRace`, Drive revisions kept + parked + pinned), multi-file saves sent whole (`UnitManifest`,
+  held while Drive is mid-upload, a conflict after 24 h), "Newest" corrected to Google's clock (`ConflictClock`, never guesses
+  when close), open play sessions from before a restart closed and synced (`BootSession`), "Earlier versions" restore in the save
+  window (verified md5, live save backed up first, read back, rolled back on failure; refused while the game runs), isolated real-Drive
+  QA switch (`QaDriveTest`: QA app + flag file + only folders inside the QA app's own files). Record: `docs/SAVE_SYNC_529.md` section 8.
+- Rule 11 on the save screens: game names, save file names and places, Drive problems and sync lines are never cut with "..." any
+  more (22 places in SaveExplorer / SaveSyncUi / SyncPrompts); a Save Vault row grows past 46 dp when a long name wraps.
+- Copy: `src_copy/data/{SyncGuards,QaDriveTest}.kt` (new), `src_copy/data/{CloudSync,DriveClient,SaveBackups,PrelaunchCheck,PlaySession,SaveWatchWorker}.kt`,
+  `src_copy/ui/{SaveSyncUi,SaveExplorer,SyncPrompts,LauncherScreen}.kt`; tests `SyncGuards529Test`, `SaveSyncSim529Test`.
+- Checked: the pure rules and the simulation on the JVM in the cloud (mutation-checked); the save-screen source test fails on the old
+  code. NOT checked: Android compile (no SDK in the cloud, PC unreachable), device run, real Drive.
+
 # Save sync P0 (update 529, 13 Nov 2026) - on branch `fix/save-sync`, NOT merged, NOT released
 - Audit of review findings 1-8 against v0.6.71: 1, 2, 3, 4, 5, 6, 7 confirmed, 8 partly; two dismissed. Three new: twin lineage (9),
   multi-file saves not a transaction (10), "keep this device's" parked Drive's copy unchecked (11). Record: `docs/SAVE_SYNC_529.md`.

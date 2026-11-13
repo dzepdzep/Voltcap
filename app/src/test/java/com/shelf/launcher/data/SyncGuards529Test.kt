@@ -196,4 +196,18 @@ class SyncGuards529Test {
         assertFalse(QaDriveTest.confined(s("$root/x", tree = "content://dolphin"), root))
         assertFalse(QaDriveTest.confined(s(), root))
     }
+
+    /**
+     * Rule 11 on the save screens (13 Nov, 529c): a game's name, a save's file name or place, a Drive problem or a sync line is never
+     * cut with "..." - two saves that differ only at the end of the name (region, revision, hack) must stay told apart.
+     */
+    @Test fun theSaveScreensNeverCutANameOrAPlace() {
+        fun ui(name: String) = listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
+            .map(::File).first { it.exists() }.readText()
+        for (f in listOf("SaveExplorer.kt", "SaveSyncUi.kt", "SyncPrompts.kt")) {
+            val t = ui(f)
+            assertFalse("$f cuts text", t.contains("TextOverflow.Ellipsis"))
+        }
+        assertFalse("a save row has a fixed height", ui("SaveExplorer.kt").contains("Row(Modifier.fillMaxWidth().height(46.dp)"))
+    }
 }
