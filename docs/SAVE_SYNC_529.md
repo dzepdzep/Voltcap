@@ -134,6 +134,10 @@ The QA app never talks to Drive. So the "upload" here is the dry run (`QaSaveDry
 | 1 save (32 KB) | **8.2 s** (found 4.7 s after the write, settled 8.7 s) | 1 |
 | 3 saves 1 s apart | **8.0 s after the last one** | 1, the last; the two earlier ones were superseded and never sent |
 | 8 MB memory card written in 8 slow chunks (≈5 s) | **8.9 s after the last chunk** | 1, the finished card; never a half-written one |
-| Voltcap's process ended in the background (`am kill`, as low memory does), then a save | **43.5 s**: WorkManager started the process again 24 s later, and the watcher restarted. The rest was its first 15 s wait, now removed (`32711b96`): the first look is immediate | 1 |
+| Voltcap's process ended in the background (`am kill`, as low memory does), then a save | first run **43.5 s**: WorkManager started the process again 24 s later, then the watcher's first 15 s wait. Re-run with the immediate first look (`32711b96`, 12:03): **30.5 s**: the process came back 26 s after the write and the save was found 0.1 s later. What is left is WorkManager's own start time (the chain runs every minute; Android decides the exact moment) | 1 |
+
+Re-run (12:02, same build plus `32711b96`): 1 save **8.2 s**; 3 saves **8.2 s after the last**, only the last sent; 8 MB card **7.5–9.1 s after the last chunk** (12.7 s after the first), one finished card; process ended **30.5 s**. Both runs: Drive itself not involved (see above).
+
+Build check before the re-run: the PC's `SaveObserver.kt` had not received `32711b96` (Gradle reported the QA compile up to date). All 22 changed source and test files were then copied from the branch to the PC again; after that only `SaveObserver.kt` recompiled, so the rest already matched. `testDebugUnitTest` on exactly the branch content: BUILD SUCCESSFUL (10:56, 13 Nov).
 
 No crashes. File dates on the Flip 2's shared storage come in whole seconds (`mtime=…442000`), the coarse dates the content check (finding 4) is there for. Afterwards the files were removed and the dry run switched off. The script had put a read-only Settings info screen in front, which one Back closed.
