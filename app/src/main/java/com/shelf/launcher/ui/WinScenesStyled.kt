@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -273,7 +275,18 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
 private fun CoverDetailPanel(ctx: WinSceneCtx) {
     // The big case stays where the layout shows it (left); the facts and keys open beside it, never over it.
     val a = ctx.accent; val ink = Color.White; val muted = Color.White.copy(alpha = 0.62f)
-    val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
+    val shortPanel = ctx.maxH < 420.dp
+    val moreOpen = ctx.tools.any { it.label == "Less" }
+    val compact = shortPanel && moreOpen
+    // (529l, KONKR x1.3 k529k3: with More open on the short panel the keys took six rows and the two info lines got no height.
+    // The panel takes a little more of the free middle while More is open - the big case on the left stays clear of it - so
+    // the keys pair up into fewer rows; it eases back when More closes, at once with animations off.)
+    val anim = rememberAnimationsEnabled()
+    val panelW by androidx.compose.animation.core.animateDpAsState(
+        if (compact) minOf(ctx.maxW * 0.56f, 600.dp) else minOf(ctx.maxW * 0.5f, 560.dp),
+        if (anim) androidx.compose.animation.core.tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+        else androidx.compose.animation.core.snap(), label = "coverPanelW"
+    )
     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
             // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
@@ -288,27 +301,35 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             // re-fit drew a faded second copy. Now the name is simply smaller on a short panel and the facts give way first.)
             // The keys are measured first (the block above them is the weighted one); inside it the name and console keep their
             // natural height and the facts give way.
-            val shortPanel = ctx.maxH < 420.dp
-            val compact = shortPanel && ctx.tools.any { it.label == "Less" }
+            // (529l: compact keys also get a line of their own size - the theme's 24 sp line made each one 54 px tall at x1.3.)
             val coverKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
-                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp)
+                    size = if (compact) 11.sp else 12.sp, pad = if (compact) 8.dp else 10.dp, height = if (compact) 26.dp else 30.dp,
+                    lineHeight = if (compact) 13.sp else TextUnit.Unspecified)
             }
             // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
             ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), coverKey) { live ->
             Column(Modifier.weight(1f, fill = false)) {
-                StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
+                // (529l: on the compact panel the two lines below are measured first and the name takes what is left - it fits
+                // itself to that room; before, the name took the room and the lines got none.)
+                if (compact) StableFullText(ctx.name, color = ink, fontSize = 20.sp, modifier = Modifier.weight(1f, fill = false), maxLines = 2,
+                    fontWeight = FontWeight.Bold, reserve = false)
+                else StableFullText(ctx.name, color = ink, fontSize = if (shortPanel) 20.sp else 24.sp, maxLines = if (shortPanel) 2 else 3, fontWeight = FontWeight.Bold)
                 // (The year beside the console: with More open the facts give way to the keys and the year went with them.)
                 // (Update 471: console and year are on this line — not repeated in the facts. With More open every fact moves up
                 // into two plain lines — console · year · maker · genre, then what you've played — so all of them stay in view over
                 // the extra keys, also with large text and display size larger (KONKR at 280 dpi left the label rows no room).)
-                val moreOpen = ctx.tools.any { it.label == "Less" }
-                Text(if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                if (moreOpen) Text(coverPlayedLine(ctx), color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp))
-                Spacer(Modifier.height(if (moreOpen) 6.dp else 10.dp))
-                // (Update 471: the facts / story under the lines are what gives way — never the lines themselves.)
-                Column(Modifier.weight(1f, fill = false)) {
-                    SceneFactsBody(ctx, muted, ink, null, omit = if (moreOpen) COVER_DETAIL_OMIT_MORE else COVER_DETAIL_OMIT, inline = moreOpen)
+                Text(if (moreOpen) coverInfoLine(ctx) else ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = a, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    lineHeight = if (compact) 16.sp else TextUnit.Unspecified)
+                if (moreOpen) Text(coverPlayedLine(ctx), color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 2.dp),
+                    lineHeight = if (compact) 15.sp else TextUnit.Unspecified)
+                // (Update 471: the facts / story under the lines are what gives way — never the lines themselves. 529l: on the
+                // compact panel they give way wholly - the story is one key away on Details - instead of being laid out at no height.)
+                if (!compact) {
+                    Spacer(Modifier.height(if (moreOpen) 6.dp else 10.dp))
+                    Column(Modifier.weight(1f, fill = false)) {
+                        SceneFactsBody(ctx, muted, ink, null, omit = if (moreOpen) COVER_DETAIL_OMIT_MORE else COVER_DETAIL_OMIT, inline = moreOpen)
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))

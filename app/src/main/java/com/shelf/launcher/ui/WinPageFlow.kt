@@ -33,7 +33,9 @@ internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolea
  */
 internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, WinScene.NIGHT_STATUS, WinScene.TILE_CARD, WinScene.BLADE_GUIDE,
     // (529k: the shelf family - Game shelf, Case stacks, Console stack, Coverflow details - ShelfFamilyPages.)
-    WinScene.INDEX_CARD)
+    WinScene.INDEX_CARD,
+    // (529l: the Twin family - Twin desk, Twin icons, Twin showcase - pages on the touch screen, TwinTouchPages.)
+    WinScene.TWIN_HINGE)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

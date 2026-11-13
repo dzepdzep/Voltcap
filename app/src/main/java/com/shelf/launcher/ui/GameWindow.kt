@@ -2391,11 +2391,15 @@ private fun SceneBody(
     if (sharedPageFor(scene, page)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
-    else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
+    // (529l, KONKR page walk k529s1, frame by frame: Info -> Details changed in one frame in all four shelf layouts while the
+    // later page changes moved. Leaving the main page moved the scene from this branch to the plain one below - a new
+    // composition, so the scene's own page motion started from nothing. A layout that draws its own pages stays in this
+    // branch on every page; the hint shows on the main page only, as before.)
+    else if (labActions && (page == WinPage.MAIN || nativePages(scene))) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
         // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
         // The hint is measured first; the scene gets the rest.)
         Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
-        LabBackHint(onClose, Modifier.padding(top = 4.dp))
+        if (page == WinPage.MAIN) LabBackHint(onClose, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)
 }
@@ -2641,8 +2645,10 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                         if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                         maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null
                     )
+                    // (529l, KONKR k529s1: Coverflow details' narrower page showed "Sync, second screen, artwork, look — for" - the
+                    // line slid with its end out of view. A line that doesn't fit takes a second line before it slides.)
                     opt.sub?.let {
-                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1, fontFamily = if (look.mono) FontFamily.Monospace else null)
+                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
                     }
                 }
             }

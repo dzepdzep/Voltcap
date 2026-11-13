@@ -43,6 +43,10 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import coil.compose.AsyncImage
 import com.shelf.launcher.data.HomeLayout
 import kotlinx.coroutines.delay
@@ -73,7 +77,18 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH, 520.dp)
     val short = h < 440.dp
     // The top screen's share; the touch half keeps at least 190 dp (keys + one row of facts on the smallest screens).
-    val topH = (h * (if (short) 0.32f else 0.38f)).coerceIn(92.dp, 220.dp).coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))
+    val topMain = (h * (if (short) 0.32f else 0.38f)).coerceIn(92.dp, 220.dp).coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))
+    // (529l, Twin family native pages: Details / Achievements / Options open on the touch screen, as a two-screen handheld
+    // changes its lower screen. The top screen keeps the picture and the name, folds down to a strip that says which page is
+    // open, and gives the touch screen the room; back on Info it comes up again. Immediate with animations off.)
+    val anim = rememberAnimationsEnabled()
+    val onPage = ctx.page != WinPage.MAIN
+    val topPage = twinTopPageHeight(h, topMain)
+    val topH by androidx.compose.animation.core.animateDpAsState(
+        if (onPage) topPage else topMain,
+        if (anim) tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(),
+        label = "twinTop"
+    )
     val ink = if (desk) DeskInk else Color.White
     val muted = if (desk) DeskMuted else Color.White.copy(alpha = 0.6f)
     val edge = if (desk) DeskEdge else Color.White.copy(alpha = 0.18f)
@@ -101,7 +116,7 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HingePicture(ctx, desk, Modifier.fillMaxHeight().widthIn(max = w * 0.48f))
+            HingePicture(ctx, desk, Modifier.fillMaxHeight().widthIn(max = w * 0.48f), label = !onPage)
             Spacer(Modifier.width(12.dp))
             Row(
                 Modifier.weight(1f).fillMaxHeight().then(
@@ -113,11 +128,19 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
                 Box(Modifier.width(4.dp).fillMaxHeight(0.6f).clip(RoundedCornerShape(2.dp)).background(a))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Center) {
-                    // Wraps, then shrinks to a readable size (CLAUDE.md rule 11) — the box's height is the limit.
-                    FitText(ctx.name, ink, maxSize = if (short) 18.sp else 22.sp, minSize = 11.sp, maxLines = 3,
-                        modifier = Modifier.weight(1f, fill = false), fontWeight = FontWeight.Bold, lineHeightRatio = 1.14f)
-                    Text(listOfNotNull(ctx.console, ctx.year).joinToString(" · "), color = if (desk) muted else a,
-                        fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (onPage) {
+                        // (529l: on a page the strip says which one is open, over the name on one line - it shrinks to a
+                        // readable size, then slides; console and year are on the Details page.)
+                        Text(winPageTitle(ctx.page).uppercase(), color = if (desk) muted else a, fontSize = 10.sp, lineHeight = 12.sp,
+                            fontWeight = FontWeight.Black, letterSpacing = 1.4.sp, maxLines = 1)
+                        StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 1, fontWeight = FontWeight.Bold, reserve = false)
+                    } else {
+                        // Wraps, then shrinks to a readable size (CLAUDE.md rule 11) — the box's height is the limit.
+                        FitText(ctx.name, ink, maxSize = if (short) 18.sp else 22.sp, minSize = 11.sp, maxLines = 3,
+                            modifier = Modifier.weight(1f, fill = false), fontWeight = FontWeight.Bold, lineHeightRatio = 1.14f)
+                        Text(listOfNotNull(ctx.console, ctx.year).joinToString(" · "), color = if (desk) muted else a,
+                            fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
@@ -140,16 +163,70 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // (The keys are measured first — not weighted — so their wrapped lines are always whole; the facts get the rest.)
-            Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {
-                if (ctx.page == WinPage.MAIN) HingeFacts(ctx, muted, ink)
-                else ctx.pageBody(Modifier.fillMaxSize())
-            }
-            KeyRow(sceneKeys(ctx)) { k ->
+            val twinKey: @Composable (WinAction) -> Unit = { k ->
                 if (desk) SceneKey(k, Color.White, a.copy(alpha = 0.18f), DeskInk, DeskInk, DeskEdge, a, RoundedCornerShape(50), height = 30.dp)
                 else SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
                     Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp)
             }
+            TwinTouchPages(ctx, desk, Modifier.weight(1f, fill = false), twinKey) { live ->
+                // (The keys are measured first — not weighted — so their wrapped lines are always whole; the facts get the rest.)
+                Column(Modifier.heightIn(min = 130.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                    Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) { HingeFacts(ctx, muted, ink) }
+                    KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }) { k -> twinKey(k) }
+                }
+            }
+        }
+    }
+}
+
+/** 529l: the top screen's height while a page is open - a strip with the picture, the page's name and the game's. Pure. */
+internal fun twinTopPageHeight(h: Dp, topMain: Dp): Dp = (h * 0.22f).coerceIn(76.dp, 104.dp).coerceAtMost(topMain)
+
+/**
+ * 529l: the Twin family's touch screen - Info ([main]) or a page (Details / Achievements / Options) in a well of the screen's
+ * own ground, the window's keys under it. A page change swaps the touch screen sideways (forward: in from the right), the
+ * leaving one gone in 90 ms so one screen reads per frame; L1 / R1 walk the pages; with animations off it is immediate.
+ * [main] gets `live` = false for the copy on its way out (WinAction.inert).
+ */
+@Composable
+internal fun TwinTouchPages(
+    ctx: WinSceneCtx, desk: Boolean, modifier: Modifier, key: @Composable (WinAction) -> Unit,
+    main: @Composable (live: Boolean) -> Unit
+) {
+    val anim = rememberAnimationsEnabled()
+    val tabs = SHELF_TABS.filter { it in ctx.pages }
+    androidx.compose.animation.AnimatedContent(
+        targetState = ctx.page,
+        transitionSpec = {
+            val dir = pageDirection(tabs, initialState, targetState)
+            if (!anim) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+            else (androidx.compose.animation.slideInHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { w -> w * dir / 3 } +
+                androidx.compose.animation.fadeIn(tween(150, delayMillis = 60))) togetherWith
+                (androidx.compose.animation.slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { w -> -w * dir / 10 } +
+                    androidx.compose.animation.fadeOut(tween(90)))
+        },
+        contentKey = { it },
+        modifier = modifier.fillMaxWidth().onPreviewKeyEvent { e ->
+            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
+            val to = pageStep(tabs, ctx.page, step)
+            if (to != ctx.page) ctx.open(to)
+            true
+        },
+        label = "twinPage"
+    ) { p ->
+        val live = p == ctx.page
+        if (p == WinPage.MAIN) main(live)
+        else Column(Modifier.fillMaxSize()) {
+            Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                .background(if (desk) Color(0xFFF2F5F8) else Color.White.copy(alpha = 0.05f))
+                .then(if (desk) Modifier.border(1.dp, DeskEdge, RoundedCornerShape(10.dp)) else Modifier).padding(6.dp)) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = !desk, showsCover = true, showsName = true)) {
+                    ctx.pageFor(p, Modifier.fillMaxSize(), live)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }) { k -> key(k) }
         }
     }
 }
@@ -165,7 +242,7 @@ internal val twinDeskVeil: Brush = Brush.verticalGradient(listOf(Color(0xFFEEF1F
 
 /** The top screen's picture: whole (Fit), never stretched; on the desk a photo pinned to the paper. No art: the console's name on a tinted card. */
 @Composable
-private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
+private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier, label: Boolean = true) {
     val art = ctx.wide ?: ctx.backdrop
     val url = art ?: ctx.cover
     val shape = RoundedCornerShape(if (desk) 8.dp else 10.dp)
@@ -183,7 +260,9 @@ private fun HingePicture(ctx: WinSceneCtx, desk: Boolean, modifier: Modifier) {
                 onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f) ratio = twinPictureRatio(sz.width, sz.height) })
         } else {
             Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
-                Text(ctx.console, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                // (529l: in the page strip the card is too small for the console's name - ShelfTextRoboTest x1.3 cut it in four
+                // lines; there it is the game's colour only, the name is on the Details page.)
+                if (label) Text(ctx.console, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
                     modifier = Modifier.padding(8.dp))
             }
         }

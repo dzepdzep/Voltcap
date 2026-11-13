@@ -46,7 +46,8 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} {2} ach={3} {1}")
         fun cases(): List<Array<Any?>> {
             val layouts = listOf(HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES,
-                HomeLayout.CONSOLES, HomeLayout.COVERDETAILS) // (529k: the rest of the shelf family has native pages now)
+                HomeLayout.CONSOLES, HomeLayout.COVERDETAILS, // (529k: the rest of the shelf family has native pages now)
+                HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE) // (529l: the Twin family's touch-screen pages)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)

@@ -57,12 +57,25 @@ class TwinHinge142Test {
 
     @Test fun hingeReservesTheKeysAndSnapsTheFacts() {
         val s = src("WinSceneTwin.kt")
-        assertTrue("facts take what the keys leave", s.contains("Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {") && s.contains("KeyRow(sceneKeys(ctx))"))
+        // (529l: the keys of the Info screen - TwinTouchPages - are inert on the copy that is leaving.)
+        assertTrue("facts take what the keys leave", s.contains("Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) {") &&
+            s.contains("KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() })"))
         // (Update 487, D265: whole rows of facts that stay, the story in whole-line pages.)
         assertTrue("whole rows", s.contains("WholeRows(Modifier.fillMaxWidth())") && s.contains("PagedStory("))
         assertTrue("touch half keeps its room", s.contains("coerceAtMost((h - 200.dp).coerceAtLeast(72.dp))"))
         assertTrue("old hinge removed", !src("WinScenesMore.kt").contains("internal fun TwinHinge("))
         assertTrue("Twin desk's own pale veil", src("GameWindow.kt").contains("layout == HomeLayout.TWIN_DESK) twinDeskVeil"))
+    }
+
+    // 529l: with a page open the top screen is a strip - room for the page's name over the game's, never taller than on Info.
+    @Test fun topScreenFoldsToAStripOnPages() {
+        for (h in listOf(300, 395, 427, 520)) {
+            val main = 120f
+            val strip = twinTopPageHeight(androidx.compose.ui.unit.Dp(h.toFloat()), androidx.compose.ui.unit.Dp(main)).value
+            assertTrue("h=$h strip $strip", strip in 76f..104f && strip <= main)
+        }
+        assertEquals(92f, twinTopPageHeight(androidx.compose.ui.unit.Dp(520f), androidx.compose.ui.unit.Dp(92f)).value, 0.01f)
+        assertTrue("Twin draws its own pages", nativePages(WinScene.TWIN_HINGE))
     }
 
     @Test fun gridRevealButtonsHaveTheirOwnPanel() {

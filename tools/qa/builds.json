@@ -869,6 +869,17 @@
    "apk_sha256": "22c7858453a5730caee560a6c1eac73241da88dd101d6abfa76c11ee7e4d5e7a",
    "base_commit": "a966964d",
    "note": "529k2: shelf pages without a second cover / name (NativePageHost), Console stack name / facts give way to the keys. assembleQa 13 Nov 20:48 (BUILD SUCCESSFUL, verifyQaIsolation). apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair c1bde53c + 529l working tree - commit follows (same tree)",
+   "id": "qa-0.6.72-repair-529l",
+   "apk_sha256": "91083e40aa3067e34de1e8439c2f39c28403ce2fd9f93903557a3062a7528b60",
+   "base_commit": "c1bde53c",
+   "note": "529l: Coverflow details compact panel (x1.3 More open), native page scenes keep one composition across pages (Info -> page moves), page cross-fade without double text, Options sub-lines wrap, Twin family native pages (TwinTouchPages). assembleQa 13 Nov 21:37 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets); testDebugUnitTest 2698 tests, 0 failures, 44 skipped. apksigner CN=Android Debug a48b27ed."
   }
  ]
 }

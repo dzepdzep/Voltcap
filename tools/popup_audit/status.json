@@ -64,7 +64,7 @@
    "HARDWARE PENDING",
    "HARDWARE VERIFIED"
   ],
-  "note": "Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed. ShelfTextRoboTest passes (Storage-style facts give way whole, by design). HW: Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24 + s525 spine / flash runs): A opens the index-card window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design; 10 fast steps each way: 0 one-frame flashes / dark dips (flash513 + brightness), no lost frames >25 ms. Visual approval: owner pending. 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). Hardware and visual approval: NOT TESTED.",
+  "note": "Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed. ShelfTextRoboTest passes (Storage-style facts give way whole, by design). HW: Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24 + s525 spine / flash runs): A opens the index-card window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design; 10 fast steps each way: 0 one-frame flashes / dark dips (flash513 + brightness), no lost frames >25 ms. Visual approval: owner pending. 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). KONKR x1.0 PASS (k529k1), x1.3 PASS (k529k2); page-motion frame review and touch on the pages: see #15. Visual approval: NOT TESTED.",
   "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24 + s525 spine / flash runs): A opens the index-card window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design; 10 fast steps each way: 0 one-frame flashes / dark dips (flash513 + brightness), no lost frames >25 ms. Visual approval: owner pending."
  },
  "STACKS": {
@@ -75,7 +75,7 @@
    "HARDWARE PENDING",
    "HARDWARE VERIFIED"
   ],
-  "note": "As Game shelf (INDEX_CARD case flight). ShelfTextRoboTest passes. HW: Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24): A opens the window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design. Endless once / Fill the row: one lit case (s525 fill). Visual approval: owner pending. 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). Hardware and visual approval: NOT TESTED.",
+  "note": "As Game shelf (INDEX_CARD case flight). ShelfTextRoboTest passes. HW: Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24): A opens the window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design. Endless once / Fill the row: one lit case (s525 fill). Visual approval: owner pending. 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). KONKR x1.0 PASS (k529k1), x1.3 PASS (k529k2); page-motion frame review and touch on the pages: see #15. Visual approval: NOT TESTED.",
   "hardware": "Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24): A opens the window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design. Endless once / Fill the row: one lit case (s525 fill). Visual approval: owner pending."
  },
  "CARDS": {
@@ -124,7 +124,7 @@
    "IMPLEMENTED",
    "PC TESTED"
   ],
-  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). Hardware and visual approval: NOT TESTED."
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). KONKR x1.0 PASS (k529k1), x1.3 PASS (k529k3); page-motion frame review and touch on the pages: see #15. Visual approval: NOT TESTED."
  },
  "COVERDETAILS": {
   "status": [
@@ -132,6 +132,30 @@
    "IMPLEMENTED",
    "PC TESTED"
   ],
-  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). Hardware and visual approval: NOT TESTED."
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529k: native pages - Details / Achievements / Options are further cards of this layout's own make (ShelfFamilyPages); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk pass (JVM). KONKR x1.0 PASS (k529k1); x1.3 with More open FAILED (info lines laid out at no height, k529k3) - 529l fix in code, hardware rerun NOT TESTED. Visual approval: NOT TESTED."
+ },
+ "TWIN_DESK": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED"
+  ],
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529l: native pages - Details / Achievements / Options open on the window's touch screen (TwinTouchPages; the top screen folds to a strip naming the page); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk on the JVM. Hardware and visual approval: NOT TESTED."
+ },
+ "TWIN_ICONS": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED"
+  ],
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529l: native pages - Details / Achievements / Options open on the window's touch screen (TwinTouchPages; the top screen folds to a strip naming the page); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk on the JVM. Hardware and visual approval: NOT TESTED."
+ },
+ "TWIN_SHOWCASE": {
+  "status": [
+   "INVESTIGATED",
+   "IMPLEMENTED",
+   "PC TESTED"
+  ],
+  "note": "PC TESTED = the shared window rules on its real window (WinFocusRoboTest). 529l: native pages - Details / Achievements / Options open on the window's touch screen (TwinTouchPages; the top screen folds to a strip naming the page); ShelfTextRoboTest x1.0 / x1.3 (long name, 0 / 160 / 9999 achievements) and the WinFocusRoboTest bumper walk on the JVM. Hardware and visual approval: NOT TESTED."
  }
 }

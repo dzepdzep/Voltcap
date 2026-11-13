@@ -107,7 +107,10 @@ internal fun SceneKey(
     a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
     font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false,
     /** The caller already draws the primary key (Play) its own way; else Play gets the lit colour as a tint (update 487). */
-    primaryStyled: Boolean = false
+    primaryStyled: Boolean = false,
+    /** 529l: the word's line height (a tight window at large text: the theme's 24 sp line made each key 54 px tall on the
+     *  KONKR at x1.3); unspecified = the theme's, as before. */
+    lineHeight: TextUnit = TextUnit.Unspecified
 ) {
     // Update 487 (E7 popup hierarchy, owner-approved): Play is the clear first action in every window. A window that drew
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
@@ -138,7 +141,8 @@ internal fun SceneKey(
             Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
             Spacer(Modifier.width(5.dp))
             Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) k.onInk else if (a.urgent) Color(0xFFFF8A3D) else k.ink,
-                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2)
+                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2,
+                lineHeight = if (lineHeight == TextUnit.Unspecified) TextUnit.Unspecified else if (a.primary) lineHeight * 1.15f else lineHeight)
         }
     }
 }

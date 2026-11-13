@@ -73,8 +73,11 @@ internal fun ShelfFamilyPages(
             val dir = pageDirection(tabs, initialState, targetState)
             if (!anim) EnterTransition.None togetherWith ExitTransition.None
             // (Forward: the next card rises out of the slot; back: the card drops back and the one before comes down to it.)
-            else (slideInVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> h * dir / 3 } + fadeIn(tween(110))) togetherWith
-                (slideOutVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> -h * dir / 10 } + fadeOut(tween(NATIVE_PAGE_MS)))
+            // (529l, frame review k529s1: the leaving card faded over the whole 280 ms while the new one was already whole after
+            // 110 ms - for several frames both names and both texts read through each other. The leaving card is gone in 90 ms
+            // and the new one fades in just behind it, so there is one readable card per frame.)
+            else (slideInVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> h * dir / 3 } + fadeIn(tween(150, delayMillis = 60))) togetherWith
+                (slideOutVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> -h * dir / 10 } + fadeOut(tween(90)))
         },
         contentKey = { it },
         modifier = modifier.onPreviewKeyEvent { e ->

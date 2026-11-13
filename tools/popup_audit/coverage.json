@@ -489,9 +489,10 @@
  "TWIN_DESK": {
   "name": "Twin desk",
   "scene": "TWIN_HINGE",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
+   "IMPLEMENTED",
    "PC TESTED"
   ],
   "tests": [
@@ -502,16 +503,18 @@
    "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
-   "WinPresentationTest (all pref combinations)"
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
   "hardware": "none"
  },
  "TWIN_ICONS": {
   "name": "Twin icons",
   "scene": "TWIN_HINGE",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
+   "IMPLEMENTED",
    "PC TESTED"
   ],
   "tests": [
@@ -522,16 +525,18 @@
    "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
-   "WinPresentationTest (all pref combinations)"
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
   "hardware": "none"
  },
  "TWIN_SHOWCASE": {
   "name": "Twin showcase",
   "scene": "TWIN_HINGE",
-  "pages": "shared",
+  "pages": "native",
   "status": [
    "INVESTIGATED",
+   "IMPLEMENTED",
    "PC TESTED"
   ],
   "tests": [
@@ -542,7 +547,8 @@
    "WinFocusRoboTest.anASoonAfterBActsOnTheOpener",
    "WinFocusRoboTest.aOrBWhileOpeningNeverStartsTheGame",
    "WinFocusRoboTest.rapidBABAOnTheMainPageNeverStartsTheGame",
-   "WinPresentationTest (all pref combinations)"
+   "WinPresentationTest (all pref combinations)",
+   "WinFocusRoboTest.bumpersWalkThePagesAndFocusStaysOnAVisibleControl"
   ],
   "hardware": "none"
  },

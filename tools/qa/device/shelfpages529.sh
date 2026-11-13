@@ -24,6 +24,20 @@ walk() { # name: R1 x3 recorded with a shot per page, then L1 x3
   rec_stop; sleep 0.3
   k BUTTON_L1 0.9; k BUTTON_L1 0.9; k BUTTON_L1 1.0; shot $1_back_main
 }
+# 529l touch (TOUCH=1): on the Achievements page a tap on the first achievement row, on the Options page a tap on the
+# "Game settings" row (opens a sheet - nothing is chosen in it; B goes back). Taps go to the middle of the shown part of the
+# control in that page's layout dump; nothing is tapped when the dump has no such control.
+ctl() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $2 2>/dev/null; }
+tapj() { r=$(ctl "$1" $F/qa_clip/${TAG}_$2.json | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
+  [ -n "$r" ] || { log "tap: no shown control '$1' in $2"; return 1; }
+  gate; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 )); log "tap '$1' at $(( $1 + $3 / 2 )),$(( $2 + $4 / 2 ))"; }
+touchp() {
+  k BUTTON_R1 1.0; k BUTTON_R1 1.2; shot $1_t_trophies
+  tapj "[^\"]*achievement 1[^\"]*" $1_t_trophies && { sleep 1.3; shot $1_t_ach_tap; }
+  k BUTTON_R1 1.2; shot $1_t_options
+  tapj "Game settings[^\"]*" $1_t_options && { sleep 1.6; shot $1_t_opt_tap; k BUTTON_B 1.3; shot $1_t_opt_back; }
+  k BUTTON_L1 0.9; k BUTTON_L1 0.9; k BUTTON_L1 1.0; shot $1_t_main
+}
 case $MODE in
 run)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -44,6 +58,7 @@ run)
     n=${lay}; logcat -c
     shot ${n}_home; k BUTTON_A 1.9; shot ${n}_main
     walk ${n}
+    [ "$TOUCH" = 1 ] && touchp ${n}
     k BUTTON_B 1.4; shot ${n}_closed
     logcat -c; for i in 1 2 3; do k BUTTON_A 0.35; k BUTTON_B 0.35; done; sleep 1.5
     echo "rapid_reopen_launches=$(launches)" > $O/${n}_rapid.txt; shot ${n}_after_rapid
