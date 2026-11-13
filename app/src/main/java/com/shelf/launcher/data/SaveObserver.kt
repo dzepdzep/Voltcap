@@ -176,12 +176,16 @@ object SaveObserver {
         var sentSig: String? = null
         var remoteAt = SystemClock.elapsedRealtime()
         var told = false
+        // (Mid-game sync, update 529: the first look is at once - a watcher brought back after the process was ended has missed
+        // the file events of the saves written meanwhile; Flip 2 dry run: 15 s of a 43 s delay were this first wait.)
+        var first = true
         while (kotlinx.coroutines.currentCoroutineContext().isActive) {
             val now = SystemClock.elapsedRealtime()
             if (now > until || now - started > MAX_MS) break
             // A pending change is looked at again soon; otherwise the next file event or the regular look.
             val awake = com.shelf.launcher.ui.ScreenState.isInteractive(app)
-            val wait = if (lastSig != null) SETTLE_MS else if (awake) POLL_MS else POLL_ASLEEP_MS
+            val wait = if (first) 0L else if (lastSig != null) SETTLE_MS else if (awake) POLL_MS else POLL_ASLEEP_MS
+            first = false
             val woke = withTimeoutOrNull(wait) { wake.receive() } != null
             // A burst of events (one save written in several steps): wait for it to go quiet first.
             if (woke) while (withTimeoutOrNull(SETTLE_MS) { wake.receive() } != null) Unit
